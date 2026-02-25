@@ -12,11 +12,35 @@ import {
   Camera,
   Loader2,
   MapPin,
-  Tag
+  Tag,
+  LogOut,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Listing, Seller, University, Category } from './types';
 import { UNIVERSITIES, CATEGORIES } from './constants';
+import { auth, db as firestore } from './firebase';
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  onAuthStateChanged, 
+  signOut, 
+  sendEmailVerification, 
+  sendPasswordResetEmail,
+  deleteUser,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { 
+  doc, 
+  setDoc, 
+  getDoc, 
+  deleteDoc,
+  serverTimestamp 
+} from 'firebase/firestore';
 
 // --- Components ---
 
@@ -24,12 +48,14 @@ const Navbar = ({
   onSearch, 
   onAddListing, 
   onProfileClick,
-  userSeller
+  userSeller,
+  firebaseUser
 }: { 
   onSearch: (val: string) => void, 
   onAddListing: () => void,
   onProfileClick: () => void,
-  userSeller: Seller | null
+  userSeller: Seller | null,
+  firebaseUser: FirebaseUser | null
 }) => {
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-zinc-200 px-4 py-3">
@@ -61,10 +87,14 @@ const Navbar = ({
           </button>
           <button 
             onClick={onProfileClick}
-            className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+            className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors overflow-hidden"
           >
             {userSeller ? (
-              <img src={userSeller.business_logo} alt="Profile" className="w-full h-full rounded-full object-cover" />
+              <img src={userSeller.business_logo} alt="Profile" className="w-full h-full object-cover" />
+            ) : firebaseUser ? (
+              <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold">
+                {firebaseUser.email?.charAt(0).toUpperCase()}
+              </div>
             ) : (
               <User className="w-5 h-5 text-zinc-600" />
             )}
@@ -218,6 +248,10 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userSeller, setUserSeller] = useState<Seller | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile'>('login');
+  const [showPassword, setShowPassword] = useState(false);
 
   // Form states
   const [newListing, setNewListing] = useState({
@@ -230,20 +264,42 @@ export default function App() {
     whatsapp_number: ""
   });
 
-  const [newSeller, setNewSeller] = useState({
-    email_phone: "",
-    business_name: "",
-    business_logo: "",
+  const [authForm, setAuthForm] = useState({
+    email: "",
+    password: "",
+    businessName: "",
     university: UNIVERSITIES[0] as University,
+    logoUrl: "",
     bio: ""
   });
 
   useEffect(() => {
-    // Load local seller profile if exists
-    const savedSeller = localStorage.getItem('campus_market_seller');
-    if (savedSeller) {
-      setUserSeller(JSON.parse(savedSeller));
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setFirebaseUser(user);
+      if (user) {
+        // Fetch profile from Firestore
+        const docRef = doc(firestore, "users", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const profile = docSnap.data() as Seller;
+          setUserSeller(profile);
+          // Sync with local SQLite
+          await fetch('/api/sellers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(profile)
+          });
+        }
+        setAuthView('profile');
+      } else {
+        setUserSeller(null);
+        setAuthView('login');
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
     fetchListings();
   }, [selectedUniv, selectedCat, search]);
 
@@ -265,26 +321,104 @@ export default function App() {
     }
   };
 
-  const handleCreateSeller = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
-      const res = await fetch('/api/sellers', {
+      const userCredential = await createUserWithEmailAndPassword(auth, authForm.email, authForm.password);
+      const user = userCredential.user;
+
+      await sendEmailVerification(user);
+
+      const profile: Seller = {
+        uid: user.uid,
+        email: authForm.email,
+        business_name: authForm.businessName,
+        business_logo: authForm.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authForm.businessName)}&background=random`,
+        university: authForm.university,
+        bio: authForm.bio,
+        is_verified: false,
+        join_date: new Date().toISOString()
+      };
+
+      // Save to Firestore
+      await setDoc(doc(firestore, "users", user.uid), profile);
+
+      // Sync to SQLite
+      await fetch('/api/sellers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSeller)
+        body: JSON.stringify(profile)
       });
-      const data = await res.json();
-      const seller = { ...newSeller, id: data.id, is_verified: false, created_at: new Date().toISOString() } as Seller;
-      setUserSeller(seller);
-      localStorage.setItem('campus_market_seller', JSON.stringify(seller));
-    } catch (err) {
-      alert("Failed to create profile");
+
+      setUserSeller(profile);
+      alert("Account created! Please check your email for verification.");
+      setAuthView('profile');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, authForm.email, authForm.password);
+      setAuthView('profile');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authForm.email) return alert("Please enter your email");
+    try {
+      await sendPasswordResetEmail(auth, authForm.email);
+      alert("Password reset email sent!");
+      setAuthView('login');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUserSeller(null);
+      setFirebaseUser(null);
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!firebaseUser) return;
+    if (!confirm("Are you sure you want to delete your account? This will permanently remove your profile and all your listings.")) return;
+
+    try {
+      // Delete from Firestore
+      await deleteDoc(doc(firestore, "users", firebaseUser.uid));
+      // Delete from Firebase Auth
+      await deleteUser(firebaseUser);
+      alert("Account deleted.");
+    } catch (err: any) {
+      alert("Error deleting account: " + err.message + ". You may need to re-authenticate to perform this action.");
     }
   };
 
   const handleCreateListing = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userSeller) return;
+    if (!userSeller || !firebaseUser) return;
+    
+    if (!firebaseUser.emailVerified) {
+      alert("Please verify your email before posting a listing.");
+      return;
+    }
 
     try {
       await fetch('/api/listings', {
@@ -292,13 +426,12 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...newListing,
-          seller_id: userSeller.id,
+          seller_uid: userSeller.uid,
           price: parseFloat(newListing.price),
           photos: newListing.photos.filter(p => p.trim() !== "")
         })
       });
       setShowAddModal(false);
-      fetchListings();
       setNewListing({
         name: "",
         price: "",
@@ -308,6 +441,7 @@ export default function App() {
         photos: [""],
         whatsapp_number: ""
       });
+      fetchListings();
     } catch (err) {
       alert("Failed to create listing");
     }
@@ -329,6 +463,52 @@ export default function App() {
     }
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'listing' | 'logo') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const contentType = res.headers.get("content-type");
+      if (!res.ok) {
+        let errorMessage = "Upload failed";
+        if (contentType && contentType.includes("application/json")) {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } else {
+          errorMessage = `Server error: ${res.status} ${res.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      if (contentType && contentType.includes("application/json")) {
+        const data = await res.json();
+        if (data.url) {
+          if (type === 'listing') {
+            setNewListing({ ...newListing, photos: [data.url] });
+          } else {
+            setAuthForm({ ...authForm, logoUrl: data.url });
+          }
+        }
+      } else {
+        throw new Error("Server returned non-JSON response");
+      }
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert(err instanceof Error ? err.message : "Image upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen pb-20">
       <Navbar 
@@ -336,6 +516,7 @@ export default function App() {
         onAddListing={() => setShowAddModal(true)}
         onProfileClick={() => setShowProfileModal(true)}
         userSeller={userSeller}
+        firebaseUser={firebaseUser}
       />
 
       <main className="max-w-7xl mx-auto px-4">
@@ -407,6 +588,33 @@ export default function App() {
                     Create Profile
                   </button>
                 </div>
+              ) : !firebaseUser?.emailVerified ? (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Mail className="w-8 h-8 text-amber-500" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">Email Verification Required</h3>
+                  <p className="text-zinc-500 mb-6">Please verify your email to post listings. Check your inbox for the verification link.</p>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-4 h-4" /> I've Verified
+                    </button>
+                    <button 
+                      onClick={async () => {
+                        if (firebaseUser) {
+                          await sendEmailVerification(firebaseUser);
+                          alert("Verification email resent!");
+                        }
+                      }}
+                      className="text-primary text-sm font-bold hover:underline"
+                    >
+                      Resend Verification Email
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <form onSubmit={handleCreateListing} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                   <div>
@@ -474,22 +682,61 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Photo URL</label>
-                    <div className="flex gap-2">
-                      <input 
-                        type="url" 
-                        placeholder="https://..."
-                        className="flex-1 px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.photos[0]}
-                        onChange={e => setNewListing({...newListing, photos: [e.target.value]})}
-                      />
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Photo</label>
+                    <div className="space-y-3">
+                      {newListing.photos[0] && (
+                        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200">
+                          <img 
+                            src={newListing.photos[0]} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setNewListing({ ...newListing, photos: [""] })}
+                            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
+                      
+                      <div className="relative">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          onChange={(e) => handleFileUpload(e, 'listing')}
+                          className="hidden"
+                          id="photo-upload"
+                          disabled={uploading}
+                        />
+                        <label 
+                          htmlFor="photo-upload"
+                          className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all ${uploading ? "bg-zinc-50 border-zinc-200 cursor-not-allowed" : "bg-zinc-50 border-zinc-200 hover:border-primary/50 hover:bg-primary/5"}`}
+                        >
+                          {uploading ? (
+                            <>
+                              <Loader2 className="w-5 h-5 text-primary animate-spin" />
+                              <span className="text-sm font-medium text-zinc-500">Uploading...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera className="w-5 h-5 text-zinc-400" />
+                              <span className="text-sm font-medium text-zinc-600">
+                                {newListing.photos[0] ? "Change Photo" : "Upload Product Photo"}
+                              </span>
+                            </>
+                          )}
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <button 
                     type="submit"
-                    className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors mt-4"
+                    disabled={uploading}
+                    className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors mt-4 ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
                   >
-                    Post Listing
+                    {uploading ? "Please wait..." : "Post Listing"}
                   </button>
                 </form>
               )}
@@ -513,91 +760,252 @@ export default function App() {
               className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl"
             >
               <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-                <h2 className="text-xl">{userSeller ? "My Profile" : "Create Seller Profile"}</h2>
+                <h2 className="text-xl font-display">
+                  {authView === 'login' && "Welcome Back"}
+                  {authView === 'signup' && "Join CampusMarket"}
+                  {authView === 'forgot' && "Reset Password"}
+                  {authView === 'profile' && "My Profile"}
+                </h2>
                 <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {userSeller ? (
-                <div className="p-8 text-center">
-                  <div className="relative w-24 h-24 mx-auto mb-4">
-                    <img src={userSeller.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
-                    {userSeller.is_verified && (
-                      <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
-                        <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
+              <div className="max-h-[80vh] overflow-y-auto">
+                {authView === 'login' && (
+                  <form onSubmit={handleLogin} className="p-8 space-y-4">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                          <input 
+                            required
+                            type="email" 
+                            className="w-full pl-10 pr-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                            value={authForm.email}
+                            onChange={e => setAuthForm({...authForm, email: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+                          <input 
+                            required
+                            type={showPassword ? "text" : "password"} 
+                            className="w-full pl-10 pr-12 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                            value={authForm.password}
+                            onChange={e => setAuthForm({...authForm, password: e.target.value})}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setAuthView('forgot')}
+                      className="text-xs font-bold text-primary hover:underline"
+                    >
+                      Forgot Password?
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
+                    </button>
+                    <p className="text-center text-sm text-zinc-500">
+                      Don't have an account?{" "}
+                      <button type="button" onClick={() => setAuthView('signup')} className="text-primary font-bold hover:underline">Sign Up</button>
+                    </p>
+                  </form>
+                )}
+
+                {authView === 'signup' && (
+                  <form onSubmit={handleSignUp} className="p-8 space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
+                        <input 
+                          required
+                          type="text" 
+                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                          value={authForm.businessName}
+                          onChange={e => setAuthForm({...authForm, businessName: e.target.value})}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
+                        <select 
+                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                          value={authForm.university}
+                          onChange={e => setAuthForm({...authForm, university: e.target.value as University})}
+                        >
+                          {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+                      <input 
+                        required
+                        type="email" 
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={authForm.email}
+                        onChange={e => setAuthForm({...authForm, email: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
+                      <input 
+                        required
+                        type="password" 
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={authForm.password}
+                        onChange={e => setAuthForm({...authForm, password: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Logo</label>
+                      <div className="flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
+                          {authForm.logoUrl ? (
+                            <img src={authForm.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-zinc-400">
+                              <Camera className="w-6 h-6" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <input 
+                            type="file" 
+                            accept="image/*"
+                            onChange={(e) => handleFileUpload(e, 'logo')}
+                            className="hidden"
+                            id="logo-upload"
+                          />
+                          <label 
+                            htmlFor="logo-upload"
+                            className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
+                          >
+                            {uploading ? "Uploading..." : "Upload Logo"}
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio (Optional)</label>
+                      <textarea 
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+                        value={authForm.bio}
+                        onChange={e => setAuthForm({...authForm, bio: e.target.value})}
+                      />
+                    </div>
+                    <button 
+                      type="submit"
+                      disabled={loading || uploading}
+                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+                    >
+                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
+                    </button>
+                    <p className="text-center text-sm text-zinc-500">
+                      Already have an account?{" "}
+                      <button type="button" onClick={() => setAuthView('login')} className="text-primary font-bold hover:underline">Log In</button>
+                    </p>
+                  </form>
+                )}
+
+                {authView === 'forgot' && (
+                  <form onSubmit={handleForgotPassword} className="p-8 space-y-4">
+                    <p className="text-sm text-zinc-500">Enter your email address and we'll send you a link to reset your password.</p>
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+                      <input 
+                        required
+                        type="email" 
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={authForm.email}
+                        onChange={e => setAuthForm({...authForm, email: e.target.value})}
+                      />
+                    </div>
+                    <button 
+                      type="submit"
+                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                    >
+                      Send Reset Link
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => setAuthView('login')}
+                      className="w-full text-sm font-bold text-zinc-500 hover:underline"
+                    >
+                      Back to Login
+                    </button>
+                  </form>
+                )}
+
+                {authView === 'profile' && userSeller && (
+                  <div className="p-8 text-center">
+                    <div className="relative w-24 h-24 mx-auto mb-4">
+                      <img src={userSeller.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
+                      {userSeller.is_verified && (
+                        <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
+                          <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
+                        </div>
+                      )}
+                    </div>
+                    <h3 className="text-2xl font-display mb-1">{userSeller.business_name}</h3>
+                    <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
+                      <MapPin className="w-4 h-4" /> {userSeller.university}
+                    </p>
+                    {!firebaseUser?.emailVerified && (
+                      <div className="mb-6 p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-medium flex items-center gap-2 justify-center">
+                        <AlertTriangle className="w-4 h-4" />
+                        Verify your email to post listings
                       </div>
                     )}
+                    {userSeller.bio && (
+                      <p className="text-sm text-zinc-600 mb-6 max-w-xs mx-auto italic">
+                        "{userSeller.bio}"
+                      </p>
+                    )}
+                    <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-3">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Email</p>
+                        <p className="text-zinc-700 font-medium">{userSeller.email}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
+                        <p className="text-zinc-700 font-medium">{new Date(userSeller.join_date).toLocaleDateString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={handleLogout}
+                        className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <LogOut className="w-4 h-4" /> Log Out
+                      </button>
+                      <button 
+                        onClick={handleDeleteAccount}
+                        className="text-red-500 text-xs font-bold hover:underline"
+                      >
+                        Delete Account & Profile
+                      </button>
+                    </div>
                   </div>
-                  <h3 className="text-2xl font-display mb-1">{userSeller.business_name}</h3>
-                  <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
-                    <MapPin className="w-4 h-4" /> {userSeller.university}
-                  </p>
-                  <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6">
-                    <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Contact Info</p>
-                    <p className="text-zinc-700 font-medium">{userSeller.email_phone}</p>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      localStorage.removeItem('campus_market_seller');
-                      setUserSeller(null);
-                    }}
-                    className="text-red-500 text-sm font-bold hover:underline"
-                  >
-                    Logout / Delete Profile
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleCreateSeller} className="p-6 space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newSeller.business_name}
-                      onChange={e => setNewSeller({...newSeller, business_name: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email or Phone</label>
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newSeller.email_phone}
-                      onChange={e => setNewSeller({...newSeller, email_phone: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-                    <select 
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newSeller.university}
-                      onChange={e => setNewSeller({...newSeller, university: e.target.value as University})}
-                    >
-                      {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Logo URL</label>
-                    <input 
-                      required
-                      type="url" 
-                      placeholder="https://..."
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newSeller.business_logo}
-                      onChange={e => setNewSeller({...newSeller, business_logo: e.target.value})}
-                    />
-                  </div>
-                  <button 
-                    type="submit"
-                    className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors mt-4"
-                  >
-                    Create Profile
-                  </button>
-                </form>
-              )}
+                )}
+              </div>
             </motion.div>
           </div>
         )}

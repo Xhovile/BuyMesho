@@ -16,19 +16,19 @@ export type Category =
   | "Beauty & Personal Care";
 
 export interface Seller {
-  id: number;
-  email_phone: string;
+  uid: string;
+  email: string;
   business_name: string;
   business_logo: string;
   university: University;
   bio?: string;
   is_verified: boolean;
-  created_at: string;
+  join_date: string;
 }
 
 export interface Listing {
   id: number;
-  seller_id: number;
+  seller_uid: string;
   name: string;
   price: number;
   description: string;
