@@ -255,7 +255,7 @@ export default function App() {
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
 
-  const isFirebaseConfigured = true; // Hardcoded in firebase.ts
+  const isFirebaseConfigured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
   // Form states
   const [newListing, setNewListing] = useState({

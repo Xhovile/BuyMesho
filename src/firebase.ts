@@ -5,13 +5,13 @@ import { getAuth } from "firebase/auth";
 import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCzRPIVpCs_MC-5Tic5nT3yeLqSK7BjIS0",
-  authDomain: "campusmarket-da919.firebaseapp.com",
-  projectId: "campusmarket-da919",
-  storageBucket: "campusmarket-da919.firebasestorage.app",
-  messagingSenderId: "558704099855",
-  appId: "1:558704099855:web:6c7f6e50ba7cf1fc13597a",
-  measurementId: "G-1G3T8H9ZZT"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
 // Strict (but non-blocking) config validation — warns early without changing runtime behavior.
