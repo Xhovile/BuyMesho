@@ -40,7 +40,6 @@ import {
   getDoc, 
   deleteDoc,
   updateDoc,
-  serverTimestamp 
 } from 'firebase/firestore';
 
 // --- Components ---
@@ -298,6 +297,8 @@ export default function App() {
             setUserSeller(profile);
             
             // Sync with local SQLite
+            setAuthView('profile');   
+} else {
             try {
               const syncRes = await fetch('/api/sellers', {
                 method: 'POST',
@@ -311,12 +312,12 @@ export default function App() {
           } else {
             console.warn("Firestore: No profile document found for user", user.uid);
             setUserSeller(null);
+            setAuthView('signup');
           }
         } catch (firestoreErr: any) {
           console.error("Firestore: Error fetching profile", firestoreErr);
           setFirestoreError(firestoreErr.message || "Unknown Firestore error");
-        }
-        setAuthView('profile');
+        } 
       } else {
         setUserSeller(null);
         setAuthView('login');
