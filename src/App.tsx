@@ -252,6 +252,10 @@ export default function App() {
   const [uploading, setUploading] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile'>('login');
   const [showPassword, setShowPassword] = useState(false);
+  const [firestoreError, setFirestoreError] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  const isFirebaseConfigured = !!import.meta.env.VITE_FIREBASE_API_KEY;
 
   // Form states
   const [newListing, setNewListing] = useState({
@@ -274,27 +278,49 @@ export default function App() {
   });
 
   useEffect(() => {
+    console.log("Auth: Initializing listener");
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log("Auth: State changed", user ? `User logged in: ${user.uid}` : "User logged out");
       setFirebaseUser(user);
+      setProfileLoading(true);
+      
       if (user) {
-        // Fetch profile from Firestore
-        const docRef = doc(firestore, "users", user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const profile = docSnap.data() as Seller;
-          setUserSeller(profile);
-          // Sync with local SQLite
-          await fetch('/api/sellers', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(profile)
-          });
+        try {
+          setFirestoreError(null);
+          console.log("Firestore: Fetching profile for", user.uid);
+          const docRef = doc(firestore, "users", user.uid);
+          const docSnap = await getDoc(docRef);
+          
+          if (docSnap.exists()) {
+            const profile = docSnap.data() as Seller;
+            console.log("Firestore: Profile found", profile.business_name);
+            setUserSeller(profile);
+            
+            // Sync with local SQLite
+            try {
+              const syncRes = await fetch('/api/sellers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profile)
+              });
+              if (!syncRes.ok) console.error("SQLite: Sync failed", syncRes.status);
+            } catch (syncErr) {
+              console.error("SQLite: Sync error", syncErr);
+            }
+          } else {
+            console.warn("Firestore: No profile document found for user", user.uid);
+            setUserSeller(null);
+          }
+        } catch (firestoreErr: any) {
+          console.error("Firestore: Error fetching profile", firestoreErr);
+          setFirestoreError(firestoreErr.message || "Unknown Firestore error");
         }
         setAuthView('profile');
       } else {
         setUserSeller(null);
         setAuthView('login');
       }
+      setProfileLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -312,10 +338,11 @@ export default function App() {
       if (search) params.append("search", search);
       
       const res = await fetch(`/api/listings?${params.toString()}`);
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setListings(data);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch listings error:", err);
     } finally {
       setLoading(false);
     }
@@ -772,7 +799,34 @@ export default function App() {
               </div>
 
               <div className="max-h-[80vh] overflow-y-auto">
-                {authView === 'login' && (
+                {!isFirebaseConfigured ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <AlertTriangle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Firebase Not Configured</h3>
+                    <p className="text-zinc-500 mb-6">The authentication system is currently offline because the Firebase environment variables are missing. Please configure them in the AI Studio Secrets panel.</p>
+                  </div>
+                ) : firestoreError ? (
+                  <div className="p-8 text-center">
+                    <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <AlertTriangle className="w-8 h-8 text-amber-500" />
+                    </div>
+                    <h3 className="text-lg font-bold mb-2">Connection Issue</h3>
+                    <p className="text-zinc-500 mb-4">We're having trouble connecting to the database.</p>
+                    <div className="bg-zinc-50 p-3 rounded-lg text-xs font-mono text-zinc-600 mb-6 break-all">
+                      {firestoreError}
+                    </div>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                ) : null}
+
+                {isFirebaseConfigured && !firestoreError && authView === 'login' && (
                   <form onSubmit={handleLogin} className="p-8 space-y-4">
                     <div className="space-y-4">
                       <div>
@@ -830,7 +884,7 @@ export default function App() {
                   </form>
                 )}
 
-                {authView === 'signup' && (
+                {isFirebaseConfigured && !firestoreError && authView === 'signup' && (
                   <form onSubmit={handleSignUp} className="p-8 space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -925,7 +979,7 @@ export default function App() {
                   </form>
                 )}
 
-                {authView === 'forgot' && (
+                {isFirebaseConfigured && !firestoreError && authView === 'forgot' && (
                   <form onSubmit={handleForgotPassword} className="p-8 space-y-4">
                     <p className="text-sm text-zinc-500">Enter your email address and we'll send you a link to reset your password.</p>
                     <div>
@@ -954,7 +1008,7 @@ export default function App() {
                   </form>
                 )}
 
-                {authView === 'profile' && userSeller && (
+                {isFirebaseConfigured && !firestoreError && authView === 'profile' && userSeller && (
                   <div className="p-8 text-center">
                     <div className="relative w-24 h-24 mx-auto mb-4">
                       <img src={userSeller.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
