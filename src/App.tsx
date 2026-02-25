@@ -278,7 +278,11 @@ export default function App() {
   });
 
   useEffect(() => {
-    console.log("Auth: Initializing listener");
+    if (!auth) {
+      console.error("Auth: Firebase Auth object is not initialized.");
+      return;
+    }
+    console.log("Auth: Initializing listener. Config valid:", isFirebaseConfigured);
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log("Auth: State changed", user ? `User logged in: ${user.uid}` : "User logged out");
       setFirebaseUser(user);
@@ -292,38 +296,40 @@ export default function App() {
           const docSnap = await getDoc(docRef);
           
           if (docSnap.exists()) {
-  const profile = docSnap.data() as Seller;
-  console.log("Firestore: Profile found", profile.business_name);
-  setUserSeller(profile);
+            const profile = docSnap.data() as Seller;
+            console.log("Firestore: Profile found", profile.business_name);
+            setUserSeller(profile);
 
-  // Sync with SQLite backend
-  try {
-    const syncRes = await fetch('/api/sellers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(profile)
-    });
-    if (!syncRes.ok) {
-      console.error("SQLite: Sync failed", syncRes.status);
-    }
-  } catch (syncErr) {
-    console.error("SQLite: Sync error", syncErr);
-  }
+            // Sync with SQLite backend
+            try {
+              const syncRes = await fetch('/api/sellers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(profile)
+              });
+              if (!syncRes.ok) {
+                console.error("SQLite: Sync failed", syncRes.status);
+              }
+            } catch (syncErr) {
+              console.error("SQLite: Sync error", syncErr);
+            }
 
-  setAuthView('profile');
-
-} else {
-  console.warn("Firestore: No profile document found", user.uid);
-  setUserSeller(null);
-  setAuthView('signup');
-}
+            setAuthView('profile');
+          } else {
+            console.warn("Firestore: No profile document found for UID:", user.uid);
+            setUserSeller(null);
+            // If user exists in Auth but not in Firestore, they might need to complete signup
+            setAuthView('signup');
+          }
         } catch (firestoreErr: any) {
           console.error("Firestore: Error fetching profile", firestoreErr);
           setFirestoreError(firestoreErr.message || "Unknown Firestore error");
+          // Don't force logout, but show error
         } 
       } else {
         setUserSeller(null);
-        setAuthView('login');
+        // Only switch to login if we're not already on signup or forgot password
+        setAuthView(prev => (prev === 'signup' || prev === 'forgot') ? prev : 'login');
       }
       setProfileLoading(false);
     });
@@ -395,12 +401,23 @@ export default function App() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseConfigured) {
+      alert("Firebase is not configured. Please add your VITE_FIREBASE_* secrets.");
+      return;
+    }
     setLoading(true);
+    console.log("Auth: Attempting login for", authForm.email);
     try {
-      await signInWithEmailAndPassword(auth, authForm.email, authForm.password);
-      setAuthView('profile');
+      const userCredential = await signInWithEmailAndPassword(auth, authForm.email, authForm.password);
+      console.log("Auth: Login successful", userCredential.user.uid);
+      // onAuthStateChanged will handle the view transition
     } catch (err: any) {
-      alert(err.message);
+      console.error("Auth: Login failed", err);
+      let message = err.message;
+      if (err.code === 'auth/invalid-credential') message = "Invalid email or password.";
+      if (err.code === 'auth/user-not-found') message = "No account found with this email.";
+      if (err.code === 'auth/wrong-password') message = "Incorrect password.";
+      alert(message);
     } finally {
       setLoading(false);
     }
