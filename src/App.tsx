@@ -296,7 +296,7 @@ export default function App() {
   console.log("Firestore: Profile found", profile.business_name);
   setUserSeller(profile);
 
-  // ✅ Sync with SQLite
+  // Sync with local SQLite
   try {
     const syncRes = await fetch('/api/sellers', {
       method: 'POST',
@@ -308,25 +308,12 @@ export default function App() {
     console.error("SQLite: Sync error", syncErr);
   }
 
-  // ✅ Only show profile if profile exists
   setAuthView('profile');
-
 } else {
   console.warn("Firestore: No profile document found for user", user.uid);
   setUserSeller(null);
-
-  // ✅ Show signup instead
   setAuthView('signup');
 }
-              if (!syncRes.ok) console.error("SQLite: Sync failed", syncRes.status);
-            } catch (syncErr) {
-              console.error("SQLite: Sync error", syncErr);
-            }
-          } else {
-            console.warn("Firestore: No profile document found for user", user.uid);
-            setUserSeller(null);
-            setAuthView('signup');
-          }
         } catch (firestoreErr: any) {
           console.error("Firestore: Error fetching profile", firestoreErr);
           setFirestoreError(firestoreErr.message || "Unknown Firestore error");
