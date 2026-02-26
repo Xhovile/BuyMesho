@@ -15,13 +15,16 @@ const firebaseConfig = {
   measurementId: "G-1G3T8H9ZZT"
 };
 
+console.log("Firebase: Initializing with config", { projectId: firebaseConfig.projectId });
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
+console.log("Firebase: Initializing Firestore...");
 // Long polling helps in proxied/restricted networks
 export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 });
+console.log("Firebase: Initialization complete");
 
 export const isConfigValid = true;

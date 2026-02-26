@@ -109,6 +109,7 @@ async function startServer() {
   });
 
   app.post(["/api/upload", "/api/upload/"], (req, res, next) => {
+    console.log("POST /api/upload - Multer starting");
     upload.single("image")(req, res, (err) => {
       if (err instanceof multer.MulterError) {
         console.error("Multer error:", err);
@@ -117,23 +118,18 @@ async function startServer() {
         console.error("Unknown upload error:", err);
         return res.status(500).json({ error: "Upload failed", details: err.message });
       }
+      console.log("Multer finished - File:", req.file ? req.file.originalname : "None");
       next();
     });
   }, async (req, res) => {
-    console.log("Upload request processing...");
+    console.log("Upload handler starting...");
     try {
       if (!req.file) {
-        console.log("No file in request");
+        console.log("No file in request after Multer");
         return res.status(400).json({ error: "No file uploaded" });
       }
-      console.log("File received:", req.file.originalname, req.file.mimetype);
-
-      // Check if Cloudinary is configured
-      if (!process.env.CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
-        console.warn("Cloudinary not configured, returning mock URL");
-        return res.json({ url: `https://picsum.photos/seed/${Date.now()}/800/600` });
-      }
-
+      
+      console.log("Cloudinary uploading...");
       const b64 = Buffer.from(req.file.buffer).toString("base64");
       const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
       
@@ -142,11 +138,14 @@ async function startServer() {
         folder: "campus_market",
       });
 
-      console.log("Upload successful:", result.secure_url);
+      console.log("Cloudinary success:", result.secure_url);
       res.json({ url: result.secure_url });
     } catch (error) {
-      console.error("Upload handler error:", error);
-      res.status(500).json({ error: "Upload failed", details: error instanceof Error ? error.message : String(error) });
+      console.error("Cloudinary/Handler error:", error);
+      res.status(500).json({ 
+        error: "Upload failed", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 

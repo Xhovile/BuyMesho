@@ -58,41 +58,43 @@ const Navbar = ({
   firebaseUser: FirebaseUser | null
 }) => {
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-zinc-200 px-4 py-3">
+    <nav className="sticky top-0 z-50 glass px-4 py-3">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => window.location.reload()}>
-          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white font-bold text-xl">
+        <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => window.location.reload()}>
+          <div className="w-10 h-10 bg-primary rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
             C
           </div>
-          <h1 className="hidden sm:block text-xl font-display text-zinc-900">CampusMarket</h1>
+          <h1 className="hidden sm:block text-xl font-display font-extrabold tracking-tight text-zinc-900">
+            Campus<span className="text-primary">Market</span>
+          </h1>
         </div>
 
-        <div className="flex-1 max-w-md relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
+        <div className="flex-1 max-w-md relative group">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
           <input 
             type="text" 
             placeholder="Search products or services..."
-            className="w-full pl-10 pr-4 py-2 bg-zinc-100 border-none rounded-full text-sm focus:ring-2 focus:ring-primary/20 transition-all"
+            className="w-full pl-11 pr-4 py-2.5 bg-zinc-100/50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 outline-none transition-all"
             onChange={(e) => onSearch(e.target.value)}
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <button 
             onClick={onAddListing}
-            className="flex items-center gap-2 bg-primary hover:bg-primary-dark text-white px-4 py-2 rounded-full text-sm font-medium transition-colors"
+            className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
           >
             <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Sell</span>
+            <span className="hidden sm:inline">List Item</span>
           </button>
           <button 
             onClick={onProfileClick}
-            className="w-10 h-10 rounded-full border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors overflow-hidden"
+            className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
           >
             {userSeller ? (
               <img src={userSeller.business_logo} alt="Profile" className="w-full h-full object-cover" />
             ) : firebaseUser ? (
-              <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-600 font-bold">
+              <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary font-bold">
                 {firebaseUser.email?.charAt(0).toUpperCase()}
               </div>
             ) : (
@@ -109,66 +111,79 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
   return (
     <motion.div 
       layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-zinc-200 overflow-hidden hover:shadow-lg transition-shadow group"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -4 }}
+      className="bg-white rounded-3xl border border-zinc-100 overflow-hidden card-shadow hover:card-shadow-hover transition-all group"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+      <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
         <img 
-          src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/400/300`} 
+          src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`} 
           alt={listing.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-3 left-3 flex gap-2">
-          <span className="bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1">
-            <MapPin className="w-3 h-3" /> {listing.university}
+        <div className="absolute top-4 left-4 flex flex-col gap-2">
+          <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
+            <MapPin className="w-3 h-3 text-primary" /> {listing.university}
           </span>
         </div>
         <button 
           onClick={() => onReport(listing.id)}
-          className="absolute top-3 right-3 p-1.5 bg-white/90 backdrop-blur-sm rounded-full text-zinc-400 hover:text-red-500 transition-colors"
+          className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm opacity-0 group-hover:opacity-100"
         >
           <AlertTriangle className="w-4 h-4" />
         </button>
+        
+        {/* Price Tag - Always Visible */}
+        <div className="absolute bottom-4 left-4">
+          <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
+            MK {listing.price.toLocaleString()}
+          </div>
+        </div>
       </div>
 
-      <div className="p-4">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs font-medium text-primary flex items-center gap-1">
-            <Tag className="w-3 h-3" /> {listing.category}
+      <div className="p-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] font-extrabold text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-wider">
+            {listing.category}
           </span>
-          <span className="text-lg font-bold text-zinc-900">MK {listing.price.toLocaleString()}</span>
-        </div>
-        <h3 className="text-base font-semibold text-zinc-900 mb-2 line-clamp-1">{listing.name}</h3>
-        <p className="text-sm text-zinc-500 line-clamp-2 mb-4 h-10">{listing.description}</p>
-
-        <div className="flex items-center justify-between pt-4 border-t border-zinc-100">
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <img 
-                src={listing.business_logo} 
-                alt={listing.business_name} 
-                className="w-8 h-8 rounded-full object-cover border border-zinc-200"
-              />
-              {listing.is_verified && (
-                <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-0.5">
-                  <ShieldCheck className="w-3 h-3 text-blue-500 fill-blue-50" />
-                </div>
-              )}
-            </div>
-            <span className="text-xs font-medium text-zinc-700">{listing.business_name}</span>
-          </div>
           
+          {/* WhatsApp Button - Always Visible */}
           <a 
             href={`https://wa.me/${listing.whatsapp_number}?text=Hi, I'm interested in your ${listing.name} on CampusMarket.`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white px-3 py-1.5 rounded-full text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-[#25D366]/20 active:scale-95"
           >
             <MessageCircle className="w-3.5 h-3.5" />
-            WhatsApp
+            Contact
           </a>
+        </div>
+        <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">{listing.name}</h3>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">{listing.description}</p>
+
+        <div className="flex items-center justify-between pt-4 border-t border-zinc-50">
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <img 
+                src={listing.business_logo} 
+                alt={listing.business_name} 
+                className="w-9 h-9 rounded-xl object-cover border border-zinc-100 shadow-sm"
+              />
+              {listing.is_verified && (
+                <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-zinc-800">{listing.business_name}</span>
+              <span className="text-[10px] text-zinc-400 font-medium">Verified Seller</span>
+            </div>
+          </div>
+          
+          <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
         </div>
       </div>
     </motion.div>
@@ -187,23 +202,26 @@ const FilterSection = ({
   setSelectedCat: (v: string) => void
 }) => {
   return (
-    <div className="py-6 space-y-6">
-      <div>
-        <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
-          <MapPin className="w-3 h-3" /> Universities
-        </h4>
-        <div className="flex flex-wrap gap-2">
+    <div className="py-8 space-y-8">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <MapPin className="w-3.5 h-3.5 text-primary" /> Campus Locations
+          </h4>
+          <span className="text-[10px] font-bold text-zinc-300">Select your university</span>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
           <button 
             onClick={() => setSelectedUniv("")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedUniv === "" ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedUniv === "" ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
           >
-            All Campus
+            All Campuses
           </button>
           {UNIVERSITIES.map(u => (
             <button 
               key={u}
               onClick={() => setSelectedUniv(u)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedUniv === u ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedUniv === u ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
             >
               {u}
             </button>
@@ -211,22 +229,25 @@ const FilterSection = ({
         </div>
       </div>
 
-      <div>
-        <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-3 flex items-center gap-2">
-          <Tag className="w-3 h-3" /> Categories
-        </h4>
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+            <Tag className="w-3.5 h-3.5 text-primary" /> Categories
+          </h4>
+          <span className="text-[10px] font-bold text-zinc-300">Filter by interest</span>
+        </div>
+        <div className="flex flex-wrap gap-2.5">
           <button 
             onClick={() => setSelectedCat("")}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCat === "" ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedCat === "" ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
           >
-            All Categories
+            All Items
           </button>
           {CATEGORIES.map(c => (
             <button 
               key={c}
               onClick={() => setSelectedCat(c)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCat === c ? "bg-zinc-900 text-white" : "bg-white border border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedCat === c ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
             >
               {c}
             </button>
@@ -362,11 +383,16 @@ export default function App() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("Auth: Starting signup for", authForm.email);
     try {
+      console.log("Auth: Creating user in Firebase...");
       const userCredential = await createUserWithEmailAndPassword(auth, authForm.email, authForm.password);
       const user = userCredential.user;
+      console.log("Auth: User created successfully", user.uid);
 
+      console.log("Auth: Sending verification email...");
       await sendEmailVerification(user);
+      console.log("Auth: Verification email sent");
 
       const profile: Seller = {
         uid: user.uid,
@@ -379,20 +405,27 @@ export default function App() {
         join_date: new Date().toISOString()
       };
 
-      // Save to Firestore
+      console.log("Auth: Saving profile to Firestore...");
       await setDoc(doc(firestore, "users", user.uid), profile);
+      console.log("Auth: Profile saved to Firestore");
 
-      // Sync to SQLite
-      await fetch('/api/sellers', {
+      console.log("Auth: Syncing to SQLite...");
+      const syncRes = await fetch('/api/sellers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile)
       });
+      if (!syncRes.ok) {
+        console.warn("Auth: SQLite sync failed", await syncRes.text());
+      } else {
+        console.log("Auth: SQLite sync successful");
+      }
 
       setUserSeller(profile);
       alert("Account created! Please check your email for verification.");
       setAuthView('profile');
     } catch (err: any) {
+      console.error("Auth: Signup failed", err);
       alert(err.message);
     } finally {
       setLoading(false);
@@ -408,6 +441,7 @@ export default function App() {
     setLoading(true);
     console.log("Auth: Attempting login for", authForm.email);
     try {
+      console.log("Auth: Calling signInWithEmailAndPassword...");
       const userCredential = await signInWithEmailAndPassword(auth, authForm.email, authForm.password);
       console.log("Auth: Login successful", userCredential.user.uid);
       // onAuthStateChanged will handle the view transition
@@ -562,34 +596,46 @@ export default function App() {
     formData.append("image", file);
 
     try {
-      const res = await fetch("/api/upload", {
+      const res = await fetch("/api/upload/", {
         method: "POST",
         body: formData,
       });
       
       const contentType = res.headers.get("content-type");
+      const responseText = await res.text();
+      
       if (!res.ok) {
         let errorMessage = "Upload failed";
-        if (contentType && contentType.includes("application/json")) {
-          const errorData = await res.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } else {
-          errorMessage = `Server error: ${res.status} ${res.statusText}`;
+        try {
+          if (contentType && contentType.includes("application/json")) {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } else {
+            errorMessage = `Server error: ${res.status} ${res.statusText}`;
+          }
+        } catch (e) {
+          errorMessage = `Server error (${res.status}): ${responseText.substring(0, 100)}`;
         }
         throw new Error(errorMessage);
       }
 
-      if (contentType && contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.url) {
-          if (type === 'listing') {
-            setNewListing({ ...newListing, photos: [data.url] });
-          } else {
-            setAuthForm({ ...authForm, logoUrl: data.url });
+      try {
+        if (contentType && contentType.includes("application/json")) {
+          const data = JSON.parse(responseText);
+          if (data.url) {
+            if (type === 'listing') {
+              setNewListing({ ...newListing, photos: [data.url] });
+            } else {
+              setAuthForm({ ...authForm, logoUrl: data.url });
+            }
           }
+        } else {
+          console.error("Non-JSON response:", responseText);
+          throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 50)}...`);
         }
-      } else {
-        throw new Error("Server returned non-JSON response");
+      } catch (err) {
+        console.error("Parse error:", err, "Response was:", responseText);
+        throw new Error("Failed to parse server response");
       }
     } catch (err) {
       console.error("Upload failed", err);
@@ -610,12 +656,51 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4">
+        {/* Hero Section */}
+        <section className="py-12 sm:py-20 text-center space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-block px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-primary text-[10px] font-extrabold uppercase tracking-[0.2em]"
+          >
+            The Ultimate Student Marketplace
+          </motion.div>
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl sm:text-6xl font-extrabold text-zinc-900 tracking-tight leading-[1.1]"
+          >
+            Buy & Sell anything <br/> 
+            <span className="text-primary">on your campus.</span>
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-zinc-500 max-w-xl mx-auto text-base sm:text-lg font-medium"
+          >
+            Connect with fellow students at MUBAS, MUST, UNIMA and more. 
+            Safe, fast, and exclusive to your university community.
+          </motion.p>
+        </section>
+
         <FilterSection 
           selectedUniv={selectedUniv} 
           setSelectedUniv={setSelectedUniv}
           selectedCat={selectedCat}
           setSelectedCat={setSelectedCat}
         />
+
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
+            Recent Listings
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          </h3>
+          <div className="text-xs font-bold text-zinc-400">
+            Showing {listings.length} items
+          </div>
+        </div>
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -639,6 +724,28 @@ export default function App() {
         )}
       </main>
 
+      <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-8">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-zinc-900 rounded-xl flex items-center justify-center text-white font-extrabold text-sm">
+              C
+            </div>
+            <span className="text-sm font-bold text-zinc-900">CampusMarket Malawi</span>
+          </div>
+          
+          <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors">Terms</a>
+            <a href="#" className="hover:text-primary transition-colors">Safety</a>
+            <a href="#" className="hover:text-primary transition-colors">Contact</a>
+          </div>
+
+          <div className="text-xs font-bold text-zinc-300">
+            © 2026 Crafted for Students
+          </div>
+        </div>
+      </footer>
+
       {/* --- Modals --- */}
 
       <AnimatePresence>
@@ -657,10 +764,13 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl"
             >
-              <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
-                <h2 className="text-xl">Create Listing</h2>
-                <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
-                  <X className="w-5 h-5" />
+              <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
+                  <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Post your item to the campus</p>
+                </div>
+                <button onClick={() => setShowAddModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100">
+                  <X className="w-5 h-5 text-zinc-400" />
                 </button>
               </div>
 
