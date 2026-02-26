@@ -202,19 +202,33 @@ async function startServer() {
     }
   });
 
-  app.post("/api/listings", (req, res) => {
-    const { seller_uid, name, price, description, category, university, photos, whatsapp_number } = req.body;
-    try {
-      const info = db.prepare(`
-        INSERT INTO listings (seller_uid, name, price, description, category, university, photos, whatsapp_number)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(seller_uid, name, price, description, category, university, JSON.stringify(photos), whatsapp_number);
-      res.json({ id: info.lastInsertRowid });
-    } catch (error) {
-      console.error("Listing error:", error);
-      res.status(500).json({ error: "Failed to create listing" });
-    }
-  });
+  app.post("/api/listings", requireAuth, (req, res) => {
+  // ✅ seller_uid MUST come from verified token
+  const seller_uid = req.user!.uid;
+
+  const { name, price, description, category, university, photos, whatsapp_number } = req.body;
+
+  try {
+    const info = db.prepare(`
+      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, whatsapp_number)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      seller_uid,
+      name,
+      price,
+      description,
+      category,
+      university,
+      JSON.stringify(photos),
+      whatsapp_number
+    );
+
+    res.json({ id: info.lastInsertRowid });
+  } catch (error) {
+    console.error("Listing error:", error);
+    res.status(500).json({ error: "Failed to create listing" });
+  }
+});
 
   app.post("/api/reports", (req, res) => {
     const { listing_id, reason } = req.body;
