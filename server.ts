@@ -150,7 +150,7 @@ async function startServer() {
   });
 
   app.get("/api/listings", (req, res) => {
-    const { category, university, search } = req.query;
+    const { category, university, search, sortBy } = req.query;
     let query = `
       SELECT l.*, s.business_name, s.business_logo, s.is_verified 
       FROM listings l 
@@ -172,7 +172,13 @@ async function startServer() {
       params.push(`%${search}%`, `%${search}%`);
     }
 
-    query += " ORDER BY l.created_at DESC";
+    if (sortBy === 'price_asc') {
+      query += " ORDER BY l.price ASC";
+    } else if (sortBy === 'price_desc') {
+      query += " ORDER BY l.price DESC";
+    } else {
+      query += " ORDER BY l.created_at DESC";
+    }
     
     const listings = db.prepare(query).all(...params);
     res.json(listings.map(l => ({

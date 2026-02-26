@@ -194,64 +194,78 @@ const FilterSection = ({
   selectedUniv, 
   setSelectedUniv, 
   selectedCat, 
-  setSelectedCat 
+  setSelectedCat,
+  sortBy,
+  setSortBy
 }: { 
   selectedUniv: string, 
   setSelectedUniv: (v: string) => void,
   selectedCat: string,
-  setSelectedCat: (v: string) => void
+  setSelectedCat: (v: string) => void,
+  sortBy: string,
+  setSortBy: (v: string) => void
 }) => {
   return (
-    <div className="py-8 space-y-8">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-primary" /> Campus Locations
-          </h4>
-          <span className="text-[10px] font-bold text-zinc-300">Select your university</span>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <button 
-            onClick={() => setSelectedUniv("")}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedUniv === "" ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
+    <div className="py-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="space-y-2">
+        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+          <MapPin className="w-3.5 h-3.5 text-primary" /> Select Campus
+        </label>
+        <div className="relative">
+          <select 
+            value={selectedUniv}
+            onChange={(e) => setSelectedUniv(e.target.value)}
+            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
           >
-            All Campuses
-          </button>
-          {UNIVERSITIES.map(u => (
-            <button 
-              key={u}
-              onClick={() => setSelectedUniv(u)}
-              className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedUniv === u ? "bg-zinc-900 text-white shadow-lg shadow-zinc-200" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
-            >
-              {u}
-            </button>
-          ))}
+            <option value="">All Campuses</option>
+            {UNIVERSITIES.map(u => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
+          </div>
         </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h4 className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-primary" /> Categories
-          </h4>
-          <span className="text-[10px] font-bold text-zinc-300">Filter by interest</span>
-        </div>
-        <div className="flex flex-wrap gap-2.5">
-          <button 
-            onClick={() => setSelectedCat("")}
-            className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedCat === "" ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
+      <div className="space-y-2">
+        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+          <Tag className="w-3.5 h-3.5 text-primary" /> Select Category
+        </label>
+        <div className="relative">
+          <select 
+            value={selectedCat}
+            onChange={(e) => setSelectedCat(e.target.value)}
+            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
           >
-            All Items
-          </button>
-          {CATEGORIES.map(c => (
-            <button 
-              key={c}
-              onClick={() => setSelectedCat(c)}
-              className={`px-5 py-2.5 rounded-2xl text-xs font-bold transition-all ${selectedCat === c ? "bg-primary text-white shadow-lg shadow-primary/20" : "bg-white border border-zinc-200 text-zinc-500 hover:border-primary/30 hover:text-primary"}`}
-            >
-              {c}
-            </button>
-          ))}
+            <option value="">All Categories</option>
+            {CATEGORIES.map(c => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+          <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort By
+        </label>
+        <div className="relative">
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
+          >
+            <option value="newest">Newest First</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="price_desc">Price: High to Low</option>
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
+          </div>
         </div>
       </div>
     </div>
@@ -266,6 +280,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [selectedUniv, setSelectedUniv] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
+  const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userSeller, setUserSeller] = useState<Seller | null>(null);
@@ -359,7 +374,7 @@ export default function App() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedUniv, selectedCat, search]);
+  }, [selectedUniv, selectedCat, search, sortBy]);
 
   const fetchListings = async () => {
     setLoading(true);
@@ -368,6 +383,7 @@ export default function App() {
       if (selectedUniv) params.append("university", selectedUniv);
       if (selectedCat) params.append("category", selectedCat);
       if (search) params.append("search", search);
+      if (sortBy) params.append("sortBy", sortBy);
       
       const res = await fetch(`/api/listings?${params.toString()}`);
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -435,8 +451,8 @@ export default function App() {
       let message = err.message;
 
       if (err.code === 'auth/email-already-in-use') {
-        message = "This email is already registered. Please try logging in instead.";
-        if (window.confirm(message + "\n\nWould you like to switch to the Login screen?")) {
+        message = "This email is already registered. Would you like to log in instead?";
+        if (window.confirm(message)) {
           setAuthView('login');
           return;
         }
@@ -469,7 +485,11 @@ export default function App() {
       let message = "Invalid email or password. Please try again.";
       
       if (err.code === 'auth/invalid-credential') {
-        message = "Invalid email or password. If you've forgotten your password, use the 'Forgot Password' link.";
+        message = "Invalid email or password. If you've forgotten your password, you can reset it.";
+        if (window.confirm(message + "\n\nWould you like to reset your password now?")) {
+          setAuthView('forgot');
+          return;
+        }
       } else if (err.code === 'auth/user-not-found') {
         message = "No account found with this email. Please sign up first.";
       } else if (err.code === 'auth/wrong-password') {
@@ -719,6 +739,8 @@ export default function App() {
           setSelectedUniv={setSelectedUniv}
           selectedCat={selectedCat}
           setSelectedCat={setSelectedCat}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
         />
 
         <div className="flex items-center justify-between mb-8">
@@ -1236,9 +1258,34 @@ export default function App() {
                       <MapPin className="w-4 h-4" /> {userSeller.university}
                     </p>
                     {!firebaseUser?.emailVerified && (
-                      <div className="mb-6 p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-xs font-medium flex items-center gap-2 justify-center">
-                        <AlertTriangle className="w-4 h-4" />
-                        Verify your email to post listings
+                      <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700 text-xs font-medium space-y-3">
+                        <div className="flex items-center gap-2 justify-center">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span>Verify your email to post listings</span>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button 
+                            onClick={refreshVerificationStatus}
+                            className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
+                          >
+                            <RefreshCw className="w-3 h-3" /> I've Verified
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (firebaseUser) {
+                                try {
+                                  await sendEmailVerification(firebaseUser);
+                                  alert("Verification email resent!");
+                                } catch (e: any) {
+                                  alert(e.message);
+                                }
+                              }
+                            }}
+                            className="text-amber-600 hover:underline font-bold"
+                          >
+                            Resend Email
+                          </button>
+                        </div>
                       </div>
                     )}
                     {userSeller.bio && (
