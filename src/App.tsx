@@ -372,6 +372,11 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+async function authHeaders() {
+  const token = await auth.currentUser?.getIdToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+  
   useEffect(() => {
     fetchListings();
   }, [selectedUniv, selectedCat, search, sortBy]);
