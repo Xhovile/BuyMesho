@@ -442,7 +442,10 @@ async function authHeaders() {
       console.log("Auth: Syncing to SQLite...");
       const syncRes = await fetch('/api/sellers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+           'Content-Type': 'application/json',
+           ...(await authHeaders()),
+        },
         body: JSON.stringify(profile)
       });
       if (!syncRes.ok) {
@@ -557,9 +560,12 @@ async function authHeaders() {
     // 4) sync to SQLite backend (server)
     await fetch("/api/sellers", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+          "Content-Type": "application/json",
+          ...(await authHeaders()),
+       },
       body: JSON.stringify({
-        uid: firebaseUser.uid,
+        
         email: firebaseUser.email,
         business_name: userSeller?.business_name || "",
         business_logo: userSeller?.business_logo || "",
