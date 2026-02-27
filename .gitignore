@@ -8,3 +8,4 @@ coverage/
 !.env.example
 dist-server
 dist-server
+dist-server
