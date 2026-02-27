@@ -41,6 +41,8 @@ import {
   deleteDoc,
   updateDoc,
 } from 'firebase/firestore';
+import { useAuthUser } from "./hooks/useAuthUser";
+import { apiFetch } from "./lib/api"; 
 
 // --- Components ---
 
