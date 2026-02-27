@@ -678,25 +678,14 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     }
 
     try {
-  const headers = {
-    "Content-Type": "application/json",
-    ...(await authHeaders()),
-  };
-
-  const res = await fetch("/api/listings", {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      ...newListing,
-      price: parseFloat(newListing.price),
-      photos: newListing.photos.filter((p) => p.trim() !== ""),
-    }),
-  });
-
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(msg || `Failed: ${res.status}`);
-  }
+await apiFetch("/api/listings", {
+  method: "POST",
+  body: JSON.stringify({
+    ...newListing,
+    price: parseFloat(newListing.price),
+    photos: newListing.photos.filter((p) => p.trim() !== ""),
+  }),
+});
 
   setShowAddModal(false);
   setNewListing({
