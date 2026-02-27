@@ -109,9 +109,24 @@ const Navbar = ({
   );
 };
 
-const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: number) => any, key?: any }) => {
+const ListingCard = ({
+  listing,
+  onReport,
+  currentUid,
+  onDelete,
+  onEdit,
+}: {
+  listing: Listing;
+  onReport: (id: number) => any;
+  currentUid?: string;
+  onDelete?: (id: number) => void;
+  onEdit?: (listing: Listing) => void;
+}) => {
+  const sellerUid = (listing as any).seller_uid as string | undefined;
+  const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
+
   return (
-    <motion.div 
+    <motion.div
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -119,8 +134,8 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
       className="bg-white rounded-3xl border border-zinc-100 overflow-hidden card-shadow hover:card-shadow-hover transition-all group"
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-        <img 
-          src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`} 
+        <img
+          src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
           alt={listing.name}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
           referrerPolicy="no-referrer"
@@ -130,14 +145,14 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
             <MapPin className="w-3 h-3 text-primary" /> {listing.university}
           </span>
         </div>
-        <button 
+
+        <button
           onClick={() => onReport(listing.id)}
           className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm"
         >
           <AlertTriangle className="w-4 h-4" />
         </button>
-        
-        {/* Price Tag - Always Visible */}
+
         <div className="absolute bottom-4 left-4">
           <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
             MK {listing.price.toLocaleString()}
@@ -150,9 +165,8 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
           <span className="text-[10px] font-extrabold text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-wider">
             {listing.category}
           </span>
-          
-          {/* WhatsApp Button - Always Visible */}
-          <a 
+
+          <a
             href={`https://wa.me/${listing.whatsapp_number}?text=Hi, I'm interested in your ${listing.name} on BuyMesho.`}
             target="_blank"
             rel="noopener noreferrer"
@@ -162,15 +176,20 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
             Contact
           </a>
         </div>
-        <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">{listing.name}</h3>
-        <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">{listing.description}</p>
+
+        <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+          {listing.name}
+        </h3>
+        <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">
+          {listing.description}
+        </p>
 
         <div className="flex items-center justify-between pt-4 border-t border-zinc-50">
           <div className="flex items-center gap-2.5">
             <div className="relative">
-              <img 
-                src={listing.business_logo} 
-                alt={listing.business_name} 
+              <img
+                src={listing.business_logo}
+                alt={listing.business_name}
                 className="w-9 h-9 rounded-xl object-cover border border-zinc-100 shadow-sm"
               />
               {listing.is_verified && (
@@ -179,13 +198,34 @@ const ListingCard = ({ listing, onReport }: { listing: Listing, onReport: (id: n
                 </div>
               )}
             </div>
+
             <div className="flex flex-col">
               <span className="text-xs font-bold text-zinc-800">{listing.business_name}</span>
               <span className="text-[10px] text-zinc-400 font-medium">Verified Seller</span>
             </div>
           </div>
-          
-          <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+
+          {/* ✅ Owner-only actions */}
+          {isOwner ? (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onEdit?.(listing)}
+                className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95 transition"
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => onDelete?.(listing.id)}
+                className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white hover:bg-red-700 active:scale-95 transition"
+              >
+                Delete
+              </button>
+            </div>
+          ) : (
+            <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+          )}
         </div>
       </div>
     </motion.div>
