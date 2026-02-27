@@ -182,7 +182,7 @@ async function startServer() {
     }
     
     const listings = db.prepare(query).all(...params);
-    res.json(listings.map(l => ({
+    res.json(listings.map((l: any) => ({
       ...l,
       photos: JSON.parse(l.photos || "[]")
     })));
