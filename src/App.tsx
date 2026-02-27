@@ -378,18 +378,14 @@ export default function App() {
 
             // Sync with SQLite backend
             try {
-              const syncRes = await fetch("/api/sellers", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  ...(await authHeaders()),
-                },
-                body: JSON.stringify(profile),
-              });
-
-              if (!syncRes.ok) {
-                console.error("SQLite: Sync failed", syncRes.status);
-              }
+              try {
+  await apiFetch("/api/sellers", {
+    method: "POST",
+    body: JSON.stringify(profile),
+  });
+} catch (e: any) {
+  console.error("SQLite: Sync failed", e?.message || e);
+}
             } catch (syncErr) {
               console.error("SQLite: Sync error", syncErr);
             }
