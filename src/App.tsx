@@ -520,19 +520,14 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
       console.log("Auth: Profile saved to Firestore");
 
       console.log("Auth: Syncing to SQLite...");
-      const syncRes = await fetch('/api/sellers', {
-        method: 'POST',
-        headers: {
-           'Content-Type': 'application/json',
-           ...(await authHeaders()),
-        },
-        body: JSON.stringify(profile)
-      });
-      if (!syncRes.ok) {
-        console.warn("Auth: SQLite sync failed", await syncRes.text());
-      } else {
-        console.log("Auth: SQLite sync successful");
-      }
+      try {
+  await apiFetch("/api/sellers", {
+    method: "POST",
+    body: JSON.stringify(profile),
+  });
+} catch (e: any) {
+  console.warn("Auth: SQLite sync failed", e?.message || e);
+}
 
       setUserSeller(profile);
       alert("Account created! Please check your email for verification.");
