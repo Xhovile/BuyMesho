@@ -23,7 +23,7 @@ export async function apiFetch(url: string, init: RequestInit = {}) {
   if (!res.ok) {
     let body: any = null;
     try { body = await res.json(); } catch {}
-    throw new Error(body?.error ||j `Request failed (${res.status})`);
+    throw new Error(body?.error || `Request failed (${res.status})`);
   }
 
   const text = await res.text();
