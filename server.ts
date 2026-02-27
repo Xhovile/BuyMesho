@@ -336,6 +336,7 @@ function cloudinaryPublicIdFromUrl(url: string): string | null {
 
 // ✅ Delete profile + all listings + all Cloudinary images
 app.delete("/api/profile", requireAuth, async (req, res) => {
+  console.log("🔥 PROFILE DELETE ROUTE HIT");
   const uid = req.user!.uid;
 
   try {
