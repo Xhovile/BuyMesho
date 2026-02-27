@@ -458,43 +458,44 @@ async function authHeaders() {
   }
 };
 
-const handleEditListing = async (listing: Listing) => {
-  // Simple safe edit for now: edit name + price + description via prompts
-  const newName = prompt("New name:", listing.name);
-  if (newName === null) return;
+const handleEditListing = (listing: Listing) => {
+  setEditingListing(listing);
+};
 
-  const newPriceStr = prompt("New price:", String(listing.price));
-  if (newPriceStr === null) return;
-
-  const newDescription = prompt("New description:", listing.description || "");
-  if (newDescription === null) return;
-
-  const newPrice = Number(newPriceStr);
-  if (Number.isNaN(newPrice)) {
-    alert("Invalid price");
+const handleUpdateListing = async (listingId: number, updated: Partial<Listing>) => {
+  const existing = listings.find((l) => l.id === listingId);
+  if (!existing) {
+    alert("Listing not found in state. Refresh and try again.");
     return;
   }
 
+  // Build payload with required backend fields
+  const payload = {
+    name: updated.name ?? existing.name,
+    price: Number(updated.price ?? existing.price),
+    description: updated.description ?? existing.description ?? "",
+    category: updated.category ?? existing.category,
+    university: updated.university ?? existing.university,
+    photos: updated.photos ?? existing.photos ?? [],
+    whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
+  };
+
   try {
-    await apiFetch(`/api/listings/${listing.id}`, {
+    await apiFetch(`/api/listings/${listingId}`, {
       method: "PUT",
-      body: JSON.stringify({
-        name: newName,
-        price: newPrice,
-        description: newDescription,
-        category: listing.category,
-        university: listing.university,
-        photos: listing.photos ?? [],
-        whatsapp_number: listing.whatsapp_number,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    // safest: refresh from server
     fetchListings();
+
+    // close modal
+    setEditingListing(null);
   } catch (err: any) {
     alert(err?.message || "Failed to update listing");
   }
 };
-
+  
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
