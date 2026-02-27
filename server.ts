@@ -220,7 +220,7 @@ const { email, business_name, business_logo, university, bio } = req.body;
       description,
       category,
       university,
-      JSON.stringify(photos),
+      JSON.stringify(photos ?? []),
       whatsapp_number
     );
 
