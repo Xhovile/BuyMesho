@@ -43,6 +43,7 @@ import {
 } from 'firebase/firestore';
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api"; 
+import EditListingModal from "./components/EditListingModal";
 
 // --- Components ---
 
