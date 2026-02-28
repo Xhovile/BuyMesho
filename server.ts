@@ -367,73 +367,85 @@ function cloudinaryPublicIdFromUrl(rawUrl: string): string | null {
 }
 
 // ✅ Delete profile + all listings + all Cloudinary images
-app.delete("/api/profile", requireAuth, async (req, res) => {
-  console.log("🔥 PROFILE DELETE ROUTE HIT");
-  const uid = req.user!.uid;
+app.delete(
+  "/api/profile",
+  (req, _res, next) => {
+    console.log("🔥 DELETE /api/profile request received");
+    next();
+  },
+  requireAuth,
+  async (req, res) => {
+    console.log("🔥 PROFILE DELETE ROUTE HIT (after auth)");
 
-  try {
-    // 1) Load seller + listings
-    const seller = db
-      .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
-      .get(uid) as { business_logo?: string } | undefined;
+    const uid = req.user!.uid;
 
-    const listings = db
-      .prepare("SELECT id, photos FROM listings WHERE seller_uid = ?")
-      .all(uid) as { id: number; photos: string | null }[];
+    try {
+      // 1) Load seller + listings
+      const seller = db
+        .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
+        .get(uid) as { business_logo?: string } | undefined;
 
-    const listingIds = listings.map(l => l.id);
+      const listings = db
+        .prepare("SELECT id, photos FROM listings WHERE seller_uid = ?")
+        .all(uid) as { id: number; photos: string | null }[];
 
-    // 2) Collect image URLs (listing photos + business logo)
-    const photoUrls: string[] = [];
-    for (const l of listings) {
-      try {
-        const arr = JSON.parse(l.photos || "[]");
-        if (Array.isArray(arr)) photoUrls.push(...arr);
-      } catch {
-        // ignore bad JSON
+      const listingIds = listings.map(l => l.id);
+
+      // 2) Collect image URLs
+      const photoUrls: string[] = [];
+      for (const l of listings) {
+        try {
+          const arr = JSON.parse(l.photos || "[]");
+          if (Array.isArray(arr)) photoUrls.push(...arr);
+        } catch {}
       }
-    }
-    if (seller?.business_logo) photoUrls.push(seller.business_logo);
 
-    // 3) Convert to Cloudinary public_ids
-    const publicIds = Array.from(
-      new Set(
-        photoUrls
-          .map(u => (typeof u === "string" ? cloudinaryPublicIdFromUrl(u) : null))
-          .filter((x): x is string => Boolean(x))
-      )
-    );
-
-    // 4) Delete images from Cloudinary (best-effort)
-    const cloudinaryResults: any[] = [];
-    for (const pid of publicIds) {
-      try {
-        const r = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
-        cloudinaryResults.push({ public_id: pid, result: r });
-      } catch (e: any) {
-        cloudinaryResults.push({ public_id: pid, error: e?.message || String(e) });
+      if (seller?.business_logo) {
+        photoUrls.push(seller.business_logo);
       }
-    }
 
-    // 5) Delete DB rows (reports -> listings -> seller)
-    if (listingIds.length > 0) {
-      const placeholders = listingIds.map(() => "?").join(",");
-      db.prepare(`DELETE FROM reports WHERE listing_id IN (${placeholders})`).run(...listingIds);
-      db.prepare("DELETE FROM listings WHERE seller_uid = ?").run(uid);
-    }
-    db.prepare("DELETE FROM sellers WHERE uid = ?").run(uid);
+      // 3) Convert to Cloudinary public_ids
+      const publicIds = Array.from(
+        new Set(
+          photoUrls
+            .map(u => (typeof u === "string" ? cloudinaryPublicIdFromUrl(u) : null))
+            .filter((x): x is string => Boolean(x))
+        )
+      );
 
-    res.json({
-      success: true,
-      deletedListings: listingIds.length,
-      deletedCloudinaryAssets: publicIds.length,
-      cloudinaryResults,
-    });
-  } catch (error: any) {
-    console.error("Delete profile error:", error);
-    res.status(500).json({ error: "Failed to delete profile", details: error?.message || String(error) });
+      // 4) Delete images from Cloudinary
+      const cloudinaryResults: any[] = [];
+      for (const pid of publicIds) {
+        try {
+          const r = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
+          cloudinaryResults.push({ public_id: pid, result: r });
+        } catch (e: any) {
+          cloudinaryResults.push({ public_id: pid, error: e?.message || String(e) });
+        }
+      }
+
+      // 5) Delete DB rows
+      if (listingIds.length > 0) {
+        const placeholders = listingIds.map(() => "?").join(",");
+        db.prepare(`DELETE FROM reports WHERE listing_id IN (${placeholders})`).run(...listingIds);
+        db.prepare("DELETE FROM listings WHERE seller_uid = ?").run(uid);
+      }
+
+      db.prepare("DELETE FROM sellers WHERE uid = ?").run(uid);
+
+      res.json({
+        success: true,
+        deletedListings: listingIds.length,
+        deletedCloudinaryAssets: publicIds.length,
+        cloudinaryResults,
+      });
+    } catch (error: any) {
+      console.error("Delete profile error:", error);
+      res.status(500).json({ error: "Failed to delete profile", details: error?.message || String(error) });
+    }
   }
-});
+);
+  
   app.post("/api/reports", (req, res) => {
     const { listing_id, reason } = req.body;
     try {
