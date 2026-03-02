@@ -229,6 +229,53 @@ const { email, business_name, business_logo, university, bio } = req.body;
     res.status(500).json({ error: "Failed to create listing" });
   }
 });
+
+  // ✅ Public seller profile by uid
+app.get("/api/users/:uid", (req, res) => {
+  const { uid } = req.params;
+
+  try {
+    const seller = db
+      .prepare(
+        "SELECT uid, email, business_name, business_logo, university, bio, is_verified, join_date FROM sellers WHERE uid = ?"
+      )
+      .get(uid);
+
+    if (!seller) return res.status(404).json({ error: "User not found" });
+
+    res.json(seller);
+  } catch (e: any) {
+    console.error("GET /api/users/:uid error:", e);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+// ✅ Public listings for a seller
+app.get("/api/users/:uid/listings", (req, res) => {
+  const { uid } = req.params;
+
+  try {
+    const rows = db
+      .prepare(`
+        SELECT l.*, s.business_name, s.business_logo, s.is_verified
+        FROM listings l
+        JOIN sellers s ON l.seller_uid = s.uid
+        WHERE l.seller_uid = ?
+        ORDER BY l.created_at DESC
+      `)
+      .all(uid);
+
+    res.json(
+      rows.map((l: any) => ({
+        ...l,
+        photos: JSON.parse(l.photos || "[]"),
+      }))
+    );
+  } catch (e: any) {
+    console.error("GET /api/users/:uid/listings error:", e);
+    res.status(500).json({ error: "Failed to load user listings" });
+  }
+});
   
   app.delete("/api/listings/:id", requireAuth, (req, res) => {
   const uid = req.user!.uid;
