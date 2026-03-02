@@ -115,13 +115,24 @@ const ListingCard = ({
   currentUid,
   onDelete,
   onEdit,
+  onOpenProfile,
 }: {
   listing: Listing;
   onReport: (id: number) => any;
   currentUid?: string;
   onDelete?: (id: number) => void;
   onEdit?: (listing: Listing) => void;
+  onOpenProfile?: (uid: string) => void;
 }) => {
+  const sellerUid = (listing as any).seller_uid as string | undefined;
+  const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
+
+  const handleOpenProfile = () => {
+    if (sellerUid) onOpenProfile?.(sellerUid);
+  };
+
+  return (
+    
   const sellerUid = (listing as any).seller_uid as string | undefined;
   const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
 
