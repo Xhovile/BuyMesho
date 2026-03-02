@@ -367,7 +367,10 @@ export default function App() {
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
-
+const [publicProfileOpen, setPublicProfileOpen] = useState(false);
+const [publicProfile, setPublicProfile] = useState<any | null>(null);
+const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]);
+const [publicProfileLoading, setPublicProfileLoading] = useState(false);
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   
@@ -468,7 +471,24 @@ export default function App() {
       setLoading(false);
     }
   };
+const openPublicProfile = async (uid: string) => {
+  setPublicProfileOpen(true);
+  setPublicProfileLoading(true);
 
+  try {
+    const profile = await apiFetch(`/api/users/${uid}`);
+    const listings = await apiFetch(`/api/users/${uid}/listings`);
+
+    setPublicProfile(profile);
+    setPublicProfileListings(listings || []);
+  } catch (e: any) {
+    alert(e?.message || "Failed to load profile");
+    setPublicProfileOpen(false);
+  } finally {
+    setPublicProfileLoading(false);
+  }
+};
+  
   const handleDeleteListing = async (listingId: number) => {
   if (!confirm("Delete this listing?")) return;
 
