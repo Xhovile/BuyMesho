@@ -510,11 +510,20 @@ app.delete(
       // 4) Delete images from Cloudinary
       const cloudinaryResults: any[] = [];
       for (const pid of publicIds) {
-        try {
-          const r = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
-          cloudinaryResults.push({ public_id: pid, result: r });
-        } catch (e: any) {
-          cloudinaryResults.push({ public_id: pid, error: e?.message || String(e) });
+  // Try delete as image
+  try {
+    const rImg = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
+    cloudinaryResults.push({ public_id: pid, type: "image", result: rImg });
+   } catch (e: any) {
+    cloudinaryResults.push({ public_id: pid, type: "image", error: e?.message || String(e) });
+      }
+
+  // Try delete as video
+  try {
+    const rVid = await cloudinary.uploader.destroy(pid, { resource_type: "video" });
+    cloudinaryResults.push({ public_id: pid, type: "video", result: rVid });
+      } catch (e: any) {
+    cloudinaryResults.push({ public_id: pid, type: "video", error: e?.message || String(e) });
         }
       }
 
