@@ -85,6 +85,7 @@ db.exec(`
     category TEXT NOT NULL,
     university TEXT NOT NULL,
     photos TEXT, -- JSON array of URLs
+    video_url TEXT, -- ✅ optional video URL
     whatsapp_number TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
