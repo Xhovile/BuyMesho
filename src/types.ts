@@ -35,6 +35,7 @@ export interface Listing {
   category: Category;
   university: University;
   photos: string[];
+  video_url?: string | null;
   whatsapp_number: string;
   created_at: string;
   // Joined fields
