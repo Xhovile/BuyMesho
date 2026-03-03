@@ -229,12 +229,22 @@ const { email, business_name, business_logo, university, bio } = req.body;
   // ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
 
-  const { name, price, description, category, university, photos, whatsapp_number } = req.body;
+  const { name, price, description, category, university, photos, video_url, whatsapp_number } = req.body;
+    // ✅ Validate photos + video
+const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
+if (safePhotos.length > 5) {
+  return res.status(400).json({ error: "Max 5 photos allowed" });
+}
+
+const safeVideoUrl =
+  video_url && typeof video_url === "string" && video_url.trim().length > 0
+    ? video_url.trim()
+    : null;
 
   try {
     const info = db.prepare(`
-      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, whatsapp_number)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, video_url, whatsapp_number)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       seller_uid,
       name,
@@ -242,7 +252,8 @@ const { email, business_name, business_logo, university, bio } = req.body;
       description,
       category,
       university,
-      JSON.stringify(photos ?? []),
+      JSON.stringify(safePhotos),
+      safeVideoUrl,
       whatsapp_number
     );
 
