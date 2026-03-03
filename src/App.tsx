@@ -140,12 +140,20 @@ const ListingCard = ({
       className="bg-white rounded-3xl border border-zinc-100 overflow-hidden card-shadow hover:card-shadow-hover transition-all group"
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-        <img
-          src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-          alt={listing.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-          referrerPolicy="no-referrer"
-        />
+        {listing.video_url ? (
+  <video
+    src={listing.video_url}
+    controls
+    className="w-full h-full object-cover"
+  />
+) : (
+  <img
+    src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+    alt={listing.name}
+    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+    referrerPolicy="no-referrer"
+  />
+)}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
             <MapPin className="w-3 h-3 text-primary" /> {listing.university}
