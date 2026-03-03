@@ -124,7 +124,7 @@ const ListingCard = ({
   onEdit?: (listing: Listing) => void;
   onOpenProfile?: (uid: string) => void;
 }) => {
-  const sellerUid = (listing as any).seller_uid as string | undefined;
+  const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
 
   const handleOpenProfile = () => {
