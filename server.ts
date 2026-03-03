@@ -39,15 +39,25 @@ try {
   process.exit(1);
 }
 
-// Simple migration: check if 'sellers' table has 'uid' column
+// Simple migration check (SAFE):
+// If old schema is detected, DO NOT auto-drop tables.
+// Only reset when RESET_DB=true is set.
 try {
   const tableInfo = db.prepare("PRAGMA table_info(sellers)").all() as any[];
-  const hasUid = tableInfo.some(col => col.name === 'uid');
+  const hasUid = tableInfo.some((col) => col.name === "uid");
+
   if (tableInfo.length > 0 && !hasUid) {
-    console.log("Old schema detected, resetting database...");
-    db.exec("DROP TABLE IF EXISTS reports");
-    db.exec("DROP TABLE IF EXISTS listings");
-    db.exec("DROP TABLE IF EXISTS sellers");
+    const shouldReset = process.env.RESET_DB === "true";
+
+    console.warn("⚠️ Old schema detected in sellers table.");
+    console.warn("⚠️ To reset database, set RESET_DB=true and restart the server.");
+
+    if (shouldReset) {
+      console.warn("🧨 RESET_DB=true → resetting database now...");
+      db.exec("DROP TABLE IF EXISTS reports");
+      db.exec("DROP TABLE IF EXISTS listings");
+      db.exec("DROP TABLE IF EXISTS sellers");
+    }
   }
 } catch (e) {
   // Table might not exist yet, which is fine
