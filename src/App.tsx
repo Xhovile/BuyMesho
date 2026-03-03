@@ -715,6 +715,68 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     );
   }
 };
+  const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const files = Array.from(e.target.files || []);
+  if (!files.length) return;
+
+  const remaining = 5 - newListing.photos.length;
+  const selected = files.slice(0, remaining);
+
+  if (selected.length < files.length) {
+    alert("Max 5 photos per listing.");
+  }
+
+  setUploading(true);
+  try {
+    const uploadedUrls: string[] = [];
+
+    for (const file of selected) {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch("/api/upload/", { method: "POST", body: formData });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+
+      if (!res.ok) throw new Error(data?.error || "Upload failed");
+      uploadedUrls.push(data.url);
+    }
+
+    setNewListing((prev) => ({
+      ...prev,
+      photos: [...prev.photos, ...uploadedUrls].slice(0, 5),
+    }));
+  } catch (err: any) {
+    alert(err?.message || "Failed to upload images");
+  } finally {
+    setUploading(false);
+    e.target.value = "";
+  }
+};
+
+const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setUploading(true);
+  try {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch("/api/upload/", { method: "POST", body: formData });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!res.ok) throw new Error(data?.error || "Upload failed");
+
+    setNewListing((prev) => ({ ...prev, video_url: data.url }));
+  } catch (err: any) {
+    alert(err?.message || "Failed to upload video");
+  } finally {
+    setUploading(false);
+    e.target.value = "";
+  }
+};
   const handleCreateListing = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userSeller || !firebaseUser) return;
