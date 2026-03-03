@@ -1139,55 +1139,75 @@ await apiFetch("/api/listings", {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Photo</label>
-                    <div className="space-y-3">
-                      {newListing.photos[0] && (
-                        <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200">
-                          <img 
-                            src={newListing.photos[0]} 
-                            alt="Preview" 
-                            className="w-full h-full object-cover"
-                          />
-                          <button 
-                            type="button"
-                            onClick={() => setNewListing({ ...newListing, photos: [""] })}
-                            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      )}
-                      
-                      <div className="relative">
-                        <input 
-                          type="file" 
-                          accept="image/*"
-                          onChange={(e) => handleFileUpload(e, 'listing')}
-                          className="hidden"
-                          id="photo-upload"
-                          disabled={uploading}
-                        />
-                        <label 
-                          htmlFor="photo-upload"
-                          className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-xl cursor-pointer transition-all ${uploading ? "bg-zinc-50 border-zinc-200 cursor-not-allowed" : "bg-zinc-50 border-zinc-200 hover:border-primary/50 hover:bg-primary/5"}`}
-                        >
-                          {uploading ? (
-                            <>
-                              <Loader2 className="w-5 h-5 text-primary animate-spin" />
-                              <span className="text-sm font-medium text-zinc-500">Uploading...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Camera className="w-5 h-5 text-zinc-400" />
-                              <span className="text-sm font-medium text-zinc-600">
-                                {newListing.photos[0] ? "Change Photo" : "Upload Product Photo"}
-                              </span>
-                            </>
-                          )}
-                        </label>
-                      </div>
-                    </div>
-                  </div>
+  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+    Photos (max 5)
+  </label>
+
+  {newListing.photos.length > 0 && (
+    <div className="grid grid-cols-3 gap-3 mb-3">
+      {newListing.photos.map((url, idx) => (
+        <div
+          key={`${url}-${idx}`}
+          className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+        >
+          <img
+            src={url}
+            alt={`Photo ${idx + 1}`}
+            className="w-full h-full object-cover"
+          />
+          <button
+            type="button"
+            onClick={() =>
+              setNewListing((prev) => ({
+                ...prev,
+                photos: prev.photos.filter((_, i) => i !== idx),
+              }))
+            }
+            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+
+  <input
+    type="file"
+    accept="image/*"
+    multiple
+    onChange={handleImagesUpload}
+    disabled={uploading || newListing.photos.length >= 5}
+    className="w-full"
+  />
+</div>
+
+<div className="mt-4">
+  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+    Video (optional, 1)
+  </label>
+
+  {newListing.video_url ? (
+    <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+      <video src={newListing.video_url} controls className="w-full" />
+      <button
+        type="button"
+        onClick={() => setNewListing((prev) => ({ ...prev, video_url: "" }))}
+        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+      >
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  ) : null}
+
+  <input
+    type="file"
+    accept="video/*"
+    onChange={handleVideoUpload}
+    disabled={uploading || !!newListing.video_url}
+    className="w-full"
+  />
+</div>
                   <button 
                     type="submit"
                     disabled={uploading}
