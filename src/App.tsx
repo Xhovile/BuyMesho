@@ -1052,6 +1052,7 @@ await apiFetch("/api/listings", {
                    onOpenProfile={openPublicProfile}
                    onEdit={handleEditListing}
                    onPlayVideo={openVideo}
+                   onOpenDetails={openDetails}
                   />
             ))}
           </div>
