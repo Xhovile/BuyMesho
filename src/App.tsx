@@ -386,6 +386,21 @@ const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]
 const [publicProfileLoading, setPublicProfileLoading] = useState(false);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
+const [galleryIndex, setGalleryIndex] = useState(0);
+
+const openDetails = (listing: Listing, startIndex = 0) => {
+  setDetailsListing(listing);
+  setGalleryIndex(startIndex);
+  setDetailsOpen(true);
+};
+
+const closeDetails = () => {
+  setDetailsOpen(false);
+  setDetailsListing(null);
+  setGalleryIndex(0);
+};
 
   const openVideo = (url: string) => {
     setActiveVideoUrl(url);
