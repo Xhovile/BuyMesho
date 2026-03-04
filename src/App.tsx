@@ -116,6 +116,7 @@ const ListingCard = ({
   onDelete,
   onEdit,
   onOpenProfile,
+  onPlayVideo,
 }: {
   listing: Listing;
   onReport: (id: number) => any;
@@ -123,6 +124,7 @@ const ListingCard = ({
   onDelete?: (id: number) => void;
   onEdit?: (listing: Listing) => void;
   onOpenProfile?: (uid: string) => void;
+  onPlayVideo?: (url: string) => void;
 }) => {
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
@@ -141,19 +143,30 @@ const ListingCard = ({
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
         {listing.video_url ? (
-  <video
-    src={listing.video_url}
-    controls
-    className="w-full h-full object-cover"
-  />
-) : (
-  <img
-    src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-    alt={listing.name}
-    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-    referrerPolicy="no-referrer"
-  />
-)}
+          <div
+            className="w-full h-full cursor-pointer relative"
+            onClick={() => onPlayVideo?.(listing.video_url!)}
+          >
+            <img
+              src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+              alt={listing.name}
+              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
+                ▶ Play
+              </span>
+            </div>
+          </div>
+        ) : (
+          <img
+            src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+            alt={listing.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+            referrerPolicy="no-referrer"
+          />
+        )}
         <div className="absolute top-4 left-4 flex flex-col gap-2">
           <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
             <MapPin className="w-3 h-3 text-primary" /> {listing.university}
@@ -357,6 +370,13 @@ const [publicProfileOpen, setPublicProfileOpen] = useState(false);
 const [publicProfile, setPublicProfile] = useState<any | null>(null);
 const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]);
 const [publicProfileLoading, setPublicProfileLoading] = useState(false);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
+
+  const openVideo = (url: string) => {
+    setActiveVideoUrl(url);
+    setVideoModalOpen(true);
+  };
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   
@@ -974,6 +994,7 @@ await apiFetch("/api/listings", {
                    onDelete={handleDeleteListing}
                    onOpenProfile={openPublicProfile}
                    onEdit={handleEditListing}
+                   onPlayVideo={openVideo}
                   />
             ))}
           </div>
@@ -1625,6 +1646,7 @@ await apiFetch("/api/listings", {
                     onDelete={handleDeleteListing}
                     onEdit={handleEditListing}
                     onOpenProfile={openPublicProfile}
+                    onPlayVideo={openVideo}
                   />
                 ))}
               </div>
@@ -1643,6 +1665,37 @@ await apiFetch("/api/listings", {
     </div>
   </div>
 )}
+      {videoModalOpen && activeVideoUrl && (
+        <motion.div
+          key="video-modal"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={() => { setVideoModalOpen(false); setActiveVideoUrl(null); }}
+        >
+          <motion.div
+            initial={{ scale: 0.95 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0.95 }}
+            className="relative w-full max-w-2xl mx-4 bg-black rounded-2xl overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => { setVideoModalOpen(false); setActiveVideoUrl(null); }}
+              className="absolute top-3 right-3 z-10 p-2 bg-black/60 text-white rounded-full hover:bg-black/80 transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <video
+              src={activeVideoUrl}
+              controls
+              autoPlay
+              className="w-full max-h-[80vh]"
+            />
+          </motion.div>
+        </motion.div>
+      )}
       </AnimatePresence>
       {editingListing && (
   <EditListingModal
