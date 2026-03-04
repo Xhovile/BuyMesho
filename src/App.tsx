@@ -142,58 +142,64 @@ const ListingCard = ({
       className="bg-white rounded-3xl border border-zinc-100 overflow-hidden card-shadow hover:card-shadow-hover transition-all group"
     >
       <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-        {listing.video_url ? (
-          <button
-  type="button"
-            className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            onClick={() => onPlayVideo?.(listing.video_url!)}
-          >
-            <img
-              src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-              alt={listing.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-              referrerPolicy="no-referrer"
-            />
-         )}
-           {listing.photos?.length > 1 && (
-             <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm">
-          +{listing.photos.length - 1}
-             </div>
-         )}
+  {listing.video_url ? (
+    <button
+      type="button"
+      className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+      onClick={() => onPlayVideo?.(listing.video_url!)}
+    >
+      <img
+        src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+        alt={listing.name}
+        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        referrerPolicy="no-referrer"
+      />
 
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
-                ▶ Play
-              </span>
-            </div>
-          </button>
-        ) : (
-          <img
-            src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-            alt={listing.name}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-            referrerPolicy="no-referrer"
-          />
-        )}
-        <div className="absolute top-4 left-4 flex flex-col gap-2">
-          <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
-            <MapPin className="w-3 h-3 text-primary" /> {listing.university}
-          </span>
-        </div>
-
-        <button
-          onClick={() => onReport(listing.id)}
-          className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm"
-        >
-          <AlertTriangle className="w-4 h-4" />
-        </button>
-
-        <div className="absolute bottom-4 left-4">
-          <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
-            MK {listing.price.toLocaleString()}
-          </div>
-        </div>
+      {/* Play overlay */}
+      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+        <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
+          ▶ Play
+        </span>
       </div>
+    </button>
+  ) : (
+    <img
+      src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+      alt={listing.name}
+      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+      referrerPolicy="no-referrer"
+    />
+  )}
+
+  {/* ✅ Photo count badge (works for BOTH video + non-video) */}
+  {listing.photos?.length > 1 && (
+    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm">
+      +{listing.photos.length - 1}
+    </div>
+  )}
+
+  {/* Top-left location */}
+  <div className="absolute top-4 left-4 flex flex-col gap-2">
+    <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
+      <MapPin className="w-3 h-3 text-primary" /> {listing.university}
+    </span>
+  </div>
+
+  {/* Report button */}
+  <button
+    onClick={() => onReport(listing.id)}
+    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm"
+  >
+    <AlertTriangle className="w-4 h-4" />
+  </button>
+
+  {/* Price */}
+  <div className="absolute bottom-4 left-4">
+    <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
+      MK {listing.price.toLocaleString()}
+    </div>
+  </div>
+</div>
 
       <div className="p-5">
         <div className="flex items-center justify-between mb-2">
