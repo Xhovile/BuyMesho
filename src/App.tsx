@@ -416,8 +416,6 @@ const [publicProfileOpen, setPublicProfileOpen] = useState(false);
 const [publicProfile, setPublicProfile] = useState<any | null>(null);
 const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]);
 const [publicProfileLoading, setPublicProfileLoading] = useState(false);
-  const [videoModalOpen, setVideoModalOpen] = useState(false);
-  const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [galleryIndex, setGalleryIndex] = useState(0);
@@ -434,10 +432,6 @@ const closeDetails = () => {
   setGalleryIndex(0);
 };
 
-  const openVideo = (url: string) => {
-    setActiveVideoUrl(url);
-    setVideoModalOpen(true);
-  };
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   
