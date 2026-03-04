@@ -221,7 +221,7 @@ async function startServer() {
 const { email, business_name, business_logo, university, bio, is_verified } = req.body;
     try {
   // Convert incoming boolean to 0/1 safely
-const incomingVerified = is_verified ? 1 : 0;
+const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0;
 
 db.prepare(`
   INSERT INTO sellers (uid, email, business_name, business_logo, university, bio, is_verified)
