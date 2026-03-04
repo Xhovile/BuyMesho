@@ -154,6 +154,11 @@ const ListingCard = ({
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
               referrerPolicy="no-referrer"
             />
+            {listing.photos?.length > 1 && (
+           <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm">
+              +{listing.photos.length - 1}
+           </div>
+         )}
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
               <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
                 ▶ Play
