@@ -1736,6 +1736,95 @@ await apiFetch("/api/listings", {
     </div>
   </div>
 )}
+        
+{detailsOpen && detailsListing && (
+  <motion.div
+    key="details-modal"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    onClick={closeDetails}
+  >
+    <motion.div
+      initial={{ scale: 0.95 }}
+      animate={{ scale: 1 }}
+      exit={{ scale: 0.95 }}
+      className="relative w-full max-w-3xl mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="p-4 border-b flex items-center justify-between">
+        <button
+          type="button"
+          onClick={closeDetails}
+          className="p-2 rounded-full hover:bg-zinc-100"
+        >
+          <X className="w-5 h-5" />
+        </button>
+
+        <h2 className="text-lg font-bold flex-1 text-center truncate px-2">
+          {detailsListing.name}
+        </h2>
+
+        <div className="w-10" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="relative rounded-2xl overflow-hidden bg-zinc-100">
+          <img
+            src={
+              detailsListing.photos?.[galleryIndex] ||
+              `https://picsum.photos/seed/${detailsListing.id}/800/800`
+            }
+            alt={detailsListing.name}
+            className="w-full object-contain max-h-[60vh]"
+          />
+
+          {detailsListing.photos?.length > 1 && (
+            <div className="absolute inset-0 flex items-center justify-between px-2">
+              <button
+                type="button"
+                onClick={() => setGalleryIndex((i) => Math.max(0, i - 1))}
+                className="p-2 bg-white/80 hover:bg-white rounded-full"
+                disabled={galleryIndex === 0}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setGalleryIndex((i) =>
+                    Math.min(detailsListing.photos.length - 1, i + 1)
+                  )
+                }
+                className="p-2 bg-white/80 hover:bg-white rounded-full"
+                disabled={galleryIndex === detailsListing.photos.length - 1}
+              >
+                ›
+              </button>
+            </div>
+          )}
+        </div>
+
+        {detailsListing.video_url ? (
+          <div className="rounded-2xl overflow-hidden border bg-black">
+            <video src={detailsListing.video_url} controls className="w-full" />
+          </div>
+        ) : null}
+
+        <div>
+          <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
+            Description
+          </div>
+          <div className="text-sm text-zinc-700 whitespace-pre-wrap">
+            {detailsListing.description}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  </motion.div>
+)}
+        
       {videoModalOpen && activeVideoUrl && (
         <motion.div
           key="video-modal"
