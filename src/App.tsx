@@ -1432,7 +1432,7 @@ await apiFetch("/api/listings", {
                           <input 
                             type="file" 
                             accept="image/*"
-                            onChange={(e) => handleFileUpload(e, 'logo')}
+                            onChange={handleFileUpload}
                             className="hidden"
                             id="logo-upload"
                           />
