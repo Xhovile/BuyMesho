@@ -220,15 +220,22 @@ async function startServer() {
     const uid = req.user!.uid; // secure UID from Firebase
 const { email, business_name, business_logo, university, bio } = req.body;
     try {
-      db.prepare(`
-        INSERT OR REPLACE INTO sellers (uid, email, business_name, business_logo, university, bio)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `).run(uid, email, business_name, business_logo, university, bio);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Seller sync error:", error);
-      res.status(500).json({ error: "Failed to sync seller profile" });
-    }
+  db.prepare(`
+    INSERT INTO sellers (uid, email, business_name, business_logo, university, bio)
+    VALUES (?, ?, ?, ?, ?, ?)
+    ON CONFLICT(uid) DO UPDATE SET
+      email = excluded.email,
+      business_name = excluded.business_name,
+      business_logo = excluded.business_logo,
+      university = excluded.university,
+      bio = excluded.bio
+  `).run(uid, email, business_name, business_logo, university, bio);
+
+  res.json({ success: true });
+} catch (error) {
+  console.error("Seller sync error:", error);
+  res.status(500).json({ error: "Failed to sync seller profile" });
+}
   });
 
   app.post("/api/listings", requireAuth, (req, res) => {
