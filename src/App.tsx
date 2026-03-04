@@ -1832,38 +1832,7 @@ await apiFetch("/api/listings", {
     </motion.div>
   </motion.div>
 )}
-        
-      {videoModalOpen && activeVideoUrl && (
-        <motion.div
-          key="video-modal"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-          onClick={() => { setVideoModalOpen(false); setActiveVideoUrl(null); }}
-        >
-          <motion.div
-            initial={{ scale: 0.95 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0.95 }}
-            className="relative w-full max-w-2xl mx-4 bg-black rounded-2xl overflow-hidden shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => { setVideoModalOpen(false); setActiveVideoUrl(null); }}
-              className="absolute top-3 right-3 z-10 p-2 bg-black/60 text-white rounded-full hover:bg-black/80 transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <video
-              src={activeVideoUrl}
-              controls
-              autoPlay
-              className="w-full max-h-[80vh]"
-            />
-          </motion.div>
-        </motion.div>
-      )}
+       
       </AnimatePresence>
       {editingListing && (
   <EditListingModal
