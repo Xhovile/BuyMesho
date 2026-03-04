@@ -116,7 +116,6 @@ const ListingCard = ({
   onDelete,
   onEdit,
   onOpenProfile,
-  onPlayVideo,
   onOpenDetails,
 }: {
   listing: Listing;
@@ -125,7 +124,6 @@ const ListingCard = ({
   onDelete?: (id: number) => void;
   onEdit?: (listing: Listing) => void;
   onOpenProfile?: (uid: string) => void;
-  onPlayVideo?: (url: string) => void;
   onOpenDetails?: (listing: Listing, startIndex?: number) => void;
 }) => {
   const sellerUid = listing.seller_uid;
