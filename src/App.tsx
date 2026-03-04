@@ -162,10 +162,10 @@ const ListingCard = ({
     {/* Play overlay (clicking this plays video, not details) */}
     <div
       className="absolute inset-0 flex items-center justify-center bg-black/30"
-      onClick={(e) => {
-        e.stopPropagation();
-        onPlayVideo?.(listing.video_url!);
-      }}
+     onClick={(e) => {
+      e.stopPropagation();
+     handleOpenDetails(0);
+   }}
     >
       <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
         ▶ Play
