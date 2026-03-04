@@ -145,7 +145,7 @@ const ListingCard = ({
         {listing.video_url ? (
           <button
   type="button"
-            className="w-full h-full cursor-pointer relative"
+            className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
             onClick={() => onPlayVideo?.(listing.video_url!)}
           >
             <img
