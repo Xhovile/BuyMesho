@@ -1907,7 +1907,13 @@ await apiFetch("/api/listings", {
 
             {publicProfileListings.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {publicProfileListings.map((l) => (
+                {publicProfileListings
+                  .filter(
+                    (l) =>
+                      !hiddenListingIds.includes(l.id) &&
+                      !hiddenSellerUids.includes(l.seller_uid)
+                  )
+                  .map((l) => (
                   <ListingCard
                     key={l.id}
                     listing={l}
@@ -1917,6 +1923,8 @@ await apiFetch("/api/listings", {
                     onEdit={handleEditListing}
                     onOpenProfile={openPublicProfile}
                     onOpenDetails={openDetails}
+                    onHideListing={hideListingLocal}
+                    onHideSeller={hideSellerLocal}
                   />
                 ))}
               </div>
