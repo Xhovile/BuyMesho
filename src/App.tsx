@@ -354,59 +354,116 @@ const ListingCard = ({
             </div>
           </button>
 
-          {/* ✅ Owner-only actions */}
-{isOwner ? (
-  <div className="relative">
-    <button
-      type="button"
-      onClick={() => setMenuOpen(!menuOpen)}
-      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-      aria-label="Open actions menu"
-    >
-      <MoreVertical className="w-5 h-5 text-zinc-500" />
-    </button>
+                {/* Actions menu (owner + non-owner) */}
+<div className="relative">
+  <button
+    type="button"
+    onClick={() => setMenuOpen(!menuOpen)}
+    className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+    aria-label="Open actions menu"
+    aria-expanded={menuOpen}
+  >
+    <MoreVertical className="w-5 h-5 text-zinc-500" />
+  </button>
 
-    {menuOpen && (
-      <div className="absolute right-0 bottom-10 bg-white border border-zinc-200 rounded-xl shadow-md w-40 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            onEdit?.(listing);
-          }}
-          className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-        >
-          Edit
-        </button>
+  {menuOpen && (
+    <div className="absolute right-0 bottom-10 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
+      {isOwner ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onEdit?.(listing);
+            }}
+            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+          >
+            Edit
+          </button>
 
-        <button
-          type="button"
-          onClick={() => {
-            setMenuOpen(false);
-            onDelete?.(listing.id);
-          }}
-          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
-        >
-          Delete
-        </button>
-      </div>
-    )}
-      </div>
-    ) : (
-        <button
-         type="button"
-         onClick={() => handleOpenDetails(0)}
-         className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-         aria-label="View details"
-        >
-         <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-       </button>
-      )}
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onDelete?.(listing.id);
+            }}
+            className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+          >
+            Delete
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              onReport(listing.id);
+            }}
+            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+          >
+            Report listing
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const num = listing.whatsapp_number || "";
+              setMenuOpen(false);
+              if (!num) return alert("No WhatsApp number found.");
+              try {
+                await navigator.clipboard.writeText(num);
+                alert("✅ WhatsApp number copied.");
+              } catch {
+                prompt("Copy WhatsApp number:", num);
+              }
+            }}
+            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+          >
+            Copy WhatsApp number
+          </button>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const shareText =
+                `BuyMesho Listing\n` +
+                `${listing.name}\n` +
+                `Price: MK ${Number(listing.price).toLocaleString()}\n` +
+                `Campus: ${listing.university}\n` +
+                `WhatsApp: ${listing.whatsapp_number}\n\n` +
+                `Open BuyMesho: ${window.location.href}`;
+
+              setMenuOpen(false);
+              try {
+                // Best effort native share; fallback to copying text
+                if ((navigator as any).share) {
+                  await (navigator as any).share({
+                    title: `BuyMesho: ${listing.name}`,
+                    text: shareText,
+                  });
+                } else {
+                  await navigator.clipboard.writeText(shareText);
+                  alert("✅ Share text copied. Paste it anywhere.");
+                }
+              } catch {
+                prompt("Copy to share:", shareText);
+              }
+            }}
+            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+          >
+             Share listing
+            </button>
+          </>
+        )}
+         </div>
+       )}
+          </div>
         </div>
       </div>
     </motion.div>
-  );
-};
+   );
+ };
 
 const FilterSection = ({ 
   selectedUniv, 
