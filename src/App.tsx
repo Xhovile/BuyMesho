@@ -294,14 +294,6 @@ const ListingCard = ({
     </span>
   </div>
 
-  {/* Report button */}
-  <button
-    onClick={() => onReport(listing.id)}
-    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-md rounded-xl text-zinc-400 hover:text-red-500 hover:bg-red-50 transition-all shadow-sm"
-  >
-    <AlertTriangle className="w-4 h-4" />
-  </button>
-
   {/* Price */}
   <div className="absolute bottom-4 left-4">
     <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
