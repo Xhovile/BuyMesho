@@ -489,6 +489,7 @@ Open BuyMesho: ${window.location.href}`;
               setMenuOpen(false);
               onEdit?.(listing);
             }}
+
             className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
           >
             Edit
