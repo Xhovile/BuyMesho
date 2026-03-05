@@ -1230,7 +1230,13 @@ await apiFetch("/api/listings", {
             <Loader2 className="w-8 h-8 text-primary animate-spin" />
             <p className="text-zinc-500 font-medium">Loading marketplace...</p>
           </div>
-        ) : listings.length > 0 ? (
+        ) : (() => {
+          const visibleListings = listings.filter(
+            (l) =>
+              !hiddenListingIds.includes(l.id) &&
+              !hiddenSellerUids.includes(l.seller_uid)
+          );
+          return visibleListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {listings.map((listing) => (
                  <ListingCard
