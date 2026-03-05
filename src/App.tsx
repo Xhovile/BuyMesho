@@ -573,6 +573,49 @@ const [publicProfileLoading, setPublicProfileLoading] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [galleryIndex, setGalleryIndex] = useState(0);
 
+// Local-only hides (no backend needed)
+const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => {
+  try {
+    const raw = localStorage.getItem("hiddenListingIds");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((x) => Number.isInteger(x)) : [];
+  } catch {
+    return [];
+  }
+});
+
+const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
+  try {
+    const raw = localStorage.getItem("hiddenSellerUids");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+  } catch {
+    return [];
+  }
+});
+
+const hideListingLocal = (id: number) => {
+  if (!Number.isInteger(id)) return;
+
+  setHiddenListingIds((prev) => {
+    if (prev.includes(id)) return prev;
+    const next = [...prev, id];
+    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
+    return next;
+  });
+};
+
+const hideSellerLocal = (uid: string) => {
+  if (!uid || typeof uid !== "string") return;
+
+  setHiddenSellerUids((prev) => {
+    if (prev.includes(uid)) return prev;
+    const next = [...prev, uid];
+    localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
+    return next;
+  });
+};
+
 const openDetails = (listing: Listing, startIndex = 0) => {
   setDetailsListing(listing);
   setGalleryIndex(startIndex);
