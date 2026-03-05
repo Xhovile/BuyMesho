@@ -47,6 +47,14 @@ import EditListingModal from "./components/EditListingModal";
 
 // --- Components ---
 
+const UNIVERSITY_LOGOS: Record<string, string> = {
+  LUANAR: "https://.../luanar.png",
+  MUBAS: "https://.../mubas.png",
+  MUST: "https://.../must.png",
+  UNIMA: "https://.../unima.png",
+  // add others you support
+};
+
 const Navbar = ({ 
   onSearch, 
   onAddListing, 
