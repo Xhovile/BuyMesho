@@ -230,6 +230,119 @@ Open BuyMesho: ${window.location.href}`;
       whileHover={{ y: -4 }}
       className="bg-white rounded-3xl border border-zinc-100 overflow-hidden card-shadow hover:card-shadow-hover transition-all group"
     >
+      {/* Seller header (moved ABOVE the post for marketing) */}
+<div className="p-4 flex items-center justify-between">
+  <button
+    type="button"
+    onClick={handleOpenProfile}
+    className="flex items-center gap-2.5 text-left"
+  >
+    <div className="relative">
+      <img
+        src={listing.business_logo}
+        alt={listing.business_name}
+        className="w-9 h-9 rounded-xl object-cover border border-zinc-100 shadow-sm"
+      />
+      {listing.is_verified && (
+        <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
+          <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
+        </div>
+      )}
+    </div>
+
+    <div className="flex flex-col">
+      <span className="text-xs font-bold text-zinc-800 hover:underline">
+        {listing.business_name}
+      </span>
+      <span className="text-[10px] text-zinc-400 font-medium">View profile</span>
+    </div>
+  </button>
+
+  {/* Actions menu (owner + non-owner) */}
+  <div className="relative" data-listing-menu={listing.id}>
+    <button
+      type="button"
+      onClick={() => setMenuOpen(!menuOpen)}
+      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+      aria-label="Open actions menu"
+      aria-expanded={menuOpen}
+    >
+      <MoreVertical className="w-5 h-5 text-zinc-500" />
+    </button>
+
+    {menuOpen && (
+      <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
+        {isOwner ? (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onEdit?.(listing);
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete?.(listing.id);
+              }}
+              className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+            >
+              Delete
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handleReportFromMenu}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Report listing
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyWhatsApp}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Copy WhatsApp number
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Share listing
+            </button>
+
+            <div className="h-px bg-zinc-100" />
+
+            {/* Keep hide options ONCE (fix duplicates) */}
+            <button
+              type="button"
+              onClick={handleHideListing}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Hide this listing
+            </button>
+            <button
+              type="button"
+              onClick={handleHideSeller}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+              disabled={!sellerUid}
+            >
+              Hide this seller
+            </button>
+          </>
+        )}
+      </div>
+    )}
+  </div>
+</div>
       <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
       
   {listing.video_url ? (
