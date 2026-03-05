@@ -241,7 +241,7 @@ Open BuyMesho: ${window.location.href}`;
       {/* Blurred halo (makes edges feel soft where they meet the background) */}
       <div className="absolute -inset-2 rounded-[28px] bg-white/60 blur-xl opacity-70 group-hover:opacity-100 transition pointer-events-none" />
 
-      <div className="relative bg-white/90 backdrop-blur rounded-3xl border border-zinc-200/70 overflow-hidden shadow-lg shadow-zinc-400/20 hover:shadow-xl hover:shadow-zinc-500/25 transition-all">
+      <div className="relative bg-amber-50/70 rounded-3xl border border-zinc-200/70 overflow-hidden shadow-lg shadow-zinc-400/20 hover:shadow-xl hover:shadow-zinc-500/25 transition-all">
       {/* Seller header (moved ABOVE the post for marketing) */}
 <div className="p-4 flex items-center justify-between">
   <button
