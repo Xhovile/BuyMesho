@@ -436,23 +436,6 @@ Open BuyMesho: ${window.location.href}`;
         Hide this seller
      </button>
          <div className="h-px bg-zinc-100" />
-
-          <button
-            type="button"
-            onClick={handleHideListing}
-            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-          >
-            Hide this listing
-          </button>
-
-          <button
-            type="button"
-            onClick={handleHideSeller}
-            className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            disabled={!sellerUid}
-          >
-            Hide this seller
-          </button>
           </>
         )}
          </div>
