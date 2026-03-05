@@ -278,32 +278,52 @@ const ListingCard = ({
           </button>
 
           {/* ✅ Owner-only actions */}
-          {isOwner ? (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onEdit?.(listing)}
-                className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-zinc-900 text-white hover:bg-zinc-800 active:scale-95 transition"
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                onClick={() => onDelete?.(listing.id)}
-                className="px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white hover:bg-red-700 active:scale-95 transition"
-              >
-                Delete
-              </button>
-            </div>
-          ) : (
-          <button
-             type="button"
-             onClick={() => handleOpenDetails(0)}
-             className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-             aria-label="View details"
-          >
-             <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+{isOwner ? (
+  <div className="relative">
+    <button
+      type="button"
+      onClick={() => setMenuOpen(!menuOpen)}
+      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+      aria-label="Open actions menu"
+    >
+      <MoreVertical className="w-5 h-5 text-zinc-500" />
+    </button>
+
+    {menuOpen && (
+      <div className="absolute right-0 bottom-10 bg-white border border-zinc-200 rounded-xl shadow-md w-40 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setMenuOpen(false);
+            onEdit?.(listing);
+          }}
+          className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+        >
+          Edit
         </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setMenuOpen(false);
+            onDelete?.(listing.id);
+          }}
+          className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+        >
+          Delete
+        </button>
+      </div>
+    )}
+      </div>
+    ) : (
+        <button
+         type="button"
+         onClick={() => handleOpenDetails(0)}
+         className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+         aria-label="View details"
+        >
+         <ChevronRight className="w-4 h-4 text-zinc-300 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+       </button>
       )}
         </div>
       </div>
