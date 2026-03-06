@@ -112,6 +112,16 @@ try {
 } catch (e) {
   console.warn("Migration check failed:", e);
 }
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasWhatsapp = cols.some((c) => c.name === "whatsapp_number");
+  if (!hasWhatsapp) {
+    db.exec("ALTER TABLE sellers ADD COLUMN whatsapp_number TEXT");
+    console.log("Migration: Added sellers.whatsapp_number");
+  }
+} catch (e) {
+  console.warn("Sellers migration check failed:", e);
+}
 
 async function startServer() {
   const app = express();
