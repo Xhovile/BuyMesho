@@ -1654,6 +1654,16 @@ await apiFetch("/api/listings", {
                       />
                     </div>
                     <div>
+                     <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
+                      <input 
+                        type="text" 
+                        placeholder="265..."
+                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={authForm.whatsappNumber}
+                        onChange={e => setAuthForm({ ...authForm, whatsappNumber: e.target.value })}
+                      />
+                    </div>
+                    <div>
                       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Logo</label>
                       <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
