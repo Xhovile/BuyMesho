@@ -235,8 +235,8 @@ const { email, business_name, business_logo, university, bio, whatsapp_number, i
 const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0;
 
 db.prepare(`
-  INSERT INTO sellers (uid, email, business_name, business_logo, university, bio, is_verified)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO sellers (uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(uid) DO UPDATE SET
     email = excluded.email,
     business_name = excluded.business_name,
