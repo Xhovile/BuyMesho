@@ -933,6 +933,7 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     business_logo: userSeller?.business_logo || "",
     university: userSeller?.university || "",
     bio: userSeller?.bio || "",
+    whatsapp_number: userSeller?.whatsapp_number || "",
     is_verified: true,
     join_date: userSeller?.join_date || new Date().toISOString(),
   }),
