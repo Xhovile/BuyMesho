@@ -598,6 +598,22 @@ const hideSellerLocal = (uid: string) => {
   });
 };
 
+const unhideListingLocal = (id: number) => {
+  setHiddenListingIds((prev) => {
+    const next = prev.filter((x) => x !== id);
+    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
+    return next;
+  });
+};
+
+const unhideSellerLocal = (uid: string) => {
+  setHiddenSellerUids((prev) => {
+    const next = prev.filter((x) => x !== uid);
+    localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
+    return next;
+  });
+};
+  
 const openDetails = (listing: Listing, startIndex = 0) => {
   setDetailsListing(listing);
   setGalleryIndex(startIndex);
