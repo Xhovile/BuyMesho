@@ -2019,8 +2019,7 @@ await apiFetch("/api/listings", {
   </button>
 </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             </motion.div>
           </div>
