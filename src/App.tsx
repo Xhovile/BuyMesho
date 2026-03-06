@@ -54,6 +54,7 @@ import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
 import ChangePasswordModal from "./components/ChangePasswordModal";
+import ReportListingModal from "./components/ReportListingModal";
 
 const getListingIdFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
@@ -582,6 +583,7 @@ const [publicProfileLoading, setPublicProfileLoading] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [galleryIndex, setGalleryIndex] = useState(0);
+  const [reportListingId, setReportListingId] = useState<number | null>(null);
 
 // Local-only hides (no backend needed)
 
