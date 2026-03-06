@@ -1253,21 +1253,9 @@ await apiFetch("/api/listings", {
 }
 };
   
-  const handleReport = async (listingId: number) => {
-    const reason = prompt("Why are you reporting this listing?");
-    if (!reason) return;
-
-    try {
-      await fetch('/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: listingId, reason })
-      });
-      alert("Report submitted. Thank you for keeping our community safe.");
-    } catch (err) {
-      alert("Failed to submit report");
-    }
-  };
+  const handleReport = (listingId: number) => {
+  setReportListingId(listingId);
+};
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
