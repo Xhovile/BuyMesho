@@ -1863,11 +1863,11 @@ await apiFetch("/api/listings", {
                          onClick={() => unhideSellerLocal(uid)}
                          className="w-full text-left px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium hover:bg-zinc-100"
                        >
-                     Unhide seller{sellerNameMap[uid] ? `: ${sellerNameMap[uid]}` : ""}
-                 </button>
-               ))}
-                 </div>
-                  ) : (
+                      {sellerNameMap[uid] ? `Unhide ${sellerNameMap[uid]}` : "Unhide seller"}
+                    </button>
+                   ))}
+                  </div>
+                 ) : (
                     <p className="text-sm text-zinc-500">No hidden sellers.</p>
                   )}
                  </div>
