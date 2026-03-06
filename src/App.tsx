@@ -802,6 +802,7 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
         business_logo: authForm.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authForm.businessName)}&background=random`,
         university: authForm.university,
         bio: authForm.bio,
+        whatsapp_number: authForm.whatsappNumber,
         is_verified: false,
         join_date: new Date().toISOString()
       };
