@@ -566,6 +566,7 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [settingsView, setSettingsView] = useState<"menu" | "privacy" | "terms" | "safety" | "report">("menu");
+  const [settingsEntrySource, setSettingsEntrySource] = useState<"settings" | "footer">("settings");
   const [userSeller, setUserSeller] = useState<Seller | null>(null);
   const [uploading, setUploading] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile'>('login');
@@ -805,6 +806,7 @@ const openMyListings = async () => {
 
 const openSettings = () => {
   setShowProfileModal(false);
+  setSettingsEntrySource("settings");
   setSettingsView("menu");
   setShowSettingsModal(true);
 };
