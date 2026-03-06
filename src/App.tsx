@@ -1512,6 +1512,7 @@ await apiFetch("/api/listings", {
                   {authView === 'login' && "Welcome Back"}
                   {authView === 'signup' && "Join BuyMesho"}
                   {authView === 'forgot' && "Reset Password"}
+                  {authView === 'editProfile' && "Edit Profile"}
                   {authView === 'profile' && "My Profile"}
                 </h2>
                 <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
