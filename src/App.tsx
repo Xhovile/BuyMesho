@@ -115,8 +115,7 @@ const ListingCard = ({
   currentUid,
   onDelete,
   onEdit,
-  onOpenProfile,
-  onHideListing,
+  onOpenProfile, 
    onHideSeller,
   onOpenDetails,
 }: {
@@ -125,7 +124,6 @@ const ListingCard = ({
   currentUid?: string;
   onDelete?: (id: number) => void;
   onEdit?: (listing: Listing) => void;
-  onHideListing?: (id: number) => void;
   onHideSeller?: (uid: string) => void;
   onOpenProfile?: (uid: string) => void;
   onOpenDetails?: (listing: Listing, startIndex?: number) => void;
@@ -209,12 +207,7 @@ Open BuyMesho: ${window.location.href}`;
     setMenuOpen(false);
     onReport(listing.id);
   };
-
-  const handleHideListing = () => {
-    setMenuOpen(false);
-    onHideListing?.(listing.id);
-  };
-
+  
  const handleHideSeller = () => {
    if (!sellerUid) return;
    setMenuOpen(false);
@@ -556,15 +549,6 @@ const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [galleryIndex, setGalleryIndex] = useState(0);
 
 // Local-only hides (no backend needed)
-const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => {
-  try {
-    const raw = localStorage.getItem("hiddenListingIds");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => Number.isInteger(x)) : [];
-  } catch {
-    return [];
-  }
-});
 
 const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
   try {
@@ -576,17 +560,6 @@ const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
   }
 });
 
-const hideListingLocal = (id: number) => {
-  if (!Number.isInteger(id)) return;
-
-  setHiddenListingIds((prev) => {
-    if (prev.includes(id)) return prev;
-    const next = [...prev, id];
-    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
-    return next;
-  });
-};
-
 const hideSellerLocal = (uid: string) => {
   if (!uid || typeof uid !== "string") return;
 
@@ -594,14 +567,6 @@ const hideSellerLocal = (uid: string) => {
     if (prev.includes(uid)) return prev;
     const next = [...prev, uid];
     localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
-    return next;
-  });
-};
-
-const unhideListingLocal = (id: number) => {
-  setHiddenListingIds((prev) => {
-    const next = prev.filter((x) => x !== id);
-    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
     return next;
   });
 };
