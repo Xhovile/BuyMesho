@@ -1504,14 +1504,6 @@ await apiFetch("/api/listings", {
                 </button>
               </div>
 
-              {reportListingId !== null && (
-                <ReportListingModal
-                  listingId={reportListingId}
-                  onClose={() => setReportListingId(null)}
-                  onSuccess={() => setReportListingId(null)}
-                 />
-               )}
-
               {!userSeller ? (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -2555,6 +2547,14 @@ await apiFetch("/api/listings", {
   <ChangePasswordModal
     user={firebaseUser}
     onClose={() => setShowChangePasswordModal(false)}
+  />
+)}
+        
+{reportListingId !== null && (
+  <ReportListingModal
+    listingId={reportListingId}
+    onClose={() => setReportListingId(null)}
+    onSuccess={() => setReportListingId(null)}
   />
 )}
 
