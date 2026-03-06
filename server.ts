@@ -390,13 +390,18 @@ app.get("/api/users/:uid/listings", (req, res) => {
 
     // Delete each public_id as both image and video resource_type (best-effort)
     const cloudinaryResults: any[] = [];
-    for (const pid of publicIds) {
-      try {
-        const rImg = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
-        cloudinaryResults.push({ public_id: pid, type: "image", result: rImg });
-      } catch (e: any) {
-        cloudinaryResults.push({ public_id: pid, type: "image", error: e?.message || String(e) });
-      }
+for (const pid of publicIds) {
+  try {
+    let r = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
+
+    if (r?.result === "not found") {
+      r = await cloudinary.uploader.destroy(pid, { resource_type: "video" });
+    }
+    cloudinaryResults.push({ public_id: pid, result: r });
+  } catch (e: any) {
+    cloudinaryResults.push({ public_id: pid, error: e?.message || String(e) });
+  }
+}
 
       try {
         const rVid = await cloudinary.uploader.destroy(pid, { resource_type: "video" });
