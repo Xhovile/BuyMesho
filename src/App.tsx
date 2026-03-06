@@ -981,6 +981,48 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     );
   }
 };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!firebaseUser || !userSeller) return;
+
+  const updatedProfile: Seller = {
+    ...userSeller,
+    business_name: editProfileForm.businessName,
+    business_logo: editProfileForm.logoUrl,
+    university: editProfileForm.university,
+    bio: editProfileForm.bio,
+    whatsapp_number: editProfileForm.whatsappNumber,
+  };
+
+  try {
+    await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+      business_name: updatedProfile.business_name,
+      business_logo: updatedProfile.business_logo,
+      university: updatedProfile.university,
+      bio: updatedProfile.bio || "",
+      whatsapp_number: updatedProfile.whatsapp_number || "",
+    });
+
+    await apiFetch("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({
+        business_name: updatedProfile.business_name,
+        business_logo: updatedProfile.business_logo,
+        university: updatedProfile.university,
+        bio: updatedProfile.bio || "",
+        whatsapp_number: updatedProfile.whatsapp_number || "",
+      }),
+    });
+
+    setUserSeller(updatedProfile);
+    setAuthView("profile");
+    alert("Profile updated successfully.");
+  } catch (err: any) {
+    alert(err?.message || "Failed to update profile");
+  }
+};
+  
   const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const files = Array.from(e.target.files || []);
   if (!files.length) return;
