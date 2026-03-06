@@ -1107,15 +1107,15 @@ await apiFetch("/api/listings", {
 
   setShowAddModal(false);
   setNewListing({
-    name: "",
-    price: "",
-    description: "",
-    category: CATEGORIES[0] as Category,
-    university: UNIVERSITIES[0] as University,
-    photos: [] as string[],
-    video_url: "",
-    whatsapp_number: "",
-  });
+  name: "",
+  price: "",
+  description: "",
+  category: CATEGORIES[0] as Category,
+  university: UNIVERSITIES[0] as University,
+  photos: [] as string[],
+  video_url: "",
+  whatsapp_number: userSeller?.whatsapp_number || "",
+});
 
   fetchListings();
 
