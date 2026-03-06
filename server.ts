@@ -93,13 +93,18 @@ db.exec(`
   );
 
   CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    listing_id INTEGER NOT NULL,
-    reason TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (listing_id) REFERENCES listings(id)
-  );
-`);
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  type TEXT NOT NULL DEFAULT 'listing',         -- 'listing' | 'problem'
+  listing_id INTEGER,
+  subject TEXT,
+  reason TEXT NOT NULL,
+  details TEXT,
+  reporter_uid TEXT,
+  reporter_email TEXT,
+  status TEXT NOT NULL DEFAULT 'open',
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (listing_id) REFERENCES listings(id)
+);
 
 // ✅ Migration: add video_url column if it doesn't exist
 try {
