@@ -5,9 +5,14 @@ import { apiFetch } from "../lib/api";
 type Props = {
   onBack: () => void;
   onClose: () => void;
+  showBackButton?: boolean;
 };
 
-export default function ReportProblemPage({ onBack, onClose }: Props) {
+export default function ReportProblemPage({
+  onBack,
+  onClose,
+  showBackButton = true,
+}: Props) {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [sending, setSending] = useState(false);
@@ -45,12 +50,16 @@ export default function ReportProblemPage({ onBack, onClose }: Props) {
   return (
     <div className="p-6 overflow-y-auto flex-1">
       <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={onBack}
-          className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold"
-        >
-          ← Back to Settings
-        </button>
+        {showBackButton ? (
+          <button
+            onClick={onBack}
+            className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold"
+          >
+            ← Back to Settings
+          </button>
+        ) : (
+          <div />
+        )}
 
         <button
           onClick={onClose}
