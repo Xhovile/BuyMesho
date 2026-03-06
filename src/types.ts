@@ -22,6 +22,7 @@ export interface Seller {
   business_logo: string;
   university: University;
   bio?: string;
+  whatsapp_number?: string;
   is_verified: boolean;
   join_date: string;
 }
