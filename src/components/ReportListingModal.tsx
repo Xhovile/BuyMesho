@@ -83,14 +83,26 @@ export default function ReportListingModal({ listingId, onClose }: Props) {
 
         <div className="p-6 space-y-4">
           {successMessage && (
-            <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-emerald-800">Submitted</p>
-                <p className="text-sm text-emerald-700">{successMessage}</p>
-              </div>
-            </div>
-          )}
+  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+    <div className="flex items-start gap-3">
+      <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+      <div className="flex-1">
+        <p className="text-sm font-bold text-emerald-800">Submitted</p>
+        <p className="text-sm text-emerald-700">{successMessage}</p>
+      </div>
+    </div>
+
+    <div className="mt-3 flex justify-end">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
+      >
+        Close
+      </button>
+    </div>
+  </div>
+)}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
