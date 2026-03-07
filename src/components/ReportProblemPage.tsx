@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { HelpCircle, Loader2, X, AlertTriangle } from "lucide-react";
+import { HelpCircle, Loader2, X, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { apiFetch } from "../lib/api";
 
 type Props = {
@@ -18,12 +18,12 @@ export default function ReportProblemPage({
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [sending, setSending] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!isLoggedIn) {
-      alert("You need to log in before submitting a problem report.");
       return;
     }
 
@@ -33,6 +33,8 @@ export default function ReportProblemPage({
     }
 
     setSending(true);
+    setSuccessMessage("");
+
     try {
       await apiFetch("/api/reports", {
         method: "POST",
@@ -44,7 +46,7 @@ export default function ReportProblemPage({
         }),
       });
 
-      alert("Problem report submitted successfully.");
+      setSuccessMessage("Your problem report has been submitted successfully.");
       setSubject("");
       setDetails("");
     } catch (err: any) {
@@ -95,6 +97,16 @@ export default function ReportProblemPage({
           </div>
         )}
 
+        {successMessage && (
+          <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-emerald-800">Submitted</p>
+              <p className="text-sm text-emerald-700">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 space-y-4">
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
@@ -136,4 +148,4 @@ export default function ReportProblemPage({
       </div>
     </div>
   );
-        }
+}
