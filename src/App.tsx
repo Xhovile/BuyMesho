@@ -1000,7 +1000,15 @@ await apiFetch("/api/listings", {
       />
 
       <main className="max-w-7xl mx-auto px-4">
-        
+        <HeroSection
+    onStartSelling={() => {
+      setNewListing((prev) => ({
+        ...prev,
+        whatsapp_number: userSeller?.whatsapp_number || "",
+      }));
+      setShowAddModal(true);
+    }}
+  />
      
         <FilterSection 
           selectedUniv={selectedUniv} 
