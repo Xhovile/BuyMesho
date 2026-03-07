@@ -413,4 +413,4 @@ Open this listing: ${shareUrl}`;
       </div>
     </motion.div>
   );
-              }
+  }
