@@ -1,19 +1,24 @@
-        
-const FilterSection = ({ 
-  selectedUniv, 
-  setSelectedUniv, 
-  selectedCat, 
+import { useEffect, useState } from "react";
+import { ChevronRight, MapPin, RefreshCw, Tag } from "lucide-react";
+import { UNIVERSITIES, CATEGORIES } from "../constants";
+
+type FilterSectionProps = {
+  selectedUniv: string;
+  setSelectedUniv: (v: string) => void;
+  selectedCat: string;
+  setSelectedCat: (v: string) => void;
+  sortBy: string;
+  setSortBy: (v: string) => void;
+};
+
+export default function FilterSection({
+  selectedUniv,
+  setSelectedUniv,
+  selectedCat,
   setSelectedCat,
   sortBy,
-  setSortBy
-}: { 
-  selectedUniv: string, 
-  setSelectedUniv: (v: string) => void,
-  selectedCat: string,
-  setSelectedCat: (v: string) => void,
-  sortBy: string,
-  setSortBy: (v: string) => void
-}) => {
+  setSortBy,
+}: FilterSectionProps) {
   const [openDropdown, setOpenDropdown] = useState<"university" | "category" | "sort" | null>(null);
 
   useEffect(() => {
@@ -49,14 +54,11 @@ const FilterSection = ({
     "absolute top-[calc(100%+0.5rem)] left-0 w-full bg-white border border-zinc-200 rounded-2xl shadow-xl z-30 max-h-64 overflow-y-auto p-2";
   const itemBase =
     "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors";
-  const activeItem =
-    "bg-zinc-900 text-white";
-  const inactiveItem =
-    "text-zinc-700 hover:bg-zinc-100";
+  const activeItem = "bg-zinc-900 text-white";
+  const inactiveItem = "text-zinc-700 hover:bg-zinc-100";
 
   return (
     <div className="py-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-      {/* University */}
       <div className="space-y-2 relative" data-filter-dropdown>
         <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
           <MapPin className="w-3.5 h-3.5 text-primary" /> University
@@ -64,9 +66,7 @@ const FilterSection = ({
 
         <button
           type="button"
-          onClick={() =>
-            setOpenDropdown(openDropdown === "university" ? null : "university")
-          }
+          onClick={() => setOpenDropdown(openDropdown === "university" ? null : "university")}
           className={triggerBase}
         >
           <span>{selectedUniv || "All Universities"}</span>
@@ -107,7 +107,6 @@ const FilterSection = ({
         )}
       </div>
 
-      {/* Category */}
       <div className="space-y-2 relative" data-filter-dropdown>
         <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
           <Tag className="w-3.5 h-3.5 text-primary" /> Category
@@ -115,9 +114,7 @@ const FilterSection = ({
 
         <button
           type="button"
-          onClick={() =>
-            setOpenDropdown(openDropdown === "category" ? null : "category")
-          }
+          onClick={() => setOpenDropdown(openDropdown === "category" ? null : "category")}
           className={triggerBase}
         >
           <span>{selectedCat || "All Categories"}</span>
@@ -158,7 +155,6 @@ const FilterSection = ({
         )}
       </div>
 
-      {/* Sort */}
       <div className="space-y-2 relative" data-filter-dropdown>
         <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
           <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort
@@ -166,14 +162,10 @@ const FilterSection = ({
 
         <button
           type="button"
-          onClick={() =>
-            setOpenDropdown(openDropdown === "sort" ? null : "sort")
-          }
+          onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
           className={triggerBase}
         >
-          <span>
-            {sortOptions.find((option) => option.value === sortBy)?.label || "Newest First"}
-          </span>
+          <span>{sortOptions.find((option) => option.value === sortBy)?.label || "Newest First"}</span>
           <ChevronRight
             className={`w-4 h-4 text-zinc-400 transition-transform ${
               openDropdown === "sort" ? "rotate-90" : "rotate-0"
@@ -201,5 +193,4 @@ const FilterSection = ({
       </div>
     </div>
   );
-};
-
+          }
