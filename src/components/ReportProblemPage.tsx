@@ -119,44 +119,46 @@ export default function ReportProblemPage({
   </div>
 )}
 
-        <form onSubmit={handleSubmit} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Subject
-            </label>
-            <input
-              type="text"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
-              placeholder="What went wrong?"
-              required
-              disabled={!isLoggedIn || sending}
-            />
-          </div>
+        {!successMessage && (
+          <form onSubmit={handleSubmit} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                Subject
+              </label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                placeholder="What went wrong?"
+                required
+                disabled={!isLoggedIn || sending}
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Details
-            </label>
-            <textarea
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-32 resize-none disabled:bg-zinc-100 disabled:text-zinc-400"
-              placeholder="Describe the issue clearly..."
-              required
-              disabled={!isLoggedIn || sending}
-            />
-          </div>
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                Details
+              </label>
+              <textarea
+                value={details}
+                onChange={(e) => setDetails(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-32 resize-none disabled:bg-zinc-100 disabled:text-zinc-400"
+                placeholder="Describe the issue clearly..."
+                required
+                disabled={!isLoggedIn || sending}
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={!isLoggedIn || sending}
-            className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:hover:bg-zinc-300 disabled:cursor-not-allowed"
-          >
-            {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Problem"}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={!isLoggedIn || sending}
+              className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:hover:bg-zinc-300 disabled:cursor-not-allowed"
+            >
+              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Problem"}
+            </button>
+          </form>
+        )}
       </div>
     </div>
   );
