@@ -36,6 +36,7 @@ import {
 } from "./lib/listingUrl";
 import FilterSection from "./components/FilterSection";
 import { auth, db as firestore } from './firebase';
+import ListingCard from "./components/ListingCard";
 import Header from "./components/Header";
 import { 
   createUserWithEmailAndPassword, 
