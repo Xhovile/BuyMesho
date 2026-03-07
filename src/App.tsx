@@ -1,29 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
-  Plus, 
   User, 
-  MessageCircle, 
   ShieldCheck, 
   AlertTriangle, 
-  Filter,
-  ChevronRight,
   X,
   Camera,
   Loader2,
   MapPin,
-  Tag,
   LogOut,
   Mail,
   Lock,
   Eye,
   EyeOff,
   RefreshCw, 
-  MoreVertical,
   Package,
   Settings,
-  FileText,
-  HelpCircle,
   Bookmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -45,8 +37,7 @@ import {
   signOut, 
   sendEmailVerification, 
   sendPasswordResetEmail,
-  deleteUser,
-  User as FirebaseUser
+  deleteUser
 } from 'firebase/auth';
 import { 
   doc, 
