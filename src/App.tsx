@@ -2543,9 +2543,10 @@ await apiFetch("/api/listings", {
     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <ReportProblemPage
-        onBack={() => setSettingsView("menu")}
-        onClose={closeSettings}
-        showBackButton={settingsEntrySource === "settings"}
+       onBack={() => setSettingsView("menu")}
+       onClose={closeSettings}
+       showBackButton={settingsEntrySource === "settings"}
+       isLoggedIn={!!firebaseUser}
       />
     </div>
   </div>
