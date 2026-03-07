@@ -27,7 +27,7 @@ import {
   syncListingParamInUrl,
   clearListingParamFromUrl
 } from "./lib/listingUrl";
-import FilterSection from "./components/FilterSection";
+import MarketSection from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
 import ListingCard from "./components/ListingCard";
 import Header from "./components/Header";
@@ -999,68 +999,30 @@ await apiFetch("/api/listings", {
       }));
       setShowAddModal(true);
     }}
-  />
-     
-        <FilterSection 
-          selectedUniv={selectedUniv} 
-          setSelectedUniv={setSelectedUniv}
-          selectedCat={selectedCat}
-          setSelectedCat={setSelectedCat}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
-
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-            Recent Listings
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          </h3>
-          <div className="text-xs font-bold text-zinc-400">
-            Showing {listings.length} items
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-zinc-500 font-medium">Loading marketplace...</p>
-          </div>
-        ) : (() => {
-          const visibleListings = listings.filter(
-            (l) =>
-              !hiddenSellerUids.includes(l.seller_uid)
-          );
-          return visibleListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {visibleListings.map((listing) => (
-                 <ListingCard
-                   key={listing.id}
-                   listing={listing}
-                   onReport={handleReport}
-                   currentUid={firebaseUser?.uid}
-                   onDelete={handleDeleteListing}
-                   onOpenProfile={openPublicProfile}
-                   onEdit={handleEditListing}
-                   onOpenDetails={openDetails}
-                   onHideSeller={hideSellerLocal}
-                   onToggleStatus={handleToggleListingStatus}
-                   isSaved={savedListingIds.includes(listing.id)}
-                   onToggleSave={toggleSavedListing}
-                   isLoggedIn={!!firebaseUser}
-                   requireLoginForContact={requireLoginForContact}
-                  />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-zinc-300" />
-            </div>
-            <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
-            <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
-          </div>
-         );
-       })()}
+  />     
+        <MarketSection
+  loading={loading}
+  listings={listings}
+  hiddenSellerUids={hiddenSellerUids}
+  selectedUniv={selectedUniv}
+  setSelectedUniv={setSelectedUniv}
+  selectedCat={selectedCat}
+  setSelectedCat={setSelectedCat}
+  sortBy={sortBy}
+  setSortBy={setSortBy}
+  firebaseUserUid={firebaseUser?.uid}
+  isLoggedIn={!!firebaseUser}
+  savedListingIds={savedListingIds}
+  onReport={handleReport}
+  onDelete={handleDeleteListing}
+  onOpenProfile={openPublicProfile}
+  onEdit={handleEditListing}
+  onOpenDetails={openDetails}
+  onHideSeller={hideSellerLocal}
+  onToggleStatus={handleToggleListingStatus}
+  onToggleSave={toggleSavedListing}
+  requireLoginForContact={requireLoginForContact}
+/>
       </main>
 
       <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
