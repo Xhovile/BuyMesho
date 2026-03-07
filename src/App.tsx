@@ -1352,34 +1352,85 @@ await apiFetch("/api/listings", {
 
       <main className="max-w-7xl mx-auto px-4">
         {/* Hero Section */}
-        <section className="py-12 sm:py-24 text-center space-y-6">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-6xl sm:text-8xl font-black tracking-tighter font-sans mb-16 sm:mb-24"
-          >
-            <span className="text-red-900">Buy</span>
-            <span className="text-zinc-700">Mesho</span>
-          </motion.h1>
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl font-extrabold text-zinc-900 tracking-tight leading-[1.1]"
-          >
-            Buy & Sell anything <br/> 
-            <span className="text-primary">on your campus.</span>
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-500 max-w-xl mx-auto text-base sm:text-lg font-medium"
-          >
-            Connect with fellow students at MUBAS, MUST, UNIMA and more. 
-            Safe, fast, and exclusive to your university community.
-          </motion.p>
-        </section>
+        <section className="relative py-14 sm:py-24">
+  <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
+    <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[22rem] sm:w-[34rem] h-[22rem] sm:h-[34rem] bg-red-900/8 blur-3xl rounded-full" />
+    <div className="absolute top-24 right-0 w-40 h-40 bg-amber-200/20 blur-3xl rounded-full" />
+    <div className="absolute bottom-0 left-0 w-40 h-40 bg-zinc-300/20 blur-3xl rounded-full" />
+  </div>
+
+  <div className="max-w-4xl mx-auto text-center">
+    <motion.div
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-900/10 bg-white/80 backdrop-blur-sm text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.22em] text-red-900 shadow-sm"
+    >
+      Student Marketplace • Malawi
+    </motion.div>
+
+    <motion.h1
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.05 }}
+      className="mt-6 text-5xl sm:text-7xl lg:text-8xl font-black tracking-[-0.06em] leading-[0.95]"
+    >
+      <span className="text-zinc-900">Campus deals,</span>
+      <br />
+      <span className="text-red-900">without the chaos.</span>
+    </motion.h1>
+
+    <motion.p
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.12 }}
+      className="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-zinc-600 font-medium leading-relaxed"
+    >
+      Built with students in mind, but flexible enough for anyone ready to buy, sell, or grow a small business. BuyMesho is designed to make marketplace trading in Malawi feel simpler, faster, and more accessible.
+    </motion.p>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.18 }}
+      className="mt-8 flex flex-wrap items-center justify-center gap-3"
+    >
+      <button
+        type="button"
+        onClick={() => {
+          setNewListing((prev) => ({
+            ...prev,
+            whatsapp_number: userSeller?.whatsapp_number || ""
+          }));
+          setShowAddModal(true);
+        }}
+        className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-3 rounded-2xl text-sm font-extrabold shadow-lg shadow-zinc-300/40 transition-all active:scale-95"
+      >
+        <Plus className="w-4 h-4" />
+        Start Selling
+      </button>
+
+      <button
+        type="button"
+        onClick={() => window.scrollTo({ top: 520, behavior: 'smooth' })}
+        className="inline-flex items-center gap-2 bg-white hover:bg-zinc-50 text-zinc-900 px-6 py-3 rounded-2xl text-sm font-extrabold border border-zinc-200 shadow-sm transition-all active:scale-95"
+      >
+        Explore Listings
+      </button>
+    </motion.div>
+
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.24 }}
+      className="mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em] text-zinc-500"
+    >
+      <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Safe</span>
+      <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Fast</span>
+      <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Flexible</span>
+      <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Built for Malawi</span>
+    </motion.div>
+  </div>
+</section>
 
         <FilterSection 
           selectedUniv={selectedUniv} 
