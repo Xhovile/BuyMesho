@@ -6,8 +6,9 @@ import { apiFetch } from "../lib/api";
 type Props = {
   listingId: number;
   onClose: () => void;
-  onSuccess?: () => void;
 };
+
+export default function ReportListingModal({ listingId, onClose }: Props) {
 
 export default function ReportListingModal({ listingId, onClose, onSuccess }: Props) {
   const [reason, setReason] = useState("");
