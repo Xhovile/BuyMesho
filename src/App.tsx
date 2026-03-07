@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
+import {  
   User, 
   ShieldCheck, 
   AlertTriangle, 
   X,
   Camera,
-  Loader2,
   MapPin,
   LogOut,
   Mail,
