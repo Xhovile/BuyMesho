@@ -25,7 +25,7 @@ import { UNIVERSITIES, CATEGORIES } from './constants';
 import {
   getListingIdFromUrl,
   syncListingParamInUrl,
-  clearListingParamFromUrl,
+  clearListingParamFromUrl
 } from "./lib/listingUrl";
 import FilterSection from "./components/FilterSection";
 import { auth, db as firestore } from './firebase';
@@ -44,7 +44,7 @@ import {
   setDoc, 
   getDoc, 
   deleteDoc,
-  updateDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api"; 
