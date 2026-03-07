@@ -47,3 +47,8 @@ export interface Listing {
   business_logo: string;
   is_verified: boolean;
 }
+export interface RatingSummary {
+  averageRating: number;
+  ratingCount: number;
+  myRating: number | null;
+}
