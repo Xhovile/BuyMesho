@@ -15,6 +15,8 @@ export type Category =
   | "Electronics & Gadgets" 
   | "Beauty & Personal Care";
 
+export type ListingStatus = "available" | "sold";
+
 export interface Seller {
   uid: string;
   email: string;
@@ -38,10 +40,10 @@ export interface Listing {
   photos: string[];
   video_url?: string | null;
   whatsapp_number: string;
-  status: "available" | "sold";
+  status: ListingStatus;
   created_at: string;
   // Joined fields
   business_name: string;
   business_logo: string;
   is_verified: boolean;
-} 
+}
