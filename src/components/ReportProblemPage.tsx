@@ -1,17 +1,19 @@
 import React, { useState } from "react";
-import { HelpCircle, Loader2, X } from "lucide-react";
+import { HelpCircle, Loader2, X, AlertTriangle } from "lucide-react";
 import { apiFetch } from "../lib/api";
 
 type Props = {
   onBack: () => void;
   onClose: () => void;
   showBackButton?: boolean;
+  isLoggedIn: boolean;
 };
 
 export default function ReportProblemPage({
   onBack,
   onClose,
   showBackButton = true,
+  isLoggedIn,
 }: Props) {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
@@ -19,6 +21,11 @@ export default function ReportProblemPage({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!isLoggedIn) {
+      alert("You need to log in before submitting a problem report.");
+      return;
+    }
 
     if (!subject.trim() || !details.trim()) {
       alert("Please complete both subject and details.");
@@ -76,6 +83,18 @@ export default function ReportProblemPage({
           <h2 className="text-2xl font-extrabold text-zinc-900">Report a Problem</h2>
         </div>
 
+        {!isLoggedIn && (
+          <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">Login required</p>
+              <p className="text-sm text-amber-700">
+                You can view this page now, but you need to log in before submitting a problem report.
+              </p>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-zinc-50 border border-zinc-100 rounded-2xl p-5 space-y-4">
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
@@ -85,9 +104,10 @@ export default function ReportProblemPage({
               type="text"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none disabled:bg-zinc-100 disabled:text-zinc-400"
               placeholder="What went wrong?"
               required
+              disabled={!isLoggedIn || sending}
             />
           </div>
 
@@ -98,16 +118,17 @@ export default function ReportProblemPage({
             <textarea
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-32 resize-none"
+              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-32 resize-none disabled:bg-zinc-100 disabled:text-zinc-400"
               placeholder="Describe the issue clearly..."
               required
+              disabled={!isLoggedIn || sending}
             />
           </div>
 
           <button
             type="submit"
-            disabled={sending}
-            className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+            disabled={!isLoggedIn || sending}
+            className="w-full bg-zinc-900 text-white py-3 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2 disabled:bg-zinc-300 disabled:hover:bg-zinc-300 disabled:cursor-not-allowed"
           >
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Submit Problem"}
           </button>
@@ -115,4 +136,4 @@ export default function ReportProblemPage({
       </div>
     </div>
   );
-}
+        }
