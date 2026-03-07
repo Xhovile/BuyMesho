@@ -29,6 +29,11 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Listing, Seller, University, Category } from './types';
 import { UNIVERSITIES, CATEGORIES } from './constants';
+import {
+  getListingIdFromUrl,
+  syncListingParamInUrl,
+  clearListingParamFromUrl,
+} from "./lib/listingUrl";
 import { auth, db as firestore } from './firebase';
 import { 
   createUserWithEmailAndPassword, 
