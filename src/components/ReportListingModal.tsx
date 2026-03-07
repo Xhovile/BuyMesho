@@ -41,7 +41,6 @@ export default function ReportListingModal({ listingId, onClose, onSuccess }: Pr
       setSuccessMessage("Your listing report has been submitted successfully.");
       setReason("");
       setDetails("");
-      onSuccess?.();
     } catch (err: any) {
       alert(err?.message || "Failed to submit listing report.");
     } finally {
