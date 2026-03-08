@@ -195,7 +195,7 @@ useEffect(() => {
     !!firebaseUser?.email &&
     firebaseUser.email.toLowerCase() === "isaacmtsiriza310@gmail.com";
 
-  const isSellerAccount = !!userSeller?.is_seller;
+  const isSellerAccount = !!userProfile?.is_seller;
   
   // Form states
   const [newListing, setNewListing] = useState({
@@ -374,14 +374,14 @@ const openFooterView = (view: "privacy" | "terms" | "safety" | "report") => {
 };
 
 const openEditProfileFromSettings = () => {
-  if (!userSeller) return;
+  if (!userProfile) return;
 
   setEditProfileForm({
-    businessName: userSeller.business_name || "",
-    university: userSeller.university || UNIVERSITIES[0],
-    logoUrl: userSeller.business_logo || "",
-    bio: userSeller.bio || "",
-    whatsappNumber: userSeller.whatsapp_number || "",
+    businessName: userProfile.business_name || "",
+    university: userProfile.university || UNIVERSITIES[0],
+    logoUrl: userProfile.business_logo || "",
+    bio: userProfile.bio || "",
+    whatsappNumber: userProfile.whatsapp_number || "",
   });
 
   setShowSettingsModal(false);
@@ -733,14 +733,14 @@ const handleToggleListingStatus = async (listing: Listing) => {
   method: "POST",
   body: JSON.stringify({
     email: firebaseUser?.email,
-    business_name: userSeller?.business_name || "",
-    business_logo: userSeller?.business_logo || "",
-    university: userSeller?.university || "",
-    bio: userSeller?.bio || "",
-    whatsapp_number: userSeller?.whatsapp_number || "",
+    business_name: userProfile?.business_name || "",
+    business_logo: userProfile?.business_logo || "",
+    university: userProfile || "",
+    bio: userProfile?.bio || "",
+    whatsapp_number: userProfile?.whatsapp_number || "",
     is_verified: true,
-    is_seller: userSeller?.is_seller ?? true,
-    join_date: userSeller?.join_date || new Date().toISOString(),
+    is_seller: userProfile?.is_seller ?? true,
+    join_date: userProfile?.join_date || new Date().toISOString(),
   }),
 });
 
