@@ -2343,6 +2343,7 @@ if (!isSellerAccount) {
   <SettingsModal
     userSeller={userSeller}
     firebaseUser={firebaseUser}
+    isSellerAccount={isSellerAccount}
     onClose={closeSettings}
     onOpenEditProfile={openEditProfileFromSettings}
     onOpenChangePassword={openChangePassword}
