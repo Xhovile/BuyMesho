@@ -737,6 +737,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
     bio: userSeller?.bio || "",
     whatsapp_number: userSeller?.whatsapp_number || "",
     is_verified: true,
+    is_seller: userSeller?.is_seller ?? true,
     join_date: userSeller?.join_date || new Date().toISOString(),
   }),
 });
