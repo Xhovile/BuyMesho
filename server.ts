@@ -424,6 +424,69 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   }
 });
 
+  app.post("/api/profile/become-seller", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
+
+  if (!business_name || typeof business_name !== "string") {
+    return res.status(400).json({ error: "business_name is required" });
+  }
+
+  if (!business_logo || typeof business_logo !== "string") {
+    return res.status(400).json({ error: "business_logo is required" });
+  }
+
+  if (!university || typeof university !== "string") {
+    return res.status(400).json({ error: "university is required" });
+  }
+
+  if (!whatsapp_number || typeof whatsapp_number !== "string") {
+    return res.status(400).json({ error: "whatsapp_number is required" });
+  }
+
+  try {
+    const existing = db
+      .prepare("SELECT uid, email, is_verified FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string; email: string; is_verified?: number } | undefined;
+
+    if (!existing) {
+      return res.status(404).json({ error: "User profile not found" });
+    }
+
+    db.prepare(`
+      UPDATE sellers
+      SET
+        business_name = ?,
+        business_logo = ?,
+        university = ?,
+        bio = ?,
+        whatsapp_number = ?,
+        is_seller = 1
+      WHERE uid = ?
+    `).run(
+      business_name,
+      business_logo,
+      university,
+      bio ?? null,
+      whatsapp_number,
+      uid
+    );
+
+    const updated = db
+      .prepare(`
+        SELECT uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date
+        FROM sellers
+        WHERE uid = ?
+      `)
+      .get(uid);
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Become seller error:", error);
+    res.status(500).json({ error: "Failed to upgrade account to seller" });
+  }
+});
+
   app.post("/api/listings", requireAuth, (req, res) => {
   // ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
