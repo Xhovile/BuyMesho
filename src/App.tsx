@@ -188,6 +188,9 @@ useEffect(() => {
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
+  const isAdminUser =
+  !!firebaseUser?.email &&
+  firebaseUser.email.toLowerCase() === "isaacmtsiriza310@gmail.com";
   
   // Form states
   const [newListing, setNewListing] = useState({
