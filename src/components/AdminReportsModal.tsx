@@ -131,63 +131,65 @@ export default function AdminReportsModal({ onClose }: Props) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-100">
-            <div className="p-4 sm:p-5">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                  <p className="text-xs font-bold text-zinc-400 uppercase">Total</p>
-                  <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.total}</p>
-                </div>
+ <div className="flex-1 overflow-y-auto">
+  <div className="p-4 sm:p-5">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+        <p className="text-xs font-bold text-zinc-400 uppercase">Total</p>
+        <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.total}</p>
+      </div>
 
-                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                  <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
-                  <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
-                </div>
+      <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+        <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
+        <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
+      </div>
 
-                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                  <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
-                  <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
-                </div>
+      <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+        <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
+        <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
+      </div>
 
-                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                  <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
-                  <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
-                </div>
-              </div>
+      <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+        <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
+        <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
+      </div>
+    </div>
+  </div>
 
-              <div className="flex flex-col sm:flex-row gap-3">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-                >
-                  <option value="">All statuses</option>
-                  <option value="open">Open</option>
-                  <option value="reviewed">Reviewed</option>
-                  <option value="resolved">Resolved</option>
-                </select>
+  <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-y border-zinc-100 px-4 sm:px-5 py-3">
+    <div className="flex flex-col sm:flex-row gap-3">
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value)}
+        className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
+      >
+        <option value="">All statuses</option>
+        <option value="open">Open</option>
+        <option value="reviewed">Reviewed</option>
+        <option value="resolved">Resolved</option>
+      </select>
 
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value)}
-                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-                >
-                  <option value="">All types</option>
-                  <option value="listing">Listing</option>
-                  <option value="problem">Problem</option>
-                </select>
+      <select
+        value={typeFilter}
+        onChange={(e) => setTypeFilter(e.target.value)}
+        className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
+      >
+        <option value="">All types</option>
+        <option value="listing">Listing</option>
+        <option value="problem">Problem</option>
+      </select>
 
-                <button
-                  onClick={fetchReports}
-                  className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Refresh
-                </button>
-              </div>
-            </div>
-          </div>
+      <button
+        onClick={fetchReports}
+        className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+      >
+        <RefreshCw className="w-4 h-4" />
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <div className="p-4 sm:p-5 space-y-4">
 
           <div className="p-4 sm:p-5 space-y-4">
             {loading ? (
