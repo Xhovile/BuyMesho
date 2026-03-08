@@ -18,7 +18,7 @@ import {
   Bookmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Listing, Seller, University, Category } from './types';
+import { Listing, UserProfile, University, Category } from './types';
 import HeroSection from "./sections/HeroSection";
 import { UNIVERSITIES, CATEGORIES } from './constants';
 import {
@@ -80,7 +80,7 @@ export default function App() {
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [settingsView, setSettingsView] = useState<"menu" | "privacy" | "terms" | "safety" | "report">("menu");
   const [settingsEntrySource, setSettingsEntrySource] = useState<"settings" | "footer">("settings");
-  const [userSeller, setUserSeller] = useState<Seller | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [uploading, setUploading] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile'>('login');
   const [showPassword, setShowPassword] = useState(false);
