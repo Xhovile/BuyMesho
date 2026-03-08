@@ -494,12 +494,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     .prepare("SELECT is_verified FROM sellers WHERE uid = ?")
     .get(seller_uid) as { is_verified?: number } | undefined;
 
-  if (!v) {
-    return res.status(404).json({ error: "Seller profile not found" });
-  }
-  if (v.is_verified !== 1) {
-    return res.status(403).json({ error: "Account not verified" });
-  }
+if (!v) {
+  return res.status(404).json({ error: "Seller profile not found" });
+}
+if (v.is_seller !== 1) {
+  return res.status(403).json({ error: "Seller account required" });
+}
+if (v.is_verified !== 1) {
+  return res.status(403).json({ error: "Account not verified" });
+}
   const { name, price, description, category, university, photos, video_url, whatsapp_number, status } = req.body;
     // ✅ Validate photos + video
 const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
@@ -818,12 +821,15 @@ for (const pid of publicIds) {
     .prepare("SELECT is_verified FROM sellers WHERE uid = ?")
     .get(uid) as { is_verified?: number } | undefined;
 
-  if (!v) {
-    return res.status(404).json({ error: "Seller profile not found" });
-  }
-  if (v.is_verified !== 1) {
-    return res.status(403).json({ error: "Account not verified" });
-  }
+if (!v) {
+  return res.status(404).json({ error: "Seller profile not found" });
+}
+if (v.is_seller !== 1) {
+  return res.status(403).json({ error: "Seller account required" });
+}
+if (v.is_verified !== 1) {
+  return res.status(403).json({ error: "Account not verified" });
+}
 
   const { name, price, description, category, university, photos, video_url, whatsapp_number, status } = req.body;
     const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
