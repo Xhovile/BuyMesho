@@ -38,7 +38,8 @@ export default function AdminReportsModal({ onClose }: Props) {
       if (statusFilter) params.append("status", statusFilter);
       if (typeFilter) params.append("type", typeFilter);
 
-      const data = await apiFetch(`/api/admin/reports?${params.toString()}`);
+      const query = params.toString();
+      const data = await apiFetch(`/api/admin/reports${query ? `?${query}` : ""}`);
       setReports(Array.isArray(data) ? data : []);
     } catch (err: any) {
       alert(err?.message || "Failed to load reports.");
@@ -51,7 +52,10 @@ export default function AdminReportsModal({ onClose }: Props) {
     fetchReports();
   }, [statusFilter, typeFilter]);
 
-  const updateStatus = async (id: number, status: "open" | "reviewed" | "resolved") => {
+  const updateStatus = async (
+    id: number,
+    status: "open" | "reviewed" | "resolved"
+  ) => {
     setUpdatingId(id);
     try {
       await apiFetch(`/api/admin/reports/${id}/status`, {
@@ -109,9 +113,9 @@ export default function AdminReportsModal({ onClose }: Props) {
         initial={{ opacity: 0, scale: 0.96, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 20 }}
-        className="relative w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[92vh] flex flex-col"
+        className="relative w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden h-[92vh] flex flex-col"
       >
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
+        <div className="p-5 sm:p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0 bg-white">
           <div>
             <h2 className="text-2xl font-extrabold text-zinc-900">Admin Reports</h2>
             <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
@@ -119,166 +123,205 @@ export default function AdminReportsModal({ onClose }: Props) {
             </p>
           </div>
 
-          <button onClick={onClose} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 border-b border-zinc-100 bg-zinc-50/70">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="bg-white rounded-2xl border border-zinc-100 p-4">
-              <p className="text-xs font-bold text-zinc-400 uppercase">Total</p>
-              <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.total}</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-zinc-100 p-4">
-              <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
-              <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-zinc-100 p-4">
-              <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
-              <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-zinc-100 p-4">
-              <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
-              <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
-            </div>
-          </div>
+        <div className="flex-1 overflow-y-auto">
+          <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-zinc-100">
+            <div className="p-4 sm:p-5">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                  <p className="text-xs font-bold text-zinc-400 uppercase">Total</p>
+                  <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.total}</p>
+                </div>
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-            >
-              <option value="">All statuses</option>
-              <option value="open">Open</option>
-              <option value="reviewed">Reviewed</option>
-              <option value="resolved">Resolved</option>
-            </select>
+                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                  <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
+                  <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
+                </div>
 
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-            >
-              <option value="">All types</option>
-              <option value="listing">Listing</option>
-              <option value="problem">Problem</option>
-            </select>
+                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                  <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
+                  <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
+                </div>
 
-            <button
-              onClick={fetchReports}
-              className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6 overflow-y-auto flex-1 space-y-4">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
-              <p className="text-zinc-500 font-medium">Loading reports...</p>
-            </div>
-          ) : reports.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShieldCheck className="w-8 h-8 text-zinc-300" />
+                <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                  <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
+                  <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
+                </div>
               </div>
-              <h3 className="text-lg font-bold text-zinc-900">No reports found</h3>
-              <p className="text-zinc-500">There are no reports matching the current filters.</p>
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
+                >
+                  <option value="">All statuses</option>
+                  <option value="open">Open</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
+                >
+                  <option value="">All types</option>
+                  <option value="listing">Listing</option>
+                  <option value="problem">Problem</option>
+                </select>
+
+                <button
+                  onClick={fetchReports}
+                  className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
             </div>
-          ) : (
-            reports.map((report) => (
-              <div key={report.id} className="border border-zinc-200 rounded-3xl p-5 bg-white shadow-sm">
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${typeBadge(report.type)}`}>
-                        {report.type}
-                      </span>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusBadge(report.status)}`}>
-                        {report.status}
-                      </span>
-                      <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
-                    </div>
+          </div>
 
-                    <div>
-                      <h3 className="text-lg font-extrabold text-zinc-900">
-                        {report.subject || report.reason}
-                      </h3>
-                      <p className="text-sm text-zinc-500 mt-1">
-                        Submitted {new Date(report.created_at).toLocaleString()}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div className="bg-zinc-50 rounded-2xl p-3">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reason</p>
-                        <p className="text-zinc-800">{report.reason}</p>
+          <div className="p-4 sm:p-5 space-y-4">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
+                <p className="text-zinc-500 font-medium">Loading reports...</p>
+              </div>
+            ) : reports.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck className="w-8 h-8 text-zinc-300" />
+                </div>
+                <h3 className="text-lg font-bold text-zinc-900">No reports found</h3>
+                <p className="text-zinc-500">There are no reports matching the current filters.</p>
+              </div>
+            ) : (
+              reports.map((report) => (
+                <div
+                  key={report.id}
+                  className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="space-y-3 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${typeBadge(
+                            report.type
+                          )}`}
+                        >
+                          {report.type}
+                        </span>
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusBadge(
+                            report.status
+                          )}`}
+                        >
+                          {report.status}
+                        </span>
+                        <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
                       </div>
 
-                      <div className="bg-zinc-50 rounded-2xl p-3">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reporter Email</p>
-                        <p className="text-zinc-800">{report.reporter_email || "Unknown"}</p>
+                      <div>
+                        <h3 className="text-lg font-extrabold text-zinc-900">
+                          {report.subject || report.reason}
+                        </h3>
+                        <p className="text-sm text-zinc-500 mt-1">
+                          Submitted {new Date(report.created_at).toLocaleString()}
+                        </p>
                       </div>
 
-                      {report.type === "listing" && (
-                        <>
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Listing</p>
-                            <p className="text-zinc-800">{report.listing_name || `Listing #${report.listing_id}`}</p>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="bg-zinc-50 rounded-2xl p-3">
+                          <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reason</p>
+                          <p className="text-zinc-800">{report.reason}</p>
+                        </div>
 
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller</p>
-                            <p className="text-zinc-800">{report.seller_business_name || "Unknown seller"}</p>
-                          </div>
-                        </>
+                        <div className="bg-zinc-50 rounded-2xl p-3">
+                          <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Reporter Email
+                          </p>
+                          <p className="text-zinc-800">{report.reporter_email || "Unknown"}</p>
+                        </div>
+
+                        {report.type === "listing" && (
+                          <>
+                            <div className="bg-zinc-50 rounded-2xl p-3">
+                              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
+                                Listing
+                              </p>
+                              <p className="text-zinc-800">
+                                {report.listing_name || `Listing #${report.listing_id}`}
+                              </p>
+                            </div>
+
+                            <div className="bg-zinc-50 rounded-2xl p-3">
+                              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
+                                Seller
+                              </p>
+                              <p className="text-zinc-800">
+                                {report.seller_business_name || "Unknown seller"}
+                              </p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+
+                      {report.details && (
+                        <div className="bg-zinc-50 rounded-2xl p-4">
+                          <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Details</p>
+                          <p className="text-sm text-zinc-700 whitespace-pre-wrap">
+                            {report.details}
+                          </p>
+                        </div>
                       )}
                     </div>
 
-                    {report.details && (
-                      <div className="bg-zinc-50 rounded-2xl p-4">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Details</p>
-                        <p className="text-sm text-zinc-700 whitespace-pre-wrap">{report.details}</p>
-                      </div>
-                    )}
-                  </div>
+                    <div className="flex flex-col gap-2 min-w-[160px]">
+                      <button
+                        onClick={() => updateStatus(report.id, "open")}
+                        disabled={updatingId === report.id}
+                        className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
+                      >
+                        {updatingId === report.id && report.status !== "open"
+                          ? "Updating..."
+                          : "Mark Open"}
+                      </button>
 
-                  <div className="flex flex-col gap-2 min-w-[160px]">
-                    <button
-                      onClick={() => updateStatus(report.id, "open")}
-                      disabled={updatingId === report.id}
-                      className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
-                    >
-                      {updatingId === report.id && report.status !== "open" ? "Updating..." : "Mark Open"}
-                    </button>
+                      <button
+                        onClick={() => updateStatus(report.id, "reviewed")}
+                        disabled={updatingId === report.id}
+                        className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
+                      >
+                        {updatingId === report.id && report.status !== "reviewed"
+                          ? "Updating..."
+                          : "Mark Reviewed"}
+                      </button>
 
-                    <button
-                      onClick={() => updateStatus(report.id, "reviewed")}
-                      disabled={updatingId === report.id}
-                      className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
-                    >
-                      {updatingId === report.id && report.status !== "reviewed" ? "Updating..." : "Mark Reviewed"}
-                    </button>
-
-                    <button
-                      onClick={() => updateStatus(report.id, "resolved")}
-                      disabled={updatingId === report.id}
-                      className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
-                    >
-                      {updatingId === report.id && report.status !== "resolved" ? "Updating..." : "Mark Resolved"}
-                    </button>
+                      <button
+                        onClick={() => updateStatus(report.id, "resolved")}
+                        disabled={updatingId === report.id}
+                        className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+                      >
+                        {updatingId === report.id && report.status !== "resolved"
+                          ? "Updating..."
+                          : "Mark Resolved"}
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
-          )}
+              ))
+            )}
+          </div>
         </div>
       </motion.div>
     </div>
   );
- }
+                    } 
