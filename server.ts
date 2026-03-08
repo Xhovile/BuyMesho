@@ -360,7 +360,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       WHEN excluded.is_verified = 1 THEN 1
       ELSE sellers.is_verified
     END
-`).run(uid, email, business_name, business_logo, university, bio, whatsapp_number, incomingVerifiedincomingVerified, incomingSeller);
+`).run(
+  uid,
+  email,
+  business_name,
+  business_logo,
+  university,
+  bio,
+  whatsapp_number,
+  incomingVerified,
+  incomingSeller
+);
 
   res.json({ success: true });
 } catch (error) {
