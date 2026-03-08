@@ -2343,8 +2343,10 @@ await apiFetch("/api/listings", {
 )}
         
   {showAdminReportsModal && isAdminUser && (
-   <AdminReportsModal onClose={() => setShowAdminReportsModal(false)}
- />
+  <AdminReportsModal
+    onClose={() => setShowAdminReportsModal(false)}
+    onOpenUser={openPublicProfile}
+  />
 )}
 
       </AnimatePresence>
