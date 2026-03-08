@@ -625,7 +625,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
   console.warn("Auth: SQLite sync failed", e?.message || e);
 }
 
-      setUserSeller(profile);
+      setUserProfile(profile);
       alert("Account created! Please check your email for verification.");
       setAuthView('profile');
     } catch (err: any) {
@@ -703,7 +703,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUserSeller(null);
+      setUserProfile(null);
     } catch (err: any) {
       alert(err.message);
     }
@@ -726,7 +726,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
     await updateDoc(userRef, { is_verified: true });
 
     // 3) update your local state so UI updates instantly
-    setUserSeller((prev: any) => (prev ? { ...prev, is_verified: true } : prev));
+    setUserProfile((prev: any) => (prev ? { ...prev, is_verified: true } : prev));
 
     // 4) sync to SQLite backend (server)
     await apiFetch("/api/sellers", {
@@ -840,7 +840,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
       }),
     });
 
-    setUserSeller(updatedProfile);
+    setUserProfile(updatedProfile);
     setAuthView("profile");
     alert("Profile updated successfully.");
   } catch (err: any) {
