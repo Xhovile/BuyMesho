@@ -65,6 +65,8 @@ export default function SettingsModal({
         </div>
 
         <div className="p-6 overflow-y-auto flex-1 space-y-8">
+
+          {isSellerAccount && (
           <section>
             <div className="flex items-center gap-2 mb-4">
               <User className="w-4 h-4 text-zinc-500" />
@@ -117,6 +119,7 @@ export default function SettingsModal({
               </button>
             </div>
           </section>
+         )} 
 
           <section>
             <div className="flex items-center gap-2 mb-4">
