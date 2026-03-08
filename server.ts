@@ -85,6 +85,7 @@ db.exec(`
     description TEXT,
     category TEXT NOT NULL,
     university TEXT NOT NULL,
+    is_seller INTEGER NOT NULL DEFAULT 1,
     photos TEXT, -- JSON array of URLs
     video_url TEXT, -- ✅ optional video URL
     whatsapp_number TEXT NOT NULL,
