@@ -44,7 +44,7 @@ import {
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api"; 
 import EditListingModal from "./components/EditListingModal";
-
+import BecomeSellerModal from "./components/BecomeSellerModal";
 const getListingIdFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   return params.get("listing");
@@ -551,6 +551,7 @@ export default function App() {
   const [selectedCat, setSelectedCat] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showBecomeSellerModal, setShowBecomeSellerModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [userSeller, setUserSeller] = useState<Seller | null>(null);
   const [uploading, setUploading] = useState(false);
