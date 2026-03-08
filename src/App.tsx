@@ -881,44 +881,50 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.value = "";
   }
 };
+  
   const handleCreateListing = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userSeller || !firebaseUser) return;
-    
-    if (!firebaseUser.emailVerified) {
-      alert("Please verify your email before posting a listing.");
-      return;
-    }
+  e.preventDefault();
 
-    try {
-await apiFetch("/api/listings", {
-  method: "POST",
-  body: JSON.stringify({
-    ...newListing,
-    price: parseFloat(newListing.price),
-    photos: newListing.photos.slice(0, 5),
-    video_url: newListing.video_url?.trim() || null,
-  }),
-});
+  if (!userSeller || !firebaseUser) return;
 
-  setShowAddModal(false);
-  setNewListing({
-  name: "",
-  price: "",
-  description: "",
-  category: CATEGORIES[0] as Category,
-  university: UNIVERSITIES[0] as University,
-  photos: [] as string[],
-  video_url: "",
-  whatsapp_number: userSeller?.whatsapp_number || "",
-  status: "available",
-});
+  if (!isSellerAccount) {
+    alert("You need a seller account to post listings.");
+    return;
+  }
 
-  fetchListings();
+  if (!firebaseUser.emailVerified) {
+    alert("Please verify your email before posting a listing.");
+    return;
+  }
 
-} catch (err: any) {
-  alert(err?.message || "Failed to create listing");
-}
+  try {
+    await apiFetch("/api/listings", {
+      method: "POST",
+      body: JSON.stringify({
+        ...newListing,
+        price: parseFloat(newListing.price),
+        photos: newListing.photos.slice(0, 5),
+        video_url: newListing.video_url?.trim() || null,
+      }),
+    });
+
+    setShowAddModal(false);
+    setNewListing({
+      name: "",
+      price: "",
+      description: "",
+      category: CATEGORIES[0] as Category,
+      university: UNIVERSITIES[0] as University,
+      photos: [] as string[],
+      video_url: "",
+      whatsapp_number: userSeller?.whatsapp_number || "",
+      status: "available",
+    });
+
+    fetchListings();
+  } catch (err: any) {
+    alert(err?.message || "Failed to create listing");
+  }
 };
   
   const handleReport = (listingId: number) => {
