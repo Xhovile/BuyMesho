@@ -16,6 +16,7 @@ type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 type Props = {
   userSeller: Seller;
   firebaseUser: any;
+  isSellerAccount: boolean;
   onClose: () => void;
   onOpenEditProfile: () => void;
   onOpenChangePassword: () => void;
@@ -23,10 +24,10 @@ type Props = {
   onRefreshVerification: () => void;
   onOpenView: (view: SettingsView) => void;
 };
-
 export default function SettingsModal({
   userSeller,
   firebaseUser,
+  isSellerAccount,
   onClose,
   onOpenEditProfile,
   onOpenChangePassword,
