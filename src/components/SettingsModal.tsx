@@ -135,7 +135,7 @@ export default function SettingsModal({
                 <div>
                   <p className="font-medium text-zinc-900">Default WhatsApp Number</p>
                   <p className="text-sm text-zinc-500">
-                    {userSeller.whatsapp_number || "Not added"}
+                    {userProfile.whatsapp_number || "Not added"}
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -148,7 +148,7 @@ export default function SettingsModal({
                 <div>
                   <p className="font-medium text-zinc-900">Default Campus</p>
                   <p className="text-sm text-zinc-500">
-                    {userSeller.university || "Not set"}
+                    {userProfile.university || "Not set"}
                   </p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -158,10 +158,10 @@ export default function SettingsModal({
                 <div>
                   <p className="font-medium text-zinc-900">Verification Status</p>
                   <p className="text-sm text-zinc-500">
-                    {userSeller.is_verified ? "Verified" : "Not verified"}
+                    {userProfile.is_verified ? "Verified" : "Not verified"}
                   </p>
                 </div>
-                {userSeller.is_verified ? (
+                {userProfile.is_verified ? (
                   <ShieldCheck className="w-5 h-5 text-blue-500" />
                 ) : null}
               </div>
