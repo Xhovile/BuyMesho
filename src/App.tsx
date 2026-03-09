@@ -1476,6 +1476,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                   {authView === 'editProfile' && "Edit Profile"}
                   {authView === 'becomeSeller' && "Become a Seller"}
                   {authView === 'profile' && "My Profile"}
+                  {authView === 'editAccount' && "Edit Account"}
                 </h2>
                 <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
                   <X className="w-5 h-5" />
