@@ -118,7 +118,6 @@ export default function SettingsModal({
               </button>
             </div>
           </section>
-         )} 
 
           {isSellerAccount && (
           <section>
