@@ -9,12 +9,12 @@ import {
   FileText,
   HelpCircle,
 } from "lucide-react";
-import { Seller, University } from "../types";
+import { userProfile, University } from "../types";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
 type Props = {
-  userSeller: Seller;
+  userProfile: userProfile;
   firebaseUser: any;
   isSellerAccount: boolean;
   onClose: () => void;
@@ -25,7 +25,7 @@ type Props = {
   onOpenView: (view: SettingsView) => void;
 };
 export default function SettingsModal({
-  userSeller,
+  userProfile,
   firebaseUser,
   isSellerAccount,
   onClose,
