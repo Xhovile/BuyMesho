@@ -607,6 +607,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
          uid: user.uid,
          email: authForm.email,
          university: authForm.university,
+         avatar_url: "",
          is_verified: false,
          is_seller: false,
          join_date: new Date().toISOString(),
