@@ -813,6 +813,35 @@ const handleToggleListingStatus = async (listing: Listing) => {
     alert(err?.message || "Failed to delete account.");
   }
 };
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!firebaseUser || !userProfile) return;
+
+  const updatedProfile: UserProfile = {
+    ...userProfile,
+    university: editAccountForm.university,
+    avatar_url: editAccountForm.avatarUrl,
+  };
+
+  try {
+    await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+      university: updatedProfile.university,
+      avatar_url: updatedProfile.avatar_url || "",
+    });
+
+    await apiFetch("/api/sellers", {
+      method: "POST",
+      body: JSON.stringify(updatedProfile),
+    });
+
+    setUserProfile(updatedProfile);
+    setAuthView("profile");
+    alert("Account updated successfully.");
+  } catch (err: any) {
+    alert(err?.message || "Failed to update account");
+  }
+};
   
   const handleSaveProfile = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -1052,9 +1081,11 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           const data = JSON.parse(responseText);
         if (data.url) {
            if (authView === "editProfile") {
-               setEditProfileForm((prev) => ({ ...prev, logoUrl: data.url }));
+             setEditProfileForm((prev) => ({ ...prev, logoUrl: data.url }));
            } else if (authView === "becomeSeller") {
-               setSellerUpgradeForm((prev) => ({ ...prev, logoUrl: data.url }));
+             setSellerUpgradeForm((prev) => ({ ...prev, logoUrl: data.url }));
+           } else if (authView === "editAccount") {
+             setEditAccountForm((prev) => ({ ...prev, avatarUrl: data.url }));
            }
         }
         } else {
