@@ -65,50 +65,6 @@ try {
 
 // Initialize database
 db.exec(`
-CREATE TABLE IF NOT EXISTS sellers (
-  uid TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  business_name TEXT,
-  business_logo TEXT,
-  university TEXT,
-  bio TEXT,
-  whatsapp_number TEXT,
-  is_verified INTEGER DEFAULT 0,
-  is_seller INTEGER NOT NULL DEFAULT 0,
-  join_date DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
-  CREATE TABLE IF NOT EXISTS listings (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    seller_uid TEXT NOT NULL,
-    name TEXT NOT NULL,
-    price REAL NOT NULL,
-    description TEXT,
-    category TEXT NOT NULL,
-    university TEXT NOT NULL,
-    is_seller INTEGER NOT NULL DEFAULT 1,
-    photos TEXT, -- JSON array of URLs
-    video_url TEXT, -- ✅ optional video URL
-    whatsapp_number TEXT NOT NULL,
-    status TEXT NOT NULL DEFAULT 'available',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
-  );
-
-  CREATE TABLE IF NOT EXISTS reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL DEFAULT 'listing',         -- 'listing' | 'problem'
-    listing_id INTEGER,
-    subject TEXT,
-    reason TEXT NOT NULL,
-    details TEXT,
-    reporter_uid TEXT,
-    reporter_email TEXT,
-    status TEXT NOT NULL DEFAULT 'open',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (listing_id) REFERENCES listings(id)
-  );
-
   CREATE TABLE IF NOT EXISTS sellers (
     uid TEXT PRIMARY KEY,
     email TEXT NOT NULL,
@@ -120,6 +76,47 @@ CREATE TABLE IF NOT EXISTS sellers (
     is_verified INTEGER DEFAULT 0,
     is_seller INTEGER NOT NULL DEFAULT 0,
     join_date DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS listings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_uid TEXT NOT NULL,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT,
+    category TEXT NOT NULL,
+    university TEXT NOT NULL,
+    is_seller INTEGER NOT NULL DEFAULT 1,
+    photos TEXT,
+    video_url TEXT,
+    whatsapp_number TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'available',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
+  );
+
+  CREATE TABLE IF NOT EXISTS reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL DEFAULT 'listing',
+    listing_id INTEGER,
+    subject TEXT,
+    reason TEXT NOT NULL,
+    details TEXT,
+    reporter_uid TEXT,
+    reporter_email TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (listing_id) REFERENCES listings(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS seller_ratings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seller_uid TEXT NOT NULL,
+    rater_uid TEXT NOT NULL,
+    stars INTEGER NOT NULL CHECK (stars >= 1 AND stars <= 5),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
   );
 `); 
 
