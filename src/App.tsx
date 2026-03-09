@@ -809,10 +809,10 @@ const handleToggleListingStatus = async (listing: Listing) => {
   
   const handleSaveProfile = async (e: React.FormEvent) => {
   e.preventDefault();
-  if (!firebaseUser || !userSeller) return;
+  if (!firebaseUser || !userProfile) return;
 
   const updatedProfile: Seller = {
-    ...userSeller,
+    ...userProfile,
     business_name: editProfileForm.businessName,
     business_logo: editProfileForm.logoUrl,
     university: editProfileForm.university,
@@ -914,7 +914,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   const handleCreateListing = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  if (!userSeller || !firebaseUser) return;
+  if (!userProfile || !firebaseUser) return;
 
 if (!isSellerAccount) {
   alert("You need a seller account to post listings.");
@@ -951,7 +951,7 @@ if (!isSellerAccount) {
       university: UNIVERSITIES[0] as University,
       photos: [] as string[],
       video_url: "",
-      whatsapp_number: userSeller?.whatsapp_number || "",
+      whatsapp_number: userProfile?.whatsapp_number || "",
       status: "available",
     });
 
@@ -1035,12 +1035,12 @@ if (!isSellerAccount) {
 
           setNewListing((prev) => ({
             ...prev,
-            whatsapp_number: userSeller?.whatsapp_number || ""
+            whatsapp_number: userProfile?.whatsapp_number || ""
           }));
           setShowAddModal(true);
         }}
           onProfileClick={() => setShowProfileModal(true)}
-          userSeller={userSeller}
+          userProfile={userProfile}
           firebaseUser={firebaseUser}
       />
 
@@ -1054,7 +1054,7 @@ if (!isSellerAccount) {
 
       setNewListing((prev) => ({
         ...prev,
-        whatsapp_number: userSeller?.whatsapp_number || "",
+        whatsapp_number: userProfile?.whatsapp_number || "",
       }));
       setShowAddModal(true);
     }}
@@ -1182,7 +1182,7 @@ if (!isSellerAccount) {
                     Back to Profile
                   </button>
                 </div>
-              ) : !userSeller ? (
+              ) : !userProfile ? (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <User className="w-8 h-8 text-primary" />
@@ -1631,7 +1631,7 @@ if (!isSellerAccount) {
                   </form>
                 )}
 
- {isFirebaseConfigured && !firestoreError && authView === 'editProfile' && userSeller && (
+ {isFirebaseConfigured && !firestoreError && authView === 'editProfile' && userProfile && (
   <form onSubmit={handleSaveProfile} className="p-8 space-y-4">
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
@@ -1723,19 +1723,19 @@ if (!isSellerAccount) {
   </form>
 )}
 
-                {isFirebaseConfigured && !firestoreError && authView === 'profile' && userSeller && (
+                {isFirebaseConfigured && !firestoreError && authView === 'profile' && userProfile && (
                   <div className="p-8 text-center">
                     <div className="relative w-24 h-24 mx-auto mb-4">
-                      <img src={userSeller.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
-                      {userSeller.is_verified && (
+                      <img src={userProfile.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
+                      {userProfile.is_verified && (
                         <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
                           <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
                         </div>
                       )}
                     </div>
-                    <h3 className="text-2xl font-display mb-1">{userSeller.business_name}</h3>
+                    <h3 className="text-2xl font-display mb-1">{userProfile.business_name}</h3>
                     <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
-                      <MapPin className="w-4 h-4" /> {userSeller.university}
+                      <MapPin className="w-4 h-4" /> {userProfile.university}
                     </p>
                     {!firebaseUser?.emailVerified && (
                       <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700 text-xs font-medium space-y-3">
@@ -1768,28 +1768,28 @@ if (!isSellerAccount) {
                         </div>
                       </div>
                     )}
-                    {userSeller.bio && (
+                    {userProfile.bio && (
                       <p className="text-sm text-zinc-600 mb-6 max-w-xs mx-auto italic">
-                        "{userSeller.bio}"
+                        "{userProfile.bio}"
                       </p>
                     )}
                     <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-3">
   <div>
     <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Email</p>
-    <p className="text-zinc-700 font-medium">{userSeller.email}</p>
+    <p className="text-zinc-700 font-medium">{userProfile.email}</p>
   </div>
 
   <div>
     <p className="text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp</p>
     <p className="text-zinc-700 font-medium">
-      {userSeller.whatsapp_number || "Not added"}
+      {userProfile.whatsapp_number || "Not added"}
     </p>
   </div>
 
   <div>
     <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
     <p className="text-zinc-700 font-medium">
-      {new Date(userSeller.join_date).toLocaleDateString()}
+      {new Date(userProfile.join_date).toLocaleDateString()}
     </p>
   </div>
 </div>
@@ -1834,13 +1834,13 @@ if (!isSellerAccount) {
   {isSellerAccount && (
     <button
       onClick={() => {
-        if (!userSeller) return;
+        if (!userProfile) return;
         setEditProfileForm({
-          businessName: userSeller.business_name || "",
-          university: userSeller.university || UNIVERSITIES[0],
-          logoUrl: userSeller.business_logo || "",
-          bio: userSeller.bio || "",
-          whatsappNumber: userSeller.whatsapp_number || ""
+          businessName: userProfile.business_name || "",
+          university: userProfile.university || UNIVERSITIES[0],
+          logoUrl: userProfile.business_logo || "",
+          bio: userProfile.bio || "",
+          whatsappNumber: userProfile.whatsapp_number || ""
         });
         setAuthView("editProfile");
       }}
@@ -1959,7 +1959,7 @@ if (!isSellerAccount) {
                 setShowMyListingsModal(false);
                 setNewListing((prev) => ({
                   ...prev,
-                  whatsapp_number: userSeller?.whatsapp_number || ""
+                  whatsapp_number: userProfile?.whatsapp_number || ""
                 }));
                 setShowAddModal(true);
               }}
@@ -2339,9 +2339,9 @@ if (!isSellerAccount) {
   </motion.div>
 )}
        
-{showSettingsModal && userSeller && settingsView === "menu" && (
+{showSettingsModal && userProfile && settingsView === "menu" && (
   <SettingsModal
-    userSeller={userSeller}
+    userProfile={userProfile}
     firebaseUser={firebaseUser}
     isSellerAccount={isSellerAccount}
     onClose={closeSettings}
