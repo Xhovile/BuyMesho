@@ -883,6 +883,36 @@ const handleToggleListingStatus = async (listing: Listing) => {
       setLoading(false);
     }
   };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!authForm.email) {
+    showFeedback(
+      "info",
+      "Email required",
+      "Please enter your email address first."
+    );
+    return;
+  }
+
+  try {
+    await sendPasswordResetEmail(auth, authForm.email);
+    showFeedback(
+      "success",
+      "Reset email sent",
+      "Check your email inbox for the password reset link."
+    );
+    setAuthView("login");
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Reset failed",
+      err?.message || "We could not send the reset email."
+    );
+  }
+};
+  
   const handleLogout = async () => {
     try {
       await signOut(auth);
