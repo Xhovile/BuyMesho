@@ -384,6 +384,12 @@ const openFooterView = (view: "privacy" | "terms" | "safety" | "report") => {
   setSettingsView(view);
 };
 
+const promptSellerUpgrade = () => {
+  alert(SELLER_REQUIRED_MESSAGE);
+  setShowProfileModal(true);
+  setAuthView("profile");
+};
+
 const openEditProfileFromSettings = () => {
   if (!userProfile) return;
 
