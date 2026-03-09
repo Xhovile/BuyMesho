@@ -1992,33 +1992,40 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       </button>
 
                       {!isSellerAccount && (
-                        <button
-                          onClick={() => {
-                            setSellerUpgradeForm({
-                              businessName: userProfile?.business_name || "",
-                              university: userProfile?.university || UNIVERSITIES[0],
-                              logoUrl: userProfile?.business_logo || "",
-                              bio: userProfile?.bio || "",
-                              whatsappNumber: userProfile?.whatsapp_number || "",
-                            });
-                            setAuthView("becomeSeller");
-                          }}
-                          className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
-                        >
-                          {!isSellerAccount && (
-                           <button
-                             onClick={() => {
-                               setEditAccountForm({
-                                 university: userProfile?.university || UNIVERSITIES[0],
-                                 avatarUrl: userProfile?.avatar_url || "",
-                               });
-                               setAuthView("editAccount");
-                              }}
-                               className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
-                             >
-                               Edit Account
-                            </button>
-                          )}
+  <button
+    onClick={() => {
+      setEditAccountForm({
+        university: userProfile?.university || UNIVERSITIES[0],
+        avatarUrl: userProfile?.avatar_url || "",
+      });
+      setAuthView("editAccount");
+    }}
+    className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+  >
+    Edit Account
+  </button>
+)}
+
+{!isSellerAccount && (
+  <button
+    onClick={() => {
+      setSellerUpgradeForm({
+        businessName: userProfile?.business_name || "",
+        university: userProfile?.university || UNIVERSITIES[0],
+        logoUrl: userProfile?.business_logo || "",
+        bio: userProfile?.bio || "",
+        whatsappNumber: userProfile?.whatsapp_number || "",
+      });
+      setAuthView("becomeSeller");
+    }}
+    className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
+  >
+    Become a Seller
+  </button>
+)}
+
+</form>
+)}
 
 {isFirebaseConfigured && !firestoreError && authView === 'editAccount' && userProfile && (
   <form onSubmit={handleSaveAccount} className="p-8 space-y-4">
@@ -2079,12 +2086,8 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       Back to Profile
     </button>
   </form>
-)} 
-
-                          Become a Seller
-                        </button>
-                      )}
-
+)}
+                      {isFirebaseConfigured && !firestoreError && authView === 'profile' && userProfile && (
                       {isSellerAccount && (
                         <button
                           onClick={() => {
