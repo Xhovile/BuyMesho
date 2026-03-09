@@ -783,7 +783,11 @@ const handleToggleListingStatus = async (listing: Listing) => {
     const refreshedUser = auth.currentUser;
     
       if (!refreshedUser?.emailVerified) {
-      alert("Not verified yet. Please click the verification link in your email, then try again.");
+      showFeedback(
+       "info",
+       "Verification still pending",
+       "Please click the verification link in your email, then try again."
+    );
       return;
     }
 
