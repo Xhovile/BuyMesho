@@ -737,7 +737,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
     email: firebaseUser?.email,
     business_name: userProfile?.business_name || "",
     business_logo: userProfile?.business_logo || "",
-    university: userProfile || "",
+    university: userProfile?.university || "",
     bio: userProfile?.bio || "",
     whatsapp_number: userProfile?.whatsapp_number || "",
     is_verified: true,
