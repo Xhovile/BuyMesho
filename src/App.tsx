@@ -82,7 +82,7 @@ export default function App() {
   const [settingsEntrySource, setSettingsEntrySource] = useState<"settings" | "footer">("settings");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile' | 'becomeSeller'>('login');
+  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile' | 'editAccount' | 'becomeSeller'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
@@ -115,6 +115,11 @@ const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
   } catch {
     return [];
   }
+});
+
+  const [editAccountForm, setEditAccountForm] = useState({
+  university: UNIVERSITIES[0] as University,
+  avatarUrl: "",
 });
 
 const hideSellerLocal = (uid: string) => {
