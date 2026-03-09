@@ -1116,17 +1116,17 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       <Header 
         onSearch={setSearch} 
         onAddListing={() => {
-          if (!isSellerAccount) {
-            alert("You need a seller account to post listings.");
-            return;
-          }
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
 
-          setNewListing((prev) => ({
-            ...prev,
-            whatsapp_number: userProfile?.whatsapp_number || ""
-          }));
-          setShowAddModal(true);
-        }}
+  setNewListing((prev) => ({
+    ...prev,
+    whatsapp_number: userProfile?.whatsapp_number || ""
+  }));
+  setShowAddModal(true);
+}}
           onProfileClick={() => setShowProfileModal(true)}
           userProfile={userProfile}
           firebaseUser={firebaseUser}
