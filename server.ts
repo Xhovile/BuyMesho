@@ -345,7 +345,14 @@ const {
   // Convert incoming boolean to 0/1 safely
 const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0;
 const incomingSeller = is_seller === false || is_seller === 0 ? 0 : 1;
+const incomingSeller = is_seller === true || is_seller === 1 ? 1 : 0;
 
+const safeBusinessName = typeof business_name === "string" && business_name.trim() ? business_name.trim() : null;
+const safeBusinessLogo = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
+const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
+const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
+const safeWhatsapp = typeof whatsapp_number === "string" && whatsapp_number.trim() ? whatsapp_number.trim() : null;
+      
 db.prepare(`
   INSERT INTO sellers (uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
