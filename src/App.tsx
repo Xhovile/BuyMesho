@@ -603,18 +603,14 @@ const handleToggleListingStatus = async (listing: Listing) => {
         console.log("Auth: User already authenticated, skipping creation", user.uid);
       }
 
-      const profile: Seller = {
-        uid: user.uid,
-        email: authForm.email,
-        business_name: authForm.businessName,
-        business_logo: authForm.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authForm.businessName)}&background=random`,
-        university: authForm.university,
-        bio: authForm.bio,
-        whatsapp_number: authForm.whatsappNumber,
-        is_verified: false,
-        is_seller: true,
-        join_date: new Date().toISOString()
-      };
+      const profile: UserProfile = {
+         uid: user.uid,
+         email: authForm.email,
+         university: authForm.university,
+         is_verified: false,
+         is_seller: false,
+         join_date: new Date().toISOString(),
+       };
 
       console.log("Auth: Saving profile to Firestore...");
       await setDoc(doc(firestore, "users", user.uid), profile);
