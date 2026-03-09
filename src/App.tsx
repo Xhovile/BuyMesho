@@ -110,7 +110,6 @@ const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
 const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
-const [authDecisionPending, setAuthDecisionPending] = useState(false);
    
   
 // Local-only hides (no backend needed)
