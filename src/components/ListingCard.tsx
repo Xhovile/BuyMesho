@@ -342,7 +342,7 @@ Open this listing: ${shareUrl}`;
                 e.stopPropagation();
                 onToggleSave?.(listing.id);
               }}
-              className="absolute top-4 right-4 z-10 bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-sm hover:bg-white transition"
+              className={`absolute right-4 z-10 bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-sm hover:bg-white transition ${listing.status === "sold" ? "top-16" : "top-4"}`}
               aria-label={isSaved ? "Remove from saved" : "Save item"}
             >
               <Bookmark
