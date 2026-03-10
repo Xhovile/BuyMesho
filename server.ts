@@ -1291,6 +1291,155 @@ app.post("/api/listings/:id/view", (req, res) => {
     res.status(500).json({ error: "Failed to track listing view" });
   }
 });
+
+  app.post("/api/listings/:id/whatsapp-click", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0")
+      .get(id) as { id: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare(`
+      UPDATE listings
+      SET whatsapp_clicks = whatsapp_clicks + 1
+      WHERE id = ?
+    `).run(id);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("WhatsApp click tracking error:", error);
+    res.status(500).json({ error: "Failed to track WhatsApp click" });
+  }
+});
+
+  app.post("/api/users/:uid/profile-view", (req, res) => {
+  const { uid } = req.params;
+  const viewerUid = req.body?.viewer_uid || null;
+
+  try {
+    const seller = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    if (viewerUid && viewerUid === uid) {
+      return res.json({ success: true, skipped: true });
+    }
+
+    db.prepare(`
+      UPDATE sellers
+      SET profile_views = profile_views + 1
+      WHERE uid = ?
+    `).run(uid);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Profile view tracking error:", error);
+    res.status(500).json({ error: "Failed to track profile view" });
+  }
+});
+
+  app.get("/api/seller/dashboard", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+
+  try {
+    const seller = db
+      .prepare(`
+        SELECT uid, business_name, profile_views
+        FROM sellers
+        WHERE uid = ?
+      `)
+      .get(uid) as
+      | { uid: string; business_name: string | null; profile_views: number }
+      | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    const listingStats = db
+      .prepare(`
+        SELECT
+          COUNT(*) as total_listings,
+          SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as active_listings,
+          SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) as sold_listings,
+          COALESCE(SUM(views_count), 0) as total_views,
+          COALESCE(SUM(whatsapp_clicks), 0) as total_whatsapp_clicks
+        FROM listings
+        WHERE seller_uid = ?
+      `)
+      .get(uid) as {
+      total_listings: number;
+      active_listings: number;
+      sold_listings: number;
+      total_views: number;
+      total_whatsapp_clicks: number;
+    };
+
+    const topListing = db
+      .prepare(`
+        SELECT
+          id,
+          name,
+          views_count,
+          whatsapp_clicks,
+          status,
+          created_at
+        FROM listings
+        WHERE seller_uid = ?
+        ORDER BY views_count DESC, whatsapp_clicks DESC, created_at DESC
+        LIMIT 1
+      `)
+      .get(uid);
+
+    const repeatSellerActivity = listingStats.total_listings > 1;
+
+    const byCampus = db
+      .prepare(`
+        SELECT
+          university,
+          COUNT(*) as count
+        FROM listings
+        WHERE seller_uid = ?
+        GROUP BY university
+        ORDER BY count DESC
+      `)
+      .all(uid);
+
+    res.json({
+      seller: {
+        uid: seller.uid,
+        business_name: seller.business_name,
+        profile_views: seller.profile_views ?? 0,
+      },
+      stats: {
+        total_listings: listingStats.total_listings ?? 0,
+        active_listings: listingStats.active_listings ?? 0,
+        sold_listings: listingStats.sold_listings ?? 0,
+        total_views: listingStats.total_views ?? 0,
+        total_whatsapp_clicks: listingStats.total_whatsapp_clicks ?? 0,
+        repeat_seller_activity: repeatSellerActivity,
+      },
+      byCampus,
+      top_listing: topListing || null,
+    });
+  } catch (error) {
+    console.error("Seller dashboard error:", error);
+    res.status(500).json({ error: "Failed to load seller dashboard" });
+  }
+});
   
   // API 404 Handler
   app.all("/api/*", (req, res) => {
