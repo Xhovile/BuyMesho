@@ -452,6 +452,16 @@ const fetchSellerDashboard = async () => {
   }
 };
 
+  
+  useEffect(() => {
+  if (firebaseUser && userProfile?.is_seller) {
+    void fetchSellerDashboard();
+  } else {
+    setSellerDashboard(null);
+  }
+}, [firebaseUser, userProfile?.is_seller]);
+
+
 const fetchMyListings = async () => {
   if (!firebaseUser) return;
 
