@@ -358,12 +358,6 @@ Open this listing: ${shareUrl}`;
             </button>
           )}
 
-          <div className="absolute top-4 left-4 flex flex-col gap-2">
-            <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
-              <MapPin className="w-3 h-3 text-primary" /> {listing.university}
-            </span>
-          </div>
-
           <div className="absolute bottom-4 left-4">
             <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
               MK {listing.price.toLocaleString()}
