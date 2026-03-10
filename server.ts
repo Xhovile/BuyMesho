@@ -1272,7 +1272,7 @@ app.post("/api/listings/:id/view", (req, res) => {
 
   try {
     const listing = db
-      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0")
+      .prepare("SELECT id FROM listings WHERE id = ?")
       .get(id) as { id: number } | undefined;
 
     if (!listing) {
@@ -1301,7 +1301,7 @@ app.post("/api/listings/:id/view", (req, res) => {
 
   try {
     const listing = db
-      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0")
+      .prepare("SELECT id FROM listings WHERE id = ?")
       .get(id) as { id: number } | undefined;
 
     if (!listing) {
