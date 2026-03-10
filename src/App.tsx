@@ -1393,6 +1393,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     });
 
     fetchListings();
+    void fetchSellerDashboard();
   } catch (err: any) {
     showFeedback(
      "error",
