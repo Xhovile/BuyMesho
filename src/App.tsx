@@ -21,7 +21,7 @@ import {
   Bookmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Listing, UserProfile, University, Category } from './types';
+import { Listing, UserProfile, University, Category, SellerDashboardData } from './types';
 import HeroSection from "./sections/HeroSection";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES, CATEGORIES } from './constants';
@@ -111,6 +111,8 @@ const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
 const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
+const [sellerDashboard, setSellerDashboard] = useState<SellerDashboardData | null>(null);
+const [sellerDashboardLoading, setSellerDashboardLoading] = useState(false);
    
   
 // Local-only hides (no backend needed)
