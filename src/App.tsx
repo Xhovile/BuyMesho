@@ -265,6 +265,14 @@ useEffect(() => {
   }
 }, [listings]);
 
+  useEffect(() => {
+  if (firebaseUser && userProfile?.is_seller) {
+    void fetchSellerDashboard();
+  } else {
+    setSellerDashboard(null);
+  }
+}, [firebaseUser, userProfile?.is_seller]);
+
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
@@ -417,6 +425,24 @@ const [editProfileForm, setEditProfileForm] = useState({
     });
   } catch (e) {
     console.error("Failed to track listing view", e);
+  }
+};
+
+const fetchSellerDashboard = async () => {
+  if (!firebaseUser || !userProfile?.is_seller) {
+    setSellerDashboard(null);
+    return;
+  }
+
+  setSellerDashboardLoading(true);
+  try {
+    const data = await apiFetch("/api/seller/dashboard");
+    setSellerDashboard(data);
+  } catch (err) {
+    console.error("Failed to load seller dashboard", err);
+    setSellerDashboard(null);
+  } finally {
+    setSellerDashboardLoading(false);
   }
 };
 
