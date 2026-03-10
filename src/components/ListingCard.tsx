@@ -180,8 +180,8 @@ Open this listing: ${shareUrl}`;
           </button>
 
    <div className="flex items-center gap-3">
-  <span className="max-w-[90px] truncate text-[11px] font-semibold text-zinc-500">
-    {listing.university}
+  <span className="max-w-[95px] truncate bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
+     {listing.university}
   </span>
 
   <div className="relative" data-listing-menu={listing.id}>
