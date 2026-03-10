@@ -629,6 +629,18 @@ const toggleSavedListing = (listingId: number) => {
     localStorage.setItem(savedStorageKey, JSON.stringify(next));
     return next;
   });
+  const trackSellerProfileView = async (sellerUid: string) => {
+  try {
+    await fetch(`/api/users/${sellerUid}/profile-view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        viewer_uid: firebaseUser?.uid || null,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to track seller profile view", e);
+  }
 };
 
 const requireLoginForContact = () => {
