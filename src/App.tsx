@@ -265,14 +265,6 @@ useEffect(() => {
   }
 }, [listings]);
 
-  useEffect(() => {
-  if (firebaseUser && userProfile?.is_seller) {
-    void fetchSellerDashboard();
-  } else {
-    setSellerDashboard(null);
-  }
-}, [firebaseUser, userProfile?.is_seller]);
-
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
