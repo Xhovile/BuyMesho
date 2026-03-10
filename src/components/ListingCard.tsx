@@ -280,6 +280,7 @@ Open this listing: ${shareUrl}`;
     )}
   </div>
 </div>
+</div>
                     
         <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
           {listing.video_url ? (
