@@ -589,6 +589,7 @@ const openPublicProfile = async (uid: string) => {
   setPublicProfileOpen(true);
   setPublicProfileLoading(true);
   setRatingSummary(null);
+  void trackSellerProfileView(uid);
 
   try {
     const profile = await apiFetch(`/api/users/${uid}`);
