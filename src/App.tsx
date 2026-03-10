@@ -1654,26 +1654,22 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Category</label>
-                      <select 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.category}
-                        onChange={e => setNewListing({...newListing, category: e.target.value as Category})}
-                      >
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-                      <select 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.university}
-                        onChange={e => setNewListing({...newListing, university: e.target.value as University})}
-                      >
-                        {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
+                  <FormDropdown
+                    label="Category"
+                    value={newListing.category}
+                    options={CATEGORIES}
+                    onChange={(value) =>
+                      setNewListing({ ...newListing, category: value as Category })
+                    }
+                 />
+                    <FormDropdown
+                      label="University"
+                      value={newListing.university}
+                      options={UNIVERSITIES}
+                      onChange={(value) =>
+                        setNewListing({ ...newListing, university: value as University })
+                      }
+                   />
                   </div>
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Description</label>
