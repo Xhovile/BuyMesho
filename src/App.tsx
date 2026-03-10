@@ -1970,16 +1970,17 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                 )}
     {isFirebaseConfigured && !firestoreError && authView === 'editAccount' && userProfile && (
   <form onSubmit={handleSaveAccount} className="p-8 space-y-4">
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-      <select
-        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-        value={editAccountForm.university}
-        onChange={e => setEditAccountForm({ ...editAccountForm, university: e.target.value as University })}
-      >
-        {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-      </select>
-    </div>
+    <FormDropdown
+      label="University"
+      value={editAccountForm.university}
+      options={UNIVERSITIES}
+      onChange={(value) =>
+        setEditAccountForm({
+         ...editAccountForm,
+         university: value as University,
+       })
+      }
+    />
 
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Profile Picture</label>
@@ -2029,16 +2030,17 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       />
     </div>
 
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-      <select
-        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-        value={editProfileForm.university}
-        onChange={e => setEditProfileForm({ ...editProfileForm, university: e.target.value as University })}
-      >
-        {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-      </select>
-    </div>
+    <FormDropdown
+      label="University"
+      value={editProfileForm.university}
+      options={UNIVERSITIES}
+      onChange={(value) =>
+        setEditProfileForm({
+          ...editProfileForm,
+          university: value as University,
+        })
+      }
+    />
 
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
