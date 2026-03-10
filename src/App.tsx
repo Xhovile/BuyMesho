@@ -1942,74 +1942,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                     )}
                   </form>
                 )}
-      {isSellerAccount && (
-  <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-3">
-    <p className="text-xs font-bold text-zinc-400 uppercase">Seller Dashboard</p>
-
-    {sellerDashboardLoading ? (
-      <p className="text-sm text-zinc-500">Loading dashboard...</p>
-    ) : sellerDashboard ? (
-      <>
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">Active</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.active_listings}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">Sold</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.sold_listings}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">Views</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.total_views}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">WhatsApp Clicks</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.total_whatsapp_clicks}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">Profile Views</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.seller.profile_views}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">Repeat Seller</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.repeat_seller_activity ? "Yes" : "No"}
-            </p>
-          </div>
-        </div>
-
-        {sellerDashboard.top_listing && (
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase mb-1">Top Listing</p>
-            <p className="font-bold text-zinc-900">{sellerDashboard.top_listing.name}</p>
-            <p className="text-sm text-zinc-500 mt-1">
-              {sellerDashboard.top_listing.views_count} views • {sellerDashboard.top_listing.whatsapp_clicks} WhatsApp clicks
-            </p>
-          </div>
-        )}
-      </>
-    ) : (
-      <p className="text-sm text-zinc-500">No dashboard data yet.</p>
-    )}
-  </div>
-)}
-
+      
  {isFirebaseConfigured && !firestoreError && authView === 'signup' && (
   <form onSubmit={handleSignUp} className="p-8 space-y-4">
  <FormDropdown
