@@ -1263,6 +1263,35 @@ app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   }
 });
 
+app.post("/api/listings/:id/view", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0")
+      .get(id) as { id: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare(`
+      UPDATE listings
+      SET views_count = views_count + 1
+      WHERE id = ?
+    `).run(id);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Listing view tracking error:", error);
+    res.status(500).json({ error: "Failed to track listing view" });
+  }
+});
+  
   // API 404 Handler
   app.all("/api/*", (req, res) => {
     res.status(404).json({ error: "API route not found", path: req.path });
