@@ -657,6 +657,7 @@ const openPublicProfile = async (uid: string) => {
   } finally {
     setPublicProfileLoading(false);
   }
+};
 
 const toggleSavedListing = (listingId: number) => {
   if (!firebaseUser) {
