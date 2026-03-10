@@ -191,91 +191,108 @@ Open this listing: ${shareUrl}`;
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
-                {isOwner ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onEdit?.(listing);
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onToggleStatus?.(listing);
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onDelete?.(listing.id);
-                      }}
-                      className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
-                    >
-                      Delete
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMenuOpen(false);
-                        onToggleSave?.(listing.id);
-                      }}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      {isSaved ? "Remove from Saved" : "Save Item"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleReportFromMenu}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      Report listing
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleCopyWhatsApp}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      Copy WhatsApp number
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                    >
-                      Share listing
-                    </button>
+              <div className="flex items-center gap-3">
+  <span className="text-[11px] font-semibold text-zinc-500">
+    {listing.university}
+  </span>
 
-                    <div className="h-px bg-zinc-100" />
+  <div className="relative" data-listing-menu={listing.id}>
+    <button
+      type="button"
+      onClick={() => setMenuOpen(!menuOpen)}
+      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+      aria-label="Open actions menu"
+      aria-expanded={menuOpen}
+    >
+      <MoreVertical className="w-5 h-5 text-zinc-500" />
+    </button>
 
-                    <button
-                      type="button"
-                      onClick={handleHideSeller}
-                      className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      disabled={!sellerUid}
-                    >
-                      Hide this seller
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+    {menuOpen && (
+      <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
+        {isOwner ? (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onEdit?.(listing);
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onToggleStatus?.(listing);
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete?.(listing.id);
+              }}
+              className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+            >
+              Delete
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onToggleSave?.(listing.id);
+              }}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              {isSaved ? "Remove from Saved" : "Save Item"}
+            </button>
+            <button
+              type="button"
+              onClick={handleReportFromMenu}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Report listing
+            </button>
+            <button
+              type="button"
+              onClick={handleCopyWhatsApp}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Copy WhatsApp number
+            </button>
+            <button
+              type="button"
+              onClick={handleShare}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Share listing
+            </button>
 
+            <div className="h-px bg-zinc-100" />
+
+            <button
+              type="button"
+              onClick={handleHideSeller}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+              disabled={!sellerUid}
+            >
+              Hide this seller
+            </button>
+          </>
+        )}
+      </div>
+    )}
+  </div>
+</div>
+                    
         <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
           {listing.video_url ? (
             <button
