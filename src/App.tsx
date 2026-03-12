@@ -250,6 +250,10 @@ const closeDetails = () => {
   setDetailsListing(null);
   setGalleryIndex(0);
   clearListingParamFromUrl();
+  setDetailsSellerProfile(null);
+  setDetailsRatingSummary(null);
+  setRelatedListings([]);
+  setDetailsLoadingExtra(false);
 };
 
 useEffect(() => {
@@ -841,6 +845,23 @@ const handleToggleListingStatus = async (listing: Listing) => {
       err?.message || "We could not update the listing status."
     );
   }
+};
+
+  const handleDetailWhatsappClick = async (listing: Listing) => {
+  try {
+    await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("Failed to track detail WhatsApp click", e);
+  }
+
+  const message = encodeURIComponent(
+    `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?`
+  );
+
+  window.open(`https://wa.me/${listing.whatsapp_number}?text=${message}`, "_blank", "noopener,noreferrer");
 };
   
   const handleSignUp = async (e: React.FormEvent) => {
