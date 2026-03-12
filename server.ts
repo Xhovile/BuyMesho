@@ -596,7 +596,8 @@ const safeStatus = status === "sold" ? "sold" : "available";
   JSON.stringify(safePhotos),
   safeVideoUrl,
   whatsapp_number,
-  safeStatus
+  safeStatus,
+  safeCondition
 );
 
     res.json({ id: info.lastInsertRowid });
@@ -961,6 +962,7 @@ const safeStatus = status === "sold" ? "sold" : "available";
       safeVideoUrl,
       whatsapp_number,
       safeStatus,
+      safeCondition,
       id
     );
 
