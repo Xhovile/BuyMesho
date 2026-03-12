@@ -242,6 +242,7 @@ const openDetails = (listing: Listing, startIndex = 0) => {
   setDetailsOpen(true);
   syncListingParamInUrl(listing.id);
   void trackListingView(listing.id);
+  void loadDetailsExtras(listing);
 };
 
 const closeDetails = () => {
