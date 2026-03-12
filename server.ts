@@ -92,6 +92,7 @@ db.exec(`
   video_url TEXT,
   whatsapp_number TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'available',
+  condition TEXT NOT NULL DEFAULT 'used',
   views_count INTEGER NOT NULL DEFAULT 0,
   whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
   is_hidden INTEGER NOT NULL DEFAULT 0,
