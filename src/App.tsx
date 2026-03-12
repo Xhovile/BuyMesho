@@ -237,12 +237,16 @@ const unhideSellerLocal = (uid: string) => {
 }, [listings, userProfile, publicProfile]);
   
 const openDetails = (listing: Listing, startIndex = 0) => {
-  setDetailsListing(listing);
+  const optimisticListing = {
+    ...listing,
+    views_count: (listing.views_count ?? 0) + 1,
+  };
+  setDetailsListing(optimisticListing);
   setGalleryIndex(startIndex);
   setDetailsOpen(true);
   syncListingParamInUrl(listing.id);
   void trackListingView(listing.id);
-  void loadDetailsExtras(listing);
+  void loadDetailsExtras(optimisticListing);
 };
 
 const closeDetails = () => {
