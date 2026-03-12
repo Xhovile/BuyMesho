@@ -1716,6 +1716,17 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
                       />
                     </div>
                   </div>
+                  <FormDropdown
+                    label="Condition"
+                    value={newListing.condition}
+                    options={["new", "used", "refurbished"]}
+                    onChange={(value) =>
+                    setNewListing({
+                      ...newListing,
+                      condition: value as "new" | "used" | "refurbished",
+                    })
+                   }
+                 />
                   <div className="grid grid-cols-2 gap-4">
                   <FormDropdown
                     label="Category"
