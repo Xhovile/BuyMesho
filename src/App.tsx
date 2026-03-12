@@ -753,6 +753,7 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     video_url: updated.video_url ?? existing.video_url ?? null,
     whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
     status: updated.status ?? existing.status ?? "available",
+    condition: updated.condition ?? existing.condition ?? "used",
   };
 
   try {
@@ -1394,6 +1395,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       video_url: "",
       whatsapp_number: userProfile?.whatsapp_number || "",
       status: "available",
+      condition: "used",
     });
 
     fetchListings();
