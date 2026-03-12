@@ -566,6 +566,9 @@ if (v.is_verified !== 1) {
   return res.status(403).json({ error: "Account not verified" });
 }
   const { name, price, description, category, university, photos, video_url, whatsapp_number, status, condition } = req.body; 
+  const allowedConditions = ["new", "used", "refurbished"];
+const safeCondition = allowedConditions.includes(condition) ? condition : "used";
+  
     // ✅ Validate photos + video
 const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
 if (safePhotos.length > 5) {
