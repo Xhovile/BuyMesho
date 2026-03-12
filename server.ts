@@ -949,7 +949,7 @@ const safeStatus = status === "sold" ? "sold" : "available";
 
     db.prepare(`
       UPDATE listings
-      SET name = ?, price = ?, description = ?, category = ?, university = ?, photos = ?, video_url = ?, whatsapp_number = ?, status = ?
+      SET name = ?, price = ?, description = ?, category = ?, university = ?, photos = ?, video_url = ?, whatsapp_number = ?, status = ?, condition = ?
       WHERE id = ?
     `).run(
       name,
