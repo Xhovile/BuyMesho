@@ -584,8 +584,8 @@ const safeStatus = status === "sold" ? "sold" : "available";
 
   try {
     const info = db.prepare(`
-      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, video_url, whatsapp_number, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, video_url, whatsapp_number, status, condition)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `).run(
   seller_uid,
   name,
