@@ -3072,7 +3072,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
           )}
         </div>
         
-        {detailsListing.photos?.length > 1 && (
+ {detailsListing.photos?.length > 1 && (
   <div className="flex gap-2 overflow-x-auto pb-1">
     {detailsListing.photos.map((url, idx) => (
       <button
@@ -3090,12 +3090,93 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
    </div>
   )}
         
-        {detailsListing.video_url ? (
-          <div className="rounded-2xl overflow-hidden border bg-black">
-            <video src={detailsListing.video_url} controls className="w-full" />
-          </div>
-        ) : null}
+  {detailsListing.video_url ? (
+    <div className="rounded-2xl overflow-hidden border bg-black">
+      <video src={detailsListing.video_url} controls className="w-full" />
+    </div>
+  ) : null}
 
+<div className="space-y-4">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <p className="text-2xl font-extrabold text-zinc-900">
+        MK {Number(detailsListing.price).toLocaleString()}
+      </p>
+      <p className="text-sm text-zinc-500 mt-1">
+        Listed by {detailsListing.business_name}
+        {detailsSellerProfile?.university ? ` · ${detailsSellerProfile.university}` : ""}
+      </p>
+    </div>
+
+    <span className="px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-bold uppercase">
+      {detailsListing.category}
+    </span>
+  </div>
+
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
+        {detailsListing.condition || "used"}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Posted</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {new Date(detailsListing.created_at).toLocaleDateString()}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Views</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {detailsListing.views_count ?? 0}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Seller Joined</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {detailsSellerProfile?.join_date
+          ? new Date(detailsSellerProfile.join_date).toLocaleDateString()
+          : "—"}
+      </p>
+    </div>
+  </div>
+
+  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+    <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Seller Rating</p>
+
+    {detailsLoadingExtra ? (
+      <p className="text-sm text-zinc-500">Loading seller info...</p>
+    ) : detailsRatingSummary ? (
+      <div className="flex items-center gap-2 text-sm">
+        <span className="font-extrabold text-zinc-900">
+          {detailsRatingSummary.averageRating.toFixed(1)}
+        </span>
+        <span className="text-amber-500 text-base tracking-wide">
+          {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
+          {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
+        </span>
+        <span className="text-zinc-500">
+          ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
+        </span>
+      </div>
+    ) : (
+      <p className="text-sm text-zinc-500">No ratings yet.</p>
+    )}
+  </div>
+
+  <button
+    type="button"
+    onClick={() => handleDetailWhatsappClick(detailsListing)}
+    className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 rounded-2xl font-extrabold transition-colors"
+  >
+    Contact Seller on WhatsApp
+  </button>
+</div>
+        
         <div>
           <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
             Description
