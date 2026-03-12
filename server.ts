@@ -161,6 +161,18 @@ try {
 }
 
 try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+  const hasCondition = cols.some((c) => c.name === "condition");
+
+  if (!hasCondition) {
+    db.exec("ALTER TABLE listings ADD COLUMN condition TEXT NOT NULL DEFAULT 'used'");
+    console.log("Migration: Added listings.condition");
+  }
+} catch (e) {
+  console.warn("Listings condition migration check failed:", e);
+}
+
+try {
   const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
   const hasIsSeller = cols.some((c) => c.name === "is_seller");
   if (!hasIsSeller) {
