@@ -3177,14 +3177,53 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   </button>
 </div>
         
-        <div>
-          <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
-            Description
+<div>
+  <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
+    Description
+  </div>
+  <div className="text-sm text-zinc-700 whitespace-pre-wrap">
+    {detailsListing.description}
+  </div>
+</div>
+
+<div>
+  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+    Related Listings
+  </div>
+
+  {detailsLoadingExtra ? (
+    <p className="text-sm text-zinc-500">Loading related listings...</p>
+  ) : relatedListings.length > 0 ? (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {relatedListings.map((item) => (
+        <button
+          key={item.id}
+          type="button"
+          onClick={() => openDetails(item, 0)}
+          className="text-left border border-zinc-200 rounded-2xl p-3 hover:bg-zinc-50 transition"
+        >
+          <div className="flex gap-3">
+            <img
+              src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/300/300`}
+              alt={item.name}
+              className="w-16 h-16 rounded-xl object-cover border"
+            />
+            <div className="min-w-0">
+              <p className="font-bold text-zinc-900 line-clamp-1">{item.name}</p>
+              <p className="text-sm text-zinc-500 line-clamp-1">{item.business_name}</p>
+              <p className="text-sm font-extrabold text-zinc-900 mt-1">
+                MK {Number(item.price).toLocaleString()}
+              </p>
+            </div>
           </div>
-          <div className="text-sm text-zinc-700 whitespace-pre-wrap">
-            {detailsListing.description}
-          </div>
-        </div>
+        </button>
+      ))}
+    </div>
+  ) : (
+    <p className="text-sm text-zinc-500">No related listings yet.</p>
+  )}
+</div>
+        
       </div>
     </motion.div>
   </motion.div>
