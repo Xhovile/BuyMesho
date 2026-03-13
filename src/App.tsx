@@ -264,16 +264,21 @@ const closeDetails = () => {
 useEffect(() => {
   if (!listings.length) return;
 
-  const listingId = getListingIdFromUrl();
-  if (!listingId) return;
+  const { listing, imageIndex } = getListingParamsFromUrl();
+  if (!listing) return;
 
   const foundListing = listings.find(
-    (item) => String(item.id) === String(listingId)
+    (item) => String(item.id) === String(listing)
   );
 
   if (foundListing) {
+    const safeIndex =
+      Array.isArray(foundListing.photos) && foundListing.photos.length > 0
+        ? Math.max(0, Math.min(imageIndex, foundListing.photos.length - 1))
+        : 0;
+
     setDetailsListing(foundListing);
-    setGalleryIndex(0);
+    setGalleryIndex(safeIndex);
     setDetailsOpen(true);
     void loadDetailsExtras(foundListing);
   }
