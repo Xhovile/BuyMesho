@@ -494,10 +494,10 @@ const loadDetailsExtras = async (listing: Listing) => {
   setDetailsLoadingExtra(true);
 
   try {
-    const [sellerProfile, allListings] = await Promise.all([
-      apiFetch(`/api/users/${listing.seller_uid}`),
-      apiFetch("/api/listings"),
-    ]);
+    const [sellerProfile, listingsResponse] = await Promise.all([
+     apiFetch(`/api/users/${listing.seller_uid}`),
+     apiFetch("/api/listings?page=1&pageSize=50"),
+   ]);
 
     setDetailsSellerProfile(sellerProfile || null);
 
