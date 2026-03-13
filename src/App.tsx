@@ -241,10 +241,11 @@ const openDetails = (listing: Listing, startIndex = 0) => {
     ...listing,
     views_count: (listing.views_count ?? 0) + 1,
   };
+
   setDetailsListing(optimisticListing);
   setGalleryIndex(startIndex);
   setDetailsOpen(true);
-  syncListingParamInUrl(listing.id);
+  syncListingParamsInUrl(listing.id, startIndex);
   void trackListingView(listing.id);
   void loadDetailsExtras(optimisticListing);
 };
