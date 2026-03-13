@@ -118,6 +118,13 @@ const [detailsSellerProfile, setDetailsSellerProfile] = useState<any | null>(nul
 const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSummary | null>(null);
 const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
 const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
+const [selectedCondition, setSelectedCondition] = useState("");
+const [minPrice, setMinPrice] = useState("");
+const [maxPrice, setMaxPrice] = useState("");
+const [currentPage, setCurrentPage] = useState(1);
+const [pageSize] = useState(12);
+const [totalResults, setTotalResults] = useState(0);
+const [totalPages, setTotalPages] = useState(1);
   
 // Local-only hides (no backend needed)
 
@@ -405,10 +412,24 @@ const [editProfileForm, setEditProfileForm] = useState({
       setRatingSubmitting(false);
     }
   }, [publicProfileOpen]);
+
+  useEffect(() => {
+  setCurrentPage(1);
+}, [selectedUniv, selectedCat, selectedCondition, minPrice, maxPrice, search, sortBy]);
   
   useEffect(() => {
-    fetchListings();
-  }, [selectedUniv, selectedCat, search, sortBy]);
+  fetchListings();
+}, [
+  selectedUniv,
+  selectedCat,
+  selectedCondition,
+  minPrice,
+  maxPrice,
+  search,
+  sortBy,
+  currentPage,
+  pageSize,
+]);
 
   const fetchListings = async () => {
     setLoading(true);
