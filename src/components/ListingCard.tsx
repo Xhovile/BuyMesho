@@ -113,7 +113,7 @@ export default function ListingCard({
   };
 
   const handleShare = async () => {
-    const shareUrl = buildListingShareUrl(listing.id);
+    const shareUrl = buildListingShareUrl(listing.id, 0);
     const shareText = `BuyMesho Listing
 ${listing.name}
 Price: MK ${Number(listing.price).toLocaleString()}
