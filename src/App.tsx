@@ -26,8 +26,8 @@ import HeroSection from "./sections/HeroSection";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES, CATEGORIES } from './constants';
 import {
-  getListingIdFromUrl,
-  syncListingParamInUrl,
+  getListingParamsFromUrl,
+  syncListingParamsInUrl,
   clearListingParamFromUrl
 } from "./lib/listingUrl";
 import MarketSection from "./sections/MarketSection";
