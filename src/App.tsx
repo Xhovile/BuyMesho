@@ -3100,7 +3100,12 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       <button
         key={idx}
         type="button"
-        onClick={() => setGalleryIndex(idx)}
+        onClick={() => {
+          setGalleryIndex(idx);
+          if (detailsListing) {
+            syncListingParamsInUrl(detailsListing.id, idx);
+          }
+        }}
         className={`w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0 ${
           idx === galleryIndex ? "border-zinc-900" : "border-zinc-200"
         }`}
