@@ -763,7 +763,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
         SELECT l.*, s.business_name, s.business_logo, s.is_verified
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
-        WHERE l.seller_uid = ?
+        WHERE l.seller_uid = ? AND l.is_hidden = 0
         ORDER BY l.created_at DESC
       `)
       .all(uid);
