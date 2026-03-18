@@ -1348,7 +1348,10 @@ for (const l of listings) {
       l.name AS listing_name,
       l.category AS listing_category,
       l.university AS listing_university,
-      s.business_name AS seller_business_name
+      l.is_hidden AS listing_is_hidden,
+      l.seller_uid AS seller_uid,
+      s.business_name AS seller_business_name,
+      s.is_suspended AS seller_is_suspended
     FROM reports r
     LEFT JOIN listings l ON r.listing_id = l.id
     LEFT JOIN sellers s ON l.seller_uid = s.uid
@@ -1375,6 +1378,35 @@ for (const l of listings) {
   } catch (error) {
     console.error("Admin reports fetch error:", error);
     res.status(500).json({ error: "Failed to load reports" });
+  }
+});
+
+app.get("/api/admin/actions", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  try {
+    const rows = db
+      .prepare(`
+        SELECT id, admin_uid, admin_email, action_type, target_type, target_id, details, created_at
+        FROM admin_actions
+        ORDER BY created_at DESC
+        LIMIT 100
+      `)
+      .all();
+
+    res.json(
+      rows.map((row: any) => ({
+        ...row,
+        details: row.details ? JSON.parse(row.details) : null,
+      }))
+    );
+  } catch (error) {
+    console.error("Admin actions fetch error:", error);
+    res.status(500).json({ error: "Failed to load admin actions" });
   }
 });
 
