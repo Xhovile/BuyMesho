@@ -303,6 +303,44 @@ function isAdminEmail(email?: string | null) {
   return ADMIN_EMAILS.includes(String(email).toLowerCase());
 }
 
+function logAdminAction({
+  admin_uid,
+  admin_email,
+  action_type,
+  target_type,
+  target_id,
+  details,
+}: {
+  admin_uid?: string | null;
+  admin_email?: string | null;
+  action_type: string;
+  target_type: string;
+  target_id?: string | null;
+  details?: any;
+}) {
+  try {
+    db.prepare(`
+      INSERT INTO admin_actions (
+        admin_uid,
+        admin_email,
+        action_type,
+        target_type,
+        target_id,
+        details
+      ) VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      admin_uid ?? null,
+      admin_email ?? null,
+      action_type,
+      target_type,
+      target_id ?? null,
+      details ? JSON.stringify(details) : null
+    );
+  } catch (e) {
+    console.warn("Failed to log admin action:", e);
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
