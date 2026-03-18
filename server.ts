@@ -75,6 +75,7 @@ db.exec(`
   whatsapp_number TEXT,
   is_verified INTEGER DEFAULT 0,
   is_seller INTEGER NOT NULL DEFAULT 0,
+  is_suspended INTEGER NOT NULL DEFAULT 0,
   profile_views INTEGER NOT NULL DEFAULT 0,
   join_date DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -123,6 +124,17 @@ db.exec(`
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (seller_uid, rater_uid),
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
+);
+
+CREATE TABLE IF NOT EXISTS admin_actions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  admin_uid TEXT,
+  admin_email TEXT,
+  action_type TEXT NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id TEXT,
+  details TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `); 
 
@@ -217,6 +229,18 @@ try {
   }
 } catch (e) {
   console.warn("Sellers analytics migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasIsSuspended = cols.some((c) => c.name === "is_suspended");
+
+  if (!hasIsSuspended) {
+    db.exec("ALTER TABLE sellers ADD COLUMN is_suspended INTEGER NOT NULL DEFAULT 0");
+    console.log("Migration: Added sellers.is_suspended");
+  }
+} catch (e) {
+  console.warn("Sellers suspension migration check failed:", e);
 }
 
 try {
