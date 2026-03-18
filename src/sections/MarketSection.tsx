@@ -116,8 +116,8 @@ export default function MarketSection({
         </h3>
 
         <div className="text-xs font-bold text-zinc-400">
-          {totalListingsCount > 0
-            ? `Showing ${startItem}-${endItem} of ${totalListingsCount} items`
+          {visibleListings.length > 0
+            ? `Showing ${visibleListings.length} visible item${visibleListings.length === 1 ? "" : "s"}`
             : "Showing 0 items"}
         </div>
       </div>

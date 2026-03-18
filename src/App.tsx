@@ -820,6 +820,12 @@ const savedListings = React.useMemo(() => {
       !hiddenSellerUids.includes(listing.seller_uid)
   );
 }, [listings, savedListingIds, hiddenListingIds, hiddenSellerUids]);
+
+const visiblePublicProfileListings = publicProfileListings.filter(
+  (l) =>
+    !hiddenSellerUids.includes(l.seller_uid) &&
+    !hiddenListingIds.includes(l.id)
+);
   
   const performDeleteListing = async (listingId: number) => {
   try {
@@ -3090,19 +3096,13 @@ setCurrentPage={setCurrentPage}
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-lg font-bold">Listings</h4>
               <span className="text-xs text-zinc-400 font-bold">
-                {publicProfileListings.length} item(s)
+                {visiblePublicProfileListings.length} item(s)
               </span>
             </div>
 
-            {publicProfileListings.length ? (
+            {visiblePublicProfileListings.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {publicProfileListings
-                  .filter(
-                    (l) =>
-                      !hiddenSellerUids.includes(l.seller_uid) &&
-                      !hiddenListingIds.includes(l.id)
-                  )
-                  .map((l) => (
+                {visiblePublicProfileListings.map((l) => (
                   <ListingCard
                     key={l.id}
                     listing={l}
