@@ -1492,6 +1492,78 @@ app.post("/api/admin/listings/:id/unhide", requireAuth, (req, res) => {
   }
 });
 
+app.post("/api/admin/sellers/:uid/suspend", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+  const { uid } = req.params;
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  try {
+    const seller = db
+      .prepare("SELECT uid, business_name, is_suspended FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string; business_name: string | null; is_suspended: number } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    db.prepare("UPDATE sellers SET is_suspended = 1 WHERE uid = ?").run(uid);
+
+    logAdminAction({
+      admin_uid: requesterUid,
+      admin_email: requesterEmail,
+      action_type: "suspend_seller",
+      target_type: "seller",
+      target_id: uid,
+      details: { business_name: seller.business_name },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Suspend seller error:", error);
+    res.status(500).json({ error: "Failed to suspend seller" });
+  }
+});
+
+app.post("/api/admin/sellers/:uid/unsuspend", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+  const { uid } = req.params;
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  try {
+    const seller = db
+      .prepare("SELECT uid, business_name, is_suspended FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string; business_name: string | null; is_suspended: number } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    db.prepare("UPDATE sellers SET is_suspended = 0 WHERE uid = ?").run(uid);
+
+    logAdminAction({
+      admin_uid: requesterUid,
+      admin_email: requesterEmail,
+      action_type: "unsuspend_seller",
+      target_type: "seller",
+      target_id: uid,
+      details: { business_name: seller.business_name },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Unsuspend seller error:", error);
+    res.status(500).json({ error: "Failed to unsuspend seller" });
+  }
+});
+
 app.post("/api/listings/:id/view", (req, res) => {
   const id = Number(req.params.id);
 
