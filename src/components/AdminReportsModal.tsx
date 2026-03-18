@@ -156,6 +156,16 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
     return "bg-red-50 text-red-700";
   };
 
+  const listingVisibilityBadge = (hidden?: number | null) =>
+    hidden === 1
+      ? "bg-red-50 text-red-700 border border-red-200"
+      : "bg-emerald-50 text-emerald-700 border border-emerald-200";
+
+  const sellerSuspensionBadge = (suspended?: number | null) =>
+    suspended === 1
+      ? "bg-red-50 text-red-700 border border-red-200"
+      : "bg-emerald-50 text-emerald-700 border border-emerald-200";
+
   return (
     <div className="fixed inset-0 z-[96] flex items-center justify-center p-4">
       <motion.div
@@ -283,6 +293,27 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                         >
                           {report.status}
                         </span>
+                        {report.type === "listing" && (
+                          <>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${listingVisibilityBadge(
+                                report.listing_is_hidden
+                              )}`}
+                            >
+                              {report.listing_is_hidden === 1 ? "Hidden" : "Visible"}
+                            </span>
+
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${sellerSuspensionBadge(
+                                report.seller_is_suspended
+                              )}`}
+                            >
+                              {report.seller_is_suspended === 1
+                                ? "Seller Suspended"
+                                : "Seller Active"}
+                            </span>
+                          </>
+                        )}
                         <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
                       </div>
 
@@ -465,17 +496,21 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                           )}
                         </>
                       )}
-                      {report.reporter_uid && (
-                     <button
-                       onClick={() => {
-                        onClose();
-                        onOpenUser(report.reporter_uid!);
-                      }}
-                       className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-bold"
-                     >
-                       View User
-                    </button>
-                    )}
+                      {(report.seller_uid || report.reporter_uid) && (
+                        <button
+                          onClick={() => {
+                            onClose();
+                            onOpenUser(
+                              (report.type === "listing"
+                                ? report.seller_uid
+                                : report.reporter_uid)!
+                            );
+                          }}
+                          className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-bold"
+                        >
+                          View User
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
