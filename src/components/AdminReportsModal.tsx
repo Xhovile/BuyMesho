@@ -35,12 +35,17 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
   const [enforcingKey, setEnforcingKey] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [reportView, setReportView] = useState<"active" | "resolved">("active");
 
   const fetchReports = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (statusFilter) params.append("status", statusFilter);
+      if (reportView === "resolved") {
+        params.append("status", "resolved");
+      } else if (statusFilter) {
+        params.append("status", statusFilter);
+      }
       if (typeFilter) params.append("type", typeFilter);
 
       const query = params.toString();
@@ -55,7 +60,15 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
 
   useEffect(() => {
     fetchReports();
-  }, [statusFilter, typeFilter]);
+  }, [statusFilter, typeFilter, reportView]);
+
+  useEffect(() => {
+    if (reportView === "resolved") {
+      setStatusFilter("resolved");
+    } else if (statusFilter === "resolved") {
+      setStatusFilter("");
+    }
+  }, [reportView]);
 
   const updateStatus = async (
     id: number,
@@ -201,40 +214,101 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
         <div className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-5">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Total</p>
-                <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.total}</p>
-              </div>
+              {reportView === "active" ? (
+                <>
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Active Total</p>
+                    <p className="text-2xl font-extrabold text-zinc-900 mt-1">
+                      {counts.open + counts.reviewed}
+                    </p>
+                  </div>
 
-              <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
-                <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
-              </div>
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
+                    <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
+                  </div>
 
-              <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
-                <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
-              </div>
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
+                    <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
+                  </div>
 
-              <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
-                <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
-              </div>
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
+                    <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Resolved Total</p>
+                    <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.resolved}</p>
+                  </div>
+
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Listing Reports</p>
+                    <p className="text-2xl font-extrabold text-red-700 mt-1">
+                      {reports.filter((r) => r.type === "listing").length}
+                    </p>
+                  </div>
+
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Problem Reports</p>
+                    <p className="text-2xl font-extrabold text-zinc-700 mt-1">
+                      {reports.filter((r) => r.type === "problem").length}
+                    </p>
+                  </div>
+
+                  <div className="bg-zinc-50 rounded-2xl border border-zinc-100 p-4">
+                    <p className="text-xs font-bold text-zinc-400 uppercase">Archive</p>
+                    <p className="text-sm font-bold text-zinc-500 mt-2">Resolved only</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="px-4 sm:px-5 pb-3">
+            <div className="inline-flex bg-zinc-100 rounded-2xl p-1 gap-1">
+              <button
+                type="button"
+                onClick={() => setReportView("active")}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+                  reportView === "active"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800"
+                }`}
+              >
+                Active Reports
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setReportView("resolved")}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+                  reportView === "resolved"
+                    ? "bg-white text-zinc-900 shadow-sm"
+                    : "text-zinc-500 hover:text-zinc-800"
+                }`}
+              >
+                Resolved Reports
+              </button>
             </div>
           </div>
 
           <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-y border-zinc-100 px-4 sm:px-5 py-2.5">
             <div className="flex flex-col sm:flex-row gap-3">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-              >
-                <option value="">All statuses</option>
-                <option value="open">Open</option>
-                <option value="reviewed">Reviewed</option>
-                <option value="resolved">Resolved</option>
-              </select>
+              {reportView === "active" && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
+                >
+                  <option value="">All active</option>
+                  <option value="open">Open</option>
+                  <option value="reviewed">Reviewed</option>
+                </select>
+              )}
 
               <select
                 value={typeFilter}
@@ -268,7 +342,11 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                   <ShieldCheck className="w-8 h-8 text-zinc-300" />
                 </div>
                 <h3 className="text-lg font-bold text-zinc-900">No reports found</h3>
-                <p className="text-zinc-500">There are no reports matching the current filters.</p>
+                <p className="text-zinc-500">
+                  {reportView === "resolved"
+                    ? "There are no resolved reports matching the current filters."
+                    : "There are no active reports matching the current filters."}
+                </p>
               </div>
             ) : (
               reports.map((report) => (
