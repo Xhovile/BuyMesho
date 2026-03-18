@@ -137,6 +137,17 @@ const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
     return [];
   }
 });
+const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => {
+  try {
+    const raw = localStorage.getItem("hiddenListingIds");
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed)
+      ? parsed.filter((x) => Number.isInteger(x))
+      : [];
+  } catch {
+    return [];
+  }
+});
 const [confirmState, setConfirmState] = useState<{
   open: boolean;
   title: string;
@@ -220,6 +231,25 @@ const unhideSellerLocal = (uid: string) => {
   setHiddenSellerUids((prev) => {
     const next = prev.filter((x) => x !== uid);
     localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
+    return next;
+  });
+};
+
+const hideListingLocal = (listingId: number) => {
+  if (!Number.isInteger(listingId)) return;
+
+  setHiddenListingIds((prev) => {
+    if (prev.includes(listingId)) return prev;
+    const next = [...prev, listingId];
+    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
+    return next;
+  });
+};
+
+const unhideListingLocal = (listingId: number) => {
+  setHiddenListingIds((prev) => {
+    const next = prev.filter((id) => id !== listingId);
+    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
     return next;
   });
 };
@@ -783,8 +813,13 @@ const requireLoginForContact = () => {
 };
 
 const savedListings = React.useMemo(() => {
-  return listings.filter((listing) => savedListingIds.includes(listing.id));
-}, [listings, savedListingIds]);
+  return listings.filter(
+    (listing) =>
+      savedListingIds.includes(listing.id) &&
+      !hiddenListingIds.includes(listing.id) &&
+      !hiddenSellerUids.includes(listing.seller_uid)
+  );
+}, [listings, savedListingIds, hiddenListingIds, hiddenSellerUids]);
   
   const performDeleteListing = async (listingId: number) => {
   try {
@@ -1645,6 +1680,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   loading={loading}
   listings={listings}
   hiddenSellerUids={hiddenSellerUids}
+        hiddenListingIds={hiddenListingIds}
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
@@ -1660,6 +1696,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
   onEdit={handleEditListing}
   onOpenDetails={openDetails}
   onHideSeller={hideSellerLocal}
+  onHideListing={hideListingLocal}
   onToggleStatus={handleToggleListingStatus}
   onToggleSave={toggleSavedListing}
   requireLoginForContact={requireLoginForContact}
@@ -2618,6 +2655,29 @@ setCurrentPage={setCurrentPage}
                           <p className="text-sm text-zinc-500">No hidden sellers.</p>
                         )}
                       </div>
+
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Hidden Listings</p>
+                        {hiddenListingIds.length ? (
+                          <div className="space-y-2">
+                            {hiddenListingIds.map((id) => {
+                              const listing = listings.find((l) => l.id === id);
+
+                              return (
+                                <button
+                                  key={id}
+                                  onClick={() => unhideListingLocal(id)}
+                                  className="w-full text-left px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium hover:bg-zinc-100"
+                                >
+                                  {listing ? `Unhide ${listing.name}` : `Unhide listing #${id}`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-zinc-500">No hidden listings.</p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex flex-col gap-3">
@@ -2860,6 +2920,7 @@ setCurrentPage={setCurrentPage}
                 onOpenProfile={openPublicProfile}
                 onOpenDetails={openDetails}
                 onHideSeller={hideSellerLocal}
+                onHideListing={hideListingLocal}
                 onToggleStatus={handleToggleListingStatus}
                 isSaved={savedListingIds.includes(listing.id)}
                 onToggleSave={toggleSavedListing}
@@ -3038,7 +3099,8 @@ setCurrentPage={setCurrentPage}
                 {publicProfileListings
                   .filter(
                     (l) =>
-                      !hiddenSellerUids.includes(l.seller_uid)
+                      !hiddenSellerUids.includes(l.seller_uid) &&
+                      !hiddenListingIds.includes(l.id)
                   )
                   .map((l) => (
                   <ListingCard
@@ -3051,6 +3113,7 @@ setCurrentPage={setCurrentPage}
                     onOpenProfile={openPublicProfile}
                     onOpenDetails={openDetails}
                     onHideSeller={hideSellerLocal}
+                    onHideListing={hideListingLocal}
                    onToggleStatus={handleToggleListingStatus}
                    isSaved={savedListingIds.includes(l.id)}
                    onToggleSave={toggleSavedListing}

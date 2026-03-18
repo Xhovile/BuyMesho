@@ -7,6 +7,7 @@ type MarketSectionProps = {
   loading: boolean;
   listings: Listing[];
   hiddenSellerUids: string[];
+  hiddenListingIds: number[];
   selectedUniv: string;
   setSelectedUniv: (v: string) => void;
   selectedCat: string;
@@ -32,6 +33,7 @@ type MarketSectionProps = {
   onEdit: (listing: Listing) => void;
   onOpenDetails: (listing: Listing, startIndex?: number) => void;
   onHideSeller: (uid: string) => void;
+  onHideListing: (listingId: number) => void;
   onToggleStatus: (listing: Listing) => void;
   onToggleSave: (listingId: number) => void;
   requireLoginForContact: () => void;
@@ -41,6 +43,7 @@ export default function MarketSection({
   loading,
   listings,
   hiddenSellerUids,
+  hiddenListingIds,
   selectedUniv,
   setSelectedUniv,
   selectedCat,
@@ -66,12 +69,15 @@ export default function MarketSection({
   onEdit,
   onOpenDetails,
   onHideSeller,
+  onHideListing,
   onToggleStatus,
   onToggleSave,
   requireLoginForContact,
 }: MarketSectionProps) {
   const visibleListings = listings.filter(
-    (l) => !hiddenSellerUids.includes(l.seller_uid)
+    (listing) =>
+      !hiddenSellerUids.includes(listing.seller_uid) &&
+      !hiddenListingIds.includes(listing.id)
   );
 
   const startItem =
@@ -135,6 +141,7 @@ export default function MarketSection({
                 onEdit={onEdit}
                 onOpenDetails={onOpenDetails}
                 onHideSeller={onHideSeller}
+                onHideListing={onHideListing}
                 onToggleStatus={onToggleStatus}
                 isSaved={savedListingIds.includes(listing.id)}
                 onToggleSave={onToggleSave}

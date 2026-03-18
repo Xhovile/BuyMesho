@@ -18,6 +18,7 @@ type ListingCardProps = {
   onDelete?: (id: number) => void;
   onEdit?: (listing: Listing) => void;
   onHideSeller?: (uid: string) => void;
+  onHideListing?: (listingId: number) => void;
   onOpenProfile?: (uid: string) => void;
   onOpenDetails?: (listing: Listing, startIndex?: number) => void;
   onToggleStatus?: (listing: Listing) => void;
@@ -35,6 +36,7 @@ export default function ListingCard({
   onEdit,
   onOpenProfile,
   onHideSeller,
+  onHideListing,
   onOpenDetails,
   onToggleStatus,
   isSaved,
@@ -150,6 +152,11 @@ Open this listing: ${shareUrl}`;
     if (!sellerUid) return;
     setMenuOpen(false);
     onHideSeller?.(sellerUid);
+  };
+
+  const handleHideListing = () => {
+    setMenuOpen(false);
+    onHideListing?.(listing.id);
   };
 
   return (
@@ -273,6 +280,14 @@ Open this listing: ${shareUrl}`;
               className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
             >
               Share listing
+            </button>
+
+            <button
+              type="button"
+              onClick={handleHideListing}
+              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+            >
+              Hide this listing
             </button>
 
             <div className="h-px bg-zinc-100" />
