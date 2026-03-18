@@ -30,6 +30,7 @@ export default function EditListingModal({
       description: listing.description || "",
       category: listing.category || "",
       university: listing.university || "",
+      condition: listing.condition || "used",
       whatsapp_number: listing.whatsapp_number || "",
     });
   }, [listing]);
