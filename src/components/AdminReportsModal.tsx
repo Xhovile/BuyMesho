@@ -17,6 +17,9 @@ type ReportRow = {
   listing_name?: string | null;
   listing_category?: string | null;
   listing_university?: string | null;
+  listing_is_hidden?: number | null;
+  seller_uid?: string | null;
+  seller_is_suspended?: number | null;
   seller_business_name?: string | null;
 };
 
@@ -29,6 +32,7 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [enforcingKey, setEnforcingKey] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
 
@@ -71,6 +75,32 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
       alert(err?.message || "Failed to update report status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const toggleListingVisibility = async (listingId: number, shouldHide: boolean) => {
+    const key = `listing-${listingId}-${shouldHide ? "hide" : "unhide"}`;
+    setEnforcingKey(key);
+
+    try {
+      await apiFetch(
+        `/api/admin/listings/${listingId}/${shouldHide ? "hide" : "unhide"}`,
+        {
+          method: "POST",
+        }
+      );
+
+      setReports((prev) =>
+        prev.map((report) =>
+          report.listing_id === listingId
+            ? { ...report, listing_is_hidden: shouldHide ? 1 : 0 }
+            : report
+        )
+      );
+    } catch (err: any) {
+      alert(err?.message || `Failed to ${shouldHide ? "hide" : "unhide"} listing.`);
+    } finally {
+      setEnforcingKey(null);
     }
   };
 
