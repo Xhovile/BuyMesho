@@ -478,35 +478,57 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                     </div>
 
                     <div className="flex flex-col gap-2 min-w-[160px]">
-                      <button
-                        onClick={() => updateStatus(report.id, "open")}
-                        disabled={updatingId === report.id}
-                        className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
-                      >
-                        {updatingId === report.id && report.status !== "open"
-                          ? "Updating..."
-                          : "Mark Open"}
-                      </button>
+                      {reportView === "active" ? (
+                        <>
+                          <button
+                            onClick={() => updateStatus(report.id, "open")}
+                            disabled={updatingId === report.id}
+                            className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
+                          >
+                            {updatingId === report.id && report.status !== "open"
+                              ? "Updating..."
+                              : "Mark Open"}
+                          </button>
 
-                      <button
-                        onClick={() => updateStatus(report.id, "reviewed")}
-                        disabled={updatingId === report.id}
-                        className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
-                      >
-                        {updatingId === report.id && report.status !== "reviewed"
-                          ? "Updating..."
-                          : "Mark Reviewed"}
-                      </button>
+                          <button
+                            onClick={() => updateStatus(report.id, "reviewed")}
+                            disabled={updatingId === report.id}
+                            className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
+                          >
+                            {updatingId === report.id && report.status !== "reviewed"
+                              ? "Updating..."
+                              : "Mark Reviewed"}
+                          </button>
 
-                      <button
-                        onClick={() => updateStatus(report.id, "resolved")}
-                        disabled={updatingId === report.id}
-                        className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
-                      >
-                        {updatingId === report.id && report.status !== "resolved"
-                          ? "Updating..."
-                          : "Mark Resolved"}
-                      </button>
+                          <button
+                            onClick={() => updateStatus(report.id, "resolved")}
+                            disabled={updatingId === report.id}
+                            className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+                          >
+                            {updatingId === report.id && report.status !== "resolved"
+                              ? "Updating..."
+                              : "Mark Resolved"}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => updateStatus(report.id, "open")}
+                            disabled={updatingId === report.id}
+                            className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
+                          >
+                            {updatingId === report.id ? "Updating..." : "Reopen"}
+                          </button>
+
+                          <button
+                            onClick={() => updateStatus(report.id, "reviewed")}
+                            disabled={updatingId === report.id}
+                            className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
+                          >
+                            {updatingId === report.id ? "Updating..." : "Move to Reviewed"}
+                          </button>
+                        </>
+                      )}
                       {report.type === "listing" && report.listing_id && (
                         <>
                           <button
