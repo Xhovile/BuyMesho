@@ -104,6 +104,32 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
     }
   };
 
+  const toggleSellerSuspension = async (sellerUid: string, shouldSuspend: boolean) => {
+    const key = `seller-${sellerUid}-${shouldSuspend ? "suspend" : "unsuspend"}`;
+    setEnforcingKey(key);
+
+    try {
+      await apiFetch(
+        `/api/admin/sellers/${sellerUid}/${shouldSuspend ? "suspend" : "unsuspend"}`,
+        {
+          method: "POST",
+        }
+      );
+
+      setReports((prev) =>
+        prev.map((report) =>
+          report.seller_uid === sellerUid
+            ? { ...report, seller_is_suspended: shouldSuspend ? 1 : 0 }
+            : report
+        )
+      );
+    } catch (err: any) {
+      alert(err?.message || `Failed to ${shouldSuspend ? "suspend" : "unsuspend"} seller.`);
+    } finally {
+      setEnforcingKey(null);
+    }
+  };
+
   const counts = useMemo(() => {
     return {
       total: reports.length,
@@ -310,6 +336,24 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                                 {report.seller_business_name || "Unknown seller"}
                               </p>
                             </div>
+
+                            <div className="bg-zinc-50 rounded-2xl p-3">
+                              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
+                                Listing Visibility
+                              </p>
+                              <p className="text-zinc-800">
+                                {report.listing_is_hidden === 1 ? "Hidden" : "Visible"}
+                              </p>
+                            </div>
+
+                            <div className="bg-zinc-50 rounded-2xl p-3">
+                              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
+                                Seller Status
+                              </p>
+                              <p className="text-zinc-800">
+                                {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
+                              </p>
+                            </div>
                           </>
                         )}
                       </div>
@@ -354,6 +398,73 @@ export default function AdminReportsModal({ onClose, onOpenUser }: Props) {
                           ? "Updating..."
                           : "Mark Resolved"}
                       </button>
+                      {report.type === "listing" && report.listing_id && (
+                        <>
+                          <button
+                            onClick={() =>
+                              toggleListingVisibility(
+                                report.listing_id!,
+                                report.listing_is_hidden !== 1
+                              )
+                            }
+                            disabled={
+                              enforcingKey ===
+                              `listing-${report.listing_id}-${
+                                report.listing_is_hidden === 1 ? "unhide" : "hide"
+                              }`
+                            }
+                            className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
+                              report.listing_is_hidden === 1
+                                ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                                : "bg-red-100 hover:bg-red-200 text-red-800"
+                            }`}
+                          >
+                            {enforcingKey ===
+                            `listing-${report.listing_id}-${
+                              report.listing_is_hidden === 1 ? "unhide" : "hide"
+                            }`
+                              ? "Updating..."
+                              : report.listing_is_hidden === 1
+                              ? "Unhide Listing"
+                              : "Hide Listing"}
+                          </button>
+
+                          {report.seller_uid && (
+                            <button
+                              onClick={() =>
+                                toggleSellerSuspension(
+                                  report.seller_uid!,
+                                  report.seller_is_suspended !== 1
+                                )
+                              }
+                              disabled={
+                                enforcingKey ===
+                                `seller-${report.seller_uid}-${
+                                  report.seller_is_suspended === 1
+                                    ? "unsuspend"
+                                    : "suspend"
+                                }`
+                              }
+                              className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
+                                report.seller_is_suspended === 1
+                                  ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                                  : "bg-red-100 hover:bg-red-200 text-red-800"
+                              }`}
+                            >
+                              {enforcingKey ===
+                              `seller-${report.seller_uid}-${
+                                report.seller_is_suspended === 1
+                                  ? "unsuspend"
+                                  : "suspend"
+                              }`
+                                ? "Updating..."
+                                : report.seller_is_suspended === 1
+                                ? "Unsuspend Seller"
+                                : "Suspend Seller"}
+                            </button>
+                          )}
+                        </>
+                      )}
                       {report.reporter_uid && (
                      <button
                        onClick={() => {
