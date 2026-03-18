@@ -423,7 +423,7 @@ async function startServer() {
   let baseQuery = `
     FROM listings l
     JOIN sellers s ON l.seller_uid = s.uid
-    WHERE 1=1
+    WHERE l.is_hidden = 0
   `;
 
   const params: any[] = [];
@@ -676,8 +676,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   // ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
   const v = db
-  .prepare("SELECT is_verified, is_seller FROM sellers WHERE uid = ?")
-  .get(seller_uid) as { is_verified?: number; is_seller?: number } | undefined;
+  .prepare("SELECT is_verified, is_seller, is_suspended FROM sellers WHERE uid = ?")
+  .get(seller_uid) as { is_verified?: number; is_seller?: number; is_suspended?: number } | undefined;
 
 if (!v) {
   return res.status(404).json({ error: "Seller profile not found" });
@@ -687,6 +687,9 @@ if (v.is_seller !== 1) {
 }
 if (v.is_verified !== 1) {
   return res.status(403).json({ error: "Account not verified" });
+}
+if (v.is_suspended === 1) {
+  return res.status(403).json({ error: "Seller account is suspended" });
 }
   const { name, price, description, category, university, photos, video_url, whatsapp_number, status, condition } = req.body; 
   const allowedConditions = ["new", "used", "refurbished"];
@@ -1008,8 +1011,8 @@ for (const pid of publicIds) {
   }
     
   const v = db
-  .prepare("SELECT is_verified, is_seller FROM sellers WHERE uid = ?")
-  .get(uid) as { is_verified?: number; is_seller?: number } | undefined;
+  .prepare("SELECT is_verified, is_seller, is_suspended FROM sellers WHERE uid = ?")
+  .get(uid) as { is_verified?: number; is_seller?: number; is_suspended?: number } | undefined;
 
 if (!v) {
   return res.status(404).json({ error: "Seller profile not found" });
@@ -1019,6 +1022,9 @@ if (v.is_seller !== 1) {
 }
 if (v.is_verified !== 1) {
   return res.status(403).json({ error: "Account not verified" });
+}
+if (v.is_suspended === 1) {
+  return res.status(403).json({ error: "Seller account is suspended" });
 }
 
     const { name, price, description, category, university, photos, video_url, whatsapp_number, status, condition } = req.body;
@@ -1403,6 +1409,86 @@ app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   } catch (error) {
     console.error("Admin report status update error:", error);
     res.status(500).json({ error: "Failed to update report status" });
+  }
+});
+
+app.post("/api/admin/listings/:id/hide", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+  const id = Number(req.params.id);
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id, seller_uid, is_hidden FROM listings WHERE id = ?")
+      .get(id) as { id: number; seller_uid: string; is_hidden: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare("UPDATE listings SET is_hidden = 1 WHERE id = ?").run(id);
+
+    logAdminAction({
+      admin_uid: requesterUid,
+      admin_email: requesterEmail,
+      action_type: "hide_listing",
+      target_type: "listing",
+      target_id: String(id),
+      details: { seller_uid: listing.seller_uid },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Hide listing error:", error);
+    res.status(500).json({ error: "Failed to hide listing" });
+  }
+});
+
+app.post("/api/admin/listings/:id/unhide", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+  const id = Number(req.params.id);
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id, seller_uid, is_hidden FROM listings WHERE id = ?")
+      .get(id) as { id: number; seller_uid: string; is_hidden: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare("UPDATE listings SET is_hidden = 0 WHERE id = ?").run(id);
+
+    logAdminAction({
+      admin_uid: requesterUid,
+      admin_email: requesterEmail,
+      action_type: "unhide_listing",
+      target_type: "listing",
+      target_id: String(id),
+      details: { seller_uid: listing.seller_uid },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Unhide listing error:", error);
+    res.status(500).json({ error: "Failed to unhide listing" });
   }
 });
 
