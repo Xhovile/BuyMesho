@@ -408,7 +408,7 @@ Open this listing: ${shareUrl}`;
             </span>
 
             {listing.status === "sold" ? (
-              <span className="flex items-center gap-1.5 bg-zinc-200 text-zinc-500 px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed">
+              <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-200 text-zinc-500 text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed">
                 Sold Out
               </span>
             ) : isLoggedIn ? (
@@ -421,7 +421,7 @@ Open this listing: ${shareUrl}`;
                  onClick={() => {
                    void trackWhatsappClick();
                }}
-               className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95"
+               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
              >
                 <MessageCircle className="w-3.5 h-3.5" />
                 Contact
@@ -430,7 +430,7 @@ Open this listing: ${shareUrl}`;
               <button
                 type="button"
                 onClick={requireLoginForContact}
-                className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95"
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
               >
                 <Lock className="w-3.5 h-3.5" />
                 Log in to Contact
