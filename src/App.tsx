@@ -371,7 +371,9 @@ useEffect(() => {
     video_url: "",
     whatsapp_number: "",
     status: "available" as "available" | "sold",
-    condition: "used" as "new" | "used" | "refurbished"
+    condition: "used" as "new" | "used" | "refurbished",
+    quantity: "1",
+    sold_quantity: "0",
   });
 
   const [authForm, setAuthForm] = useState({
@@ -1620,6 +1622,8 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         price: parseFloat(newListing.price),
         photos: newListing.photos.slice(0, 5),
         video_url: newListing.video_url?.trim() || null,
+        quantity: Number(newListing.quantity || 1),
+        sold_quantity: Number(newListing.sold_quantity || 0),
       }),
     });
 
@@ -1635,6 +1639,8 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       whatsapp_number: userProfile?.whatsapp_number || "",
       status: "available",
       condition: "used",
+      quantity: "1",
+      sold_quantity: "0",
     });
 
     fetchListings();
@@ -2062,6 +2068,34 @@ setCurrentPage={setCurrentPage}
                         className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                         value={newListing.whatsapp_number}
                         onChange={e => setNewListing({...newListing, whatsapp_number: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                        Total Quantity
+                      </label>
+                      <input
+                        required
+                        type="number"
+                        min="1"
+                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={newListing.quantity}
+                        onChange={(e) => setNewListing({ ...newListing, quantity: e.target.value })}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                        Sold Quantity
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={newListing.sold_quantity}
+                        onChange={(e) => setNewListing({ ...newListing, sold_quantity: e.target.value })}
                       />
                     </div>
                   </div>

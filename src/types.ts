@@ -51,6 +51,8 @@ export interface Listing {
   condition?: ListingCondition;
   created_at: string;
   updated_at?: string;
+  quantity?: number;
+  sold_quantity?: number;
   views_count?: number;
   whatsapp_clicks?: number;
   is_hidden?: number;

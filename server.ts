@@ -97,6 +97,8 @@ db.exec(`
   views_count INTEGER NOT NULL DEFAULT 0,
   whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
   is_hidden INTEGER NOT NULL DEFAULT 0,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  sold_quantity INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
@@ -230,6 +232,24 @@ try {
   }
 } catch (e) {
   console.warn("Listings updated_at migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+
+  const hasQuantity = cols.some((c) => c.name === "quantity");
+  if (!hasQuantity) {
+    db.exec("ALTER TABLE listings ADD COLUMN quantity INTEGER NOT NULL DEFAULT 1");
+    console.log("Migration: Added listings.quantity");
+  }
+
+  const hasSoldQuantity = cols.some((c) => c.name === "sold_quantity");
+  if (!hasSoldQuantity) {
+    db.exec("ALTER TABLE listings ADD COLUMN sold_quantity INTEGER NOT NULL DEFAULT 0");
+    console.log("Migration: Added listings.sold_quantity");
+  }
+} catch (e) {
+  console.warn("Listings inventory migration check failed:", e);
 }
 
 try {
@@ -704,7 +724,20 @@ if (v.is_verified !== 1) {
 if (v.is_suspended === 1) {
   return res.status(403).json({ error: "Seller account is suspended" });
 }
-  const { name, price, description, category, university, photos, video_url, whatsapp_number, status, condition } = req.body; 
+  const {
+    name,
+    price,
+    description,
+    category,
+    university,
+    photos,
+    video_url,
+    whatsapp_number,
+    status,
+    condition,
+    quantity,
+    sold_quantity,
+  } = req.body;
   const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
   
@@ -720,14 +753,17 @@ const safeVideoUrl =
     : null;
 
 const safeStatus = status === "sold" ? "sold" : "available";
+const safeQuantity = Math.max(1, Number(quantity) || 1);
+const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
 
   try {
     const info = db.prepare(`
       INSERT INTO listings (
         seller_uid, name, price, description, category, university,
-        photos, video_url, whatsapp_number, status, condition, updated_at
+        photos, video_url, whatsapp_number, status, condition,
+        quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 `).run(
   seller_uid,
   name,
@@ -739,7 +775,9 @@ const safeStatus = status === "sold" ? "sold" : "available";
   safeVideoUrl,
   whatsapp_number,
   safeStatus,
-  safeCondition
+  safeCondition,
+  safeQuantity,
+  safeSoldQuantity
 );
 
     res.json({ id: info.lastInsertRowid });
@@ -1043,7 +1081,20 @@ if (v.is_suspended === 1) {
   return res.status(403).json({ error: "Seller account is suspended" });
 }
 
-    const { name, price, description, category, university, photos, video_url, whatsapp_number, status, condition } = req.body;
+    const {
+      name,
+      price,
+      description,
+      category,
+      university,
+      photos,
+      video_url,
+      whatsapp_number,
+      status,
+      condition,
+      quantity,
+      sold_quantity,
+    } = req.body;
     const allowedConditions = ["new", "used", "refurbished"];
     const safeCondition = allowedConditions.includes(condition) ? condition : "used";
     const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
@@ -1057,6 +1108,8 @@ const safeVideoUrl =
     : null;
 
 const safeStatus = status === "sold" ? "sold" : "available";
+const safeQuantity = Math.max(1, Number(quantity) || 1);
+const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
     
   // Minimal validation
   if (!name || typeof name !== "string") {
@@ -1106,6 +1159,8 @@ const safeStatus = status === "sold" ? "sold" : "available";
         whatsapp_number = ?,
         status = ?,
         condition = ?,
+        quantity = ?,
+        sold_quantity = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
@@ -1119,6 +1174,8 @@ const safeStatus = status === "sold" ? "sold" : "available";
       whatsapp_number,
       safeStatus,
       safeCondition,
+      safeQuantity,
+      safeSoldQuantity,
       id
     );
 

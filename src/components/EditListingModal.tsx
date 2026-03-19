@@ -21,6 +21,8 @@ export default function EditListingModal({
     university: listing.university || "",
     condition: listing.condition || "used",
     whatsapp_number: listing.whatsapp_number || "",
+    quantity: String(listing.quantity ?? 1),
+    sold_quantity: String(listing.sold_quantity ?? 0),
   });
 
   useEffect(() => {
@@ -32,14 +34,33 @@ export default function EditListingModal({
       university: listing.university || "",
       condition: listing.condition || "used",
       whatsapp_number: listing.whatsapp_number || "",
+      quantity: String(listing.quantity ?? 1),
+      sold_quantity: String(listing.sold_quantity ?? 0),
     });
   }, [listing]);
 
   const handleSave = () => {
     const priceNum = Number(form.price);
+    const quantityNum = Number(form.quantity);
+    const soldQuantityNum = Number(form.sold_quantity);
 
     if (Number.isNaN(priceNum)) {
       alert("Price must be a number.");
+      return;
+    }
+
+    if (!Number.isInteger(quantityNum) || quantityNum < 1) {
+      alert("Total quantity must be at least 1.");
+      return;
+    }
+
+    if (!Number.isInteger(soldQuantityNum) || soldQuantityNum < 0) {
+      alert("Sold quantity cannot be negative.");
+      return;
+    }
+
+    if (soldQuantityNum > quantityNum) {
+      alert("Sold quantity cannot be greater than total quantity.");
       return;
     }
 
@@ -51,6 +72,8 @@ export default function EditListingModal({
       university: form.university,
       whatsapp_number: form.whatsapp_number,
       condition: form.condition as "new" | "used" | "refurbished",
+      quantity: quantityNum,
+      sold_quantity: soldQuantityNum,
     });
   };
 
@@ -120,6 +143,34 @@ export default function EditListingModal({
                   setForm({ ...form, whatsapp_number: e.target.value })
                 }
                 placeholder="265..."
+                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                Total Quantity
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                Sold Quantity
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={form.sold_quantity}
+                onChange={(e) => setForm({ ...form, sold_quantity: e.target.value })}
                 className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
               />
             </div>
