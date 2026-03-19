@@ -1725,6 +1725,12 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       ? new Date(listing.created_at).toLocaleDateString()
       : "—";
 
+    const updatedLabel = listing.updated_at
+      ? new Date(listing.updated_at).toLocaleDateString()
+      : "—";
+
+    const freshnessLabel = getListingFreshnessLabel(listing);
+
     const sellerJoinedLabel = sellerProfile?.join_date
       ? new Date(sellerProfile.join_date).toLocaleDateString()
       : "—";
@@ -1739,48 +1745,48 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         return [
           { label: "Device State", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Rating", value: ratingLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
 
       case "Fashion & Clothing":
         return [
           { label: "Wear State", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
 
       case "Food & Snacks":
         return [
           { label: "Item State", value: listing.condition || "new" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
 
       case "Academic Services":
         return [
           { label: "Service Type", value: listing.category },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Rating", value: ratingLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
 
       case "Beauty & Personal Care":
         return [
           { label: "Product State", value: listing.condition || "new" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Rating", value: ratingLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
 
       default:
         return [
           { label: "Condition", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Posted", value: postedLabel },
-          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Last Updated", value: updatedLabel },
+          { label: "Freshness", value: freshnessLabel },
         ];
     }
   };
@@ -1795,7 +1801,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
 
-  const getListingFreshnessLabel = (listing: Listing) => {
+  function getListingFreshnessLabel(listing: Listing) {
     const sourceDate = listing.updated_at || listing.created_at;
     if (!sourceDate) return "Fresh";
 
@@ -1810,7 +1816,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (diffHours < 72) return "Recently updated";
     if (diffHours < 168) return "This week";
     return "Older listing";
-  };
+  }
 
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
@@ -3477,7 +3483,7 @@ setCurrentPage={setCurrentPage}
     </span>
   </div>
 
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
       <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
@@ -3505,6 +3511,22 @@ setCurrentPage={setCurrentPage}
         {detailsSellerProfile?.join_date
           ? new Date(detailsSellerProfile.join_date).toLocaleDateString()
           : "—"}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Last Updated</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {detailsListing.updated_at
+          ? new Date(detailsListing.updated_at).toLocaleDateString()
+          : "—"}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Freshness</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {getListingFreshnessLabel(detailsListing)}
       </p>
     </div>
   </div>
