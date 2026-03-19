@@ -936,6 +936,8 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
     status: updated.status ?? existing.status ?? "available",
     condition: updated.condition ?? existing.condition ?? "used",
+    quantity: Number(updated.quantity ?? existing.quantity ?? 1),
+    sold_quantity: Number(updated.sold_quantity ?? existing.sold_quantity ?? 0),
   };
 
   try {
@@ -1791,6 +1793,14 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!detailsListing) return [];
     return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
   }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
+
+  const detailAvailableQuantity =
+    detailsListing
+      ? Math.max(
+          0,
+          Number(detailsListing.quantity ?? 1) - Number(detailsListing.sold_quantity ?? 0)
+        )
+      : 0;
 
   const isDetailsOwner =
     !!firebaseUser?.uid &&
@@ -3653,6 +3663,14 @@ setCurrentPage={setCurrentPage}
 
   <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
     Views: {detailsListing.views_count ?? 0}
+  </span>
+
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Available: {detailAvailableQuantity}
+  </span>
+
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Sold: {detailsListing.sold_quantity ?? 0}
   </span>
 </div>
 
