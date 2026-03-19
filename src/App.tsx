@@ -105,6 +105,7 @@ const [ratingSubmitting, setRatingSubmitting] = useState(false);
 const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [galleryIndex, setGalleryIndex] = useState(0); 
+const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
 const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
 const [showSavedModal, setShowSavedModal] = useState(false);
@@ -292,11 +293,38 @@ const closeDetails = () => {
   setDetailsOpen(false);
   setDetailsListing(null);
   setGalleryIndex(0);
+  setIsImageFullscreenOpen(false);
   clearListingParamFromUrl();
   setDetailsSellerProfile(null);
   setDetailsRatingSummary(null);
   setRelatedListings([]);
   setDetailsLoadingExtra(false);
+};
+
+const showPrevDetailImage = () => {
+  if (!detailGalleryImages.length) return;
+
+  const nextIndex =
+    galleryIndex === 0 ? detailGalleryImages.length - 1 : galleryIndex - 1;
+
+  setGalleryIndex(nextIndex);
+
+  if (detailsListing) {
+    syncListingParamsInUrl(detailsListing.id, nextIndex);
+  }
+};
+
+const showNextDetailImage = () => {
+  if (!detailGalleryImages.length) return;
+
+  const nextIndex =
+    galleryIndex === detailGalleryImages.length - 1 ? 0 : galleryIndex + 1;
+
+  setGalleryIndex(nextIndex);
+
+  if (detailsListing) {
+    syncListingParamsInUrl(detailsListing.id, nextIndex);
+  }
 };
 
 useEffect(() => {
@@ -826,6 +854,16 @@ const visiblePublicProfileListings = publicProfileListings.filter(
     !hiddenSellerUids.includes(l.seller_uid) &&
     !hiddenListingIds.includes(l.id)
 );
+
+const detailGalleryImages = React.useMemo(() => {
+  if (!detailsListing) return [];
+
+  if (Array.isArray(detailsListing.photos) && detailsListing.photos.length > 0) {
+    return detailsListing.photos;
+  }
+
+  return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
+}, [detailsListing]);
   
   const performDeleteListing = async (listingId: number) => {
   try {
@@ -3171,41 +3209,40 @@ setCurrentPage={setCurrentPage}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         <div className="relative rounded-2xl overflow-hidden bg-zinc-100">
           <img
-            src={
-              detailsListing.photos?.[galleryIndex] ||
-              `https://picsum.photos/seed/${detailsListing.id}/800/800`
-            }
+            src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
             alt={detailsListing.name}
             className="w-full object-contain max-h-[60vh]"
           />
 
-          {detailsListing.photos?.length > 1 && (
+          {detailGalleryImages.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setIsImageFullscreenOpen(true)}
+              className="absolute top-3 right-3 px-3 py-2 rounded-full bg-white/85 hover:bg-white text-zinc-900 text-xs font-bold shadow border border-white/60"
+            >
+              Fullscreen
+            </button>
+          )}
+
+          {detailGalleryImages.length > 1 && (
+            <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-bold">
+              {galleryIndex + 1} / {detailGalleryImages.length}
+            </div>
+          )}
+
+          {detailGalleryImages.length > 1 && (
             <div className="absolute inset-0 flex items-center justify-between px-2">
               <button
                 type="button"
-                onClick={() => {
-                  const nextIndex = Math.max(0, galleryIndex - 1);
-                  setGalleryIndex(nextIndex);
-                  if (detailsListing) {
-                    syncListingParamsInUrl(detailsListing.id, nextIndex);
-                  }
-                }}
+                onClick={showPrevDetailImage}
                 className="p-2 bg-white/80 hover:bg-white rounded-full"
-                disabled={galleryIndex === 0}
               >
                 ‹
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const nextIndex = Math.min(detailsListing.photos.length - 1, galleryIndex + 1);
-                  setGalleryIndex(nextIndex);
-                  if (detailsListing) {
-                    syncListingParamsInUrl(detailsListing.id, nextIndex);
-                  }
-                }}
+                onClick={showNextDetailImage}
                 className="p-2 bg-white/80 hover:bg-white rounded-full"
-                disabled={galleryIndex === detailsListing.photos.length - 1}
               >
                 ›
               </button>
@@ -3213,9 +3250,9 @@ setCurrentPage={setCurrentPage}
           )}
         </div>
         
- {detailsListing.photos?.length > 1 && (
+ {detailGalleryImages.length > 1 && (
   <div className="flex gap-2 overflow-x-auto pb-1">
-    {detailsListing.photos.map((url, idx) => (
+    {detailGalleryImages.map((url, idx) => (
       <button
         key={idx}
         type="button"
@@ -3372,6 +3409,66 @@ setCurrentPage={setCurrentPage}
         
       </div>
     </motion.div>
+  </motion.div>
+)}
+
+{isImageFullscreenOpen && detailsOpen && detailsListing && (
+  <motion.div
+    key="fullscreen-image-modal"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
+    onClick={() => setIsImageFullscreenOpen(false)}
+  >
+    <button
+      type="button"
+      onClick={() => setIsImageFullscreenOpen(false)}
+      className="absolute top-5 right-5 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+    >
+      <X className="w-5 h-5" />
+    </button>
+
+    {detailGalleryImages.length > 1 && (
+      <>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            showPrevDetailImage();
+          }}
+          className="absolute left-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            showNextDetailImage();
+          }}
+          className="absolute right-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+        >
+          ›
+        </button>
+
+        <div className="absolute bottom-5 right-5 px-3 py-1.5 rounded-full bg-white/10 text-white text-sm font-bold">
+          {galleryIndex + 1} / {detailGalleryImages.length}
+        </div>
+      </>
+    )}
+
+    <div
+      className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
+        alt={detailsListing.name}
+        className="max-w-full max-h-full object-contain rounded-2xl"
+      />
+    </div>
   </motion.div>
 )}
        
