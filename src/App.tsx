@@ -3545,29 +3545,6 @@ setCurrentPage={setCurrentPage}
       </p>
     </div>
   </div>
-
-  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
-    <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Seller Rating</p>
-
-    {detailsLoadingExtra ? (
-      <p className="text-sm text-zinc-500">Loading seller info...</p>
-    ) : detailsRatingSummary ? (
-      <div className="flex items-center gap-2 text-sm">
-        <span className="font-extrabold text-zinc-900">
-          {detailsRatingSummary.averageRating.toFixed(1)}
-        </span>
-        <span className="text-amber-500 text-base tracking-wide">
-          {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
-          {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
-        </span>
-        <span className="text-zinc-500">
-          ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
-        </span>
-      </div>
-    ) : (
-      <p className="text-sm text-zinc-500">No ratings yet.</p>
-    )}
-  </div>
 </div>
         
 <div>
@@ -3610,7 +3587,7 @@ setCurrentPage={setCurrentPage}
     {detailsLoadingExtra ? (
       <p className="text-sm text-zinc-500">Loading related listings...</p>
     ) : relatedListings.length > 0 ? (
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {relatedListings.map((item) => (
           <button
             key={item.id}
@@ -3641,21 +3618,36 @@ setCurrentPage={setCurrentPage}
   </div>
 </div>
 
+<div>
+  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+    Seller Rating
+  </div>
+
+  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+    {detailsLoadingExtra ? (
+      <p className="text-sm text-zinc-500">Loading seller info...</p>
+    ) : detailsRatingSummary ? (
+      <div className="flex items-center gap-2 text-sm flex-wrap">
+        <span className="font-extrabold text-zinc-900">
+          {detailsRatingSummary.averageRating.toFixed(1)}
+        </span>
+        <span className="text-amber-500 text-base tracking-wide">
+          {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
+          {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
+        </span>
+        <span className="text-zinc-500">
+          ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
+        </span>
+      </div>
+    ) : (
+      <p className="text-sm text-zinc-500">No ratings yet.</p>
+    )}
+  </div>
+</div>
+
 <div className="flex flex-wrap gap-3 pt-2">
   <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
     Added: {formatDetailDate(detailsListing.created_at)}
-  </span>
-
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Last updated: {formatDetailDate(detailsListing.updated_at)}
-  </span>
-
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Freshness: {getListingFreshnessTone(detailsListing)}
-  </span>
-
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Views: {detailsListing.views_count ?? 0}
   </span>
 
   <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
@@ -3664,6 +3656,11 @@ setCurrentPage={setCurrentPage}
 
   <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
     Sold: {detailsListing.sold_quantity ?? 0}
+  </span>
+
+  <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    <Eye className="w-3.5 h-3.5" />
+    {detailsListing.views_count ?? 0}
   </span>
 </div>
 
