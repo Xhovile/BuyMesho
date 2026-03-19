@@ -2817,13 +2817,6 @@ setCurrentPage={setCurrentPage}
           </div>
 
           <div className="bg-white rounded-xl p-3 border border-zinc-200">
-            <p className="text-xs text-zinc-400 font-bold uppercase">WhatsApp Clicks</p>
-            <p className="text-lg font-extrabold text-zinc-900">
-              {sellerDashboard.stats.total_whatsapp_clicks}
-            </p>
-          </div>
-
-          <div className="bg-white rounded-xl p-3 border border-zinc-200">
             <p className="text-xs text-zinc-400 font-bold uppercase">Profile Views</p>
             <p className="text-lg font-extrabold text-zinc-900">
               {sellerDashboard.seller.profile_views}
@@ -2843,7 +2836,7 @@ setCurrentPage={setCurrentPage}
             <p className="text-xs text-zinc-400 font-bold uppercase mb-1">Top Listing</p>
             <p className="font-bold text-zinc-900">{sellerDashboard.top_listing.name}</p>
             <p className="text-sm text-zinc-500 mt-1">
-              {sellerDashboard.top_listing.views_count} views • {sellerDashboard.top_listing.whatsapp_clicks} WhatsApp clicks
+              {sellerDashboard.top_listing.views_count} views
             </p>
           </div>
         )}

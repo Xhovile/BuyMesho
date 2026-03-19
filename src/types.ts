@@ -72,7 +72,6 @@ export interface SellerDashboardData {
     active_listings: number;
     sold_listings: number;
     total_views: number;
-    total_whatsapp_clicks: number;
     repeat_seller_activity: boolean;
   };
   byCampus: {
@@ -83,7 +82,6 @@ export interface SellerDashboardData {
     id: number;
     name: string;
     views_count: number;
-    whatsapp_clicks: number;
     status: string;
     created_at: string;
   } | null;

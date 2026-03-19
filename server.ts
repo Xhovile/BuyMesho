@@ -497,7 +497,7 @@ async function startServer() {
   } else if (sortBy === "price_desc") {
     orderBy = " ORDER BY l.price DESC";
   } else if (sortBy === "popular") {
-  orderBy = " ORDER BY l.views_count DESC, l.whatsapp_clicks DESC, l.created_at DESC";
+  orderBy = " ORDER BY l.views_count DESC, l.created_at DESC";
   } else if (sortBy === "oldest") {
     orderBy = " ORDER BY l.created_at ASC";
   }
@@ -1811,12 +1811,11 @@ app.post("/api/listings/:id/view", (req, res) => {
           id,
           name,
           views_count,
-          whatsapp_clicks,
           status,
           created_at
         FROM listings
         WHERE seller_uid = ?
-        ORDER BY views_count DESC, whatsapp_clicks DESC, created_at DESC
+        ORDER BY views_count DESC, created_at DESC
         LIMIT 1
       `)
       .get(uid);
@@ -1846,7 +1845,6 @@ app.post("/api/listings/:id/view", (req, res) => {
         active_listings: listingStats.active_listings ?? 0,
         sold_listings: listingStats.sold_listings ?? 0,
         total_views: listingStats.total_views ?? 0,
-        total_whatsapp_clicks: listingStats.total_whatsapp_clicks ?? 0,
         repeat_seller_activity: repeatSellerActivity,
       },
       byCampus,
