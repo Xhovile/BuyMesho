@@ -132,291 +132,343 @@ export default function FilterSection({
     "w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-zinc-300";
 
   return (
-    <>
-      <div className="py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <div className="space-y-2 relative" data-filter-dropdown>
-          <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-primary" /> University
-          </label>
+     <>
+  <div className="py-6 space-y-4">
+    <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 items-end">
+      <div className="space-y-2 relative" data-filter-dropdown>
+        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+          <MapPin className="w-3.5 h-3.5 text-primary" /> University
+        </label>
 
-          <button
-            type="button"
-            onClick={() =>
-              setOpenDropdown(openDropdown === "university" ? null : "university")
-            }
-            className={triggerBase}
-          >
-            <span className="truncate text-left">
-              {selectedUniv || "All Universities"}
-            </span>
-            <ChevronRight
-              className={`w-4 h-4 text-zinc-400 transition-transform ${
-                openDropdown === "university" ? "rotate-90" : "rotate-0"
-              }`}
-            />
-          </button>
+        <button
+          type="button"
+          onClick={() =>
+            setOpenDropdown(openDropdown === "university" ? null : "university")
+          }
+          className={triggerBase}
+        >
+          <span className="truncate text-left">
+            {selectedUniv || "All Universities"}
+          </span>
+          <ChevronRight
+            className={`w-4 h-4 text-zinc-400 transition-transform ${
+              openDropdown === "university" ? "rotate-90" : "rotate-0"
+            }`}
+          />
+        </button>
 
-          {openDropdown === "university" && (
-            <div className={menuShell}>
-              <div className={searchWrap}>
-                <div className="relative">
-                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={universityQuery}
-                    onChange={(e) => setUniversityQuery(e.target.value)}
-                    placeholder="Search university..."
-                    className={searchInput}
-                  />
+        {openDropdown === "university" && (
+          <div className={menuShell}>
+            <div className={searchWrap}>
+              <div className="relative">
+                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={universityQuery}
+                  onChange={(e) => setUniversityQuery(e.target.value)}
+                  placeholder="Search university..."
+                  className={searchInput}
+                />
+              </div>
+            </div>
+
+            <div className={menuBase}>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedUniv("");
+                  setOpenDropdown(null);
+                  setUniversityQuery("");
+                }}
+                className={`${itemBase} ${
+                  selectedUniv === "" ? activeItem : inactiveItem
+                }`}
+              >
+                All Universities
+              </button>
+
+              {filteredUniversities.length > 0 ? (
+                filteredUniversities.map((u) => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => {
+                      setSelectedUniv(u);
+                      setOpenDropdown(null);
+                      setUniversityQuery("");
+                    }}
+                    className={`${itemBase} ${
+                      selectedUniv === u ? activeItem : inactiveItem
+                    }`}
+                  >
+                    {u}
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-3 text-sm text-zinc-500">
+                  No universities found.
                 </div>
-              </div>
-
-              <div className={menuBase}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedUniv("");
-                    setOpenDropdown(null);
-                    setUniversityQuery("");
-                  }}
-                  className={`${itemBase} ${
-                    selectedUniv === "" ? activeItem : inactiveItem
-                  }`}
-                >
-                  All Universities
-                </button>
-
-                {filteredUniversities.length > 0 ? (
-                  filteredUniversities.map((u) => (
-                    <button
-                      key={u}
-                      type="button"
-                      onClick={() => {
-                        setSelectedUniv(u);
-                        setOpenDropdown(null);
-                        setUniversityQuery("");
-                      }}
-                      className={`${itemBase} ${
-                        selectedUniv === u ? activeItem : inactiveItem
-                      }`}
-                    >
-                      {u}
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-3 text-sm text-zinc-500">
-                    No universities found.
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          )}
-        </div>
-
-        <div className="space-y-2 relative" data-filter-dropdown>
-          <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-primary" /> Category
-          </label>
-
-          <button
-            type="button"
-            onClick={() =>
-              setOpenDropdown(openDropdown === "category" ? null : "category")
-            }
-            className={triggerBase}
-          >
-            <span className="truncate text-left">
-              {selectedCat || "All Categories"}
-            </span>
-            <ChevronRight
-              className={`w-4 h-4 text-zinc-400 transition-transform ${
-                openDropdown === "category" ? "rotate-90" : "rotate-0"
-              }`}
-            />
-          </button>
-
-          {openDropdown === "category" && (
-            <div className={menuShell}>
-              <div className={menuBase}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCat("");
-                    setOpenDropdown(null);
-                  }}
-                  className={`${itemBase} ${
-                    selectedCat === "" ? activeItem : inactiveItem
-                  }`}
-                >
-                  All Categories
-                </button>
-
-                {CATEGORIES.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCat(c);
-                      setOpenDropdown(null);
-                    }}
-                    className={`${itemBase} ${
-                      selectedCat === c ? activeItem : inactiveItem
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2 relative" data-filter-dropdown>
-          <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <Tag className="w-3.5 h-3.5 text-primary" /> Condition
-          </label>
-
-          <button
-            type="button"
-            onClick={() =>
-              setOpenDropdown(openDropdown === "condition" ? null : "condition")
-            }
-            className={triggerBase}
-          >
-            <span className="truncate text-left">
-              {selectedCondition || "All Conditions"}
-            </span>
-            <ChevronRight
-              className={`w-4 h-4 text-zinc-400 transition-transform ${
-                openDropdown === "condition" ? "rotate-90" : "rotate-0"
-              }`}
-            />
-          </button>
-
-          {openDropdown === "condition" && (
-            <div className={menuShell}>
-              <div className={menuBase}>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCondition("");
-                    setOpenDropdown(null);
-                  }}
-                  className={`${itemBase} ${
-                    selectedCondition === "" ? activeItem : inactiveItem
-                  }`}
-                >
-                  All Conditions
-                </button>
-
-                {conditionOptions.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCondition(c);
-                      setOpenDropdown(null);
-                    }}
-                    className={`${itemBase} ${
-                      selectedCondition === c ? activeItem : inactiveItem
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-2">
-          <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <Search className="w-3.5 h-3.5 text-primary" /> Price Range
-          </label>
-
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              min="0"
-              placeholder="Min"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-            <input
-              type="number"
-              min="0"
-              placeholder="Max"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
           </div>
-        </div>
-
-        <div className="space-y-2 relative" data-filter-dropdown>
-          <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-            <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort
-          </label>
-
-          <button
-            type="button"
-            onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
-            className={triggerBase}
-          >
-            <span className="truncate text-left">
-              {sortOptions.find((option) => option.value === sortBy)?.label ||
-                "Newest First"}
-            </span>
-            <ChevronRight
-              className={`w-4 h-4 text-zinc-400 transition-transform ${
-                openDropdown === "sort" ? "rotate-90" : "rotate-0"
-              }`}
-            />
-          </button>
-
-          {openDropdown === "sort" && (
-            <div className={menuShell}>
-              <div className={menuBase}>
-                {sortOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setSortBy(option.value);
-                      setOpenDropdown(null);
-                    }}
-                    className={`${itemBase} ${
-                      sortBy === option.value ? activeItem : inactiveItem
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
-      <div className="pt-2 flex justify-end">
+      <div className="flex items-center justify-end">
         <button
           type="button"
           onClick={() => {
-            setSelectedUniv("");
-            setSelectedCat("");
-            setSelectedCondition("");
-            setMinPrice("");
-            setMaxPrice("");
-            setSortBy("newest");
+            setShowMoreFilters((prev) => !prev);
             setOpenDropdown(null);
-            setUniversityQuery("");
           }}
-          className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+          className={`relative inline-flex items-center gap-2 h-[52px] px-5 rounded-2xl border text-sm font-extrabold transition-all shadow-sm ${
+            showMoreFilters || activeExtraFilterCount > 0
+              ? "bg-zinc-900 text-white border-zinc-900 hover:bg-zinc-800"
+              : "bg-amber-50 text-zinc-900 border-amber-200 hover:bg-amber-100"
+          }`}
         >
-          Clear Filters
+          <Funnel className="w-4 h-4" />
+          Filters
+
+          {activeExtraFilterCount > 0 && (
+            <span
+              className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-1 rounded-full text-[11px] font-black ${
+                showMoreFilters
+                  ? "bg-white text-zinc-900"
+                  : "bg-zinc-900 text-white"
+              }`}
+            >
+              {activeExtraFilterCount}
+            </span>
+          )}
         </button>
       </div>
-    </>
+    </div>
+
+    {showMoreFilters && (
+      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-4 md:p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              More Filters
+            </p>
+            <p className="text-sm text-zinc-500 mt-1">
+              Narrow down listings faster
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowMoreFilters(false);
+              setOpenDropdown(null);
+            }}
+            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 flex items-center justify-center"
+            aria-label="Close filters"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="space-y-2 relative" data-filter-dropdown>
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <Tag className="w-3.5 h-3.5 text-primary" /> Category
+            </label>
+
+            <button
+              type="button"
+              onClick={() =>
+                setOpenDropdown(openDropdown === "category" ? null : "category")
+              }
+              className={triggerBase}
+            >
+              <span className="truncate text-left">
+                {selectedCat || "All Categories"}
+              </span>
+              <ChevronRight
+                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                  openDropdown === "category" ? "rotate-90" : "rotate-0"
+                }`}
+              />
+            </button>
+
+            {openDropdown === "category" && (
+              <div className={menuShell}>
+                <div className={menuBase}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCat("");
+                      setOpenDropdown(null);
+                    }}
+                    className={`${itemBase} ${
+                      selectedCat === "" ? activeItem : inactiveItem
+                    }`}
+                  >
+                    All Categories
+                  </button>
+
+                  {CATEGORIES.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCat(c);
+                        setOpenDropdown(null);
+                      }}
+                      className={`${itemBase} ${
+                        selectedCat === c ? activeItem : inactiveItem
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2 relative" data-filter-dropdown>
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <Tag className="w-3.5 h-3.5 text-primary" /> Condition
+            </label>
+
+            <button
+              type="button"
+              onClick={() =>
+                setOpenDropdown(openDropdown === "condition" ? null : "condition")
+              }
+              className={triggerBase}
+            >
+              <span className="truncate text-left">
+                {selectedCondition || "All Conditions"}
+              </span>
+              <ChevronRight
+                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                  openDropdown === "condition" ? "rotate-90" : "rotate-0"
+                }`}
+              />
+            </button>
+
+            {openDropdown === "condition" && (
+              <div className={menuShell}>
+                <div className={menuBase}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCondition("");
+                      setOpenDropdown(null);
+                    }}
+                    className={`${itemBase} ${
+                      selectedCondition === "" ? activeItem : inactiveItem
+                    }`}
+                  >
+                    All Conditions
+                  </button>
+
+                  {conditionOptions.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCondition(c);
+                        setOpenDropdown(null);
+                      }}
+                      className={`${itemBase} ${
+                        selectedCondition === c ? activeItem : inactiveItem
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <Search className="w-3.5 h-3.5 text-primary" /> Price Range
+            </label>
+
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                min="0"
+                placeholder="Min"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Max"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+                className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 relative" data-filter-dropdown>
+            <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+              <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort
+            </label>
+
+            <button
+              type="button"
+              onClick={() => setOpenDropdown(openDropdown === "sort" ? null : "sort")}
+              className={triggerBase}
+            >
+              <span className="truncate text-left">
+                {sortOptions.find((option) => option.value === sortBy)?.label ||
+                  "Newest First"}
+              </span>
+              <ChevronRight
+                className={`w-4 h-4 text-zinc-400 transition-transform ${
+                  openDropdown === "sort" ? "rotate-90" : "rotate-0"
+                }`}
+              />
+            </button>
+
+            {openDropdown === "sort" && (
+              <div className={menuShell}>
+                <div className={menuBase}>
+                  {sortOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        setSortBy(option.value);
+                        setOpenDropdown(null);
+                      }}
+                      className={`${itemBase} ${
+                        sortBy === option.value ? activeItem : inactiveItem
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={clearExtraFilters}
+            className="px-4 py-2 rounded-xl bg-zinc-100 border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-200"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+</>
   );
 }
