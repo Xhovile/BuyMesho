@@ -1003,6 +1003,37 @@ const handleToggleListingStatus = async (listing: Listing) => {
     "noopener,noreferrer"
   );
 };
+
+const handleDetailShare = async (listing: Listing) => {
+  const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
+  const shareText = `BuyMesho Listing
+${listing.name}
+Price: MK ${Number(listing.price).toLocaleString()}
+Campus: ${listing.university}
+WhatsApp: ${listing.whatsapp_number}
+
+Open this listing: ${shareUrl}`;
+
+  try {
+    if ((navigator as any).share) {
+      await (navigator as any).share({
+        title: `BuyMesho: ${listing.name}`,
+        text: shareText,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareText);
+    showFeedback(
+      "success",
+      "Share text copied",
+      "Paste it on WhatsApp or anywhere you want."
+    );
+  } catch {
+    prompt("Copy to share:", shareText);
+  }
+};
   
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -3195,19 +3226,63 @@ setCurrentPage={setCurrentPage}
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-4 border-b flex items-center justify-between">
-        <button
-          type="button"
-          onClick={closeDetails}
-          className="p-2 rounded-full hover:bg-zinc-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="w-10" />
 
         <h2 className="text-lg font-bold flex-1 text-center truncate px-2">
           {detailsListing.name}
         </h2>
 
-        <div className="w-10" />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => toggleSavedListing(detailsListing.id)}
+            className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+              savedListingIds.includes(detailsListing.id)
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+            }`}
+            aria-label={savedListingIds.includes(detailsListing.id) ? "Remove from saved" : "Save item"}
+          >
+            <Bookmark
+              className={`w-4 h-4 ${
+                savedListingIds.includes(detailsListing.id) ? "fill-current" : ""
+              }`}
+            />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleDetailShare(detailsListing)}
+            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+            aria-label="Share listing"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-4 h-4"
+            >
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <path d="M8.59 13.51 15.42 17.49" />
+              <path d="M15.41 6.51 8.59 10.49" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            onClick={closeDetails}
+            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+            aria-label="Close details"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
