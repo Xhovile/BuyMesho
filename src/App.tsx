@@ -3525,7 +3525,7 @@ setCurrentPage={setCurrentPage}
     </div>
   </div>
 
-  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
       <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
@@ -3537,13 +3537,6 @@ setCurrentPage={setCurrentPage}
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Posted</p>
       <p className="text-sm font-bold text-zinc-900 mt-1">
         {formatDetailDate(detailsListing.created_at)}
-      </p>
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Views</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1">
-        {detailsListing.views_count ?? 0}
       </p>
     </div>
 
@@ -3646,10 +3639,6 @@ setCurrentPage={setCurrentPage}
 </div>
 
 <div className="flex flex-wrap gap-3 pt-2">
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Added: {formatDetailDate(detailsListing.created_at)}
-  </span>
-
   <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
     Available: {detailAvailableQuantity}
   </span>
