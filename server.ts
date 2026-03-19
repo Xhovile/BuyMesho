@@ -227,8 +227,8 @@ try {
   const hasUpdatedAt = cols.some((c) => c.name === "updated_at");
 
   if (!hasUpdatedAt) {
-    db.exec("ALTER TABLE listings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
-    console.log("Migration: Added listings.updated_at");
+    db.exec("ALTER TABLE listings ADD COLUMN updated_at DATETIME");
+    db.exec("UPDATE listings SET updated_at = created_at WHERE updated_at IS NULL");
   }
 } catch (e) {
   console.warn("Listings updated_at migration check failed:", e);
