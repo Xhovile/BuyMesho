@@ -421,7 +421,7 @@ Open this listing: ${shareUrl}`;
                  onClick={() => {
                    void trackWhatsappClick();
                }}
-               className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-[#25D366]/20 active:scale-95"
+               className="flex items-center gap-1.5 bg-zinc-900 hover:bg-zinc-800 text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95"
              >
                 <MessageCircle className="w-3.5 h-3.5" />
                 Contact

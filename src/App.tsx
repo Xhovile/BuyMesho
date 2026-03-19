@@ -3622,13 +3622,18 @@ setCurrentPage={setCurrentPage}
   </span>
 </div>
 
-<button
-  type="button"
-  onClick={() => handleDetailWhatsappClick(detailsListing)}
-  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 rounded-2xl font-extrabold transition-colors mt-2"
->
-  Contact Seller on WhatsApp
-</button>
+<div className="mt-2">
+  <button
+    type="button"
+    onClick={() => handleDetailWhatsappClick(detailsListing)}
+    className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3.5 rounded-2xl font-extrabold transition-colors"
+  >
+    Contact
+  </button>
+  <p className="text-center text-xs font-medium text-zinc-500 mt-2">
+    Chat in WhatsApp
+  </p>
+</div>
         
       </div>
     </motion.div>
