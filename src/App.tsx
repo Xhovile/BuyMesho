@@ -1716,6 +1716,80 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     }
   };
 
+  const getDetailSpecRows = (
+    listing: Listing,
+    sellerProfile: any | null,
+    ratingSummary: SellerRatingSummary | null
+  ) => {
+    const postedLabel = listing.created_at
+      ? new Date(listing.created_at).toLocaleDateString()
+      : "—";
+
+    const sellerJoinedLabel = sellerProfile?.join_date
+      ? new Date(sellerProfile.join_date).toLocaleDateString()
+      : "—";
+
+    const ratingLabel =
+      ratingSummary && ratingSummary.ratingCount > 0
+        ? `${ratingSummary.averageRating.toFixed(1)} / 5 (${ratingSummary.ratingCount})`
+        : "No ratings yet";
+
+    switch (listing.category) {
+      case "Electronics & Gadgets":
+        return [
+          { label: "Device State", value: listing.condition || "used" },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Rating", value: ratingLabel },
+        ];
+
+      case "Fashion & Clothing":
+        return [
+          { label: "Wear State", value: listing.condition || "used" },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+        ];
+
+      case "Food & Snacks":
+        return [
+          { label: "Item State", value: listing.condition || "new" },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+        ];
+
+      case "Academic Services":
+        return [
+          { label: "Service Type", value: listing.category },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Rating", value: ratingLabel },
+        ];
+
+      case "Beauty & Personal Care":
+        return [
+          { label: "Product State", value: listing.condition || "new" },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Rating", value: ratingLabel },
+        ];
+
+      default:
+        return [
+          { label: "Condition", value: listing.condition || "used" },
+          { label: "Campus", value: listing.university || "—" },
+          { label: "Posted", value: postedLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+        ];
+    }
+  };
+
+  const detailSpecRows = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
+  }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
+
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
@@ -3449,6 +3523,28 @@ setCurrentPage={setCurrentPage}
   </div>
   <div className="text-sm text-zinc-700 whitespace-pre-wrap">
     {detailsListing.description}
+  </div>
+</div>
+
+<div>
+  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+    Quick Details
+  </div>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    {detailSpecRows.map((row) => (
+      <div
+        key={row.label}
+        className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+      >
+        <p className="text-[11px] font-bold text-zinc-400 uppercase">
+          {row.label}
+        </p>
+        <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
+          {row.value}
+        </p>
+      </div>
+    ))}
   </div>
 </div>
 
