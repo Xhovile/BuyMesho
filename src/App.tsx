@@ -1752,62 +1752,62 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     sellerProfile: any | null,
     ratingSummary: SellerRatingSummary | null
   ) => {
-    const postedLabel = formatDetailDate(listing.created_at);
-
     const sellerJoinedLabel = formatDetailDate(sellerProfile?.join_date);
-
-    const ratingLabel =
-      ratingSummary && ratingSummary.ratingCount > 0
-        ? `${ratingSummary.averageRating.toFixed(1)} / 5 (${ratingSummary.ratingCount})`
-        : "No ratings yet";
 
     switch (listing.category) {
       case "Electronics & Gadgets":
         return [
           { label: "Device State", value: listing.condition || "used" },
-          { label: "Campus", value: listing.university || "—" },
-          { label: "Seller Rating", value: ratingLabel },
-          { label: "Posted", value: postedLabel },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
         ];
 
       case "Fashion & Clothing":
         return [
           { label: "Wear State", value: listing.condition || "used" },
-          { label: "Campus", value: listing.university || "—" },
-          { label: "Seller Joined", value: sellerJoinedLabel },
-          { label: "Posted", value: postedLabel },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
         ];
 
       case "Food & Snacks":
         return [
           { label: "Item State", value: listing.condition || "new" },
-          { label: "Campus", value: listing.university || "—" },
-          { label: "Seller Joined", value: sellerJoinedLabel },
-          { label: "Posted", value: postedLabel },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
         ];
 
       case "Academic Services":
         return [
           { label: "Service Type", value: listing.category },
-          { label: "Campus", value: listing.university || "—" },
-          { label: "Seller Rating", value: ratingLabel },
-          { label: "Posted", value: postedLabel },
         ];
 
       case "Beauty & Personal Care":
         return [
           { label: "Product State", value: listing.condition || "new" },
-          { label: "Campus", value: listing.university || "—" },
-          { label: "Seller Rating", value: ratingLabel },
-          { label: "Posted", value: postedLabel },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
         ];
 
       default:
         return [
           { label: "Condition", value: listing.condition || "used" },
-          { label: "Campus", value: listing.university || "—" },
           { label: "Seller Joined", value: sellerJoinedLabel },
-          { label: "Posted", value: postedLabel },
         ];
     }
   };
@@ -3516,6 +3516,15 @@ setCurrentPage={setCurrentPage}
     </span>
   </div>
 
+  <div>
+    <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
+      Description
+    </div>
+    <div className="text-sm text-zinc-700 whitespace-pre-wrap">
+      {detailsListing.description}
+    </div>
+  </div>
+
   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
@@ -3544,15 +3553,6 @@ setCurrentPage={setCurrentPage}
         {formatDetailDate(detailsSellerProfile?.join_date)}
       </p>
     </div>
-  </div>
-</div>
-        
-<div>
-  <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
-    Description
-  </div>
-  <div className="text-sm text-zinc-700 whitespace-pre-wrap">
-    {detailsListing.description}
   </div>
 </div>
 
