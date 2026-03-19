@@ -368,11 +368,15 @@ Open this listing: ${shareUrl}`;
                 e.stopPropagation();
                 onToggleSave?.(listing.id);
               }}
-              className={`absolute right-4 z-10 bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-sm hover:bg-white transition ${listing.status === "sold" ? "top-14" : "top-4"}`}
+              className={`absolute right-4 z-10 h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                isSaved
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white/95 backdrop-blur-md text-zinc-700 hover:bg-white"
+              } ${listing.status === "sold" ? "top-14" : "top-4"}`}
               aria-label={isSaved ? "Remove from saved" : "Save item"}
             >
               <Bookmark
-                className={`w-4 h-4 ${isSaved ? "fill-zinc-900 text-zinc-900" : "text-zinc-700"}`}
+                className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`}
               />
             </button>
           )}

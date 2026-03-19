@@ -1790,6 +1790,11 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
   }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
 
+  const isDetailsOwner =
+    !!firebaseUser?.uid &&
+    !!detailsListing?.seller_uid &&
+    detailsListing.seller_uid === firebaseUser.uid;
+
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
@@ -3307,22 +3312,24 @@ setCurrentPage={setCurrentPage}
         </h2>
 
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => toggleSavedListing(detailsListing.id)}
-            className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-              savedListingIds.includes(detailsListing.id)
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-            }`}
-            aria-label={savedListingIds.includes(detailsListing.id) ? "Remove from saved" : "Save item"}
-          >
-            <Bookmark
-              className={`w-4 h-4 ${
-                savedListingIds.includes(detailsListing.id) ? "fill-current" : ""
+          {!isDetailsOwner && (
+            <button
+              type="button"
+              onClick={() => toggleSavedListing(detailsListing.id)}
+              className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                savedListingIds.includes(detailsListing.id)
+                  ? "border-zinc-900 bg-zinc-900 text-white"
+                  : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
               }`}
-            />
-          </button>
+              aria-label={savedListingIds.includes(detailsListing.id) ? "Remove from saved" : "Save item"}
+            >
+              <Bookmark
+                className={`w-4 h-4 ${
+                  savedListingIds.includes(detailsListing.id) ? "fill-current" : ""
+                }`}
+              />
+            </button>
+          )}
 
           <button
             type="button"
