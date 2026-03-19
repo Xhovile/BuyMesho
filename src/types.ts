@@ -50,6 +50,7 @@ export interface Listing {
   status: ListingStatus;
   condition?: ListingCondition;
   created_at: string;
+  updated_at?: string;
   views_count?: number;
   whatsapp_clicks?: number;
   is_hidden?: number;

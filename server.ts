@@ -98,6 +98,7 @@ db.exec(`
   whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
   is_hidden INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
 );
 
@@ -217,6 +218,18 @@ try {
   }
 } catch (e) {
   console.warn("Listings analytics migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+  const hasUpdatedAt = cols.some((c) => c.name === "updated_at");
+
+  if (!hasUpdatedAt) {
+    db.exec("ALTER TABLE listings ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP");
+    console.log("Migration: Added listings.updated_at");
+  }
+} catch (e) {
+  console.warn("Listings updated_at migration check failed:", e);
 }
 
 try {
@@ -710,8 +723,11 @@ const safeStatus = status === "sold" ? "sold" : "available";
 
   try {
     const info = db.prepare(`
-      INSERT INTO listings (seller_uid, name, price, description, category, university, photos, video_url, whatsapp_number, status, condition)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO listings (
+        seller_uid, name, price, description, category, university,
+        photos, video_url, whatsapp_number, status, condition, updated_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 `).run(
   seller_uid,
   name,
@@ -1079,7 +1095,18 @@ const safeStatus = status === "sold" ? "sold" : "available";
 
     db.prepare(`
       UPDATE listings
-      SET name = ?, price = ?, description = ?, category = ?, university = ?, photos = ?, video_url = ?, whatsapp_number = ?, status = ?, condition = ?
+      SET
+        name = ?,
+        price = ?,
+        description = ?,
+        category = ?,
+        university = ?,
+        photos = ?,
+        video_url = ?,
+        whatsapp_number = ?,
+        status = ?,
+        condition = ?,
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
       name,

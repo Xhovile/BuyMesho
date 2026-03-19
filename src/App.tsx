@@ -1795,6 +1795,23 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
 
+  const getListingFreshnessLabel = (listing: Listing) => {
+    const sourceDate = listing.updated_at || listing.created_at;
+    if (!sourceDate) return "Fresh";
+
+    const now = new Date().getTime();
+    const then = new Date(sourceDate).getTime();
+
+    if (Number.isNaN(then)) return "Fresh";
+
+    const diffHours = (now - then) / (1000 * 60 * 60);
+
+    if (diffHours < 24) return "Just posted";
+    if (diffHours < 72) return "Recently updated";
+    if (diffHours < 168) return "This week";
+    return "Older listing";
+  };
+
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
