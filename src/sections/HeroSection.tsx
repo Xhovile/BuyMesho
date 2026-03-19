@@ -29,18 +29,18 @@ export default function HeroSection({ onStartSelling }: HeroSectionProps) {
           transition={{ delay: 0.05 }}
           className="mt-6 text-5xl sm:text-7xl lg:text-8xl font-black tracking-[-0.06em] leading-[0.95]"
         >
-          <span className="text-zinc-900">Campus deals,</span>
+          <span className="text-zinc-900">Buy from Mesho,</span>
           <br />
-          <span className="text-red-900">without the chaos.</span>
+          <span className="text-red-900">grow each other.</span>
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.12 }}
-          className="mt-6 max-w-2xl mx-auto text-base sm:text-lg text-zinc-600 font-medium leading-relaxed"
+          className="mt-5 max-w-2xl mx-auto text-sm sm:text-base text-zinc-500 font-semibold leading-relaxed"
         >
-          Built with students in mind, but flexible enough for anyone ready to buy, sell, or grow a small business. BuyMesho is designed to make marketplace trading in Malawi feel simpler, faster, and more accessible.
+          BuyMesho means buy from Mesho.
         </motion.p>
 
         <motion.div

@@ -19,7 +19,8 @@ import {
   Loader2,
   Settings,
   Bookmark,
-  Expand
+  Expand,
+  ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Listing, UserProfile, University, Category, SellerDashboardData } from './types';
@@ -127,6 +128,7 @@ const [currentPage, setCurrentPage] = useState(1);
 const [pageSize] = useState(12);
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
+const [showScrollTop, setShowScrollTop] = useState(false);
   
 // Local-only hides (no backend needed)
 
@@ -622,6 +624,19 @@ const fetchSellerDashboard = async () => {
     setSellerDashboard(null);
   }
 }, [firebaseUser, userProfile?.is_seller]);
+
+useEffect(() => {
+  const handleScroll = () => {
+    setShowScrollTop(window.scrollY > 700);
+  };
+
+  window.addEventListener("scroll", handleScroll, { passive: true });
+  handleScroll();
+
+  return () => {
+    window.removeEventListener("scroll", handleScroll);
+  };
+}, []);
 
 
 const fetchMyListings = async () => {
@@ -1829,6 +1844,10 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !!firebaseUser?.uid &&
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
@@ -3860,6 +3879,21 @@ setCurrentPage={setCurrentPage}
     onClose={closeFeedback}
   />
 )}
+      <AnimatePresence>
+        {showScrollTop && (
+          <motion.button
+            type="button"
+            initial={{ opacity: 0, y: 16, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.92 }}
+            onClick={scrollToTop}
+            className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[90] h-12 w-12 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center transition-all active:scale-95"
+            aria-label="Scroll to top"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
  );
 }
