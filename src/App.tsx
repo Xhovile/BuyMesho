@@ -1721,19 +1721,9 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     sellerProfile: any | null,
     ratingSummary: SellerRatingSummary | null
   ) => {
-    const postedLabel = listing.created_at
-      ? new Date(listing.created_at).toLocaleDateString()
-      : "—";
+    const postedLabel = formatDetailDate(listing.created_at);
 
-    const updatedLabel = listing.updated_at
-      ? new Date(listing.updated_at).toLocaleDateString()
-      : "—";
-
-    const freshnessLabel = getListingFreshnessLabel(listing);
-
-    const sellerJoinedLabel = sellerProfile?.join_date
-      ? new Date(sellerProfile.join_date).toLocaleDateString()
-      : "—";
+    const sellerJoinedLabel = formatDetailDate(sellerProfile?.join_date);
 
     const ratingLabel =
       ratingSummary && ratingSummary.ratingCount > 0
@@ -1745,48 +1735,48 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         return [
           { label: "Device State", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Rating", value: ratingLabel },
+          { label: "Posted", value: postedLabel },
         ];
 
       case "Fashion & Clothing":
         return [
           { label: "Wear State", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Posted", value: postedLabel },
         ];
 
       case "Food & Snacks":
         return [
           { label: "Item State", value: listing.condition || "new" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Posted", value: postedLabel },
         ];
 
       case "Academic Services":
         return [
           { label: "Service Type", value: listing.category },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Rating", value: ratingLabel },
+          { label: "Posted", value: postedLabel },
         ];
 
       case "Beauty & Personal Care":
         return [
           { label: "Product State", value: listing.condition || "new" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Rating", value: ratingLabel },
+          { label: "Posted", value: postedLabel },
         ];
 
       default:
         return [
           { label: "Condition", value: listing.condition || "used" },
           { label: "Campus", value: listing.university || "—" },
-          { label: "Last Updated", value: updatedLabel },
-          { label: "Freshness", value: freshnessLabel },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+          { label: "Posted", value: postedLabel },
         ];
     }
   };
@@ -1801,13 +1791,19 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
 
-  function getListingFreshnessLabel(listing: Listing) {
+  const formatDetailDate = (value?: string) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString();
+  };
+
+  const getListingFreshnessTone = (listing: Listing) => {
     const sourceDate = listing.updated_at || listing.created_at;
     if (!sourceDate) return "Fresh";
 
-    const now = new Date().getTime();
+    const now = Date.now();
     const then = new Date(sourceDate).getTime();
-
     if (Number.isNaN(then)) return "Fresh";
 
     const diffHours = (now - then) / (1000 * 60 * 60);
@@ -1816,7 +1812,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (diffHours < 72) return "Recently updated";
     if (diffHours < 168) return "This week";
     return "Older listing";
-  }
+  };
 
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
@@ -3483,7 +3479,7 @@ setCurrentPage={setCurrentPage}
     </span>
   </div>
 
-  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
       <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
@@ -3494,7 +3490,7 @@ setCurrentPage={setCurrentPage}
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Posted</p>
       <p className="text-sm font-bold text-zinc-900 mt-1">
-        {new Date(detailsListing.created_at).toLocaleDateString()}
+        {formatDetailDate(detailsListing.created_at)}
       </p>
     </div>
 
@@ -3508,25 +3504,7 @@ setCurrentPage={setCurrentPage}
     <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
       <p className="text-[11px] font-bold text-zinc-400 uppercase">Seller Joined</p>
       <p className="text-sm font-bold text-zinc-900 mt-1">
-        {detailsSellerProfile?.join_date
-          ? new Date(detailsSellerProfile.join_date).toLocaleDateString()
-          : "—"}
-      </p>
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Last Updated</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1">
-        {detailsListing.updated_at
-          ? new Date(detailsListing.updated_at).toLocaleDateString()
-          : "—"}
-      </p>
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Freshness</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1">
-        {getListingFreshnessLabel(detailsListing)}
+        {formatDetailDate(detailsSellerProfile?.join_date)}
       </p>
     </div>
   </div>
@@ -3553,14 +3531,6 @@ setCurrentPage={setCurrentPage}
       <p className="text-sm text-zinc-500">No ratings yet.</p>
     )}
   </div>
-
-  <button
-    type="button"
-    onClick={() => handleDetailWhatsappClick(detailsListing)}
-    className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 rounded-2xl font-extrabold transition-colors"
-  >
-    Contact Seller on WhatsApp
-  </button>
 </div>
         
 <div>
@@ -3572,65 +3542,93 @@ setCurrentPage={setCurrentPage}
   </div>
 </div>
 
-<div>
-  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-    Quick Details
-  </div>
+<div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+  <div>
+    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+      Quick Details
+    </div>
 
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    {detailSpecRows.map((row) => (
-      <div
-        key={row.label}
-        className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-      >
-        <p className="text-[11px] font-bold text-zinc-400 uppercase">
-          {row.label}
-        </p>
-        <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
-          {row.value}
-        </p>
-      </div>
-    ))}
-  </div>
-</div>
-
-<div>
-  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-    Related Listings
-  </div>
-
-  {detailsLoadingExtra ? (
-    <p className="text-sm text-zinc-500">Loading related listings...</p>
-  ) : relatedListings.length > 0 ? (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {relatedListings.map((item) => (
-        <button
-          key={item.id}
-          type="button"
-          onClick={() => openDetails(item, 0)}
-          className="text-left border border-zinc-200 rounded-2xl p-3 hover:bg-zinc-50 transition"
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {detailSpecRows.map((row) => (
+        <div
+          key={row.label}
+          className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
         >
-          <div className="flex gap-3">
-            <img
-              src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/300/300`}
-              alt={item.name}
-              className="w-16 h-16 rounded-xl object-cover border"
-            />
-            <div className="min-w-0">
-              <p className="font-bold text-zinc-900 line-clamp-1">{item.name}</p>
-              <p className="text-sm text-zinc-500 line-clamp-1">{item.business_name}</p>
-              <p className="text-sm font-extrabold text-zinc-900 mt-1">
-                MK {Number(item.price).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </button>
+          <p className="text-[11px] font-bold text-zinc-400 uppercase">
+            {row.label}
+          </p>
+          <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
+            {row.value}
+          </p>
+        </div>
       ))}
     </div>
-  ) : (
-    <p className="text-sm text-zinc-500">No related listings yet.</p>
-  )}
+  </div>
+
+  <div>
+    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+      Related Listings
+    </div>
+
+    {detailsLoadingExtra ? (
+      <p className="text-sm text-zinc-500">Loading related listings...</p>
+    ) : relatedListings.length > 0 ? (
+      <div className="space-y-3">
+        {relatedListings.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => openDetails(item, 0)}
+            className="w-full text-left border border-zinc-200 rounded-2xl p-3 hover:bg-zinc-50 transition"
+          >
+            <div className="flex gap-3">
+              <img
+                src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/300/300`}
+                alt={item.name}
+                className="w-16 h-16 rounded-xl object-cover border"
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-zinc-900 line-clamp-1">{item.name}</p>
+                <p className="text-sm text-zinc-500 line-clamp-1">{item.business_name}</p>
+                <p className="text-sm font-extrabold text-zinc-900 mt-1">
+                  MK {Number(item.price).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-zinc-500">No related listings yet.</p>
+    )}
+  </div>
 </div>
+
+<div className="flex flex-wrap gap-3 pt-2">
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Added: {formatDetailDate(detailsListing.created_at)}
+  </span>
+
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Last updated: {formatDetailDate(detailsListing.updated_at)}
+  </span>
+
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Freshness: {getListingFreshnessTone(detailsListing)}
+  </span>
+
+  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+    Views: {detailsListing.views_count ?? 0}
+  </span>
+</div>
+
+<button
+  type="button"
+  onClick={() => handleDetailWhatsappClick(detailsListing)}
+  className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-3.5 rounded-2xl font-extrabold transition-colors mt-2"
+>
+  Contact Seller on WhatsApp
+</button>
         
       </div>
     </motion.div>
