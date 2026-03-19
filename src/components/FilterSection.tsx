@@ -1,5 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, MapPin, RefreshCw, Search, Tag } from "lucide-react";
+import {
+  ChevronRight,
+  MapPin,
+  RefreshCw,
+  Search,
+  Tag,
+  Funnel,
+  X,
+} from "lucide-react";
 import { UNIVERSITIES, CATEGORIES } from "../constants";
 
 type FilterSectionProps = {
@@ -35,6 +43,7 @@ export default function FilterSection({
     "university" | "category" | "condition" | "sort" | null
   >(null);
   const [universityQuery, setUniversityQuery] = useState("");
+  const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -70,6 +79,35 @@ export default function FilterSection({
 
     return UNIVERSITIES.filter((u) => u.toLowerCase().includes(trimmed));
   }, [universityQuery]);
+
+  const activeExtraFilterCount = [
+    selectedCat,
+    selectedCondition,
+    minPrice,
+    maxPrice,
+    sortBy !== "newest" ? sortBy : "",
+  ].filter(Boolean).length;
+
+  const clearExtraFilters = () => {
+    setSelectedCat("");
+    setSelectedCondition("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSortBy("newest");
+    setOpenDropdown(null);
+  };
+
+  useEffect(() => {
+    if (!showMoreFilters) {
+      if (
+        openDropdown === "category" ||
+        openDropdown === "condition" ||
+        openDropdown === "sort"
+      ) {
+        setOpenDropdown(null);
+      }
+    }
+  }, [showMoreFilters, openDropdown]);
 
   const sortOptions = [
   { value: "newest", label: "Newest First" },
