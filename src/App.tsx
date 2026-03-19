@@ -18,7 +18,8 @@ import {
   Package, 
   Loader2,
   Settings,
-  Bookmark
+  Bookmark,
+  Expand
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Listing, UserProfile, University, Category, SellerDashboardData } from './types';
@@ -1496,11 +1497,11 @@ const handleDeleteAccount = async () => {
 };
   
   const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const files = Array.from(e.target.files || []);
+  const files: File[] = Array.from(e.target.files ?? []);
   if (!files.length) return;
 
   const remaining = 5 - newListing.photos.length;
-  const selected = files.slice(0, remaining);
+  const selected: File[] = files.slice(0, remaining);
 
   if (selected.length < files.length) {
     showFeedback(
@@ -1516,7 +1517,7 @@ const handleDeleteAccount = async () => {
 
     for (const file of selected) {
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", file as Blob);
 
       const res = await fetch("/api/upload/", { method: "POST", body: formData });
       const text = await res.text();
@@ -1543,13 +1544,13 @@ const handleDeleteAccount = async () => {
 };
 
 const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
+  const file: File | undefined = e.target.files?.[0];
   if (!file) return;
 
   setUploading(true);
   try {
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", file as Blob);
 
     const res = await fetch("/api/upload/", { method: "POST", body: formData });
     const text = await res.text();
@@ -1621,12 +1622,12 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file: File | undefined = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", file as Blob);
 
     try {
       const res = await fetch("/api/upload/", {
@@ -2871,22 +2872,23 @@ setCurrentPage={setCurrentPage}
         ) : myListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {myListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                onReport={handleReport}
-                currentUid={firebaseUser?.uid}
-                onDelete={handleDeleteListing}
-                onEdit={handleEditListing}
-                onOpenProfile={openPublicProfile}
-                onOpenDetails={openDetails}
-                onHideSeller={hideSellerLocal}
-                onToggleStatus={handleToggleListingStatus}
-                isSaved={savedListingIds.includes(listing.id)}
-                onToggleSave={toggleSavedListing}
-                isLoggedIn={!!firebaseUser}
-                requireLoginForContact={requireLoginForContact}
-              />
+              <div key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={handleReport}
+                  currentUid={firebaseUser?.uid}
+                  onDelete={handleDeleteListing}
+                  onEdit={handleEditListing}
+                  onOpenProfile={openPublicProfile}
+                  onOpenDetails={openDetails}
+                  onHideSeller={hideSellerLocal}
+                  onToggleStatus={handleToggleListingStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={toggleSavedListing}
+                  isLoggedIn={!!firebaseUser}
+                  requireLoginForContact={requireLoginForContact}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -2954,23 +2956,24 @@ setCurrentPage={setCurrentPage}
         {savedListings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                onReport={handleReport}
-                currentUid={firebaseUser?.uid}
-                onDelete={handleDeleteListing}
-                onEdit={handleEditListing}
-                onOpenProfile={openPublicProfile}
-                onOpenDetails={openDetails}
-                onHideSeller={hideSellerLocal}
-                onHideListing={hideListingLocal}
-                onToggleStatus={handleToggleListingStatus}
-                isSaved={savedListingIds.includes(listing.id)}
-                onToggleSave={toggleSavedListing}
-                isLoggedIn={!!firebaseUser}
-                requireLoginForContact={requireLoginForContact}
-              />
+              <div key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={handleReport}
+                  currentUid={firebaseUser?.uid}
+                  onDelete={handleDeleteListing}
+                  onEdit={handleEditListing}
+                  onOpenProfile={openPublicProfile}
+                  onOpenDetails={openDetails}
+                  onHideSeller={hideSellerLocal}
+                  onHideListing={hideListingLocal}
+                  onToggleStatus={handleToggleListingStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={toggleSavedListing}
+                  isLoggedIn={!!firebaseUser}
+                  requireLoginForContact={requireLoginForContact}
+                />
+              </div>
             ))}
           </div>
         ) : (
@@ -3141,23 +3144,24 @@ setCurrentPage={setCurrentPage}
             {visiblePublicProfileListings.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {visiblePublicProfileListings.map((l) => (
-                  <ListingCard
-                    key={l.id}
-                    listing={l}
-                    onReport={handleReport}
-                    currentUid={firebaseUser?.uid}
-                    onDelete={handleDeleteListing}
-                    onEdit={handleEditListing}
-                    onOpenProfile={openPublicProfile}
-                    onOpenDetails={openDetails}
-                    onHideSeller={hideSellerLocal}
-                    onHideListing={hideListingLocal}
-                   onToggleStatus={handleToggleListingStatus}
-                   isSaved={savedListingIds.includes(l.id)}
-                   onToggleSave={toggleSavedListing}
-                   isLoggedIn={!!firebaseUser}
-                   requireLoginForContact={requireLoginForContact}
-                  />
+                  <div key={l.id}>
+                    <ListingCard
+                      listing={l}
+                      onReport={handleReport}
+                      currentUid={firebaseUser?.uid}
+                      onDelete={handleDeleteListing}
+                      onEdit={handleEditListing}
+                      onOpenProfile={openPublicProfile}
+                      onOpenDetails={openDetails}
+                      onHideSeller={hideSellerLocal}
+                      onHideListing={hideListingLocal}
+                      onToggleStatus={handleToggleListingStatus}
+                      isSaved={savedListingIds.includes(l.id)}
+                      onToggleSave={toggleSavedListing}
+                      isLoggedIn={!!firebaseUser}
+                      requireLoginForContact={requireLoginForContact}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -3207,20 +3211,24 @@ setCurrentPage={setCurrentPage}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="relative rounded-2xl overflow-hidden bg-zinc-100">
+        <div className="relative rounded-2xl overflow-hidden bg-zinc-100 h-[340px] sm:h-[440px] md:h-[520px]">
           <img
             src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
             alt={detailsListing.name}
-            className="w-full object-contain max-h-[60vh]"
+            className="w-full h-full object-contain"
           />
 
           {detailGalleryImages.length > 0 && (
             <button
               type="button"
-              onClick={() => setIsImageFullscreenOpen(true)}
-              className="absolute top-3 right-3 px-3 py-2 rounded-full bg-white/85 hover:bg-white text-zinc-900 text-xs font-bold shadow border border-white/60"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsImageFullscreenOpen(true);
+              }}
+              className="absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/85 hover:bg-white text-zinc-900 border border-white/60 shadow flex items-center justify-center"
+              aria-label="Open fullscreen image"
             >
-              Fullscreen
+              <Expand className="w-5 h-5" />
             </button>
           )}
 
