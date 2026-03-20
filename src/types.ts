@@ -17,6 +17,44 @@ export type Category =
 
 export type ListingStatus = "available" | "sold";
 export type ListingCondition = "new" | "used" | "refurbished";
+export type ListingSpecValue = string | number | boolean | string[] | null;
+export type ListingSpecValues = Record<string, ListingSpecValue>;
+
+export interface ListingDraft {
+  name: string;
+  price: string;
+  description: string;
+  category: Category;
+  subcategory: string;
+  item_type: string;
+  spec_values: ListingSpecValues;
+  university: University;
+  photos: string[];
+  video_url: string;
+  whatsapp_number: string;
+  status: ListingStatus;
+  condition: ListingCondition;
+  quantity: string;
+  sold_quantity: string;
+}
+
+export interface CreateListingPayload {
+  name: string;
+  price: number;
+  description: string;
+  category: Category;
+  subcategory?: string | null;
+  item_type?: string | null;
+  spec_values?: ListingSpecValues;
+  university: University;
+  photos: string[];
+  video_url?: string | null;
+  whatsapp_number: string;
+  status: ListingStatus;
+  condition: ListingCondition;
+  quantity: number;
+  sold_quantity: number;
+}
 
 export interface UserProfile {
   uid: string;
@@ -43,6 +81,9 @@ export interface Listing {
   price: number;
   description: string;
   category: Category;
+  subcategory?: string | null;
+  item_type?: string | null;
+  spec_values?: ListingSpecValues | null;
   university: University;
   photos: string[];
   video_url?: string | null;
