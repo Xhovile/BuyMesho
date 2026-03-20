@@ -5,14 +5,11 @@ import { CATEGORIES, UNIVERSITIES } from "../constants";
 import FormDropdown from "./FormDropdown";
 import {
   createEmptyListingSpecValues,
-  getAdvancedListingFields,
-  getBasicListingFields,
-  getListingItemConfig,
-  getListingItemTypes,
   getListingSubcategories,
-  validateListingSpecValues,
+  getListingItemTypes,
+  getListingItemConfig,
+  type ListingSpecField,
 } from "../listingSchemas";
-import type { ListingSpecField } from "../listingSchemas";
 
 export default function EditListingModal({
   listing,
@@ -62,49 +59,233 @@ export default function EditListingModal({
 
   const availableSubcategories = useMemo(() => {
     if (!isSchemaDrivenCategory) return [];
-    return getListingSubcategories(form.category as Category);
-  }, [isSchemaDrivenCategory, form.category]);
+    return getListingSubcategories(form.category);
+  }, [form.category, isSchemaDrivenCategory]);
 
   const availableItemTypes = useMemo(() => {
     if (!isSchemaDrivenCategory || !form.subcategory) return [];
-    return getListingItemTypes(form.category as Category, form.subcategory);
-  }, [isSchemaDrivenCategory, form.category, form.subcategory]);
+    return getListingItemTypes(form.category, form.subcategory);
+  }, [form.category, form.subcategory, isSchemaDrivenCategory]);
 
   const selectedItemConfig = useMemo(() => {
     if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
       return null;
     }
 
-    return getListingItemConfig(
-      form.category as Category,
-      form.subcategory,
-      form.item_type
-    );
-  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+    return getListingItemConfig(form.category, form.subcategory, form.item_type);
+  }, [form.category, form.subcategory, form.item_type, isSchemaDrivenCategory]);
 
-  const basicSpecFields = useMemo(() => {
-    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
-      return [];
+  const handleCategoryChange = (category: Category) => {
+    setForm((prev) => ({
+      ...prev,
+      category,
+      subcategory: "",
+      item_type: "",
+      spec_values: {},
+    }));
+  };
+
+  const handleSubcategoryChange = (subcategory: string) => {
+    setForm((prev) => ({
+      ...prev,
+      subcategory,
+      item_type: "",
+      spec_values: {},
+    }));
+  };
+
+  const handleItemTypeChange = (itemType: string) => {
+    setForm((prev) => ({
+      ...prev,
+      item_type: itemType,
+      spec_values: createEmptyListingSpecValues(
+        prev.category as Category,
+        prev.subcategory,
+        itemType
+      ),
+    }));
+  };
+
+  const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
+    setForm((prev) => ({
+      ...prev,
+      spec_values: {
+        ...prev.spec_values,
+        [key]: value,
+      },
+    }));
+  };
+
+  const renderSpecField = (field: ListingSpecField) => {
+    const rawValue = form.spec_values[field.key];
+    const value = rawValue === null || rawValue === undefined ? "" : rawValue;
+
+    const isRequired =
+      !!field.required || !!selectedItemConfig?.requiredKeys.includes(field.key);
+
+    const labelText = `${field.label}${isRequired ? " *" : ""}`;
+
+    if (field.type === "select") {
+      return (
+        <div key={field.key}>
+          <FormDropdown
+            label={labelText}
+            value={typeof value === "string" ? value : ""}
+            options={field.options || []}
+            onChange={(option) => handleSpecValueChange(field.key, option)}
+            placeholder={field.placeholder || "Select an option"}
+            searchPlaceholder={`Search ${field.label.toLowerCase()}...`}
+          />
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
     }
 
-    return getBasicListingFields(
-      form.category as Category,
-      form.subcategory,
-      form.item_type
-    );
-  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
-
-  const advancedSpecFields = useMemo(() => {
-    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
-      return [];
+    if (field.type === "textarea") {
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <textarea
+            value={value as string}
+            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+            rows={3}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-y"
+            placeholder={field.placeholder || ""}
+          />
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
     }
 
-    return getAdvancedListingFields(
-      form.category as Category,
-      form.subcategory,
-      form.item_type
+    if (field.type === "boolean") {
+      const boolValue = typeof rawValue === "boolean" ? rawValue : null;
+
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+            {labelText}
+          </label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, true)}
+              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+                boolValue === true
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, false)}
+              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${
+                boolValue === false
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50"
+              }`}
+            >
+              No
+            </button>
+          </div>
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "multiselect") {
+      const selectedValues = Array.isArray(rawValue) ? rawValue : [];
+
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+            {labelText}
+          </label>
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+            {(field.options || []).map((option: string) => {
+              const isChecked = selectedValues.includes(option);
+
+              return (
+                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleSpecValueChange(field.key, [...selectedValues, option]);
+                        return;
+                      }
+
+                      handleSpecValueChange(
+                        field.key,
+                        selectedValues.filter((item: string) => item !== option)
+                      );
+                    }}
+                  />
+                  <span>{option}</span>
+                </label>
+              );
+            })}
+          </div>
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "number") {
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <input
+            type="number"
+            value={value === "" ? "" : String(value)}
+            onChange={(e) =>
+              handleSpecValueChange(
+                field.key,
+                e.target.value === "" ? null : Number(e.target.value)
+              )
+            }
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            placeholder={field.placeholder || ""}
+          />
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div key={field.key}>
+        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          {labelText}
+        </label>
+        <input
+          type="text"
+          value={value as string}
+          onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+          className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          placeholder={field.placeholder || ""}
+        />
+        {field.helpText ? (
+          <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+        ) : null}
+      </div>
     );
-  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+  };
 
   const handleSave = () => {
     const priceNum = Number(form.price);
@@ -136,6 +317,9 @@ export default function EditListingModal({
       price: priceNum,
       description: form.description,
       category: form.category,
+      subcategory: form.subcategory || null,
+      item_type: form.item_type || null,
+      spec_values: form.spec_values,
       university: form.university,
       whatsapp_number: form.whatsapp_number,
       condition: form.condition as "new" | "used" | "refurbished",
@@ -249,9 +433,7 @@ export default function EditListingModal({
               value={form.category}
               options={CATEGORIES}
               searchPlaceholder="Search category..."
-              onChange={(value) =>
-                setForm({ ...form, category: value as Category })
-              }
+              onChange={(value) => handleCategoryChange(value as Category)}
             />
 
             <FormDropdown
@@ -275,7 +457,32 @@ export default function EditListingModal({
                  condition: value as "new" | "used" | "refurbished",
                })
               }
-            />
+             />
+
+          {isSchemaDrivenCategory && (
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormDropdown
+                  label="Subcategory"
+                  value={form.subcategory}
+                  options={availableSubcategories}
+                  onChange={handleSubcategoryChange}
+                />
+                <FormDropdown
+                  label="Item Type"
+                  value={form.item_type}
+                  options={availableItemTypes}
+                  onChange={handleItemTypeChange}
+                />
+              </div>
+
+              {form.subcategory && form.item_type && selectedItemConfig && (
+                <div className="grid grid-cols-1 gap-4">
+                  {selectedItemConfig.schema.fields.map(renderSpecField)}
+                </div>
+              )}
+            </div>
+          )}
 
 
           <div>
