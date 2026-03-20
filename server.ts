@@ -796,7 +796,7 @@ const safeItemType =
     : null;
 
 const safeSpecValues =
-  spec_values && typeof spec_values === "object"
+  spec_values && typeof spec_values === "object" && !Array.isArray(spec_values)
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
 
@@ -1171,7 +1171,7 @@ const safeItemType =
     : null;
 
 const safeSpecValues =
-  spec_values && typeof spec_values === "object"
+  spec_values && typeof spec_values === "object" && !Array.isArray(spec_values)
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
     
