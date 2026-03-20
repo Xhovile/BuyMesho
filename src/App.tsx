@@ -4038,7 +4038,7 @@ setCurrentPage={setCurrentPage}
 <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
   <div>
     <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-      Quick Details
+      Specifications
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -4055,30 +4055,20 @@ setCurrentPage={setCurrentPage}
           </p>
         </div>
       ))}
+      {detailStructuredSpecRows.map((row) => (
+        <div
+          key={row.key}
+          className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+        >
+          <p className="text-[11px] font-bold text-zinc-400 uppercase">
+            {row.label}
+          </p>
+          <p className="text-sm font-bold text-zinc-900 mt-1">
+            {row.value}
+          </p>
+        </div>
+      ))}
     </div>
-
-    {detailStructuredSpecRows.length > 0 && (
-      <div className="mt-4">
-        <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-          Item Details
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {detailStructuredSpecRows.map((row) => (
-            <div
-              key={row.key}
-              className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-            >
-              <p className="text-[11px] font-bold text-zinc-400 uppercase">
-                {row.label}
-              </p>
-              <p className="text-sm font-bold text-zinc-900 mt-1">
-                {row.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    )}
   </div>
 
   <div>
