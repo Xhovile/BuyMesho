@@ -8226,3 +8226,106 @@ export const CALCULATOR_REQUIRED_KEYS = [
   "battery_present",
   "includes_cover"
 ];
+
+export const ALL_LISTING_SCHEMAS: ListingItemSchema[] = [
+  SMARTPHONE_SCHEMA,
+  FEATURE_PHONE_SCHEMA,
+  TABLET_SCHEMA,
+  SMARTWATCH_FITNESS_BAND_SCHEMA,
+
+  LAPTOP_SCHEMA,
+  DESKTOP_COMPUTER_SCHEMA,
+  MONITOR_SCHEMA,
+
+  HEADPHONES_SCHEMA,
+  EARBUDS_SCHEMA,
+  BLUETOOTH_SPEAKER_SCHEMA,
+
+  POWER_BANK_SCHEMA,
+  CHARGER_CHARGING_ADAPTER_SCHEMA,
+  ROUTER_MIFI_MODEM_SCHEMA,
+
+  USB_FLASH_DRIVE_SCHEMA,
+  MEMORY_CARD_SCHEMA,
+  EXTERNAL_HARD_DRIVE_SSD_SCHEMA,
+  KEYBOARD_SCHEMA,
+  MOUSE_SCHEMA,
+
+  PRINTER_SCHEMA,
+  CALCULATOR_SCHEMA
+];
+
+export interface ListingSchemaRegistryItem {
+  schema: ListingItemSchema;
+}
+
+export type ListingSchemaRegistry = Record<
+  string,
+  Record<string, Record<string, ListingSchemaRegistryItem>>
+>;
+
+export const LISTING_SCHEMA_REGISTRY: ListingSchemaRegistry = ALL_LISTING_SCHEMAS.reduce(
+  (acc, schema) => {
+    if (!acc[schema.category]) {
+      acc[schema.category] = {};
+    }
+
+    if (!acc[schema.category][schema.subcategory]) {
+      acc[schema.category][schema.subcategory] = {};
+    }
+
+    acc[schema.category][schema.subcategory][schema.itemType] = {
+      schema
+    };
+
+    return acc;
+  },
+  {} as ListingSchemaRegistry
+);
+
+export function getListingSchema(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingItemSchema | null {
+  if (!category || !subcategory || !itemType) {
+    return null;
+  }
+
+  return (
+    LISTING_SCHEMA_REGISTRY[category]?.[subcategory]?.[itemType]?.schema ?? null
+  );
+}
+
+export function getListingCategories(): string[] {
+  return Object.keys(LISTING_SCHEMA_REGISTRY);
+}
+
+export function getListingSubcategories(category?: string): string[] {
+  if (!category) {
+    return [];
+  }
+
+  return Object.keys(LISTING_SCHEMA_REGISTRY[category] ?? {});
+}
+
+export function getListingItemTypes(
+  category?: string,
+  subcategory?: string
+): string[] {
+  if (!category || !subcategory) {
+    return [];
+  }
+
+  return Object.keys(
+    LISTING_SCHEMA_REGISTRY[category]?.[subcategory] ?? {}
+  );
+}
+
+export function hasListingSchema(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): boolean {
+  return !!getListingSchema(category, subcategory, itemType);
+}
