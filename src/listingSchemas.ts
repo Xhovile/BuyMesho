@@ -8506,3 +8506,236 @@ export function hasListingSchema(
 ): boolean {
   return !!getListingItemConfig(category, subcategory, itemType);
 }
+
+export type ListingSpecValue = string | number | boolean | string[] | null;
+export type ListingSpecValues = Record<string, ListingSpecValue>;
+
+export interface ListingSpecValidationError {
+  key: string;
+  message: string;
+}
+
+export interface ListingSpecValidationResult {
+  isValid: boolean;
+  errors: ListingSpecValidationError[];
+}
+
+export function getListingField(
+  category?: string,
+  subcategory?: string,
+  itemType?: string,
+  fieldKey?: string
+): ListingSpecField | null {
+  if (!fieldKey) {
+    return null;
+  }
+
+  const schema = getListingSchema(category, subcategory, itemType);
+
+  if (!schema) {
+    return null;
+  }
+
+  return schema.fields.find((field) => field.key === fieldKey) ?? null;
+}
+
+export function getBasicListingFields(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingSpecField[] {
+  const schema = getListingSchema(category, subcategory, itemType);
+
+  if (!schema) {
+    return [];
+  }
+
+  return schema.fields.filter((field) => !field.advanced);
+}
+
+export function getAdvancedListingFields(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingSpecField[] {
+  const schema = getListingSchema(category, subcategory, itemType);
+
+  if (!schema) {
+    return [];
+  }
+
+  return schema.fields.filter((field) => !!field.advanced);
+}
+
+export function getRequiredListingFields(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingSpecField[] {
+  const schema = getListingSchema(category, subcategory, itemType);
+  const requiredKeys = getListingRequiredKeys(category, subcategory, itemType);
+
+  if (!schema) {
+    return [];
+  }
+
+  return schema.fields.filter((field) => requiredKeys.includes(field.key));
+}
+
+export function createEmptyListingSpecValues(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingSpecValues {
+  const schema = getListingSchema(category, subcategory, itemType);
+
+  if (!schema) {
+    return {};
+  }
+
+  return schema.fields.reduce((acc, field) => {
+    switch (field.type) {
+      case "multiselect":
+        acc[field.key] = [];
+        break;
+      case "boolean":
+        acc[field.key] = null;
+        break;
+      case "number":
+        acc[field.key] = null;
+        break;
+      case "text":
+      case "textarea":
+      case "select":
+      default:
+        acc[field.key] = "";
+        break;
+    }
+
+    return acc;
+  }, {} as ListingSpecValues);
+}
+
+export function validateListingSpecValues(
+  category?: string,
+  subcategory?: string,
+  itemType?: string,
+  values: ListingSpecValues = {}
+): ListingSpecValidationResult {
+  const schema = getListingSchema(category, subcategory, itemType);
+  const requiredKeys = getListingRequiredKeys(category, subcategory, itemType);
+
+  if (!schema) {
+    return {
+      isValid: false,
+      errors: [
+        {
+          key: "schema",
+          message: "No listing schema found for the selected item."
+        }
+      ]
+    };
+  }
+
+  const errors: ListingSpecValidationError[] = [];
+
+  for (const field of schema.fields) {
+    const value = values[field.key];
+    const isRequired = requiredKeys.includes(field.key) || !!field.required;
+
+    if (isRequired) {
+      const isEmptyString =
+        typeof value === "string" && value.trim().length === 0;
+      const isEmptyArray = Array.isArray(value) && value.length === 0;
+      const isMissing =
+        value === null ||
+        value === undefined ||
+        isEmptyString ||
+        isEmptyArray;
+
+      if (isMissing) {
+        errors.push({
+          key: field.key,
+          message: `${field.label} is required.`
+        });
+        continue;
+      }
+    }
+
+    if (value === null || value === undefined || value === "") {
+      continue;
+    }
+
+    if (field.type === "multiselect" && !Array.isArray(value)) {
+      errors.push({
+        key: field.key,
+        message: `${field.label} must be a list of selected values.`
+      });
+    }
+
+    if (field.type === "boolean" && typeof value !== "boolean") {
+      errors.push({
+        key: field.key,
+        message: `${field.label} must be true or false.`
+      });
+    }
+
+    if (field.type === "number") {
+      const isValidNumber =
+        typeof value === "number" ||
+        (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
+
+      if (!isValidNumber) {
+        errors.push({
+          key: field.key,
+          message: `${field.label} must be a valid number.`
+        });
+      }
+    }
+
+    if (
+      (field.type === "select" || field.type === "text" || field.type === "textarea") &&
+      typeof value !== "string"
+    ) {
+      errors.push({
+        key: field.key,
+        message: `${field.label} must be text.`
+      });
+    }
+
+    if (
+      field.type === "select" &&
+      field.options &&
+      typeof value === "string" &&
+      value.trim() !== "" &&
+      !field.options.includes(value)
+    ) {
+      errors.push({
+        key: field.key,
+        message: `${field.label} has an invalid option selected.`
+      });
+    }
+
+    if (
+      field.type === "multiselect" &&
+      field.options &&
+      Array.isArray(value)
+    ) {
+      const invalidOptions = value.filter(
+        (item) => typeof item !== "string" || !field.options?.includes(item)
+      );
+
+      if (invalidOptions.length > 0) {
+        errors.push({
+          key: field.key,
+          message: `${field.label} contains invalid selected values.`
+        });
+      }
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
