@@ -35,6 +35,8 @@ export default function EditListingModal({
     sold_quantity: String(listing.sold_quantity ?? 0),
   });
 
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+
   useEffect(() => {
     setForm({
       name: listing.name || "",
@@ -50,6 +52,7 @@ export default function EditListingModal({
       quantity: String(listing.quantity ?? 1),
       sold_quantity: String(listing.sold_quantity ?? 0),
     });
+    setShowAdvancedSpecs(false);
   }, [listing]);
 
   const isSchemaDrivenCategory = form.category === "Electronics & Gadgets";
