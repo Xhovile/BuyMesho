@@ -3934,7 +3934,7 @@ setCurrentPage={setCurrentPage}
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
       exit={{ scale: 0.95 }}
-      className="relative w-full max-w-3xl mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+      className="relative w-[min(96vw,1200px)] mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-4 border-b flex items-center justify-between">
@@ -3999,7 +3999,7 @@ setCurrentPage={setCurrentPage}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
         <div className="relative rounded-2xl overflow-hidden bg-zinc-100 h-[340px] sm:h-[440px] md:h-[520px]">
           <img
             src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
@@ -4133,13 +4133,13 @@ setCurrentPage={setCurrentPage}
     </div>
 
     {detailSpecGroups.length > 0 && (
-      <div className="flex flex-wrap gap-2 mb-3">
+      <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
         {detailSpecGroups.map((group) => (
           <button
             key={group.title}
             type="button"
             onClick={() => setActiveDetailSpecGroup(group.title)}
-            className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+            className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
               activeSpecGroup?.title === group.title
                 ? "bg-zinc-900 text-white border-zinc-900"
                 : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
@@ -4151,7 +4151,7 @@ setCurrentPage={setCurrentPage}
       </div>
     )}
 
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200">
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 max-h-[42vh] overflow-y-auto">
       {activeStructuredSpecRows.length > 0 ? (
         activeStructuredSpecRows.map((row) => (
           <div key={row.key} className="px-4 py-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
