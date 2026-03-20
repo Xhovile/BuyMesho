@@ -4048,32 +4048,35 @@ setCurrentPage={setCurrentPage}
     </div>
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {detailSpecRows.map((row) => (
-        <div
-          key={row.label}
-          className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-        >
-          <p className="text-[11px] font-bold text-zinc-400 uppercase">
-            {row.label}
-          </p>
-          <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
-            {row.value}
-          </p>
-        </div>
-      ))}
-      {detailStructuredSpecRows.map((row) => (
-        <div
-          key={row.key}
-          className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-        >
-          <p className="text-[11px] font-bold text-zinc-400 uppercase">
-            {row.label}
-          </p>
-          <p className="text-sm font-bold text-zinc-900 mt-1">
-            {row.value}
-          </p>
-        </div>
-      ))}
+      {detailStructuredSpecRows.length > 0 ? (
+        detailStructuredSpecRows.map((row) => (
+          <div
+            key={row.key}
+            className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+          >
+            <p className="text-[11px] font-bold text-zinc-400 uppercase">
+              {row.label}
+            </p>
+            <p className="text-sm font-bold text-zinc-900 mt-1">
+              {row.value}
+            </p>
+          </div>
+        ))
+      ) : (
+        detailSpecRows.map((row) => (
+          <div
+            key={row.label}
+            className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+          >
+            <p className="text-[11px] font-bold text-zinc-400 uppercase">
+              {row.label}
+            </p>
+            <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
+              {row.value}
+            </p>
+          </div>
+        ))
+      )}
     </div>
   </div>
 
