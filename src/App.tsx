@@ -2001,11 +2001,6 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     }
   };
 
-  const detailSpecRows = React.useMemo(() => {
-    if (!detailsListing) return [];
-    return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
-  }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
-
   const detailAvailableQuantity =
     detailsListing
       ? Math.max(
@@ -2192,6 +2187,75 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
       </div>
     );
   };
+
+  const formatSpecValue = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return value.length ? value.join(", ") : "—";
+    }
+
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+
+    if (value === null || value === undefined || value === "") {
+      return "—";
+    }
+
+    return String(value);
+  };
+
+  const getListingSpecDisplayRows = (listing: Listing) => {
+    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
+      return [];
+    }
+
+    const itemConfig = getListingItemConfig(
+      listing.category,
+      listing.subcategory,
+      listing.item_type
+    );
+
+    if (!itemConfig) {
+      return [];
+    }
+
+    return itemConfig.schema.fields
+      .map((field) => {
+        const rawValue = listing.spec_values?.[field.key];
+
+        if (
+          rawValue === null ||
+          rawValue === undefined ||
+          rawValue === "" ||
+          (Array.isArray(rawValue) && rawValue.length === 0)
+        ) {
+          return null;
+        }
+
+        return {
+          key: field.key,
+          label: field.label,
+          value: formatSpecValue(rawValue),
+          advanced: !!field.advanced,
+        };
+      })
+      .filter(Boolean) as Array<{
+        key: string;
+        label: string;
+        value: string;
+        advanced: boolean;
+      }>;
+  };
+
+  const detailSpecRows = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
+  }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
+
+  const detailStructuredSpecRows = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getListingSpecDisplayRows(detailsListing);
+  }, [detailsListing]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3989,6 +4053,29 @@ setCurrentPage={setCurrentPage}
         </div>
       ))}
     </div>
+
+    {detailStructuredSpecRows.length > 0 && (
+      <div className="mt-4">
+        <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+          Item Details
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {detailStructuredSpecRows.map((row) => (
+            <div
+              key={row.key}
+              className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+            >
+              <p className="text-[11px] font-bold text-zinc-400 uppercase">
+                {row.label}
+              </p>
+              <p className="text-sm font-bold text-zinc-900 mt-1">
+                {row.value}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
 
   <div>
