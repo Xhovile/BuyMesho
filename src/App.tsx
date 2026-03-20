@@ -1750,6 +1750,13 @@ const handleNewListingItemTypeChange = (itemType: string) => {
   }));
 };
 
+const handleNewListingUniversityChange = (university: University) => {
+  setNewListing((prev) => ({
+    ...prev,
+    university,
+  }));
+};
+
 const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   setNewListing((prev) => ({
     ...prev,
@@ -2489,10 +2496,7 @@ setCurrentPage={setCurrentPage}
                       value={newListing.university}
                       options={UNIVERSITIES}
                       onChange={(value) =>
-                        setNewListing({
-                          ...newListing,
-                          university: value as University,
-                        })
+                        handleNewListingUniversityChange(value as University)
                       }
                     />
                   </div>
