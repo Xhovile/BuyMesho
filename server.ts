@@ -527,6 +527,7 @@ async function startServer() {
       items: rows.map((l: any) => ({
         ...l,
         photos: JSON.parse(l.photos || "[]"),
+        spec_values: JSON.parse(l.spec_values || "{}"),
       })),
       total,
       page: safePage,
@@ -826,6 +827,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
       rows.map((l: any) => ({
         ...l,
         photos: JSON.parse(l.photos || "[]"),
+        spec_values: JSON.parse(l.spec_values || "{}"),
       }))
     );
   } catch (e: any) {

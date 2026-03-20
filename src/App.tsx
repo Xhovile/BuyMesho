@@ -128,6 +128,7 @@ export default function App() {
   const [settingsEntrySource, setSettingsEntrySource] = useState<"settings" | "footer">("settings");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [creatingListing, setCreatingListing] = useState(false);
   const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile' | 'editAccount' | 'becomeSeller'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
@@ -1773,41 +1774,44 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   const handleCreateListing = async (e: React.FormEvent) => {
   e.preventDefault();
 
-  if (!userProfile || !firebaseUser) return;
-
-  if (!isSellerAccount) {
-  promptSellerUpgrade();
-  return;
-  }
-
-  if (isSchemaDrivenCategory) {
-    if (!newListing.subcategory || !newListing.item_type) {
-      showFeedback(
-        "info",
-        "Item details needed",
-        "Please choose a subcategory and item type first."
-      );
-      return;
-    }
-
-    const validation = validateListingSpecValues(
-      newListing.category,
-      newListing.subcategory,
-      newListing.item_type,
-      newListing.spec_values
-    );
-
-    if (!validation.isValid) {
-      showFeedback(
-        "error",
-        "Missing or invalid details",
-        validation.errors[0]?.message || "Please complete the required item details."
-      );
-      return;
-    }
-  }
+  if (creatingListing) return;
+  setCreatingListing(true);
 
   try {
+    if (!userProfile || !firebaseUser) return;
+
+    if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+    }
+
+    if (isSchemaDrivenCategory) {
+      if (!newListing.subcategory || !newListing.item_type) {
+        showFeedback(
+          "info",
+          "Item details needed",
+          "Please choose a subcategory and item type first."
+        );
+        return;
+      }
+
+      const validation = validateListingSpecValues(
+        newListing.category,
+        newListing.subcategory,
+        newListing.item_type,
+        newListing.spec_values
+      );
+
+      if (!validation.isValid) {
+        showFeedback(
+          "error",
+          "Missing or invalid details",
+          validation.errors[0]?.message || "Please complete the required item details."
+        );
+        return;
+      }
+    }
+
     const payload: CreateListingPayload = {
       name: newListing.name,
       price: parseFloat(newListing.price),
@@ -1845,6 +1849,8 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
      "Listing creation failed",
      err?.message || "We could not create your listing."
    );
+  } finally {
+    setCreatingListing(false);
   }
 };
   
@@ -2708,10 +2714,10 @@ setCurrentPage={setCurrentPage}
 </div>
                   <button 
                     type="submit"
-                    disabled={uploading}
-                    className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors mt-4 ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
+                    disabled={uploading || creatingListing}
+                    className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors mt-4 ${uploading || creatingListing ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
                   >
-                    {uploading ? "Please wait..." : "Post Listing"}
+                    {uploading ? "Please wait..." : creatingListing ? "Posting..." : "Post Listing"}
                   </button>
                 </form>
               )}
