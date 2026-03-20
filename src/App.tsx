@@ -1750,6 +1750,13 @@ const handleNewListingItemTypeChange = (itemType: string) => {
   }));
 };
 
+const handleNewListingUniversityChange = (university: University) => {
+  setNewListing((prev) => ({
+    ...prev,
+    university,
+  }));
+};
+
 const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   setNewListing((prev) => ({
     ...prev,
@@ -2474,6 +2481,25 @@ setCurrentPage={setCurrentPage}
                     })
                    }
                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormDropdown
+                      label="Category"
+                      value={newListing.category}
+                      options={CATEGORIES}
+                      onChange={(value) =>
+                        handleNewListingCategoryChange(value as Category)
+                      }
+                    />
+
+                    <FormDropdown
+                      label="University"
+                      value={newListing.university}
+                      options={UNIVERSITIES}
+                      onChange={(value) =>
+                        handleNewListingUniversityChange(value as University)
+                      }
+                    />
+                  </div>
                   {isSchemaDrivenCategory && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
