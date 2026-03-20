@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { Listing, Category, University } from "../types";
+import { Listing, Category, University, ListingSpecValue } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
 import FormDropdown from "./FormDropdown";
+import {
+  createEmptyListingSpecValues,
+  getAdvancedListingFields,
+  getBasicListingFields,
+  getListingItemConfig,
+  getListingItemTypes,
+  getListingSubcategories,
+  validateListingSpecValues,
+} from "../listingSchemas";
+import type { ListingSpecField } from "../listingSchemas";
 
 export default function EditListingModal({
   listing,
@@ -18,6 +28,9 @@ export default function EditListingModal({
     price: String(listing.price ?? ""),
     description: listing.description || "",
     category: listing.category || "",
+    subcategory: listing.subcategory || "",
+    item_type: listing.item_type || "",
+    spec_values: listing.spec_values || {},
     university: listing.university || "",
     condition: listing.condition || "used",
     whatsapp_number: listing.whatsapp_number || "",
@@ -25,19 +38,73 @@ export default function EditListingModal({
     sold_quantity: String(listing.sold_quantity ?? 0),
   });
 
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+
   useEffect(() => {
     setForm({
       name: listing.name || "",
       price: String(listing.price ?? ""),
       description: listing.description || "",
       category: listing.category || "",
+      subcategory: listing.subcategory || "",
+      item_type: listing.item_type || "",
+      spec_values: listing.spec_values || {},
       university: listing.university || "",
       condition: listing.condition || "used",
       whatsapp_number: listing.whatsapp_number || "",
       quantity: String(listing.quantity ?? 1),
       sold_quantity: String(listing.sold_quantity ?? 0),
     });
+    setShowAdvancedSpecs(false);
   }, [listing]);
+
+  const isSchemaDrivenCategory = form.category === "Electronics & Gadgets";
+
+  const availableSubcategories = useMemo(() => {
+    if (!isSchemaDrivenCategory) return [];
+    return getListingSubcategories(form.category as Category);
+  }, [isSchemaDrivenCategory, form.category]);
+
+  const availableItemTypes = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory) return [];
+    return getListingItemTypes(form.category as Category, form.subcategory);
+  }, [isSchemaDrivenCategory, form.category, form.subcategory]);
+
+  const selectedItemConfig = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
+      return null;
+    }
+
+    return getListingItemConfig(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+
+  const basicSpecFields = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
+      return [];
+    }
+
+    return getBasicListingFields(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+
+  const advancedSpecFields = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
+      return [];
+    }
+
+    return getAdvancedListingFields(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
 
   const handleSave = () => {
     const priceNum = Number(form.price);
