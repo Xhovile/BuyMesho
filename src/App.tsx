@@ -23,10 +23,28 @@ import {
   ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Listing, UserProfile, University, Category, SellerDashboardData } from './types';
+import {
+  Listing,
+  UserProfile,
+  University,
+  Category,
+  SellerDashboardData,
+  ListingDraft,
+  CreateListingPayload,
+  ListingSpecValue
+} from './types';
 import HeroSection from "./sections/HeroSection";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES, CATEGORIES } from './constants';
+import {
+  getListingSubcategories,
+  getListingItemTypes,
+  getListingItemConfig,
+  getBasicListingFields,
+  getAdvancedListingFields,
+  createEmptyListingSpecValues,
+  validateListingSpecValues
+} from "./listingSchemas";
 import {
   getListingParamsFromUrl,
   buildListingShareUrl,
@@ -73,6 +91,26 @@ type SellerRatingSummary = {
   ratingCount: number;
   myRating: number | null;
 };
+
+const createInitialListingDraft = (
+  userProfile?: UserProfile | null
+): ListingDraft => ({
+  name: "",
+  price: "",
+  description: "",
+  category: CATEGORIES[0] as Category,
+  subcategory: "",
+  item_type: "",
+  spec_values: {},
+  university: userProfile?.university || (UNIVERSITIES[0] as University),
+  photos: [],
+  video_url: "",
+  whatsapp_number: userProfile?.whatsapp_number || "",
+  status: "available",
+  condition: "used",
+  quantity: "1",
+  sold_quantity: "0",
+});
 
 export default function App() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -363,20 +401,9 @@ useEffect(() => {
   const isSellerAccount = !!userProfile?.is_seller;
 
   // Form states
-  const [newListing, setNewListing] = useState({
-    name: "",
-    price: "",
-    description: "",
-    category: CATEGORIES[0] as Category,
-    university: UNIVERSITIES[0] as University,
-    photos: [] as string[],
-    video_url: "",
-    whatsapp_number: "",
-    status: "available" as "available" | "sold",
-    condition: "used" as "new" | "used" | "refurbished",
-    quantity: "1",
-    sold_quantity: "0",
-  });
+  const [newListing, setNewListing] = useState(
+    createInitialListingDraft(null)
+  );
 
   const [authForm, setAuthForm] = useState({
   email: "",
