@@ -4031,3 +4031,383 @@ export const EARBUDS_REQUIRED_KEYS = [
   "includes_case"
 ];
 
+export const BLUETOOTH_SPEAKER_SCHEMA: ListingItemSchema = {
+  category: "Electronics & Gadgets",
+  subcategory: "Audio",
+  itemType: "Bluetooth Speaker",
+  fields: [
+    // Device Identity
+    {
+      key: "speaker_type",
+      label: "Speaker Type",
+      type: "select",
+      required: true,
+      options: ["Portable", "Home Speaker", "Party Speaker", "Soundbar", "Mini Speaker", "Other"]
+    },
+    {
+      key: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "JBL",
+        "Sony",
+        "Anker",
+        "Oraimo",
+        "Bose",
+        "LG",
+        "Samsung",
+        "Xiaomi",
+        "Harman Kardon",
+        "Marshall",
+        "Other"
+      ]
+    },
+    {
+      key: "model",
+      label: "Model",
+      type: "text",
+      required: true,
+      placeholder: "e.g. JBL Flip 5, Sony SRS-XB13"
+    },
+    {
+      key: "color",
+      label: "Color",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Black, Blue, Red"
+    },
+
+    // Connectivity & Features
+    {
+      key: "connection_type",
+      label: "Connection Type",
+      type: "select",
+      required: true,
+      options: ["Bluetooth Only", "Bluetooth + AUX", "Bluetooth + USB", "Bluetooth + AUX + USB", "Other"]
+    },
+    {
+      key: "bluetooth_working",
+      label: "Bluetooth Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "aux_input_available",
+      label: "AUX Input Available",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "usb_input_available",
+      label: "USB Input Available",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "memory_card_support",
+      label: "Memory Card Support",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "fm_radio_available",
+      label: "FM Radio Available",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "microphone_input_available",
+      label: "Microphone Input Available",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "water_resistance",
+      label: "Water Resistance",
+      type: "select",
+      advanced: true,
+      options: ["Yes", "No", "Not Sure"]
+    },
+
+    // Physical Condition
+    {
+      key: "body_condition",
+      label: "Body Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "grill_condition",
+      label: "Speaker Grill Condition",
+      type: "select",
+      advanced: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "buttons_condition",
+      label: "Buttons Condition",
+      type: "select",
+      required: true,
+      options: ["Fully Working", "Some Buttons Weak", "Some Buttons Not Working", "Damaged"]
+    },
+    {
+      key: "has_scratches",
+      label: "Visible Scratches?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "has_cracks",
+      label: "Any Cracks?",
+      type: "boolean",
+      required: true
+    },
+
+    // Functionality Check
+    {
+      key: "sound_clear",
+      label: "Sound Clear",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "volume_output_good",
+      label: "Volume Output Good",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "bass_working_well",
+      label: "Bass Working Well",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "left_right_channels_ok",
+      label: "Channels Working Properly",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "buttons_working",
+      label: "Buttons Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "charging_port_working",
+      label: "Charging Port Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "aux_input_working",
+      label: "AUX Input Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "usb_input_working",
+      label: "USB Input Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "memory_card_working",
+      label: "Memory Card Slot Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "fm_radio_working",
+      label: "FM Radio Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "microphone_input_working",
+      label: "Microphone Input Working",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Battery
+    {
+      key: "battery_condition",
+      label: "Battery Condition",
+      type: "select",
+      required: true,
+      options: ["Excellent", "Good", "Fair", "Weak", "Needs Replacement", "Not Applicable"]
+    },
+    {
+      key: "battery_backup",
+      label: "Battery Backup",
+      type: "select",
+      required: true,
+      options: [
+        "10+ Hours",
+        "5-10 Hours",
+        "1-5 Hours",
+        "Less Than 1 Hour",
+        "Drains Fast",
+        "Not Sure",
+        "Not Applicable"
+      ]
+    },
+    {
+      key: "battery_replaced",
+      label: "Battery Ever Replaced?",
+      type: "boolean",
+      advanced: true
+    },
+
+    // What's Included
+    {
+      key: "includes_charging_cable",
+      label: "Charging Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_aux_cable",
+      label: "AUX Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_box",
+      label: "Original Box Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_receipt",
+      label: "Receipt Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_remote",
+      label: "Remote Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "accessories_notes",
+      label: "Other Included Accessories",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Strap, adapter, microphone"
+    },
+
+    // Extra Notes
+    {
+      key: "known_faults",
+      label: "Known Faults / Defects",
+      type: "textarea",
+      advanced: true,
+      placeholder: "List any issue clearly"
+    },
+    {
+      key: "usage_history",
+      label: "Usage History",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Used for home music for 8 months"
+    },
+    {
+      key: "reason_for_selling",
+      label: "Reason for Selling",
+      type: "text",
+      advanced: true,
+      placeholder: "Optional"
+    }
+  ]
+};
+
+export const BLUETOOTH_SPEAKER_FIELD_GROUPS = [
+  {
+    title: "Device Identity",
+    keys: ["speaker_type", "brand", "model", "color"]
+  },
+  {
+    title: "Connectivity & Features",
+    keys: [
+      "connection_type",
+      "bluetooth_working",
+      "aux_input_available",
+      "usb_input_available",
+      "memory_card_support",
+      "fm_radio_available",
+      "microphone_input_available",
+      "water_resistance"
+    ]
+  },
+  {
+    title: "Physical Condition",
+    keys: [
+      "body_condition",
+      "grill_condition",
+      "buttons_condition",
+      "has_scratches",
+      "has_cracks"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "sound_clear",
+      "volume_output_good",
+      "bass_working_well",
+      "left_right_channels_ok",
+      "buttons_working",
+      "charging_port_working",
+      "aux_input_working",
+      "usb_input_working",
+      "memory_card_working",
+      "fm_radio_working",
+      "microphone_input_working"
+    ]
+  },
+  {
+    title: "Battery",
+    keys: ["battery_condition", "battery_backup", "battery_replaced"]
+  },
+  {
+    title: "What's Included",
+    keys: [
+      "includes_charging_cable",
+      "includes_aux_cable",
+      "includes_box",
+      "includes_receipt",
+      "includes_remote",
+      "accessories_notes"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
+export const BLUETOOTH_SPEAKER_REQUIRED_KEYS = [
+  "speaker_type",
+  "brand",
+  "model",
+  "color",
+  "connection_type",
+  "bluetooth_working",
+  "body_condition",
+  "buttons_condition",
+  "has_scratches",
+  "has_cracks",
+  "sound_clear",
+  "volume_output_good",
+  "buttons_working",
+  "charging_port_working",
+  "battery_condition",
+  "battery_backup"
+];
+
