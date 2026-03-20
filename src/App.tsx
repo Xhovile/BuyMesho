@@ -2486,25 +2486,7 @@ setCurrentPage={setCurrentPage}
                     })
                    }
                  />
-                  <div className="grid grid-cols-2 gap-4">
-                  <FormDropdown
-                    label="Category"
-                    value={newListing.category}
-                    options={CATEGORIES}
-                    onChange={(value) =>
-                      handleNewListingCategoryChange(value as Category)
-                    }
-                 />
-                   <FormDropdown
-                      label="University"
-                      value={newListing.university}
-                      options={UNIVERSITIES}
-                      onChange={(value) =>
-                        setNewListing({ ...newListing, university: value as University })
-                      }
-                    />
-                   </div>
-                   {isSchemaDrivenCategory && (
+                  {isSchemaDrivenCategory && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
                         <FormDropdown
@@ -2559,15 +2541,6 @@ setCurrentPage={setCurrentPage}
                       )}
                     </>
                   )}
-                   <div>
-                     <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Description</label>
-                     <textarea 
-                       required
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
-                      value={newListing.description}
-                      onChange={e => setNewListing({...newListing, description: e.target.value})}
-                    />
-                  </div>
                   <div>
   <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
     Photos (max 5)
