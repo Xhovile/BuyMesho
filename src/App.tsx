@@ -404,6 +404,69 @@ useEffect(() => {
   const [newListing, setNewListing] = useState(
     createInitialListingDraft(null)
   );
+  const isSchemaDrivenCategory =
+    newListing.category === "Electronics & Gadgets";
+
+  const availableSubcategories = React.useMemo(() => {
+    if (!isSchemaDrivenCategory) return [];
+    return getListingSubcategories(newListing.category);
+  }, [isSchemaDrivenCategory, newListing.category]);
+
+  const availableItemTypes = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory) return [];
+    return getListingItemTypes(newListing.category, newListing.subcategory);
+  }, [isSchemaDrivenCategory, newListing.category, newListing.subcategory]);
+
+  const selectedItemConfig = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return null;
+    }
+
+    return getListingItemConfig(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
+
+  const basicSpecFields = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return [];
+    }
+
+    return getBasicListingFields(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
+
+  const advancedSpecFields = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return [];
+    }
+
+    return getAdvancedListingFields(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
 
   const [authForm, setAuthForm] = useState({
   email: "",
@@ -1647,6 +1710,47 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     e.target.value = "";
   }
 };
+
+const handleNewListingCategoryChange = (category: Category) => {
+  setNewListing((prev) => ({
+    ...prev,
+    category,
+    subcategory: "",
+    item_type: "",
+    spec_values: {},
+  }));
+};
+
+const handleNewListingSubcategoryChange = (subcategory: string) => {
+  setNewListing((prev) => ({
+    ...prev,
+    subcategory,
+    item_type: "",
+    spec_values: {},
+  }));
+};
+
+const handleNewListingItemTypeChange = (itemType: string) => {
+  setNewListing((prev) => ({
+    ...prev,
+    item_type: itemType,
+    spec_values: createEmptyListingSpecValues(
+      prev.category,
+      prev.subcategory,
+      itemType
+    ),
+  }));
+};
+
+const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
+  setNewListing((prev) => ({
+    ...prev,
+    spec_values: {
+      ...prev.spec_values,
+      [key]: value,
+    },
+  }));
+};
   
   const handleCreateListing = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -2172,7 +2276,7 @@ setCurrentPage={setCurrentPage}
                     value={newListing.category}
                     options={CATEGORIES}
                     onChange={(value) =>
-                      setNewListing({ ...newListing, category: value as Category })
+                      handleNewListingCategoryChange(value as Category)
                     }
                  />
                     <FormDropdown
