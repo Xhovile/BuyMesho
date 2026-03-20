@@ -5,11 +5,14 @@ import { CATEGORIES, UNIVERSITIES } from "../constants";
 import FormDropdown from "./FormDropdown";
 import {
   createEmptyListingSpecValues,
-  getListingSubcategories,
-  getListingItemTypes,
+  getAdvancedListingFields,
+  getBasicListingFields,
   getListingItemConfig,
-  type ListingSpecField,
+  getListingItemTypes,
+  getListingSubcategories,
+  validateListingSpecValues,
 } from "../listingSchemas";
+import type { ListingSpecField } from "../listingSchemas";
 
 export default function EditListingModal({
   listing,
@@ -34,6 +37,7 @@ export default function EditListingModal({
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
   });
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
 
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
 
@@ -59,21 +63,49 @@ export default function EditListingModal({
 
   const availableSubcategories = useMemo(() => {
     if (!isSchemaDrivenCategory) return [];
-    return getListingSubcategories(form.category);
-  }, [form.category, isSchemaDrivenCategory]);
+    return getListingSubcategories(form.category as Category);
+  }, [isSchemaDrivenCategory, form.category]);
 
   const availableItemTypes = useMemo(() => {
     if (!isSchemaDrivenCategory || !form.subcategory) return [];
-    return getListingItemTypes(form.category, form.subcategory);
-  }, [form.category, form.subcategory, isSchemaDrivenCategory]);
+    return getListingItemTypes(form.category as Category, form.subcategory);
+  }, [isSchemaDrivenCategory, form.category, form.subcategory]);
 
   const selectedItemConfig = useMemo(() => {
     if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
       return null;
     }
 
-    return getListingItemConfig(form.category, form.subcategory, form.item_type);
-  }, [form.category, form.subcategory, form.item_type, isSchemaDrivenCategory]);
+    return getListingItemConfig(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+
+  const basicSpecFields = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
+      return [];
+    }
+
+    return getBasicListingFields(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
+
+  const advancedSpecFields = useMemo(() => {
+    if (!isSchemaDrivenCategory || !form.subcategory || !form.item_type) {
+      return [];
+    }
+
+    return getAdvancedListingFields(
+      form.category as Category,
+      form.subcategory,
+      form.item_type
+    );
+  }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
 
   const handleCategoryChange = (category: Category) => {
     setForm((prev) => ({
@@ -83,6 +115,7 @@ export default function EditListingModal({
       item_type: "",
       spec_values: {},
     }));
+    setShowAdvancedSpecs(false);
   };
 
   const handleSubcategoryChange = (subcategory: string) => {
@@ -92,6 +125,7 @@ export default function EditListingModal({
       item_type: "",
       spec_values: {},
     }));
+    setShowAdvancedSpecs(false);
   };
 
   const handleItemTypeChange = (itemType: string) => {
@@ -104,6 +138,7 @@ export default function EditListingModal({
         itemType
       ),
     }));
+    setShowAdvancedSpecs(false);
   };
 
   const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
@@ -116,26 +151,31 @@ export default function EditListingModal({
     }));
   };
 
-  const renderSpecField = (field: ListingSpecField) => {
+  const renderListingSpecField = (field: ListingSpecField) => {
     const rawValue = form.spec_values[field.key];
     const value = rawValue === null || rawValue === undefined ? "" : rawValue;
-
     const isRequired =
       !!field.required || !!selectedItemConfig?.requiredKeys.includes(field.key);
-
     const labelText = `${field.label}${isRequired ? " *" : ""}`;
 
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <FormDropdown
-            label={labelText}
-            value={typeof value === "string" ? value : ""}
-            options={field.options || []}
-            onChange={(option) => handleSpecValueChange(field.key, option)}
-            placeholder={field.placeholder || "Select an option"}
-            searchPlaceholder={`Search ${field.label.toLowerCase()}...`}
-          />
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <select
+            value={value as string}
+            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">Select {field.label}</option>
+            {(field.options || []).map((option: string) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -152,8 +192,7 @@ export default function EditListingModal({
           <textarea
             value={value as string}
             onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
-            rows={3}
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-y"
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
             placeholder={field.placeholder || ""}
           />
           {field.helpText ? (
@@ -168,33 +207,25 @@ export default function EditListingModal({
 
       return (
         <div key={field.key}>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleSpecValueChange(field.key, true)}
-              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${
-                boolValue === true
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50"
-              }`}
-            >
-              Yes
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSpecValueChange(field.key, false)}
-              className={`px-3 py-2 rounded-xl border text-sm font-semibold transition-colors ${
-                boolValue === false
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white text-zinc-700 border-zinc-300 hover:bg-zinc-50"
-              }`}
-            >
-              No
-            </button>
-          </div>
+          <select
+            value={boolValue === null ? "" : boolValue ? "true" : "false"}
+            onChange={(e) => {
+              if (e.target.value === "") {
+                handleSpecValueChange(field.key, null);
+                return;
+              }
+
+              handleSpecValueChange(field.key, e.target.value === "true");
+            }}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">Select an option</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -215,13 +246,19 @@ export default function EditListingModal({
               const isChecked = selectedValues.includes(option);
 
               return (
-                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
+                <label
+                  key={option}
+                  className="flex items-center gap-2 text-sm text-zinc-700"
+                >
                   <input
                     type="checkbox"
                     checked={isChecked}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        handleSpecValueChange(field.key, [...selectedValues, option]);
+                        handleSpecValueChange(field.key, [
+                          ...selectedValues,
+                          option,
+                        ]);
                         return;
                       }
 
@@ -312,15 +349,37 @@ export default function EditListingModal({
       return;
     }
 
+    if (isSchemaDrivenCategory) {
+      if (!form.subcategory || !form.item_type) {
+        alert("Please choose a subcategory and item type.");
+        return;
+      }
+
+      const validation = validateListingSpecValues(
+        form.category as Category,
+        form.subcategory,
+        form.item_type,
+        form.spec_values
+      );
+
+      if (!validation.isValid) {
+        alert(
+          validation.errors[0]?.message ||
+            "Please complete the required item details."
+        );
+        return;
+      }
+    }
+
     onSave({
       name: form.name,
       price: priceNum,
       description: form.description,
-      category: form.category,
+      category: form.category as Category,
       subcategory: form.subcategory || null,
       item_type: form.item_type || null,
-      spec_values: form.spec_values,
-      university: form.university,
+      spec_values: isSchemaDrivenCategory ? form.spec_values : {},
+      university: form.university as University,
       whatsapp_number: form.whatsapp_number,
       condition: form.condition as "new" | "used" | "refurbished",
       quantity: quantityNum,
@@ -499,6 +558,62 @@ export default function EditListingModal({
               className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
             />
           </div>
+
+          {isSchemaDrivenCategory && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <FormDropdown
+                  label="Subcategory"
+                  value={form.subcategory}
+                  options={availableSubcategories}
+                  onChange={handleSubcategoryChange}
+                />
+                <FormDropdown
+                  label="Item Type"
+                  value={form.item_type}
+                  options={availableItemTypes}
+                  onChange={handleItemTypeChange}
+                />
+              </div>
+
+              {form.subcategory && form.item_type && selectedItemConfig && (
+                <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <div>
+                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                      Item details
+                    </p>
+                    <p className="text-xs text-zinc-400 mt-1">
+                      Fill required fields marked with *.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {basicSpecFields.map(renderListingSpecField)}
+                  </div>
+
+                  {advancedSpecFields.length > 0 && (
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => setShowAdvancedSpecs((prev) => !prev)}
+                        className="text-sm font-bold text-primary hover:underline"
+                      >
+                        {showAdvancedSpecs
+                          ? "Hide advanced details"
+                          : "Add advanced details"}
+                      </button>
+                    </div>
+                  )}
+
+                  {showAdvancedSpecs && advancedSpecFields.length > 0 && (
+                    <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                      {advancedSpecFields.map(renderListingSpecField)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
