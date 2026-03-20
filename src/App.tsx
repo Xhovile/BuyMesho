@@ -45,6 +45,7 @@ import {
   createEmptyListingSpecValues,
   validateListingSpecValues
 } from "./listingSchemas";
+import type { ListingSpecField } from "./listingSchemas";
 import {
   getListingParamsFromUrl,
   buildListingShareUrl,
@@ -2015,7 +2016,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
 
-  const renderListingSpecField = (field: any) => {
+  const renderListingSpecField = (field: ListingSpecField) => {
     const rawValue = newListing.spec_values[field.key];
     const value =
       rawValue === null || rawValue === undefined ? "" : rawValue;
@@ -2033,7 +2034,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
             {labelText}
           </label>
           <select
-            value={String(value)}
+            value={value as string}
             onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
             className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
           >
@@ -2058,7 +2059,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
             {labelText}
           </label>
           <textarea
-            value={String(value)}
+            value={value as string}
             onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
             className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
             placeholder={field.placeholder || ""}
@@ -2177,7 +2178,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
         </label>
         <input
           type="text"
-          value={String(value)}
+          value={value as string}
           onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
           className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
           placeholder={field.placeholder || ""}
