@@ -2944,3 +2944,1090 @@ export const DESKTOP_COMPUTER_REQUIRED_KEYS = [
   "mouse_included"
 ];
 
+export const MONITOR_SCHEMA: ListingItemSchema = {
+  category: "Electronics & Gadgets",
+  subcategory: "Computers",
+  itemType: "Monitor",
+  fields: [
+    // Device Identity
+    {
+      key: "monitor_type",
+      label: "Monitor Type",
+      type: "select",
+      required: true,
+      options: ["Flat", "Curved", "Portable Monitor", "All-in-One Display", "Other"]
+    },
+    {
+      key: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "HP",
+        "Dell",
+        "Lenovo",
+        "Samsung",
+        "LG",
+        "Acer",
+        "Asus",
+        "MSI",
+        "AOC",
+        "ViewSonic",
+        "BenQ",
+        "Apple",
+        "Other"
+      ]
+    },
+    {
+      key: "model",
+      label: "Model",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Dell P2419H, Samsung Odyssey G5"
+    },
+    {
+      key: "color",
+      label: "Color",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Black, Silver, White"
+    },
+    {
+      key: "release_year",
+      label: "Release Year",
+      type: "number",
+      advanced: true,
+      placeholder: "e.g. 2021"
+    },
+
+    // Display Specs
+    {
+      key: "screen_size",
+      label: "Screen Size",
+      type: "text",
+      required: true,
+      placeholder: 'e.g. 19", 22", 24", 27"'
+    },
+    {
+      key: "resolution",
+      label: "Resolution",
+      type: "select",
+      required: true,
+      options: ["HD", "Full HD", "2K", "4K", "Retina", "Not Sure"]
+    },
+    {
+      key: "panel_type",
+      label: "Panel Type",
+      type: "select",
+      advanced: true,
+      options: ["TN", "IPS", "VA", "OLED", "AMOLED", "Not Sure"]
+    },
+    {
+      key: "refresh_rate",
+      label: "Refresh Rate",
+      type: "select",
+      advanced: true,
+      options: ["60Hz", "75Hz", "90Hz", "100Hz", "120Hz", "144Hz", "165Hz", "240Hz", "Not Sure"]
+    },
+    {
+      key: "aspect_ratio",
+      label: "Aspect Ratio",
+      type: "select",
+      advanced: true,
+      options: ["16:9", "16:10", "21:9", "32:9", "Not Sure"]
+    },
+    {
+      key: "touchscreen",
+      label: "Touchscreen",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Physical Condition
+    {
+      key: "body_condition",
+      label: "Body Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "screen_condition",
+      label: "Screen Condition",
+      type: "select",
+      required: true,
+      options: [
+        "Clean",
+        "Minor Scratches",
+        "Noticeable Scratches",
+        "Dead Pixels",
+        "Lines / Spots",
+        "Cracked",
+        "Replaced Panel"
+      ]
+    },
+    {
+      key: "stand_condition",
+      label: "Stand Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged", "Not Included"]
+    },
+    {
+      key: "has_cracks",
+      label: "Any Cracks?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "has_scratches",
+      label: "Visible Scratches?",
+      type: "boolean",
+      required: true
+    },
+
+    // Functionality Check
+    {
+      key: "display_working",
+      label: "Display Working Properly",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "dead_pixels_present",
+      label: "Dead Pixels Present",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "backlight_issue",
+      label: "Backlight / Brightness Issue",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "hdmi_port_working",
+      label: "HDMI Port Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "displayport_working",
+      label: "DisplayPort Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "vga_port_working",
+      label: "VGA Port Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "dvi_port_working",
+      label: "DVI Port Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "usb_ports_working",
+      label: "USB Ports Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "built_in_speakers_working",
+      label: "Built-in Speakers Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "buttons_working",
+      label: "Buttons / Menu Controls Working",
+      type: "boolean",
+      required: true
+    },
+
+    // Mounting & Ergonomics
+    {
+      key: "vesa_mount_support",
+      label: "VESA Mount Support",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "height_adjustable",
+      label: "Height Adjustable",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "tilt_adjustable",
+      label: "Tilt Adjustable",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "pivot_support",
+      label: "Pivot / Rotate Support",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Power & Cables
+    {
+      key: "power_cable_included",
+      label: "Power Cable Included",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "hdmi_cable_included",
+      label: "HDMI Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "displayport_cable_included",
+      label: "DisplayPort Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "vga_cable_included",
+      label: "VGA Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "adapter_included",
+      label: "Power Adapter Included",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Ownership / Extra
+    {
+      key: "repair_history",
+      label: "Has It Been Repaired Before?",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "replacement_parts",
+      label: "Any Replaced Parts?",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Panel changed, stand replaced"
+    },
+    {
+      key: "proof_of_ownership",
+      label: "Proof of Ownership Available",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "warranty_remaining",
+      label: "Warranty Remaining",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Extra Notes
+    {
+      key: "known_faults",
+      label: "Known Faults / Defects",
+      type: "textarea",
+      advanced: true,
+      placeholder: "List any issue clearly"
+    },
+    {
+      key: "usage_history",
+      label: "Usage History",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Used for office work for 1 year"
+    },
+    {
+      key: "reason_for_selling",
+      label: "Reason for Selling",
+      type: "text",
+      advanced: true,
+      placeholder: "Optional"
+    }
+  ]
+};
+
+export const MONITOR_FIELD_GROUPS = [
+  {
+    title: "Device Identity",
+    keys: ["monitor_type", "brand", "model", "color", "release_year"]
+  },
+  {
+    title: "Display Specs",
+    keys: [
+      "screen_size",
+      "resolution",
+      "panel_type",
+      "refresh_rate",
+      "aspect_ratio",
+      "touchscreen"
+    ]
+  },
+  {
+    title: "Physical Condition",
+    keys: [
+      "body_condition",
+      "screen_condition",
+      "stand_condition",
+      "has_cracks",
+      "has_scratches"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "display_working",
+      "dead_pixels_present",
+      "backlight_issue",
+      "hdmi_port_working",
+      "displayport_working",
+      "vga_port_working",
+      "dvi_port_working",
+      "usb_ports_working",
+      "built_in_speakers_working",
+      "buttons_working"
+    ]
+  },
+  {
+    title: "Mounting & Ergonomics",
+    keys: [
+      "vesa_mount_support",
+      "height_adjustable",
+      "tilt_adjustable",
+      "pivot_support"
+    ]
+  },
+  {
+    title: "Power & Cables",
+    keys: [
+      "power_cable_included",
+      "hdmi_cable_included",
+      "displayport_cable_included",
+      "vga_cable_included",
+      "adapter_included"
+    ]
+  },
+  {
+    title: "Ownership / Extra",
+    keys: [
+      "repair_history",
+      "replacement_parts",
+      "proof_of_ownership",
+      "warranty_remaining"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
+export const MONITOR_REQUIRED_KEYS = [
+  "monitor_type",
+  "brand",
+  "model",
+  "screen_size",
+  "resolution",
+  "body_condition",
+  "screen_condition",
+  "stand_condition",
+  "has_cracks",
+  "has_scratches",
+  "display_working",
+  "dead_pixels_present",
+  "buttons_working",
+  "power_cable_included"
+];
+
+export const HEADPHONES_SCHEMA: ListingItemSchema = {
+  category: "Electronics & Gadgets",
+  subcategory: "Audio",
+  itemType: "Headphones",
+  fields: [
+    // Device Identity
+    {
+      key: "headphone_type",
+      label: "Headphone Type",
+      type: "select",
+      required: true,
+      options: ["Over-Ear", "On-Ear", "Wired Headphones", "Wireless Headphones", "Gaming Headset", "Other"]
+    },
+    {
+      key: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "Sony",
+        "JBL",
+        "Beats",
+        "Apple",
+        "Samsung",
+        "Oraimo",
+        "Anker",
+        "Skullcandy",
+        "Logitech",
+        "Razer",
+        "HyperX",
+        "Other"
+      ]
+    },
+    {
+      key: "model",
+      label: "Model",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Sony WH-1000XM4, JBL Tune 510BT"
+    },
+    {
+      key: "color",
+      label: "Color",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Black, Blue, White"
+    },
+
+    // Connectivity & Compatibility
+    {
+      key: "connection_type",
+      label: "Connection Type",
+      type: "select",
+      required: true,
+      options: ["Wired", "Wireless", "Wired + Wireless"]
+    },
+    {
+      key: "connector_type",
+      label: "Connector Type",
+      type: "select",
+      advanced: true,
+      options: ["3.5mm Jack", "USB-C", "Lightning", "USB", "Not Applicable", "Other"]
+    },
+    {
+      key: "bluetooth_working",
+      label: "Bluetooth Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "compatible_with",
+      label: "Compatible With",
+      type: "select",
+      required: true,
+      options: ["Android", "iPhone (iOS)", "Laptop / PC", "Android & iPhone", "Universal", "Not Sure"]
+    },
+    {
+      key: "noise_cancellation",
+      label: "Noise Cancellation",
+      type: "select",
+      advanced: true,
+      options: ["Yes", "No", "Not Sure"]
+    },
+    {
+      key: "microphone_available",
+      label: "Built-in Microphone",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Physical Condition
+    {
+      key: "body_condition",
+      label: "Body Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "ear_cushion_condition",
+      label: "Ear Cushion Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Worn Out", "Damaged", "Not Applicable"]
+    },
+    {
+      key: "headband_condition",
+      label: "Headband Condition",
+      type: "select",
+      advanced: true,
+      options: ["Like New", "Very Good", "Good", "Worn", "Damaged", "Not Applicable"]
+    },
+    {
+      key: "has_scratches",
+      label: "Visible Scratches?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "has_cracks",
+      label: "Any Cracks?",
+      type: "boolean",
+      required: true
+    },
+
+    // Functionality Check
+    {
+      key: "left_side_working",
+      label: "Left Side Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "right_side_working",
+      label: "Right Side Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "sound_clear",
+      label: "Sound Clear",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "volume_controls_working",
+      label: "Volume Controls Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "microphone_working",
+      label: "Microphone Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "charging_port_working",
+      label: "Charging Port Working",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Battery
+    {
+      key: "battery_condition",
+      label: "Battery Condition",
+      type: "select",
+      advanced: true,
+      options: ["Excellent", "Good", "Fair", "Weak", "Needs Replacement", "Not Applicable"]
+    },
+    {
+      key: "battery_backup",
+      label: "Battery Backup",
+      type: "select",
+      advanced: true,
+      options: [
+        "10+ Hours",
+        "5-10 Hours",
+        "1-5 Hours",
+        "Less Than 1 Hour",
+        "Drains Fast",
+        "Not Sure",
+        "Not Applicable"
+      ]
+    },
+
+    // What's Included
+    {
+      key: "includes_charging_cable",
+      label: "Charging Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_audio_cable",
+      label: "Audio Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_case",
+      label: "Case / Pouch Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_box",
+      label: "Original Box Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_receipt",
+      label: "Receipt Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "accessories_notes",
+      label: "Other Included Accessories",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Adapter, extra cable"
+    },
+
+    // Extra Notes
+    {
+      key: "known_faults",
+      label: "Known Faults / Defects",
+      type: "textarea",
+      advanced: true,
+      placeholder: "List any issue clearly"
+    },
+    {
+      key: "usage_history",
+      label: "Usage History",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Used for 6 months"
+    },
+    {
+      key: "reason_for_selling",
+      label: "Reason for Selling",
+      type: "text",
+      advanced: true,
+      placeholder: "Optional"
+    }
+  ]
+};
+
+export const HEADPHONES_FIELD_GROUPS = [
+  {
+    title: "Device Identity",
+    keys: ["headphone_type", "brand", "model", "color"]
+  },
+  {
+    title: "Connectivity & Compatibility",
+    keys: [
+      "connection_type",
+      "connector_type",
+      "bluetooth_working",
+      "compatible_with",
+      "noise_cancellation",
+      "microphone_available"
+    ]
+  },
+  {
+    title: "Physical Condition",
+    keys: [
+      "body_condition",
+      "ear_cushion_condition",
+      "headband_condition",
+      "has_scratches",
+      "has_cracks"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "left_side_working",
+      "right_side_working",
+      "sound_clear",
+      "volume_controls_working",
+      "microphone_working",
+      "charging_port_working"
+    ]
+  },
+  {
+    title: "Battery",
+    keys: ["battery_condition", "battery_backup"]
+  },
+  {
+    title: "What's Included",
+    keys: [
+      "includes_charging_cable",
+      "includes_audio_cable",
+      "includes_case",
+      "includes_box",
+      "includes_receipt",
+      "accessories_notes"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
+export const HEADPHONES_REQUIRED_KEYS = [
+  "headphone_type",
+  "brand",
+  "model",
+  "color",
+  "connection_type",
+  "compatible_with",
+  "body_condition",
+  "ear_cushion_condition",
+  "has_scratches",
+  "has_cracks",
+  "left_side_working",
+  "right_side_working",
+  "sound_clear"
+];
+
+export const EARBUDS_SCHEMA: ListingItemSchema = {
+  category: "Electronics & Gadgets",
+  subcategory: "Audio",
+  itemType: "Earbuds",
+  fields: [
+    // Device Identity
+    {
+      key: "earbuds_type",
+      label: "Earbuds Type",
+      type: "select",
+      required: true,
+      options: ["True Wireless", "Neckband", "Wired Earbuds", "Gaming Earbuds", "Other"]
+    },
+    {
+      key: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "Apple",
+        "Samsung",
+        "JBL",
+        "Sony",
+        "Oraimo",
+        "Anker",
+        "Xiaomi",
+        "Redmi",
+        "Huawei",
+        "Beats",
+        "Skullcandy",
+        "Other"
+      ]
+    },
+    {
+      key: "model",
+      label: "Model",
+      type: "text",
+      required: true,
+      placeholder: "e.g. AirPods Pro, Galaxy Buds 2, Oraimo FreePods 4"
+    },
+    {
+      key: "color",
+      label: "Color",
+      type: "text",
+      required: true,
+      placeholder: "e.g. White, Black, Blue"
+    },
+
+    // Connectivity & Compatibility
+    {
+      key: "connection_type",
+      label: "Connection Type",
+      type: "select",
+      required: true,
+      options: ["Wired", "Wireless", "Wired + Wireless"]
+    },
+    {
+      key: "connector_type",
+      label: "Connector Type",
+      type: "select",
+      advanced: true,
+      options: ["3.5mm Jack", "USB-C", "Lightning", "Not Applicable", "Other"]
+    },
+    {
+      key: "bluetooth_working",
+      label: "Bluetooth Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "compatible_with",
+      label: "Compatible With",
+      type: "select",
+      required: true,
+      options: ["Android", "iPhone (iOS)", "Laptop / PC", "Android & iPhone", "Universal", "Not Sure"]
+    },
+    {
+      key: "noise_cancellation",
+      label: "Noise Cancellation",
+      type: "select",
+      advanced: true,
+      options: ["Yes", "No", "Not Sure"]
+    },
+    {
+      key: "microphone_available",
+      label: "Built-in Microphone",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Physical Condition
+    {
+      key: "body_condition",
+      label: "Body Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "left_earbud_condition",
+      label: "Left Earbud Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged", "Missing"]
+    },
+    {
+      key: "right_earbud_condition",
+      label: "Right Earbud Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged", "Missing"]
+    },
+    {
+      key: "charging_case_condition",
+      label: "Charging Case Condition",
+      type: "select",
+      advanced: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged", "Not Included", "Not Applicable"]
+    },
+    {
+      key: "ear_tips_condition",
+      label: "Ear Tips Condition",
+      type: "select",
+      advanced: true,
+      options: ["Like New", "Very Good", "Good", "Worn Out", "Damaged", "Not Included", "Not Applicable"]
+    },
+    {
+      key: "has_scratches",
+      label: "Visible Scratches?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "has_cracks",
+      label: "Any Cracks?",
+      type: "boolean",
+      required: true
+    },
+
+    // Functionality Check
+    {
+      key: "left_side_working",
+      label: "Left Earbud Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "right_side_working",
+      label: "Right Earbud Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "sound_clear",
+      label: "Sound Clear",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "touch_controls_working",
+      label: "Touch / Button Controls Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "microphone_working",
+      label: "Microphone Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "charging_case_working",
+      label: "Charging Case Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "charging_port_working",
+      label: "Charging Port Working",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Battery
+    {
+      key: "battery_condition",
+      label: "Battery Condition",
+      type: "select",
+      advanced: true,
+      options: ["Excellent", "Good", "Fair", "Weak", "Needs Replacement", "Not Applicable"]
+    },
+    {
+      key: "battery_backup",
+      label: "Battery Backup",
+      type: "select",
+      advanced: true,
+      options: [
+        "8+ Hours",
+        "4-8 Hours",
+        "1-4 Hours",
+        "Less Than 1 Hour",
+        "Drains Fast",
+        "Not Sure",
+        "Not Applicable"
+      ]
+    },
+    {
+      key: "case_holds_charge",
+      label: "Charging Case Holds Charge",
+      type: "boolean",
+      advanced: true
+    },
+
+    // What's Included
+    {
+      key: "includes_charging_cable",
+      label: "Charging Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_case",
+      label: "Charging Case Included",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "includes_extra_ear_tips",
+      label: "Extra Ear Tips Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_box",
+      label: "Original Box Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_receipt",
+      label: "Receipt Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "accessories_notes",
+      label: "Other Included Accessories",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Silicone cover, hook, adapter"
+    },
+
+    // Extra Notes
+    {
+      key: "known_faults",
+      label: "Known Faults / Defects",
+      type: "textarea",
+      advanced: true,
+      placeholder: "List any issue clearly"
+    },
+    {
+      key: "usage_history",
+      label: "Usage History",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Used for 4 months"
+    },
+    {
+      key: "reason_for_selling",
+      label: "Reason for Selling",
+      type: "text",
+      advanced: true,
+      placeholder: "Optional"
+    }
+  ]
+};
+
+export const EARBUDS_FIELD_GROUPS = [
+  {
+    title: "Device Identity",
+    keys: ["earbuds_type", "brand", "model", "color"]
+  },
+  {
+    title: "Connectivity & Compatibility",
+    keys: [
+      "connection_type",
+      "connector_type",
+      "bluetooth_working",
+      "compatible_with",
+      "noise_cancellation",
+      "microphone_available"
+    ]
+  },
+  {
+    title: "Physical Condition",
+    keys: [
+      "body_condition",
+      "left_earbud_condition",
+      "right_earbud_condition",
+      "charging_case_condition",
+      "ear_tips_condition",
+      "has_scratches",
+      "has_cracks"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "left_side_working",
+      "right_side_working",
+      "sound_clear",
+      "touch_controls_working",
+      "microphone_working",
+      "charging_case_working",
+      "charging_port_working"
+    ]
+  },
+  {
+    title: "Battery",
+    keys: ["battery_condition", "battery_backup", "case_holds_charge"]
+  },
+  {
+    title: "What's Included",
+    keys: [
+      "includes_charging_cable",
+      "includes_case",
+      "includes_extra_ear_tips",
+      "includes_box",
+      "includes_receipt",
+      "accessories_notes"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
+export const EARBUDS_REQUIRED_KEYS = [
+  "earbuds_type",
+  "brand",
+  "model",
+  "color",
+  "connection_type",
+  "compatible_with",
+  "body_condition",
+  "left_earbud_condition",
+  "right_earbud_condition",
+  "has_scratches",
+  "has_cracks",
+  "left_side_working",
+  "right_side_working",
+  "sound_clear",
+  "includes_case"
+];
+
