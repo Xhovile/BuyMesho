@@ -146,6 +146,7 @@ const [ratingLoading, setRatingLoading] = useState(false);
 const [ratingSubmitting, setRatingSubmitting] = useState(false);
 const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
+const [activeDetailSpecGroup, setActiveDetailSpecGroup] = useState("");
 const [galleryIndex, setGalleryIndex] = useState(0); 
 const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
@@ -980,6 +981,27 @@ const detailGalleryImages = React.useMemo(() => {
   }
 
   return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
+}, [detailsListing]);
+
+useEffect(() => {
+  if (!detailsListing) {
+    setActiveDetailSpecGroup("");
+    return;
+  }
+
+  const itemConfig =
+    detailsListing.category &&
+    detailsListing.subcategory &&
+    detailsListing.item_type
+      ? getListingItemConfig(
+          detailsListing.category,
+          detailsListing.subcategory,
+          detailsListing.item_type
+        )
+      : null;
+
+  const firstGroupTitle = itemConfig?.fieldGroups?.[0]?.title || "";
+  setActiveDetailSpecGroup(firstGroupTitle);
 }, [detailsListing]);
   
   const performDeleteListing = async (listingId: number) => {
@@ -2256,6 +2278,58 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
       }>;
   };
 
+  const getDetailSpecGroups = (listing: Listing) => {
+    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
+      return [];
+    }
+
+    const itemConfig = getListingItemConfig(
+      listing.category,
+      listing.subcategory,
+      listing.item_type
+    );
+
+    if (!itemConfig) return [];
+
+    return itemConfig.fieldGroups
+      .map((group) => {
+        const rows = group.keys
+          .map((key) => {
+            const field = itemConfig.schema.fields.find((f) => f.key === key);
+            if (!field) return null;
+
+            const rawValue = listing.spec_values?.[key];
+
+            if (
+              rawValue === null ||
+              rawValue === undefined ||
+              rawValue === "" ||
+              (Array.isArray(rawValue) && rawValue.length === 0)
+            ) {
+              return null;
+            }
+
+            return {
+              key,
+              label: field.label,
+              value: formatSpecValue(rawValue),
+            };
+          })
+          .filter(Boolean) as Array<{ key: string; label: string; value: string }>;
+
+        if (!rows.length) return null;
+
+        return {
+          title: group.title,
+          rows,
+        };
+      })
+      .filter(Boolean) as Array<{
+        title: string;
+        rows: Array<{ key: string; label: string; value: string }>;
+      }>;
+  };
+
   const detailSpecRows = React.useMemo(() => {
     if (!detailsListing) return [];
     return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
@@ -2265,6 +2339,16 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     if (!detailsListing) return [];
     return getListingSpecDisplayRows(detailsListing);
   }, [detailsListing]);
+
+  const detailSpecGroups = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getDetailSpecGroups(detailsListing);
+  }, [detailsListing]);
+
+  const activeSpecGroup =
+    detailSpecGroups.find((group) => group.title === activeDetailSpecGroup) ||
+    detailSpecGroups[0] ||
+    null;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4047,8 +4131,41 @@ setCurrentPage={setCurrentPage}
       Specifications
     </div>
 
+    {detailSpecGroups.length > 1 && (
+      <div className="flex flex-wrap gap-2 mb-3">
+        {detailSpecGroups.map((group) => (
+          <button
+            key={group.title}
+            type="button"
+            onClick={() => setActiveDetailSpecGroup(group.title)}
+            className={`px-3 py-1 rounded-lg text-xs font-bold border transition ${
+              activeSpecGroup?.title === group.title
+                ? "bg-zinc-900 text-white border-zinc-900"
+                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+            }`}
+          >
+            {group.title}
+          </button>
+        ))}
+      </div>
+    )}
+
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {detailStructuredSpecRows.length > 0 ? (
+      {activeSpecGroup ? (
+        activeSpecGroup.rows.map((row) => (
+          <div
+            key={row.key}
+            className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
+          >
+            <p className="text-[11px] font-bold text-zinc-400 uppercase">
+              {row.label}
+            </p>
+            <p className="text-sm font-bold text-zinc-900 mt-1">
+              {row.value}
+            </p>
+          </div>
+        ))
+      ) : detailStructuredSpecRows.length > 0 ? (
         detailStructuredSpecRows.map((row) => (
           <div
             key={row.key}
