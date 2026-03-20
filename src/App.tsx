@@ -803,6 +803,7 @@ const promptSellerUpgrade = () => {
   setNewListing((prev) => ({
     ...prev,
     whatsapp_number: userProfile?.whatsapp_number || "",
+    university: userProfile?.university || prev.university,
   }));
   setShowAddModal(true);
 };
@@ -1762,34 +1763,62 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   return;
   }
 
+  if (isSchemaDrivenCategory) {
+    if (!newListing.subcategory || !newListing.item_type) {
+      showFeedback(
+        "info",
+        "Item details needed",
+        "Please choose a subcategory and item type first."
+      );
+      return;
+    }
+
+    const validation = validateListingSpecValues(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type,
+      newListing.spec_values
+    );
+
+    if (!validation.isValid) {
+      showFeedback(
+        "error",
+        "Missing or invalid details",
+        validation.errors[0]?.message || "Please complete the required item details."
+      );
+      return;
+    }
+  }
+
   try {
+    const payload: CreateListingPayload = {
+      name: newListing.name,
+      price: parseFloat(newListing.price),
+      description: newListing.description,
+      category: newListing.category,
+      subcategory: newListing.subcategory || null,
+      item_type: newListing.item_type || null,
+      spec_values:
+        isSchemaDrivenCategory && newListing.item_type
+          ? newListing.spec_values
+          : {},
+      university: newListing.university,
+      photos: newListing.photos.slice(0, 5),
+      video_url: newListing.video_url?.trim() || null,
+      whatsapp_number: newListing.whatsapp_number,
+      status: newListing.status,
+      condition: newListing.condition,
+      quantity: Number(newListing.quantity || 1),
+      sold_quantity: Number(newListing.sold_quantity || 0),
+    };
+
     await apiFetch("/api/listings", {
       method: "POST",
-      body: JSON.stringify({
-        ...newListing,
-        price: parseFloat(newListing.price),
-        photos: newListing.photos.slice(0, 5),
-        video_url: newListing.video_url?.trim() || null,
-        quantity: Number(newListing.quantity || 1),
-        sold_quantity: Number(newListing.sold_quantity || 0),
-      }),
+      body: JSON.stringify(payload),
     });
 
     setShowAddModal(false);
-    setNewListing({
-      name: "",
-      price: "",
-      description: "",
-      category: CATEGORIES[0] as Category,
-      university: UNIVERSITIES[0] as University,
-      photos: [] as string[],
-      video_url: "",
-      whatsapp_number: userProfile?.whatsapp_number || "",
-      status: "available",
-      condition: "used",
-      quantity: "1",
-      sold_quantity: "0",
-    });
+    setNewListing(createInitialListingDraft(userProfile));
 
     fetchListings();
     void fetchSellerDashboard();
@@ -1992,7 +2021,8 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
 
   setNewListing((prev) => ({
     ...prev,
-    whatsapp_number: userProfile?.whatsapp_number || ""
+    whatsapp_number: userProfile?.whatsapp_number || "",
+    university: userProfile?.university || prev.university,
   }));
   setShowAddModal(true);
 }}
@@ -2012,6 +2042,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   setNewListing((prev) => ({
     ...prev,
     whatsapp_number: userProfile?.whatsapp_number || "",
+    university: userProfile?.university || prev.university,
   }));
   setShowAddModal(true);
 }}
@@ -3221,7 +3252,8 @@ setCurrentPage={setCurrentPage}
                 setShowMyListingsModal(false);
                 setNewListing((prev) => ({
                   ...prev,
-                  whatsapp_number: userProfile?.whatsapp_number || ""
+                  whatsapp_number: userProfile?.whatsapp_number || "",
+                  university: userProfile?.university || prev.university,
                 }));
                 setShowAddModal(true);
               }}
