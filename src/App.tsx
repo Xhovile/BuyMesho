@@ -688,7 +688,7 @@ const loadDetailsExtras = async (listing: Listing) => {
             item.category === listing.category &&
             item.university === listing.university
           )
-          .slice(0, 6);
+          .slice(0, 5);
 
     setRelatedListings(related);
   } catch (e) {
@@ -4172,6 +4172,59 @@ setCurrentPage={setCurrentPage}
 
   <div>
     <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+      Seller Rating
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+      {detailsLoadingExtra ? (
+        <p className="text-sm text-zinc-500">Loading seller info...</p>
+      ) : detailsRatingSummary ? (
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <span className="font-extrabold text-zinc-900">
+            {detailsRatingSummary.averageRating.toFixed(1)}
+          </span>
+          <span className="text-amber-500 text-base tracking-wide">
+            {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
+            {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
+          </span>
+          <span className="text-zinc-500">
+            ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
+          </span>
+        </div>
+      ) : (
+        <p className="text-sm text-zinc-500">No ratings yet.</p>
+      )}
+    </div>
+
+    <div className="flex flex-wrap gap-3 pt-2">
+      <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+        Available: {detailAvailableQuantity}
+      </span>
+
+      <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+        Sold: {detailsListing.sold_quantity ?? 0}
+      </span>
+
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
+        <Eye className="w-3.5 h-3.5" />
+        {detailsListing.views_count ?? 0}
+      </span>
+    </div>
+
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => handleDetailWhatsappClick(detailsListing)}
+        className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3.5 rounded-2xl font-extrabold transition-colors"
+      >
+        Contact
+      </button>
+      <p className="text-center text-xs font-medium text-zinc-500 mt-2">
+        Chat in WhatsApp
+      </p>
+    </div>
+
+    <div className="text-xs font-bold text-zinc-400 uppercase mt-4 mb-3">
       Related Listings
     </div>
 
@@ -4207,61 +4260,6 @@ setCurrentPage={setCurrentPage}
       <p className="text-sm text-zinc-500">No related listings yet.</p>
     )}
   </div>
-</div>
-
-<div>
-  <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-    Seller Rating
-  </div>
-
-  <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
-    {detailsLoadingExtra ? (
-      <p className="text-sm text-zinc-500">Loading seller info...</p>
-    ) : detailsRatingSummary ? (
-      <div className="flex items-center gap-2 text-sm flex-wrap">
-        <span className="font-extrabold text-zinc-900">
-          {detailsRatingSummary.averageRating.toFixed(1)}
-        </span>
-        <span className="text-amber-500 text-base tracking-wide">
-          {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
-          {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
-        </span>
-        <span className="text-zinc-500">
-          ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
-        </span>
-      </div>
-    ) : (
-      <p className="text-sm text-zinc-500">No ratings yet.</p>
-    )}
-  </div>
-</div>
-
-<div className="flex flex-wrap gap-3 pt-2">
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Available: {detailAvailableQuantity}
-  </span>
-
-  <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    Sold: {detailsListing.sold_quantity ?? 0}
-  </span>
-
-  <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-    <Eye className="w-3.5 h-3.5" />
-    {detailsListing.views_count ?? 0}
-  </span>
-</div>
-
-<div className="mt-2">
-  <button
-    type="button"
-    onClick={() => handleDetailWhatsappClick(detailsListing)}
-    className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3.5 rounded-2xl font-extrabold transition-colors"
-  >
-    Contact
-  </button>
-  <p className="text-center text-xs font-medium text-zinc-500 mt-2">
-    Chat in WhatsApp
-  </p>
 </div>
         
       </div>
