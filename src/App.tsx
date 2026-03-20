@@ -404,6 +404,7 @@ useEffect(() => {
   const [newListing, setNewListing] = useState(
     createInitialListingDraft(null)
   );
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const isSchemaDrivenCategory =
     newListing.category === "Electronics & Gadgets";
 
@@ -491,8 +492,17 @@ const [editProfileForm, setEditProfileForm] = useState({
 });
   
   useEffect(() => {
-  if (authLoading) return; // wait until Firebase finishes checking
+    setShowAdvancedSpecs(false);
+  }, [
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type,
+    showAddModal
+  ]);
 
+  useEffect(() => {
+    if (authLoading) return; // wait until Firebase finishes checking
+ 
   setProfileLoading(true);
 
   (async () => {
@@ -2005,6 +2015,180 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     !!detailsListing?.seller_uid &&
     detailsListing.seller_uid === firebaseUser.uid;
 
+  const renderListingSpecField = (field: any) => {
+    const rawValue = newListing.spec_values[field.key];
+    const value =
+      rawValue === null || rawValue === undefined ? "" : rawValue;
+
+    const isRequired =
+      !!field.required ||
+      !!selectedItemConfig?.requiredKeys.includes(field.key);
+
+    const labelText = `${field.label}${isRequired ? " *" : ""}`;
+
+    if (field.type === "select") {
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <select
+            value={String(value)}
+            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">Select {field.label}</option>
+            {(field.options || []).map((option: string) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "textarea") {
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <textarea
+            value={String(value)}
+            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
+            placeholder={field.placeholder || ""}
+          />
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "boolean") {
+      const boolValue =
+        typeof rawValue === "boolean" ? rawValue : null;
+
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <select
+            value={
+              boolValue === null ? "" : boolValue ? "true" : "false"
+            }
+            onChange={(e) => {
+              if (e.target.value === "") {
+                handleSpecValueChange(field.key, null);
+                return;
+              }
+
+              handleSpecValueChange(field.key, e.target.value === "true");
+            }}
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          >
+            <option value="">Select an option</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "multiselect") {
+      const selectedValues = Array.isArray(rawValue) ? rawValue : [];
+
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+            {labelText}
+          </label>
+          <div className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+            {(field.options || []).map((option: string) => {
+              const isChecked = selectedValues.includes(option);
+
+              return (
+                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleSpecValueChange(field.key, [...selectedValues, option]);
+                        return;
+                      }
+
+                      handleSpecValueChange(
+                        field.key,
+                        selectedValues.filter((item: string) => item !== option)
+                      );
+                    }}
+                  />
+                  <span>{option}</span>
+                </label>
+              );
+            })}
+          </div>
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "number") {
+      return (
+        <div key={field.key}>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <input
+            type="number"
+            value={value === "" ? "" : String(value)}
+            onChange={(e) =>
+              handleSpecValueChange(
+                field.key,
+                e.target.value === "" ? null : Number(e.target.value)
+              )
+            }
+            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            placeholder={field.placeholder || ""}
+          />
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div key={field.key}>
+        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          {labelText}
+        </label>
+        <input
+          type="text"
+          value={String(value)}
+          onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+          className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          placeholder={field.placeholder || ""}
+        />
+        {field.helpText ? (
+          <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+        ) : null}
+      </div>
+    );
+  };
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -2310,19 +2494,74 @@ setCurrentPage={setCurrentPage}
                       handleNewListingCategoryChange(value as Category)
                     }
                  />
-                    <FormDropdown
+                   <FormDropdown
                       label="University"
                       value={newListing.university}
                       options={UNIVERSITIES}
                       onChange={(value) =>
                         setNewListing({ ...newListing, university: value as University })
                       }
-                   />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Description</label>
-                    <textarea 
-                      required
+                    />
+                   </div>
+                   {isSchemaDrivenCategory && (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormDropdown
+                          label="Subcategory"
+                          value={newListing.subcategory}
+                          options={availableSubcategories}
+                          onChange={handleNewListingSubcategoryChange}
+                        />
+                        <FormDropdown
+                          label="Item Type"
+                          value={newListing.item_type}
+                          options={availableItemTypes}
+                          onChange={handleNewListingItemTypeChange}
+                        />
+                      </div>
+
+                      {newListing.subcategory && newListing.item_type && selectedItemConfig && (
+                        <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                          <div>
+                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                              Item details
+                            </p>
+                            <p className="text-xs text-zinc-400 mt-1">
+                              Fill required fields marked with *.
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 gap-4">
+                            {basicSpecFields.map(renderListingSpecField)}
+                          </div>
+
+                          {advancedSpecFields.length > 0 && (
+                            <div>
+                              <button
+                                type="button"
+                                onClick={() => setShowAdvancedSpecs((prev) => !prev)}
+                                className="text-sm font-bold text-primary hover:underline"
+                              >
+                                {showAdvancedSpecs
+                                  ? "Hide advanced details"
+                                  : "Add advanced details"}
+                              </button>
+                            </div>
+                          )}
+
+                          {showAdvancedSpecs && advancedSpecFields.length > 0 && (
+                            <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                              {advancedSpecFields.map(renderListingSpecField)}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+                   <div>
+                     <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Description</label>
+                     <textarea 
+                       required
                       className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
                       value={newListing.description}
                       onChange={e => setNewListing({...newListing, description: e.target.value})}
