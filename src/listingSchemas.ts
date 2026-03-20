@@ -884,6 +884,71 @@ export const FEATURE_PHONE_SCHEMA: ListingItemSchema = {
   ]
 };
 
+export const FEATURE_PHONE_FIELD_GROUPS = [
+  {
+    title: "Phone Identity",
+    keys: ["brand", "model", "color", "phone_type"]
+  },
+  {
+    title: "Basic Specs",
+    keys: [
+      "sim_type",
+      "network_type",
+      "memory_card_support",
+      "torch_available",
+      "wireless_radio",
+      "bluetooth_available"
+    ]
+  },
+  {
+    title: "Network & Safety",
+    keys: ["network_status", "previous_account_removed"]
+  },
+  {
+    title: "Physical Condition",
+    keys: [
+      "body_condition",
+      "screen_condition",
+      "keypad_condition",
+      "has_cracks",
+      "has_scratches"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "screen_working",
+      "speaker_working",
+      "microphone_working",
+      "earpiece_working",
+      "charging_port_working",
+      "keypad_working",
+      "battery_contacts_ok",
+      "torch_working",
+      "radio_working",
+      "bluetooth_working"
+    ]
+  },
+  {
+    title: "Battery",
+    keys: ["battery_condition", "battery_backup", "battery_replaced"]
+  },
+  {
+    title: "What's Included",
+    keys: [
+      "includes_charger",
+      "includes_battery",
+      "includes_box",
+      "includes_receipt",
+      "accessories_notes"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
 export const FEATURE_PHONE_REQUIRED_KEYS = [
   "brand",
   "model",
