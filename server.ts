@@ -87,6 +87,9 @@ db.exec(`
   price REAL NOT NULL,
   description TEXT,
   category TEXT NOT NULL,
+  subcategory TEXT,
+  item_type TEXT,
+  spec_values TEXT,
   university TEXT NOT NULL,
   is_seller INTEGER NOT NULL DEFAULT 1,
   photos TEXT,
@@ -250,6 +253,30 @@ try {
   }
 } catch (e) {
   console.warn("Listings inventory migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+
+  const hasSubcategory = cols.some((c) => c.name === "subcategory");
+  if (!hasSubcategory) {
+    db.exec("ALTER TABLE listings ADD COLUMN subcategory TEXT");
+    console.log("Migration: Added listings.subcategory");
+  }
+
+  const hasItemType = cols.some((c) => c.name === "item_type");
+  if (!hasItemType) {
+    db.exec("ALTER TABLE listings ADD COLUMN item_type TEXT");
+    console.log("Migration: Added listings.item_type");
+  }
+
+  const hasSpecValues = cols.some((c) => c.name === "spec_values");
+  if (!hasSpecValues) {
+    db.exec("ALTER TABLE listings ADD COLUMN spec_values TEXT");
+    console.log("Migration: Added listings.spec_values");
+  }
+} catch (e) {
+  console.warn("Listings specs migration check failed:", e);
 }
 
 try {
@@ -729,6 +756,9 @@ if (v.is_suspended === 1) {
     price,
     description,
     category,
+    subcategory,
+    item_type,
+    spec_values,
     university,
     photos,
     video_url,
@@ -755,21 +785,38 @@ const safeVideoUrl =
 const safeStatus = status === "sold" ? "sold" : "available";
 const safeQuantity = Math.max(1, Number(quantity) || 1);
 const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
+const safeSubcategory =
+  typeof subcategory === "string" && subcategory.trim().length > 0
+    ? subcategory.trim()
+    : null;
+
+const safeItemType =
+  typeof item_type === "string" && item_type.trim().length > 0
+    ? item_type.trim()
+    : null;
+
+const safeSpecValues =
+  spec_values && typeof spec_values === "object"
+    ? JSON.stringify(spec_values)
+    : JSON.stringify({});
 
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, description, category, university,
+        seller_uid, name, price, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 `).run(
   seller_uid,
   name,
   price,
   description,
   category,
+  safeSubcategory,
+  safeItemType,
+  safeSpecValues,
   university,
   JSON.stringify(safePhotos),
   safeVideoUrl,
@@ -1086,6 +1133,9 @@ if (v.is_suspended === 1) {
       price,
       description,
       category,
+      subcategory,
+      item_type,
+      spec_values,
       university,
       photos,
       video_url,
@@ -1110,6 +1160,20 @@ const safeVideoUrl =
 const safeStatus = status === "sold" ? "sold" : "available";
 const safeQuantity = Math.max(1, Number(quantity) || 1);
 const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
+const safeSubcategory =
+  typeof subcategory === "string" && subcategory.trim().length > 0
+    ? subcategory.trim()
+    : null;
+
+const safeItemType =
+  typeof item_type === "string" && item_type.trim().length > 0
+    ? item_type.trim()
+    : null;
+
+const safeSpecValues =
+  spec_values && typeof spec_values === "object"
+    ? JSON.stringify(spec_values)
+    : JSON.stringify({});
     
   // Minimal validation
   if (!name || typeof name !== "string") {
@@ -1153,6 +1217,9 @@ const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity
         price = ?,
         description = ?,
         category = ?,
+        subcategory = ?,
+        item_type = ?,
+        spec_values = ?,
         university = ?,
         photos = ?,
         video_url = ?,
@@ -1168,6 +1235,9 @@ const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity
       Number(price),
       description ?? null,
       category,
+      safeSubcategory,
+      safeItemType,
+      safeSpecValues,
       university,
       JSON.stringify(safePhotos),
       safeVideoUrl,
