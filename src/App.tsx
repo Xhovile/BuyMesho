@@ -4164,20 +4164,19 @@ setCurrentPage={setCurrentPage}
             <p className="text-sm font-bold text-zinc-900 mt-1">
               {row.value}
             </p>
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200">
+      {detailStructuredSpecRows.length > 0 ? (
+        detailStructuredSpecRows.map((row) => (
+          <div key={row.key} className="px-4 py-3 flex items-start justify-between gap-4">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase">{row.label}</p>
+            <p className="text-sm font-bold text-zinc-900 text-right">{row.value}</p>
           </div>
         ))
       ) : (
         detailSpecRows.map((row) => (
-          <div
-            key={row.label}
-            className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-          >
-            <p className="text-[11px] font-bold text-zinc-400 uppercase">
-              {row.label}
-            </p>
-            <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
-              {row.value}
-            </p>
+          <div key={row.label} className="px-4 py-3 flex items-start justify-between gap-4">
+            <p className="text-[11px] font-bold text-zinc-400 uppercase">{row.label}</p>
+            <p className="text-sm font-bold text-zinc-900 text-right capitalize">{row.value}</p>
           </div>
         ))
       )}

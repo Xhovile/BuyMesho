@@ -159,21 +159,13 @@ export default function EditListingModal({
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-            {labelText}
-          </label>
-          <select
+          <FormDropdown
+            label={labelText}
             value={value as string}
-            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          >
-            <option value="">Select {field.label}</option>
-            {(field.options || []).map((option: string) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            options={field.options || []}
+            onChange={(selected) => handleSpecValueChange(field.key, selected)}
+            placeholder={`Select ${field.label}`}
+          />
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
