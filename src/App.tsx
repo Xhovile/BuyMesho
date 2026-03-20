@@ -811,11 +811,7 @@ const promptSellerUpgrade = () => {
     return;
   }
 
-  setNewListing((prev) => ({
-    ...prev,
-    whatsapp_number: userProfile?.whatsapp_number || "",
-    university: userProfile?.university || prev.university,
-  }));
+  setNewListing(createInitialListingDraft(userProfile));
   setShowAddModal(true);
 };
 
@@ -2204,11 +2200,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     return;
   }
 
-  setNewListing((prev) => ({
-    ...prev,
-    whatsapp_number: userProfile?.whatsapp_number || "",
-    university: userProfile?.university || prev.university,
-  }));
+  setNewListing(createInitialListingDraft(userProfile));
   setShowAddModal(true);
 }}
           onProfileClick={() => setShowProfileModal(true)}
@@ -2224,11 +2216,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     return;
   }
 
-  setNewListing((prev) => ({
-    ...prev,
-    whatsapp_number: userProfile?.whatsapp_number || "",
-    university: userProfile?.university || prev.university,
-  }));
+  setNewListing(createInitialListingDraft(userProfile));
   setShowAddModal(true);
 }}
   />     
@@ -3490,11 +3478,7 @@ setCurrentPage={setCurrentPage}
             <button
               onClick={() => {
                 setShowMyListingsModal(false);
-                setNewListing((prev) => ({
-                  ...prev,
-                  whatsapp_number: userProfile?.whatsapp_number || "",
-                  university: userProfile?.university || prev.university,
-                }));
+                setNewListing(createInitialListingDraft(userProfile));
                 setShowAddModal(true);
               }}
               className="bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3 rounded-xl font-bold transition-colors"
