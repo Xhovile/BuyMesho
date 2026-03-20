@@ -2349,6 +2349,7 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     detailSpecGroups.find((group) => group.title === activeDetailSpecGroup) ||
     detailSpecGroups[0] ||
     null;
+  const activeStructuredSpecRows = activeSpecGroup?.rows || detailStructuredSpecRows;
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4131,7 +4132,7 @@ setCurrentPage={setCurrentPage}
       Specifications
     </div>
 
-    {detailSpecGroups.length > 1 && (
+    {detailSpecGroups.length > 0 && (
       <div className="flex flex-wrap gap-2 mb-3">
         {detailSpecGroups.map((group) => (
           <button
@@ -4151,22 +4152,8 @@ setCurrentPage={setCurrentPage}
     )}
 
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {activeSpecGroup ? (
-        activeSpecGroup.rows.map((row) => (
-          <div
-            key={row.key}
-            className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
-          >
-            <p className="text-[11px] font-bold text-zinc-400 uppercase">
-              {row.label}
-            </p>
-            <p className="text-sm font-bold text-zinc-900 mt-1">
-              {row.value}
-            </p>
-          </div>
-        ))
-      ) : detailStructuredSpecRows.length > 0 ? (
-        detailStructuredSpecRows.map((row) => (
+      {activeStructuredSpecRows.length > 0 ? (
+        activeStructuredSpecRows.map((row) => (
           <div
             key={row.key}
             className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100"
