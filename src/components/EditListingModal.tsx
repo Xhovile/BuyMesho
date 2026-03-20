@@ -39,6 +39,8 @@ export default function EditListingModal({
   });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
 
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+
   useEffect(() => {
     setForm({
       name: listing.name || "",
@@ -514,7 +516,32 @@ export default function EditListingModal({
                  condition: value as "new" | "used" | "refurbished",
                })
               }
-            />
+             />
+
+          {isSchemaDrivenCategory && (
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormDropdown
+                  label="Subcategory"
+                  value={form.subcategory}
+                  options={availableSubcategories}
+                  onChange={handleSubcategoryChange}
+                />
+                <FormDropdown
+                  label="Item Type"
+                  value={form.item_type}
+                  options={availableItemTypes}
+                  onChange={handleItemTypeChange}
+                />
+              </div>
+
+              {form.subcategory && form.item_type && selectedItemConfig && (
+                <div className="grid grid-cols-1 gap-4">
+                  {selectedItemConfig.schema.fields.map(renderSpecField)}
+                </div>
+              )}
+            </div>
+          )}
 
 
           <div>
