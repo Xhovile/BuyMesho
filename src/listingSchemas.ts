@@ -1485,3 +1485,449 @@ export const TABLET_REQUIRED_KEYS = [
   "icloud_frp_status",
   "previous_account_removed"
 ];
+
+export const SMARTWATCH_FITNESS_BAND_SCHEMA: ListingItemSchema = {
+  category: "Electronics & Gadgets",
+  subcategory: "Phones & Mobile Devices",
+  itemType: "Smartwatch / Fitness Band",
+  fields: [
+    // Device Identity
+    {
+      key: "device_type",
+      label: "Device Type",
+      type: "select",
+      required: true,
+      options: ["Smartwatch", "Fitness Band"]
+    },
+    {
+      key: "brand",
+      label: "Brand",
+      type: "select",
+      required: true,
+      options: [
+        "Apple",
+        "Samsung",
+        "Huawei",
+        "Xiaomi",
+        "Amazfit",
+        "Fitbit",
+        "Garmin",
+        "Noise",
+        "Oraimo",
+        "Other"
+      ]
+    },
+    {
+      key: "model",
+      label: "Model",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Apple Watch Series 7, Mi Band 8"
+    },
+    {
+      key: "series_variant",
+      label: "Series / Variant",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. GPS, GPS + Cellular, Pro"
+    },
+    {
+      key: "color",
+      label: "Color",
+      type: "text",
+      required: true,
+      placeholder: "e.g. Black, Silver, Pink"
+    },
+    {
+      key: "case_size",
+      label: "Case / Screen Size",
+      type: "text",
+      advanced: true,
+      placeholder: 'e.g. 41mm, 44mm, 1.62"'
+    },
+
+    // Compatibility & Connectivity
+    {
+      key: "compatible_with",
+      label: "Compatible With",
+      type: "select",
+      required: true,
+      options: ["Android", "iPhone (iOS)", "Android & iPhone", "Not Sure"]
+    },
+    {
+      key: "connectivity",
+      label: "Connectivity",
+      type: "multiselect",
+      required: true,
+      options: ["Bluetooth", "Wi-Fi", "GPS", "Cellular / eSIM", "NFC"]
+    },
+    {
+      key: "bluetooth_working",
+      label: "Bluetooth Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "wifi_working",
+      label: "Wi-Fi Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "gps_working",
+      label: "GPS Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "cellular_supported",
+      label: "Cellular / eSIM Supported",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "nfc_available",
+      label: "NFC Available",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Display & Build
+    {
+      key: "display_type",
+      label: "Display Type",
+      type: "select",
+      advanced: true,
+      options: ["LCD", "OLED", "AMOLED", "Retina", "Not Sure"]
+    },
+    {
+      key: "body_condition",
+      label: "Body Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged"]
+    },
+    {
+      key: "screen_condition",
+      label: "Screen Condition",
+      type: "select",
+      required: true,
+      options: [
+        "Clean",
+        "Minor Scratches",
+        "Noticeable Scratches",
+        "Cracked",
+        "Replaced Screen"
+      ]
+    },
+    {
+      key: "strap_condition",
+      label: "Strap / Band Condition",
+      type: "select",
+      required: true,
+      options: ["Like New", "Very Good", "Good", "Fair", "Damaged", "Not Included"]
+    },
+    {
+      key: "has_cracks",
+      label: "Any Cracks?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "has_scratches",
+      label: "Visible Scratches?",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "water_damage_signs",
+      label: "Signs of Water Damage",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Functionality Check
+    {
+      key: "touchscreen_working",
+      label: "Touch Screen Working Properly",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "buttons_working",
+      label: "Buttons / Crown Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "speaker_working",
+      label: "Speaker Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "microphone_working",
+      label: "Microphone Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "vibration_working",
+      label: "Vibration Working",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "heart_rate_sensor_working",
+      label: "Heart Rate Sensor Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "step_tracking_working",
+      label: "Step Tracking Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "sleep_tracking_working",
+      label: "Sleep Tracking Working",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "spo2_working",
+      label: "SpO2 / Blood Oxygen Working",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Battery
+    {
+      key: "battery_condition",
+      label: "Battery Condition",
+      type: "select",
+      required: true,
+      options: ["Excellent", "Good", "Fair", "Weak", "Needs Replacement"]
+    },
+    {
+      key: "battery_backup",
+      label: "Battery Backup",
+      type: "select",
+      required: true,
+      options: [
+        "Several Days",
+        "2-3 Days",
+        "1 Day",
+        "Less Than a Day",
+        "Drains Fast",
+        "Not Sure"
+      ]
+    },
+    {
+      key: "battery_replaced",
+      label: "Battery Ever Replaced?",
+      type: "boolean",
+      advanced: true
+    },
+
+    // What's Included
+    {
+      key: "includes_charger",
+      label: "Charger Included",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "includes_cable",
+      label: "Charging Cable Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_box",
+      label: "Original Box Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "includes_receipt",
+      label: "Receipt Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "extra_strap_included",
+      label: "Extra Strap Included",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "accessories_notes",
+      label: "Other Included Accessories",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Extra strap, dock"
+    },
+
+    // Ownership / Safety
+    {
+      key: "account_lock_status",
+      label: "Account Lock Status",
+      type: "select",
+      required: true,
+      options: [
+        "No Lock / Safe to Reset",
+        "Account Removed",
+        "Locked",
+        "Not Sure"
+      ]
+    },
+    {
+      key: "previous_account_removed",
+      label: "Previous Account Removed",
+      type: "boolean",
+      required: true
+    },
+    {
+      key: "repair_history",
+      label: "Has It Been Repaired Before?",
+      type: "boolean",
+      advanced: true
+    },
+    {
+      key: "replacement_parts",
+      label: "Any Replaced Parts?",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Screen replaced, strap changed"
+    },
+    {
+      key: "proof_of_ownership",
+      label: "Proof of Ownership Available",
+      type: "boolean",
+      advanced: true
+    },
+
+    // Extra Notes
+    {
+      key: "known_faults",
+      label: "Known Faults / Defects",
+      type: "textarea",
+      advanced: true,
+      placeholder: "List any issue clearly"
+    },
+    {
+      key: "usage_history",
+      label: "Usage History",
+      type: "text",
+      advanced: true,
+      placeholder: "e.g. Used for 6 months"
+    },
+    {
+      key: "reason_for_selling",
+      label: "Reason for Selling",
+      type: "text",
+      advanced: true,
+      placeholder: "Optional"
+    }
+  ]
+};
+
+export const SMARTWATCH_FITNESS_BAND_FIELD_GROUPS = [
+  {
+    title: "Device Identity",
+    keys: ["device_type", "brand", "model", "series_variant", "color", "case_size"]
+  },
+  {
+    title: "Compatibility & Connectivity",
+    keys: [
+      "compatible_with",
+      "connectivity",
+      "bluetooth_working",
+      "wifi_working",
+      "gps_working",
+      "cellular_supported",
+      "nfc_available"
+    ]
+  },
+  {
+    title: "Display & Build",
+    keys: [
+      "display_type",
+      "body_condition",
+      "screen_condition",
+      "strap_condition",
+      "has_cracks",
+      "has_scratches",
+      "water_damage_signs"
+    ]
+  },
+  {
+    title: "Functionality Check",
+    keys: [
+      "touchscreen_working",
+      "buttons_working",
+      "speaker_working",
+      "microphone_working",
+      "vibration_working",
+      "heart_rate_sensor_working",
+      "step_tracking_working",
+      "sleep_tracking_working",
+      "spo2_working"
+    ]
+  },
+  {
+    title: "Battery",
+    keys: ["battery_condition", "battery_backup", "battery_replaced"]
+  },
+  {
+    title: "What's Included",
+    keys: [
+      "includes_charger",
+      "includes_cable",
+      "includes_box",
+      "includes_receipt",
+      "extra_strap_included",
+      "accessories_notes"
+    ]
+  },
+  {
+    title: "Ownership / Safety",
+    keys: [
+      "account_lock_status",
+      "previous_account_removed",
+      "repair_history",
+      "replacement_parts",
+      "proof_of_ownership"
+    ]
+  },
+  {
+    title: "Extra Notes",
+    keys: ["known_faults", "usage_history", "reason_for_selling"]
+  }
+];
+
+export const SMARTWATCH_FITNESS_BAND_REQUIRED_KEYS = [
+  "device_type",
+  "brand",
+  "model",
+  "color",
+  "compatible_with",
+  "connectivity",
+  "bluetooth_working",
+  "body_condition",
+  "screen_condition",
+  "strap_condition",
+  "has_cracks",
+  "has_scratches",
+  "touchscreen_working",
+  "buttons_working",
+  "vibration_working",
+  "battery_condition",
+  "battery_backup",
+  "includes_charger",
+  "account_lock_status",
+  "previous_account_removed"
+];
+
