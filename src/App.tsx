@@ -2500,6 +2500,20 @@ setCurrentPage={setCurrentPage}
                       }
                     />
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      required
+                      rows={4}
+                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                      value={newListing.description}
+                      onChange={(e) =>
+                        setNewListing({ ...newListing, description: e.target.value })
+                      }
+                    />
+                  </div>
                   {isSchemaDrivenCategory && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
