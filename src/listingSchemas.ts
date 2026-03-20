@@ -8292,45 +8292,137 @@ export const CALCULATOR_REQUIRED_KEYS = [
   "includes_cover"
 ];
 
-export const ALL_LISTING_SCHEMAS: ListingItemSchema[] = [
-  SMARTPHONE_SCHEMA,
-  FEATURE_PHONE_SCHEMA,
-  TABLET_SCHEMA,
-  SMARTWATCH_FITNESS_BAND_SCHEMA,
-
-  LAPTOP_SCHEMA,
-  DESKTOP_COMPUTER_SCHEMA,
-  MONITOR_SCHEMA,
-
-  HEADPHONES_SCHEMA,
-  EARBUDS_SCHEMA,
-  BLUETOOTH_SPEAKER_SCHEMA,
-
-  POWER_BANK_SCHEMA,
-  CHARGER_CHARGING_ADAPTER_SCHEMA,
-  ROUTER_MIFI_MODEM_SCHEMA,
-
-  USB_FLASH_DRIVE_SCHEMA,
-  MEMORY_CARD_SCHEMA,
-  EXTERNAL_HARD_DRIVE_SSD_SCHEMA,
-  KEYBOARD_SCHEMA,
-  MOUSE_SCHEMA,
-
-  PRINTER_SCHEMA,
-  CALCULATOR_SCHEMA
-];
-
-export interface ListingSchemaRegistryItem {
-  schema: ListingItemSchema;
+export interface ListingFieldGroup {
+  title: string;
+  keys: string[];
 }
 
-export type ListingSchemaRegistry = Record<
+export interface ListingItemConfig {
+  schema: ListingItemSchema;
+  fieldGroups: ListingFieldGroup[];
+  requiredKeys: string[];
+}
+
+export const ALL_LISTING_ITEM_CONFIGS: ListingItemConfig[] = [
+  {
+    schema: SMARTPHONE_SCHEMA,
+    fieldGroups: SMARTPHONE_FIELD_GROUPS,
+    requiredKeys: SMARTPHONE_REQUIRED_KEYS
+  },
+  {
+    schema: FEATURE_PHONE_SCHEMA,
+    fieldGroups: FEATURE_PHONE_FIELD_GROUPS,
+    requiredKeys: FEATURE_PHONE_REQUIRED_KEYS
+  },
+  {
+    schema: TABLET_SCHEMA,
+    fieldGroups: TABLET_FIELD_GROUPS,
+    requiredKeys: TABLET_REQUIRED_KEYS
+  },
+  {
+    schema: SMARTWATCH_FITNESS_BAND_SCHEMA,
+    fieldGroups: SMARTWATCH_FITNESS_BAND_FIELD_GROUPS,
+    requiredKeys: SMARTWATCH_FITNESS_BAND_REQUIRED_KEYS
+  },
+
+  {
+    schema: LAPTOP_SCHEMA,
+    fieldGroups: LAPTOP_FIELD_GROUPS,
+    requiredKeys: LAPTOP_REQUIRED_KEYS
+  },
+  {
+    schema: DESKTOP_COMPUTER_SCHEMA,
+    fieldGroups: DESKTOP_COMPUTER_FIELD_GROUPS,
+    requiredKeys: DESKTOP_COMPUTER_REQUIRED_KEYS
+  },
+  {
+    schema: MONITOR_SCHEMA,
+    fieldGroups: MONITOR_FIELD_GROUPS,
+    requiredKeys: MONITOR_REQUIRED_KEYS
+  },
+
+  {
+    schema: HEADPHONES_SCHEMA,
+    fieldGroups: HEADPHONES_FIELD_GROUPS,
+    requiredKeys: HEADPHONES_REQUIRED_KEYS
+  },
+  {
+    schema: EARBUDS_SCHEMA,
+    fieldGroups: EARBUDS_FIELD_GROUPS,
+    requiredKeys: EARBUDS_REQUIRED_KEYS
+  },
+  {
+    schema: BLUETOOTH_SPEAKER_SCHEMA,
+    fieldGroups: BLUETOOTH_SPEAKER_FIELD_GROUPS,
+    requiredKeys: BLUETOOTH_SPEAKER_REQUIRED_KEYS
+  },
+
+  {
+    schema: POWER_BANK_SCHEMA,
+    fieldGroups: POWER_BANK_FIELD_GROUPS,
+    requiredKeys: POWER_BANK_REQUIRED_KEYS
+  },
+  {
+    schema: CHARGER_CHARGING_ADAPTER_SCHEMA,
+    fieldGroups: CHARGER_CHARGING_ADAPTER_FIELD_GROUPS,
+    requiredKeys: CHARGER_CHARGING_ADAPTER_REQUIRED_KEYS
+  },
+  {
+    schema: ROUTER_MIFI_MODEM_SCHEMA,
+    fieldGroups: ROUTER_MIFI_MODEM_FIELD_GROUPS,
+    requiredKeys: ROUTER_MIFI_MODEM_REQUIRED_KEYS
+  },
+
+  {
+    schema: USB_FLASH_DRIVE_SCHEMA,
+    fieldGroups: USB_FLASH_DRIVE_FIELD_GROUPS,
+    requiredKeys: USB_FLASH_DRIVE_REQUIRED_KEYS
+  },
+  {
+    schema: MEMORY_CARD_SCHEMA,
+    fieldGroups: MEMORY_CARD_FIELD_GROUPS,
+    requiredKeys: MEMORY_CARD_REQUIRED_KEYS
+  },
+  {
+    schema: EXTERNAL_HARD_DRIVE_SSD_SCHEMA,
+    fieldGroups: EXTERNAL_HARD_DRIVE_SSD_FIELD_GROUPS,
+    requiredKeys: EXTERNAL_HARD_DRIVE_SSD_REQUIRED_KEYS
+  },
+  {
+    schema: KEYBOARD_SCHEMA,
+    fieldGroups: KEYBOARD_FIELD_GROUPS,
+    requiredKeys: KEYBOARD_REQUIRED_KEYS
+  },
+  {
+    schema: MOUSE_SCHEMA,
+    fieldGroups: MOUSE_FIELD_GROUPS,
+    requiredKeys: MOUSE_REQUIRED_KEYS
+  },
+
+  {
+    schema: PRINTER_SCHEMA,
+    fieldGroups: PRINTER_FIELD_GROUPS,
+    requiredKeys: PRINTER_REQUIRED_KEYS
+  },
+  {
+    schema: CALCULATOR_SCHEMA,
+    fieldGroups: CALCULATOR_FIELD_GROUPS,
+    requiredKeys: CALCULATOR_REQUIRED_KEYS
+  }
+];
+
+export const ALL_LISTING_SCHEMAS: ListingItemSchema[] =
+  ALL_LISTING_ITEM_CONFIGS.map((item) => item.schema);
+
+export type ListingItemConfigRegistry = Record<
   string,
-  Record<string, Record<string, ListingSchemaRegistryItem>>
+  Record<string, Record<string, ListingItemConfig>>
 >;
 
-export const LISTING_SCHEMA_REGISTRY: ListingSchemaRegistry = ALL_LISTING_SCHEMAS.reduce(
-  (acc, schema) => {
+export const LISTING_ITEM_CONFIG_REGISTRY: ListingItemConfigRegistry =
+  ALL_LISTING_ITEM_CONFIGS.reduce((acc, itemConfig) => {
+    const { schema } = itemConfig;
+
     if (!acc[schema.category]) {
       acc[schema.category] = {};
     }
@@ -8339,31 +8431,51 @@ export const LISTING_SCHEMA_REGISTRY: ListingSchemaRegistry = ALL_LISTING_SCHEMA
       acc[schema.category][schema.subcategory] = {};
     }
 
-    acc[schema.category][schema.subcategory][schema.itemType] = {
-      schema
-    };
+    acc[schema.category][schema.subcategory][schema.itemType] = itemConfig;
 
     return acc;
-  },
-  {} as ListingSchemaRegistry
-);
+  }, {} as ListingItemConfigRegistry);
+
+export function getListingItemConfig(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingItemConfig | null {
+  if (!category || !subcategory || !itemType) {
+    return null;
+  }
+
+  return (
+    LISTING_ITEM_CONFIG_REGISTRY[category]?.[subcategory]?.[itemType] ?? null
+  );
+}
 
 export function getListingSchema(
   category?: string,
   subcategory?: string,
   itemType?: string
 ): ListingItemSchema | null {
-  if (!category || !subcategory || !itemType) {
-    return null;
-  }
+  return getListingItemConfig(category, subcategory, itemType)?.schema ?? null;
+}
 
-  return (
-    LISTING_SCHEMA_REGISTRY[category]?.[subcategory]?.[itemType]?.schema ?? null
-  );
+export function getListingFieldGroups(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): ListingFieldGroup[] {
+  return getListingItemConfig(category, subcategory, itemType)?.fieldGroups ?? [];
+}
+
+export function getListingRequiredKeys(
+  category?: string,
+  subcategory?: string,
+  itemType?: string
+): string[] {
+  return getListingItemConfig(category, subcategory, itemType)?.requiredKeys ?? [];
 }
 
 export function getListingCategories(): string[] {
-  return Object.keys(LISTING_SCHEMA_REGISTRY);
+  return Object.keys(LISTING_ITEM_CONFIG_REGISTRY);
 }
 
 export function getListingSubcategories(category?: string): string[] {
@@ -8371,7 +8483,7 @@ export function getListingSubcategories(category?: string): string[] {
     return [];
   }
 
-  return Object.keys(LISTING_SCHEMA_REGISTRY[category] ?? {});
+  return Object.keys(LISTING_ITEM_CONFIG_REGISTRY[category] ?? {});
 }
 
 export function getListingItemTypes(
@@ -8383,7 +8495,7 @@ export function getListingItemTypes(
   }
 
   return Object.keys(
-    LISTING_SCHEMA_REGISTRY[category]?.[subcategory] ?? {}
+    LISTING_ITEM_CONFIG_REGISTRY[category]?.[subcategory] ?? {}
   );
 }
 
@@ -8392,5 +8504,5 @@ export function hasListingSchema(
   subcategory?: string,
   itemType?: string
 ): boolean {
-  return !!getListingSchema(category, subcategory, itemType);
+  return !!getListingItemConfig(category, subcategory, itemType);
 }
