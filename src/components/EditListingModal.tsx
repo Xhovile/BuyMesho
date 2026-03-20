@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { X } from "lucide-react";
 import { Listing, Category, University, ListingSpecValue } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
@@ -36,8 +36,11 @@ export default function EditListingModal({
     whatsapp_number: listing.whatsapp_number || "",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
+    photos: listing.photos || [],
+    video_url: listing.video_url || "",
   });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   useEffect(() => {
     setForm({
@@ -53,6 +56,8 @@ export default function EditListingModal({
       whatsapp_number: listing.whatsapp_number || "",
       quantity: String(listing.quantity ?? 1),
       sold_quantity: String(listing.sold_quantity ?? 0),
+      photos: listing.photos || [],
+      video_url: listing.video_url || "",
     });
     setShowAdvancedSpecs(false);
   }, [listing]);
@@ -333,6 +338,104 @@ export default function EditListingModal({
     );
   };
 
+  const uploadMediaFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch("/api/upload/", {
+      method: "POST",
+      body: formData,
+    });
+
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!res.ok) {
+      throw new Error(data?.error || "Upload failed");
+    }
+
+    return data.url as string;
+  };
+
+  const handleAddImages = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files: File[] = Array.from(e.target.files ?? []);
+    if (!files.length) return;
+
+    const remaining = 5 - form.photos.length;
+    const selectedFiles = files.slice(0, remaining);
+
+    setUploadingMedia(true);
+    try {
+      const uploadedUrls: string[] = [];
+
+      for (const file of selectedFiles) {
+        const url = await uploadMediaFile(file);
+        uploadedUrls.push(url);
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        photos: [...prev.photos, ...uploadedUrls].slice(0, 5),
+      }));
+    } catch (err: any) {
+      alert(err?.message || "Image upload failed.");
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleReplaceImage = async (index: number, file?: File) => {
+    if (!file) return;
+
+    setUploadingMedia(true);
+    try {
+      const url = await uploadMediaFile(file);
+
+      setForm((prev) => ({
+        ...prev,
+        photos: prev.photos.map((photo, i) => (i === index ? url : photo)),
+      }));
+    } catch (err: any) {
+      alert(err?.message || "Image replacement failed.");
+    } finally {
+      setUploadingMedia(false);
+    }
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      photos: prev.photos.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleReplaceVideo = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingMedia(true);
+    try {
+      const url = await uploadMediaFile(file);
+      setForm((prev) => ({
+        ...prev,
+        video_url: url,
+      }));
+    } catch (err: any) {
+      alert(err?.message || "Video upload failed.");
+    } finally {
+      setUploadingMedia(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemoveVideo = () => {
+    setForm((prev) => ({
+      ...prev,
+      video_url: "",
+    }));
+  };
+
   const handleSave = () => {
     const priceNum = Number(form.price);
     const quantityNum = Number(form.quantity);
@@ -393,6 +496,8 @@ export default function EditListingModal({
       condition: form.condition as "new" | "used" | "refurbished",
       quantity: quantityNum,
       sold_quantity: soldQuantityNum,
+      photos: form.photos,
+      video_url: form.video_url || null,
     });
   };
 
@@ -598,13 +703,89 @@ export default function EditListingModal({
             </>
           )}
 
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+              Photos (max 5)
+            </label>
+
+            {form.photos.length > 0 && (
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {form.photos.map((url, idx) => (
+                  <div
+                    key={`${url}-${idx}`}
+                    className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+                  >
+                    <img
+                      src={url}
+                      alt={`Photo ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveImage(idx)}
+                      className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) =>
+                        handleReplaceImage(idx, e.target.files?.[0])
+                      }
+                      disabled={uploadingMedia}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      aria-label={`Replace photo ${idx + 1}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleAddImages}
+              disabled={uploadingMedia || form.photos.length >= 5}
+              className="w-full"
+            />
+          </div>
+
+          <div className="mt-4">
+            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+              Video (optional, 1)
+            </label>
+
+            {form.video_url ? (
+              <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+                <video src={form.video_url} controls className="w-full" />
+                <button
+                  type="button"
+                  onClick={handleRemoveVideo}
+                  className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : null}
+
+            <input
+              type="file"
+              accept="video/*"
+              onChange={handleReplaceVideo}
+              disabled={uploadingMedia}
+              className="w-full"
+            />
+          </div>
+
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
               Note
             </p>
             <p className="text-sm text-zinc-600">
-              Media cannot be edited here yet. Create a new listing if you want
-              to change photos or video.
+              You can update photos and video here. Changes will be saved with
+              the listing.
             </p>
           </div>
         </div>
