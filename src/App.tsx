@@ -2474,6 +2474,28 @@ setCurrentPage={setCurrentPage}
                     })
                    }
                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormDropdown
+                      label="Category"
+                      value={newListing.category}
+                      options={CATEGORIES}
+                      onChange={(value) =>
+                        handleNewListingCategoryChange(value as Category)
+                      }
+                    />
+
+                    <FormDropdown
+                      label="University"
+                      value={newListing.university}
+                      options={UNIVERSITIES}
+                      onChange={(value) =>
+                        setNewListing({
+                          ...newListing,
+                          university: value as University,
+                        })
+                      }
+                    />
+                  </div>
                   {isSchemaDrivenCategory && (
                     <>
                       <div className="grid grid-cols-2 gap-4">
