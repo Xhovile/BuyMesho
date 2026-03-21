@@ -83,6 +83,20 @@ export default function ListingCard({
     alert(msg);
   };
 
+  const availableQuantity = Math.max(
+    0,
+    Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
+  );
+
+  const metaChips = [
+    listing.subcategory,
+    listing.item_type,
+    listing.condition
+      ? listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)
+      : null,
+    listing.status !== "sold" ? `${availableQuantity} left` : "Sold out",
+  ].filter(Boolean) as string[];
+
   const trackWhatsappClick = async () => {
   try {
     await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
@@ -441,6 +455,20 @@ Open this listing: ${shareUrl}`;
           <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">
             {listing.name}
           </h3>
+
+          {metaChips.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {metaChips.map((chip) => (
+                <span
+                  key={chip}
+                  className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600"
+                >
+                  {chip}
+                </span>
+              ))}
+            </div>
+          )}
+
           <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">
             {listing.description}
           </p>
