@@ -19,6 +19,8 @@ export const FOOD_AVAILABILITY_OPTIONS = [
   "Made to Order",
   "Pre-Order",
   "Limited Batch",
+  "Store in Cool Dry Place",
+  "Not Sure",
 ];
 
 export const FOOD_FRESHNESS_OPTIONS = [
@@ -26,6 +28,7 @@ export const FOOD_FRESHNESS_OPTIONS = [
   "Fresh",
   "Good",
   "Use Soon",
+  "Near Expiry", 
 ];
 
 export const FOOD_ALLERGEN_OPTIONS = [
@@ -48,6 +51,7 @@ export const FOOD_DIETARY_TAG_OPTIONS = [
   "Dairy-Free",
   "Sugar-Free",
   "High Protein",
+  "Organic", 
 ];
 
 export const FOOD_SPICE_LEVEL_OPTIONS = [
