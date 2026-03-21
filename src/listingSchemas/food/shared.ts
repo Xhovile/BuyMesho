@@ -4,12 +4,21 @@ import type {
   ListingSpecField,
 } from "../core";
 
-export const FOOD_CATEGORY = "Food & Groceries";
+export const FOOD_CATEGORY = "Food & Snacks";
 
 export const FOOD_STORAGE_OPTIONS = [
   "Room Temperature",
   "Keep Refrigerated",
   "Keep Frozen",
+  "Serve Hot / Warm",
+  "Use Immediately",
+];
+
+export const FOOD_AVAILABILITY_OPTIONS = [
+  "Ready Now",
+  "Made to Order",
+  "Pre-Order",
+  "Limited Batch",
   "Store in Cool Dry Place",
   "Not Sure",
 ];
@@ -17,37 +26,55 @@ export const FOOD_STORAGE_OPTIONS = [
 export const FOOD_FRESHNESS_OPTIONS = [
   "Very Fresh",
   "Fresh",
+  "Good",
   "Use Soon",
-  "Near Expiry",
+  "Near Expiry", 
 ];
 
-export const FOOD_PACKAGING_OPTIONS = [
-  "Sealed Pack",
-  "Bottle",
-  "Can",
-  "Bag",
-  "Box",
-  "Loose / Unpacked",
-  "Other",
-];
-
-export const FOOD_SPICE_LEVEL_OPTIONS = [
-  "Mild",
-  "Medium",
-  "Hot",
-  "Extra Hot",
-  "Not Spicy",
+export const FOOD_ALLERGEN_OPTIONS = [
+  "Milk",
+  "Eggs",
+  "Peanuts",
+  "Tree Nuts",
+  "Soy",
+  "Wheat / Gluten",
+  "Fish",
+  "Shellfish",
+  "Sesame",
 ];
 
 export const FOOD_DIETARY_TAG_OPTIONS = [
-  "Vegan",
   "Vegetarian",
+  "Vegan",
   "Halal",
-  "Kosher",
   "Gluten-Free",
   "Dairy-Free",
-  "Nut-Free",
-  "Organic",
+  "Sugar-Free",
+  "High Protein",
+  "Organic", 
+];
+
+export const FOOD_SPICE_LEVEL_OPTIONS = [
+  "Not Spicy",
+  "Mild",
+  "Medium",
+  "Hot",
+  "Very Hot",
+];
+
+export const FOOD_PACKAGING_OPTIONS = [
+  "Loose",
+  "Sealed Pack",
+  "Bottle",
+  "Can",
+  "Jar",
+  "Box",
+  "Tray",
+  "Cup",
+  "Wrapper",
+  "Foil Pack",
+  "Basket / Plate",
+  "Other",
 ];
 
 type BaseFieldParams = {
@@ -91,6 +118,23 @@ export const textareaField = ({
   key,
   label,
   type: "textarea",
+  required,
+  advanced,
+  placeholder,
+  helpText,
+});
+
+export const numberField = ({
+  key,
+  label,
+  required,
+  advanced,
+  placeholder,
+  helpText,
+}: BaseFieldParams): ListingSpecField => ({
+  key,
+  label,
+  type: "number",
   required,
   advanced,
   placeholder,
