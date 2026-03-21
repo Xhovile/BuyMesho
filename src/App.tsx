@@ -2489,9 +2489,9 @@ setCurrentPage={setCurrentPage}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl"
+              className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
             >
-              <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+              <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
                 <div>
                   <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Post your item to the campus</p>
@@ -2566,7 +2566,8 @@ setCurrentPage={setCurrentPage}
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleCreateListing} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleCreateListing} className="flex-1 min-h-0 flex flex-col">
+                  <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
                   <div>
                     <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>
                     <input 
@@ -2797,13 +2798,16 @@ setCurrentPage={setCurrentPage}
     className="w-full"
   />
 </div>
-                  <button 
-                    type="submit"
-                    disabled={uploading || creatingListing}
-                    className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors mt-4 ${uploading || creatingListing ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
-                  >
-                    {uploading ? "Please wait..." : creatingListing ? "Posting..." : "Post Listing"}
-                  </button>
+                  </div>
+                  <div className="p-6 border-t border-zinc-100 bg-white sticky bottom-0 flex-shrink-0">
+                    <button 
+                      type="submit"
+                      disabled={uploading || creatingListing}
+                      className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors ${uploading || creatingListing ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
+                    >
+                      {uploading ? "Please wait..." : creatingListing ? "Posting..." : "Post Listing"}
+                    </button>
+                  </div>
                 </form>
               )}
             </motion.div>
