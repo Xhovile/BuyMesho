@@ -454,7 +454,7 @@ useEffect(() => {
   const isSchemaDrivenCategory =
     getListingSubcategories(newListing.category).length > 0;
 
-  const availableSubcategories = React.useMemo(() => {
+  const availableSubcategories = useMemo(() => {
     if (!isSchemaDrivenCategory) return [];
     return getListingSubcategories(newListing.category);
   }, [isSchemaDrivenCategory, newListing.category]);
