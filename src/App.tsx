@@ -2548,7 +2548,7 @@ setCurrentPage={setCurrentPage}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+              className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
             >
               <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
                 <div>
@@ -2625,244 +2625,326 @@ setCurrentPage={setCurrentPage}
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleCreateListing} className="flex-1 min-h-0 flex flex-col">
-                  <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newListing.name}
-                      onChange={e => setNewListing({...newListing, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Price (MK)</label>
-                      <input 
-                        required
-                        type="number" 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.price}
-                        onChange={e => setNewListing({...newListing, price: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-                      <input 
-                        required
-                        type="text" 
-                        placeholder="265..."
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.whatsapp_number}
-                        onChange={e => setNewListing({...newListing, whatsapp_number: e.target.value})}
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                        Total Quantity
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        min="1"
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.quantity}
-                        onChange={(e) => setNewListing({ ...newListing, quantity: e.target.value })}
-                      />
-                    </div>
+                <form onSubmit={handleCreateListing} className="flex flex-col min-h-0 flex-1">
+                  <div className="p-6">
+                    <div className="max-h-[58vh] overflow-y-auto space-y-4 pr-1">
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Basic Info
+                        </p>
 
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                        Sold Quantity
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.sold_quantity}
-                        onChange={(e) => setNewListing({ ...newListing, sold_quantity: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <FormDropdown
-                    label="Condition"
-                    value={newListing.condition}
-                    options={["new", "used", "refurbished"]}
-                    onChange={(value) =>
-                    setNewListing({
-                      ...newListing,
-                      condition: value as "new" | "used" | "refurbished",
-                    })
-                   }
-                 />
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormDropdown
-                      label="Category"
-                      value={newListing.category}
-                      options={CATEGORIES}
-                      onChange={(value) =>
-                        handleNewListingCategoryChange(value as Category)
-                      }
-                    />
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Product Name
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                            value={newListing.name}
+                            onChange={(e) =>
+                              setNewListing({ ...newListing, name: e.target.value })
+                            }
+                          />
+                        </div>
 
-                    <FormDropdown
-                      label="University"
-                      value={newListing.university}
-                      options={UNIVERSITIES}
-                      onChange={(value) =>
-                        handleNewListingUniversityChange(value as University)
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-                      value={newListing.description}
-                      onChange={(e) =>
-                        setNewListing({ ...newListing, description: e.target.value })
-                      }
-                    />
-                  </div>
-                  {isSchemaDrivenCategory && (
-                    <>
-                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Price (MK)
+                            </label>
+                            <input
+                              required
+                              type="number"
+                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              value={newListing.price}
+                              onChange={(e) =>
+                                setNewListing({ ...newListing, price: e.target.value })
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              WhatsApp Number
+                            </label>
+                            <input
+                              required
+                              type="text"
+                              placeholder="265..."
+                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              value={newListing.whatsapp_number}
+                              onChange={(e) =>
+                                setNewListing({
+                                  ...newListing,
+                                  whatsapp_number: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Listing Setup
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Total Quantity
+                            </label>
+                            <input
+                              required
+                              type="number"
+                              min="1"
+                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              value={newListing.quantity}
+                              onChange={(e) =>
+                                setNewListing({ ...newListing, quantity: e.target.value })
+                              }
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Sold Quantity
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              value={newListing.sold_quantity}
+                              onChange={(e) =>
+                                setNewListing({
+                                  ...newListing,
+                                  sold_quantity: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormDropdown
+                            label="Category"
+                            value={newListing.category}
+                            options={CATEGORIES}
+                            searchPlaceholder="Search category..."
+                            onChange={(value) =>
+                              handleNewListingCategoryChange(value as Category)
+                            }
+                          />
+
+                          <FormDropdown
+                            label="University"
+                            value={newListing.university}
+                            options={UNIVERSITIES}
+                            searchPlaceholder="Search university..."
+                            onChange={(value) =>
+                              handleNewListingUniversityChange(value as University)
+                            }
+                          />
+                        </div>
+
                         <FormDropdown
-                          label="Subcategory"
-                          value={newListing.subcategory}
-                          options={availableSubcategories}
-                          onChange={handleNewListingSubcategoryChange}
-                        />
-                        <FormDropdown
-                          label="Item Type"
-                          value={newListing.item_type}
-                          options={availableItemTypes}
-                          onChange={handleNewListingItemTypeChange}
+                          label="Condition"
+                          value={newListing.condition}
+                          options={["new", "used", "refurbished"]}
+                          onChange={(value) =>
+                            setNewListing({
+                              ...newListing,
+                              condition: value as "new" | "used" | "refurbished",
+                            })
+                          }
                         />
                       </div>
 
-                      {newListing.subcategory && newListing.item_type && selectedItemConfig && (
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Description
+                        </p>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Description
+                          </label>
+                          <textarea
+                            required
+                            rows={4}
+                            className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                            value={newListing.description}
+                            onChange={(e) =>
+                              setNewListing({
+                                ...newListing,
+                                description: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {isSchemaDrivenCategory && (
                         <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                          <div>
-                            <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-                              Item details
-                            </p>
-                            <p className="text-xs text-zinc-400 mt-1">
-                              Fill required fields marked with *.
-                            </p>
+                          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                            Item Details
+                          </p>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <FormDropdown
+                              label="Subcategory"
+                              value={newListing.subcategory}
+                              options={availableSubcategories}
+                              onChange={handleNewListingSubcategoryChange}
+                            />
+                            <FormDropdown
+                              label="Item Type"
+                              value={newListing.item_type}
+                              options={availableItemTypes}
+                              onChange={handleNewListingItemTypeChange}
+                            />
                           </div>
 
-                          <div className="grid grid-cols-1 gap-4">
-                            {basicSpecFields.map(renderListingSpecField)}
-                          </div>
+                          {newListing.subcategory &&
+                            newListing.item_type &&
+                            selectedItemConfig && (
+                              <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                                <div>
+                                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                                    Item details
+                                  </p>
+                                  <p className="text-xs text-zinc-400 mt-1">
+                                    Fill required fields marked with *.
+                                  </p>
+                                </div>
 
-                          {advancedSpecFields.length > 0 && (
-                            <div>
-                              <button
-                                type="button"
-                                onClick={() => setShowAdvancedSpecs((prev) => !prev)}
-                                className="text-sm font-bold text-primary hover:underline"
-                              >
-                                {showAdvancedSpecs
-                                  ? "Hide advanced details"
-                                  : "Add advanced details"}
-                              </button>
-                            </div>
-                          )}
+                                <div className="grid grid-cols-1 gap-4">
+                                  {basicSpecFields.map(renderListingSpecField)}
+                                </div>
 
-                          {showAdvancedSpecs && advancedSpecFields.length > 0 && (
-                            <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
-                              {advancedSpecFields.map(renderListingSpecField)}
-                            </div>
-                          )}
+                                {advancedSpecFields.length > 0 && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAdvancedSpecs((prev) => !prev)}
+                                      className="text-sm font-bold text-primary hover:underline"
+                                    >
+                                      {showAdvancedSpecs
+                                        ? "Hide advanced details"
+                                        : "Add advanced details"}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {showAdvancedSpecs && advancedSpecFields.length > 0 && (
+                                  <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                                    {advancedSpecFields.map(renderListingSpecField)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                         </div>
                       )}
-                    </>
-                  )}
-                  <div>
-  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-    Photos (max 5)
-  </label>
 
-  {newListing.photos.length > 0 && (
-    <div className="grid grid-cols-3 gap-3 mb-3">
-      {newListing.photos.map((url, idx) => (
-        <div
-          key={`${url}-${idx}`}
-          className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
-        >
-          <img
-            src={url}
-            alt={`Photo ${idx + 1}`}
-            className="w-full h-full object-cover"
-          />
-          <button
-            type="button"
-            onClick={() =>
-              setNewListing((prev) => ({
-                ...prev,
-                photos: prev.photos.filter((_, i) => i !== idx),
-              }))
-            }
-            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Media
+                        </p>
 
-  <input
-    type="file"
-    accept="image/*"
-    multiple
-    onChange={handleImagesUpload}
-    disabled={uploading || newListing.photos.length >= 5}
-    className="w-full"
-  />
-</div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Photos (max 5)
+                          </label>
 
-<div className="mt-4">
-  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-    Video (optional, 1)
-  </label>
+                          {newListing.photos.length > 0 && (
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              {newListing.photos.map((url, idx) => (
+                                <div
+                                  key={`${url}-${idx}`}
+                                  className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Photo ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setNewListing((prev) => ({
+                                        ...prev,
+                                        photos: prev.photos.filter((_, i) => i !== idx),
+                                      }))
+                                    }
+                                    className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
-  {newListing.video_url ? (
-    <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
-      <video src={newListing.video_url} controls className="w-full" />
-      <button
-        type="button"
-        onClick={() => setNewListing((prev) => ({ ...prev, video_url: "" }))}
-        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  ) : null}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImagesUpload}
+                            disabled={uploading || newListing.photos.length >= 5}
+                            className="w-full"
+                          />
+                        </div>
 
-  <input
-    type="file"
-    accept="video/*"
-    onChange={handleVideoUpload}
-    disabled={uploading || !!newListing.video_url}
-    className="w-full"
-  />
-</div>
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Video (optional, 1)
+                          </label>
+
+                          {newListing.video_url ? (
+                            <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+                              <video src={newListing.video_url} controls className="w-full" />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewListing((prev) => ({ ...prev, video_url: "" }))
+                                }
+                                className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : null}
+
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoUpload}
+                            disabled={uploading || !!newListing.video_url}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-6 border-t border-zinc-100 bg-white sticky bottom-0 flex-shrink-0">
-                    <button 
+
+                  <div className="p-6 border-t border-zinc-100 bg-white flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
                       type="submit"
                       disabled={uploading || creatingListing}
-                      className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors ${uploading || creatingListing ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
+                      className={`flex-1 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
+                        uploading || creatingListing
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-primary-dark"
+                      }`}
                     >
                       {uploading ? "Please wait..." : creatingListing ? "Posting..." : "Post Listing"}
                     </button>
