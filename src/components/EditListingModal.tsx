@@ -62,7 +62,8 @@ export default function EditListingModal({
     setShowAdvancedSpecs(false);
   }, [listing]);
 
-  const isSchemaDrivenCategory = form.category === "Electronics & Gadgets";
+  const isSchemaDrivenCategory =
+    getListingSubcategories(form.category as Category).length > 0;
 
   const availableSubcategories = useMemo(() => {
     if (!isSchemaDrivenCategory) return [];

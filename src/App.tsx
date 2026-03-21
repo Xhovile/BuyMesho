@@ -409,7 +409,7 @@ useEffect(() => {
   );
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const isSchemaDrivenCategory =
-    newListing.category === "Electronics & Gadgets";
+    getListingSubcategories(newListing.category).length > 0;
 
   const availableSubcategories = React.useMemo(() => {
     if (!isSchemaDrivenCategory) return [];
