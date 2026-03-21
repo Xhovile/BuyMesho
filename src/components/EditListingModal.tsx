@@ -185,7 +185,12 @@ export default function EditListingModal({
 
     if (field.type === "select") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            editSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <FormDropdown
             label={labelText}
             value={value as string}
@@ -202,7 +207,12 @@ export default function EditListingModal({
 
     if (field.type === "textarea") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            editSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -223,7 +233,12 @@ export default function EditListingModal({
       const boolValue = typeof rawValue === "boolean" ? rawValue : null;
 
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            editSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -273,7 +288,12 @@ export default function EditListingModal({
       const selectedValues = Array.isArray(rawValue) ? rawValue : [];
 
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            editSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
             {labelText}
           </label>
@@ -318,7 +338,12 @@ export default function EditListingModal({
 
     if (field.type === "number") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            editSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -342,7 +367,12 @@ export default function EditListingModal({
     }
 
     return (
-      <div key={field.key}>
+      <div
+        key={field.key}
+        ref={(el) => {
+          editSpecFieldRefs.current[field.key] = el;
+        }}
+      >
         <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
           {labelText}
         </label>
