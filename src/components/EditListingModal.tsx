@@ -529,255 +529,285 @@ export default function EditListingModal({
           </button>
         </div>
 
-        <div className="p-6 space-y-4 overflow-y-auto">
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Product Name
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              placeholder="Product name"
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-            />
-          </div>
+        <div className="p-6">
+          <div className="max-h-[58vh] overflow-y-auto space-y-4 pr-1">
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                Basic Info
+              </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                Price (MK)
-              </label>
-              <input
-                type="number"
-                value={form.price}
-                onChange={(e) => setForm({ ...form, price: e.target.value })}
-                placeholder="Price"
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                WhatsApp Number
-              </label>
-              <input
-                type="text"
-                value={form.whatsapp_number}
-                onChange={(e) =>
-                  setForm({ ...form, whatsapp_number: e.target.value })
-                }
-                placeholder="265..."
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                Total Quantity
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                Sold Quantity
-              </label>
-              <input
-                type="number"
-                min="0"
-                value={form.sold_quantity}
-                onChange={(e) => setForm({ ...form, sold_quantity: e.target.value })}
-                className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormDropdown
-              label="Category"
-              value={form.category}
-              options={CATEGORIES}
-              searchPlaceholder="Search category..."
-              onChange={(value) => handleCategoryChange(value as Category)}
-            />
-
-            <FormDropdown
-              label="University"
-              value={form.university}
-              options={UNIVERSITIES}
-              searchPlaceholder="Search university..."
-              onChange={(value) =>
-                setForm({ ...form, university: value as University })
-              }
-            />
-          </div>
-
-           <FormDropdown
-             label="Condition"
-             value={form.condition}
-             options={["new", "used", "refurbished"]}
-             onChange={(value) =>
-               setForm({
-                 ...form,
-                 condition: value as "new" | "used" | "refurbished",
-               })
-              }
-             />
-
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Description
-            </label>
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-              placeholder="Describe your item"
-              rows={4}
-              className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-            />
-          </div>
-
-          {isSchemaDrivenCategory && (
-            <>
-              <div className="grid grid-cols-2 gap-4">
-                <FormDropdown
-                  label="Subcategory"
-                  value={form.subcategory}
-                  options={availableSubcategories}
-                  onChange={handleSubcategoryChange}
-                />
-                <FormDropdown
-                  label="Item Type"
-                  value={form.item_type}
-                  options={availableItemTypes}
-                  onChange={handleItemTypeChange}
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Product name"
+                  className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
                 />
               </div>
 
-              {form.subcategory && form.item_type && selectedItemConfig && (
-                <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                  <div>
-                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-                      Item details
-                    </p>
-                    <p className="text-xs text-zinc-400 mt-1">
-                      Fill required fields marked with *.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4">
-                    {basicSpecFields.map(renderListingSpecField)}
-                  </div>
-
-                  {advancedSpecFields.length > 0 && (
-                    <div>
-                      <button
-                        type="button"
-                        onClick={() => setShowAdvancedSpecs((prev) => !prev)}
-                        className="text-sm font-bold text-primary hover:underline"
-                      >
-                        {showAdvancedSpecs
-                          ? "Hide advanced details"
-                          : "Add advanced details"}
-                      </button>
-                    </div>
-                  )}
-
-                  {showAdvancedSpecs && advancedSpecFields.length > 0 && (
-                    <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
-                      {advancedSpecFields.map(renderListingSpecField)}
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                    Price (MK)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: e.target.value })}
+                    placeholder="Price"
+                    className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
                 </div>
-              )}
-            </>
-          )}
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Photos (max 5)
-            </label>
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                    WhatsApp Number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.whatsapp_number}
+                    onChange={(e) =>
+                      setForm({ ...form, whatsapp_number: e.target.value })
+                    }
+                    placeholder="265..."
+                    className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
 
-            {form.photos.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                {form.photos.map((url, idx) => (
-                  <div
-                    key={`${url}-${idx}`}
-                    className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
-                  >
-                    <img
-                      src={url}
-                      alt={`Photo ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                Listing Setup
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                    Total Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.quantity}
+                    onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                    Sold Quantity
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.sold_quantity}
+                    onChange={(e) => setForm({ ...form, sold_quantity: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <FormDropdown
+                  label="Category"
+                  value={form.category}
+                  options={CATEGORIES}
+                  searchPlaceholder="Search category..."
+                  onChange={(value) => handleCategoryChange(value as Category)}
+                />
+
+                <FormDropdown
+                  label="University"
+                  value={form.university}
+                  options={UNIVERSITIES}
+                  searchPlaceholder="Search university..."
+                  onChange={(value) =>
+                    setForm({ ...form, university: value as University })
+                  }
+                />
+              </div>
+
+               <FormDropdown
+                 label="Condition"
+                 value={form.condition}
+                 options={["new", "used", "refurbished"]}
+                 onChange={(value) =>
+                   setForm({
+                     ...form,
+                     condition: value as "new" | "used" | "refurbished",
+                   })
+                  }
+                 />
+            </div>
+
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                Description
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                  placeholder="Describe your item"
+                  rows={4}
+                  className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                />
+              </div>
+            </div>
+
+            {isSchemaDrivenCategory && (
+              <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                  Item Details
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormDropdown
+                    label="Subcategory"
+                    value={form.subcategory}
+                    options={availableSubcategories}
+                    onChange={handleSubcategoryChange}
+                  />
+                  <FormDropdown
+                    label="Item Type"
+                    value={form.item_type}
+                    options={availableItemTypes}
+                    onChange={handleItemTypeChange}
+                  />
+                </div>
+
+                {form.subcategory && form.item_type && selectedItemConfig && (
+                  <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                    <div>
+                      <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                        Item details
+                      </p>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Fill required fields marked with *.
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {basicSpecFields.map(renderListingSpecField)}
+                    </div>
+
+                    {advancedSpecFields.length > 0 && (
+                      <div>
+                        <button
+                          type="button"
+                          onClick={() => setShowAdvancedSpecs((prev) => !prev)}
+                          className="text-sm font-bold text-primary hover:underline"
+                        >
+                          {showAdvancedSpecs
+                            ? "Hide advanced details"
+                            : "Add advanced details"}
+                        </button>
+                      </div>
+                    )}
+
+                    {showAdvancedSpecs && advancedSpecFields.length > 0 && (
+                      <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                        {advancedSpecFields.map(renderListingSpecField)}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                Media
+              </p>
+
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  Photos (max 5)
+                </label>
+
+                {form.photos.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    {form.photos.map((url, idx) => (
+                      <div
+                        key={`${url}-${idx}`}
+                        className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+                      >
+                        <img
+                          src={url}
+                          alt={`Photo ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            handleReplaceImage(idx, e.target.files?.[0])
+                          }
+                          disabled={uploadingMedia}
+                          className="absolute inset-0 opacity-0 cursor-pointer"
+                          aria-label={`Replace photo ${idx + 1}`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleAddImages}
+                  disabled={uploadingMedia || form.photos.length >= 5}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="mt-4">
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                  Video (optional, 1)
+                </label>
+
+                {form.video_url ? (
+                  <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+                    <video src={form.video_url} controls className="w-full" />
                     <button
                       type="button"
-                      onClick={() => handleRemoveImage(idx)}
+                      onClick={handleRemoveVideo}
                       className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
                     >
                       <X className="w-4 h-4" />
                     </button>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        handleReplaceImage(idx, e.target.files?.[0])
-                      }
-                      disabled={uploadingMedia}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      aria-label={`Replace photo ${idx + 1}`}
-                    />
                   </div>
-                ))}
+                ) : null}
+
+                <input
+                  type="file"
+                  accept="video/*"
+                  onChange={handleReplaceVideo}
+                  disabled={uploadingMedia}
+                  className="w-full"
+                />
               </div>
-            )}
-
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={handleAddImages}
-              disabled={uploadingMedia || form.photos.length >= 5}
-              className="w-full"
-            />
-          </div>
-
-          <div className="mt-4">
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Video (optional, 1)
-            </label>
-
-            {form.video_url ? (
-              <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
-                <video src={form.video_url} controls className="w-full" />
-                <button
-                  type="button"
-                  onClick={handleRemoveVideo}
-                  className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            ) : null}
-
-            <input
-              type="file"
-              accept="video/*"
-              onChange={handleReplaceVideo}
-              disabled={uploadingMedia}
-              className="w-full"
-            />
+            </div>
           </div>
 
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
