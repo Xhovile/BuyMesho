@@ -1872,6 +1872,16 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     },
   }));
 };
+
+const scrollToCreateSpecField = (fieldKey: string) => {
+  const target = createSpecFieldRefs.current[fieldKey];
+  if (!target) return;
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+};
   
   const handleCreateListing = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -2138,7 +2148,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
 
     if (field.type === "select") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <FormDropdown
             label={labelText}
             value={value as string}
@@ -2155,7 +2170,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
 
     if (field.type === "textarea") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -2176,7 +2196,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
       const boolValue = typeof rawValue === "boolean" ? rawValue : null;
 
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -2226,7 +2251,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
       const selectedValues = Array.isArray(rawValue) ? rawValue : [];
 
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
             {labelText}
           </label>
@@ -2265,7 +2295,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
 
     if (field.type === "number") {
       return (
-        <div key={field.key}>
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
@@ -2289,7 +2324,12 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     }
 
     return (
-      <div key={field.key}>
+      <div
+        key={field.key}
+        ref={(el) => {
+          createSpecFieldRefs.current[field.key] = el;
+        }}
+      >
         <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
           {labelText}
         </label>
