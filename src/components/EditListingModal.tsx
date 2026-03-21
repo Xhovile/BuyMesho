@@ -176,6 +176,16 @@ export default function EditListingModal({
     }));
   };
 
+  const scrollToEditSpecField = (fieldKey: string) => {
+    const target = editSpecFieldRefs.current[fieldKey];
+    if (!target) return;
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
+
   const renderListingSpecField = (field: ListingSpecField) => {
     const rawValue = form.spec_values[field.key];
     const value = rawValue === null || rawValue === undefined ? "" : rawValue;
