@@ -2768,7 +2768,7 @@ setCurrentPage={setCurrentPage}
 
                         <div>
                           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                            Description
+                            Product Description
                           </label>
                           <textarea
                             required
@@ -2812,7 +2812,7 @@ setCurrentPage={setCurrentPage}
                               <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
                                 <div>
                                   <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
-                                    Item details
+                                    Item Details
                                   </p>
                                   <p className="text-xs text-zinc-400 mt-1">
                                     Fill required fields marked with *.
