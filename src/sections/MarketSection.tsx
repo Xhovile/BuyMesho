@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Loader2, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
@@ -131,23 +132,24 @@ export default function MarketSection({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {visibleListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                onReport={onReport}
-                currentUid={firebaseUserUid}
-                onDelete={onDelete}
-                onOpenProfile={onOpenProfile}
-                onEdit={onEdit}
-                onOpenDetails={onOpenDetails}
-                onHideSeller={onHideSeller}
-                onHideListing={onHideListing}
-                onToggleStatus={onToggleStatus}
-                isSaved={savedListingIds.includes(listing.id)}
-                onToggleSave={onToggleSave}
-                isLoggedIn={isLoggedIn}
-                requireLoginForContact={requireLoginForContact}
-              />
+              <Fragment key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={onReport}
+                  currentUid={firebaseUserUid}
+                  onDelete={onDelete}
+                  onOpenProfile={onOpenProfile}
+                  onEdit={onEdit}
+                  onOpenDetails={onOpenDetails}
+                  onHideSeller={onHideSeller}
+                  onHideListing={onHideListing}
+                  onToggleStatus={onToggleStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={onToggleSave}
+                  isLoggedIn={isLoggedIn}
+                  requireLoginForContact={requireLoginForContact}
+                />
+              </Fragment>
             ))}
           </div>
 

@@ -1,4 +1,4 @@
-import type { ListingItemSchema, ListingFieldGroup } from "../core";
+import type { ListingItemSchema } from "../core";
 
 export const PRINTER_SCHEMA: ListingItemSchema = {
   category: "Electronics & Gadgets",
