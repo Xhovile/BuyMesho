@@ -2138,21 +2138,13 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     if (field.type === "select") {
       return (
         <div key={field.key}>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-            {labelText}
-          </label>
-          <select
+          <FormDropdown
+            label={labelText}
             value={value as string}
-            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          >
-            <option value="">Select {field.label}</option>
-            {(field.options || []).map((option: string) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+            options={field.options || []}
+            onChange={(selected) => handleSpecValueChange(field.key, selected)}
+            placeholder={`Select ${field.label}`}
+          />
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2180,32 +2172,48 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
     }
 
     if (field.type === "boolean") {
-      const boolValue =
-        typeof rawValue === "boolean" ? rawValue : null;
+      const boolValue = typeof rawValue === "boolean" ? rawValue : null;
 
       return (
         <div key={field.key}>
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
-          <select
-            value={
-              boolValue === null ? "" : boolValue ? "true" : "false"
-            }
-            onChange={(e) => {
-              if (e.target.value === "") {
-                handleSpecValueChange(field.key, null);
-                return;
-              }
-
-              handleSpecValueChange(field.key, e.target.value === "true");
-            }}
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          >
-            <option value="">Select an option</option>
-            <option value="true">Yes</option>
-            <option value="false">No</option>
-          </select>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, null)}
+              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+                boolValue === null
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              Not set
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, true)}
+              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+                boolValue === true
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, false)}
+              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+                boolValue === false
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              No
+            </button>
+          </div>
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
