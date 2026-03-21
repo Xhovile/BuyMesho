@@ -5,7 +5,6 @@ import {
   MEETING_LOCATION_OPTIONS,
   STUDY_LEVEL_OPTIONS,
   SUBJECT_AREA_OPTIONS,
-  TURNAROUND_OPTIONS,
   booleanField,
   createAcademicConfig,
   multiselectField,
@@ -179,7 +178,6 @@ export const EXAM_REVISION_SESSIONS_CONFIG = createTutoringConfig({
 
 export const ASSIGNMENT_GUIDANCE_CONFIG = createTutoringConfig({
   itemType: "Assignment Guidance",
-  noteFields: undefined,
   serviceFields: [
     selectField({
       key: "guidance_type",
