@@ -537,9 +537,28 @@ export default function EditListingModal({
       );
 
       if (!validation.isValid) {
+        const firstError = validation.errors[0];
+        const errorKey = firstError?.key;
+
+        if (errorKey) {
+          const erroredField = selectedItemConfig?.schema.fields.find(
+            (field) => field.key === errorKey
+          );
+
+          if (erroredField?.advanced) {
+            setShowAdvancedSpecs(true);
+            setTimeout(() => {
+              scrollToEditSpecField(errorKey);
+            }, 150);
+          } else {
+            setTimeout(() => {
+              scrollToEditSpecField(errorKey);
+            }, 0);
+          }
+        }
+
         alert(
-          validation.errors[0]?.message ||
-            "Please complete the required item details."
+          firstError?.message || "Please complete the required item details."
         );
         return;
       }
