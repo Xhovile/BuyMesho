@@ -1,7 +1,6 @@
 import type { ListingItemConfig, ListingSpecField } from "../core";
 import {
   AVAILABILITY_OPTIONS,
-  DESIGN_TYPE_OPTIONS,
   DELIVERY_MODE_OPTIONS,
   TURNAROUND_OPTIONS,
   booleanField,
