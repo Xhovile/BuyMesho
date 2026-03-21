@@ -111,6 +111,26 @@ export default function EditListingModal({
     );
   }, [isSchemaDrivenCategory, form.category, form.subcategory, form.item_type]);
 
+  const requiredSpecCount = useMemo(() => {
+    return selectedItemConfig?.requiredKeys.length || 0;
+  }, [selectedItemConfig]);
+
+  const completedRequiredSpecCount = useMemo(() => {
+    if (!selectedItemConfig) return 0;
+
+    return selectedItemConfig.requiredKeys.filter((key) => {
+      const value = form.spec_values[key];
+      return !(
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+      );
+    }).length;
+  }, [selectedItemConfig, form.spec_values]);
+
+  const advancedSpecCount = advancedSpecFields.length;
+
   const handleCategoryChange = (category: Category) => {
     setForm((prev) => ({
       ...prev,
@@ -695,7 +715,9 @@ export default function EditListingModal({
                         Item details
                       </p>
                       <p className="text-xs text-zinc-400 mt-1">
-                        Fill required fields marked with *.
+                        {requiredSpecCount > 0
+                          ? `${completedRequiredSpecCount}/${requiredSpecCount} required fields completed. Fill required fields marked with *.`
+                          : "Fill required fields marked with *."}
                       </p>
                     </div>
 
@@ -711,8 +733,8 @@ export default function EditListingModal({
                           className="text-sm font-bold text-primary hover:underline"
                         >
                           {showAdvancedSpecs
-                            ? "Hide advanced details"
-                            : "Add advanced details"}
+                            ? "Hide optional advanced details"
+                            : `Add optional advanced details (${advancedSpecCount})`}
                         </button>
                       </div>
                     )}

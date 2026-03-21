@@ -514,6 +514,26 @@ useEffect(() => {
     newListing.item_type
   ]);
 
+  const requiredSpecCount = React.useMemo(() => {
+    return selectedItemConfig?.requiredKeys.length || 0;
+  }, [selectedItemConfig]);
+
+  const completedRequiredSpecCount = React.useMemo(() => {
+    if (!selectedItemConfig) return 0;
+
+    return selectedItemConfig.requiredKeys.filter((key) => {
+      const value = newListing.spec_values[key];
+      return !(
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+      );
+    }).length;
+  }, [selectedItemConfig, newListing.spec_values]);
+
+  const advancedSpecCount = advancedSpecFields.length;
+
   const listingBasicReady =
     !!newListing.name.trim() &&
     !!newListing.price &&
@@ -2815,7 +2835,9 @@ setCurrentPage={setCurrentPage}
                                     Item Details
                                   </p>
                                   <p className="text-xs text-zinc-400 mt-1">
-                                    Fill required fields marked with *.
+                                    {requiredSpecCount > 0
+                                      ? `${completedRequiredSpecCount}/${requiredSpecCount} required fields completed. Fill required fields marked with *.`
+                                      : "Fill required fields marked with *."}
                                   </p>
                                 </div>
 
@@ -2831,8 +2853,8 @@ setCurrentPage={setCurrentPage}
                                       className="text-sm font-bold text-primary hover:underline"
                                     >
                                       {showAdvancedSpecs
-                                        ? "Hide advanced details"
-                                        : "Add advanced details"}
+                                        ? "Hide optional advanced details"
+                                        : `Add optional advanced details (${advancedSpecCount})`}
                                     </button>
                                   </div>
                                 )}
