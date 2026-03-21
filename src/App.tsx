@@ -1915,10 +1915,30 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       );
 
       if (!validation.isValid) {
+        const firstError = validation.errors[0];
+        const errorKey = firstError?.key;
+
+        if (errorKey) {
+          const erroredField = selectedItemConfig?.schema.fields.find(
+            (field) => field.key === errorKey
+          );
+
+          if (erroredField?.advanced) {
+            setShowAdvancedSpecs(true);
+            setTimeout(() => {
+              scrollToCreateSpecField(errorKey);
+            }, 150);
+          } else {
+            setTimeout(() => {
+              scrollToCreateSpecField(errorKey);
+            }, 0);
+          }
+        }
+
         showFeedback(
           "error",
           "Missing or invalid details",
-          validation.errors[0]?.message || "Please complete the required item details."
+          firstError?.message || "Please complete the required item details."
         );
         return;
       }
