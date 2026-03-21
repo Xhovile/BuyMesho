@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import ConfirmModal from "./components/ConfirmModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
 import FormDropdown from "./components/FormDropdown";
@@ -450,10 +450,11 @@ useEffect(() => {
     createInitialListingDraft(null)
   );
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+  const createSpecFieldRefs = useRef<Record<string, HTMLElement | null>>({});
   const isSchemaDrivenCategory =
     getListingSubcategories(newListing.category).length > 0;
 
-  const availableSubcategories = React.useMemo(() => {
+  const availableSubcategories = useMemo(() => {
     if (!isSchemaDrivenCategory) return [];
     return getListingSubcategories(newListing.category);
   }, [isSchemaDrivenCategory, newListing.category]);
