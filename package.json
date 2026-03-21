@@ -10,7 +10,7 @@
     "dev:server": "tsx server.ts",
     "build:server": "tsc -p tsconfig.server.json",
     "start:server": "node dist-server/server.js",
-    "lint": "node -e \"const { existsSync } = require('node:fs'); const tscPath = 'node_modules/typescript/lib/tsc.js'; if (!existsSync(tscPath)) { console.error('Dependencies are missing. Run npm ci before npm run lint.'); process.exit(1); }\" && node node_modules/typescript/lib/tsc.js --noEmit"
+    "lint": "node -e \"const { existsSync } = require('node:fs'); const tscPath = 'node_modules/.bin/tsc'; if (!existsSync(tscPath)) { console.error('Dependencies are missing. Run npm ci before npm run lint.'); process.exit(1); }\" && ./node_modules/.bin/tsc --noEmit"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
