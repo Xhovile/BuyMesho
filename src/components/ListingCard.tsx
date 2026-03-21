@@ -89,13 +89,24 @@ export default function ListingCard({
   );
 
   const metaChips = [
-    listing.subcategory,
-    listing.item_type,
-    listing.condition
-      ? listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)
-      : null,
-    listing.status !== "sold" ? `${availableQuantity} left` : "Sold out",
-  ].filter(Boolean) as string[];
+    { key: "subcategory", label: listing.subcategory },
+    { key: "item_type", label: listing.item_type },
+    {
+      key: "condition",
+      label: listing.condition
+        ? listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)
+        : null,
+    },
+    {
+      key: "availability",
+      label:
+        listing.status !== "sold" && availableQuantity > 0
+          ? `${availableQuantity} left`
+          : "Sold out",
+    },
+  ].filter(
+    (chip): chip is { key: string; label: string } => Boolean(chip.label)
+  );
 
   const trackWhatsappClick = async () => {
   try {
@@ -460,10 +471,10 @@ Open this listing: ${shareUrl}`;
             <div className="flex flex-wrap gap-1.5 mb-2">
               {metaChips.map((chip) => (
                 <span
-                  key={chip}
+                  key={chip.key}
                   className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600"
                 >
-                  {chip}
+                  {chip.label}
                 </span>
               ))}
             </div>
