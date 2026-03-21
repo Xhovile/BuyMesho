@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X } from "lucide-react";
 import { Listing, Category, University, ListingSpecValue } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
@@ -41,6 +41,7 @@ export default function EditListingModal({
   });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const editSpecFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     setForm({
