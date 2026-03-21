@@ -113,6 +113,48 @@ const createInitialListingDraft = (
   sold_quantity: "0",
 });
 
+function ListingFormSection({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      <div>
+        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+          {title}
+        </h3>
+        {hint ? <p className="text-xs text-zinc-400 mt-1">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ListingProgressPill({
+  label,
+  active,
+}: {
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
+        active
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-zinc-200 bg-zinc-50 text-zinc-400"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
+
 export default function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -471,6 +513,23 @@ useEffect(() => {
     newListing.subcategory,
     newListing.item_type
   ]);
+
+  const listingBasicReady =
+    !!newListing.name.trim() &&
+    !!newListing.price &&
+    !!newListing.whatsapp_number.trim();
+
+  const listingSetupReady =
+    !!newListing.category &&
+    !!newListing.university &&
+    !!newListing.condition &&
+    !!newListing.quantity;
+
+  const listingDetailsReady = isSchemaDrivenCategory
+    ? !!newListing.subcategory && !!newListing.item_type
+    : true;
+
+  const listingMediaReady = newListing.photos.length > 0;
 
   const [authForm, setAuthForm] = useState({
   email: "",
