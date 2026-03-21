@@ -4327,7 +4327,7 @@ setCurrentPage={setCurrentPage}
       </div>
     )}
 
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 max-h-[42vh] overflow-y-auto">
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[42vh] overflow-y-auto">
       {activeStructuredSpecRows.length > 0 ? (
         activeStructuredSpecRows.map((row) => (
           <div key={row.key} className="px-4 py-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
