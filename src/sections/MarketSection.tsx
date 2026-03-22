@@ -96,6 +96,23 @@ export default function MarketSection({
     Math.max(0, currentPage - 3),
     Math.min(totalPages, currentPage + 2)
   );
+  const hasActiveFilters =
+    Boolean(selectedUniv) ||
+    Boolean(selectedCat) ||
+    Boolean(selectedCondition) ||
+    Boolean(minPrice) ||
+    Boolean(maxPrice) ||
+    sortBy !== "newest";
+
+  const clearAllFilters = () => {
+    setSelectedUniv("");
+    setSelectedCat("");
+    setSelectedCondition("");
+    setMinPrice("");
+    setMaxPrice("");
+    setSortBy("newest");
+    setCurrentPage(1);
+  };
 
   return (
     <>
@@ -204,7 +221,29 @@ export default function MarketSection({
             <Search className="w-8 h-8 text-zinc-300" />
           </div>
           <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
-          <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
+          <p className="text-zinc-500">
+            {hasActiveFilters
+              ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
+              : "Try adjusting your search terms or check again later for new listings."}
+          </p>
+          {hasActiveFilters && (
+            <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+              >
+                Clear all filters
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                Start from first page
+              </button>
+            </div>
+          )}
         </div>
       )}
     </>
