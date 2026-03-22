@@ -94,6 +94,8 @@ type SellerRatingSummary = {
   myRating: number | null;
 };
 
+type SellerApplicationStatus = "pending" | "approved" | "rejected";
+
 const createInitialListingDraft = (
   userProfile?: UserProfile | null
 ): ListingDraft => ({
@@ -582,12 +584,19 @@ useEffect(() => {
 });
   
   const [sellerUpgradeForm, setSellerUpgradeForm] = useState({
+  fullLegalName: "",
+  institution: UNIVERSITIES[0] as University,
+  applicantType: "student" as "student" | "staff" | "registered_business",
+  institutionIdNumber: "",
+  whatsappNumber: "",
   businessName: "",
-  university: UNIVERSITIES[0] as University,
-  logoUrl: "",
-  bio: "",
-  whatsappNumber: ""
+  whatToSell: "",
+  businessDescription: "",
+  reasonForApplying: "",
+  proofDocumentUrl: "",
+  agreedToRules: false
 });
+  const [sellerApplicationStatus, setSellerApplicationStatus] = useState<SellerApplicationStatus | null>(null);
   
 const [editProfileForm, setEditProfileForm] = useState({
   businessName: "",
@@ -845,6 +854,14 @@ const fetchSellerDashboard = async () => {
     void fetchSellerDashboard();
   } else {
     setSellerDashboard(null);
+  }
+}, [firebaseUser, userProfile?.is_seller]);
+
+  useEffect(() => {
+  if (firebaseUser && !userProfile?.is_seller) {
+    void fetchSellerApplicationStatus();
+  } else {
+    setSellerApplicationStatus(null);
   }
 }, [firebaseUser, userProfile?.is_seller]);
 
@@ -1743,59 +1760,61 @@ const handleDeleteAccount = async () => {
     );
   }
 };
+
+  const fetchSellerApplicationStatus = async () => {
+    if (!firebaseUser || userProfile?.is_seller) {
+      setSellerApplicationStatus(null);
+      return;
+    }
+
+    try {
+      const data = await apiFetch("/api/profile/seller-application");
+      if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
+        setSellerApplicationStatus(data.status);
+      } else {
+        setSellerApplicationStatus(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch seller application status", err);
+      setSellerApplicationStatus(null);
+    }
+  };
   
   const handleBecomeSeller = async (e: React.FormEvent) => {
   e.preventDefault();
   if (!firebaseUser || !userProfile) return;
 
   try {
-    const updatedProfile: UserProfile = {
-      ...userProfile,
-      is_seller: true,
-      business_name: sellerUpgradeForm.businessName,
-      business_logo: sellerUpgradeForm.logoUrl,
-      university: sellerUpgradeForm.university,
-      bio: sellerUpgradeForm.bio,
-      whatsapp_number: sellerUpgradeForm.whatsappNumber,
-    };
-
-    await updateDoc(doc(firestore, "users", firebaseUser.uid), {
-      is_seller: true,
-      business_name: updatedProfile.business_name,
-      business_logo: updatedProfile.business_logo,
-      university: updatedProfile.university,
-      bio: updatedProfile.bio || "",
-      whatsapp_number: updatedProfile.whatsapp_number || "",
-    });
-
-    const upgraded = await apiFetch("/api/profile/become-seller", {
+    const submitted = await apiFetch("/api/profile/become-seller", {
       method: "POST",
       body: JSON.stringify({
-        business_name: updatedProfile.business_name,
-        business_logo: updatedProfile.business_logo,
-        university: updatedProfile.university,
-        bio: updatedProfile.bio || "",
-        whatsapp_number: updatedProfile.whatsapp_number || "",
+        full_legal_name: sellerUpgradeForm.fullLegalName,
+        institution: sellerUpgradeForm.institution,
+        applicant_type: sellerUpgradeForm.applicantType,
+        institution_id_number: sellerUpgradeForm.institutionIdNumber,
+        whatsapp_number: sellerUpgradeForm.whatsappNumber,
+        business_name: sellerUpgradeForm.businessName,
+        what_to_sell: sellerUpgradeForm.whatToSell,
+        business_description: sellerUpgradeForm.businessDescription,
+        reason_for_applying: sellerUpgradeForm.reasonForApplying,
+        proof_document_url: sellerUpgradeForm.proofDocumentUrl,
+        agreed_to_rules: sellerUpgradeForm.agreedToRules,
       }),
     });
 
-    setUserProfile({
-      ...updatedProfile,
-      ...(upgraded || {}),
-      is_seller: true,
-    });
+    setSellerApplicationStatus(submitted?.application?.status || "pending");
 
     showFeedback(
       "success",
-      "Seller account activated",
-      "Your seller profile is now active."
+      "Application submitted",
+      "Your application is pending manual review."
     );
     setAuthView("profile");
   } catch (err: any) {
     showFeedback(
      "error",
-     "Seller upgrade failed",
-     err?.message || "We could not activate your seller account."
+     "Application failed",
+     err?.message || "We could not submit your seller application."
    );
   }
 };
@@ -2201,7 +2220,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
            if (authView === "editProfile") {
              setEditProfileForm((prev) => ({ ...prev, logoUrl: data.url }));
            } else if (authView === "becomeSeller") {
-             setSellerUpgradeForm((prev) => ({ ...prev, logoUrl: data.url }));
+             setSellerUpgradeForm((prev) => ({ ...prev, proofDocumentUrl: data.url }));
            } else if (authView === "editAccount") {
              setEditAccountForm((prev) => ({ ...prev, avatarUrl: data.url }));
            }
@@ -3398,7 +3417,7 @@ setCurrentPage={setCurrentPage}
                   {authView === 'signup' && "Join BuyMesho"}
                   {authView === 'forgot' && "Reset Password"}
                   {authView === 'editProfile' && "Edit Profile"}
-                  {authView === 'becomeSeller' && "Become a Seller"}
+                  {authView === 'becomeSeller' && "Apply to Become a Seller"}
                   {authView === 'profile' && "My Profile"}
                   {authView === 'editAccount' && "Edit Account"}
                 </h2>
@@ -3727,27 +3746,50 @@ setCurrentPage={setCurrentPage}
                 {isFirebaseConfigured && !firestoreError && authView === 'becomeSeller' && userProfile && (
   <form onSubmit={handleBecomeSeller} className="p-8 space-y-4">
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Full Legal Name</label>
       <input
         required
         type="text"
         className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-        value={sellerUpgradeForm.businessName}
-        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, businessName: e.target.value })}
+        value={sellerUpgradeForm.fullLegalName}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, fullLegalName: e.target.value })}
       />
     </div>
 
      <FormDropdown
-        label="University"
-        value={sellerUpgradeForm.university}
+        label="Institution"
+        value={sellerUpgradeForm.institution}
         options={UNIVERSITIES}
         onChange={(value) =>
           setSellerUpgradeForm({
             ...sellerUpgradeForm,
-            university: value as University,
+            institution: value as University,
           })
         }
       />
+
+    <FormDropdown
+      label="Applicant Type"
+      value={sellerUpgradeForm.applicantType}
+      options={["student", "staff", "registered_business"]}
+      onChange={(value) =>
+        setSellerUpgradeForm({
+          ...sellerUpgradeForm,
+          applicantType: value as "student" | "staff" | "registered_business",
+        })
+      }
+    />
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Institution ID / Registration Number</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.institutionIdNumber}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, institutionIdNumber: e.target.value })}
+      />
+    </div>
 
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
@@ -3762,11 +3804,53 @@ setCurrentPage={setCurrentPage}
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Logo</label>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.businessName}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, businessName: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">What Do You Want to Sell?</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.whatToSell}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, whatToSell: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Description</label>
+      <textarea
+        required
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+        value={sellerUpgradeForm.businessDescription}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, businessDescription: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Reason for Applying</label>
+      <textarea
+        required
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+        value={sellerUpgradeForm.reasonForApplying}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, reasonForApplying: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Proof Document Upload</label>
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
-          {sellerUpgradeForm.logoUrl ? (
-            <img src={sellerUpgradeForm.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+          {sellerUpgradeForm.proofDocumentUrl ? (
+            <img src={sellerUpgradeForm.proofDocumentUrl} alt="Proof document" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-zinc-400">
               <Camera className="w-6 h-6" />
@@ -3785,28 +3869,49 @@ setCurrentPage={setCurrentPage}
             htmlFor="seller-logo-upload"
             className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
           >
-            {uploading ? "Uploading..." : "Upload Logo"}
+            {uploading ? "Uploading..." : "Upload Proof"}
           </label>
         </div>
       </div>
     </div>
 
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio</label>
-      <textarea
-        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
-        value={sellerUpgradeForm.bio}
-        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, bio: e.target.value })}
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+      <p className="font-bold mb-1">Application flow: submitted → pending review → approved/rejected.</p>
+      <p>False information can lead to rejection, suspension, or account removal.</p>
+    </div>
+
+    <div className="flex items-start gap-2">
+      <input
+        required
+        id="seller-rules-agreement"
+        type="checkbox"
+        checked={sellerUpgradeForm.agreedToRules}
+        onChange={(e) =>
+          setSellerUpgradeForm({
+            ...sellerUpgradeForm,
+            agreedToRules: e.target.checked,
+          })
+        }
+        className="mt-1"
       />
+      <label htmlFor="seller-rules-agreement" className="text-sm text-zinc-600">
+        I agree to seller rules and prohibited-items policy.
+      </label>
     </div>
 
     <button
       type="submit"
-      disabled={uploading}
+      disabled={uploading || !sellerUpgradeForm.proofDocumentUrl || !sellerUpgradeForm.agreedToRules}
       className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
     >
-      Activate Seller Account
+      Submit Seller Application
     </button>
+
+    {sellerApplicationStatus && (
+      <p className="text-sm text-zinc-600 text-center">
+        Current application status: <span className="font-bold capitalize">{sellerApplicationStatus}</span>
+      </p>
+    )}
 
     <button
       type="button"
@@ -4074,17 +4179,23 @@ setCurrentPage={setCurrentPage}
   <button
     onClick={() => {
       setSellerUpgradeForm({
-        businessName: userProfile?.business_name || "",
-        university: userProfile?.university || UNIVERSITIES[0],
-        logoUrl: userProfile?.business_logo || "",
-        bio: userProfile?.bio || "",
+        fullLegalName: "",
+        institution: userProfile?.university || UNIVERSITIES[0],
+        applicantType: "student",
+        institutionIdNumber: "",
         whatsappNumber: userProfile?.whatsapp_number || "",
+        businessName: userProfile?.business_name || "",
+        whatToSell: "",
+        businessDescription: "",
+        reasonForApplying: "",
+        proofDocumentUrl: "",
+        agreedToRules: false,
       });
       setAuthView("becomeSeller");
     }}
     className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
   >
-    Become a Seller
+    Apply to Become a Seller
   </button>
 )}
                       
