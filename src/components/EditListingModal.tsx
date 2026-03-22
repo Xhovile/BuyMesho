@@ -589,7 +589,7 @@ export default function EditListingModal({
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] flex flex-col">
         <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">
