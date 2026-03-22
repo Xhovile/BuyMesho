@@ -9,3 +9,6 @@ coverage/
 dist-server
 dist-server
 dist-server
+market.db
+market.db-wal
+market.db-shm
