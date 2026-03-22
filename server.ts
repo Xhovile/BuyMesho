@@ -1948,8 +1948,8 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
     return res.status(400).json({ error: "Invalid application id" });
   }
 
-  if (!["pending", "approved", "rejected"].includes(status)) {
-    return res.status(400).json({ error: "Invalid status" });
+  if (!["approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status. Allowed values: approved, rejected" });
   }
 
   try {
@@ -1963,6 +1963,25 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       return res.status(404).json({ error: "Application not found" });
     }
 
+    if (application.status !== "pending") {
+      return res
+        .status(409)
+        .json({ error: "Status transition not allowed. Only pending applications can be reviewed." });
+    }
+
+    if (status === "approved") {
+      const applicantEmail =
+        typeof application.applicant_email === "string" ? application.applicant_email.trim() : "";
+      if (!applicantEmail) {
+        return res.status(422).json({
+          error: "Cannot approve application without applicant_email. Ask applicant to update profile email.",
+        });
+      }
+    }
+
+    const normalizedReviewNotes =
+      typeof review_notes === "string" && review_notes.trim() ? review_notes.trim() : null;
+
     db.prepare(`
       UPDATE seller_applications
       SET
@@ -1974,7 +1993,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       WHERE id = ?
     `).run(
       status,
-      typeof review_notes === "string" && review_notes.trim() ? review_notes.trim() : null,
+      normalizedReviewNotes,
       requesterUid,
       id
     );
