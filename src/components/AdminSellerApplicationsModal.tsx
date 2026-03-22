@@ -7,6 +7,7 @@ type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
 type SellerApplicationRow = {
   id: number;
+  applicant_uid: string | null;
   full_legal_name: string | null;
   applicant_email: string | null;
   institution: string | null;
@@ -19,6 +20,11 @@ type SellerApplicationRow = {
   reason_for_applying: string | null;
   proof_document_url: string | null;
   status: SellerApplicationStatus;
+  review_notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by_uid: string | null;
+  created_at: string | null;
+  updated_at: string | null;
 };
 
 type Props = {
@@ -32,15 +38,26 @@ export default function AdminSellerApplicationsModal({ onClose }: Props) {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<SellerApplicationStatus>("pending");
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [reviewNotesById, setReviewNotesById] = useState<Record<number, string>>({});
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   const fetchApplications = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await apiFetch("/api/admin/seller-applications");
       const rows = Array.isArray(data) ? data : [];
       setApplications(rows);
+      setReviewNotesById(
+        rows.reduce<Record<number, string>>((acc, row) => {
+          acc[row.id] = row.review_notes || "";
+          return acc;
+        }, {})
+      );
     } catch (err: any) {
-      alert(err?.message || "Failed to load seller applications.");
+      setLoadError(err?.message || "Failed to load seller applications.");
     } finally {
       setLoading(false);
     }
@@ -59,20 +76,50 @@ export default function AdminSellerApplicationsModal({ onClose }: Props) {
     id: number,
     status: Exclude<SellerApplicationStatus, "pending">
   ) => {
+    const reviewNotes = reviewNotesById[id]?.trim() || "";
+    if (status === "rejected" && !reviewNotes) {
+      setActionError("Please provide a rejection reason in review notes before rejecting.");
+      setActionSuccess(null);
+      return;
+    }
+
+    setActionError(null);
+    setActionSuccess(null);
     setUpdatingId(id);
     try {
-      await apiFetch(`/api/admin/seller-applications/${id}/status`, {
+      const data = await apiFetch(`/api/admin/seller-applications/${id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, review_notes: reviewNotes || null }),
       });
 
       setApplications((prev) =>
         prev.map((application) =>
-          application.id === id ? { ...application, status } : application
+          application.id === id
+            ? {
+                ...application,
+                status,
+                review_notes:
+                  data?.application?.review_notes ?? data?.review_notes ?? (reviewNotes || null),
+                reviewed_at:
+                  data?.application?.reviewed_at ??
+                  data?.reviewed_at ??
+                  application.reviewed_at,
+                reviewed_by_uid:
+                  data?.application?.reviewed_by_uid ??
+                  data?.reviewed_by_uid ??
+                  application.reviewed_by_uid,
+                updated_at: data?.application?.updated_at ?? data?.updated_at ?? application.updated_at,
+              }
+            : application
         )
       );
+      setActionSuccess(
+        status === "approved"
+          ? "Application approved successfully."
+          : "Application rejected successfully."
+      );
     } catch (err: any) {
-      alert(err?.message || "Failed to update application status.");
+      setActionError(err?.message || "Failed to update application status.");
     } finally {
       setUpdatingId(null);
     }
@@ -174,6 +221,21 @@ export default function AdminSellerApplicationsModal({ onClose }: Props) {
                 Refresh
               </button>
             </div>
+            {loadError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {loadError}
+              </div>
+            ) : null}
+            {actionError ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {actionError}
+              </div>
+            ) : null}
+            {actionSuccess ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                {actionSuccess}
+              </div>
+            ) : null}
 
             {loading ? (
               <div className="py-24 flex items-center justify-center text-zinc-500">
@@ -264,6 +326,35 @@ export default function AdminSellerApplicationsModal({ onClose }: Props) {
                       <div>
                         <dt className="font-bold text-zinc-500">Current status</dt>
                         <dd className="text-zinc-900 capitalize">{application.status}</dd>
+                      </div>
+                      <div className="md:col-span-2">
+                        <dt className="font-bold text-zinc-500">Review notes</dt>
+                        <dd className="mt-1">
+                          <textarea
+                            value={reviewNotesById[application.id] || ""}
+                            onChange={(e) =>
+                              setReviewNotesById((prev) => ({
+                                ...prev,
+                                [application.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Optional for approval, required for rejection."
+                            rows={3}
+                            className="w-full rounded-xl border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-300"
+                          />
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-bold text-zinc-500">Reviewed at</dt>
+                        <dd className="text-zinc-900">
+                          {application.reviewed_at
+                            ? new Date(application.reviewed_at).toLocaleString()
+                            : "—"}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="font-bold text-zinc-500">Reviewed by UID</dt>
+                        <dd className="text-zinc-900 break-all">{application.reviewed_by_uid || "—"}</dd>
                       </div>
                     </dl>
 
