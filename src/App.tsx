@@ -673,6 +673,7 @@ useEffect(() => {
   selectedSubcategory,
   selectedItemType,
   selectedCondition,
+  hideSoldOut,
   minPrice,
   maxPrice,
   search,
