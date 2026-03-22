@@ -73,7 +73,7 @@ BuyMesho focuses on:
 
 ### Frontend
 - React
-- TypeScript
+- [TypeScript](https://www.typescriptlang.org/)
 - Vite
 - Tailwind CSS
 - Firebase Client SDK
@@ -81,7 +81,7 @@ BuyMesho focuses on:
 ### Backend
 - Node.js
 - Express
-- TypeScript
+- [TypeScript](https://www.typescriptlang.org/)
 - SQLite (`better-sqlite3`)
 - Firebase Admin SDK
 
