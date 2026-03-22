@@ -1259,6 +1259,11 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     }
     void fetchSellerDashboard();
 
+    showFeedback(
+      "success",
+      "Listing updated",
+      "Your listing was updated successfully."
+    );
     setEditingListing(null);
   } catch (err: any) {
     showFeedback(
@@ -5209,6 +5214,7 @@ setCurrentPage={setCurrentPage}
     listing={editingListing}
     onClose={() => setEditingListing(null)}
     onSave={(updated) => handleUpdateListing(editingListing.id, updated)}
+    showFeedback={showFeedback}
   />
 )}
       {confirmState && (
