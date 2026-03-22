@@ -4387,19 +4387,19 @@ setCurrentPage={setCurrentPage}
       </div>
     )}
 
-    <div className="rounded-2xl border border-zinc-100 bg-white divide-y divide-zinc-100 h-[38vh] overflow-y-auto">
+    <div className="rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-200 h-[34vh] overflow-y-auto">
       {activeStructuredSpecRows.length > 0 ? (
         activeStructuredSpecRows.map((row) => (
-          <div key={row.key} className="px-4 py-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-            <p className="text-[11px] font-medium text-zinc-400 uppercase">{row.label}</p>
-            <p className="text-sm font-medium text-zinc-900 text-right break-words">{row.value}</p>
+          <div key={row.key} className="px-3 py-2.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">{row.label}</p>
+            <p className="text-xs font-medium text-zinc-900 text-right break-words">{row.value}</p>
           </div>
         ))
       ) : (
         detailSpecRows.map((row) => (
-          <div key={row.label} className="px-4 py-3 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-4">
-            <p className="text-[11px] font-medium text-zinc-400 uppercase">{row.label}</p>
-            <p className="text-sm font-medium text-zinc-900 text-right break-words capitalize">{row.value}</p>
+          <div key={row.label} className="px-3 py-2.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
+            <p className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">{row.label}</p>
+            <p className="text-xs font-medium text-zinc-900 text-right break-words capitalize">{row.value}</p>
           </div>
         ))
       )}
