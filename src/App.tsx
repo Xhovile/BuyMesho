@@ -85,6 +85,7 @@ import ReportProblemPage from "./components/ReportProblemPage";
 import ChangePasswordModal from "./components/ChangePasswordModal";
 import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
+import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
                 
 // --- Main App ---
 
@@ -202,6 +203,7 @@ const [reportListingId, setReportListingId] = useState<number | null>(null);
 const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
 const [showSavedModal, setShowSavedModal] = useState(false);
 const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
+const [showAdminSellerApplicationsModal, setShowAdminSellerApplicationsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
 const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
@@ -1762,15 +1764,34 @@ const handleDeleteAccount = async () => {
 };
 
   const fetchSellerApplicationStatus = async () => {
-    if (!firebaseUser || userProfile?.is_seller) {
+    if (!firebaseUser) {
       setSellerApplicationStatus(null);
       return;
     }
 
     try {
       const data = await apiFetch("/api/profile/seller-application");
-      if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
+
+      if (
+        data?.status === "pending" ||
+        data?.status === "approved" ||
+        data?.status === "rejected"
+      ) {
         setSellerApplicationStatus(data.status);
+
+        if (data.status === "approved" && userProfile && !userProfile.is_seller) {
+          await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+            is_seller: true,
+          });
+
+          const nextProfile = { ...userProfile, is_seller: true };
+          setUserProfile(nextProfile);
+
+          await apiFetch("/api/sellers", {
+            method: "POST",
+            body: JSON.stringify(nextProfile),
+          });
+        }
       } else {
         setSellerApplicationStatus(null);
       }
@@ -5114,7 +5135,13 @@ setCurrentPage={setCurrentPage}
     onClose={() => setShowAdminReportsModal(false)}
     onOpenUser={openPublicProfile}
   />
-)}       
+)}
+
+{showAdminSellerApplicationsModal && isAdminUser && (
+  <AdminSellerApplicationsModal
+    onClose={() => setShowAdminSellerApplicationsModal(false)}
+  />
+)}
         
 {reportListingId !== null && (
   <ReportListingModal
