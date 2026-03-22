@@ -179,14 +179,14 @@ export default function FilterSection({
     minPrice
       ? {
           key: "minPrice",
-          label: `Min: $${minPrice}`,
+          label: `Min: MK ${minPrice}`,
           onRemove: () => setMinPrice(""),
         }
       : null,
     maxPrice
       ? {
           key: "maxPrice",
-          label: `Max: $${maxPrice}`,
+          label: `Max: MK ${maxPrice}`,
           onRemove: () => setMaxPrice(""),
         }
       : null,
