@@ -97,6 +97,28 @@ type SellerRatingSummary = {
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
+type SellerApplication = {
+  id: number;
+  applicant_uid: string | null;
+  applicant_email: string | null;
+  full_legal_name: string | null;
+  institution: string | null;
+  applicant_type: string | null;
+  institution_id_number: string | null;
+  whatsapp_number: string | null;
+  business_name: string | null;
+  what_to_sell: string | null;
+  business_description: string | null;
+  reason_for_applying: string | null;
+  proof_document_url: string | null;
+  status: SellerApplicationStatus;
+  review_notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by_uid: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 const createInitialListingDraft = (
   userProfile?: UserProfile | null
 ): ListingDraft => ({
@@ -598,7 +620,7 @@ useEffect(() => {
   proofDocumentUrl: "",
   agreedToRules: false
 });
-  const [sellerApplicationStatus, setSellerApplicationStatus] = useState<SellerApplicationStatus | null>(null);
+  const [sellerApplication, setSellerApplication] = useState<SellerApplication | null>(null);
   
 const [editProfileForm, setEditProfileForm] = useState({
   businessName: "",
@@ -863,7 +885,7 @@ const fetchSellerDashboard = async () => {
   if (firebaseUser && !userProfile?.is_seller) {
     void fetchSellerApplicationStatus();
   } else {
-    setSellerApplicationStatus(null);
+    setSellerApplication(null);
   }
 }, [firebaseUser, userProfile?.is_seller]);
 
@@ -1765,7 +1787,7 @@ const handleDeleteAccount = async () => {
 
   const fetchSellerApplicationStatus = async () => {
     if (!firebaseUser) {
-      setSellerApplicationStatus(null);
+      setSellerApplication(null);
       return;
     }
 
@@ -1777,7 +1799,7 @@ const handleDeleteAccount = async () => {
         data?.status === "approved" ||
         data?.status === "rejected"
       ) {
-        setSellerApplicationStatus(data.status);
+        setSellerApplication(data as SellerApplication);
 
         if (data.status === "approved" && userProfile && !userProfile.is_seller) {
           await updateDoc(doc(firestore, "users", firebaseUser.uid), {
@@ -1793,11 +1815,11 @@ const handleDeleteAccount = async () => {
           });
         }
       } else {
-        setSellerApplicationStatus(null);
+        setSellerApplication(null);
       }
     } catch (err) {
       console.error("Failed to fetch seller application status", err);
-      setSellerApplicationStatus(null);
+      setSellerApplication(null);
     }
   };
   
@@ -1823,7 +1845,17 @@ const handleDeleteAccount = async () => {
       }),
     });
 
-    setSellerApplicationStatus(submitted?.application?.status || "pending");
+    const nextApplication = submitted?.application;
+    if (
+      nextApplication &&
+      (nextApplication.status === "pending" ||
+        nextApplication.status === "approved" ||
+        nextApplication.status === "rejected")
+    ) {
+      setSellerApplication(nextApplication as SellerApplication);
+    } else {
+      setSellerApplication(null);
+    }
 
     showFeedback(
       "success",
@@ -3952,10 +3984,26 @@ setCurrentPage={setCurrentPage}
       Submit Seller Application
     </button>
 
-    {sellerApplicationStatus && (
-      <p className="text-sm text-zinc-600 text-center">
-        Current application status: <span className="font-bold capitalize">{sellerApplicationStatus}</span>
-      </p>
+    {sellerApplication && (
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 space-y-1">
+        <p>
+          Current application status:{" "}
+          <span className="font-bold capitalize">{sellerApplication.status}</span>
+        </p>
+        <p>
+          Reviewed date:{" "}
+          <span className="font-medium">
+            {sellerApplication.reviewed_at
+              ? new Date(sellerApplication.reviewed_at).toLocaleString()
+              : "Not reviewed yet"}
+          </span>
+        </p>
+        {sellerApplication.review_notes ? (
+          <p>
+            Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+          </p>
+        ) : null}
+      </div>
     )}
 
     <button
@@ -4218,6 +4266,28 @@ setCurrentPage={setCurrentPage}
   >
     Edit Account
   </button>
+)}
+
+{!isSellerAccount && sellerApplication && (
+  <div className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-left text-sm text-zinc-700 space-y-1">
+    <p>
+      Application status:{" "}
+      <span className="font-bold capitalize">{sellerApplication.status}</span>
+    </p>
+    <p>
+      Reviewed date:{" "}
+      <span className="font-medium">
+        {sellerApplication.reviewed_at
+          ? new Date(sellerApplication.reviewed_at).toLocaleString()
+          : "Not reviewed yet"}
+      </span>
+    </p>
+    {sellerApplication.review_notes ? (
+      <p>
+        Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+      </p>
+    ) : null}
+  </div>
 )}
 
 {!isSellerAccount && (
