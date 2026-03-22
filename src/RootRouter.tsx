@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import App from "./App";
 import HomePage from "./HomePage";
+import SavedPage from "./SavedPage";
 import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
 
 export default function RootRouter() {
@@ -22,6 +23,10 @@ export default function RootRouter() {
 
   if (route === "explore") {
     return <App />;
+  }
+
+  if (route === "saved") {
+    return <SavedPage />;
   }
 
   return <HomePage />;
