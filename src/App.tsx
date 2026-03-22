@@ -257,6 +257,7 @@ const [feedback, setFeedback] = useState<{
   title: string;
   message: string;
 } | null>(null);
+const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
 
   const [editAccountForm, setEditAccountForm] = useState({
   university: UNIVERSITIES[0] as University,
@@ -277,6 +278,22 @@ const showFeedback = (
 };
 const closeFeedback = () => {
   setFeedback(null);
+};
+
+const setCreateFieldError = (key: string, message: string) => {
+  setCreateFieldErrors((prev) => ({
+    ...prev,
+    [key]: message,
+  }));
+};
+
+const clearCreateFieldError = (key: string) => {
+  setCreateFieldErrors((prev) => {
+    if (!prev[key]) return prev;
+    const next = { ...prev };
+    delete next[key];
+    return next;
+  });
 };
 
 const askConfirm = ({
@@ -1818,6 +1835,7 @@ const handleDeleteAccount = async () => {
       ...prev,
       photos: [...prev.photos, ...uploadedUrls].slice(0, 5),
     }));
+    clearCreateFieldError("photos");
   } catch (err: any) {
     showFeedback(
   "error",
@@ -1859,6 +1877,7 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 };
 
 const handleNewListingCategoryChange = (category: Category) => {
+  setCreateFieldErrors({});
   setNewListing((prev) => ({
     ...prev,
     category,
@@ -1869,6 +1888,8 @@ const handleNewListingCategoryChange = (category: Category) => {
 };
 
 const handleNewListingSubcategoryChange = (subcategory: string) => {
+  clearCreateFieldError("subcategory");
+  clearCreateFieldError("item_type");
   setNewListing((prev) => ({
     ...prev,
     subcategory,
@@ -1878,6 +1899,16 @@ const handleNewListingSubcategoryChange = (subcategory: string) => {
 };
 
 const handleNewListingItemTypeChange = (itemType: string) => {
+  clearCreateFieldError("item_type");
+  setCreateFieldErrors((prev) => {
+    const next = { ...prev };
+    Object.keys(next).forEach((key) => {
+      if (createSpecFieldRefs.current[key]) {
+        delete next[key];
+      }
+    });
+    return next;
+  });
   setNewListing((prev) => ({
     ...prev,
     item_type: itemType,
@@ -1897,6 +1928,7 @@ const handleNewListingUniversityChange = (university: University) => {
 };
 
 const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
+  clearCreateFieldError(key);
   setNewListing((prev) => ({
     ...prev,
     spec_values: {
@@ -1930,6 +1962,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   setCreatingListing(true);
 
   try {
+    setCreateFieldErrors({});
     if (!userProfile || !firebaseUser) return;
 
     if (!isSellerAccount) {
@@ -1939,6 +1972,12 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
     if (isSchemaDrivenCategory) {
       if (!newListing.subcategory || !newListing.item_type) {
+        if (!newListing.subcategory) {
+          setCreateFieldError("subcategory", "Please choose a subcategory.");
+        }
+        if (!newListing.item_type) {
+          setCreateFieldError("item_type", "Please choose an item type.");
+        }
         showFeedback(
           "info",
           "Item details needed",
@@ -1957,6 +1996,16 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       if (!validation.isValid) {
         const firstError = validation.errors[0];
         const errorKey = firstError?.key;
+        const nextErrors = validation.errors.reduce<Record<string, string>>(
+          (acc, error) => {
+            if (error.key) {
+              acc[error.key] = error.message;
+            }
+            return acc;
+          },
+          {}
+        );
+        setCreateFieldErrors(nextErrors);
 
         if (errorKey) {
           const erroredField = selectedItemConfig?.schema.fields.find(
@@ -1985,6 +2034,10 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     }
 
     if (!hasMeaningfulTitle(newListing.name)) {
+      setCreateFieldError(
+        "name",
+        "Please enter a clear listing title with at least 3 letters or numbers."
+      );
       showFeedback(
         "error",
         "Title needed",
@@ -1993,8 +2046,19 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       return;
     }
 
+    if (!newListing.whatsapp_number.trim()) {
+      setCreateFieldError("whatsapp_number", "WhatsApp number is required.");
+      showFeedback(
+        "error",
+        "WhatsApp number required",
+        "Please provide a WhatsApp number buyers can contact."
+      );
+      return;
+    }
+
     const parsedPrice = Number(newListing.price);
     if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      setCreateFieldError("price", "Please enter a valid price greater than 0.");
       showFeedback(
         "error",
         "Invalid price",
@@ -2004,6 +2068,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     }
 
     if (newListing.photos.length < 1) {
+      setCreateFieldError("photos", "Add at least 1 photo.");
       showFeedback(
         "error",
         "Photo required",
@@ -2015,6 +2080,10 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     const quantityNum = Number(newListing.quantity || 1);
     const soldQuantityNum = Number(newListing.sold_quantity || 0);
     if (!Number.isInteger(quantityNum) || quantityNum < 1) {
+      setCreateFieldError(
+        "quantity",
+        "Total quantity must be a whole number of at least 1."
+      );
       showFeedback(
         "error",
         "Invalid quantity",
@@ -2024,6 +2093,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     }
 
     if (!Number.isInteger(soldQuantityNum) || soldQuantityNum < 0) {
+      setCreateFieldError("sold_quantity", "Sold quantity cannot be negative.");
       showFeedback(
         "error",
         "Invalid sold quantity",
@@ -2033,6 +2103,10 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     }
 
     if (soldQuantityNum > quantityNum) {
+      setCreateFieldError(
+        "sold_quantity",
+        "Sold quantity cannot be greater than total quantity."
+      );
       showFeedback(
         "error",
         "Invalid stock values",
@@ -2069,6 +2143,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
     setShowAddModal(false);
     setNewListing(createInitialListingDraft(userProfile));
+    setCreateFieldErrors({});
 
     fetchListings();
     void fetchSellerDashboard();
@@ -2262,6 +2337,12 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       !!selectedItemConfig?.requiredKeys.includes(field.key);
 
     const labelText = `${field.label}${isRequired ? " *" : ""}`;
+    const fieldError = createFieldErrors[field.key];
+    const inputClass = `w-full px-4 py-2 bg-zinc-50 border rounded-xl outline-none ${
+      fieldError
+        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+    }`;
 
     if (field.type === "select") {
       return (
@@ -2271,13 +2352,18 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             createSpecFieldRefs.current[field.key] = el;
           }}
         >
-          <FormDropdown
-            label={labelText}
-            value={value as string}
-            options={field.options || []}
-            onChange={(selected) => handleSpecValueChange(field.key, selected)}
-            placeholder={`Select ${field.label}`}
-          />
+          <div className={fieldError ? "rounded-xl ring-2 ring-red-200" : ""}>
+            <FormDropdown
+              label={labelText}
+              value={value as string}
+              options={field.options || []}
+              onChange={(selected) => handleSpecValueChange(field.key, selected)}
+              placeholder={`Select ${field.label}`}
+            />
+          </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2299,9 +2385,12 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           <textarea
             value={value as string}
             onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
+            className={`${inputClass} h-24 resize-none`}
             placeholder={field.placeholder || ""}
           />
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2322,7 +2411,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
             {labelText}
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div
+            className={`grid grid-cols-3 gap-2 rounded-xl ${
+              fieldError ? "ring-2 ring-red-200 p-1" : ""
+            }`}
+          >
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, null)}
@@ -2357,6 +2450,9 @@ const scrollToCreateSpecField = (fieldKey: string) => {
               No
             </button>
           </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2377,7 +2473,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
             {labelText}
           </label>
-          <div className="grid grid-cols-2 gap-2 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <div
+            className={`grid grid-cols-2 gap-2 rounded-xl border bg-zinc-50 p-3 ${
+              fieldError ? "border-red-500 ring-2 ring-red-200" : "border-zinc-200"
+            }`}
+          >
             {(field.options || []).map((option: string) => {
               const isChecked = selectedValues.includes(option);
 
@@ -2403,6 +2503,9 @@ const scrollToCreateSpecField = (fieldKey: string) => {
               );
             })}
           </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2430,9 +2533,12 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                 e.target.value === "" ? null : Number(e.target.value)
               )
             }
-            className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className={inputClass}
             placeholder={field.placeholder || ""}
           />
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
           {field.helpText ? (
             <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
           ) : null}
@@ -2454,9 +2560,12 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           type="text"
           value={value as string}
           onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
-          className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          className={inputClass}
           placeholder={field.placeholder || ""}
         />
+        {fieldError ? (
+          <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+        ) : null}
         {field.helpText ? (
           <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
         ) : null}
@@ -2762,7 +2871,10 @@ setCurrentPage={setCurrentPage}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                setCreateFieldErrors({});
+                setShowAddModal(false);
+              }}
               className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
             />
             <motion.div 
@@ -2776,7 +2888,13 @@ setCurrentPage={setCurrentPage}
                   <h2 className="text-xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Post your item to the campus</p>
                 </div>
-                <button onClick={() => setShowAddModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100">
+                <button
+                  onClick={() => {
+                    setCreateFieldErrors({});
+                    setShowAddModal(false);
+                  }}
+                  className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100"
+                >
                   <X className="w-5 h-5 text-zinc-400" />
                 </button>
               </div>
@@ -2861,12 +2979,20 @@ setCurrentPage={setCurrentPage}
                           <input
                             required
                             type="text"
-                            className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                            className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                              createFieldErrors.name
+                                ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                            }`}
                             value={newListing.name}
-                            onChange={(e) =>
-                              setNewListing({ ...newListing, name: e.target.value })
-                            }
+                            onChange={(e) => {
+                              clearCreateFieldError("name");
+                              setNewListing({ ...newListing, name: e.target.value });
+                            }}
                           />
+                          {createFieldErrors.name ? (
+                            <p className="mt-1 text-xs text-red-600">{createFieldErrors.name}</p>
+                          ) : null}
                         </div>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2877,12 +3003,20 @@ setCurrentPage={setCurrentPage}
                             <input
                               required
                               type="number"
-                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.price
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
                               value={newListing.price}
-                              onChange={(e) =>
-                                setNewListing({ ...newListing, price: e.target.value })
-                              }
+                              onChange={(e) => {
+                                clearCreateFieldError("price");
+                                setNewListing({ ...newListing, price: e.target.value });
+                              }}
                             />
+                            {createFieldErrors.price ? (
+                              <p className="mt-1 text-xs text-red-600">{createFieldErrors.price}</p>
+                            ) : null}
                           </div>
 
                           <div>
@@ -2893,15 +3027,25 @@ setCurrentPage={setCurrentPage}
                               required
                               type="text"
                               placeholder="265..."
-                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.whatsapp_number
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
                               value={newListing.whatsapp_number}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                clearCreateFieldError("whatsapp_number");
                                 setNewListing({
                                   ...newListing,
                                   whatsapp_number: e.target.value,
-                                })
-                              }
+                                });
+                              }}
                             />
+                            {createFieldErrors.whatsapp_number ? (
+                              <p className="mt-1 text-xs text-red-600">
+                                {createFieldErrors.whatsapp_number}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -2920,12 +3064,20 @@ setCurrentPage={setCurrentPage}
                               required
                               type="number"
                               min="1"
-                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.quantity
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
                               value={newListing.quantity}
-                              onChange={(e) =>
-                                setNewListing({ ...newListing, quantity: e.target.value })
-                              }
+                              onChange={(e) => {
+                                clearCreateFieldError("quantity");
+                                setNewListing({ ...newListing, quantity: e.target.value });
+                              }}
                             />
+                            {createFieldErrors.quantity ? (
+                              <p className="mt-1 text-xs text-red-600">{createFieldErrors.quantity}</p>
+                            ) : null}
                           </div>
 
                           <div>
@@ -2935,15 +3087,25 @@ setCurrentPage={setCurrentPage}
                             <input
                               type="number"
                               min="0"
-                              className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.sold_quantity
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
                               value={newListing.sold_quantity}
-                              onChange={(e) =>
+                              onChange={(e) => {
+                                clearCreateFieldError("sold_quantity");
                                 setNewListing({
                                   ...newListing,
                                   sold_quantity: e.target.value,
-                                })
-                              }
+                                });
+                              }}
                             />
+                            {createFieldErrors.sold_quantity ? (
+                              <p className="mt-1 text-xs text-red-600">
+                                {createFieldErrors.sold_quantity}
+                              </p>
+                            ) : null}
                           </div>
                         </div>
 
@@ -3013,18 +3175,44 @@ setCurrentPage={setCurrentPage}
                           </p>
 
                           <div className="grid grid-cols-2 gap-4">
-                            <FormDropdown
-                              label="Subcategory"
-                              value={newListing.subcategory}
-                              options={availableSubcategories}
-                              onChange={handleNewListingSubcategoryChange}
-                            />
-                            <FormDropdown
-                              label="Item Type"
-                              value={newListing.item_type}
-                              options={availableItemTypes}
-                              onChange={handleNewListingItemTypeChange}
-                            />
+                            <div>
+                              <div
+                                className={
+                                  createFieldErrors.subcategory ? "rounded-xl ring-2 ring-red-200" : ""
+                                }
+                              >
+                                <FormDropdown
+                                  label="Subcategory"
+                                  value={newListing.subcategory}
+                                  options={availableSubcategories}
+                                  onChange={handleNewListingSubcategoryChange}
+                                />
+                              </div>
+                              {createFieldErrors.subcategory ? (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {createFieldErrors.subcategory}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div>
+                              <div
+                                className={
+                                  createFieldErrors.item_type ? "rounded-xl ring-2 ring-red-200" : ""
+                                }
+                              >
+                                <FormDropdown
+                                  label="Item Type"
+                                  value={newListing.item_type}
+                                  options={availableItemTypes}
+                                  onChange={handleNewListingItemTypeChange}
+                                />
+                              </div>
+                              {createFieldErrors.item_type ? (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {createFieldErrors.item_type}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
 
                           {newListing.subcategory &&
@@ -3094,12 +3282,13 @@ setCurrentPage={setCurrentPage}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() =>
+                                    onClick={() => {
+                                      clearCreateFieldError("photos");
                                       setNewListing((prev) => ({
                                         ...prev,
                                         photos: prev.photos.filter((_, i) => i !== idx),
-                                      }))
-                                    }
+                                      }));
+                                    }}
                                     className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
                                   >
                                     <X className="w-4 h-4" />
@@ -3115,8 +3304,15 @@ setCurrentPage={setCurrentPage}
                             multiple
                             onChange={handleImagesUpload}
                             disabled={uploading || newListing.photos.length >= 5}
-                            className="w-full"
+                            className={`w-full rounded-xl border p-2 ${
+                              createFieldErrors.photos
+                                ? "border-red-500 ring-2 ring-red-200"
+                                : "border-zinc-200"
+                            }`}
                           />
+                          {createFieldErrors.photos ? (
+                            <p className="mt-1 text-xs text-red-600">{createFieldErrors.photos}</p>
+                          ) : null}
                         </div>
 
                         <div>
@@ -3154,7 +3350,10 @@ setCurrentPage={setCurrentPage}
                   <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
                     <button
                       type="button"
-                      onClick={() => setShowAddModal(false)}
+                      onClick={() => {
+                        setCreateFieldErrors({});
+                        setShowAddModal(false);
+                      }}
                       className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
                     >
                       Cancel
