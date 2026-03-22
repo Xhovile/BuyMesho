@@ -833,6 +833,29 @@ const loadDetailsExtras = async (listing: Listing) => {
   const requestId = ++detailsExtrasRequestIdRef.current;
   setDetailsLoadingExtra(true);
 
+  const isTransientDetailExtrasError = (error: unknown) => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+
+    if (error instanceof TypeError) return true;
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes("failed to fetch") ||
+        msg.includes("networkerror") ||
+        msg.includes("network request failed") ||
+        msg.includes("load failed")
+      );
+    }
+
+    return false;
+  };
+
+  const warnDetailExtrasFailure = (label: string, error: unknown) => {
+    if (isTransientDetailExtrasError(error)) return;
+    console.warn(label, error);
+  };
+
   try {
     const [sellerProfileResult, relatedResult] = await Promise.allSettled([
      apiFetch(`/api/users/${listing.seller_uid}`),
@@ -840,11 +863,17 @@ const loadDetailsExtras = async (listing: Listing) => {
    ]);
 
     if (sellerProfileResult.status === "rejected") {
-      console.warn("Detail extras: seller profile request failed", sellerProfileResult.reason);
+      warnDetailExtrasFailure(
+        "Detail extras: seller profile request failed",
+        sellerProfileResult.reason
+      );
     }
 
     if (relatedResult.status === "rejected") {
-      console.warn("Detail extras: related listings request failed", relatedResult.reason);
+      warnDetailExtrasFailure(
+        "Detail extras: related listings request failed",
+        relatedResult.reason
+      );
     }
 
     const sellerProfile =
@@ -862,7 +891,7 @@ const loadDetailsExtras = async (listing: Listing) => {
         if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(summary || null);
       } catch (ratingError) {
-        console.warn("Detail extras: rating summary request failed", ratingError);
+        warnDetailExtrasFailure("Detail extras: rating summary request failed", ratingError);
         if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(null);
       }
