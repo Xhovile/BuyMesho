@@ -882,7 +882,7 @@ export default function EditListingModal({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="hidden sm:block rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
               Note
             </p>
