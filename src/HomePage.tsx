@@ -1,6 +1,82 @@
-import { ArrowRight, ShieldCheck, Sparkles, Store, Search, MessageCircle } from "lucide-react";
+import {
+  ArrowRight,
+  ShieldCheck,
+  Sparkles,
+  Store,
+  Search,
+  MessageCircle,
+  Smartphone,
+  ShoppingBag,
+  Package,
+  BookOpen,
+  Check,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
+
+const quickPaths = [
+  {
+    title: "Browse listings faster",
+    text: "Go straight to Explore and use campus, category, item type, and price filters with less friction.",
+  },
+  {
+    title: "Find student-relevant items",
+    text: "Focus on useful categories like gadgets, fashion, books, services, and everyday campus needs.",
+  },
+  {
+    title: "Sell with more structure",
+    text: "Post listings with clearer details, stronger photos, and cleaner seller identity than scattered group posts.",
+  },
+];
+
+const featuredCategories = [
+  {
+    icon: Smartphone,
+    title: "Phones & gadgets",
+    text: "High-interest student tech, chargers, accessories, and practical electronics.",
+  },
+  {
+    icon: ShoppingBag,
+    title: "Fashion & shoes",
+    text: "Useful campus fashion, shoes, bags, and everyday wear students actually search for.",
+  },
+  {
+    icon: BookOpen,
+    title: "Books & study tools",
+    text: "Academic materials, calculators, stationery, and study-related items that matter on campus.",
+  },
+  {
+    icon: Package,
+    title: "Practical student items",
+    text: "Hostel needs, room items, daily essentials, and useful campus-life products.",
+  },
+];
+
+const trustHighlights = [
+  "Campus-focused marketplace structure",
+  "WhatsApp contact without heavy messaging clutter",
+  "Better listing detail and seller visibility",
+  "Built to feel cleaner than random campus groups",
+];
+
+const whyBuyMesho = [
+  {
+    title: "More structured than random group selling",
+    points: [
+      "Listings are easier to scan and compare",
+      "Categories and filters reduce browsing confusion",
+      "Seller identity and listing signals are clearer",
+    ],
+  },
+  {
+    title: "Made for campus trade, not generic noise",
+    points: [
+      "Campus relevance matters in discovery",
+      "Student needs are easier to surface quickly",
+      "The product is shaped around local campus buying and selling",
+    ],
+  },
+];
 
 export default function HomePage() {
   return (
@@ -78,7 +154,7 @@ export default function HomePage() {
                 transition={{ delay: 0.1 }}
                 className="mt-5 max-w-2xl text-base text-zinc-600 font-medium leading-relaxed"
               >
-                BuyMesho helps students find relevant listings faster, contact sellers through WhatsApp,
+                BuyMesho helps students discover relevant listings faster, contact sellers through WhatsApp,
                 and trade in a marketplace that feels more structured than scattered campus groups.
               </motion.p>
 
@@ -104,6 +180,23 @@ export default function HomePage() {
                 >
                   Start Selling
                 </button>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-8 flex flex-wrap gap-2"
+              >
+                {trustHighlights.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 shadow-sm"
+                  >
+                    <Check className="w-3.5 h-3.5 text-red-900" />
+                    {item}
+                  </span>
+                ))}
               </motion.div>
             </div>
 
@@ -150,7 +243,25 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 pb-16">
+        <section className="max-w-7xl mx-auto px-4 pb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              "Campus-based browsing",
+              "Structured listings",
+              "Direct WhatsApp contact",
+              "Built for Malawi students",
+            ].map((item) => (
+              <div
+                key={item}
+                className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-600 shadow-sm"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
               <div>
@@ -167,25 +278,116 @@ export default function HomePage() {
             </div>
 
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[
-                {
-                  title: "Browse by campus",
-                  text: "Open Explore and narrow listings to your campus and budget quickly.",
-                },
-                {
-                  title: "Find useful categories",
-                  text: "Discover practical student items, services, and everyday essentials faster.",
-                },
-                {
-                  title: "Sell with more structure",
-                  text: "Create stronger listings with cleaner details, better photos, and clearer trust signals.",
-                },
-              ].map((item) => (
+              {quickPaths.map((item) => (
                 <div key={item.title} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                   <h3 className="text-base font-extrabold text-zinc-900">{item.title}</h3>
                   <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{item.text}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="flex items-end justify-between gap-4 mb-6">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Useful categories</p>
+              <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+                Start from the things students actually look for.
+              </h2>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            >
+              Open Explore
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            {featuredCategories.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.title}
+                  type="button"
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="text-left rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm hover:bg-zinc-50 transition-colors"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-zinc-100 text-zinc-900 flex items-center justify-center mb-4">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-lg font-extrabold text-zinc-900">{item.title}</h3>
+                  <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{item.text}</p>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="max-w-3xl">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Why BuyMesho</p>
+              <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+                Better than trying to buy and sell through scattered groups alone.
+              </h2>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {whyBuyMesho.map((item) => (
+                <div key={item.title} className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+                  <h3 className="text-lg font-extrabold text-zinc-900">{item.title}</h3>
+                  <div className="mt-4 space-y-3">
+                    {item.points.map((point) => (
+                      <div key={point} className="flex items-start gap-3 text-sm text-zinc-600">
+                        <span className="mt-0.5 h-6 w-6 rounded-full bg-white border border-zinc-200 flex items-center justify-center flex-shrink-0">
+                          <Check className="w-3.5 h-3.5 text-red-900" />
+                        </span>
+                        <span>{point}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 pt-10 pb-16">
+          <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 lg:p-10 shadow-xl shadow-zinc-400/20">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-6 items-center">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller call to action</p>
+                <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight">
+                  Ready to sell more seriously on campus?
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-300 leading-relaxed">
+                  Move from random posts to a cleaner marketplace presence with better listing structure,
+                  better visibility, and stronger buyer trust.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3 lg:justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
+                >
+                  Start Selling
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
+                >
+                  Explore First
+                </button>
+              </div>
             </div>
           </div>
         </section>
