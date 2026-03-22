@@ -1068,7 +1068,6 @@ const detailGalleryImages = React.useMemo(() => {
 
 const DETAIL_SPEC_SCROLL_AMOUNT = 180;
 const DETAIL_SPEC_SCROLL_TOLERANCE = 4; // small buffer for rounding differences
-const DETAIL_SPEC_CHEVRON_GUTTER = 40;
 
 const scrollDetailSpecTabsRight = () => {
   detailSpecTabsRef.current?.scrollBy({
@@ -4405,7 +4404,7 @@ setCurrentPage={setCurrentPage}
   </div>
 </div>
 
-<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4">
+<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-4">
   <div>
     <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
       Specifications
@@ -4415,10 +4414,7 @@ setCurrentPage={setCurrentPage}
       <div className="relative mb-3">
         <div
           ref={detailSpecTabsRef}
-          className="flex gap-2 overflow-x-auto pb-1"
-          style={{
-            paddingRight: showDetailSpecTabsChevron ? `${DETAIL_SPEC_CHEVRON_GUTTER}px` : undefined,
-          }}
+          className="flex gap-2 overflow-x-auto pb-1 pr-10"
         >
           {detailSpecGroups.map((group) => (
             <button
@@ -4440,8 +4436,8 @@ setCurrentPage={setCurrentPage}
           <button
             type="button"
             onClick={scrollDetailSpecTabsRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-white border border-zinc-200 shadow-sm flex items-center justify-center text-zinc-500 hover:text-zinc-800"
-            aria-label="Scroll spec tabs right"
+            className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+            aria-label="Scroll specification groups"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -4449,19 +4445,33 @@ setCurrentPage={setCurrentPage}
       </div>
     )}
 
-    <div className="rounded-lg border border-zinc-200 bg-white divide-y divide-zinc-200 h-[34vh] overflow-y-auto">
+    <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-200 h-[34vh] xl:h-[29vh] overflow-y-auto shadow-sm">
       {activeStructuredSpecRows.length > 0 ? (
         activeStructuredSpecRows.map((row) => (
-          <div key={row.key} className="px-3 py-2.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-            <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wide">{row.label}</p>
-            <p className="text-xs font-medium text-zinc-900 text-right break-words">{row.value}</p>
+          <div
+            key={row.key}
+            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
+          >
+            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+              {row.label}
+            </p>
+            <p className="text-sm font-semibold text-zinc-900 text-right break-words">
+              {row.value}
+            </p>
           </div>
         ))
       ) : (
         detailSpecRows.map((row) => (
-          <div key={row.label} className="px-3 py-2.5 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-3">
-            <p className="text-[10px] font-semibold text-zinc-600 uppercase tracking-wide">{row.label}</p>
-            <p className="text-xs font-medium text-zinc-900 text-right break-words capitalize">{row.value}</p>
+          <div
+            key={row.label}
+            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
+          >
+            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+              {row.label}
+            </p>
+            <p className="text-sm font-semibold text-zinc-900 text-right break-words capitalize">
+              {row.value}
+            </p>
           </div>
         ))
       )}
