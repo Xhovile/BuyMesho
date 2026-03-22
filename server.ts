@@ -129,6 +129,30 @@ db.exec(`
   join_date DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS seller_applications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  applicant_uid TEXT NOT NULL,
+  applicant_email TEXT,
+  full_legal_name TEXT NOT NULL,
+  institution TEXT NOT NULL,
+  applicant_type TEXT NOT NULL,
+  institution_id_number TEXT NOT NULL,
+  whatsapp_number TEXT NOT NULL,
+  business_name TEXT NOT NULL,
+  what_to_sell TEXT NOT NULL,
+  business_description TEXT NOT NULL,
+  reason_for_applying TEXT NOT NULL,
+  proof_document_url TEXT NOT NULL,
+  agreed_to_rules INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending',
+  reviewed_by_uid TEXT,
+  review_notes TEXT,
+  reviewed_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (applicant_uid) REFERENCES sellers(uid)
+);
+
   CREATE TABLE IF NOT EXISTS listings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   seller_uid TEXT NOT NULL,
@@ -192,6 +216,15 @@ CREATE TABLE IF NOT EXISTS admin_actions (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 `); 
+
+try {
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_seller_applications_applicant_uid
+    ON seller_applications (applicant_uid, created_at DESC)
+  `);
+} catch (e) {
+  console.warn("Seller applications index migration failed:", e);
+}
 
 // ✅ Migration: add video_url column if it doesn't exist
 try {
@@ -740,67 +773,194 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   }
 });
 
+app.get("/api/profile/seller-application", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+
+  try {
+    const latestApplication = db.prepare(`
+      SELECT id, status, created_at, updated_at, reviewed_at, review_notes
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(uid);
+
+    res.json(latestApplication || null);
+  } catch (error) {
+    console.error("Get seller application error:", error);
+    res.status(500).json({ error: "Failed to load seller application status" });
+  }
+});
+
  app.post("/api/profile/become-seller", requireAuth, (req, res) => {
   const uid = req.user!.uid;
   const email = (req.user as any)?.email || null;
-  const tokenVerified = (req.user as any)?.email_verified ? 1 : 0;
-  const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
+  const {
+    full_legal_name,
+    institution,
+    applicant_type,
+    institution_id_number,
+    whatsapp_number,
+    business_name,
+    what_to_sell,
+    business_description,
+    reason_for_applying,
+    proof_document_url,
+    agreed_to_rules,
+  } = req.body;
 
-  if (!business_name || typeof business_name !== "string") {
-    return res.status(400).json({ error: "business_name is required" });
+  if (!full_legal_name || typeof full_legal_name !== "string") {
+    return res.status(400).json({ error: "full_legal_name is required" });
   }
 
-  if (!business_logo || typeof business_logo !== "string") {
-    return res.status(400).json({ error: "business_logo is required" });
+  if (!institution || typeof institution !== "string") {
+    return res.status(400).json({ error: "institution is required" });
   }
 
-  if (!university || typeof university !== "string") {
-    return res.status(400).json({ error: "university is required" });
+  if (!applicant_type || typeof applicant_type !== "string") {
+    return res.status(400).json({ error: "applicant_type is required" });
+  }
+
+  if (!["student", "staff", "registered_business"].includes(applicant_type)) {
+    return res.status(400).json({ error: "Invalid applicant_type" });
+  }
+
+  if (!institution_id_number || typeof institution_id_number !== "string") {
+    return res.status(400).json({ error: "institution_id_number is required" });
   }
 
   if (!whatsapp_number || typeof whatsapp_number !== "string") {
     return res.status(400).json({ error: "whatsapp_number is required" });
   }
 
-  try {
-    db.prepare(`
-      INSERT INTO sellers (
-        uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-      ON CONFLICT(uid) DO UPDATE SET
-        email = COALESCE(excluded.email, sellers.email),
-        business_name = excluded.business_name,
-        business_logo = excluded.business_logo,
-        university = excluded.university,
-        bio = excluded.bio,
-        whatsapp_number = excluded.whatsapp_number,
-        is_seller = 1,
-        is_verified = CASE
-          WHEN excluded.is_verified = 1 THEN 1
-          ELSE sellers.is_verified
-        END
-    `).run(
-      uid,
-      email,
-      business_name,
-      business_logo,
-      university,
-      bio ?? null,
-      whatsapp_number,
-      tokenVerified
-    );
+  if (!business_name || typeof business_name !== "string") {
+    return res.status(400).json({ error: "business_name is required" });
+  }
 
-    const updated = db.prepare(`
-      SELECT uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date
-      FROM sellers
-      WHERE uid = ?
+  if (!what_to_sell || typeof what_to_sell !== "string") {
+    return res.status(400).json({ error: "what_to_sell is required" });
+  }
+
+  if (!business_description || typeof business_description !== "string") {
+    return res.status(400).json({ error: "business_description is required" });
+  }
+
+  if (!reason_for_applying || typeof reason_for_applying !== "string") {
+    return res.status(400).json({ error: "reason_for_applying is required" });
+  }
+
+  if (!proof_document_url || typeof proof_document_url !== "string") {
+    return res.status(400).json({ error: "proof_document_url is required" });
+  }
+
+  if (agreed_to_rules !== true && agreed_to_rules !== 1) {
+    return res.status(400).json({ error: "You must agree to seller rules and prohibited-items policy" });
+  }
+
+  try {
+    const existing = db.prepare(`
+      SELECT id
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(uid) as { id: number } | undefined;
+
+    if (existing) {
+      db.prepare(`
+        UPDATE seller_applications
+        SET
+          applicant_email = ?,
+          full_legal_name = ?,
+          institution = ?,
+          applicant_type = ?,
+          institution_id_number = ?,
+          whatsapp_number = ?,
+          business_name = ?,
+          what_to_sell = ?,
+          business_description = ?,
+          reason_for_applying = ?,
+          proof_document_url = ?,
+          agreed_to_rules = 1,
+          status = 'pending',
+          reviewed_by_uid = NULL,
+          review_notes = NULL,
+          reviewed_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(
+        email,
+        full_legal_name.trim(),
+        institution.trim(),
+        applicant_type,
+        institution_id_number.trim(),
+        whatsapp_number.trim(),
+        business_name.trim(),
+        what_to_sell.trim(),
+        business_description.trim(),
+        reason_for_applying.trim(),
+        proof_document_url.trim(),
+        existing.id
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO seller_applications (
+          applicant_uid,
+          applicant_email,
+          full_legal_name,
+          institution,
+          applicant_type,
+          institution_id_number,
+          whatsapp_number,
+          business_name,
+          what_to_sell,
+          business_description,
+          reason_for_applying,
+          proof_document_url,
+          agreed_to_rules,
+          status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
+      `).run(
+        uid,
+        email,
+        full_legal_name.trim(),
+        institution.trim(),
+        applicant_type,
+        institution_id_number.trim(),
+        whatsapp_number.trim(),
+        business_name.trim(),
+        what_to_sell.trim(),
+        business_description.trim(),
+        reason_for_applying.trim(),
+        proof_document_url.trim()
+      );
+    }
+
+    const latestApplication = db.prepare(`
+      SELECT id, status, created_at, updated_at
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
     `).get(uid);
 
-    res.json(updated);
+    const seller = db.prepare("SELECT is_seller FROM sellers WHERE uid = ?").get(uid) as { is_seller?: number } | undefined;
+    if (!seller) {
+      db.prepare(`
+        INSERT INTO sellers (uid, email, is_verified, is_seller)
+        VALUES (?, ?, ?, 0)
+      `).run(uid, email, (req.user as any)?.email_verified ? 1 : 0);
+    }
+
+    res.json({
+      success: true,
+      application: latestApplication,
+      message: "Application submitted and pending review",
+    });
   } catch (error) {
     console.error("Become seller error:", error);
-    res.status(500).json({ error: "Failed to upgrade account to seller" });
+    res.status(500).json({ error: "Failed to submit seller application" });
   }
 });
 
