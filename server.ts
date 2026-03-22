@@ -549,6 +549,58 @@ async function startServer() {
     }
   });
 
+type IncomingSpecFilters = Record<string, unknown>;
+
+function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
+  if (typeof raw !== "string" || !raw.trim()) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as IncomingSpecFilters;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const safe: Record<string, string | string[] | boolean> = {};
+
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!key || key.length > 120) {
+        continue;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed) {
+          safe[key] = trimmed;
+        }
+        continue;
+      }
+
+      if (typeof value === "boolean") {
+        safe[key] = value;
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        const cleaned = value
+          .filter((item) => typeof item === "string")
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0)
+          .slice(0, 25);
+
+        if (cleaned.length > 0) {
+          safe[key] = cleaned;
+        }
+      }
+    }
+
+    return safe;
+  } catch {
+    return {};
+  }
+}
+
   app.get("/api/listings", (req, res) => {
   const {
     category,
@@ -563,6 +615,7 @@ async function startServer() {
     hideSoldOut,
     page = "1",
     pageSize = "12",
+    specFilters,
   } = req.query;
 
   let baseQuery = `
@@ -615,6 +668,34 @@ async function startServer() {
   if (maxPrice !== undefined && maxPrice !== "" && !Number.isNaN(Number(maxPrice))) {
     baseQuery += " AND l.price <= ?";
     params.push(Number(maxPrice));
+  }
+
+  const safeSpecFilters = parseSpecFilters(specFilters);
+
+  for (const [fieldKey, value] of Object.entries(safeSpecFilters)) {
+    const jsonPath = `$.${fieldKey}`;
+
+    if (typeof value === "string") {
+      baseQuery += " AND json_extract(l.spec_values, ?) = ?";
+      params.push(jsonPath, value);
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      baseQuery += " AND json_extract(l.spec_values, ?) = ?";
+      params.push(jsonPath, value ? 1 : 0);
+      continue;
+    }
+
+    if (Array.isArray(value) && value.length > 0) {
+      const placeholders = value.map(() => "?").join(", ");
+      baseQuery += ` AND EXISTS (
+        SELECT 1
+        FROM json_each(json_extract(l.spec_values, ?))
+        WHERE json_each.value IN (${placeholders})
+      )`;
+      params.push(jsonPath, ...value);
+    }
   }
 
   let orderBy =

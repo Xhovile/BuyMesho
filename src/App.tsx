@@ -167,6 +167,7 @@ export default function App() {
   const [selectedCat, setSelectedCat] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [selectedItemType, setSelectedItemType] = useState("");
+  const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>({});
   const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -706,7 +707,20 @@ useEffect(() => {
   maxPrice,
   search,
   sortBy,
+  selectedSpecFilters,
 ]);
+
+useEffect(() => {
+  setSelectedSpecFilters({});
+}, [selectedCat]);
+
+useEffect(() => {
+  setSelectedSpecFilters({});
+}, [selectedSubcategory]);
+
+useEffect(() => {
+  setSelectedSpecFilters({});
+}, [selectedItemType]);
   
   useEffect(() => {
   fetchListings();
@@ -723,6 +737,7 @@ useEffect(() => {
   sortBy,
   currentPage,
   pageSize,
+  selectedSpecFilters,
 ]);
 
   const fetchListings = async () => {
@@ -740,6 +755,9 @@ useEffect(() => {
     if (maxPrice) params.append("maxPrice", maxPrice);
     if (search) params.append("search", search);
     if (sortBy) params.append("sortBy", sortBy);
+    if (Object.keys(selectedSpecFilters).length > 0) {
+      params.append("specFilters", JSON.stringify(selectedSpecFilters));
+    }
 
     params.append("page", String(currentPage));
     params.append("pageSize", String(pageSize));
@@ -2835,6 +2853,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   setSelectedSubcategory={setSelectedSubcategory}
   selectedItemType={selectedItemType}
   setSelectedItemType={setSelectedItemType}
+  selectedSpecFilters={selectedSpecFilters}
+  setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
   setSortBy={setSortBy}
   firebaseUserUid={firebaseUser?.uid}
