@@ -831,10 +831,15 @@ const loadDetailsExtras = async (listing: Listing) => {
   setDetailsLoadingExtra(true);
 
   try {
-    const [sellerProfile, relatedResponse] = await Promise.all([
+    const [sellerProfileResult, relatedResult] = await Promise.allSettled([
      apiFetch(`/api/users/${listing.seller_uid}`),
      apiFetch(`/api/listings/${listing.id}/related?limit=5`),
    ]);
+
+    const sellerProfile =
+      sellerProfileResult.status === "fulfilled" ? sellerProfileResult.value : null;
+    const relatedResponse =
+      relatedResult.status === "fulfilled" ? relatedResult.value : [];
 
     setDetailsSellerProfile(sellerProfile || null);
 
