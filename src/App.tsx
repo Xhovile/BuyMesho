@@ -4405,7 +4405,7 @@ setCurrentPage={setCurrentPage}
   </div>
 </div>
 
-<div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-4">
   <div>
     <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
       Specifications
