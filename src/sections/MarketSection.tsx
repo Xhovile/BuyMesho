@@ -15,6 +15,8 @@ type MarketSectionProps = {
   setSelectedCat: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
+  hideSoldOut: boolean;
+  setHideSoldOut: (v: boolean) => void;
   minPrice: string;
   setMinPrice: (v: string) => void;
   maxPrice: string;
@@ -51,6 +53,8 @@ export default function MarketSection({
   setSelectedCat,
   selectedCondition,
   setSelectedCondition,
+  hideSoldOut,
+  setHideSoldOut,
   minPrice,
   setMinPrice,
   maxPrice,
@@ -102,6 +106,8 @@ export default function MarketSection({
         setSelectedCat={setSelectedCat}
         selectedCondition={selectedCondition}
         setSelectedCondition={setSelectedCondition}
+        hideSoldOut={hideSoldOut}
+        setHideSoldOut={setHideSoldOut}
         minPrice={minPrice}
         setMinPrice={setMinPrice}
         maxPrice={maxPrice}

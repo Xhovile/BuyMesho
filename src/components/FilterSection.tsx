@@ -17,6 +17,8 @@ type FilterSectionProps = {
   setSelectedCat: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
+  hideSoldOut: boolean;
+  setHideSoldOut: (v: boolean) => void;
   minPrice: string;
   setMinPrice: (v: string) => void;
   maxPrice: string;
@@ -32,6 +34,8 @@ export default function FilterSection({
   setSelectedCat,
   selectedCondition,
   setSelectedCondition,
+  hideSoldOut,
+  setHideSoldOut,
   minPrice,
   setMinPrice,
   maxPrice,
@@ -83,6 +87,7 @@ export default function FilterSection({
   const activeExtraFilterCount = [
     selectedCat,
     selectedCondition,
+    hideSoldOut ? "sold_out_hidden" : "",
     minPrice,
     maxPrice,
     sortBy !== "newest" ? sortBy : "",
@@ -91,6 +96,7 @@ export default function FilterSection({
   const clearExtraFilters = () => {
     setSelectedCat("");
     setSelectedCondition("");
+    setHideSoldOut(false);
     setMinPrice("");
     setMaxPrice("");
     setSortBy("newest");
@@ -456,6 +462,16 @@ export default function FilterSection({
             )}
           </div>
         </div>
+
+        <label className="inline-flex items-center gap-3 text-sm font-semibold text-zinc-700">
+          <input
+            type="checkbox"
+            checked={hideSoldOut}
+            onChange={(e) => setHideSoldOut(e.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-400"
+          />
+          Hide sold-out listings
+        </label>
 
         <div className="pt-2 flex justify-end">
           <button

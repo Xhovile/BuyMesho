@@ -208,6 +208,7 @@ const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSum
 const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
 const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
 const [selectedCondition, setSelectedCondition] = useState("");
+const [hideSoldOut, setHideSoldOut] = useState(false);
 const [minPrice, setMinPrice] = useState("");
 const [maxPrice, setMaxPrice] = useState("");
 const [currentPage, setCurrentPage] = useState(1);
@@ -664,7 +665,7 @@ const [editProfileForm, setEditProfileForm] = useState({
 
   useEffect(() => {
   setCurrentPage(1);
-}, [selectedUniv, selectedCat, selectedCondition, minPrice, maxPrice, search, sortBy]);
+}, [selectedUniv, selectedCat, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy]);
   
   useEffect(() => {
   fetchListings();
@@ -672,6 +673,7 @@ const [editProfileForm, setEditProfileForm] = useState({
   selectedUniv,
   selectedCat,
   selectedCondition,
+  hideSoldOut,
   minPrice,
   maxPrice,
   search,
@@ -688,6 +690,7 @@ const [editProfileForm, setEditProfileForm] = useState({
     if (selectedUniv) params.append("university", selectedUniv);
     if (selectedCat) params.append("category", selectedCat);
     if (selectedCondition) params.append("condition", selectedCondition);
+    if (hideSoldOut) params.append("hideSoldOut", "1");
     if (minPrice) params.append("minPrice", minPrice);
     if (maxPrice) params.append("maxPrice", maxPrice);
     if (search) params.append("search", search);
@@ -1886,6 +1889,13 @@ const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
   }));
 };
 
+const hasMeaningfulTitle = (rawTitle: string) => {
+  const trimmed = rawTitle.trim();
+  if (trimmed.length < 3) return false;
+  const alnumCount = (trimmed.match(/[a-zA-Z0-9]/g) ?? []).length;
+  return alnumCount >= 3;
+};
+
 const scrollToCreateSpecField = (fieldKey: string) => {
   const target = createSpecFieldRefs.current[fieldKey];
   if (!target) return;
@@ -1957,9 +1967,66 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       }
     }
 
+    if (!hasMeaningfulTitle(newListing.name)) {
+      showFeedback(
+        "error",
+        "Title needed",
+        "Please enter a clear listing title with at least 3 letters or numbers."
+      );
+      return;
+    }
+
+    const parsedPrice = Number(newListing.price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      showFeedback(
+        "error",
+        "Invalid price",
+        "Please enter a valid price greater than 0."
+      );
+      return;
+    }
+
+    if (newListing.photos.length < 1) {
+      showFeedback(
+        "error",
+        "Photo required",
+        "Add at least 1 photo so buyers can trust what is being sold."
+      );
+      return;
+    }
+
+    const quantityNum = Number(newListing.quantity || 1);
+    const soldQuantityNum = Number(newListing.sold_quantity || 0);
+    if (!Number.isInteger(quantityNum) || quantityNum < 1) {
+      showFeedback(
+        "error",
+        "Invalid quantity",
+        "Total quantity must be a whole number of at least 1."
+      );
+      return;
+    }
+
+    if (!Number.isInteger(soldQuantityNum) || soldQuantityNum < 0) {
+      showFeedback(
+        "error",
+        "Invalid sold quantity",
+        "Sold quantity cannot be negative."
+      );
+      return;
+    }
+
+    if (soldQuantityNum > quantityNum) {
+      showFeedback(
+        "error",
+        "Invalid stock values",
+        "Sold quantity cannot be greater than total quantity."
+      );
+      return;
+    }
+
     const payload: CreateListingPayload = {
       name: newListing.name,
-      price: parseFloat(newListing.price),
+      price: parsedPrice,
       description: newListing.description,
       category: newListing.category,
       subcategory: newListing.subcategory || null,
@@ -1974,8 +2041,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       whatsapp_number: newListing.whatsapp_number,
       status: newListing.status,
       condition: newListing.condition,
-      quantity: Number(newListing.quantity || 1),
-      sold_quantity: Number(newListing.sold_quantity || 0),
+      quantity: quantityNum,
+      sold_quantity: soldQuantityNum,
     };
 
     await apiFetch("/api/listings", {
@@ -2601,6 +2668,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   requireLoginForContact={requireLoginForContact}
   selectedCondition={selectedCondition}
 setSelectedCondition={setSelectedCondition}
+hideSoldOut={hideSoldOut}
+setHideSoldOut={setHideSoldOut}
 minPrice={minPrice}
 setMinPrice={setMinPrice}
 maxPrice={maxPrice}
