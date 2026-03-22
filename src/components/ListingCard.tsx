@@ -30,7 +30,6 @@ type ListingCardProps = {
 
 export default function ListingCard({
   listing,
-  onReport,
   currentUid,
   onDelete,
   onEdit,
@@ -168,11 +167,6 @@ Open this listing: ${shareUrl}`;
     }
   };
 
-  const handleReportFromMenu = () => {
-    setMenuOpen(false);
-    onReport(listing.id);
-  };
-
   const handleHideSeller = () => {
     if (!sellerUid) return;
     setMenuOpen(false);
@@ -284,13 +278,6 @@ Open this listing: ${shareUrl}`;
               className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
             >
               {isSaved ? "Remove from Saved" : "Save Item"}
-            </button>
-            <button
-              type="button"
-              onClick={handleReportFromMenu}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Report listing
             </button>
             <button
               type="button"
