@@ -162,6 +162,8 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [selectedUniv, setSelectedUniv] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [selectedItemType, setSelectedItemType] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -663,15 +665,27 @@ const [editProfileForm, setEditProfileForm] = useState({
     }
   }, [publicProfileOpen]);
 
-  useEffect(() => {
+useEffect(() => {
   setCurrentPage(1);
-}, [selectedUniv, selectedCat, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy]);
+}, [
+  selectedUniv,
+  selectedCat,
+  selectedSubcategory,
+  selectedItemType,
+  selectedCondition,
+  minPrice,
+  maxPrice,
+  search,
+  sortBy,
+]);
   
   useEffect(() => {
   fetchListings();
 }, [
   selectedUniv,
   selectedCat,
+  selectedSubcategory,
+  selectedItemType,
   selectedCondition,
   hideSoldOut,
   minPrice,
@@ -689,6 +703,8 @@ const [editProfileForm, setEditProfileForm] = useState({
 
     if (selectedUniv) params.append("university", selectedUniv);
     if (selectedCat) params.append("category", selectedCat);
+    if (selectedSubcategory) params.append("subcategory", selectedSubcategory);
+    if (selectedItemType) params.append("itemType", selectedItemType);
     if (selectedCondition) params.append("condition", selectedCondition);
     if (hideSoldOut) params.append("hideSoldOut", "1");
     if (minPrice) params.append("minPrice", minPrice);
@@ -2651,6 +2667,10 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
   setSelectedCat={setSelectedCat}
+  selectedSubcategory={selectedSubcategory}
+  setSelectedSubcategory={setSelectedSubcategory}
+  selectedItemType={selectedItemType}
+  setSelectedItemType={setSelectedItemType}
   sortBy={sortBy}
   setSortBy={setSortBy}
   firebaseUserUid={firebaseUser?.uid}

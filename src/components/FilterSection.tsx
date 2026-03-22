@@ -9,12 +9,17 @@ import {
   X,
 } from "lucide-react";
 import { UNIVERSITIES, CATEGORIES } from "../constants";
+import { getListingItemTypes, getListingSubcategories } from "../listingSchemas";
 
 type FilterSectionProps = {
   selectedUniv: string;
   setSelectedUniv: (v: string) => void;
   selectedCat: string;
   setSelectedCat: (v: string) => void;
+  selectedSubcategory: string;
+  setSelectedSubcategory: (v: string) => void;
+  selectedItemType: string;
+  setSelectedItemType: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -32,6 +37,10 @@ export default function FilterSection({
   setSelectedUniv,
   selectedCat,
   setSelectedCat,
+  selectedSubcategory,
+  setSelectedSubcategory,
+  selectedItemType,
+  setSelectedItemType,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -44,7 +53,13 @@ export default function FilterSection({
   setSortBy,
 }: FilterSectionProps) {
   const [openDropdown, setOpenDropdown] = useState<
-    "university" | "category" | "condition" | "sort" | null
+    | "university"
+    | "category"
+    | "subcategory"
+    | "itemType"
+    | "condition"
+    | "sort"
+    | null
   >(null);
   const [universityQuery, setUniversityQuery] = useState("");
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -86,6 +101,8 @@ export default function FilterSection({
 
   const activeExtraFilterCount = [
     selectedCat,
+    selectedSubcategory,
+    selectedItemType,
     selectedCondition,
     hideSoldOut ? "sold_out_hidden" : "",
     minPrice,
@@ -98,6 +115,8 @@ export default function FilterSection({
 
   const clearExtraFilters = () => {
     setSelectedCat("");
+    setSelectedSubcategory("");
+    setSelectedItemType("");
     setSelectedCondition("");
     setHideSoldOut(false);
     setMinPrice("");
@@ -115,6 +134,8 @@ export default function FilterSection({
     if (!showMoreFilters) {
       if (
         openDropdown === "category" ||
+        openDropdown === "subcategory" ||
+        openDropdown === "itemType" ||
         openDropdown === "condition" ||
         openDropdown === "sort"
       ) {
@@ -131,6 +152,8 @@ export default function FilterSection({
   ];
 
   const conditionOptions = ["new", "used", "refurbished"];
+  const subcategoryOptions = getListingSubcategories(selectedCat);
+  const itemTypeOptions = getListingItemTypes(selectedCat, selectedSubcategory);
   const activeFilterChips = [
     selectedUniv
       ? {
@@ -406,6 +429,8 @@ export default function FilterSection({
                       type="button"
                       onClick={() => {
                         setSelectedCat(c);
+                        setSelectedSubcategory("");
+                        setSelectedItemType("");
                         setOpenDropdown(null);
                       }}
                       className={`${itemBase} ${
@@ -419,6 +444,132 @@ export default function FilterSection({
               </div>
             )}
           </div>
+
+          {selectedCat && (
+            <div className="space-y-2 relative" data-filter-dropdown>
+              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                <Tag className="w-3.5 h-3.5 text-primary" /> Subcategory
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenDropdown(
+                    openDropdown === "subcategory" ? null : "subcategory"
+                  )
+                }
+                className={triggerBase}
+              >
+                <span className="truncate text-left">
+                  {selectedSubcategory || "All Subcategories"}
+                </span>
+                <ChevronRight
+                  className={`w-4 h-4 text-zinc-400 transition-transform ${
+                    openDropdown === "subcategory" ? "rotate-90" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              {openDropdown === "subcategory" && (
+                <div className={menuShell}>
+                  <div className={menuBase}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubcategory("");
+                        setSelectedItemType("");
+                        setOpenDropdown(null);
+                      }}
+                      className={`${itemBase} ${
+                        selectedSubcategory === "" ? activeItem : inactiveItem
+                      }`}
+                    >
+                      All Subcategories
+                    </button>
+
+                    {subcategoryOptions.map((subcategory) => (
+                      <button
+                        key={subcategory}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSubcategory(subcategory);
+                          setSelectedItemType("");
+                          setOpenDropdown(null);
+                        }}
+                        className={`${itemBase} ${
+                          selectedSubcategory === subcategory
+                            ? activeItem
+                            : inactiveItem
+                        }`}
+                      >
+                        {subcategory}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {selectedCat && selectedSubcategory && (
+            <div className="space-y-2 relative" data-filter-dropdown>
+              <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
+                <Tag className="w-3.5 h-3.5 text-primary" /> Item Type
+              </label>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenDropdown(openDropdown === "itemType" ? null : "itemType")
+                }
+                className={triggerBase}
+              >
+                <span className="truncate text-left">
+                  {selectedItemType || "All Item Types"}
+                </span>
+                <ChevronRight
+                  className={`w-4 h-4 text-zinc-400 transition-transform ${
+                    openDropdown === "itemType" ? "rotate-90" : "rotate-0"
+                  }`}
+                />
+              </button>
+
+              {openDropdown === "itemType" && (
+                <div className={menuShell}>
+                  <div className={menuBase}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedItemType("");
+                        setOpenDropdown(null);
+                      }}
+                      className={`${itemBase} ${
+                        selectedItemType === "" ? activeItem : inactiveItem
+                      }`}
+                    >
+                      All Item Types
+                    </button>
+
+                    {itemTypeOptions.map((itemType) => (
+                      <button
+                        key={itemType}
+                        type="button"
+                        onClick={() => {
+                          setSelectedItemType(itemType);
+                          setOpenDropdown(null);
+                        }}
+                        className={`${itemBase} ${
+                          selectedItemType === itemType ? activeItem : inactiveItem
+                        }`}
+                      >
+                        {itemType}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2 relative" data-filter-dropdown>
             <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">

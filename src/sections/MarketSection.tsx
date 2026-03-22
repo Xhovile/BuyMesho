@@ -13,6 +13,10 @@ type MarketSectionProps = {
   setSelectedUniv: (v: string) => void;
   selectedCat: string;
   setSelectedCat: (v: string) => void;
+  selectedSubcategory: string;
+  setSelectedSubcategory: (v: string) => void;
+  selectedItemType: string;
+  setSelectedItemType: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -51,6 +55,10 @@ export default function MarketSection({
   setSelectedUniv,
   selectedCat,
   setSelectedCat,
+  selectedSubcategory,
+  setSelectedSubcategory,
+  selectedItemType,
+  setSelectedItemType,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -121,6 +129,10 @@ export default function MarketSection({
         setSelectedUniv={setSelectedUniv}
         selectedCat={selectedCat}
         setSelectedCat={setSelectedCat}
+        selectedSubcategory={selectedSubcategory}
+        setSelectedSubcategory={setSelectedSubcategory}
+        selectedItemType={selectedItemType}
+        setSelectedItemType={setSelectedItemType}
         selectedCondition={selectedCondition}
         setSelectedCondition={setSelectedCondition}
         hideSoldOut={hideSoldOut}
