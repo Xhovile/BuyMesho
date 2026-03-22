@@ -1764,15 +1764,34 @@ const handleDeleteAccount = async () => {
 };
 
   const fetchSellerApplicationStatus = async () => {
-    if (!firebaseUser || userProfile?.is_seller) {
+    if (!firebaseUser) {
       setSellerApplicationStatus(null);
       return;
     }
 
     try {
       const data = await apiFetch("/api/profile/seller-application");
-      if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
+
+      if (
+        data?.status === "pending" ||
+        data?.status === "approved" ||
+        data?.status === "rejected"
+      ) {
         setSellerApplicationStatus(data.status);
+
+        if (data.status === "approved" && userProfile && !userProfile.is_seller) {
+          await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+            is_seller: true,
+          });
+
+          const nextProfile = { ...userProfile, is_seller: true };
+          setUserProfile(nextProfile);
+
+          await apiFetch("/api/sellers", {
+            method: "POST",
+            body: JSON.stringify(nextProfile),
+          });
+        }
       } else {
         setSellerApplicationStatus(null);
       }
@@ -5125,7 +5144,7 @@ setCurrentPage={setCurrentPage}
     onClose={() => setShowAdminReportsModal(false)}
     onOpenUser={openPublicProfile}
   />
-)}       
+)}
 
 {showAdminSellerApplicationsModal && isAdminUser && (
   <AdminSellerApplicationsModal
