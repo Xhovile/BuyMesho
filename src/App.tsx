@@ -236,6 +236,7 @@ const [detailsSellerProfile, setDetailsSellerProfile] = useState<any | null>(nul
 const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSummary | null>(null);
 const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
 const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
+const detailsExtrasRequestIdRef = useRef(0);
 const [selectedCondition, setSelectedCondition] = useState("");
 const [hideSoldOut, setHideSoldOut] = useState(false);
 const [minPrice, setMinPrice] = useState("");
@@ -426,6 +427,7 @@ const openDetails = (listing: Listing, startIndex = 0) => {
 };
 
 const closeDetails = () => {
+  detailsExtrasRequestIdRef.current += 1;
   setDetailsOpen(false);
   setDetailsListing(null);
   setGalleryIndex(0);
@@ -828,6 +830,7 @@ useEffect(() => {
 }; 
 
 const loadDetailsExtras = async (listing: Listing) => {
+  const requestId = ++detailsExtrasRequestIdRef.current;
   setDetailsLoadingExtra(true);
 
   try {
@@ -836,31 +839,47 @@ const loadDetailsExtras = async (listing: Listing) => {
      apiFetch(`/api/listings/${listing.id}/related?limit=5`),
    ]);
 
+    if (sellerProfileResult.status === "rejected") {
+      console.warn("Detail extras: seller profile request failed", sellerProfileResult.reason);
+    }
+
+    if (relatedResult.status === "rejected") {
+      console.warn("Detail extras: related listings request failed", relatedResult.reason);
+    }
+
     const sellerProfile =
       sellerProfileResult.status === "fulfilled" ? sellerProfileResult.value : null;
     const relatedResponse =
       relatedResult.status === "fulfilled" ? relatedResult.value : [];
+
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
 
     setDetailsSellerProfile(sellerProfile || null);
 
     if (firebaseUser) {
       try {
         const summary = await apiFetch(`/api/users/${listing.seller_uid}/rating-summary`);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(summary || null);
-      } catch {
+      } catch (ratingError) {
+        console.warn("Detail extras: rating summary request failed", ratingError);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(null);
       }
     } else {
       setDetailsRatingSummary(null);
     }
 
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
     setRelatedListings(Array.isArray(relatedResponse) ? relatedResponse : []);
   } catch (e) {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
     console.error("Failed to load detail extras", e);
     setDetailsSellerProfile(null);
     setDetailsRatingSummary(null);
     setRelatedListings([]);
   } finally {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
     setDetailsLoadingExtra(false);
   }
 };
