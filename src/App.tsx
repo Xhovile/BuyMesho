@@ -4255,6 +4255,15 @@ setCurrentPage={setCurrentPage}
                         </button>
                       )}
 
+                      {isAdminUser && (
+                        <button
+                          onClick={() => setShowAdminSellerApplicationsModal(true)}
+                          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ShieldCheck className="w-4 h-4" /> Seller Applications
+                        </button>
+                      )}
+
                       <button
                         onClick={handleLogout}
                         className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
@@ -5131,7 +5140,7 @@ setCurrentPage={setCurrentPage}
 )}
 
  {showAdminReportsModal && isAdminUser && (
-  <AdminReportsModal
+ <AdminReportsModal
     onClose={() => setShowAdminReportsModal(false)}
     onOpenUser={openPublicProfile}
   />
