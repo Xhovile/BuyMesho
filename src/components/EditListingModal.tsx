@@ -897,8 +897,8 @@ export default function EditListingModal({
               Note
             </p>
             <p className="text-sm text-zinc-600">
-              You can update photos and video here. Changes will be saved with
-              the listing.
+              You can upload up to 5 photos and 1 video. Changes are saved when
+              you click Save Changes.
             </p>
           </div>
         </div>
