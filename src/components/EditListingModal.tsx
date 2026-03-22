@@ -838,16 +838,6 @@ export default function EditListingModal({
                         >
                           <X className="w-4 h-4" />
                         </button>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) =>
-                            handleReplaceImage(idx, e.target.files?.[0])
-                          }
-                          disabled={uploadingMedia}
-                          className="absolute inset-0 opacity-0 cursor-pointer"
-                          aria-label={`Replace photo ${idx + 1}`}
-                        />
                       </div>
                     ))}
                   </div>
