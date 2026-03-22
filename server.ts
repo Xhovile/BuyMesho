@@ -473,6 +473,8 @@ async function startServer() {
     university,
     search,
     sortBy,
+    subcategory,
+    itemType,
     minPrice,
     maxPrice,
     condition,
@@ -491,6 +493,16 @@ async function startServer() {
   if (category && typeof category === "string") {
     baseQuery += " AND l.category = ?";
     params.push(category);
+  }
+
+  if (subcategory && typeof subcategory === "string") {
+    baseQuery += " AND l.subcategory = ?";
+    params.push(subcategory);
+  }
+
+  if (itemType && typeof itemType === "string") {
+    baseQuery += " AND l.item_type = ?";
+    params.push(itemType);
   }
 
   if (university && typeof university === "string") {
