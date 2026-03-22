@@ -2086,6 +2086,20 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       return;
     }
 
+    const trimmedDescription = newListing.description.trim();
+    if (trimmedDescription.length < 10) {
+      setCreateFieldError(
+        "description",
+        "Please enter a product description of at least 10 characters."
+      );
+      showFeedback(
+        "error",
+        "Description needed",
+        "Please enter a product description of at least 10 characters."
+      );
+      return;
+    }
+
     if (!newListing.whatsapp_number.trim()) {
       setCreateFieldError("whatsapp_number", "WhatsApp number is required.");
       showFeedback(
@@ -3196,15 +3210,25 @@ setCurrentPage={setCurrentPage}
                           <textarea
                             required
                             rows={4}
-                            className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none ${
+                              createFieldErrors.description
+                                ? "border-red-400 ring-2 ring-red-200"
+                                : "border-zinc-200"
+                            }`}
                             value={newListing.description}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              clearCreateFieldError("description");
                               setNewListing({
                                 ...newListing,
                                 description: e.target.value,
-                              })
-                            }
+                              });
+                            }}
                           />
+                          {createFieldErrors.description ? (
+                            <p className="mt-1 text-xs text-red-600">
+                              {createFieldErrors.description}
+                            </p>
+                          ) : null}
                         </div>
                       </div>
 
