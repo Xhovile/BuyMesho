@@ -1,13 +1,18 @@
-export type AppRoute = "home" | "explore" | "saved";
+export type AppRoute = "home" | "explore" | "saved" | "settings";
 
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
+export const SETTINGS_PATH = "/settings";
 
 export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): AppRoute => {
   const params = new URLSearchParams(location.search);
+
+  if (location.pathname === SETTINGS_PATH) {
+    return "settings";
+  }
 
   if (location.pathname === SAVED_PATH) {
     return "saved";

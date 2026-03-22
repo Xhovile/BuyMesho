@@ -1,7 +1,7 @@
-import { Search, Plus, User, Compass, House } from "lucide-react";
+import { Search, Plus, User, Compass, House, Settings } from "lucide-react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
-import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../lib/appNavigation";
+import { EXPLORE_PATH, HOME_PATH, SETTINGS_PATH, navigateToPath } from "../lib/appNavigation";
 
 type HeaderProps = {
   onSearch: (val: string) => void;
@@ -63,6 +63,14 @@ export default function Header({
               <Compass className="w-4 h-4" />
               Explore
             </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -72,6 +80,14 @@ export default function Header({
             >
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">List Item</span>
+            </button>
+
+            <button
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="md:hidden w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+              aria-label="Open settings"
+            >
+              <Settings className="w-5 h-5 text-zinc-600" />
             </button>
 
             <button
