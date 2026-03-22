@@ -88,6 +88,9 @@ export default function FilterSection({
     sortBy !== "newest" ? sortBy : "",
   ].filter(Boolean).length;
 
+  const activeFilterCount =
+    activeExtraFilterCount + (selectedUniv ? 1 : 0);
+
   const clearExtraFilters = () => {
     setSelectedCat("");
     setSelectedCondition("");
@@ -95,6 +98,11 @@ export default function FilterSection({
     setMaxPrice("");
     setSortBy("newest");
     setOpenDropdown(null);
+  };
+
+  const clearAllFilters = () => {
+    setSelectedUniv("");
+    clearExtraFilters();
   };
 
   useEffect(() => {
@@ -110,13 +118,59 @@ export default function FilterSection({
   }, [showMoreFilters, openDropdown]);
 
   const sortOptions = [
-  { value: "newest", label: "Newest First" },
-  { value: "popular", label: "Most Popular" },
-  { value: "price_asc", label: "Price: Low to High" },
-  { value: "price_desc", label: "Price: High to Low" },
-];
+    { value: "newest", label: "Newest First" },
+    { value: "popular", label: "Most Popular" },
+    { value: "price_asc", label: "Price: Low to High" },
+    { value: "price_desc", label: "Price: High to Low" },
+  ];
 
   const conditionOptions = ["new", "used", "refurbished"];
+  const activeFilterChips = [
+    selectedUniv
+      ? {
+          key: "university",
+          label: `University: ${selectedUniv}`,
+          onRemove: () => setSelectedUniv(""),
+        }
+      : null,
+    selectedCat
+      ? {
+          key: "category",
+          label: `Category: ${selectedCat}`,
+          onRemove: () => setSelectedCat(""),
+        }
+      : null,
+    selectedCondition
+      ? {
+          key: "condition",
+          label: `Condition: ${selectedCondition}`,
+          onRemove: () => setSelectedCondition(""),
+        }
+      : null,
+    minPrice
+      ? {
+          key: "minPrice",
+          label: `Min: $${minPrice}`,
+          onRemove: () => setMinPrice(""),
+        }
+      : null,
+    maxPrice
+      ? {
+          key: "maxPrice",
+          label: `Max: $${maxPrice}`,
+          onRemove: () => setMaxPrice(""),
+        }
+      : null,
+    sortBy !== "newest"
+      ? {
+          key: "sort",
+          label: `Sort: ${
+            sortOptions.find((option) => option.value === sortBy)?.label || "Newest First"
+          }`,
+          onRemove: () => setSortBy("newest"),
+        }
+      : null,
+  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   const triggerBase =
     "w-full flex items-center justify-between gap-3 bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50 transition-all";
@@ -244,6 +298,37 @@ export default function FilterSection({
         </button>
       </div>
     </div>
+
+    {activeFilterCount > 0 && (
+      <div className="rounded-2xl border border-zinc-200 bg-white p-3 md:p-4">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            Active Filters ({activeFilterCount})
+          </p>
+          <button
+            type="button"
+            onClick={clearAllFilters}
+            className="text-xs font-bold text-zinc-600 hover:text-zinc-900"
+          >
+            Clear all
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {activeFilterChips.map((chip) => (
+            <button
+              key={chip.key}
+              type="button"
+              onClick={chip.onRemove}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-zinc-100 border border-zinc-200 text-xs font-semibold text-zinc-700 hover:bg-zinc-200 transition-colors"
+            >
+              <span className="max-w-[220px] truncate">{chip.label}</span>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
 
     {showMoreFilters && (
       <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-4 md:p-5 space-y-4">
