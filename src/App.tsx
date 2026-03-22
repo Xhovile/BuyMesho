@@ -85,6 +85,7 @@ import ReportProblemPage from "./components/ReportProblemPage";
 import ChangePasswordModal from "./components/ChangePasswordModal";
 import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
+import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
                 
 // --- Main App ---
 
@@ -202,6 +203,7 @@ const [reportListingId, setReportListingId] = useState<number | null>(null);
 const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
 const [showSavedModal, setShowSavedModal] = useState(false);
 const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
+const [showAdminSellerApplicationsModal, setShowAdminSellerApplicationsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
 const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
@@ -4234,6 +4236,15 @@ setCurrentPage={setCurrentPage}
                         </button>
                       )}
 
+                      {isAdminUser && (
+                        <button
+                          onClick={() => setShowAdminSellerApplicationsModal(true)}
+                          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ShieldCheck className="w-4 h-4" /> Seller Applications
+                        </button>
+                      )}
+
                       <button
                         onClick={handleLogout}
                         className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
@@ -5110,11 +5121,17 @@ setCurrentPage={setCurrentPage}
 )}
 
  {showAdminReportsModal && isAdminUser && (
-  <AdminReportsModal
+ <AdminReportsModal
     onClose={() => setShowAdminReportsModal(false)}
     onOpenUser={openPublicProfile}
   />
 )}       
+
+{showAdminSellerApplicationsModal && isAdminUser && (
+  <AdminSellerApplicationsModal
+    onClose={() => setShowAdminSellerApplicationsModal(false)}
+  />
+)}
         
 {reportListingId !== null && (
   <ReportListingModal
