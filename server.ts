@@ -1814,6 +1814,62 @@ for (const l of listings) {
   }
 });
 
+app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  const { status } = req.query;
+
+  let query = `
+    SELECT
+      sa.id,
+      sa.applicant_uid,
+      sa.applicant_email,
+      sa.full_legal_name,
+      sa.institution,
+      sa.applicant_type,
+      sa.institution_id_number,
+      sa.whatsapp_number,
+      sa.business_name,
+      sa.what_to_sell,
+      sa.business_description,
+      sa.reason_for_applying,
+      sa.proof_document_url,
+      sa.agreed_to_rules,
+      sa.status,
+      sa.review_notes,
+      sa.reviewed_by_uid,
+      sa.reviewed_at,
+      sa.created_at,
+      sa.updated_at,
+      s.is_seller,
+      s.is_suspended
+    FROM seller_applications sa
+    LEFT JOIN sellers s ON sa.applicant_uid = s.uid
+    WHERE 1=1
+  `;
+
+  const params: any[] = [];
+
+  if (status && typeof status === "string") {
+    query += " AND sa.status = ?";
+    params.push(status);
+  }
+
+  query += " ORDER BY sa.created_at DESC";
+
+  try {
+    const rows = db.prepare(query).all(...params);
+    res.json(rows);
+  } catch (error) {
+    console.error("Admin seller applications fetch error:", error);
+    res.status(500).json({ error: "Failed to load seller applications" });
+  }
+});
+
 app.get("/api/admin/actions", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
 
@@ -1874,6 +1930,100 @@ app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   } catch (error) {
     console.error("Admin report status update error:", error);
     res.status(500).json({ error: "Failed to update report status" });
+  }
+});
+
+app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+
+  if (!isAdminEmail(requesterEmail)) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  const id = Number(req.params.id);
+  const { status, review_notes } = req.body;
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid application id" });
+  }
+
+  if (!["pending", "approved", "rejected"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  try {
+    const application = db.prepare(`
+      SELECT *
+      FROM seller_applications
+      WHERE id = ?
+    `).get(id) as any;
+
+    if (!application) {
+      return res.status(404).json({ error: "Application not found" });
+    }
+
+    db.prepare(`
+      UPDATE seller_applications
+      SET
+        status = ?,
+        review_notes = ?,
+        reviewed_by_uid = ?,
+        reviewed_at = CURRENT_TIMESTAMP,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      status,
+      typeof review_notes === "string" && review_notes.trim() ? review_notes.trim() : null,
+      requesterUid,
+      id
+    );
+
+    if (status === "approved") {
+      db.prepare(`
+        INSERT INTO sellers (
+          uid,
+          email,
+          business_name,
+          university,
+          whatsapp_number,
+          is_verified,
+          is_seller
+        )
+        VALUES (?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(uid) DO UPDATE SET
+          email = COALESCE(excluded.email, sellers.email),
+          business_name = excluded.business_name,
+          university = excluded.university,
+          whatsapp_number = excluded.whatsapp_number,
+          is_seller = 1
+      `).run(
+        application.applicant_uid,
+        application.applicant_email,
+        application.business_name,
+        application.institution,
+        application.whatsapp_number,
+        1
+      );
+    }
+
+    logAdminAction({
+      admin_uid: requesterUid,
+      admin_email: requesterEmail,
+      action_type: status === "approved" ? "approve_seller_application" : "reject_seller_application",
+      target_type: "seller_application",
+      target_id: String(id),
+      details: {
+        applicant_uid: application.applicant_uid,
+        business_name: application.business_name,
+        status,
+      },
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Admin seller application review error:", error);
+    res.status(500).json({ error: "Failed to review seller application" });
   }
 });
 
