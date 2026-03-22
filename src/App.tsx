@@ -831,9 +831,9 @@ const loadDetailsExtras = async (listing: Listing) => {
   setDetailsLoadingExtra(true);
 
   try {
-    const [sellerProfile, listingsResponse] = await Promise.all([
+    const [sellerProfile, relatedResponse] = await Promise.all([
      apiFetch(`/api/users/${listing.seller_uid}`),
-     apiFetch("/api/listings?page=1&pageSize=50"),
+     apiFetch(`/api/listings/${listing.id}/related?limit=5`),
    ]);
 
     setDetailsSellerProfile(sellerProfile || null);
@@ -849,19 +849,7 @@ const loadDetailsExtras = async (listing: Listing) => {
       setDetailsRatingSummary(null);
     }
 
-    const allListings = Array.isArray(listingsResponse?.items)
-     ? listingsResponse.items
-     : [];
-
-      const related = allListings
-        .filter((item: Listing) =>
-            item.id !== listing.id &&
-            item.category === listing.category &&
-            item.university === listing.university
-          )
-          .slice(0, 5);
-
-    setRelatedListings(related);
+    setRelatedListings(Array.isArray(relatedResponse) ? relatedResponse : []);
   } catch (e) {
     console.error("Failed to load detail extras", e);
     setDetailsSellerProfile(null);
