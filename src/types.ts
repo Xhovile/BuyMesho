@@ -1,12 +1,6 @@
-export type University = 
-  | "MUBAS" 
-  | "LUANAR" 
-  | "MZUNI" 
-  | "UNIMA" 
-  | "MUST" 
-  | "Catholic University (CU)" 
-  | "Livingstonia" 
-  | "MAGU";
+import { UNIVERSITIES } from "./constants";
+
+export type University = (typeof UNIVERSITIES)[number];
 
 export type Category = 
   | "Food & Snacks" 
