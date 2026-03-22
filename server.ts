@@ -751,6 +751,75 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     res.status(500).json({ error: "Failed to load listings" });
   }
 });
+
+  app.get("/api/listings/:id/related", (req, res) => {
+    const listingId = Number(req.params.id);
+    const requestedLimit = Number(req.query.limit);
+    const limit = Math.max(1, Math.min(12, Number.isFinite(requestedLimit) ? requestedLimit : 5));
+
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    try {
+      const currentListing = db
+        .prepare(`
+          SELECT id, category, subcategory, item_type, university
+          FROM listings
+          WHERE id = ?
+          LIMIT 1
+        `)
+        .get(listingId) as
+        | {
+            id: number;
+            category: string;
+            subcategory: string | null;
+            item_type: string | null;
+            university: string;
+          }
+        | undefined;
+
+      if (!currentListing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+
+      const rows = db
+        .prepare(`
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.is_hidden = 0
+            AND l.id != ?
+            AND l.category = ?
+            AND l.university = ?
+          ORDER BY
+            CASE WHEN l.subcategory = ? THEN 0 ELSE 1 END ASC,
+            CASE WHEN l.item_type = ? THEN 0 ELSE 1 END ASC,
+            CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
+            l.created_at DESC
+          LIMIT ?
+        `)
+        .all(
+          listingId,
+          currentListing.category,
+          currentListing.university,
+          currentListing.subcategory,
+          currentListing.item_type,
+          limit
+        );
+
+      res.json(
+        rows.map((l: any) => ({
+          ...l,
+          photos: JSON.parse(l.photos || "[]"),
+          spec_values: JSON.parse(l.spec_values || "{}"),
+        }))
+      );
+    } catch (error) {
+      console.error("Fetch related listings error:", error);
+      res.status(500).json({ error: "Failed to load related listings" });
+    }
+  });
   
   app.post("/api/sellers", requireAuth, (req, res) => {
     const uid = req.user!.uid; // secure UID from Firebase
