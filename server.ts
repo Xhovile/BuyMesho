@@ -7,6 +7,11 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { requireAuth } from "./server/middleware/requireAuth.js";
+import { CATEGORIES } from "./src/constants.js";
+import {
+  getListingSubcategories,
+  getListingItemTypes,
+} from "./src/listingSchemas/index.js";
 dotenv.config();
 
 console.log("SERVER STARTING: Environment loaded");
@@ -28,6 +33,50 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit
   }
 });
+
+const TITLE_MIN_ALNUM_CHARS = 3;
+
+function isMeaningfulTitle(input: unknown): boolean {
+  if (typeof input !== "string") return false;
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  if (trimmed.length < 3) return false;
+
+  const alnumMatches = trimmed.match(/[a-zA-Z0-9]/g) ?? [];
+  if (alnumMatches.length < TITLE_MIN_ALNUM_CHARS) return false;
+
+  const uniqueChars = new Set(trimmed.toLowerCase().replace(/\s+/g, ""));
+  return uniqueChars.size >= 2;
+}
+
+function isValidListingHierarchy(
+  category: string,
+  subcategory?: string | null,
+  itemType?: string | null
+): boolean {
+  if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
+    return false;
+  }
+
+  const safeSubcategory = subcategory?.trim();
+  const safeItemType = itemType?.trim();
+
+  if (!safeSubcategory && !safeItemType) {
+    return true;
+  }
+
+  if (!safeSubcategory || !safeItemType) {
+    return false;
+  }
+
+  const validSubcategories = getListingSubcategories(category);
+  if (!validSubcategories.includes(safeSubcategory)) {
+    return false;
+  }
+
+  const validItemTypes = getListingItemTypes(category, safeSubcategory);
+  return validItemTypes.includes(safeItemType);
+}
 
 let db: Database.Database;
 try {
@@ -476,6 +525,7 @@ async function startServer() {
     minPrice,
     maxPrice,
     condition,
+    hideSoldOut,
     page = "1",
     pageSize = "12",
   } = req.query;
@@ -508,6 +558,10 @@ async function startServer() {
     params.push(condition);
   }
 
+  if (hideSoldOut === "1" || hideSoldOut === "true") {
+    baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
+  }
+
   if (minPrice !== undefined && minPrice !== "" && !Number.isNaN(Number(minPrice))) {
     baseQuery += " AND l.price >= ?";
     params.push(Number(minPrice));
@@ -518,15 +572,20 @@ async function startServer() {
     params.push(Number(maxPrice));
   }
 
-  let orderBy = " ORDER BY l.created_at DESC";
+  let orderBy =
+    " ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC, l.created_at DESC";
   if (sortBy === "price_asc") {
-    orderBy = " ORDER BY l.price ASC";
+    orderBy =
+      " ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC, l.price ASC, l.created_at DESC";
   } else if (sortBy === "price_desc") {
-    orderBy = " ORDER BY l.price DESC";
+    orderBy =
+      " ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC, l.price DESC, l.created_at DESC";
   } else if (sortBy === "popular") {
-  orderBy = " ORDER BY l.views_count DESC, l.created_at DESC";
+  orderBy =
+    " ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC, l.views_count DESC, l.created_at DESC";
   } else if (sortBy === "oldest") {
-    orderBy = " ORDER BY l.created_at ASC";
+    orderBy =
+      " ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC, l.created_at ASC";
   }
 
   const safePage = Math.max(1, Number(page) || 1);
@@ -771,9 +830,18 @@ if (v.is_suspended === 1) {
   } = req.body;
   const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
+const safeName = typeof name === "string" ? name.trim() : "";
+const safeCategory = typeof category === "string" ? category.trim() : "";
+const safeUniversity = typeof university === "string" ? university.trim() : "";
+const safeWhatsappNumber =
+  typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
+const numericPrice = Number(price);
   
     // ✅ Validate photos + video
 const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
+if (safePhotos.length < 1) {
+  return res.status(400).json({ error: "At least 1 photo is required" });
+}
 if (safePhotos.length > 5) {
   return res.status(400).json({ error: "Max 5 photos allowed" });
 }
@@ -801,6 +869,30 @@ const safeSpecValues =
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
 
+if (!isMeaningfulTitle(safeName)) {
+  return res.status(400).json({ error: "Title is missing or not meaningful" });
+}
+
+if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+  return res.status(400).json({ error: "price must be greater than 0" });
+}
+
+if (!safeCategory) {
+  return res.status(400).json({ error: "category is required" });
+}
+
+if (!safeUniversity) {
+  return res.status(400).json({ error: "university is required" });
+}
+
+if (!safeWhatsappNumber) {
+  return res.status(400).json({ error: "whatsapp_number is required" });
+}
+
+if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
+  return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
+}
+
   try {
     const info = db.prepare(`
       INSERT INTO listings (
@@ -811,17 +903,17 @@ const safeSpecValues =
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 `).run(
   seller_uid,
-  name,
-  price,
+  safeName,
+  numericPrice,
   description,
-  category,
+  safeCategory,
   safeSubcategory,
   safeItemType,
   safeSpecValues,
-  university,
+  safeUniversity,
   JSON.stringify(safePhotos),
   safeVideoUrl,
-  whatsapp_number,
+  safeWhatsappNumber,
   safeStatus,
   safeCondition,
   safeQuantity,
@@ -1149,7 +1241,16 @@ if (v.is_suspended === 1) {
     } = req.body;
     const allowedConditions = ["new", "used", "refurbished"];
     const safeCondition = allowedConditions.includes(condition) ? condition : "used";
+    const safeName = typeof name === "string" ? name.trim() : "";
+    const safeCategory = typeof category === "string" ? category.trim() : "";
+    const safeUniversity = typeof university === "string" ? university.trim() : "";
+    const safeWhatsappNumber =
+      typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
+    const numericPrice = Number(price);
     const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
+if (safePhotos.length < 1) {
+  return res.status(400).json({ error: "At least 1 photo is required" });
+}
 if (safePhotos.length > 5) {
   return res.status(400).json({ error: "Max 5 photos allowed" });
 }
@@ -1178,24 +1279,28 @@ const safeSpecValues =
     : JSON.stringify({});
     
   // Minimal validation
-  if (!name || typeof name !== "string") {
-    return res.status(400).json({ error: "name is required" });
+  if (!isMeaningfulTitle(safeName)) {
+    return res.status(400).json({ error: "Title is missing or not meaningful" });
   }
 
-  if (price === undefined || Number.isNaN(Number(price))) {
-    return res.status(400).json({ error: "price must be a number" });
+  if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+    return res.status(400).json({ error: "price must be greater than 0" });
   }
 
-  if (!category || typeof category !== "string") {
+  if (!safeCategory) {
     return res.status(400).json({ error: "category is required" });
   }
 
-  if (!university || typeof university !== "string") {
+  if (!safeUniversity) {
     return res.status(400).json({ error: "university is required" });
   }
 
-  if (!whatsapp_number || typeof whatsapp_number !== "string") {
+  if (!safeWhatsappNumber) {
     return res.status(400).json({ error: "whatsapp_number is required" });
+  }
+
+  if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
+    return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
   }
 
   try {
@@ -1233,17 +1338,17 @@ const safeSpecValues =
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `).run(
-      name,
-      Number(price),
+      safeName,
+      numericPrice,
       description ?? null,
-      category,
+      safeCategory,
       safeSubcategory,
       safeItemType,
       safeSpecValues,
-      university,
+      safeUniversity,
       JSON.stringify(safePhotos),
       safeVideoUrl,
-      whatsapp_number,
+      safeWhatsappNumber,
       safeStatus,
       safeCondition,
       safeQuantity,
