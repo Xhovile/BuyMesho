@@ -2637,11 +2637,11 @@ setCurrentPage={setCurrentPage}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col"
             >
-              <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
+              <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
+                  <h2 className="text-xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Post your item to the campus</p>
                 </div>
                 <button onClick={() => setShowAddModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100">
@@ -2715,8 +2715,8 @@ setCurrentPage={setCurrentPage}
                 </div>
               ) : (
                 <form onSubmit={handleCreateListing} className="flex flex-col min-h-0 flex-1">
-                  <div className="p-6">
-                    <div className="max-h-[58vh] overflow-y-auto space-y-4 pr-1">
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <div className="space-y-4 pr-1">
                       <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                         <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                           Basic Info
@@ -3019,7 +3019,7 @@ setCurrentPage={setCurrentPage}
                     </div>
                   </div>
 
-                  <div className="p-6 border-t border-zinc-100 bg-white flex gap-3">
+                  <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowAddModal(false)}
