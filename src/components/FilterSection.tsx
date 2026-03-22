@@ -166,7 +166,32 @@ export default function FilterSection({
       ? {
           key: "category",
           label: `Category: ${selectedCat}`,
-          onRemove: () => setSelectedCat(""),
+          onRemove: () => {
+            setSelectedCat("");
+            setSelectedSubcategory("");
+            setSelectedItemType("");
+          },
+        }
+      : null,
+    selectedSubcategory
+      ? {
+          key: "subcategory",
+          label: `Subcategory: ${selectedSubcategory}`,
+          onRemove: () => setSelectedSubcategory(""),
+        }
+      : null,
+    selectedItemType
+      ? {
+          key: "itemType",
+          label: `Item Type: ${selectedItemType}`,
+          onRemove: () => setSelectedItemType(""),
+        }
+      : null,
+    hideSoldOut
+      ? {
+          key: "hideSoldOut",
+          label: "Hide Sold-out",
+          onRemove: () => setHideSoldOut(false),
         }
       : null,
     selectedCondition

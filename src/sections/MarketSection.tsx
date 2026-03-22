@@ -107,7 +107,10 @@ export default function MarketSection({
   const hasActiveFilters =
     Boolean(selectedUniv) ||
     Boolean(selectedCat) ||
+    Boolean(selectedSubcategory) ||
+    Boolean(selectedItemType) ||
     Boolean(selectedCondition) ||
+    hideSoldOut ||
     Boolean(minPrice) ||
     Boolean(maxPrice) ||
     sortBy !== "newest";
@@ -115,7 +118,10 @@ export default function MarketSection({
   const clearAllFilters = () => {
     setSelectedUniv("");
     setSelectedCat("");
+    setSelectedSubcategory("");
+    setSelectedItemType("");
     setSelectedCondition("");
+    setHideSoldOut(false);
     setMinPrice("");
     setMaxPrice("");
     setSortBy("newest");
