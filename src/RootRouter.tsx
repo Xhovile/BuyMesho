@@ -3,6 +3,7 @@ import App from "./App";
 import HomePage from "./HomePage";
 import SavedPage from "./SavedPage";
 import SettingsPage from "./SettingsPage";
+import SellerProfilePage from "./SellerProfilePage";
 import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
 
 export default function RootRouter() {
@@ -32,6 +33,10 @@ export default function RootRouter() {
 
   if (route === "settings") {
     return <SettingsPage />;
+  }
+
+  if (route === "seller") {
+    return <SellerProfilePage />;
   }
 
   return <HomePage />;
