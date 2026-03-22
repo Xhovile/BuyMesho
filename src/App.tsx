@@ -20,7 +20,8 @@ import {
   Settings,
   Bookmark,
   Expand,
-  ArrowUp
+  ArrowUp,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -189,6 +190,8 @@ const [ratingSubmitting, setRatingSubmitting] = useState(false);
 const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [activeDetailSpecGroup, setActiveDetailSpecGroup] = useState("");
+const detailSpecTabsRef = useRef<HTMLDivElement | null>(null);
+const [showDetailSpecTabsChevron, setShowDetailSpecTabsChevron] = useState(false);
 const [galleryIndex, setGalleryIndex] = useState(0); 
 const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
@@ -1062,6 +1065,17 @@ const detailGalleryImages = React.useMemo(() => {
 
   return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
 }, [detailsListing]);
+
+const DETAIL_SPEC_SCROLL_AMOUNT = 180;
+const DETAIL_SPEC_SCROLL_TOLERANCE = 4; // small buffer for rounding differences
+const DETAIL_SPEC_CHEVRON_GUTTER = 40;
+
+const scrollDetailSpecTabsRight = () => {
+  detailSpecTabsRef.current?.scrollBy({
+    left: DETAIL_SPEC_SCROLL_AMOUNT,
+    behavior: "smooth",
+  });
+};
 
 useEffect(() => {
   if (!detailsListing) {
@@ -2498,6 +2512,35 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     detailSpecGroups[0] ||
     null;
   const activeStructuredSpecRows = activeSpecGroup?.rows || detailStructuredSpecRows;
+
+  useEffect(() => {
+    const el = detailSpecTabsRef.current;
+
+    const updateChevronVisibility = () => {
+      if (!el) {
+        setShowDetailSpecTabsChevron(false);
+        return;
+      }
+
+    const canScroll = el.scrollWidth > el.clientWidth + DETAIL_SPEC_SCROLL_TOLERANCE;
+    const hasMoreToRight =
+      el.scrollLeft + el.clientWidth < el.scrollWidth - DETAIL_SPEC_SCROLL_TOLERANCE;
+
+      setShowDetailSpecTabsChevron(canScroll && hasMoreToRight);
+    };
+
+    updateChevronVisibility();
+
+    if (!el) return;
+
+    el.addEventListener("scroll", updateChevronVisibility, { passive: true });
+    window.addEventListener("resize", updateChevronVisibility);
+
+    return () => {
+      el.removeEventListener("scroll", updateChevronVisibility);
+      window.removeEventListener("resize", updateChevronVisibility);
+    };
+  }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4369,21 +4412,40 @@ setCurrentPage={setCurrentPage}
     </div>
 
     {detailSpecGroups.length > 0 && (
-      <div className="flex gap-2 overflow-x-auto pb-1 mb-3">
-        {detailSpecGroups.map((group) => (
+      <div className="relative mb-3">
+        <div
+          ref={detailSpecTabsRef}
+          className="flex gap-2 overflow-x-auto pb-1"
+          style={{
+            paddingRight: showDetailSpecTabsChevron ? `${DETAIL_SPEC_CHEVRON_GUTTER}px` : undefined,
+          }}
+        >
+          {detailSpecGroups.map((group) => (
+            <button
+              key={group.title}
+              type="button"
+              onClick={() => setActiveDetailSpecGroup(group.title)}
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                activeSpecGroup?.title === group.title
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              {group.title}
+            </button>
+          ))}
+        </div>
+
+        {showDetailSpecTabsChevron && (
           <button
-            key={group.title}
             type="button"
-            onClick={() => setActiveDetailSpecGroup(group.title)}
-            className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
-              activeSpecGroup?.title === group.title
-                ? "bg-zinc-900 text-white border-zinc-900"
-                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
-            }`}
+            onClick={scrollDetailSpecTabsRight}
+            className="absolute right-0 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-white border border-zinc-200 shadow-sm flex items-center justify-center text-zinc-500 hover:text-zinc-800"
+            aria-label="Scroll spec tabs right"
           >
-            {group.title}
+            <ChevronRight className="w-4 h-4" />
           </button>
-        ))}
+        )}
       </div>
     )}
 
