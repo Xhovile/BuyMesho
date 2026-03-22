@@ -583,14 +583,14 @@ export default function EditListingModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
       <div
         className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60">
+      <div className="relative w-full max-w-3xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col">
+        <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/60 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">
               Edit Listing
@@ -609,8 +609,8 @@ export default function EditListingModal({
           </button>
         </div>
 
-        <div className="p-6">
-          <div className="max-h-[58vh] overflow-y-auto space-y-4 pr-1">
+        <div className="p-6 flex-1 min-h-0 flex flex-col gap-4">
+          <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
             <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
                 Basic Info
@@ -903,7 +903,7 @@ export default function EditListingModal({
           </div>
         </div>
 
-        <div className="p-6 border-t border-zinc-100 bg-white flex gap-3">
+        <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
             className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
