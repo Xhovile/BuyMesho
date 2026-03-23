@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { Plus, Filter, ShieldCheck, Clock3 } from "lucide-react";
 import { motion } from "motion/react";
 
 type HeroSectionProps = {
@@ -7,78 +7,93 @@ type HeroSectionProps = {
 
 export default function HeroSection({ onStartSelling }: HeroSectionProps) {
   return (
-    <section className="relative py-14 sm:py-24">
+    <section className="relative pt-8 pb-6 sm:pt-10 sm:pb-8">
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-8 left-1/2 -translate-x-1/2 w-[22rem] sm:w-[34rem] h-[22rem] sm:h-[34rem] bg-red-900/8 blur-3xl rounded-full" />
-        <div className="absolute top-24 right-0 w-40 h-40 bg-amber-200/20 blur-3xl rounded-full" />
-        <div className="absolute bottom-0 left-0 w-40 h-40 bg-zinc-300/20 blur-3xl rounded-full" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[22rem] sm:w-[30rem] h-[22rem] sm:h-[30rem] bg-red-900/8 blur-3xl rounded-full" />
       </div>
 
-      <div className="max-w-4xl mx-auto text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 18 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-900/10 bg-white/80 backdrop-blur-sm text-[11px] sm:text-xs font-extrabold uppercase tracking-[0.22em] text-red-900 shadow-sm"
-        >
-          Student Marketplace • Malawi
-        </motion.div>
+      <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-7 shadow-sm">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6">
+          <div className="max-w-3xl">
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-full border border-red-900/10 bg-red-900/[0.03] text-[11px] font-extrabold uppercase tracking-[0.18em] text-red-900"
+            >
+              Explore • Campus marketplace
+            </motion.div>
 
-        <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="mt-6 text-5xl sm:text-7xl lg:text-8xl font-black tracking-[-0.06em] leading-[0.95]"
-        >
-          <span className="text-zinc-900">Buy from Mesho,</span>
-          <br />
-          <span className="text-red-900">grow each other.</span>
-        </motion.h1>
+            <motion.h1
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="mt-4 text-3xl sm:text-4xl lg:text-5xl font-black tracking-[-0.05em] leading-[0.98] text-zinc-900"
+            >
+              Browse campus listings without the mess.
+            </motion.h1>
 
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="mt-5 max-w-2xl mx-auto text-sm sm:text-base text-zinc-500 font-semibold leading-relaxed"
-        >
-          BuyMesho means buy from Mesho.
-        </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 font-medium leading-relaxed"
+            >
+              Explore BuyMesho by campus, category, subcategory, item type, and budget.
+              Find useful student listings faster and contact sellers directly on WhatsApp.
+            </motion.p>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
-        >
-          <button
-            type="button"
-            onClick={onStartSelling}
-            className="inline-flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-6 py-3 rounded-2xl text-sm font-extrabold shadow-lg shadow-zinc-300/40 transition-all active:scale-95"
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="mt-5 flex flex-wrap gap-2"
+            >
+              {[
+                { icon: Filter, label: "Smarter filters" },
+                { icon: ShieldCheck, label: "Clearer trust signals" },
+                { icon: Clock3, label: "Fresh campus discovery" },
+              ].map((item) => {
+                const Icon = item.icon;
+                return (
+                  <span
+                    key={item.label}
+                    className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-600"
+                  >
+                    <Icon className="w-3.5 h-3.5 text-red-900" />
+                    {item.label}
+                  </span>
+                );
+              })}
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12 }}
+            className="xl:max-w-sm w-full rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5"
           >
-            <Plus className="w-4 h-4" />
-            Start Selling
-          </button>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              Seller action
+            </p>
+            <h2 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
+              Ready to list something useful?
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600 leading-relaxed">
+              Post your item with better structure, stronger details, and cleaner buyer discovery.
+            </p>
 
-          <button
-            type="button"
-            onClick={() => window.scrollTo({ top: 520, behavior: "smooth" })}
-            className="inline-flex items-center gap-2 bg-white hover:bg-zinc-50 text-zinc-900 px-6 py-3 rounded-2xl text-sm font-extrabold border border-zinc-200 shadow-sm transition-all active:scale-95"
-          >
-            Explore Listings
-          </button>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.24 }}
-          className="mt-10 flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-[11px] sm:text-xs font-bold uppercase tracking-[0.18em] text-zinc-500"
-        >
-          <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Safe</span>
-          <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Fast</span>
-          <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Flexible</span>
-          <span className="px-3 py-2 rounded-full bg-white border border-zinc-200 shadow-sm">Built for Malawi</span>
-        </motion.div>
+            <button
+              type="button"
+              onClick={onStartSelling}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            >
+              <Plus className="w-4 h-4" />
+              Start Selling
+            </button>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
-  }
+}
