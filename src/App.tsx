@@ -734,17 +734,6 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedCat]);
-
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedSubcategory]);
-
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedItemType]);
 
 useEffect(() => {
   if (authLoading || profileLoading) return;
@@ -797,7 +786,22 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-  const fetchListings = async () => {
+  const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
+};
+
+const fetchListings = async () => {
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -2957,11 +2961,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
-  setSelectedCat={setSelectedCat}
+  setSelectedCat={handleSelectedCategoryChange}
   selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={setSelectedSubcategory}
+  setSelectedSubcategory={handleSelectedSubcategoryChange}
   selectedItemType={selectedItemType}
-  setSelectedItemType={setSelectedItemType}
+  setSelectedItemType={handleSelectedItemTypeChange}
   selectedSpecFilters={selectedSpecFilters}
   setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
