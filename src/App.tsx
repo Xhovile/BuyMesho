@@ -745,6 +745,39 @@ useEffect(() => {
 useEffect(() => {
   setSelectedSpecFilters({});
 }, [selectedItemType]);
+
+useEffect(() => {
+  if (authLoading || profileLoading) return;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("create") !== "1") return;
+
+  params.delete("create");
+  const nextUrl =
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setCreateFieldErrors({});
+  setShowAddModal(true);
+}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
   
   useEffect(() => {
   fetchListings();

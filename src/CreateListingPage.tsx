@@ -11,6 +11,20 @@ export default function CreateListingPage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
+  const openCurrentCreator = () => {
+    const url = new URL(window.location.href);
+    url.pathname = "/explore";
+    url.searchParams.set("create", "1");
+    url.searchParams.delete("listing");
+    url.searchParams.delete("image");
+    url.searchParams.delete("uid");
+    url.searchParams.delete("id");
+
+    window.history.pushState({}, "", url.toString());
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
     const loadProfile = async () => {
       if (!firebaseUser) {
@@ -107,7 +121,7 @@ export default function CreateListingPage() {
 
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
+              onClick={openCurrentCreator}
               className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               <Plus className="w-4 h-4" />
