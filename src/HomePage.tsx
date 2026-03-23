@@ -12,7 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateToCreateListing, navigateToPath } from "./lib/appNavigation";
 
 const quickPaths = [
   {
@@ -112,10 +112,10 @@ export default function HomePage() {
             </button>
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
+              onClick={navigateToCreateListing}
               className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
             >
-              Start Here
+              Start Selling
             </button>
           </div>
         </div>
@@ -175,7 +175,7 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  onClick={navigateToCreateListing}
                   className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
                 >
                   Start Selling
@@ -374,7 +374,7 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-3 lg:justify-end">
                 <button
                   type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  onClick={navigateToCreateListing}
                   className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                 >
                   Start Selling

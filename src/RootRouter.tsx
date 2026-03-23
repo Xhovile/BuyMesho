@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import App from "./App";
+import CreateListingPage from "./CreateListingPage";
+import EditListingPage from "./EditListingPage";
 import HomePage from "./HomePage";
 import SavedPage from "./SavedPage";
 import SettingsPage from "./SettingsPage";
@@ -37,6 +39,14 @@ export default function RootRouter() {
 
   if (route === "seller") {
     return <SellerProfilePage />;
+  }
+
+  if (route === "create") {
+    return <CreateListingPage />;
+  }
+
+  if (route === "edit") {
+    return <EditListingPage />;
   }
 
   return <HomePage />;
