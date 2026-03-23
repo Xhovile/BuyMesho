@@ -1,15 +1,47 @@
-import { useEffect, useState } from "react";
-import { ChevronLeft, Lock, Mail, Plus, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
+import ListingStudioForm from "./components/ListingStudioForm";
+import FeedbackModal from "./components/FeedbackModal";
 import { auth, db as firestore } from "./firebase";
 import { useAuthUser } from "./hooks/useAuthUser";
-import type { UserProfile } from "./types";
+import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
+import { CATEGORIES, UNIVERSITIES } from "./constants";
+import type { ListingDraft, UserProfile } from "./types";
+
+const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
+  name: "",
+  price: "",
+  description: "",
+  category: CATEGORIES[0],
+  subcategory: "",
+  item_type: "",
+  spec_values: {},
+  university: userProfile?.university || UNIVERSITIES[0],
+  photos: [],
+  video_url: "",
+  whatsapp_number: userProfile?.whatsapp_number || "",
+  status: "available",
+  condition: "used",
+  quantity: "1",
+  sold_quantity: "0",
+});
+
+type FeedbackState = {
+  open: boolean;
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+} | null;
 
 export default function CreateListingPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -34,7 +66,38 @@ export default function CreateListingPage() {
     void loadProfile();
   }, [firebaseUser]);
 
-  const isReadyToSell = !!profile?.is_seller && !!auth.currentUser?.emailVerified;
+  const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
+
+  const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
+    setFeedback({ open: true, type, title, message });
+  };
+
+  const closeFeedback = () => {
+    setFeedback(null);
+    if (redirectAfterFeedback) {
+      setRedirectAfterFeedback(false);
+      navigateToPath(EXPLORE_PATH);
+    }
+  };
+
+  const handleCreate = async (payload: any) => {
+    setSubmitting(true);
+    try {
+      await apiFetch("/api/listings", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      setRedirectAfterFeedback(true);
+      showFeedback("success", "Listing posted", "Your listing was created successfully.");
+    } catch (err: any) {
+      showFeedback("error", "Listing creation failed", err?.message || "We could not create your listing.");
+      throw err;
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const canCreate = !!firebaseUser && !!profile?.is_seller && !!auth.currentUser?.emailVerified;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -47,79 +110,43 @@ export default function CreateListingPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Create listing</p>
             </div>
           </button>
-
-          <button
-            type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
-            className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
-          >
-            Back to Explore
-          </button>
+          <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50">Back to Explore</button>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
-          <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
-            Create listing is now getting its own surface.
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
-            This route-backed page is the transition point away from modal-only selling. The full create flow still depends on the existing Explore listing creator right now, but selling now has its own dedicated entry surface.
-          </p>
-        </section>
-
-        <section className="mt-6 grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-extrabold text-zinc-900">Pre-flight checks</h2>
-            <div className="mt-5 space-y-3 text-sm">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 flex items-start gap-3">
-                <Lock className="w-5 h-5 text-zinc-500 mt-0.5" />
-                <div>
-                  <p className="font-bold text-zinc-900">Login</p>
-                  <p className="text-zinc-600">{authLoading ? "Checking account..." : firebaseUser ? "Logged in" : "You need to log in first."}</p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 flex items-start gap-3">
-                <ShieldCheck className="w-5 h-5 text-zinc-500 mt-0.5" />
-                <div>
-                  <p className="font-bold text-zinc-900">Seller status</p>
-                  <p className="text-zinc-600">{loadingProfile ? "Checking seller profile..." : profile?.is_seller ? "Seller account available" : "Apply to become a seller before posting."}</p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 flex items-start gap-3">
-                <Mail className="w-5 h-5 text-zinc-500 mt-0.5" />
-                <div>
-                  <p className="font-bold text-zinc-900">Email verification</p>
-                  <p className="text-zinc-600">{auth.currentUser?.emailVerified ? "Verified" : "Verify your email before posting."}</p>
-                </div>
-              </div>
-            </div>
+        {authLoading || loadingProfile ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium"><Loader2 className="w-5 h-5 animate-spin" /> Preparing listing studio...</div>
+        ) : !firebaseUser ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
+            <p className="mt-3 text-sm text-zinc-500">You need to log in before posting a listing.</p>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-            <h2 className="text-xl font-extrabold text-zinc-900">Continue to the current creator</h2>
-            <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
-              The full page-level create form is still being extracted from Explore. For now, use the current creator while the route-backed surface and selling structure are being established.
-            </p>
-
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              <Plus className="w-4 h-4" />
-              {isReadyToSell ? "Open current listing creator in Explore" : "Go to Explore"}
-            </button>
-
-            <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 leading-relaxed">
-              This is a deliberate transition step: selling now has its own addressable page, even before the entire creator is fully extracted from the giant Explore app surface.
-            </div>
+        ) : !profile?.is_seller ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
+            <p className="mt-3 text-sm text-zinc-500">Apply to become a seller before posting listings.</p>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-        </section>
+        ) : !auth.currentUser?.emailVerified ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Email verification required</h1>
+            <p className="mt-3 text-sm text-zinc-500">Verify your email before posting listings.</p>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
+          </div>
+        ) : canCreate ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
+            <div className="p-6 border-b border-zinc-100 bg-zinc-50">
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
+            </div>
+            <ListingStudioForm mode="create" initialData={listingDraft} onCancel={() => navigateToPath(EXPLORE_PATH)} onSubmit={handleCreate} showFeedback={showFeedback} isSubmitting={submitting} submitLabel="Post Listing" submitBusyLabel="Posting..." />
+          </div>
+        ) : null}
       </main>
+
+      {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={closeFeedback} />}
     </div>
   );
 }
