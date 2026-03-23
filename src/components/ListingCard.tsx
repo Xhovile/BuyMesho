@@ -2,14 +2,13 @@ import { useEffect, useState } from "react";
 import {
   Bookmark,
   Lock,
-  MapPin,
   MessageCircle,
   MoreVertical,
   ShieldCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
-import { navigateToSellerProfile } from "../lib/appNavigation";
+import { navigateToEditListing, navigateToSellerProfile } from "../lib/appNavigation";
 import { buildListingShareUrl } from "../lib/listingUrl";
 
 type ListingCardProps = {
@@ -250,7 +249,7 @@ Open this listing: ${shareUrl}`;
                         type="button"
                         onClick={() => {
                           setMenuOpen(false);
-                          onEdit?.(listing);
+                          navigateToEditListing(listing.id);
                         }}
                         className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
                       >

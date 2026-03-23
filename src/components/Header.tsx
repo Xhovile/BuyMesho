@@ -1,7 +1,13 @@
 import { Search, Plus, User, Compass, House, Settings } from "lucide-react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
-import { EXPLORE_PATH, HOME_PATH, SETTINGS_PATH, navigateToPath } from "../lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  HOME_PATH,
+  SETTINGS_PATH,
+  navigateToCreateListing,
+  navigateToPath,
+} from "../lib/appNavigation";
 
 type HeaderProps = {
   onSearch: (val: string) => void;
@@ -75,7 +81,7 @@ export default function Header({
 
           <div className="flex items-center gap-3 flex-shrink-0">
             <button
-              onClick={onAddListing}
+              onClick={navigateToCreateListing}
               className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
             >
               <Plus className="w-4 h-4" />
