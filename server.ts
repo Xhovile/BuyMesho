@@ -766,7 +766,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
         .prepare(`
           SELECT id, category, subcategory, item_type, university
           FROM listings
-          WHERE id = ?
+          WHERE id = ? AND is_hidden = 0
           LIMIT 1
         `)
         .get(listingId) as
@@ -2148,6 +2148,19 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       id
     );
 
+    const updatedApplication = db.prepare(`
+      SELECT
+        id,
+        status,
+        review_notes,
+        reviewed_at,
+        reviewed_by_uid,
+        updated_at
+      FROM seller_applications
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+
     if (status === "approved") {
       db.prepare(`
         INSERT INTO sellers (
@@ -2189,7 +2202,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       },
     });
 
-    res.json({ success: true });
+    res.json({ success: true, application: updatedApplication });
   } catch (error) {
     console.error("Admin seller application review error:", error);
     res.status(500).json({ error: "Failed to review seller application" });
