@@ -10,7 +10,7 @@ import { motion } from "motion/react";
 import type { Listing } from "../types";
 import {
   navigateToEditListing,
-  navigateToExploreListing,
+  navigateToListingDetails,
   navigateToSellerProfile,
 } from "../lib/appNavigation";
 import { buildListingShareUrl } from "../lib/listingUrl";
