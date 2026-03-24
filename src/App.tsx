@@ -246,6 +246,8 @@ const [pageSize] = useState(12);
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const [showScrollTop, setShowScrollTop] = useState(false);
+const listingsFetchAbortRef = useRef<AbortController | null>(null);
+const listingsRequestIdRef = useRef(0);
   
 // Local-only hides (no backend needed)
 
@@ -786,22 +788,18 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-  const handleSelectedCategoryChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedCat(value);
-};
+useEffect(() => {
+  return () => {
+    listingsFetchAbortRef.current?.abort();
+  };
+}, []);
 
-const handleSelectedSubcategoryChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedSubcategory(value);
-};
+  const fetchListings = async () => {
+  const requestId = ++listingsRequestIdRef.current;
+  listingsFetchAbortRef.current?.abort();
+  const controller = new AbortController();
+  listingsFetchAbortRef.current = controller;
 
-const handleSelectedItemTypeChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedItemType(value);
-};
-
-const fetchListings = async () => {
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -823,22 +821,50 @@ const fetchListings = async () => {
     params.append("page", String(currentPage));
     params.append("pageSize", String(pageSize));
 
-    const res = await fetch(`/api/listings?${params.toString()}`);
+    const res = await fetch(`/api/listings?${params.toString()}`, {
+      signal: controller.signal,
+    });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const data = await res.json();
 
+    if (requestId !== listingsRequestIdRef.current) return;
+
     setListings(Array.isArray(data.items) ? data.items : []);
     setTotalResults(Number(data.total || 0));
     setTotalPages(Number(data.totalPages || 1));
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return;
+    }
+    if (requestId !== listingsRequestIdRef.current) return;
+
     console.error("Fetch listings error:", err);
     setListings([]);
     setTotalResults(0);
     setTotalPages(1);
   } finally {
+    if (requestId !== listingsRequestIdRef.current) return;
     setLoading(false);
   }
+};
+
+const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory("");
+  setSelectedItemType("");
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType("");
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
 };
 
   const trackListingView = async (listingId: number) => {
