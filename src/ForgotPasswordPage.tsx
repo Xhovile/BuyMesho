@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -22,7 +22,7 @@ export default function ForgotPasswordPage() {
     message: string
   ) => setFeedback({ open: true, type, title, message });
 
-  const handleReset = async (e: React.FormEvent) => {
+  const handleReset = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!email.trim()) {

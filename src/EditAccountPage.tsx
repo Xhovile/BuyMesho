@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { User } from "lucide-react";
 import { updateDoc, doc } from "firebase/firestore";
 import AccountPageShell from "./components/AccountPageShell";
@@ -40,7 +40,7 @@ export default function EditAccountPage() {
     setFeedback({ open: true, type, title, message });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
@@ -60,7 +60,7 @@ export default function EditAccountPage() {
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!firebaseUser || !profile) return;
     setSaving(true);

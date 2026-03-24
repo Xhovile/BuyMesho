@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Loader2, Lock } from "lucide-react";
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import AccountPageShell from "./components/AccountPageShell";
@@ -26,7 +26,7 @@ export default function ChangePasswordPage() {
     setFeedback({ open: true, type, title, message });
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleChangePassword = async (e: FormEvent) => {
     e.preventDefault();
 
     if (!firebaseUser?.email) {

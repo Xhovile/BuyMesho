@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import FormDropdown from "./components/FormDropdown";
@@ -74,7 +74,7 @@ export default function BecomeSellerPage() {
     setFeedback({ open: true, type, title, message });
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
@@ -94,7 +94,7 @@ export default function BecomeSellerPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!firebaseUser || !profile) return;
     setSaving(true);

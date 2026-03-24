@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import App from "./App";
 import BecomeSellerPage from "./BecomeSellerPage";
 import ChangePasswordPage from "./ChangePasswordPage";
 import App from "./App.new";

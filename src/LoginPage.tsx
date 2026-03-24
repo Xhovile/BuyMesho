@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -24,7 +24,7 @@ export default function LoginPage() {
     message: string
   ) => setFeedback({ open: true, type, title, message });
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
