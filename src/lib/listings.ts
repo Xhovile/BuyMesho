@@ -4,8 +4,6 @@ import { apiFetch } from "./api";
 function normalizeListingResponse(payload: any): Listing | null {
   if (!payload) return null;
   if (payload?.id) return payload as Listing;
-  if (payload?.listing?.id) return payload.listing as Listing;
-  if (payload?.item?.id) return payload.item as Listing;
   return null;
 }
 
