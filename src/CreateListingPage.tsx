@@ -43,6 +43,20 @@ export default function CreateListingPage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
+  const openCurrentCreator = () => {
+    const url = new URL(window.location.href);
+    url.pathname = "/explore";
+    url.searchParams.set("create", "1");
+    url.searchParams.delete("listing");
+    url.searchParams.delete("image");
+    url.searchParams.delete("uid");
+    url.searchParams.delete("id");
+
+    window.history.pushState({}, "", url.toString());
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   useEffect(() => {
     const loadProfile = async () => {
       if (!firebaseUser) {
@@ -140,6 +154,24 @@ export default function CreateListingPage() {
             <div className="p-6 border-b border-zinc-100 bg-zinc-50">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
+
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-extrabold text-zinc-900">Continue to the current creator</h2>
+            <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
+              The full page-level create form is still being extracted from Explore. For now, use the current creator while the route-backed surface and selling structure are being established.
+            </p>
+
+            <button
+              type="button"
+              onClick={openCurrentCreator}
+              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            >
+              <Plus className="w-4 h-4" />
+              {isReadyToSell ? "Open current listing creator in Explore" : "Go to Explore"}
+            </button>
+
+            <div className="mt-6 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600 leading-relaxed">
+              This is a deliberate transition step: selling now has its own addressable page, even before the entire creator is fully extracted from the giant Explore app surface.
             </div>
             <ListingStudioForm mode="create" initialData={listingDraft} onCancel={() => navigateToPath(EXPLORE_PATH)} onSubmit={handleCreate} showFeedback={showFeedback} isSubmitting={submitting} submitLabel="Post Listing" submitBusyLabel="Posting..." />
           </div>
