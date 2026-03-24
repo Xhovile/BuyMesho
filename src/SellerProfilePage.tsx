@@ -37,12 +37,18 @@ function formatDate(value?: string) {
 }
 
 export default function SellerProfilePage() {
-  const [sellerUid] = useState(() => getSellerUidFromUrl() || "");
+  const [sellerUid, setSellerUid] = useState(() => getSellerUidFromUrl() || "");
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [ratingSummary, setRatingSummary] = useState<SellerRatingSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
+useEffect(() => {
+  const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
+  window.addEventListener("popstate", syncSellerUid);
+  return () => window.removeEventListener("popstate", syncSellerUid);
+}, []);
+  
   useEffect(() => {
     const loadSeller = async () => {
       if (!sellerUid) {
