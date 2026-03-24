@@ -9,6 +9,7 @@ import EditProfilePage from "./EditProfilePage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import HomePage from "./HomePage";
 import LoginPage from "./LoginPage";
+import MyListingsPage from "./MyListingsPage";
 import ProfilePage from "./ProfilePage";
 import SavedPage from "./SavedPage";
 import SettingsPage from "./SettingsPage";
@@ -47,6 +48,7 @@ export default function RootRouter() {
   if (route === "edit_account") return <EditAccountPage />;
   if (route === "become_seller") return <BecomeSellerPage />;
   if (route === "change_password") return <ChangePasswordPage />;
+  if (route === "my_listings") return <MyListingsPage />;
 
   return <HomePage />;
 }
