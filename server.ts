@@ -550,6 +550,7 @@ async function startServer() {
   });
 
 type IncomingSpecFilters = Record<string, unknown>;
+const SPEC_FILTER_KEY_PATTERN = /^[A-Za-z0-9_]+$/;
 
 function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
   if (typeof raw !== "string" || !raw.trim()) {
@@ -565,7 +566,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     const safe: Record<string, string | string[] | boolean> = {};
 
     for (const [key, value] of Object.entries(parsed)) {
-      if (!key || key.length > 120) {
+      if (!key || key.length > 120 || !SPEC_FILTER_KEY_PATTERN.test(key)) {
         continue;
       }
 
