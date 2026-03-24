@@ -1,5 +1,16 @@
 import { useState } from "react";
-import { AlertTriangle, Bookmark, Loader2, LogOut, Package, Settings, ShieldCheck, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Bookmark,
+  Loader2,
+  LogOut,
+  Package,
+  Settings,
+  ShieldCheck,
+  User,
+  Lock,
+  Pencil,
+} from "lucide-react";
 import { signOut, sendEmailVerification } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -15,7 +26,8 @@ type FeedbackState = {
 } | null;
 
 export default function ProfilePage() {
-  const { firebaseUser, authLoading, profile, profileLoading, emailVerified } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading, emailVerified } =
+    useAccountProfile();
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   const showFeedback = (
@@ -48,7 +60,9 @@ export default function ProfilePage() {
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening your profile page.</p>
+          <p className="mt-3 text-sm text-zinc-500">
+            You need to log in before opening your profile page.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
@@ -60,7 +74,9 @@ export default function ProfilePage() {
       ) : !profile ? (
         <div className="p-10 text-center">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Profile not found</h2>
-          <p className="mt-3 text-sm text-zinc-500">Your account exists, but your BuyMesho profile has not been set up properly.</p>
+          <p className="mt-3 text-sm text-zinc-500">
+            Your account exists, but your BuyMesho profile has not been set up properly.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/signup")}
@@ -133,12 +149,16 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
-              <p className="text-sm font-semibold text-zinc-900">{new Date(profile.join_date).toLocaleDateString()}</p>
+              <p className="text-sm font-semibold text-zinc-900">
+                {new Date(profile.join_date).toLocaleDateString()}
+              </p>
             </div>
 
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Account Type</p>
-              <p className="text-sm font-semibold text-zinc-900">{profile.is_seller ? "Seller" : "Buyer / Member"}</p>
+              <p className="text-sm font-semibold text-zinc-900">
+                {profile.is_seller ? "Seller" : "Buyer / Member"}
+              </p>
             </div>
           </div>
 
@@ -168,9 +188,51 @@ export default function ProfilePage() {
               onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
               className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
             >
-              {profile.is_seller ? <Package className="w-5 h-5 text-zinc-700 mb-3" /> : <ShieldCheck className="w-5 h-5 text-zinc-700 mb-3" />}
-              <p className="font-bold text-zinc-900">{profile.is_seller ? "My Listings" : "Become a Seller"}</p>
-              <p className="text-sm text-zinc-500 mt-1">{profile.is_seller ? "Manage what you posted." : "Apply for seller status."}</p>
+              {profile.is_seller ? (
+                <Package className="w-5 h-5 text-zinc-700 mb-3" />
+              ) : (
+                <ShieldCheck className="w-5 h-5 text-zinc-700 mb-3" />
+              )}
+              <p className="font-bold text-zinc-900">
+                {profile.is_seller ? "My Listings" : "Become a Seller"}
+              </p>
+              <p className="text-sm text-zinc-500 mt-1">
+                {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
+              </p>
+            </button>
+
+            {!profile.is_seller && (
+              <button
+                type="button"
+                onClick={() => navigateToPath("/edit-account")}
+                className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
+              >
+                <Pencil className="w-5 h-5 text-zinc-700 mb-3" />
+                <p className="font-bold text-zinc-900">Edit Account</p>
+                <p className="text-sm text-zinc-500 mt-1">Update your university and profile photo.</p>
+              </button>
+            )}
+
+            {profile.is_seller && (
+              <button
+                type="button"
+                onClick={() => navigateToPath("/edit-profile")}
+                className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
+              >
+                <Pencil className="w-5 h-5 text-zinc-700 mb-3" />
+                <p className="font-bold text-zinc-900">Edit Seller Profile</p>
+                <p className="text-sm text-zinc-500 mt-1">Update your public seller details.</p>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => navigateToPath("/change-password")}
+              className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
+            >
+              <Lock className="w-5 h-5 text-zinc-700 mb-3" />
+              <p className="font-bold text-zinc-900">Change Password</p>
+              <p className="text-sm text-zinc-500 mt-1">Update your account password securely.</p>
             </button>
           </div>
 
