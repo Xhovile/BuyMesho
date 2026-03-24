@@ -1,4 +1,4 @@
-import type { ListingItemSchema, ListingFieldGroup } from "../core";
+import type { ListingItemSchema, ListingFieldGroup } from "../core.js";
 
 export const USB_FLASH_DRIVE_SCHEMA: ListingItemSchema = {
   category: "Electronics & Gadgets",

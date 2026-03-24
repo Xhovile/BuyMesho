@@ -6,13 +6,13 @@ import type {
   ListingSpecValidationError,
   ListingSpecValidationResult,
   ListingSpecValues,
-} from "./core";
+} from "./core.js";
 
-import { ELECTRONICS_LISTING_ITEM_CONFIGS } from "./electronics";
-import { FASHION_LISTING_ITEM_CONFIGS } from "./fashion";
-import { FOOD_LISTING_ITEM_CONFIGS } from "./food";
-import { ACADEMIC_LISTING_ITEM_CONFIGS } from "./academic";
-import { BEAUTY_LISTING_ITEM_CONFIGS } from "./beauty";
+import { ELECTRONICS_LISTING_ITEM_CONFIGS } from "./electronics/index.js";
+import { FASHION_LISTING_ITEM_CONFIGS } from "./fashion/index.js";
+import { FOOD_LISTING_ITEM_CONFIGS } from "./food/index.js";
+import { ACADEMIC_LISTING_ITEM_CONFIGS } from "./academic/index.js";
+import { BEAUTY_LISTING_ITEM_CONFIGS } from "./beauty/index.js";
 
 export type ListingItemConfigRegistry = Record<
   string,
