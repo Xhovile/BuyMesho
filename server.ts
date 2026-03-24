@@ -550,6 +550,7 @@ async function startServer() {
   });
 
 type IncomingSpecFilters = Record<string, unknown>;
+const SPEC_FILTER_KEY_PATTERN = /^[A-Za-z0-9_]+$/;
 
 function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
   if (typeof raw !== "string" || !raw.trim()) {
@@ -565,7 +566,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     const safe: Record<string, string | string[] | boolean> = {};
 
     for (const [key, value] of Object.entries(parsed)) {
-      if (!key || key.length > 120) {
+      if (!key || key.length > 120 || !SPEC_FILTER_KEY_PATTERN.test(key)) {
         continue;
       }
 
@@ -752,6 +753,38 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   }
 });
 
+  app.get("/api/listings/:id", (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    try {
+      const row = db
+        .prepare(`
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.id = ? AND l.is_hidden = 0
+          LIMIT 1
+        `)
+        .get(listingId) as any;
+
+      if (!row) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+
+      res.json({
+        ...row,
+        photos: JSON.parse(row.photos || "[]"),
+        spec_values: JSON.parse(row.spec_values || "{}"),
+      });
+    } catch (error) {
+      console.error("Fetch listing by id error:", error);
+      res.status(500).json({ error: "Failed to load listing" });
+    }
+  });
+
   app.get("/api/listings/:id/related", (req, res) => {
     const listingId = Number(req.params.id);
     const requestedLimit = Number(req.query.limit);
@@ -767,7 +800,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
         .prepare(`
           SELECT id, category, subcategory, item_type, university
           FROM listings
-          WHERE id = ?
+          WHERE id = ? AND is_hidden = 0
           LIMIT 1
         `)
         .get(listingId) as
@@ -2149,6 +2182,19 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       id
     );
 
+    const updatedApplication = db.prepare(`
+      SELECT
+        id,
+        status,
+        review_notes,
+        reviewed_at,
+        reviewed_by_uid,
+        updated_at
+      FROM seller_applications
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+
     if (status === "approved") {
       db.prepare(`
         INSERT INTO sellers (
@@ -2190,7 +2236,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       },
     });
 
-    res.json({ success: true });
+    res.json({ success: true, application: updatedApplication });
   } catch (error) {
     console.error("Admin seller application review error:", error);
     res.status(500).json({ error: "Failed to review seller application" });

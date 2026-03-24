@@ -1,46 +1,23 @@
 import { Bookmark, ChevronLeft, Loader2, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Listing, UserProfile } from "./types";
-import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateToExploreListing, navigateToPath } from "./lib/appNavigation";
-
-function getSavedListingIds() {
-  try {
-    const guestRaw = localStorage.getItem("savedListingIds:guest");
-    const guestParsed = guestRaw ? JSON.parse(guestRaw) : [];
-    const guestIds = Array.isArray(guestParsed)
-      ? guestParsed.filter((x) => Number.isInteger(x))
-      : [];
-
-    const keys = Object.keys(localStorage).filter((key) => key.startsWith("savedListingIds:"));
-    const merged = new Set<number>(guestIds);
-
-    keys.forEach((key) => {
-      const raw = localStorage.getItem(key);
-      const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) {
-        parsed.forEach((value) => {
-          if (Number.isInteger(value)) {
-            merged.add(value);
-          }
-        });
-      }
-    });
-
-    return Array.from(merged);
-  } catch {
-    return [];
-  }
-}
+import type { Listing } from "./types";
+import { EXPLORE_PATH, HOME_PATH, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+import { fetchListingsByIds } from "./lib/listings";
+import { readAllSavedListingIds, subscribeToSavedListingChanges } from "./lib/savedListings";
 
 export default function SavedPage() {
-  const [savedIds, setSavedIds] = useState<number[]>(() => getSavedListingIds());
+  const [savedIds, setSavedIds] = useState<number[]>(() => readAllSavedListingIds());
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    setSavedIds(getSavedListingIds());
+    const syncSavedIds = () => {
+      setSavedIds(readAllSavedListingIds());
+    };
+
+    syncSavedIds();
+    return subscribeToSavedListingChanges(syncSavedIds);
   }, []);
 
   useEffect(() => {
@@ -53,9 +30,8 @@ export default function SavedPage() {
 
       setLoading(true);
       try {
-        const data = await apiFetch("/api/listings?page=1&pageSize=120");
-        const allItems = Array.isArray(data?.items) ? data.items : [];
-        setListings(allItems.filter((item: Listing) => savedIds.includes(item.id)));
+        const items = await fetchListingsByIds(savedIds);
+        setListings(items);
       } catch (error) {
         console.error("Failed to load saved listings", error);
         setListings([]);
@@ -160,7 +136,7 @@ export default function SavedPage() {
                   <button
                     key={listing.id}
                     type="button"
-                    onClick={() => navigateToExploreListing(listing.id, 0)}
+                    onClick={() => navigateToListingDetails(listing.id, 0)}
                     className="text-left rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm hover:bg-zinc-50 transition-colors"
                   >
                     <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-4">
@@ -192,7 +168,11 @@ export default function SavedPage() {
                       <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
                         {listing.category}
                       </span>
-                      <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-zinc-200 text-zinc-600"}`}>
+                      <span
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
+                          isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-zinc-200 text-zinc-600"
+                        }`}
+                      >
                         {isAvailable ? "Available" : "Sold out"}
                       </span>
                     </div>

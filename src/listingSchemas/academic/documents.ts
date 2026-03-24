@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   AVAILABILITY_OPTIONS,
   BINDING_OPTIONS,
@@ -13,7 +13,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createDocumentServiceConfig(params: {
   subcategory: string;

@@ -246,6 +246,8 @@ const [pageSize] = useState(12);
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const [showScrollTop, setShowScrollTop] = useState(false);
+const listingsFetchAbortRef = useRef<AbortController | null>(null);
+const listingsRequestIdRef = useRef(0);
   
 // Local-only hides (no backend needed)
 
@@ -734,17 +736,39 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedCat]);
 
 useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedSubcategory]);
+  if (authLoading || profileLoading) return;
 
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedItemType]);
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("create") !== "1") return;
+
+  params.delete("create");
+  const nextUrl =
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setCreateFieldErrors({});
+  setShowAddModal(true);
+}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
   
   useEffect(() => {
   fetchListings();
@@ -764,7 +788,18 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
+useEffect(() => {
+  return () => {
+    listingsFetchAbortRef.current?.abort();
+  };
+}, []);
+
   const fetchListings = async () => {
+  const requestId = ++listingsRequestIdRef.current;
+  listingsFetchAbortRef.current?.abort();
+  const controller = new AbortController();
+  listingsFetchAbortRef.current = controller;
+
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -786,22 +821,50 @@ useEffect(() => {
     params.append("page", String(currentPage));
     params.append("pageSize", String(pageSize));
 
-    const res = await fetch(`/api/listings?${params.toString()}`);
+    const res = await fetch(`/api/listings?${params.toString()}`, {
+      signal: controller.signal,
+    });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const data = await res.json();
 
+    if (requestId !== listingsRequestIdRef.current) return;
+
     setListings(Array.isArray(data.items) ? data.items : []);
     setTotalResults(Number(data.total || 0));
     setTotalPages(Number(data.totalPages || 1));
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return;
+    }
+    if (requestId !== listingsRequestIdRef.current) return;
+
     console.error("Fetch listings error:", err);
     setListings([]);
     setTotalResults(0);
     setTotalPages(1);
   } finally {
+    if (requestId !== listingsRequestIdRef.current) return;
     setLoading(false);
   }
+};
+
+const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory("");
+  setSelectedItemType("");
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType("");
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
 };
 
   const trackListingView = async (listingId: number) => {
@@ -2924,11 +2987,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
-  setSelectedCat={setSelectedCat}
+  setSelectedCat={handleSelectedCategoryChange}
   selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={setSelectedSubcategory}
+  setSelectedSubcategory={handleSelectedSubcategoryChange}
   selectedItemType={selectedItemType}
-  setSelectedItemType={setSelectedItemType}
+  setSelectedItemType={handleSelectedItemTypeChange}
   selectedSpecFilters={selectedSpecFilters}
   setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
@@ -2938,9 +3001,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   savedListingIds={savedListingIds}
   onReport={handleReport}
   onDelete={handleDeleteListing}
-  onOpenProfile={openPublicProfile}
   onEdit={handleEditListing}
-  onOpenDetails={openDetails}
   onHideSeller={hideSellerLocal}
   onHideListing={hideListingLocal}
   onToggleStatus={handleToggleListingStatus}
@@ -4491,8 +4552,6 @@ setCurrentPage={setCurrentPage}
                   currentUid={firebaseUser?.uid}
                   onDelete={handleDeleteListing}
                   onEdit={handleEditListing}
-                  onOpenProfile={openPublicProfile}
-                  onOpenDetails={openDetails}
                   onHideSeller={hideSellerLocal}
                   onToggleStatus={handleToggleListingStatus}
                   isSaved={savedListingIds.includes(listing.id)}
@@ -4572,8 +4631,6 @@ setCurrentPage={setCurrentPage}
                   currentUid={firebaseUser?.uid}
                   onDelete={handleDeleteListing}
                   onEdit={handleEditListing}
-                  onOpenProfile={openPublicProfile}
-                  onOpenDetails={openDetails}
                   onHideSeller={hideSellerLocal}
                   onHideListing={hideListingLocal}
                   onToggleStatus={handleToggleListingStatus}
@@ -4760,8 +4817,6 @@ setCurrentPage={setCurrentPage}
                       currentUid={firebaseUser?.uid}
                       onDelete={handleDeleteListing}
                       onEdit={handleEditListing}
-                      onOpenProfile={openPublicProfile}
-                      onOpenDetails={openDetails}
                       onHideSeller={hideSellerLocal}
                       onHideListing={hideListingLocal}
                       onToggleStatus={handleToggleListingStatus}
