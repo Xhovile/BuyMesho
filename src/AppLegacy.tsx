@@ -19,9 +19,7 @@ import {
   Loader2,
   Settings,
   Bookmark,
-  Expand,
   ArrowUp,
-  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -48,14 +46,12 @@ import {
 } from "./listingSchemas";
 import type { ListingSpecField } from "./listingSchemas";
 import {
-  getListingParamsFromUrl,
-  buildListingShareUrl,
-  syncListingParamsInUrl,
-  clearListingParamFromUrl
-} from "./lib/listingUrl";
+  navigateToMyListings,
+  navigateToPath,
+  navigateToSellerProfile,
+} from "./lib/appNavigation";
 import MarketSection from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
-import ListingCard from "./components/ListingCard";
 import Header from "./components/Header";
 import { 
   createUserWithEmailAndPassword, 
@@ -89,11 +85,6 @@ import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsMo
                 
 // --- Main App ---
 
-type SellerRatingSummary = {
-  averageRating: number;
-  ratingCount: number;
-  myRating: number | null;
-};
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
@@ -205,26 +196,8 @@ export default function App() {
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
-const [showMyListingsModal, setShowMyListingsModal] = useState(false);
-const [myListings, setMyListings] = useState<Listing[]>([]);
-const [myListingsLoading, setMyListingsLoading] = useState(false);
-const [publicProfileOpen, setPublicProfileOpen] = useState(false);
-const [publicProfile, setPublicProfile] = useState<any | null>(null);
-const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]);
-const [publicProfileLoading, setPublicProfileLoading] = useState(false);
-const [ratingSummary, setRatingSummary] = useState<SellerRatingSummary | null>(null);
-const [ratingLoading, setRatingLoading] = useState(false);
-const [ratingSubmitting, setRatingSubmitting] = useState(false);
-const [detailsOpen, setDetailsOpen] = useState(false);
-const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
-const [activeDetailSpecGroup, setActiveDetailSpecGroup] = useState("");
-const detailSpecTabsRef = useRef<HTMLDivElement | null>(null);
-const [showDetailSpecTabsChevron, setShowDetailSpecTabsChevron] = useState(false);
-const [galleryIndex, setGalleryIndex] = useState(0); 
-const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
 const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
-const [showSavedModal, setShowSavedModal] = useState(false);
 const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
 const [showAdminSellerApplicationsModal, setShowAdminSellerApplicationsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
@@ -232,11 +205,6 @@ const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
 const [sellerDashboard, setSellerDashboard] = useState<SellerDashboardData | null>(null);
 const [sellerDashboardLoading, setSellerDashboardLoading] = useState(false);
-const [detailsSellerProfile, setDetailsSellerProfile] = useState<any | null>(null);
-const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSummary | null>(null);
-const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
-const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
-const detailsExtrasRequestIdRef = useRef(0);
 const [selectedCondition, setSelectedCondition] = useState("");
 const [hideSoldOut, setHideSoldOut] = useState(false);
 const [minPrice, setMinPrice] = useState("");
@@ -246,8 +214,6 @@ const [pageSize] = useState(12);
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const [showScrollTop, setShowScrollTop] = useState(false);
-const listingsFetchAbortRef = useRef<AbortController | null>(null);
-const listingsRequestIdRef = useRef(0);
   
 // Local-only hides (no backend needed)
 
@@ -407,88 +373,9 @@ const unhideListingLocal = (listingId: number) => {
     map[userProfile.uid] = userProfile.business_name;
   }
 
-  if (publicProfile?.uid && publicProfile?.business_name) {
-    map[publicProfile.uid] = publicProfile.business_name;
-  }
-
   return map;
-}, [listings, userProfile, publicProfile]);
+}, [listings, userProfile]);
   
-const openDetails = (listing: Listing, startIndex = 0) => {
-  const optimisticListing = {
-    ...listing,
-    views_count: (listing.views_count ?? 0) + 1,
-  };
-
-  setDetailsListing(optimisticListing);
-  setGalleryIndex(startIndex);
-  setDetailsOpen(true);
-  syncListingParamsInUrl(listing.id, startIndex);
-  void trackListingView(listing.id);
-  void loadDetailsExtras(optimisticListing);
-};
-
-const closeDetails = () => {
-  detailsExtrasRequestIdRef.current += 1;
-  setDetailsOpen(false);
-  setDetailsListing(null);
-  setGalleryIndex(0);
-  setIsImageFullscreenOpen(false);
-  clearListingParamFromUrl();
-  setDetailsSellerProfile(null);
-  setDetailsRatingSummary(null);
-  setRelatedListings([]);
-  setDetailsLoadingExtra(false);
-};
-
-const showPrevDetailImage = () => {
-  if (!detailGalleryImages.length) return;
-
-  const nextIndex =
-    galleryIndex === 0 ? detailGalleryImages.length - 1 : galleryIndex - 1;
-
-  setGalleryIndex(nextIndex);
-
-  if (detailsListing) {
-    syncListingParamsInUrl(detailsListing.id, nextIndex);
-  }
-};
-
-const showNextDetailImage = () => {
-  if (!detailGalleryImages.length) return;
-
-  const nextIndex =
-    galleryIndex === detailGalleryImages.length - 1 ? 0 : galleryIndex + 1;
-
-  setGalleryIndex(nextIndex);
-
-  if (detailsListing) {
-    syncListingParamsInUrl(detailsListing.id, nextIndex);
-  }
-};
-
-useEffect(() => {
-  if (!listings.length) return;
-
-  const { listing, imageIndex } = getListingParamsFromUrl();
-  if (!listing) return;
-
-  const foundListing = listings.find(
-    (item) => String(item.id) === String(listing)
-  );
-
-  if (foundListing) {
-    const safeIndex =
-      Array.isArray(foundListing.photos) && foundListing.photos.length > 0
-        ? Math.max(0, Math.min(imageIndex, foundListing.photos.length - 1))
-        : 0;
-
-    setDetailsListing(foundListing);
-    setGalleryIndex(safeIndex);
-    setDetailsOpen(true);
-    void loadDetailsExtras(foundListing);
-  }
-}, [listings]);
 
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
@@ -712,14 +599,6 @@ const [editProfileForm, setEditProfileForm] = useState({
     }
   }, [savedStorageKey]);
 
-  useEffect(() => {
-    if (!publicProfileOpen) {
-      setRatingSummary(null);
-      setRatingLoading(false);
-      setRatingSubmitting(false);
-    }
-  }, [publicProfileOpen]);
-
 useEffect(() => {
   setCurrentPage(1);
 }, [
@@ -736,39 +615,17 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
+useEffect(() => {
+  setSelectedSpecFilters({});
+}, [selectedCat]);
 
 useEffect(() => {
-  if (authLoading || profileLoading) return;
+  setSelectedSpecFilters({});
+}, [selectedSubcategory]);
 
-  const params = new URLSearchParams(window.location.search);
-  if (params.get("create") !== "1") return;
-
-  params.delete("create");
-  const nextUrl =
-    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
-  window.history.replaceState({}, "", nextUrl);
-
-  if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("signup");
-    return;
-  }
-
-  if (!userProfile) {
-    setShowProfileModal(true);
-    setAuthView("signup");
-    return;
-  }
-
-  if (!isSellerAccount) {
-    promptSellerUpgrade();
-    return;
-  }
-
-  setNewListing(createInitialListingDraft(userProfile));
-  setCreateFieldErrors({});
-  setShowAddModal(true);
-}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
+useEffect(() => {
+  setSelectedSpecFilters({});
+}, [selectedItemType]);
   
   useEffect(() => {
   fetchListings();
@@ -788,18 +645,7 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-useEffect(() => {
-  return () => {
-    listingsFetchAbortRef.current?.abort();
-  };
-}, []);
-
   const fetchListings = async () => {
-  const requestId = ++listingsRequestIdRef.current;
-  listingsFetchAbortRef.current?.abort();
-  const controller = new AbortController();
-  listingsFetchAbortRef.current = controller;
-
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -821,158 +667,25 @@ useEffect(() => {
     params.append("page", String(currentPage));
     params.append("pageSize", String(pageSize));
 
-    const res = await fetch(`/api/listings?${params.toString()}`, {
-      signal: controller.signal,
-    });
+    const res = await fetch(`/api/listings?${params.toString()}`);
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const data = await res.json();
 
-    if (requestId !== listingsRequestIdRef.current) return;
-
     setListings(Array.isArray(data.items) ? data.items : []);
     setTotalResults(Number(data.total || 0));
     setTotalPages(Number(data.totalPages || 1));
-  } catch (err: any) {
-    if (err?.name === "AbortError") {
-      return;
-    }
-    if (requestId !== listingsRequestIdRef.current) return;
-
+  } catch (err) {
     console.error("Fetch listings error:", err);
     setListings([]);
     setTotalResults(0);
     setTotalPages(1);
   } finally {
-    if (requestId !== listingsRequestIdRef.current) return;
     setLoading(false);
   }
 };
 
-const handleSelectedCategoryChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedSubcategory("");
-  setSelectedItemType("");
-  setSelectedCat(value);
-};
 
-const handleSelectedSubcategoryChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedItemType("");
-  setSelectedSubcategory(value);
-};
-
-const handleSelectedItemTypeChange = (value: string) => {
-  setSelectedSpecFilters({});
-  setSelectedItemType(value);
-};
-
-  const trackListingView = async (listingId: number) => {
-  try {
-    await fetch(`/api/listings/${listingId}/view`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("Failed to track listing view", e);
-  }
-};
-
-  const trackSellerProfileView = async (sellerUid: string) => {
-  try {
-    await fetch(`/api/users/${sellerUid}/profile-view`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        viewer_uid: firebaseUser?.uid || null,
-      }),
-    });
-  } catch (e) {
-    console.error("Failed to track seller profile view", e);
-  }
-}; 
-
-const loadDetailsExtras = async (listing: Listing) => {
-  const requestId = ++detailsExtrasRequestIdRef.current;
-  setDetailsLoadingExtra(true);
-
-  const isTransientDetailExtrasError = (error: unknown) => {
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
-
-    if (error instanceof Error) {
-      const msg = error.message.toLowerCase();
-      return (
-        msg.includes("failed to fetch") ||
-        msg.includes("networkerror") ||
-        msg.includes("network request failed") ||
-        msg.includes("load failed")
-      );
-    }
-
-    return false;
-  };
-
-  const warnDetailExtrasFailure = (label: string, error: unknown) => {
-    if (isTransientDetailExtrasError(error)) return;
-    console.warn(label, error);
-  };
-
-  try {
-    const [sellerProfileResult, relatedResult] = await Promise.allSettled([
-     apiFetch(`/api/users/${listing.seller_uid}`),
-     apiFetch(`/api/listings/${listing.id}/related?limit=5`),
-   ]);
-
-    if (sellerProfileResult.status === "rejected") {
-      warnDetailExtrasFailure(
-        "Detail extras: seller profile request failed",
-        sellerProfileResult.reason
-      );
-    }
-
-    if (relatedResult.status === "rejected") {
-      warnDetailExtrasFailure(
-        "Detail extras: related listings request failed",
-        relatedResult.reason
-      );
-    }
-
-    const sellerProfile =
-      sellerProfileResult.status === "fulfilled" ? sellerProfileResult.value : null;
-    const relatedResponse =
-      relatedResult.status === "fulfilled" ? relatedResult.value : [];
-
-    if (detailsExtrasRequestIdRef.current !== requestId) return;
-
-    setDetailsSellerProfile(sellerProfile || null);
-
-    if (firebaseUser) {
-      try {
-        const summary = await apiFetch(`/api/users/${listing.seller_uid}/rating-summary`);
-        if (detailsExtrasRequestIdRef.current !== requestId) return;
-        setDetailsRatingSummary(summary || null);
-      } catch (ratingError) {
-        warnDetailExtrasFailure("Detail extras: rating summary request failed", ratingError);
-        if (detailsExtrasRequestIdRef.current !== requestId) return;
-        setDetailsRatingSummary(null);
-      }
-    } else {
-      setDetailsRatingSummary(null);
-    }
-
-    if (detailsExtrasRequestIdRef.current !== requestId) return;
-    setRelatedListings(Array.isArray(relatedResponse) ? relatedResponse : []);
-  } catch (e) {
-    if (detailsExtrasRequestIdRef.current !== requestId) return;
-    console.error("Failed to load detail extras", e);
-    setDetailsSellerProfile(null);
-    setDetailsRatingSummary(null);
-    setRelatedListings([]);
-  } finally {
-    if (detailsExtrasRequestIdRef.current !== requestId) return;
-    setDetailsLoadingExtra(false);
-  }
-};
 
 const fetchSellerDashboard = async () => {
   if (!firebaseUser || !userProfile?.is_seller) {
@@ -1022,36 +735,6 @@ useEffect(() => {
   };
 }, []);
 
-
-const fetchMyListings = async () => {
-  if (!firebaseUser) return;
-
-  setMyListingsLoading(true);
-  try {
-    const data = await apiFetch(`/api/users/${firebaseUser.uid}/listings`);
-    setMyListings(Array.isArray(data) ? data : []);
-  } catch (err: any) {
-    showFeedback(
-  "error",
-  "Could not load listings",
-  err?.message || "We could not load your listings."
-);
-  } finally {
-    setMyListingsLoading(false);
-  }
-};
-
-const openMyListings = async () => {
-  if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("login");
-    return;
-  }
-
-  setShowProfileModal(false);
-  setShowMyListingsModal(true);
-  await fetchMyListings();
-};
 
 const openSettings = () => {
   setShowProfileModal(false);
@@ -1118,103 +801,10 @@ const openChangePassword = () => {
   setShowChangePasswordModal(true);
 };
 
-const fetchRatingSummary = async (sellerUid: string) => {
-  if (!firebaseUser) {
-    setRatingSummary(null);
-    return;
-  }
 
-  setRatingLoading(true);
-  try {
-    const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
-    setRatingSummary(summary);
-  } catch (e) {
-    console.error("Failed to load rating summary", e);
-    setRatingSummary(null);
-  } finally {
-    setRatingLoading(false);
-  }
-};
-
-const handleRateSeller = async (sellerUid: string, stars: number) => {
-  if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("login");
-    return;
-  }
-
-  if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
-
-  setRatingSubmitting(true);
-  try {
-    const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
-      method: "POST",
-      body: JSON.stringify({ stars }),
-    });
-    setRatingSummary(summary);
-  } catch (e: any) {
-    showFeedback(
-      "error",
-      "Rating failed",
-      e?.message || "We could not save your rating."
-    );
-  } finally {
-    setRatingSubmitting(false);
-  }
-};
-
-const handleRemoveSellerRating = async (sellerUid: string) => {
-  if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("login");
-    return;
-  }
-
-  setRatingSubmitting(true);
-  try {
-    const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
-      method: "DELETE",
-    });
-    setRatingSummary(summary);
-  } catch (e: any) {
-    showFeedback(
-      "error",
-      "Remove rating failed",
-      e?.message || "We could not remove your rating."
-    );
-  } finally {
-    setRatingSubmitting(false);
-  }
-};
-
-const openPublicProfile = async (uid: string) => {
-  setPublicProfileOpen(true);
-  setPublicProfileLoading(true);
-  setRatingSummary(null);
-  void trackSellerProfileView(uid);
-
-  try {
-    const profile = await apiFetch(`/api/users/${uid}`);
-    const listings = await apiFetch(`/api/users/${uid}/listings`);
-
-    setPublicProfile(profile);
-    setPublicProfileListings(listings || []);
-
-    if (firebaseUser) {
-      await fetchRatingSummary(uid);
-    } else {
-      setRatingSummary(null);
-    }
-  } catch (e: any) {
-    showFeedback(
-     "error",
-     "Profile load failed",
-     e?.message || "We could not load this profile."
-   );
-    setPublicProfileOpen(false);
-  } finally {
-    setPublicProfileLoading(false);
-  }
+const openPublicProfile = (uid: string) => {
+  setShowProfileModal(false);
+  navigateToSellerProfile(uid);
 };
 
 const toggleSavedListing = (listingId: number) => {
@@ -1239,71 +829,13 @@ const requireLoginForContact = () => {
   setAuthView("login");
 };
 
-const savedListings = React.useMemo(() => {
-  return listings.filter(
-    (listing) =>
-      savedListingIds.includes(listing.id) &&
-      !hiddenListingIds.includes(listing.id) &&
-      !hiddenSellerUids.includes(listing.seller_uid)
-  );
-}, [listings, savedListingIds, hiddenListingIds, hiddenSellerUids]);
 
-const visiblePublicProfileListings = publicProfileListings.filter(
-  (l) =>
-    !hiddenSellerUids.includes(l.seller_uid) &&
-    !hiddenListingIds.includes(l.id)
-);
-
-const detailGalleryImages = React.useMemo(() => {
-  if (!detailsListing) return [];
-
-  if (Array.isArray(detailsListing.photos) && detailsListing.photos.length > 0) {
-    return detailsListing.photos;
-  }
-
-  return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
-}, [detailsListing]);
-
-const DETAIL_SPEC_SCROLL_AMOUNT = 180;
-const DETAIL_SPEC_SCROLL_TOLERANCE = 4; // small buffer for rounding differences
-
-const scrollDetailSpecTabsRight = () => {
-  detailSpecTabsRef.current?.scrollBy({
-    left: DETAIL_SPEC_SCROLL_AMOUNT,
-    behavior: "smooth",
-  });
-};
-
-useEffect(() => {
-  if (!detailsListing) {
-    setActiveDetailSpecGroup("");
-    return;
-  }
-
-  const itemConfig =
-    detailsListing.category &&
-    detailsListing.subcategory &&
-    detailsListing.item_type
-      ? getListingItemConfig(
-          detailsListing.category,
-          detailsListing.subcategory,
-          detailsListing.item_type
-        )
-      : null;
-
-  const firstGroupTitle = itemConfig?.fieldGroups?.[0]?.title || "";
-  setActiveDetailSpecGroup(firstGroupTitle);
-}, [detailsListing]);
-  
   const performDeleteListing = async (listingId: number) => {
   try {
     await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
 
     fetchListings();
 
-    if (showMyListingsModal && firebaseUser) {
-      fetchMyListings();
-    }
     void fetchSellerDashboard();
 
     showFeedback(
@@ -1339,9 +871,7 @@ const handleEditListing = (listing: Listing) => {
 };
 
 const handleUpdateListing = async (listingId: number, updated: Partial<Listing>) => {
-  const existing =
-    listings.find((l) => l.id === listingId) ||
-    myListings.find((l) => l.id === listingId);
+  const existing = listings.find((l) => l.id === listingId);
 
   if (!existing) {
     showFeedback(
@@ -1378,9 +908,6 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 
     fetchListings();
 
-    if (showMyListingsModal && firebaseUser) {
-      fetchMyListings();
-    }
     void fetchSellerDashboard();
 
     showFeedback(
@@ -1415,65 +942,7 @@ const handleToggleListingStatus = async (listing: Listing) => {
   }
 };
 
-  const handleDetailWhatsappClick = async (listing: Listing) => {
-  if (!firebaseUser) {
-    requireLoginForContact();
-    return;
-  }
 
-  try {
-    await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("Failed to track detail WhatsApp click", e);
-  }
-
-  const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
-
-  const message = encodeURIComponent(
-    `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${shareUrl}`
-  );
-
-  window.open(
-    `https://wa.me/${listing.whatsapp_number}?text=${message}`,
-    "_blank",
-    "noopener,noreferrer"
-  );
-};
-
-const handleDetailShare = async (listing: Listing) => {
-  const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
-  const shareText = `BuyMesho Listing
-${listing.name}
-Price: MK ${Number(listing.price).toLocaleString()}
-Campus: ${listing.university}
-WhatsApp: ${listing.whatsapp_number}
-
-Open this listing: ${shareUrl}`;
-
-  try {
-    if ((navigator as any).share) {
-      await (navigator as any).share({
-        title: `BuyMesho: ${listing.name}`,
-        text: shareText,
-        url: shareUrl,
-      });
-      return;
-    }
-
-    await navigator.clipboard.writeText(shareText);
-    showFeedback(
-      "success",
-      "Share text copied",
-      "Paste it on WhatsApp or anywhere you want."
-    );
-  } catch {
-    prompt("Copy to share:", shareText);
-  }
-};
-  
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -2437,106 +1906,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     }
   };
 
-  const formatDetailDate = (value?: string) => {
-    if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString();
-  };
-
-  const getListingFreshnessTone = (listing: Listing) => {
-    const sourceDate = listing.updated_at || listing.created_at;
-    if (!sourceDate) return "Fresh";
-
-    const now = Date.now();
-    const then = new Date(sourceDate).getTime();
-    if (Number.isNaN(then)) return "Fresh";
-
-    const diffHours = (now - then) / (1000 * 60 * 60);
-
-    if (diffHours < 24) return "Just posted";
-    if (diffHours < 72) return "Recently updated";
-    if (diffHours < 168) return "This week";
-    return "Older listing";
-  };
-
-  const getDetailSpecRows = (
-    listing: Listing,
-    sellerProfile: any | null,
-    ratingSummary: SellerRatingSummary | null
-  ) => {
-    const sellerJoinedLabel = formatDetailDate(sellerProfile?.join_date);
-
-    switch (listing.category) {
-      case "Electronics & Gadgets":
-        return [
-          { label: "Device State", value: listing.condition || "used" },
-          {
-            label: "Available",
-            value: String(
-              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
-            ),
-          },
-        ];
-
-      case "Fashion & Clothing":
-        return [
-          { label: "Wear State", value: listing.condition || "used" },
-          {
-            label: "Available",
-            value: String(
-              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
-            ),
-          },
-        ];
-
-      case "Food & Snacks":
-        return [
-          { label: "Item State", value: listing.condition || "new" },
-          {
-            label: "Available",
-            value: String(
-              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
-            ),
-          },
-        ];
-
-      case "Academic Services":
-        return [
-          { label: "Service Type", value: listing.category },
-        ];
-
-      case "Beauty & Personal Care":
-        return [
-          { label: "Product State", value: listing.condition || "new" },
-          {
-            label: "Available",
-            value: String(
-              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
-            ),
-          },
-        ];
-
-      default:
-        return [
-          { label: "Condition", value: listing.condition || "used" },
-          { label: "Seller Joined", value: sellerJoinedLabel },
-        ];
-    }
-  };
-
-  const detailAvailableQuantity =
-    detailsListing
-      ? Math.max(
-          0,
-          Number(detailsListing.quantity ?? 1) - Number(detailsListing.sold_quantity ?? 0)
-        )
-      : 0;
-
-  const isDetailsOwner =
-    !!firebaseUser?.uid &&
-    !!detailsListing?.seller_uid &&
-    detailsListing.seller_uid === firebaseUser.uid;
 
   const renderListingSpecField = (field: ListingSpecField) => {
     const rawValue = newListing.spec_values[field.key];
@@ -2800,150 +2169,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     return String(value);
   };
 
-  const getListingSpecDisplayRows = (listing: Listing) => {
-    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
-      return [];
-    }
-
-    const itemConfig = getListingItemConfig(
-      listing.category,
-      listing.subcategory,
-      listing.item_type
-    );
-
-    if (!itemConfig) {
-      return [];
-    }
-
-    return itemConfig.schema.fields
-      .map((field) => {
-        const rawValue = listing.spec_values?.[field.key];
-
-        if (
-          rawValue === null ||
-          rawValue === undefined ||
-          rawValue === "" ||
-          (Array.isArray(rawValue) && rawValue.length === 0)
-        ) {
-          return null;
-        }
-
-        return {
-          key: field.key,
-          label: field.label,
-          value: formatSpecValue(rawValue),
-          advanced: !!field.advanced,
-        };
-      })
-      .filter(Boolean) as Array<{
-        key: string;
-        label: string;
-        value: string;
-        advanced: boolean;
-      }>;
-  };
-
-  const getDetailSpecGroups = (listing: Listing) => {
-    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
-      return [];
-    }
-
-    const itemConfig = getListingItemConfig(
-      listing.category,
-      listing.subcategory,
-      listing.item_type
-    );
-
-    if (!itemConfig) return [];
-
-    return itemConfig.fieldGroups
-      .map((group) => {
-        const rows = group.keys
-          .map((key) => {
-            const field = itemConfig.schema.fields.find((f) => f.key === key);
-            if (!field) return null;
-
-            const rawValue = listing.spec_values?.[key];
-
-            if (
-              rawValue === null ||
-              rawValue === undefined ||
-              rawValue === "" ||
-              (Array.isArray(rawValue) && rawValue.length === 0)
-            ) {
-              return null;
-            }
-
-            return {
-              key,
-              label: field.label,
-              value: formatSpecValue(rawValue),
-            };
-          })
-          .filter(Boolean) as Array<{ key: string; label: string; value: string }>;
-
-        if (!rows.length) return null;
-
-        return {
-          title: group.title,
-          rows,
-        };
-      })
-      .filter(Boolean) as Array<{
-        title: string;
-        rows: Array<{ key: string; label: string; value: string }>;
-      }>;
-  };
-
-  const detailSpecRows = React.useMemo(() => {
-    if (!detailsListing) return [];
-    return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
-  }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
-
-  const detailStructuredSpecRows = React.useMemo(() => {
-    if (!detailsListing) return [];
-    return getListingSpecDisplayRows(detailsListing);
-  }, [detailsListing]);
-
-  const detailSpecGroups = React.useMemo(() => {
-    if (!detailsListing) return [];
-    return getDetailSpecGroups(detailsListing);
-  }, [detailsListing]);
-
-  const activeSpecGroup =
-    detailSpecGroups.find((group) => group.title === activeDetailSpecGroup) ||
-    detailSpecGroups[0] ||
-    null;
-  const activeStructuredSpecRows = activeSpecGroup?.rows || detailStructuredSpecRows;
-
-  useEffect(() => {
-    const el = detailSpecTabsRef.current;
-
-    const updateChevronVisibility = () => {
-      if (!el) {
-        setShowDetailSpecTabsChevron(false);
-        return;
-      }
-
-    const canScroll = el.scrollWidth > el.clientWidth + DETAIL_SPEC_SCROLL_TOLERANCE;
-    const hasMoreToRight =
-      el.scrollLeft + el.clientWidth < el.scrollWidth - DETAIL_SPEC_SCROLL_TOLERANCE;
-
-      setShowDetailSpecTabsChevron(canScroll && hasMoreToRight);
-    };
-
-    updateChevronVisibility();
-
-    if (!el) return;
-
-    el.addEventListener("scroll", updateChevronVisibility, { passive: true });
-    window.addEventListener("resize", updateChevronVisibility);
-
-    return () => {
-      el.removeEventListener("scroll", updateChevronVisibility);
-      window.removeEventListener("resize", updateChevronVisibility);
-    };
-  }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -2987,11 +2212,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
-  setSelectedCat={handleSelectedCategoryChange}
+  setSelectedCat={setSelectedCat}
   selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={handleSelectedSubcategoryChange}
+  setSelectedSubcategory={setSelectedSubcategory}
   selectedItemType={selectedItemType}
-  setSelectedItemType={handleSelectedItemTypeChange}
+  setSelectedItemType={setSelectedItemType}
   selectedSpecFilters={selectedSpecFilters}
   setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
@@ -4364,7 +3589,10 @@ setCurrentPage={setCurrentPage}
                     <div className="flex flex-col gap-3">
                       {isSellerAccount && (
                         <button
-                          onClick={openMyListings}
+                          onClick={() => {
+                            setShowProfileModal(false);
+                            navigateToMyListings();
+                          }}
                           className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                         >
                           <Package className="w-4 h-4" /> My Listings
@@ -4372,7 +3600,10 @@ setCurrentPage={setCurrentPage}
                       )}
 
                       <button
-                        onClick={() => setShowSavedModal(true)}
+                        onClick={() => {
+                          setShowProfileModal(false);
+                          navigateToPath("/saved");
+                        }}
                         className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                       >
                         <Bookmark className="w-4 h-4" /> Saved Items
@@ -4504,780 +3735,6 @@ setCurrentPage={setCurrentPage}
           </div>
         )}
 
-  {showMyListingsModal && (
-  <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={() => setShowMyListingsModal(false)}
-      className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
-    />
-
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-    >
-      <div className="p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-extrabold text-zinc-900">My Listings</h2>
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
-            Manage your posts
-          </p>
-        </div>
-
-        <button
-          onClick={() => setShowMyListingsModal(false)}
-          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="p-6 overflow-y-auto flex-1">
-        {myListingsLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-zinc-500 font-medium">Loading your listings...</p>
-          </div>
-        ) : myListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {myListings.map((listing) => (
-              <div key={listing.id}>
-                <ListingCard
-                  listing={listing}
-                  onReport={handleReport}
-                  currentUid={firebaseUser?.uid}
-                  onDelete={handleDeleteListing}
-                  onEdit={handleEditListing}
-                  onHideSeller={hideSellerLocal}
-                  onToggleStatus={handleToggleListingStatus}
-                  isSaved={savedListingIds.includes(listing.id)}
-                  onToggleSave={toggleSavedListing}
-                  isLoggedIn={!!firebaseUser}
-                  requireLoginForContact={requireLoginForContact}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-zinc-300" />
-            </div>
-            <h3 className="text-lg font-bold text-zinc-900">No listings yet</h3>
-            <p className="text-zinc-500 mb-6">
-              You have not posted anything yet.
-            </p>
-            <button
-              onClick={() => {
-                setShowMyListingsModal(false);
-                setNewListing(createInitialListingDraft(userProfile));
-                setShowAddModal(true);
-              }}
-              className="bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3 rounded-xl font-bold transition-colors"
-            >
-              Create Your First Listing
-            </button>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  </div>
-)}
-
-  {showSavedModal && (
-  <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={() => setShowSavedModal(false)}
-      className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
-    />
-
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95, y: 20 }}
-      animate={{ opacity: 1, scale: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95, y: 20 }}
-      className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
-    >
-      <div className="p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
-        <div>
-          <h2 className="text-2xl font-extrabold text-zinc-900">Saved Items</h2>
-          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
-            Your saved listings
-          </p>
-        </div>
-
-        <button
-          onClick={() => setShowSavedModal(false)}
-          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="p-6 overflow-y-auto flex-1">
-        {savedListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {savedListings.map((listing) => (
-              <div key={listing.id}>
-                <ListingCard
-                  listing={listing}
-                  onReport={handleReport}
-                  currentUid={firebaseUser?.uid}
-                  onDelete={handleDeleteListing}
-                  onEdit={handleEditListing}
-                  onHideSeller={hideSellerLocal}
-                  onHideListing={hideListingLocal}
-                  onToggleStatus={handleToggleListingStatus}
-                  isSaved={savedListingIds.includes(listing.id)}
-                  onToggleSave={toggleSavedListing}
-                  isLoggedIn={!!firebaseUser}
-                  requireLoginForContact={requireLoginForContact}
-                />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Bookmark className="w-8 h-8 text-zinc-300" />
-            </div>
-            <h3 className="text-lg font-bold text-zinc-900">No saved items yet</h3>
-            <p className="text-zinc-500">
-              Save products you may want to buy later.
-            </p>
-          </div>
-        )}
-      </div>
-    </motion.div>
-  </div>
-)}
-
-  {publicProfileOpen && (
-  <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-    <div
-      className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
-      onClick={() => setPublicProfileOpen(false)}
-    />
-
-    <div className="relative w-full max-w-3xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
-        <button
-          type="button"
-          onClick={() => setPublicProfileOpen(false)}
-          className="px-3 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold"
-        >
-          ← Back
-        </button>
-
-        <h2 className="text-xl font-bold">Profile</h2>
-
-        <button
-          type="button"
-          onClick={() => setPublicProfileOpen(false)}
-          className="p-2 hover:bg-zinc-100 rounded-full"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      {/* Scrollable body */}
-      <div className="p-6 overflow-y-auto flex-1">
-        {publicProfileLoading ? (
-          <div className="flex items-center justify-center py-16 gap-2">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            <span>Loading profile...</span>
-          </div>
-        ) : publicProfile ? (
-          <>
-            <div className="flex items-center gap-4 mb-6">
-              <img
-                src={publicProfile.business_logo}
-                alt={publicProfile.business_name}
-                className="w-20 h-20 rounded-2xl object-cover border"
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="text-2xl font-extrabold">
-                    {publicProfile.business_name}
-                  </h3>
-                  {publicProfile.is_verified ? (
-                    <ShieldCheck className="w-5 h-5 text-blue-500" />
-                  ) : null}
-                </div>
-                <p className="text-sm text-zinc-500">{publicProfile.university}</p>
-                {publicProfile.bio ? (
-                  <p className="text-sm text-zinc-700 mt-2 italic">
-                    “{publicProfile.bio}”
-                  </p>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="bg-zinc-50 rounded-2xl p-4 mb-6 border border-zinc-100">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller Rating</p>
-
-                  {ratingLoading ? (
-                    <p className="text-sm text-zinc-500">Loading rating...</p>
-                  ) : ratingSummary ? (
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-extrabold text-zinc-900">
-                        {ratingSummary.averageRating.toFixed(1)}
-                      </span>
-                      <span className="text-amber-500 text-base tracking-wide">
-                        {"★".repeat(Math.round(ratingSummary.averageRating))}
-                        {"☆".repeat(5 - Math.round(ratingSummary.averageRating))}
-                      </span>
-                      <span className="text-zinc-500">
-                        ({ratingSummary.ratingCount} rating{ratingSummary.ratingCount === 1 ? "" : "s"})
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-zinc-500">
-                      {firebaseUser ? "No ratings yet." : "Log in to view and leave ratings."}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {[1, 2, 3, 4, 5].map((star) => {
-                      const active = (ratingSummary?.myRating ?? 0) >= star;
-
-                      return (
-                        <button
-                          key={star}
-                          type="button"
-                          disabled={ratingSubmitting || !publicProfile?.uid || publicProfile?.uid === firebaseUser?.uid}
-                          onClick={() => handleRateSeller(publicProfile.uid, star)}
-                          className={`text-2xl leading-none transition-transform ${
-                            active ? "text-amber-500" : "text-zinc-300"
-                          } ${
-                            ratingSubmitting || publicProfile?.uid === firebaseUser?.uid
-                              ? "cursor-not-allowed opacity-60"
-                              : "hover:scale-110"
-                          }`}
-                          aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
-                        >
-                          ★
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {publicProfile?.uid === firebaseUser?.uid ? (
-                    <p className="text-xs text-zinc-500 font-medium">
-                      You cannot rate yourself.
-                    </p>
-                  ) : ratingSummary?.myRating ? (
-                    <div className="flex items-center gap-3">
-                      <p className="text-xs text-zinc-500 font-medium">
-                        Your rating: {ratingSummary.myRating}/5
-                      </p>
-                      <button
-                        type="button"
-                        disabled={ratingSubmitting || !publicProfile?.uid}
-                        onClick={() => handleRemoveSellerRating(publicProfile.uid)}
-                        className="text-xs font-bold text-red-600 hover:underline disabled:opacity-60"
-                      >
-                        Remove rating
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="text-xs text-zinc-500 font-medium">
-                      Tap a star to rate this seller.
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-lg font-bold">Listings</h4>
-              <span className="text-xs text-zinc-400 font-bold">
-                {visiblePublicProfileListings.length} item(s)
-              </span>
-            </div>
-
-            {visiblePublicProfileListings.length ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {visiblePublicProfileListings.map((l) => (
-                  <div key={l.id}>
-                    <ListingCard
-                      listing={l}
-                      onReport={handleReport}
-                      currentUid={firebaseUser?.uid}
-                      onDelete={handleDeleteListing}
-                      onEdit={handleEditListing}
-                      onHideSeller={hideSellerLocal}
-                      onHideListing={hideListingLocal}
-                      onToggleStatus={handleToggleListingStatus}
-                      isSaved={savedListingIds.includes(l.id)}
-                      onToggleSave={toggleSavedListing}
-                      isLoggedIn={!!firebaseUser}
-                      requireLoginForContact={requireLoginForContact}
-                    />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-10 text-center text-zinc-500">
-                No listings yet.
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="py-10 text-center text-zinc-500">Profile not found.</div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
-        
-{detailsOpen && detailsListing && (
-  <motion.div
-    key="details-modal"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-    onClick={closeDetails}
-  >
-    <motion.div
-      initial={{ scale: 0.95 }}
-      animate={{ scale: 1 }}
-      exit={{ scale: 0.95 }}
-      className="relative w-[min(96vw,1200px)] mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="p-4 border-b flex items-center justify-between">
-        <div className="w-10" />
-
-        <h2 className="text-lg font-bold flex-1 text-center truncate px-2">
-          {detailsListing.name}
-        </h2>
-
-        <div className="flex items-center gap-2">
-          {!isDetailsOwner && (
-            <button
-              type="button"
-              onClick={() => toggleSavedListing(detailsListing.id)}
-              className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                savedListingIds.includes(detailsListing.id)
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-              }`}
-              aria-label={savedListingIds.includes(detailsListing.id) ? "Remove from saved" : "Save item"}
-            >
-              <Bookmark
-                className={`w-4 h-4 ${
-                  savedListingIds.includes(detailsListing.id) ? "fill-current" : ""
-                }`}
-              />
-            </button>
-          )}
-
-          <button
-            type="button"
-            onClick={() => handleDetailShare(detailsListing)}
-            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
-            aria-label="Share listing"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-4 h-4"
-            >
-              <circle cx="18" cy="5" r="3" />
-              <circle cx="6" cy="12" r="3" />
-              <circle cx="18" cy="19" r="3" />
-              <path d="M8.59 13.51 15.42 17.49" />
-              <path d="M15.41 6.51 8.59 10.49" />
-            </svg>
-          </button>
-
-          <button
-            type="button"
-            onClick={closeDetails}
-            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
-            aria-label="Close details"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
-        <div className="relative rounded-2xl overflow-hidden bg-zinc-100 h-[340px] sm:h-[440px] md:h-[520px]">
-          <img
-            src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
-            alt={detailsListing.name}
-            className="w-full h-full object-contain"
-          />
-
-          {detailGalleryImages.length > 0 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsImageFullscreenOpen(true);
-              }}
-              className="absolute top-3 right-3 z-20 h-10 w-10 rounded-full bg-white/85 hover:bg-white text-zinc-900 border border-white/60 shadow flex items-center justify-center"
-              aria-label="Open fullscreen image"
-            >
-              <Expand className="w-5 h-5" />
-            </button>
-          )}
-
-          {detailGalleryImages.length > 1 && (
-            <div className="absolute bottom-3 right-3 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-bold">
-              {galleryIndex + 1} / {detailGalleryImages.length}
-            </div>
-          )}
-
-          {detailGalleryImages.length > 1 && (
-            <div className="absolute inset-0 flex items-center justify-between px-2">
-              <button
-                type="button"
-                onClick={showPrevDetailImage}
-                className="p-2 bg-white/80 hover:bg-white rounded-full"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                onClick={showNextDetailImage}
-                className="p-2 bg-white/80 hover:bg-white rounded-full"
-              >
-                ›
-              </button>
-            </div>
-          )}
-        </div>
-        
- {detailGalleryImages.length > 1 && (
-  <div className="flex gap-2 overflow-x-auto pb-1">
-    {detailGalleryImages.map((url, idx) => (
-      <button
-        key={idx}
-        type="button"
-        onClick={() => {
-          setGalleryIndex(idx);
-          if (detailsListing) {
-            syncListingParamsInUrl(detailsListing.id, idx);
-          }
-        }}
-        className={`w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0 ${
-          idx === galleryIndex ? "border-zinc-900" : "border-zinc-200"
-        }`}
-        aria-label={`View photo ${idx + 1}`}
-      >
-        <img src={url} alt="" className="w-full h-full object-cover" />
-      </button>
-     ))}
-   </div>
-  )}
-        
-  {detailsListing.video_url ? (
-    <div className="rounded-2xl overflow-hidden border bg-black">
-      <video src={detailsListing.video_url} controls className="w-full" />
-    </div>
-  ) : null}
-
-<div className="space-y-4">
-  <div className="flex items-start justify-between gap-4">
-    <div>
-      <p className="text-2xl font-extrabold text-zinc-900">
-        MK {Number(detailsListing.price).toLocaleString()}
-      </p>
-      <p className="text-sm text-zinc-500 mt-1">
-        Listed by {detailsListing.business_name}
-        {detailsSellerProfile?.university ? ` · ${detailsSellerProfile.university}` : ""}
-      </p>
-    </div>
-
-    <span className="px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-bold uppercase">
-      {detailsListing.category}
-    </span>
-  </div>
-
-  <div>
-    <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
-      Description
-    </div>
-    <div className="text-sm text-zinc-700 whitespace-pre-wrap">
-      {detailsListing.description}
-    </div>
-  </div>
-
-  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
-        {detailsListing.condition || "used"}
-      </p>
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Posted</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1">
-        {formatDetailDate(detailsListing.created_at)}
-      </p>
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
-      <p className="text-[11px] font-bold text-zinc-400 uppercase">Seller Joined</p>
-      <p className="text-sm font-bold text-zinc-900 mt-1">
-        {formatDetailDate(detailsSellerProfile?.join_date)}
-      </p>
-    </div>
-  </div>
-</div>
-
-<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-4">
-  <div>
-    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-      Specifications
-    </div>
-
-    {detailSpecGroups.length > 0 && (
-      <div className="relative mb-3">
-        <div
-          ref={detailSpecTabsRef}
-          className="flex gap-2 overflow-x-auto pb-1 pr-10"
-        >
-          {detailSpecGroups.map((group) => (
-            <button
-              key={group.title}
-              type="button"
-              onClick={() => setActiveDetailSpecGroup(group.title)}
-              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
-                activeSpecGroup?.title === group.title
-                  ? "bg-zinc-900 text-white border-zinc-900"
-                  : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
-              }`}
-            >
-              {group.title}
-            </button>
-          ))}
-        </div>
-
-        {showDetailSpecTabsChevron && (
-          <button
-            type="button"
-            onClick={scrollDetailSpecTabsRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
-            aria-label="Scroll specification groups"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
-    )}
-
-    <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-200 h-[34vh] xl:h-[29vh] overflow-y-auto shadow-sm">
-      {activeStructuredSpecRows.length > 0 ? (
-        activeStructuredSpecRows.map((row) => (
-          <div
-            key={row.key}
-            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
-          >
-            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
-              {row.label}
-            </p>
-            <p className="text-sm font-semibold text-zinc-900 text-right break-words">
-              {row.value}
-            </p>
-          </div>
-        ))
-      ) : (
-        detailSpecRows.map((row) => (
-          <div
-            key={row.label}
-            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
-          >
-            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
-              {row.label}
-            </p>
-            <p className="text-sm font-semibold text-zinc-900 text-right break-words capitalize">
-              {row.value}
-            </p>
-          </div>
-        ))
-      )}
-    </div>
-  </div>
-
-  <div>
-    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-      Seller Rating
-    </div>
-
-    <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
-      {detailsLoadingExtra ? (
-        <p className="text-sm text-zinc-500">Loading seller info...</p>
-      ) : detailsRatingSummary ? (
-        <div className="flex items-center gap-2 text-sm flex-wrap">
-          <span className="font-extrabold text-zinc-900">
-            {detailsRatingSummary.averageRating.toFixed(1)}
-          </span>
-          <span className="text-amber-500 text-base tracking-wide">
-            {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
-            {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
-          </span>
-          <span className="text-zinc-500">
-            ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
-          </span>
-        </div>
-      ) : (
-        <p className="text-sm text-zinc-500">No ratings yet.</p>
-      )}
-    </div>
-
-    <div className="flex flex-wrap gap-3 pt-2">
-      <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-        Available: {detailAvailableQuantity}
-      </span>
-
-      <span className="px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-        Sold: {detailsListing.sold_quantity ?? 0}
-      </span>
-
-      <span className="inline-flex items-center gap-2 px-3 py-1.5 border border-zinc-200 bg-white rounded-full text-xs font-medium text-zinc-700 shadow-sm">
-        <Eye className="w-3.5 h-3.5" />
-        {detailsListing.views_count ?? 0}
-      </span>
-    </div>
-
-    <div className="mt-2">
-      <button
-        type="button"
-        onClick={() => handleDetailWhatsappClick(detailsListing)}
-        className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3.5 rounded-2xl font-extrabold transition-colors"
-      >
-        Contact
-      </button>
-      <p className="text-center text-xs font-medium text-zinc-500 mt-2">
-        Chat in WhatsApp
-      </p>
-    </div>
-
-    <div className="text-xs font-bold text-zinc-400 uppercase mt-4 mb-3">
-      Related Listings
-    </div>
-
-    {detailsLoadingExtra ? (
-      <p className="text-sm text-zinc-500">Loading related listings...</p>
-    ) : relatedListings.length > 0 ? (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {relatedListings.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => openDetails(item, 0)}
-            className="w-full text-left border border-zinc-200 rounded-2xl p-3 hover:bg-zinc-50 transition"
-          >
-            <div className="flex gap-3">
-              <img
-                src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/300/300`}
-                alt={item.name}
-                className="w-16 h-16 rounded-xl object-cover border"
-              />
-              <div className="min-w-0">
-                <p className="font-bold text-zinc-900 line-clamp-1">{item.name}</p>
-                <p className="text-sm text-zinc-500 line-clamp-1">{item.business_name}</p>
-                <p className="text-sm font-extrabold text-zinc-900 mt-1">
-                  MK {Number(item.price).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-    ) : (
-      <p className="text-sm text-zinc-500">No related listings yet.</p>
-    )}
-  </div>
-</div>
-        
-      </div>
-    </motion.div>
-  </motion.div>
-)}
-
-{isImageFullscreenOpen && detailsOpen && detailsListing && (
-  <motion.div
-    key="fullscreen-image-modal"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
-    onClick={() => setIsImageFullscreenOpen(false)}
-  >
-    <button
-      type="button"
-      onClick={() => setIsImageFullscreenOpen(false)}
-      className="absolute top-5 right-5 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
-    >
-      <X className="w-5 h-5" />
-    </button>
-
-    {detailGalleryImages.length > 1 && (
-      <>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            showPrevDetailImage();
-          }}
-          className="absolute left-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
-        >
-          ‹
-        </button>
-
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            showNextDetailImage();
-          }}
-          className="absolute right-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
-        >
-          ›
-        </button>
-
-        <div className="absolute bottom-5 right-5 px-3 py-1.5 rounded-full bg-white/10 text-white text-sm font-bold">
-          {galleryIndex + 1} / {detailGalleryImages.length}
-        </div>
-      </>
-    )}
-
-    <div
-      className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <img
-        src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
-        alt={detailsListing.name}
-        className="max-w-full max-h-full object-contain rounded-2xl"
-      />
-    </div>
-  </motion.div>
-)}
-       
 {showSettingsModal && userProfile && settingsView === "menu" && (
   <SettingsModal
     userProfile={userProfile}

@@ -8,7 +8,11 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
-import { navigateToEditListing, navigateToSellerProfile } from "../lib/appNavigation";
+import {
+  navigateToEditListing,
+  navigateToListingDetails,
+  navigateToSellerProfile,
+} from "../lib/appNavigation";
 import { buildListingShareUrl } from "../lib/listingUrl";
 
 type ListingCardProps = {
@@ -19,8 +23,6 @@ type ListingCardProps = {
   onEdit?: (listing: Listing) => void;
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
-  onOpenProfile?: (uid: string) => void;
-  onOpenDetails?: (listing: Listing, startIndex?: number) => void;
   onToggleStatus?: (listing: Listing) => void;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
@@ -34,10 +36,8 @@ export default function ListingCard({
   currentUid,
   onDelete,
   onEdit,
-  onOpenProfile,
   onHideSeller,
   onHideListing,
-  onOpenDetails,
   onToggleStatus,
   isSaved,
   onToggleSave,
@@ -51,12 +51,11 @@ export default function ListingCard({
   const handleOpenProfile = () => {
     if (sellerUid) {
       navigateToSellerProfile(sellerUid);
-      onOpenProfile?.(sellerUid);
     }
   };
 
   const handleOpenDetails = (startIndex = 0) => {
-    onOpenDetails?.(listing, startIndex);
+    navigateToListingDetails(listing.id, startIndex);
   };
 
   useEffect(() => {

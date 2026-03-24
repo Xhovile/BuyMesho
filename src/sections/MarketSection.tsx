@@ -39,9 +39,7 @@ type MarketSectionProps = {
   savedListingIds: number[];
   onReport: (id: number) => void;
   onDelete: (id: number) => void;
-  onOpenProfile: (uid: string) => void;
   onEdit: (listing: Listing) => void;
-  onOpenDetails: (listing: Listing, startIndex?: number) => void;
   onHideSeller: (uid: string) => void;
   onHideListing: (listingId: number) => void;
   onToggleStatus: (listing: Listing) => void;
@@ -83,9 +81,7 @@ export default function MarketSection({
   savedListingIds,
   onReport,
   onDelete,
-  onOpenProfile,
   onEdit,
-  onOpenDetails,
   onHideSeller,
   onHideListing,
   onToggleStatus,
@@ -188,9 +184,7 @@ export default function MarketSection({
                   onReport={onReport}
                   currentUid={firebaseUserUid}
                   onDelete={onDelete}
-                  onOpenProfile={onOpenProfile}
                   onEdit={onEdit}
-                  onOpenDetails={onOpenDetails}
                   onHideSeller={onHideSeller}
                   onHideListing={onHideListing}
                   onToggleStatus={onToggleStatus}

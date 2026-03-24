@@ -1,11 +1,12 @@
 import { Plus, Filter, ShieldCheck, Clock3 } from "lucide-react";
 import { motion } from "motion/react";
+import { navigateToCreateListing } from "../lib/appNavigation";
 
 type HeroSectionProps = {
   onStartSelling: () => void;
 };
 
-export default function HeroSection({ onStartSelling }: HeroSectionProps) {
+export default function HeroSection(_: HeroSectionProps) {
   return (
     <section className="relative pt-8 pb-6 sm:pt-10 sm:pb-8">
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -85,7 +86,7 @@ export default function HeroSection({ onStartSelling }: HeroSectionProps) {
 
             <button
               type="button"
-              onClick={onStartSelling}
+              onClick={navigateToCreateListing}
               className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               <Plus className="w-4 h-4" />

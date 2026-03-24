@@ -7,7 +7,7 @@ import {
   HOME_PATH,
   SETTINGS_PATH,
   getSellerUidFromUrl,
-  navigateToExploreListing,
+  navigateToListingDetails,
   navigateToPath,
 } from "./lib/appNavigation";
 
@@ -37,12 +37,18 @@ function formatDate(value?: string) {
 }
 
 export default function SellerProfilePage() {
-  const [sellerUid] = useState(() => getSellerUidFromUrl() || "");
+  const [sellerUid, setSellerUid] = useState(() => getSellerUidFromUrl() || "");
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
   const [ratingSummary, setRatingSummary] = useState<SellerRatingSummary | null>(null);
   const [loading, setLoading] = useState(true);
 
+useEffect(() => {
+  const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
+  window.addEventListener("popstate", syncSellerUid);
+  return () => window.removeEventListener("popstate", syncSellerUid);
+}, []);
+  
   useEffect(() => {
     const loadSeller = async () => {
       if (!sellerUid) {
@@ -231,7 +237,7 @@ export default function SellerProfilePage() {
                         <button
                           key={listing.id}
                           type="button"
-                          onClick={() => navigateToExploreListing(listing.id, 0)}
+                          onClick={() => navigateToListingDetails(listing.id, 0)}
                           className="text-left rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 transition-colors"
                         >
                           <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-4">

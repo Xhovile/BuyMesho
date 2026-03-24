@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { doc, getDoc } from "firebase/firestore";
-import EditListingModal from "./components/EditListingModal";
+import ListingStudioForm from "./components/ListingStudioForm";
 import FeedbackModal from "./components/FeedbackModal";
 import { auth, db as firestore } from "./firebase";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, getEditListingIdFromUrl, navigateToPath } from "./lib/appNavigation";
-import type { Listing, UserProfile } from "./types";
+import type { Listing, ListingDraft, UserProfile } from "./types";
 
 type FeedbackState = {
   open: boolean;
@@ -16,13 +16,33 @@ type FeedbackState = {
   message: string;
 } | null;
 
+const toListingDraft = (listing: Listing): ListingDraft => ({
+  name: listing.name || "",
+  price: String(listing.price ?? ""),
+  description: listing.description || "",
+  category: listing.category,
+  subcategory: listing.subcategory || "",
+  item_type: listing.item_type || "",
+  spec_values: listing.spec_values || {},
+  university: listing.university,
+  photos: listing.photos || [],
+  video_url: listing.video_url || "",
+  whatsapp_number: listing.whatsapp_number || "",
+  status: listing.status || "available",
+  condition: listing.condition || "used",
+  quantity: String(listing.quantity ?? 1),
+  sold_quantity: String(listing.sold_quantity ?? 0),
+});
+
 export default function EditListingPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [listing, setListing] = useState<Listing | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const listingId = getEditListingIdFromUrl();
 
@@ -74,49 +94,36 @@ export default function EditListingPage() {
     void loadListing();
   }, [listingId, firebaseUser]);
 
-  const showFeedback = (
-    type: "success" | "error" | "info",
-    title: string,
-    message: string
-  ) => {
+  const listingDraft = useMemo(() => (listing ? toListingDraft(listing) : null), [listing]);
+
+  const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
   };
 
-  const handleSave = async (updated: Partial<Listing>) => {
+  const closeFeedback = () => {
+    setFeedback(null);
+    if (redirectAfterFeedback) {
+      setRedirectAfterFeedback(false);
+      navigateToPath(EXPLORE_PATH);
+    }
+  };
+
+  const handleSave = async (payload: any) => {
     if (!listing) return;
 
-    const payload = {
-      name: updated.name ?? listing.name,
-      price: Number(updated.price ?? listing.price),
-      description: updated.description ?? listing.description ?? "",
-      category: updated.category ?? listing.category,
-      subcategory: updated.subcategory ?? listing.subcategory ?? null,
-      item_type: updated.item_type ?? listing.item_type ?? null,
-      spec_values: updated.spec_values ?? listing.spec_values ?? {},
-      university: updated.university ?? listing.university,
-      photos: updated.photos ?? listing.photos ?? [],
-      video_url: updated.video_url ?? listing.video_url ?? null,
-      whatsapp_number: updated.whatsapp_number ?? listing.whatsapp_number,
-      status: updated.status ?? listing.status ?? "available",
-      condition: updated.condition ?? listing.condition ?? "used",
-      quantity: Number(updated.quantity ?? listing.quantity ?? 1),
-      sold_quantity: Number(updated.sold_quantity ?? listing.sold_quantity ?? 0),
-    };
-
+    setSubmitting(true);
     try {
       await apiFetch(`/api/listings/${listing.id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
-
+      setRedirectAfterFeedback(true);
       showFeedback("success", "Listing updated", "Your listing was updated successfully.");
-      navigateToPath(EXPLORE_PATH);
     } catch (err: any) {
-      showFeedback(
-        "error",
-        "Update failed",
-        err?.message || "We could not update the listing."
-      );
+      showFeedback("error", "Update failed", err?.message || "We could not update the listing.");
+      throw err;
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -133,61 +140,30 @@ export default function EditListingPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Edit listing</p>
             </div>
           </button>
-
-          <button
-            type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
-            className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
-          >
-            Back to Explore
-          </button>
+          <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50">Back to Explore</button>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {authLoading || profileLoading || loadingListing ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium">
-            <Loader2 className="w-5 h-5 animate-spin" />
-            Preparing edit surface...
-          </div>
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium"><Loader2 className="w-5 h-5 animate-spin" /> Preparing edit surface...</div>
         ) : !firebaseUser ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
             <p className="mt-3 text-sm text-zinc-500">You need to log in before editing a listing.</p>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Return to Explore
-            </button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
         ) : !canEdit ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h1>
             <p className="mt-3 text-sm text-zinc-500">Only verified seller accounts can edit listings from this route-backed surface.</p>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Return to Explore
-            </button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-        ) : !listing ? (
+        ) : !listingDraft ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
             <p className="mt-3 text-sm text-zinc-500">This listing could not be loaded for editing.</p>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Return to Explore
-            </button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
         ) : (
           <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
@@ -195,26 +171,12 @@ export default function EditListingPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Edit your listing in a dedicated page surface.</h1>
             </div>
-
-            <EditListingModal
-              listing={listing}
-              onClose={() => navigateToPath(EXPLORE_PATH)}
-              onSave={handleSave}
-              showFeedback={showFeedback}
-            />
+            <ListingStudioForm mode="edit" initialData={listingDraft} onCancel={() => navigateToPath(EXPLORE_PATH)} onSubmit={handleSave} showFeedback={showFeedback} isSubmitting={submitting} submitLabel="Save Changes" submitBusyLabel="Saving..." />
           </div>
         )}
       </main>
 
-      {feedback && (
-        <FeedbackModal
-          open={feedback.open}
-          type={feedback.type}
-          title={feedback.title}
-          message={feedback.message}
-          onClose={() => setFeedback(null)}
-        />
-      )}
+      {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={closeFeedback} />}
     </div>
   );
 }
