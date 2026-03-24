@@ -46,6 +46,9 @@ import {
 } from "./listingSchemas";
 import type { ListingSpecField } from "./listingSchemas";
 import {
+  navigateToCreateListing,
+  navigateToLogin,
+  navigateToProfile,
   navigateToMyListings,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -728,34 +731,13 @@ const openSettings = () => {
 
 const promptSellerUpgrade = () => {
   setShowAddModal(false);
-
-  if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("signup");
-    return;
-  }
-
-  if (!userProfile) {
-    setShowProfileModal(true);
-    setAuthView("signup");
-    return;
-  }
-
-  if (!userProfile.is_seller) {
-    setShowProfileModal(true);
-    setAuthView("profile");
-    return;
-  }
-
-  setNewListing(createInitialListingDraft(userProfile));
-  setShowAddModal(true);
+  navigateToCreateListing();
 };
 
 
 const toggleSavedListing = (listingId: number) => {
   if (!firebaseUser) {
-    setShowProfileModal(true);
-    setAuthView("login");
+    navigateToLogin();
     return;
   }
 
@@ -770,8 +752,7 @@ const toggleSavedListing = (listingId: number) => {
 };
 
 const requireLoginForContact = () => {
-  setShowProfileModal(true);
-  setAuthView("login");
+  navigateToLogin();
 };
 
 
@@ -2123,31 +2104,15 @@ const scrollToCreateSpecField = (fieldKey: string) => {
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
         onSearch={setSearch} 
-        onAddListing={() => {
-  if (!isSellerAccount) {
-    promptSellerUpgrade();
-    return;
-  }
-
-  setNewListing(createInitialListingDraft(userProfile));
-  setShowAddModal(true);
-}}
-          onProfileClick={() => setShowProfileModal(true)}
+        onAddListing={navigateToCreateListing}
+          onProfileClick={navigateToProfile}
           userProfile={userProfile}
           firebaseUser={firebaseUser}
       />
 
       <main className="max-w-7xl mx-auto px-4">
         <HeroSection
-    onStartSelling={() => {
-  if (!isSellerAccount) {
-    promptSellerUpgrade();
-    return;
-  }
-
-  setNewListing(createInitialListingDraft(userProfile));
-  setShowAddModal(true);
-}}
+    onStartSelling={navigateToCreateListing}
   />     
         <MarketSection
   loading={loading}
