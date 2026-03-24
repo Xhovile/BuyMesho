@@ -9,44 +9,12 @@ function normalizeListingResponse(payload: any): Listing | null {
   return null;
 }
 
-async function fetchListingByIdFromPages(listingId: string | number): Promise<Listing | null> {
-  let page = 1;
-  let totalPages = 1;
-
-  while (page <= totalPages && page <= 20) {
-    const data = await apiFetch(`/api/listings?page=${page}&pageSize=120`);
-    const items = Array.isArray(data?.items) ? data.items : [];
-    const found = items.find((item: Listing) => String(item.id) === String(listingId));
-    if (found) return found;
-
-    const nextTotalPages = Number(data?.totalPages || 0);
-    if (nextTotalPages > 0) {
-      totalPages = nextTotalPages;
-    } else if (!items.length) {
-      break;
-    } else {
-      totalPages = page + 1;
-    }
-
-    page += 1;
-  }
-
-  return null;
-}
-
 export async function fetchListingById(listingId: string | number): Promise<Listing | null> {
   try {
     const direct = await apiFetch(`/api/listings/${listingId}`);
-    const normalized = normalizeListingResponse(direct);
-    if (normalized) return normalized;
+    return normalizeListingResponse(direct);
   } catch (error) {
-    console.warn("Direct listing fetch failed, falling back to paginated search", error);
-  }
-
-  try {
-    return await fetchListingByIdFromPages(listingId);
-  } catch (error) {
-    console.error("Fallback listing fetch failed", error);
+    console.error("Listing fetch failed", error);
     return null;
   }
 }
@@ -65,4 +33,4 @@ export async function fetchListingsByIds(listingIds: Array<string | number>): Pr
   return uniqueIds
     .map((id) => listingMap.get(String(id)) || null)
     .filter((item): item is Listing => Boolean(item));
-                                                                                  }
+}

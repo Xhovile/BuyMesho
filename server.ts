@@ -753,6 +753,38 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   }
 });
 
+  app.get("/api/listings/:id", (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    try {
+      const row = db
+        .prepare(`
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.id = ? AND l.is_hidden = 0
+          LIMIT 1
+        `)
+        .get(listingId) as any;
+
+      if (!row) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+
+      res.json({
+        ...row,
+        photos: JSON.parse(row.photos || "[]"),
+        spec_values: JSON.parse(row.spec_values || "{}"),
+      });
+    } catch (error) {
+      console.error("Fetch listing by id error:", error);
+      res.status(500).json({ error: "Failed to load listing" });
+    }
+  });
+
   app.get("/api/listings/:id/related", (req, res) => {
     const listingId = Number(req.params.id);
     const requestedLimit = Number(req.query.limit);
