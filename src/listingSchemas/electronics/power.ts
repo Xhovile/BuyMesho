@@ -1,4 +1,4 @@
-import type { ListingItemSchema, ListingFieldGroup } from "../core";
+import type { ListingItemSchema, ListingFieldGroup } from "../core.js";
 
 export const POWER_BANK_SCHEMA: ListingItemSchema = {
   category: "Electronics & Gadgets",

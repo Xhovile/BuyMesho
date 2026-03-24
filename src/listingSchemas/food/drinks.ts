@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   FOOD_ALLERGEN_OPTIONS,
   FOOD_AVAILABILITY_OPTIONS,
@@ -13,7 +13,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createDrinkConfig(params: {
   itemType: string;

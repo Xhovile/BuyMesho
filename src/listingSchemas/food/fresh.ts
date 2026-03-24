@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   FOOD_DIETARY_TAG_OPTIONS,
   FOOD_STORAGE_OPTIONS,
@@ -8,7 +8,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createFreshConfig(params: {
   itemType: string;
