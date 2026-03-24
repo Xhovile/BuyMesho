@@ -15,7 +15,9 @@ export type AppRoute =
   | "edit_account"
   | "become_seller"
   | "change_password"
-  | "my_listings";
+  | "my_listings"
+  | "admin_reports"
+  | "admin_seller_applications";
 
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
@@ -34,6 +36,8 @@ export const EDIT_ACCOUNT_PATH = "/edit-account";
 export const BECOME_SELLER_PATH = "/become-seller";
 export const CHANGE_PASSWORD_PATH = "/change-password";
 export const MY_LISTINGS_PATH = "/my-listings";
+export const ADMIN_REPORTS_PATH = "/admin/reports";
+export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 
 export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
@@ -86,6 +90,14 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === MY_LISTINGS_PATH) {
     return "my_listings";
+  }
+
+  if (location.pathname === ADMIN_REPORTS_PATH) {
+    return "admin_reports";
+  }
+
+  if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) {
+    return "admin_seller_applications";
   }
 
   if (location.pathname === SELLER_PATH && params.has("uid")) {
