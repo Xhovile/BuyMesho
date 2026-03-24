@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
-import { navigateToEditListing, navigateToSellerProfile } from "../lib/appNavigation";
+import { navigateToEditListing, navigateToListingDetails, navigateToSellerProfile } from "../lib/appNavigation";
 import { buildListingShareUrl } from "../lib/listingUrl";
 
 type ListingCardProps = {
@@ -56,7 +56,7 @@ export default function ListingCard({
   };
 
   const handleOpenDetails = (startIndex = 0) => {
-    onOpenDetails?.(listing, startIndex);
+    navigateToListingDetails(listing.id, startIndex);
   };
 
   useEffect(() => {
