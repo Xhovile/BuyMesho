@@ -1,8 +1,8 @@
 import { Bookmark, ChevronLeft, Loader2, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import type { Listing, UserProfile } from "./types";
+import type { Listing } from "./types";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateToExploreListing, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, HOME_PATH, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
 
 function getSavedListingIds() {
   try {
@@ -160,7 +160,7 @@ export default function SavedPage() {
                   <button
                     key={listing.id}
                     type="button"
-                    onClick={() => navigateToExploreListing(listing.id, 0)}
+                    onClick={() => navigateToListingDetails(listing.id, 0)}
                     className="text-left rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm hover:bg-zinc-50 transition-colors"
                   >
                     <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-4">
