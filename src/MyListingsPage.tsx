@@ -3,7 +3,7 @@ import { ExternalLink, Loader2, Pencil } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
-import { navigateToEditListing, navigateToExploreListing, navigateToPath } from "./lib/appNavigation";
+import { navigateToEditListing, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
 import type { Listing } from "./types";
 
 export default function MyListingsPage() {
@@ -137,7 +137,7 @@ export default function MyListingsPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigateToExploreListing(listing.id, 0)}
+                      onClick={() => navigateToListingDetails(listing.id, 0)}
                       className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
                     >
                       <ExternalLink className="w-4 h-4" />

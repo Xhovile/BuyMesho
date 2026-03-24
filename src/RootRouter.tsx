@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
+import App from "./App.new";
 import BecomeSellerPage from "./BecomeSellerPage";
 import ChangePasswordPage from "./ChangePasswordPage";
-import App from "./App.new";
 import CreateListingPage from "./CreateListingPage";
 import EditAccountPage from "./EditAccountPage";
 import EditListingPage from "./EditListingPage";
 import EditProfilePage from "./EditProfilePage";
 import ForgotPasswordPage from "./ForgotPasswordPage";
 import HomePage from "./HomePage";
+import ListingDetailsPage from "./ListingDetailsPage";
 import LoginPage from "./LoginPage";
 import MyListingsPage from "./MyListingsPage";
 import ProfilePage from "./ProfilePage";
@@ -38,6 +39,7 @@ export default function RootRouter() {
   if (route === "saved") return <SavedPage />;
   if (route === "settings") return <SettingsPage />;
   if (route === "seller") return <SellerProfilePage />;
+  if (route === "listing_details") return <ListingDetailsPage />;
   if (route === "create") return <CreateListingPage />;
   if (route === "edit") return <EditListingPage />;
   if (route === "login") return <LoginPage />;

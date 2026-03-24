@@ -4,6 +4,7 @@ export type AppRoute =
   | "saved"
   | "settings"
   | "seller"
+  | "listing_details"
   | "create"
   | "edit"
   | "login"
@@ -21,6 +22,7 @@ export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
 export const SETTINGS_PATH = "/settings";
 export const SELLER_PATH = "/seller";
+export const LISTING_PATH = "/listing";
 export const CREATE_PATH = "/create";
 export const EDIT_PATH = "/edit";
 export const LOGIN_PATH = "/login";
@@ -37,6 +39,10 @@ export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): AppRoute => {
   const params = new URLSearchParams(location.search);
+
+  if (location.pathname === LISTING_PATH && params.has("listing")) {
+    return "listing_details";
+  }
 
   if (location.pathname === EDIT_PATH && params.has("id")) {
     return "edit";
@@ -105,7 +111,7 @@ export const navigateToPath = (path: string) => {
   const url = new URL(window.location.href);
   url.pathname = path;
 
-  if (path !== EXPLORE_PATH) {
+  if (path !== EXPLORE_PATH && path !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
   }
@@ -129,6 +135,22 @@ export const navigateToExploreListing = (
 ) => {
   const url = new URL(window.location.href);
   url.pathname = EXPLORE_PATH;
+  url.searchParams.set("listing", String(listingId));
+  url.searchParams.set("image", String(imageIndex));
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState({}, "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToListingDetails = (
+  listingId: string | number,
+  imageIndex: number = 0
+) => {
+  const url = new URL(window.location.href);
+  url.pathname = LISTING_PATH;
   url.searchParams.set("listing", String(listingId));
   url.searchParams.set("image", String(imageIndex));
   url.searchParams.delete("uid");

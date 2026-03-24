@@ -55,7 +55,7 @@ export default function ListingCard({
   };
 
   const handleOpenDetails = (startIndex = 0) => {
-    navigateToExploreListing(listing.id, startIndex);
+    navigateToListingDetails(listing.id, startIndex);
   };
 
   useEffect(() => {
