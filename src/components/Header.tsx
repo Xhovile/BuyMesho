@@ -7,6 +7,7 @@ import {
   SETTINGS_PATH,
   navigateToCreateListing,
   navigateToPath,
+  navigateToProfile,
 } from "../lib/appNavigation";
 
 type HeaderProps = {
@@ -97,7 +98,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={onProfileClick}
+              onClick={navigateToProfile}
               className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
             >
               {profileImage ? (
