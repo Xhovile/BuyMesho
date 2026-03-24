@@ -112,7 +112,7 @@ export const getAppRouteFromLocation = (
     return "saved";
   }
 
-  if (location.pathname === EXPLORE_PATH || params.has("listing")) {
+  if (location.pathname === EXPLORE_PATH) {
     return "explore";
   }
 
