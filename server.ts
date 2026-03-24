@@ -550,6 +550,7 @@ async function startServer() {
   });
 
 type IncomingSpecFilters = Record<string, unknown>;
+const SPEC_FILTER_KEY_RE = /^[A-Za-z0-9_]+$/;
 
 function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
   if (typeof raw !== "string" || !raw.trim()) {
@@ -565,7 +566,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     const safe: Record<string, string | string[] | boolean> = {};
 
     for (const [key, value] of Object.entries(parsed)) {
-      if (!key || key.length > 120) {
+      if (!key || key.length > 120 || !SPEC_FILTER_KEY_RE.test(key)) {
         continue;
       }
 
@@ -755,7 +756,11 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   app.get("/api/listings/:id/related", (req, res) => {
     const listingId = Number(req.params.id);
     const requestedLimit = Number(req.query.limit);
-    const limit = Math.max(1, Math.min(12, Number.isFinite(requestedLimit) ? requestedLimit : 5));
+    if (req.query.limit !== undefined && !Number.isInteger(requestedLimit)) {
+      return res.status(400).json({ error: "limit must be an integer" });
+    }
+    const safeRequestedLimit = Number.isInteger(requestedLimit) ? requestedLimit : 5;
+    const limit = Math.max(1, Math.min(12, safeRequestedLimit));
 
     if (!Number.isInteger(listingId)) {
       return res.status(400).json({ error: "Invalid listing id" });
@@ -766,7 +771,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
         .prepare(`
           SELECT id, category, subcategory, item_type, university
           FROM listings
-          WHERE id = ?
+          WHERE id = ? AND is_hidden = 0
           LIMIT 1
         `)
         .get(listingId) as
@@ -2148,6 +2153,19 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       id
     );
 
+    const updatedApplication = db.prepare(`
+      SELECT
+        id,
+        status,
+        review_notes,
+        reviewed_at,
+        reviewed_by_uid,
+        updated_at
+      FROM seller_applications
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+
     if (status === "approved") {
       db.prepare(`
         INSERT INTO sellers (
@@ -2189,7 +2207,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       },
     });
 
-    res.json({ success: true });
+    res.json({ success: true, application: updatedApplication });
   } catch (error) {
     console.error("Admin seller application review error:", error);
     res.status(500).json({ error: "Failed to review seller application" });

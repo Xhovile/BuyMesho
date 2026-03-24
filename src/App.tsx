@@ -734,17 +734,39 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedCat]);
 
 useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedSubcategory]);
+  if (authLoading || profileLoading) return;
 
-useEffect(() => {
-  setSelectedSpecFilters({});
-}, [selectedItemType]);
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("create") !== "1") return;
+
+  params.delete("create");
+  const nextUrl =
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setCreateFieldErrors({});
+  setShowAddModal(true);
+}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
   
   useEffect(() => {
   fetchListings();
@@ -764,7 +786,22 @@ useEffect(() => {
   selectedSpecFilters,
 ]);
 
-  const fetchListings = async () => {
+  const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
+};
+
+const fetchListings = async () => {
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -835,8 +872,6 @@ const loadDetailsExtras = async (listing: Listing) => {
 
   const isTransientDetailExtrasError = (error: unknown) => {
     if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
-
-    if (error instanceof TypeError) return true;
 
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
@@ -2926,11 +2961,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
-  setSelectedCat={setSelectedCat}
+  setSelectedCat={handleSelectedCategoryChange}
   selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={setSelectedSubcategory}
+  setSelectedSubcategory={handleSelectedSubcategoryChange}
   selectedItemType={selectedItemType}
-  setSelectedItemType={setSelectedItemType}
+  setSelectedItemType={handleSelectedItemTypeChange}
   selectedSpecFilters={selectedSpecFilters}
   setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
