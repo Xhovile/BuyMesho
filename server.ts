@@ -755,7 +755,8 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   app.get("/api/listings/:id/related", (req, res) => {
     const listingId = Number(req.params.id);
     const requestedLimit = Number(req.query.limit);
-    const limit = Math.max(1, Math.min(12, Number.isFinite(requestedLimit) ? requestedLimit : 5));
+    const parsedLimit = Number.isInteger(requestedLimit) ? requestedLimit : 5;
+    const limit = Math.max(1, Math.min(12, parsedLimit));
 
     if (!Number.isInteger(listingId)) {
       return res.status(400).json({ error: "Invalid listing id" });

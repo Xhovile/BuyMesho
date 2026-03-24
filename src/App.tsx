@@ -836,8 +836,6 @@ const loadDetailsExtras = async (listing: Listing) => {
   const isTransientDetailExtrasError = (error: unknown) => {
     if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
 
-    if (error instanceof TypeError) return true;
-
     if (error instanceof Error) {
       const msg = error.message.toLowerCase();
       return (
