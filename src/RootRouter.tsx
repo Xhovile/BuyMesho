@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import App from "./App.new";
 import AdminReportsPage from "./AdminReportsPage";
 import AdminSellerApplicationsPage from "./AdminSellerApplicationsPage";
+import AdminRouteGuard from "./components/AdminRouteGuard";
 import BecomeSellerPage from "./BecomeSellerPage";
 import ChangePasswordPage from "./ChangePasswordPage";
 import CreateListingPage from "./CreateListingPage";
@@ -54,8 +55,18 @@ export default function RootRouter() {
   if (route === "change_password") return <ChangePasswordPage />;
   if (route === "my_listings") return <MyListingsPage />;
 
-  if (route === "admin_reports") return <AdminReportsPage />;
-  if (route === "admin_seller_applications") return <AdminSellerApplicationsPage />;
+  if (route === "admin_reports")
+    return (
+      <AdminRouteGuard>
+        <AdminReportsPage />
+      </AdminRouteGuard>
+    );
+  if (route === "admin_seller_applications")
+    return (
+      <AdminRouteGuard>
+        <AdminSellerApplicationsPage />
+      </AdminRouteGuard>
+    );
 
   return <HomePage />;
 }
