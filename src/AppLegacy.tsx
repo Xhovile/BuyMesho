@@ -2,14 +2,13 @@ import React, { useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ConfirmModal from "./components/ConfirmModal";
-import PasswordPromptModal from "./components/PasswordPromptModal";
 import FeedbackModal from "./components/FeedbackModal";
 import Header from "./components/Header";
 import EditListingModal from "./components/EditListingModal";
 import ReportListingModal from "./components/ReportListingModal";
 import HeroSection from "./sections/HeroSection";
 import MarketSection from "./sections/MarketSection";
-import { Listing, SellerDashboardData, UserProfile } from "./types";
+import { Listing } from "./types";
 import { navigateToCreateListing, navigateToLogin, navigateToPath, navigateToProfile } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api";
@@ -24,12 +23,9 @@ export default function App() {
   const [selectedItemType, setSelectedItemType] = useState("");
   const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>({});
   const [sortBy, setSortBy] = useState("newest");
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [reportListingId, setReportListingId] = useState<number | null>(null);
   const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
-  const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
-  const [reauthPassword, setReauthPassword] = useState("");
   const [selectedCondition, setSelectedCondition] = useState("");
   const [hideSoldOut, setHideSoldOut] = useState(false);
   const [minPrice, setMinPrice] = useState("");
@@ -39,7 +35,6 @@ export default function App() {
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [sellerDashboard, setSellerDashboard] = useState<SellerDashboardData | null>(null);
 
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
     try {
@@ -199,25 +194,10 @@ export default function App() {
     });
   };
 
-  const fetchSellerDashboard = async () => {
-    if (!firebaseUser || !userProfile?.is_seller) {
-      setSellerDashboard(null);
-      return;
-    }
-
-    try {
-      const data = await apiFetch("/api/seller/dashboard");
-      setSellerDashboard(data);
-    } catch {
-      setSellerDashboard(null);
-    }
-  };
-
   const performDeleteListing = async (listingId: number) => {
     try {
       await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
       fetchListings();
-      void fetchSellerDashboard();
       showFeedback("success", "Listing deleted", "The listing was deleted successfully.");
     } catch (err: any) {
       showFeedback("error", "Delete failed", err?.message || "We could not delete the listing.");
@@ -252,7 +232,6 @@ export default function App() {
     try {
       await apiFetch(`/api/listings/${listingId}`, { method: "PUT", body: JSON.stringify(payload) });
       fetchListings();
-      void fetchSellerDashboard();
       showFeedback("success", "Listing updated", "Your listing was updated successfully.");
       setEditingListing(null);
     } catch (err: any) {
@@ -260,19 +239,12 @@ export default function App() {
     }
   };
 
-  const closePasswordPrompt = () => {
-    setPasswordPromptOpen(false);
-    setReauthPassword("");
-  };
-
-
   return (
     <div className="min-h-screen pb-20 bg-zinc-100">
       <Header
         onSearch={setSearch}
         onAddListing={navigateToCreateListing}
         onProfileClick={navigateToProfile}
-        userProfile={userProfile}
         firebaseUser={firebaseUser}
       />
 
@@ -374,16 +346,6 @@ export default function App() {
           onConfirm={() => confirmState.onConfirm?.()}
         />
       )}
-
-      <PasswordPromptModal
-        open={passwordPromptOpen}
-        title="Confirm your password"
-        message="For security, enter your password to continue."
-        password={reauthPassword}
-        onPasswordChange={setReauthPassword}
-        onSubmit={async () => {}}
-        onCancel={closePasswordPrompt}
-      />
 
       {feedback && (
         <FeedbackModal

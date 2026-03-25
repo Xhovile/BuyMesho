@@ -14,7 +14,7 @@ type HeaderProps = {
   onSearch: (val: string) => void;
   onAddListing: () => void;
   onProfileClick: () => void;
-  userProfile: UserProfile | null;
+  userProfile?: UserProfile | null;
   firebaseUser: FirebaseUser | null;
 };
 
