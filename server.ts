@@ -2367,6 +2367,7 @@ app.patch(
 
     return res.json({ success: true, application: updatedApplication });
   })
+
 );
 
 app.post("/api/admin/listings/:id/hide", requireAuth, (req, res) => {
