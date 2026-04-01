@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
 import { UNIVERSITIES } from "../constants";
+import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
 export function useAccountProfile() {
@@ -46,6 +47,8 @@ export function useAccountProfile() {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
+          await apiFetch("/api/profile/bootstrap", {
+            method: "POST",
             body: JSON.stringify({
               university: fallbackProfile.university,
             }),
