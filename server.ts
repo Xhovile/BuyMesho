@@ -2296,6 +2296,16 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
         application.whatsapp_number,
         1
       );
+
+      try {
+        const adminApp = getFirebaseAdmin();
+        await adminApp.firestore().collection("users").doc(application.applicant_uid).set(
+          { is_seller: true },
+          { merge: true }
+        );
+      } catch (firestoreSyncError) {
+        console.warn("Failed to sync approved seller status to Firestore:", firestoreSyncError);
+      }
     }
 
     logAdminAction({
