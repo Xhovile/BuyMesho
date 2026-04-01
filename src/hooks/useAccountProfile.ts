@@ -22,20 +22,20 @@ export function useAccountProfile() {
 
     setProfileLoading(true);
     try {
+      const fallbackProfile: UserProfile = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || "",
+        university: UNIVERSITIES[0],
+        avatar_url: "",
+        is_verified: false,
+        is_seller: false,
+        join_date: new Date().toISOString(),
+      };
       const userRef = doc(firestore, "users", firebaseUser.uid);
       const snap = await getDoc(userRef);
       if (snap.exists()) {
         setProfile(snap.data() as UserProfile);
       } else {
-        const fallbackProfile: UserProfile = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          university: UNIVERSITIES[0],
-          avatar_url: "",
-          is_verified: false,
-          is_seller: false,
-          join_date: new Date().toISOString(),
-        };
         try {
           await setDoc(userRef, fallbackProfile);
         } catch (firestoreWriteErr) {
@@ -60,8 +60,36 @@ export function useAccountProfile() {
       setError(null);
     } catch (err: any) {
       console.error("Failed to load account profile", err);
-      setProfile(null);
-      setError(err?.message || "Failed to load profile");
+      try {
+        const token = await firebaseUser.getIdToken(true);
+        const bootstrapRes = await fetch("/api/profile/bootstrap", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            university: UNIVERSITIES[0],
+          }),
+        });
+
+        if (!bootstrapRes.ok) {
+          throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+        }
+
+        const bootstrapData = await bootstrapRes.json();
+        if (bootstrapData?.profile) {
+          setProfile(bootstrapData.profile as UserProfile);
+          setError(null);
+        } else {
+          setProfile(null);
+          setError(err?.message || "Failed to load profile");
+        }
+      } catch (bootstrapErr: any) {
+        console.error("Profile bootstrap after read failure failed", bootstrapErr);
+        setProfile(null);
+        setError(bootstrapErr?.message || err?.message || "Failed to load profile");
+      }
     } finally {
       setProfileLoading(false);
     }
