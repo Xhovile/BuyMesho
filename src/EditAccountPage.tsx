@@ -65,33 +65,47 @@ export default function EditAccountPage() {
     if (!firebaseUser) return;
     setSaving(true);
     try {
-      let updatedProfile: UserProfile;
-      if (profile) {
-        updatedProfile = {
-          ...profile,
-          university: form.university,
-          avatar_url: form.avatarUrl,
-        };
-        await updateDoc(doc(firestore, "users", firebaseUser.uid), {
-          university: updatedProfile.university,
-          avatar_url: updatedProfile.avatar_url || "",
-        });
-      } else {
-        updatedProfile = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email || "",
-          university: form.university,
-          avatar_url: form.avatarUrl,
-          is_verified: false,
-          is_seller: false,
-          join_date: new Date().toISOString(),
-        };
-        await setDoc(doc(firestore, "users", firebaseUser.uid), updatedProfile);
-      }
+      const updatedProfile: UserProfile = profile
+        ? {
+            ...profile,
+            university: form.university,
+            avatar_url: form.avatarUrl,
+          }
+        : {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || "",
+            university: form.university,
+            avatar_url: form.avatarUrl,
+            is_verified: false,
+            is_seller: false,
+            join_date: new Date().toISOString(),
+          };
+
       await apiFetch("/api/sellers", {
         method: "POST",
         body: JSON.stringify(updatedProfile),
       });
+
+      try {
+        if (profile) {
+          await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+            university: updatedProfile.university,
+            avatar_url: updatedProfile.avatar_url || "",
+          });
+        } else {
+          await setDoc(doc(firestore, "users", firebaseUser.uid), updatedProfile);
+        }
+      } catch (firestoreErr) {
+        console.warn("Firestore account sync skipped; server save succeeded.", firestoreErr);
+        await apiFetch("/api/profile/bootstrap", {
+          method: "POST",
+          body: JSON.stringify({
+            university: updatedProfile.university,
+            avatar_url: updatedProfile.avatar_url || "",
+          }),
+        });
+      }
+
       setProfile(updatedProfile);
       showFeedback("success", "Account updated", "Your account details were saved successfully.");
       navigateToPath("/profile");
