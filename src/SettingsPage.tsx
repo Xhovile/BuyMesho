@@ -15,18 +15,28 @@ import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
+import PasswordPromptModal from "./components/PasswordPromptModal";
 import {
   BECOME_SELLER_PATH,
   EDIT_ACCOUNT_PATH,
   EDIT_PROFILE_PATH,
   EXPLORE_PATH,
   HOME_PATH,
+  LOGIN_PATH,
   SETTINGS_PATH,
   CHANGE_PASSWORD_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { VisibilitySetting } from "./types";
+import {
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  signOut,
+} from "firebase/auth";
+import { auth } from "./firebase";
+import { apiFetch } from "./lib/api";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
@@ -54,6 +64,8 @@ export default function SettingsPage() {
   const [savingPrivacyField, setSavingPrivacyField] = useState<
     "profile_visibility" | "seller_visibility" | "saved_visibility" | null
   >(null);
+  const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState("");
 
   const visibilityLabel: Record<VisibilitySetting, string> = {
     everyone: "Everyone",
@@ -123,6 +135,72 @@ export default function SettingsPage() {
       await updateProfile({ [field]: nextValue });
     } finally {
       setSavingPrivacyField(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!firebaseUser) return;
+
+    try {
+      await signOut(auth);
+      navigateToPath(LOGIN_PATH);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      window.alert("Logout failed. Please try again.");
+    }
+  };
+
+  const handleDeleteAccount = async (skipConfirm = false) => {
+    if (!firebaseUser) return;
+
+    if (!skipConfirm) {
+      const confirmed = window.confirm(
+        "Are you sure you want to delete your account? This action cannot be undone."
+      );
+      if (!confirmed) return;
+    }
+
+    try {
+      await apiFetch("/api/profile", { method: "DELETE" });
+      await deleteUser(firebaseUser);
+      navigateToPath(LOGIN_PATH);
+    } catch (error: any) {
+      console.error("Delete account failed:", error);
+      if (error?.code === "auth/requires-recent-login") {
+        setPasswordPromptOpen(true);
+        return;
+      }
+      window.alert(
+        error?.message || "Delete account failed. Please try again."
+      );
+    }
+  };
+
+  const handlePasswordPromptSubmit = async () => {
+    if (!firebaseUser?.email) {
+      window.alert("No email found for this account.");
+      return;
+    }
+
+    if (!reauthPassword.trim()) {
+      window.alert("Please enter your password to continue.");
+      return;
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(
+        firebaseUser.email,
+        reauthPassword
+      );
+
+      await reauthenticateWithCredential(firebaseUser, credential);
+      setPasswordPromptOpen(false);
+      setReauthPassword("");
+      await handleDeleteAccount(true);
+    } catch (error: any) {
+      window.alert(
+        error?.message || "We could not verify your password. Please try again."
+      );
     }
   };
 
@@ -246,6 +324,26 @@ export default function SettingsPage() {
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 ))}
+
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900">Logout</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => void handleDeleteAccount()}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-red-700">Delete Account</span>
+                  <ChevronRight className="w-4 h-4 text-red-300" />
+                </button>
               </div>
             </section>
 
@@ -451,6 +549,19 @@ export default function SettingsPage() {
           </section>
         )}
       </main>
+
+      <PasswordPromptModal
+        open={passwordPromptOpen}
+        title="Verify your identity"
+        message="For security, please re-enter your password before deleting your account."
+        password={reauthPassword}
+        onPasswordChange={setReauthPassword}
+        onSubmit={() => void handlePasswordPromptSubmit()}
+        onCancel={() => {
+          setPasswordPromptOpen(false);
+          setReauthPassword("");
+        }}
+      />
     </div>
   );
 }
