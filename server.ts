@@ -463,9 +463,23 @@ if (ADMIN_EMAILS.length === 0) {
   );
 }
 
-function isAdminEmail(email?: string | null) {
-  if (!email) return false;
-  return ADMIN_EMAILS.includes(String(email).toLowerCase());
+const ADMIN_UIDS = (
+  process.env.ADMIN_UIDS ||
+  process.env.VITE_ADMIN_UIDS ||
+  ""
+)
+  .split(",")
+  .map((uid) => uid.trim())
+  .filter(Boolean);
+
+function isAdminUser(identity?: { email?: string | null; uid?: string | null }) {
+  const email = identity?.email ? String(identity.email).toLowerCase() : "";
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+
+  const uid = identity?.uid ? String(identity.uid) : "";
+  if (uid && ADMIN_UIDS.includes(uid)) return true;
+
+  return false;
 }
 
 function logAdminAction({
@@ -2030,8 +2044,9 @@ for (const l of listings) {
 
   app.get("/api/admin/reports", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2087,8 +2102,9 @@ for (const l of listings) {
 
 app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2143,8 +2159,9 @@ app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
 
 app.get("/api/admin/actions", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2172,8 +2189,9 @@ app.get("/api/admin/actions", requireAuth, (req, res) => {
 
 app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2208,7 +2226,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, withAsyncRou
   const requesterEmail = (req.user as any)?.email || null;
   const requesterUid = req.user?.uid || null;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2314,8 +2332,22 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, withAsyncRou
         { is_seller: true },
         { merge: true }
       );
-    } catch (firestoreSyncError) {
-      console.warn("Failed to sync approved seller status to Firestore:", firestoreSyncError);
+
+      const adminApp = getFirebaseAdmin();
+      adminApp
+        .firestore()
+        .collection("users")
+        .doc(application.applicant_uid)
+        .set(
+          { is_seller: true },
+          { merge: true }
+        )
+        .catch((firestoreSyncError) => {
+          console.warn(
+            "Failed to sync approved seller status to Firestore:",
+            firestoreSyncError
+          );
+        });
     }
   }
 
@@ -2340,7 +2372,7 @@ app.post("/api/admin/listings/:id/hide", requireAuth, (req, res) => {
   const requesterUid = req.user?.uid || null;
   const id = Number(req.params.id);
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2380,7 +2412,7 @@ app.post("/api/admin/listings/:id/unhide", requireAuth, (req, res) => {
   const requesterUid = req.user?.uid || null;
   const id = Number(req.params.id);
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2420,7 +2452,7 @@ app.post("/api/admin/sellers/:uid/suspend", requireAuth, (req, res) => {
   const requesterUid = req.user?.uid || null;
   const { uid } = req.params;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
@@ -2456,7 +2488,7 @@ app.post("/api/admin/sellers/:uid/unsuspend", requireAuth, (req, res) => {
   const requesterUid = req.user?.uid || null;
   const { uid } = req.params;
 
-  if (!isAdminEmail(requesterEmail)) {
+  if (!isAdminUser({ email: requesterEmail, uid: requesterUid })) {
     return res.status(403).json({ error: "Forbidden: admin access required" });
   }
 
