@@ -2333,15 +2333,21 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, withAsyncRou
         { merge: true }
       );
 
-      try {
-        const adminApp = getFirebaseAdmin();
-        await adminApp.firestore().collection("users").doc(application.applicant_uid).set(
+      const adminApp = getFirebaseAdmin();
+      adminApp
+        .firestore()
+        .collection("users")
+        .doc(application.applicant_uid)
+        .set(
           { is_seller: true },
           { merge: true }
-        );
-      } catch (firestoreSyncError) {
-        console.warn("Failed to sync approved seller status to Firestore:", firestoreSyncError);
-      }
+        )
+        .catch((firestoreSyncError) => {
+          console.warn(
+            "Failed to sync approved seller status to Firestore:",
+            firestoreSyncError
+          );
+        });
     }
   }
 
