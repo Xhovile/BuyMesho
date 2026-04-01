@@ -1,6 +1,6 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { User } from "lucide-react";
-import { updateDoc, doc } from "firebase/firestore";
+import { updateDoc, setDoc, doc } from "firebase/firestore";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import FormDropdown from "./components/FormDropdown";
@@ -62,18 +62,32 @@ export default function EditAccountPage() {
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (!firebaseUser || !profile) return;
+    if (!firebaseUser) return;
     setSaving(true);
     try {
-      const updatedProfile: UserProfile = {
-        ...profile,
-        university: form.university,
-        avatar_url: form.avatarUrl,
-      };
-      await updateDoc(doc(firestore, "users", firebaseUser.uid), {
-        university: updatedProfile.university,
-        avatar_url: updatedProfile.avatar_url || "",
-      });
+      let updatedProfile: UserProfile;
+      if (profile) {
+        updatedProfile = {
+          ...profile,
+          university: form.university,
+          avatar_url: form.avatarUrl,
+        };
+        await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+          university: updatedProfile.university,
+          avatar_url: updatedProfile.avatar_url || "",
+        });
+      } else {
+        updatedProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          university: form.university,
+          avatar_url: form.avatarUrl,
+          is_verified: false,
+          is_seller: false,
+          join_date: new Date().toISOString(),
+        };
+        await setDoc(doc(firestore, "users", firebaseUser.uid), updatedProfile);
+      }
       await apiFetch("/api/sellers", {
         method: "POST",
         body: JSON.stringify(updatedProfile),
@@ -91,8 +105,12 @@ export default function EditAccountPage() {
   return (
     <AccountPageShell
       eyebrow="Account"
-      title="Edit account"
-      description="Update your general account details, including your university and profile picture."
+      title={profile ? "Edit account" : "Complete account setup"}
+      description={
+        profile
+          ? "Update your general account details, including your university and profile picture."
+          : "Create your account details to finish setting up your profile."
+      }
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
     >
@@ -100,17 +118,6 @@ export default function EditAccountPage() {
         <div className="p-8 text-sm text-zinc-500">Loading account…</div>
       ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
-      ) : !profile ? (
-        <div className="p-8 space-y-3 text-sm text-zinc-500">
-          <p>Account setup is still in progress. Please open your profile to continue setup.</p>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/profile")}
-            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Continue profile setup
-          </button>
-        </div>
       ) : (
         <form onSubmit={handleSave} className="p-8 space-y-5 w-full">
           <FormDropdown
