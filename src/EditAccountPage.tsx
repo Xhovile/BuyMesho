@@ -98,8 +98,19 @@ export default function EditAccountPage() {
     >
       {authLoading || profileLoading ? (
         <div className="p-8 text-sm text-zinc-500">Loading account…</div>
-      ) : !firebaseUser || !profile ? (
+      ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
+      ) : !profile ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-500">
+          <p>Account setup is still in progress. Please open your profile to continue setup.</p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/profile")}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Continue profile setup
+          </button>
+        </div>
       ) : (
         <form onSubmit={handleSave} className="p-8 space-y-5 w-full">
           <FormDropdown
