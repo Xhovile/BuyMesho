@@ -56,18 +56,6 @@ export function useAccountProfile() {
       if (snap.exists()) {
         const loadedProfile = snap.data() as UserProfile;
         setProfile(loadedProfile);
-
-        if (!loadedProfile.is_seller) {
-          try {
-            const sellerApplication = await fetchSellerApplicationWithRetry();
-            if (sellerApplication?.status === "approved") {
-              await setDoc(userRef, { is_seller: true }, { merge: true });
-              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
-            }
-          } catch (statusErr) {
-            console.error("Failed to sync seller status from application after retries", statusErr);
-          }
-        }
       } else {
         try {
           await setDoc(userRef, fallbackProfile);
