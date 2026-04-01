@@ -59,7 +59,7 @@ export function useAccountProfile() {
     try {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       await setDoc(userRef, updates, { merge: true });
-      setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      await loadProfile();
       // If the profile hadn't loaded yet, reload from Firestore so the update isn't lost
       if (!profile) {
         await loadProfile();
