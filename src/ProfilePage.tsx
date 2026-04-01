@@ -17,9 +17,11 @@ import { signOut, sendEmailVerification } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
-import { navigateToPath } from "./lib/appNavigation";
+import { navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
+import AdminReportsModal from "./components/AdminReportsModal";
+import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 
 type FeedbackState = {
   open: boolean;
@@ -33,6 +35,8 @@ export default function ProfilePage() {
     useAccountProfile();
   const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [adminReportsOpen, setAdminReportsOpen] = useState(false);
+  const [sellerApprovalsOpen, setSellerApprovalsOpen] = useState(false);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -158,21 +162,25 @@ export default function ProfilePage() {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => navigateToPath("/admin/reports")}
+                  onClick={() => setAdminReportsOpen(true)}
                   className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
                 >
-                  <Flag className="w-5 h-5 text-indigo-700 mb-2" />
-                  <p className="font-bold text-zinc-900">Reports</p>
+                  <div className="flex items-center gap-2">
+                    <Flag className="w-5 h-5 text-indigo-700" />
+                    <p className="font-bold text-zinc-900">Reports</p>
+                  </div>
                   <p className="text-sm text-zinc-500 mt-1">Review and resolve listing/user reports.</p>
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => navigateToPath("/admin/seller-applications")}
+                  onClick={() => setSellerApprovalsOpen(true)}
                   className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
                 >
-                  <ClipboardList className="w-5 h-5 text-indigo-700 mb-2" />
-                  <p className="font-bold text-zinc-900">Seller Approvals</p>
+                  <div className="flex items-center gap-2">
+                    <ClipboardList className="w-5 h-5 text-indigo-700" />
+                    <p className="font-bold text-zinc-900">Seller Approvals</p>
+                  </div>
                   <p className="text-sm text-zinc-500 mt-1">Approve or reject seller applications.</p>
                 </button>
               </div>
@@ -200,8 +208,10 @@ export default function ProfilePage() {
               onClick={() => navigateToPath("/saved")}
               className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
             >
-              <Bookmark className="w-5 h-5 text-zinc-700 mb-3" />
-              <p className="font-bold text-zinc-900">Saved Items</p>
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-zinc-700" />
+                <p className="font-bold text-zinc-900">Saved Items</p>
+              </div>
               <p className="text-sm text-zinc-500 mt-1">Open the saved page.</p>
             </button>
 
@@ -210,8 +220,10 @@ export default function ProfilePage() {
               onClick={() => navigateToPath("/settings")}
               className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
             >
-              <Settings className="w-5 h-5 text-zinc-700 mb-3" />
-              <p className="font-bold text-zinc-900">Settings</p>
+              <div className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-zinc-700" />
+                <p className="font-bold text-zinc-900">Settings</p>
+              </div>
               <p className="text-sm text-zinc-500 mt-1">Open account settings.</p>
             </button>
 
@@ -220,14 +232,16 @@ export default function ProfilePage() {
               onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
               className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
             >
-              {profile.is_seller ? (
-                <Package className="w-5 h-5 text-zinc-700 mb-3" />
-              ) : (
-                <ShieldCheck className="w-5 h-5 text-zinc-700 mb-3" />
-              )}
-              <p className="font-bold text-zinc-900">
-                {profile.is_seller ? "My Listings" : "Become a Seller"}
-              </p>
+              <div className="flex items-center gap-2">
+                {profile.is_seller ? (
+                  <Package className="w-5 h-5 text-zinc-700" />
+                ) : (
+                  <ShieldCheck className="w-5 h-5 text-zinc-700" />
+                )}
+                <p className="font-bold text-zinc-900">
+                  {profile.is_seller ? "My Listings" : "Become a Seller"}
+                </p>
+              </div>
               <p className="text-sm text-zinc-500 mt-1">
                 {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
               </p>
@@ -239,8 +253,10 @@ export default function ProfilePage() {
                 onClick={() => navigateToPath("/edit-account")}
                 className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
               >
-                <Pencil className="w-5 h-5 text-zinc-700 mb-3" />
-                <p className="font-bold text-zinc-900">Edit Account</p>
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-zinc-700" />
+                  <p className="font-bold text-zinc-900">Edit Account</p>
+                </div>
                 <p className="text-sm text-zinc-500 mt-1">Update your university and profile photo.</p>
               </button>
             )}
@@ -251,8 +267,10 @@ export default function ProfilePage() {
                 onClick={() => navigateToPath("/edit-profile")}
                 className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
               >
-                <Pencil className="w-5 h-5 text-zinc-700 mb-3" />
-                <p className="font-bold text-zinc-900">Edit Seller Profile</p>
+                <div className="flex items-center gap-2">
+                  <Pencil className="w-5 h-5 text-zinc-700" />
+                  <p className="font-bold text-zinc-900">Edit Seller Profile</p>
+                </div>
                 <p className="text-sm text-zinc-500 mt-1">Update your public seller details.</p>
               </button>
             )}
@@ -262,8 +280,10 @@ export default function ProfilePage() {
               onClick={() => navigateToPath("/change-password")}
               className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
             >
-              <Lock className="w-5 h-5 text-zinc-700 mb-3" />
-              <p className="font-bold text-zinc-900">Change Password</p>
+              <div className="flex items-center gap-2">
+                <Lock className="w-5 h-5 text-zinc-700" />
+                <p className="font-bold text-zinc-900">Change Password</p>
+              </div>
               <p className="text-sm text-zinc-500 mt-1">Update your account password securely.</p>
             </button>
           </div>
@@ -289,6 +309,17 @@ export default function ProfilePage() {
           message={feedback.message}
           onClose={() => setFeedback(null)}
         />
+      )}
+
+      {adminReportsOpen && (
+        <AdminReportsModal
+          onClose={() => setAdminReportsOpen(false)}
+          onOpenUser={(uid) => navigateToSellerProfile(uid)}
+        />
+      )}
+
+      {sellerApprovalsOpen && (
+        <AdminSellerApplicationsModal onClose={() => setSellerApprovalsOpen(false)} />
       )}
     </AccountPageShell>
   );
