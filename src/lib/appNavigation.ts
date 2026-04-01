@@ -141,13 +141,17 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-export const navigateBackOrPath = (fallbackPath: string = EXPLORE_PATH) => {
-  if (window.history.length > 1) {
-    window.history.back();
-    return;
-  }
+export const navigateToExplore = () => {
+  const url = new URL(window.location.href);
+  url.pathname = EXPLORE_PATH;
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
 
-  navigateToPath(fallbackPath);
+  window.history.pushState({}, "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 export const navigateToListingDetails = (
