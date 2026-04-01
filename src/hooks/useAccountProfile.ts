@@ -6,6 +6,26 @@ import { UNIVERSITIES } from "../constants";
 import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
+const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
+
+async function fetchSellerApplicationWithRetry() {
+  let lastError: unknown = null;
+
+  for (const delayMs of SELLER_STATUS_RETRY_DELAYS_MS) {
+    if (delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+
+    try {
+      return await apiFetch("/api/profile/seller-application");
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 export function useAccountProfile() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -38,15 +58,25 @@ export function useAccountProfile() {
         setProfile(loadedProfile);
 
         if (!loadedProfile.is_seller) {
-          try {
-            const sellerApplication = await apiFetch("/api/profile/seller-application");
-            if (sellerApplication?.status === "approved") {
-              await setDoc(userRef, { is_seller: true }, { merge: true });
-              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+          // Run in the background so profileLoading is cleared immediately.
+          void (async () => {
+            try {
+              const sellerApplication = await fetchSellerApplicationWithRetry();
+              if (sellerApplication?.status === "approved") {
+                // Update local state based on approved application, even if Firestore write fails.
+                setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+                // Best-effort Firestore write; if it fails the local state already
+                // reflects the approval and the next profile load will retry the sync.
+                try {
+                  await setDoc(userRef, { is_seller: true }, { merge: true });
+                } catch (firestoreWriteErr) {
+                  console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+                }
+              }
+            } catch (statusErr) {
+              console.error("Failed to sync seller status from application after retries", statusErr);
             }
-          } catch (statusErr) {
-            console.warn("Failed to sync seller status from application", statusErr);
-          }
+          })();
         }
       } else {
         try {
