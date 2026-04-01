@@ -47,8 +47,6 @@ export function useAccountProfile() {
               Authorization: `Bearer ${token}`,
               "Content-Type": "application/json",
             },
-          await apiFetch("/api/profile/bootstrap", {
-            method: "POST",
             body: JSON.stringify({
               university: fallbackProfile.university,
             }),
