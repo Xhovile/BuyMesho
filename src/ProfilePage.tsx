@@ -10,6 +10,8 @@ import {
   User,
   Lock,
   Pencil,
+  ClipboardList,
+  Flag,
 } from "lucide-react";
 import { signOut, sendEmailVerification } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -17,6 +19,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { navigateToPath } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useIsAdmin } from "./hooks/useIsAdmin";
 
 type FeedbackState = {
   open: boolean;
@@ -28,6 +31,7 @@ type FeedbackState = {
 export default function ProfilePage() {
   const { firebaseUser, authLoading, profile, profileLoading, emailVerified } =
     useAccountProfile();
+  const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   const showFeedback = (
@@ -146,6 +150,34 @@ export default function ProfilePage() {
             </div>
           </div>
 
+
+
+          {isAdmin && (
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-500">Admin tools</p>
+              <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/admin/reports")}
+                  className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
+                >
+                  <Flag className="w-5 h-5 text-indigo-700 mb-2" />
+                  <p className="font-bold text-zinc-900">Reports</p>
+                  <p className="text-sm text-zinc-500 mt-1">Review and resolve listing/user reports.</p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/admin/seller-applications")}
+                  className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
+                >
+                  <ClipboardList className="w-5 h-5 text-indigo-700 mb-2" />
+                  <p className="font-bold text-zinc-900">Seller Approvals</p>
+                  <p className="text-sm text-zinc-500 mt-1">Approve or reject seller applications.</p>
+                </button>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
