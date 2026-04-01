@@ -58,20 +58,25 @@ export function useAccountProfile() {
         setProfile(loadedProfile);
 
         if (!loadedProfile.is_seller) {
-          try {
-            const sellerApplication = await fetchSellerApplicationWithRetry();
-            if (sellerApplication?.status === "approved") {
-              // Update local state based on approved application, even if Firestore write fails.
-              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
-              try {
-                await setDoc(userRef, { is_seller: true }, { merge: true });
-              } catch (firestoreWriteErr) {
-                console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+          // Run in the background so profileLoading is cleared immediately.
+          void (async () => {
+            try {
+              const sellerApplication = await fetchSellerApplicationWithRetry();
+              if (sellerApplication?.status === "approved") {
+                // Update local state based on approved application, even if Firestore write fails.
+                setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+                // Best-effort Firestore write; if it fails the local state already
+                // reflects the approval and the next profile load will retry the sync.
+                try {
+                  await setDoc(userRef, { is_seller: true }, { merge: true });
+                } catch (firestoreWriteErr) {
+                  console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+                }
               }
+            } catch (statusErr) {
+              console.error("Failed to sync seller status from application after retries", statusErr);
             }
-          } catch (statusErr) {
-            console.error("Failed to sync seller status from application after retries", statusErr);
-          }
+          })();
         }
       } else {
         try {
