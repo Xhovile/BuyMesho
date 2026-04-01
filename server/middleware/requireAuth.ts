@@ -25,6 +25,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   uid: decoded.uid,
   email: decoded.email ?? null,
   email_verified: (decoded as any).email_verified === true,
+  is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
 };
 
     next();
