@@ -24,7 +24,7 @@ type SellerApplication = {
 };
 
 export default function BecomeSellerPage() {
-  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading, updateProfile } = useAccountProfile();
   const [form, setForm] = useState({
     fullLegalName: "",
     institution: UNIVERSITIES[0] as University,
@@ -60,6 +60,13 @@ export default function BecomeSellerPage() {
       try {
         const data = await apiFetch("/api/profile/seller-application");
         if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
+          if (data.status === "approved" && !profile?.is_seller) {
+            try {
+              await updateProfile({ is_seller: true });
+            } catch (syncErr) {
+              console.error("Failed to sync approved seller profile from become-seller page", syncErr);
+            }
+          }
           setApplication(data as SellerApplication);
           setShowReapplyForm(false);
         } else {
