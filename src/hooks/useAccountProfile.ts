@@ -148,7 +148,7 @@ export function useAccountProfile() {
   }, [firebaseUser, authLoading]);
 
   useEffect(() => {
-    if (authLoading || !firebaseUser || profile?.is_seller) return;
+    if (authLoading || !firebaseUser || profile?.is_seller || !sellerApplicationPending) return;
 
     const syncApprovedSellerStatus = async () => {
       try {
