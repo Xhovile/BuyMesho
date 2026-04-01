@@ -141,6 +141,15 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export const navigateBackOrPath = (fallbackPath: string) => {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  navigateToPath(fallbackPath);
+};
+
 export const navigateToExplore = () => {
   const url = new URL(window.location.href);
   url.pathname = EXPLORE_PATH;

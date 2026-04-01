@@ -10,9 +10,10 @@ import {
   Package,
   BookOpen,
   Check,
+  Settings,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { EXPLORE_PATH, navigateToCreateListing, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, SETTINGS_PATH, navigateToCreateListing, navigateToPath } from "./lib/appNavigation";
 
 const quickPaths = [
   {
@@ -109,6 +110,14 @@ export default function HomePage() {
               className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
             >
               Explore
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 inline-flex items-center gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
             </button>
             <button
               type="button"
