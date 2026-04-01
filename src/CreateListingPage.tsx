@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { doc, getDoc } from "firebase/firestore";
 import ListingStudioForm from "./components/ListingStudioForm";
 import FeedbackModal from "./components/FeedbackModal";
-import { auth, db as firestore } from "./firebase";
-import { useAuthUser } from "./hooks/useAuthUser";
+import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES, UNIVERSITIES } from "./constants";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { ListingDraft, UserProfile } from "./types";
 
 const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
@@ -36,9 +35,7 @@ type FeedbackState = {
 } | null;
 
 export default function CreateListingPage() {
-  const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
@@ -56,29 +53,6 @@ export default function CreateListingPage() {
     window.dispatchEvent(new PopStateEvent("popstate"));
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!firebaseUser) {
-        setProfile(null);
-        setLoadingProfile(false);
-        return;
-      }
-
-      setLoadingProfile(true);
-      try {
-        const snap = await getDoc(doc(firestore, "users", firebaseUser.uid));
-        setProfile(snap.exists() ? (snap.data() as UserProfile) : null);
-      } catch (error) {
-        console.error("Failed to load create-listing profile state", error);
-        setProfile(null);
-      } finally {
-        setLoadingProfile(false);
-      }
-    };
-
-    void loadProfile();
-  }, [firebaseUser]);
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
 
@@ -129,7 +103,7 @@ export default function CreateListingPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
-        {authLoading || loadingProfile ? (
+        {authLoading || profileLoading ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium"><Loader2 className="w-5 h-5 animate-spin" /> Preparing listing studio...</div>
         ) : !firebaseUser ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">

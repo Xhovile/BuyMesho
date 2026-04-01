@@ -35,7 +35,25 @@ export function useAccountProfile() {
           is_seller: false,
           join_date: new Date().toISOString(),
         };
-        await setDoc(userRef, fallbackProfile);
+        try {
+          await setDoc(userRef, fallbackProfile);
+        } catch (firestoreWriteErr) {
+          console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
+          const token = await firebaseUser.getIdToken(true);
+          const bootstrapRes = await fetch("/api/profile/bootstrap", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              university: fallbackProfile.university,
+            }),
+          });
+          if (!bootstrapRes.ok) {
+            throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+          }
+        }
         setProfile(fallbackProfile);
       }
       setError(null);
