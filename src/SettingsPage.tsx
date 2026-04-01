@@ -28,6 +28,7 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useIsAdmin } from "./hooks/useIsAdmin";
 import type { VisibilitySetting } from "./types";
 import {
   EmailAuthProvider,
@@ -61,6 +62,7 @@ export default function SettingsPage() {
     getSettingsViewFromSearch(window.location.search)
   );
   const { firebaseUser, profile, profileLoading, updateProfile } = useAccountProfile();
+  const { isAdmin } = useIsAdmin(firebaseUser);
   const [savingPrivacyField, setSavingPrivacyField] = useState<
     "profile_visibility" | "seller_visibility" | "saved_visibility" | null
   >(null);
@@ -311,8 +313,12 @@ export default function SettingsPage() {
               <div className="mt-4 space-y-2">
                 {[
                   { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
-                  { label: "Edit Profile", path: EDIT_PROFILE_PATH },
-                  { label: "Become Seller", path: BECOME_SELLER_PATH },
+                  ...(profile?.is_seller
+                    ? [{ label: "Edit Seller Profile", path: EDIT_PROFILE_PATH }]
+                    : []),
+                  ...(!profile?.is_seller
+                    ? [{ label: "Become Seller", path: BECOME_SELLER_PATH }]
+                    : []),
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -324,6 +330,27 @@ export default function SettingsPage() {
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 ))}
+
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath("/admin/reports")}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900">Admin Reports</span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath("/admin/seller-applications")}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900">Seller Approvals</span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  </>
+                )}
 
                 <button
                   type="button"

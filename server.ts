@@ -436,10 +436,20 @@ try {
   console.warn("Seller ratings index setup failed:", e);
 }
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "isaacmtsiriza310@gmail.com")
+const ADMIN_EMAILS = (
+  process.env.ADMIN_EMAILS ||
+  process.env.VITE_ADMIN_EMAILS ||
+  ""
+)
   .split(",")
   .map((email) => email.trim().toLowerCase())
   .filter(Boolean);
+
+if (ADMIN_EMAILS.length === 0) {
+  console.warn(
+    "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
+  );
+}
 
 function isAdminEmail(email?: string | null) {
   if (!email) return false;
@@ -2623,6 +2633,7 @@ app.post("/api/listings/:id/view", (req, res) => {
         active_listings: listingStats.active_listings ?? 0,
         sold_listings: listingStats.sold_listings ?? 0,
         total_views: listingStats.total_views ?? 0,
+        total_whatsapp_clicks: listingStats.total_whatsapp_clicks ?? 0,
         repeat_seller_activity: repeatSellerActivity,
       },
       byCampus,
