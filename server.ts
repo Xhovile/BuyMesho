@@ -546,7 +546,6 @@ async function startServer() {
       
       const result = await cloudinary.uploader.upload(dataURI, {
         resource_type: "auto",
-        folder: "buymesho",
       });
 
       console.log("Cloudinary success:", result.secure_url);
@@ -929,6 +928,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     const requestedUniversity =
       typeof req.body?.university === "string" ? req.body.university.trim() : "";
     const safeUniversity = requestedUniversity || "University Not Set";
+    const requestedAvatarUrl =
+      typeof req.body?.avatar_url === "string" ? req.body.avatar_url.trim() : "";
+    const safeAvatarUrl = requestedAvatarUrl || "";
     const nowIso = new Date().toISOString();
     const hasExistingListings = !!db
       .prepare(
@@ -946,7 +948,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       uid,
       email,
       university: safeUniversity,
-      avatar_url: "",
+      avatar_url: safeAvatarUrl,
       is_verified: !!req.user?.email_verified,
       is_seller: recoveredIsSeller,
       join_date: nowIso,
