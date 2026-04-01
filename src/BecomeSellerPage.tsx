@@ -41,6 +41,7 @@ export default function BecomeSellerPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [application, setApplication] = useState<SellerApplication | null>(null);
+  const [showReapplyForm, setShowReapplyForm] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function BecomeSellerPage() {
         const data = await apiFetch("/api/profile/seller-application");
         if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
           setApplication(data as SellerApplication);
+          setShowReapplyForm(false);
         } else {
           setApplication(null);
         }
@@ -119,6 +121,7 @@ export default function BecomeSellerPage() {
       if (nextApplication?.status) {
         setApplication(nextApplication as SellerApplication);
       }
+      setShowReapplyForm(false);
       showFeedback("success", "Application submitted", "Your application is pending manual review.");
       navigateToPath("/profile");
     } catch (err: any) {
@@ -153,6 +156,70 @@ export default function BecomeSellerPage() {
         </div>
       ) : profile.is_seller ? (
         <div className="p-8 text-sm text-zinc-500">Your account is already a seller account.</div>
+      ) : application?.status === "pending" ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-600">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <p className="font-bold text-amber-800">Application pending review</p>
+            <p className="mt-1 text-amber-800">You already applied to become a seller. We are still reviewing your application.</p>
+            <p className="mt-2">
+              Reviewed date:{" "}
+              <span className="font-medium">
+                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Not reviewed yet"}
+              </span>
+            </p>
+            {application.review_notes ? (
+              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
+            ) : null}
+          </div>
+        </div>
+      ) : application?.status === "approved" ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-600">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+            <p className="font-bold text-emerald-800">Application approved</p>
+            <p className="mt-1 text-emerald-800">
+              Your seller application has been approved. If seller tools are not visible yet, refresh the page.
+            </p>
+            <p className="mt-2">
+              Reviewed date:{" "}
+              <span className="font-medium">
+                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Approved"}
+              </span>
+            </p>
+            {application.review_notes ? (
+              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/profile")}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Back to profile
+          </button>
+        </div>
+      ) : application?.status === "rejected" && !showReapplyForm ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-600">
+          <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <p className="font-bold text-rose-800">Application rejected</p>
+            <p className="mt-1 text-rose-800">Your previous seller application was not approved.</p>
+            <p className="mt-2">
+              Reviewed date:{" "}
+              <span className="font-medium">
+                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Not available"}
+              </span>
+            </p>
+            {application.review_notes ? (
+              <p className="mt-1">Review note: <span className="font-medium">{application.review_notes}</span></p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowReapplyForm(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Reapply
+          </button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="p-8 space-y-5 w-full">
           <div>

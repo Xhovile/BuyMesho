@@ -17,11 +17,13 @@ import { signOut, sendEmailVerification } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
-import { navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
+import {
+  ADMIN_REPORTS_PATH,
+  ADMIN_SELLER_APPLICATIONS_PATH,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
-import AdminReportsModal from "./components/AdminReportsModal";
-import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 
 type FeedbackState = {
   open: boolean;
@@ -35,8 +37,6 @@ export default function ProfilePage() {
     useAccountProfile();
   const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
-  const [adminReportsOpen, setAdminReportsOpen] = useState(false);
-  const [sellerApprovalsOpen, setSellerApprovalsOpen] = useState(false);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -162,7 +162,7 @@ export default function ProfilePage() {
               <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  onClick={() => setAdminReportsOpen(true)}
+                  onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
                   className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
                 >
                   <div className="flex items-center gap-2">
@@ -174,7 +174,7 @@ export default function ProfilePage() {
 
                 <button
                   type="button"
-                  onClick={() => setSellerApprovalsOpen(true)}
+                  onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
                   className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100"
                 >
                   <div className="flex items-center gap-2">
@@ -309,17 +309,6 @@ export default function ProfilePage() {
           message={feedback.message}
           onClose={() => setFeedback(null)}
         />
-      )}
-
-      {adminReportsOpen && (
-        <AdminReportsModal
-          onClose={() => setAdminReportsOpen(false)}
-          onOpenUser={(uid) => navigateToSellerProfile(uid)}
-        />
-      )}
-
-      {sellerApprovalsOpen && (
-        <AdminSellerApplicationsModal onClose={() => setSellerApprovalsOpen(false)} />
       )}
     </AccountPageShell>
   );
