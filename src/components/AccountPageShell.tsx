@@ -51,7 +51,7 @@ export default function AccountPageShell({
           </button>
           <div className="flex items-center gap-3">
             {firebaseUser && (
-              <button type="button" onClick={() => void handleLogout()} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2">
+              <button type="button" onClick={() => void handleLogout()} className="inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2">
                 <LogOut className="w-4 h-4" />
                 Log out
               </button>
