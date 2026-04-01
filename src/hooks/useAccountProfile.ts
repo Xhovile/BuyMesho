@@ -148,16 +148,23 @@ export function useAccountProfile() {
   }, [firebaseUser, authLoading]);
 
   useEffect(() => {
-    if (authLoading || !firebaseUser || profile?.is_seller) return;
+    if (authLoading || !firebaseUser || profile?.is_seller || !sellerApplicationPending) return;
 
     const syncApprovedSellerStatus = async () => {
       try {
         const sellerApplication = await fetchSellerApplicationWithRetry();
-        if (sellerApplication?.status !== "approved") return;
 
-        const userRef = doc(firestore, "users", firebaseUser.uid);
-        await setDoc(userRef, { is_seller: true }, { merge: true });
-        setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+        if (sellerApplication?.status === "approved") {
+          const userRef = doc(firestore, "users", firebaseUser.uid);
+          await setDoc(userRef, { is_seller: true }, { merge: true });
+          setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+          setSellerApplicationPending(false);
+          return;
+        }
+
+        if (!sellerApplication || sellerApplication?.status === "rejected") {
+          setSellerApplicationPending(false);
+        }
       } catch (statusErr) {
         console.error("Background seller status sync failed", statusErr);
       }
@@ -180,7 +187,7 @@ export function useAccountProfile() {
       window.removeEventListener("popstate", handleFocusSync);
       window.clearInterval(syncInterval);
     };
-  }, [authLoading, firebaseUser, profile?.is_seller]);
+  }, [authLoading, firebaseUser, profile?.is_seller, sellerApplicationPending]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!firebaseUser) return;
