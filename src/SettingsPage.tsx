@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
   FileText,
@@ -12,12 +12,66 @@ import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
-import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  HOME_PATH,
+  SETTINGS_PATH,
+  navigateToPath,
+} from "./lib/appNavigation";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
+const SETTINGS_VIEW_QUERY_KEY = "section";
+
+const getSettingsViewFromSearch = (search: string): SettingsView => {
+  const section = new URLSearchParams(search).get(SETTINGS_VIEW_QUERY_KEY);
+  if (section === "privacy" || section === "terms" || section === "safety" || section === "report") {
+    return section;
+  }
+
+  return "menu";
+};
+
 export default function SettingsPage() {
-  const [view, setView] = useState<SettingsView>("menu");
+  const [view, setView] = useState<SettingsView>(() =>
+    getSettingsViewFromSearch(window.location.search)
+  );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setView(getSettingsViewFromSearch(window.location.search));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  const openView = (nextView: SettingsView) => {
+    if (nextView === "menu") {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      url.pathname = SETTINGS_PATH;
+      url.searchParams.delete(SETTINGS_VIEW_QUERY_KEY);
+
+      window.history.pushState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.pathname = SETTINGS_PATH;
+    url.searchParams.set(SETTINGS_VIEW_QUERY_KEY, nextView);
+
+    window.history.pushState({}, "", url.toString());
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const headerSubtitle = useMemo(() => {
     switch (view) {
@@ -120,7 +174,7 @@ export default function SettingsPage() {
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => setView(item.key as SettingsView)}
+                      onClick={() => openView(item.key as SettingsView)}
                       className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 px-4 py-4 text-left transition-colors"
                     >
                       <div className="flex items-center gap-3">
@@ -156,7 +210,7 @@ export default function SettingsPage() {
             <div className="p-4 border-b border-zinc-100 bg-zinc-50 flex items-center justify-between gap-4">
               <button
                 type="button"
-                onClick={() => setView("menu")}
+                onClick={() => openView("menu")}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold hover:bg-zinc-50"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -169,7 +223,7 @@ export default function SettingsPage() {
 
             {view === "privacy" && (
               <PrivacyPolicyPage
-                onBack={() => setView("menu")}
+                onBack={() => openView("menu")}
                 onClose={() => navigateToPath(HOME_PATH)}
                 showBackButton={false}
               />
@@ -177,7 +231,7 @@ export default function SettingsPage() {
 
             {view === "terms" && (
               <TermsPage
-                onBack={() => setView("menu")}
+                onBack={() => openView("menu")}
                 onClose={() => navigateToPath(HOME_PATH)}
                 showBackButton={false}
               />
@@ -185,7 +239,7 @@ export default function SettingsPage() {
 
             {view === "safety" && (
               <SafetyTipsPage
-                onBack={() => setView("menu")}
+                onBack={() => openView("menu")}
                 onClose={() => navigateToPath(HOME_PATH)}
                 showBackButton={false}
               />
@@ -193,7 +247,7 @@ export default function SettingsPage() {
 
             {view === "report" && (
               <ReportProblemPage
-                onBack={() => setView("menu")}
+                onBack={() => openView("menu")}
                 onClose={() => navigateToPath(HOME_PATH)}
                 showBackButton={false}
                 isLoggedIn={false}

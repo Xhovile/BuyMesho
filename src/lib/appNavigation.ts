@@ -141,6 +141,15 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export const navigateBackOrPath = (fallbackPath: string = EXPLORE_PATH) => {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  navigateToPath(fallbackPath);
+};
+
 export const navigateToListingDetails = (
   listingId: string | number,
   imageIndex: number = 0
