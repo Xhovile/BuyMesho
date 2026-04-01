@@ -216,7 +216,17 @@ export default function SettingsPage() {
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
-                  <p className="mt-1 font-semibold text-zinc-900">{profile?.is_seller ? "Seller" : "Buyer"}</p>
+                  <p className="mt-1 font-semibold text-zinc-900">
+                    {profileLoading
+                      ? "Loading..."
+                      : !firebaseUser
+                      ? "Login required"
+                      : profile
+                      ? profile.is_seller
+                        ? "Seller"
+                        : "Buyer"
+                      : "Not available"}
+                  </p>
                 </div>
               </div>
 
@@ -258,7 +268,13 @@ export default function SettingsPage() {
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email verification</p>
                   <p className="mt-1 font-semibold text-zinc-900">
-                    {profileLoading ? "Checking..." : firebaseUser?.emailVerified ? "Verified" : "Not verified"}
+                    {profileLoading
+                      ? "Checking..."
+                      : !firebaseUser
+                        ? "Login required"
+                        : firebaseUser.emailVerified
+                          ? "Verified"
+                          : "Not verified"}
                   </p>
                 </div>
 
@@ -314,9 +330,13 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </label>
-                  {!profile?.is_seller && (
-                    <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
-                  )}
+                  {!firebaseUser
+                    ? <p className="mt-2 text-xs text-zinc-500">Sign in to view seller status.</p>
+                    : profileLoading
+                    ? <p className="mt-2 text-xs text-zinc-500">Loading seller status...</p>
+                    : !profile?.is_seller && (
+                      <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
+                    )}
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Saved items visibility</p>
