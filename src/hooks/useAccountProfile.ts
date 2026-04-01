@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
 import { UNIVERSITIES } from "../constants";
+import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
 const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
@@ -63,7 +64,7 @@ export function useAccountProfile() {
           // Check application status on initial load to decide whether background
           // polling is needed, without forcing a token refresh.
           try {
-            const application = await fetchSellerApplicationBackground();
+            const application = await fetchSellerApplicationWithRetry();
             if (application?.status === "approved") {
               setSellerApplicationPending(false);
               setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
