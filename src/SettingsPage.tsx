@@ -304,7 +304,7 @@ export default function SettingsPage() {
                       : profile
                       ? profile.is_seller
                         ? "Seller"
-                        : "Buyer"
+                        : "General"
                       : "Not available"}
                   </p>
                 </div>

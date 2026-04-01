@@ -189,7 +189,7 @@ export default function ProfilePage() {
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Account Type</p>
               <p className="text-sm font-semibold text-zinc-900">
-                {profile.is_seller ? "Seller" : "Buyer / Member"}
+                {profile.is_seller ? "Seller" : "General"}
               </p>
             </div>
           </div>
