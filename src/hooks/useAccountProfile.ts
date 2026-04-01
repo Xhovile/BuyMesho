@@ -34,7 +34,20 @@ export function useAccountProfile() {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       const snap = await getDoc(userRef);
       if (snap.exists()) {
-        setProfile(snap.data() as UserProfile);
+        const loadedProfile = snap.data() as UserProfile;
+        setProfile(loadedProfile);
+
+        if (!loadedProfile.is_seller) {
+          try {
+            const sellerApplication = await apiFetch("/api/profile/seller-application");
+            if (sellerApplication?.status === "approved") {
+              await setDoc(userRef, { is_seller: true }, { merge: true });
+              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+            }
+          } catch (statusErr) {
+            console.warn("Failed to sync seller status from application", statusErr);
+          }
+        }
       } else {
         try {
           await setDoc(userRef, fallbackProfile);
