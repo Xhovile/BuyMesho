@@ -26,6 +26,7 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import type { VisibilitySetting } from "./types";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
@@ -49,7 +50,16 @@ export default function SettingsPage() {
   const [view, setView] = useState<SettingsView>(() =>
     getSettingsViewFromSearch(window.location.search)
   );
-  const { firebaseUser, profile, profileLoading } = useAccountProfile();
+  const { firebaseUser, profile, profileLoading, updateProfile } = useAccountProfile();
+  const [savingPrivacyField, setSavingPrivacyField] = useState<
+    "profile_visibility" | "seller_visibility" | "saved_visibility" | null
+  >(null);
+
+  const visibilityLabel: Record<VisibilitySetting, string> = {
+    everyone: "Everyone",
+    students_only: "Students only",
+    only_me: "Only me",
+  };
 
   useEffect(() => {
     const handlePopState = () => {
@@ -101,6 +111,20 @@ export default function SettingsPage() {
         return "Settings";
     }
   }, [view]);
+
+  const updateVisibility = async (
+    field: "profile_visibility" | "seller_visibility" | "saved_visibility",
+    nextValue: VisibilitySetting
+  ) => {
+    if (!firebaseUser) return;
+
+    setSavingPrivacyField(field);
+    try {
+      await updateProfile({ [field]: nextValue });
+    } finally {
+      setSavingPrivacyField(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -253,19 +277,72 @@ export default function SettingsPage() {
               <div className="space-y-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
-                  <p className="mt-1 font-semibold text-zinc-900">Visible to marketplace users</p>
+                  <label className="mt-2 block">
+                    <span className="sr-only">Profile visibility</span>
+                    <select
+                      value={profile?.profile_visibility || "everyone"}
+                      onChange={(event) =>
+                        void updateVisibility("profile_visibility", event.target.value as VisibilitySetting)
+                      }
+                      disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
+                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+                    >
+                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
+                        <option key={option} value={option}>
+                          {visibilityLabel[option]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Seller visibility</p>
-                  <p className="mt-1 font-semibold text-zinc-900">{profile?.is_seller ? "Seller page visible" : "Not a seller account"}</p>
+                  <label className="mt-2 block">
+                    <span className="sr-only">Seller visibility</span>
+                    <select
+                      value={profile?.seller_visibility || "everyone"}
+                      onChange={(event) =>
+                        void updateVisibility("seller_visibility", event.target.value as VisibilitySetting)
+                      }
+                      disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
+                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+                    >
+                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
+                        <option key={option} value={option}>
+                          {visibilityLabel[option]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {!profile?.is_seller && (
+                    <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
+                  )}
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Saved items visibility</p>
-                  <p className="mt-1 font-semibold text-zinc-900">Private (only you)</p>
+                  <label className="mt-2 block">
+                    <span className="sr-only">Saved items visibility</span>
+                    <select
+                      value={profile?.saved_visibility || "only_me"}
+                      onChange={(event) =>
+                        void updateVisibility("saved_visibility", event.target.value as VisibilitySetting)
+                      }
+                      disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
+                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
+                    >
+                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
+                        <option key={option} value={option}>
+                          {visibilityLabel[option]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                 </div>
-                <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
-                  “Who can see me” controls can be expanded here later.
-                </div>
+                {!firebaseUser && (
+                  <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
+                    Sign in to save privacy preferences.
+                  </div>
+                )}
               </div>
             </section>
 
