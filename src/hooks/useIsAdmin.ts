@@ -17,7 +17,29 @@ export function useIsAdmin(user: User | null | undefined) {
       }
 
       setLoading(true);
-      const nextValue = await resolveIsAdminUser(user);
+
+      let nextValue = await resolveIsAdminUser(user);
+
+      if (!nextValue) {
+        try {
+          const token = await user.getIdToken();
+          const response = await fetch("/api/admin/access", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            nextValue = result?.isAdmin === true;
+          } else {
+            nextValue = false;
+          }
+        } catch {
+          nextValue = false;
+        }
+      }
+
       if (!cancelled) {
         setIsAdmin(nextValue);
         setLoading(false);

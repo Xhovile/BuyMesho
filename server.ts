@@ -2167,6 +2167,17 @@ app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
   }
 });
 
+app.get("/api/admin/access", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+
+  if (!hasAdminAccess({ email: requesterEmail, uid: requesterUid, is_admin: req.user?.is_admin })) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  return res.json({ isAdmin: true });
+});
+
 app.get("/api/admin/actions", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
   const requesterUid = req.user?.uid || null;
