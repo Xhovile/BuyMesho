@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
+  ChevronRight,
   Expand,
-  ExternalLink,
   Eye,
   Loader2,
   Lock,
@@ -71,6 +71,9 @@ export default function ListingDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [activeSpecGroupTitle, setActiveSpecGroupTitle] = useState<string>("");
+  const [showSpecTabsChevron, setShowSpecTabsChevron] = useState(false);
+  const specTabsRef = useRef<HTMLDivElement | null>(null);
 
   const listingId = routeState.listing || "";
 
@@ -124,7 +127,7 @@ export default function ListingDetailsPage() {
         const [sellerResult, ratingResult, relatedResult] = await Promise.allSettled([
           apiFetch(`/api/users/${found.seller_uid}`),
           apiFetch(`/api/users/${found.seller_uid}/rating-summary`),
-          apiFetch(`/api/listings/${found.id}/related?limit=6`),
+          apiFetch(`/api/listings/${found.id}/related?limit=20`),
         ]);
 
         setSeller(sellerResult.status === "fulfilled" ? sellerResult.value : null);
@@ -211,6 +214,45 @@ export default function ListingDetailsPage() {
     : 0;
 
   const currentImage = galleryImages[currentGalleryIndex] || galleryImages[0] || "";
+  const visibleRelatedListings = relatedListings.slice(0, 20);
+
+  useEffect(() => {
+    if (!groupedSpecs.length) {
+      setActiveSpecGroupTitle("");
+      return;
+    }
+
+    if (!groupedSpecs.some((group) => group.title === activeSpecGroupTitle)) {
+      setActiveSpecGroupTitle(groupedSpecs[0].title);
+    }
+  }, [groupedSpecs, activeSpecGroupTitle]);
+
+  useEffect(() => {
+    const container = specTabsRef.current;
+    if (!container) {
+      setShowSpecTabsChevron(false);
+      return;
+    }
+
+    const checkOverflow = () => {
+      const hasOverflow = container.scrollWidth > container.clientWidth + 2;
+      const canScrollRight = container.scrollLeft + container.clientWidth < container.scrollWidth - 2;
+      setShowSpecTabsChevron(hasOverflow && canScrollRight);
+    };
+
+    checkOverflow();
+    container.addEventListener("scroll", checkOverflow);
+    window.addEventListener("resize", checkOverflow);
+    return () => {
+      container.removeEventListener("scroll", checkOverflow);
+      window.removeEventListener("resize", checkOverflow);
+    };
+  }, [groupedSpecs]);
+
+  const activeSpecGroup = useMemo(
+    () => groupedSpecs.find((group) => group.title === activeSpecGroupTitle) || groupedSpecs[0] || null,
+    [groupedSpecs, activeSpecGroupTitle]
+  );
 
   const handleShare = async () => {
     if (!listing) return;
@@ -241,6 +283,12 @@ export default function ListingDetailsPage() {
     if (!listing) return;
     const nextSaved = toggleSavedListingId(listing.id, firebaseUser?.uid);
     setSaved(nextSaved);
+  };
+
+  const handleScrollSpecTabsRight = () => {
+    const container = specTabsRef.current;
+    if (!container) return;
+    container.scrollBy({ left: 180, behavior: "smooth" });
   };
 
   const handleContactSeller = async () => {
@@ -394,18 +442,48 @@ export default function ListingDetailsPage() {
                       <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
                         MK {Number(listing.price).toLocaleString()}
                       </p>
+                      <p className="text-sm text-zinc-500 mt-1">
+                        Listed by {listing.business_name}
+                        {seller?.university ? ` · ${seller.university}` : ""}
+                      </p>
                     </div>
-                    <span
-                      className={`px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
-                        listing.status === "sold" || availableQuantity === 0
-                          ? "bg-zinc-200 text-zinc-600"
-                          : "bg-emerald-100 text-emerald-700"
-                      }`}
-                    >
-                      {listing.status === "sold" || availableQuantity === 0
-                        ? "Sold out"
-                        : `${availableQuantity} left`}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleToggleSaved}
+                        className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                          saved
+                            ? "border-zinc-900 bg-zinc-900 text-white"
+                            : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                        }`}
+                        aria-label={saved ? "Remove from saved" : "Save item"}
+                      >
+                        <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+                        aria-label="Share listing"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="w-4 h-4"
+                        >
+                          <circle cx="18" cy="5" r="3" />
+                          <circle cx="6" cy="12" r="3" />
+                          <circle cx="18" cy="19" r="3" />
+                          <path d="M8.59 13.51 15.42 17.49" />
+                          <path d="M15.41 6.51 8.59 10.49" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -429,7 +507,18 @@ export default function ListingDetailsPage() {
                     ) : null}
                   </div>
 
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-4 space-y-3">
+                    <span
+                      className={`inline-flex px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
+                        listing.status === "sold" || availableQuantity === 0
+                          ? "bg-zinc-200 text-zinc-600"
+                          : "bg-emerald-100 text-emerald-700"
+                      }`}
+                    >
+                      {listing.status === "sold" || availableQuantity === 0
+                        ? "Sold out"
+                        : `${availableQuantity} left`}
+                    </span>
                     <button
                       type="button"
                       onClick={handleContactSeller}
@@ -438,38 +527,16 @@ export default function ListingDetailsPage() {
                       {firebaseUser ? <MessageCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       {firebaseUser ? "Contact on WhatsApp" : "Log in to Contact"}
                     </button>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={handleToggleSaved}
-                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all shadow-md ${
-                          saved
-                            ? "bg-primary text-white shadow-primary/10 hover:bg-primary/90"
-                            : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50 shadow-sm"
-                        }`}
-                      >
-                        <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-                        {saved ? "Saved" : "Save"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleShare}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/10 hover:bg-primary/90 transition-all"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        Share
-                      </button>
-                    </div>
                   </div>
-                </section>
 
-                <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                    Description
-                  </p>
-                  <p className="mt-4 text-sm sm:text-base text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                    {listing.description}
-                  </p>
+                  <div className="mt-4">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                      Description
+                    </p>
+                    <p className="mt-3 text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
+                      {listing.description}
+                    </p>
+                  </div>
                 </section>
 
                 <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
@@ -548,29 +615,50 @@ export default function ListingDetailsPage() {
                   Specifications
                 </p>
                 {groupedSpecs.length > 0 ? (
-                  <div className="mt-5 space-y-5">
-                    {groupedSpecs.map((group) => (
-                      <div key={group.title}>
-                        <h3 className="text-sm font-black text-zinc-900 tracking-tight">
-                          {group.title}
-                        </h3>
-                        <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 overflow-hidden">
-                          {group.rows.map((row) => (
-                            <div
-                              key={row.key}
-                              className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
-                            >
-                              <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
-                                {row.label}
-                              </p>
-                              <p className="text-sm font-semibold text-zinc-900 text-right break-words">
-                                {row.value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
+                  <div className="mt-5">
+                    <div className="relative mb-3">
+                      <div ref={specTabsRef} className="flex gap-2 overflow-x-auto pb-1 pr-10">
+                        {groupedSpecs.map((group) => (
+                          <button
+                            key={group.title}
+                            type="button"
+                            onClick={() => setActiveSpecGroupTitle(group.title)}
+                            className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                              activeSpecGroup?.title === group.title
+                                ? "bg-zinc-900 text-white border-zinc-900"
+                                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                            }`}
+                          >
+                            {group.title}
+                          </button>
+                        ))}
                       </div>
-                    ))}
+                      {showSpecTabsChevron ? (
+                        <button
+                          type="button"
+                          onClick={handleScrollSpecTabsRight}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          aria-label="Scroll specification groups"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 overflow-hidden">
+                      {(activeSpecGroup?.rows || []).map((row) => (
+                        <div
+                          key={row.key}
+                          className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
+                        >
+                          <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+                            {row.label}
+                          </p>
+                          <p className="text-sm font-semibold text-zinc-900 text-right break-words">
+                            {row.value}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
@@ -590,31 +678,31 @@ export default function ListingDetailsPage() {
                     </h2>
                   </div>
                   <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                    {relatedListings.length} item{relatedListings.length === 1 ? "" : "s"}
+                    {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
                   </div>
                 </div>
 
-                {relatedListings.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {relatedListings.map((item) => (
+                {visibleRelatedListings.length > 0 ? (
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    {visibleRelatedListings.map((item) => (
                       <button
                         key={item.id}
                         type="button"
                         onClick={() => navigateToListingDetails(item.id, 0)}
-                        className="text-left rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 transition-colors"
+                        className="snap-start shrink-0 w-[240px] text-left rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-3 hover:bg-zinc-100 transition-colors"
                       >
-                        <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-4">
+                        <div className="aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-3">
                           <img
                             src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
                             alt={item.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
-                        <h3 className="text-lg font-extrabold text-zinc-900 line-clamp-1">
+                        <h3 className="text-base font-extrabold text-zinc-900 line-clamp-1">
                           {item.name}
                         </h3>
-                        <p className="mt-2 text-sm text-zinc-500 line-clamp-2">{item.description}</p>
-                        <p className="mt-3 text-2xl font-black tracking-tight text-zinc-900">
+                        <p className="mt-1.5 text-xs text-zinc-500 line-clamp-2">{item.description}</p>
+                        <p className="mt-2.5 text-xl font-black tracking-tight text-zinc-900">
                           MK {Number(item.price).toLocaleString()}
                         </p>
                       </button>
