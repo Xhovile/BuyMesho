@@ -83,7 +83,7 @@ export default function ChangePasswordPage() {
       ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
       ) : (
-        <form onSubmit={handleChangePassword} className="p-8 space-y-5 max-w-xl">
+        <form onSubmit={handleChangePassword} className="p-8 space-y-5 w-full">
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Current Password</label>
             <div className="relative">

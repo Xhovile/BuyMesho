@@ -121,7 +121,7 @@ export default function EditProfilePage() {
       ) : !profile.is_seller ? (
         <div className="p-8 text-sm text-zinc-500">Seller access required.</div>
       ) : (
-        <form onSubmit={handleSave} className="p-8 space-y-5 max-w-2xl">
+        <form onSubmit={handleSave} className="p-8 space-y-5 w-full">
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
             <input required type="text" value={form.businessName} onChange={(e) => setForm((prev) => ({ ...prev, businessName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />

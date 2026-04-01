@@ -101,7 +101,7 @@ export default function EditAccountPage() {
       ) : !firebaseUser || !profile ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
       ) : (
-        <form onSubmit={handleSave} className="p-8 space-y-5 max-w-2xl">
+        <form onSubmit={handleSave} className="p-8 space-y-5 w-full">
           <FormDropdown
             label="University"
             value={form.university}
