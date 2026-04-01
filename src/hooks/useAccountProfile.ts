@@ -162,6 +162,11 @@ export function useAccountProfile() {
           return;
         }
 
+        if (sellerApplication?.status === "pending") {
+          setSellerApplicationPending(true);
+          return;
+        }
+
         if (!sellerApplication || sellerApplication?.status === "rejected") {
           setSellerApplicationPending(false);
         }
@@ -178,14 +183,18 @@ export function useAccountProfile() {
 
     window.addEventListener("focus", handleFocusSync);
     window.addEventListener("popstate", handleFocusSync);
-    const syncInterval = window.setInterval(() => {
-      void syncApprovedSellerStatus();
-    }, 15000);
+    const syncInterval = sellerApplicationPending
+      ? window.setInterval(() => {
+          void syncApprovedSellerStatus();
+        }, 15000)
+      : null;
 
     return () => {
       window.removeEventListener("focus", handleFocusSync);
       window.removeEventListener("popstate", handleFocusSync);
-      window.clearInterval(syncInterval);
+      if (syncInterval) {
+        window.clearInterval(syncInterval);
+      }
     };
   }, [authLoading, firebaseUser, profile?.is_seller, sellerApplicationPending]);
 

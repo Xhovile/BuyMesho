@@ -977,7 +977,32 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
       )
       .get(uid);
-    const recoveredIsSeller = hasExistingListings;
+
+    const existingSellerRow = db
+      .prepare(
+        `
+          SELECT is_seller
+          FROM sellers
+          WHERE uid = ?
+          LIMIT 1
+        `
+      )
+      .get(uid) as { is_seller?: number } | undefined;
+
+    const hasApprovedApplication = !!db
+      .prepare(
+        `
+          SELECT 1
+          FROM seller_applications
+          WHERE applicant_uid = ?
+            AND status = 'approved'
+          LIMIT 1
+        `
+      )
+      .get(uid);
+
+    const recoveredIsSeller =
+      existingSellerRow?.is_seller === 1 || hasExistingListings || hasApprovedApplication;
 
     const fallbackProfile = {
       uid,
