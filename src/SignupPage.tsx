@@ -50,13 +50,23 @@ export default function SignupPage() {
         join_date: new Date().toISOString(),
       };
 
-      await setDoc(doc(firestore, "users", user.uid), profile);
-      showFeedback(
-        "success",
-        "Account created",
-        "Please check your email and verify your account before selling."
-      );
-      navigateToPath("/profile");
+      try {
+        await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
+        showFeedback(
+          "success",
+          "Account created",
+          "Please check your email and verify your account before selling."
+        );
+        navigateToPath("/profile");
+      } catch (profileErr: any) {
+        console.error("Failed to create Firestore profile during signup", profileErr);
+        showFeedback(
+          "info",
+          "Account created",
+          "Your account was created. Please complete your profile now."
+        );
+        navigateToPath("/edit-account");
+      }
     } catch (err: any) {
       let message = err?.message || "We could not create your account.";
       if (err?.code === "auth/email-already-in-use") {
