@@ -1939,6 +1939,7 @@ for (const l of listings) {
       }
 
       db.prepare("DELETE FROM seller_ratings WHERE seller_uid = ? OR rater_uid = ?").run(uid, uid);
+      db.prepare("DELETE FROM seller_applications WHERE applicant_uid = ?").run(uid);
 
       db.prepare("DELETE FROM sellers WHERE uid = ?").run(uid);
 
@@ -2332,22 +2333,11 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, withAsyncRou
         { is_seller: true },
         { merge: true }
       );
-
-      const adminApp = getFirebaseAdmin();
-      adminApp
-        .firestore()
-        .collection("users")
-        .doc(application.applicant_uid)
-        .set(
-          { is_seller: true },
-          { merge: true }
-        )
-        .catch((firestoreSyncError) => {
-          console.warn(
-            "Failed to sync approved seller status to Firestore:",
-            firestoreSyncError
-          );
-        });
+    } catch (firestoreSyncError) {
+      console.warn(
+        "Failed to sync approved seller status to Firestore:",
+        firestoreSyncError
+      );
     }
   }
 
