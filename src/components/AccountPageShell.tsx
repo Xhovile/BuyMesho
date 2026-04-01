@@ -1,11 +1,15 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, Search } from "lucide-react";
+import { ChevronLeft, House, LogOut, Search } from "lucide-react";
+import { signOut } from "firebase/auth";
 import {
   EXPLORE_PATH,
   HOME_PATH,
+  LOGIN_PATH,
   navigateBackOrPath,
   navigateToPath,
 } from "../lib/appNavigation";
+import { auth } from "../firebase";
+import { useAuthUser } from "../hooks/useAuthUser";
 
 type AccountPageShellProps = {
   eyebrow: string;
@@ -24,6 +28,16 @@ export default function AccountPageShell({
   backLabel = "Back",
   onBack,
 }: AccountPageShellProps) {
+  const { user: firebaseUser } = useAuthUser();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+    } finally {
+      navigateToPath(LOGIN_PATH);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
@@ -36,6 +50,12 @@ export default function AccountPageShell({
             </div>
           </button>
           <div className="flex items-center gap-3">
+            {firebaseUser && (
+              <button type="button" onClick={() => void handleLogout()} className="inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2">
+                <LogOut className="w-4 h-4" />
+                Log out
+              </button>
+            )}
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"><Search className="w-4 h-4" />Explore</button>
           </div>
