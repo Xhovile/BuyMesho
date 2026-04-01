@@ -141,6 +141,19 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export const navigateToExplore = () => {
+  const url = new URL(window.location.href);
+  url.pathname = EXPLORE_PATH;
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState({}, "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 export const navigateToListingDetails = (
   listingId: string | number,
   imageIndex: number = 0
