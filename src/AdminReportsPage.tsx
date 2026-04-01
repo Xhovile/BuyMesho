@@ -8,6 +8,7 @@ import {
   House,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
+import FormDropdown from "./components/FormDropdown";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -43,6 +44,8 @@ export default function AdminReportsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [reportView, setReportView] = useState<"active" | "resolved">("active");
+  const activeStatusFilterOptions = ["All active", "Open", "Reviewed"] as const;
+  const typeFilterOptions = ["All types", "Listing", "Problem"] as const;
 
   const fetchReports = async () => {
     setLoading(true);
@@ -333,26 +336,44 @@ export default function AdminReportsPage() {
           <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex flex-col sm:flex-row gap-3">
               {reportView === "active" && (
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-                >
-                  <option value="">All active</option>
-                  <option value="open">Open</option>
-                  <option value="reviewed">Reviewed</option>
-                </select>
+                <div className="sm:min-w-[220px]">
+                  <FormDropdown
+                    label="Status"
+                    value={
+                      statusFilter === "open"
+                        ? "Open"
+                        : statusFilter === "reviewed"
+                        ? "Reviewed"
+                        : "All active"
+                    }
+                    options={[...activeStatusFilterOptions]}
+                    onChange={(value) =>
+                      setStatusFilter(
+                        value === "Open" ? "open" : value === "Reviewed" ? "reviewed" : ""
+                      )
+                    }
+                  />
+                </div>
               )}
 
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="px-4 py-3 bg-white border border-zinc-200 rounded-xl outline-none"
-              >
-                <option value="">All types</option>
-                <option value="listing">Listing</option>
-                <option value="problem">Problem</option>
-              </select>
+              <div className="sm:min-w-[220px]">
+                <FormDropdown
+                  label="Type"
+                  value={
+                    typeFilter === "listing"
+                      ? "Listing"
+                      : typeFilter === "problem"
+                      ? "Problem"
+                      : "All types"
+                  }
+                  options={[...typeFilterOptions]}
+                  onChange={(value) =>
+                    setTypeFilter(
+                      value === "Listing" ? "listing" : value === "Problem" ? "problem" : ""
+                    )
+                  }
+                />
+              </div>
             </div>
           </div>
         </section>

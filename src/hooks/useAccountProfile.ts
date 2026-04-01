@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
 import { UNIVERSITIES } from "../constants";
-import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
 const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
@@ -31,6 +30,9 @@ export function useAccountProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Only poll for seller-status updates when the user has a pending application.
+  const [sellerApplicationPending, setSellerApplicationPending] = useState(false);
+  const syncInFlight = useRef(false);
 
   const loadProfile = async () => {
     if (!firebaseUser) {
@@ -56,6 +58,29 @@ export function useAccountProfile() {
       if (snap.exists()) {
         const loadedProfile = snap.data() as UserProfile;
         setProfile(loadedProfile);
+
+        if (!loadedProfile.is_seller) {
+          // Check application status on initial load to decide whether background
+          // polling is needed, without forcing a token refresh.
+          try {
+            const application = await fetchSellerApplicationBackground();
+            if (application?.status === "approved") {
+              setSellerApplicationPending(false);
+              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+              try {
+                await setDoc(userRef, { is_seller: true }, { merge: true });
+              } catch (firestoreWriteErr) {
+                console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+              }
+            } else if (application?.status === "pending") {
+              setSellerApplicationPending(true);
+            }
+            // null = no application; other statuses (rejected) do not need polling
+          } catch {
+            // Transient error: default to polling so an approved status is not missed.
+            setSellerApplicationPending(true);
+          }
+        }
       } else {
         try {
           await setDoc(userRef, fallbackProfile);
