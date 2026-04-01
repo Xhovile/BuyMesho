@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
@@ -36,6 +36,18 @@ const upload = multer({
 });
 
 const TITLE_MIN_ALNUM_CHARS = 3;
+
+type AsyncRouteHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<unknown>;
+
+const withAsyncRoute = (handler: AsyncRouteHandler) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    void handler(req, res, next).catch(next);
+  };
+};
 
 function isMeaningfulTitle(input: unknown): boolean {
   if (typeof input !== "string") return false;
@@ -2192,7 +2204,7 @@ app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   }
 });
 
-app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) => {
+app.patch("/api/admin/seller-applications/:id/status", requireAuth, withAsyncRoute(async (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
   const requesterUid = req.user?.uid || null;
 
@@ -2211,122 +2223,117 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
     return res.status(400).json({ error: "Invalid status. Allowed values: approved, rejected" });
   }
 
-  try {
-    const application = db.prepare(`
-      SELECT *
-      FROM seller_applications
-      WHERE id = ?
-    `).get(id) as any;
+  const application = db.prepare(`
+    SELECT *
+    FROM seller_applications
+    WHERE id = ?
+  `).get(id) as any;
 
-    if (!application) {
-      return res.status(404).json({ error: "Application not found" });
+  if (!application) {
+    return res.status(404).json({ error: "Application not found" });
+  }
+
+  if (application.status !== "pending") {
+    return res
+      .status(409)
+      .json({ error: "Status transition not allowed. Only pending applications can be reviewed." });
+  }
+
+  if (status === "approved") {
+    const applicantEmail =
+      typeof application.applicant_email === "string" ? application.applicant_email.trim() : "";
+    if (!applicantEmail) {
+      return res.status(422).json({
+        error: "Cannot approve application without applicant_email. Ask applicant to update profile email.",
+      });
     }
+  }
 
-    if (application.status !== "pending") {
-      return res
-        .status(409)
-        .json({ error: "Status transition not allowed. Only pending applications can be reviewed." });
-    }
+  const normalizedReviewNotes =
+    typeof review_notes === "string" && review_notes.trim() ? review_notes.trim() : null;
 
-    if (status === "approved") {
-      const applicantEmail =
-        typeof application.applicant_email === "string" ? application.applicant_email.trim() : "";
-      if (!applicantEmail) {
-        return res.status(422).json({
-          error: "Cannot approve application without applicant_email. Ask applicant to update profile email.",
-        });
-      }
-    }
+  db.prepare(`
+    UPDATE seller_applications
+    SET
+      status = ?,
+      review_notes = ?,
+      reviewed_by_uid = ?,
+      reviewed_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(
+    status,
+    normalizedReviewNotes,
+    requesterUid,
+    id
+  );
 
-    const normalizedReviewNotes =
-      typeof review_notes === "string" && review_notes.trim() ? review_notes.trim() : null;
-
-    db.prepare(`
-      UPDATE seller_applications
-      SET
-        status = ?,
-        review_notes = ?,
-        reviewed_by_uid = ?,
-        reviewed_at = CURRENT_TIMESTAMP,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(
+  const updatedApplication = db.prepare(`
+    SELECT
+      id,
       status,
-      normalizedReviewNotes,
-      requesterUid,
-      id
+      review_notes,
+      reviewed_at,
+      reviewed_by_uid,
+      updated_at
+    FROM seller_applications
+    WHERE id = ?
+    LIMIT 1
+  `).get(id);
+
+  if (status === "approved") {
+    db.prepare(`
+      INSERT INTO sellers (
+        uid,
+        email,
+        business_name,
+        university,
+        whatsapp_number,
+        is_verified,
+        is_seller
+      )
+      VALUES (?, ?, ?, ?, ?, ?, 1)
+      ON CONFLICT(uid) DO UPDATE SET
+        email = COALESCE(excluded.email, sellers.email),
+        business_name = excluded.business_name,
+        university = excluded.university,
+        whatsapp_number = excluded.whatsapp_number,
+        is_seller = 1
+    `).run(
+      application.applicant_uid,
+      application.applicant_email,
+      application.business_name,
+      application.institution,
+      application.whatsapp_number,
+      1
     );
 
-    const updatedApplication = db.prepare(`
-      SELECT
-        id,
-        status,
-        review_notes,
-        reviewed_at,
-        reviewed_by_uid,
-        updated_at
-      FROM seller_applications
-      WHERE id = ?
-      LIMIT 1
-    `).get(id);
-
-    if (status === "approved") {
-      db.prepare(`
-        INSERT INTO sellers (
-          uid,
-          email,
-          business_name,
-          university,
-          whatsapp_number,
-          is_verified,
-          is_seller
-        )
-        VALUES (?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(uid) DO UPDATE SET
-          email = COALESCE(excluded.email, sellers.email),
-          business_name = excluded.business_name,
-          university = excluded.university,
-          whatsapp_number = excluded.whatsapp_number,
-          is_seller = 1
-      `).run(
-        application.applicant_uid,
-        application.applicant_email,
-        application.business_name,
-        application.institution,
-        application.whatsapp_number,
-        1
+    try {
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(application.applicant_uid).set(
+        { is_seller: true },
+        { merge: true }
       );
-
-      try {
-        const adminApp = getFirebaseAdmin();
-        await adminApp.firestore().collection("users").doc(application.applicant_uid).set(
-          { is_seller: true },
-          { merge: true }
-        );
-      } catch (firestoreSyncError) {
-        console.warn("Failed to sync approved seller status to Firestore:", firestoreSyncError);
-      }
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync approved seller status to Firestore:", firestoreSyncError);
     }
-
-    logAdminAction({
-      admin_uid: requesterUid,
-      admin_email: requesterEmail,
-      action_type: status === "approved" ? "approve_seller_application" : "reject_seller_application",
-      target_type: "seller_application",
-      target_id: String(id),
-      details: {
-        applicant_uid: application.applicant_uid,
-        business_name: application.business_name,
-        status,
-      },
-    });
-
-    res.json({ success: true, application: updatedApplication });
-  } catch (error) {
-    console.error("Admin seller application review error:", error);
-    res.status(500).json({ error: "Failed to review seller application" });
   }
-});
+
+  logAdminAction({
+    admin_uid: requesterUid,
+    admin_email: requesterEmail,
+    action_type: status === "approved" ? "approve_seller_application" : "reject_seller_application",
+    target_type: "seller_application",
+    target_id: String(id),
+    details: {
+      applicant_uid: application.applicant_uid,
+      business_name: application.business_name,
+      status,
+    },
+  });
+
+  res.json({ success: true, application: updatedApplication });
+}));
 
 app.post("/api/admin/listings/:id/hide", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
