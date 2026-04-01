@@ -89,7 +89,7 @@ export default function SignupPage() {
       description="Join BuyMesho with a university-linked account so you can save items, build your profile, and apply to sell."
       backLabel="Back to Explore"
     >
-      <form onSubmit={handleSignUp} className="p-8 space-y-5 max-w-xl">
+      <form onSubmit={handleSignUp} className="p-8 space-y-5 w-full">
         <FormDropdown
           label="University"
           value={form.university}

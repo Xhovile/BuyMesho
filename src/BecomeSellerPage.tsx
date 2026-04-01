@@ -143,7 +143,7 @@ export default function BecomeSellerPage() {
       ) : profile.is_seller ? (
         <div className="p-8 text-sm text-zinc-500">Your account is already a seller account.</div>
       ) : (
-        <form onSubmit={handleSubmit} className="p-8 space-y-5 max-w-3xl">
+        <form onSubmit={handleSubmit} className="p-8 space-y-5 w-full">
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Full Legal Name</label>
             <input required type="text" value={form.fullLegalName} onChange={(e) => setForm((prev) => ({ ...prev, fullLegalName: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />

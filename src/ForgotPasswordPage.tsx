@@ -54,7 +54,7 @@ export default function ForgotPasswordPage() {
       backLabel="Back to Login"
       onBack={() => navigateToPath("/login")}
     >
-      <form onSubmit={handleReset} className="p-8 space-y-5 max-w-xl">
+      <form onSubmit={handleReset} className="p-8 space-y-5 w-full">
         <div>
           <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
           <input
