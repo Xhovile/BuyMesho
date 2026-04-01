@@ -1,23 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
+  ChevronRight,
   FileText,
   HelpCircle,
   House,
   Search,
   Settings,
   ShieldCheck,
+  User,
+  UserCheck,
 } from "lucide-react";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
 import {
+  BECOME_SELLER_PATH,
+  EDIT_ACCOUNT_PATH,
+  EDIT_PROFILE_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   SETTINGS_PATH,
+  CHANGE_PASSWORD_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
@@ -25,7 +33,12 @@ const SETTINGS_VIEW_QUERY_KEY = "section";
 
 const getSettingsViewFromSearch = (search: string): SettingsView => {
   const section = new URLSearchParams(search).get(SETTINGS_VIEW_QUERY_KEY);
-  if (section === "privacy" || section === "terms" || section === "safety" || section === "report") {
+  if (
+    section === "privacy" ||
+    section === "terms" ||
+    section === "safety" ||
+    section === "report"
+  ) {
     return section;
   }
 
@@ -36,6 +49,7 @@ export default function SettingsPage() {
   const [view, setView] = useState<SettingsView>(() =>
     getSettingsViewFromSearch(window.location.search)
   );
+  const { firebaseUser, profile, profileLoading } = useAccountProfile();
 
   useEffect(() => {
     const handlePopState = () => {
@@ -136,17 +150,22 @@ export default function SettingsPage() {
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Settings</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                Settings
+              </p>
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
-                Legal, safety, and support in one place.
+                Your account control center.
               </h1>
               <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
-                This page gives BuyMesho a clearer, more serious product structure by moving policy and support content out of stacked overlays and into a real page surface.
+                Manage your account details, security posture, visibility controls,
+                and legal/help resources from one page.
               </p>
             </div>
 
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Current section</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                Current section
+              </p>
               <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900 capitalize">
                 {view === "menu" ? "Settings" : view}
               </p>
@@ -155,11 +174,105 @@ export default function SettingsPage() {
         </section>
 
         {view === "menu" ? (
-          <section className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <User className="w-5 h-5 text-zinc-700" />
+                <h2 className="text-xl font-extrabold text-zinc-900">Account</h2>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">University</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{profile?.university || "Not set"}</p>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{profile?.is_seller ? "Seller" : "Buyer"}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 space-y-2">
+                {[
+                  { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
+                  { label: "Edit Profile", path: EDIT_PROFILE_PATH },
+                  { label: "Become Seller", path: BECOME_SELLER_PATH },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => navigateToPath(item.path)}
+                    className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left"
+                  >
+                    <span className="font-bold text-zinc-900">{item.label}</span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <ShieldCheck className="w-5 h-5 text-zinc-700" />
+                <h2 className="text-xl font-extrabold text-zinc-900">Security</h2>
+              </div>
+
+              <div className="space-y-3">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left"
+                >
+                  <span className="font-bold text-zinc-900">Change Password</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email verification</p>
+                  <p className="mt-1 font-semibold text-zinc-900">
+                    {profileLoading ? "Checking..." : firebaseUser?.emailVerified ? "Verified" : "Not verified"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                  Later: login controls and authentication settings.
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-5">
+                <UserCheck className="w-5 h-5 text-zinc-700" />
+                <h2 className="text-xl font-extrabold text-zinc-900">Privacy</h2>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
+                  <p className="mt-1 font-semibold text-zinc-900">Visible to marketplace users</p>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Seller visibility</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{profile?.is_seller ? "Seller page visible" : "Not a seller account"}</p>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Saved items visibility</p>
+                  <p className="mt-1 font-semibold text-zinc-900">Private (only you)</p>
+                </div>
+                <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
+                  “Who can see me” controls can be expanded here later.
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <Settings className="w-5 h-5 text-zinc-700" />
-                <h2 className="text-xl font-extrabold text-zinc-900">Open a section</h2>
+                <h2 className="text-xl font-extrabold text-zinc-900">Help & Legal</h2>
               </div>
 
               <div className="space-y-3">
@@ -188,22 +301,7 @@ export default function SettingsPage() {
                   );
                 })}
               </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-xl font-extrabold text-zinc-900">Why this matters</h2>
-              <div className="mt-5 space-y-4 text-sm text-zinc-600 leading-relaxed">
-                <p>
-                  BuyMesho should feel like a structured product, not a single page with layers on top of layers.
-                </p>
-                <p>
-                  Moving legal, safety, and support content into a dedicated route makes navigation clearer and the overall app more serious.
-                </p>
-                <p>
-                  This is one step toward turning major experiences into page-like product surfaces instead of keeping everything inside floating modals.
-                </p>
-              </div>
-            </div>
+            </section>
           </section>
         ) : (
           <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
@@ -250,7 +348,7 @@ export default function SettingsPage() {
                 onBack={() => openView("menu")}
                 onClose={() => navigateToPath(HOME_PATH)}
                 showBackButton={false}
-                isLoggedIn={false}
+                isLoggedIn={!!firebaseUser}
               />
             )}
           </section>
