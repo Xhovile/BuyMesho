@@ -60,6 +60,10 @@ export function useAccountProfile() {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       await setDoc(userRef, updates, { merge: true });
       setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      // If the profile hadn't loaded yet, reload from Firestore so the update isn't lost
+      if (!profile) {
+        await loadProfile();
+      }
       setError(null);
     } catch (err: any) {
       console.error("Failed to update account profile", err);

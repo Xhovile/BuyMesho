@@ -54,6 +54,7 @@ export default function SettingsPage() {
   const [savingPrivacyField, setSavingPrivacyField] = useState<
     "profile_visibility" | "seller_visibility" | "saved_visibility" | null
   >(null);
+  const [privacyError, setPrivacyError] = useState<string | null>(null);
 
   const visibilityLabel: Record<VisibilitySetting, string> = {
     everyone: "Everyone",
@@ -119,8 +120,11 @@ export default function SettingsPage() {
     if (!firebaseUser) return;
 
     setSavingPrivacyField(field);
+    setPrivacyError(null);
     try {
       await updateProfile({ [field]: nextValue });
+    } catch {
+      setPrivacyError("Failed to save. Please try again.");
     } finally {
       setSavingPrivacyField(null);
     }
@@ -216,7 +220,9 @@ export default function SettingsPage() {
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
-                  <p className="mt-1 font-semibold text-zinc-900">{profile?.is_seller ? "Seller" : "Buyer"}</p>
+                  <p className="mt-1 font-semibold text-zinc-900">
+                    {profile ? (profile.is_seller ? "Seller" : "Buyer") : "Loading..."}
+                  </p>
                 </div>
               </div>
 
@@ -314,7 +320,7 @@ export default function SettingsPage() {
                       ))}
                     </select>
                   </label>
-                  {!profile?.is_seller && (
+                  {!profileLoading && !profile?.is_seller && (
                     <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
                   )}
                 </div>
@@ -338,6 +344,11 @@ export default function SettingsPage() {
                     </select>
                   </label>
                 </div>
+                {privacyError && (
+                  <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 font-semibold">
+                    {privacyError}
+                  </div>
+                )}
                 {!firebaseUser && (
                   <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
                     Sign in to save privacy preferences.
