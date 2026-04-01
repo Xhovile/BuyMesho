@@ -53,6 +53,21 @@ export function useAccountProfile() {
     void loadProfile();
   }, [firebaseUser, authLoading]);
 
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!firebaseUser) return;
+
+    try {
+      const userRef = doc(firestore, "users", firebaseUser.uid);
+      await setDoc(userRef, updates, { merge: true });
+      setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to update account profile", err);
+      setError(err?.message || "Failed to update profile");
+      throw err;
+    }
+  };
+
   return {
     firebaseUser,
     authLoading,
@@ -61,6 +76,7 @@ export function useAccountProfile() {
     profileLoading,
     error,
     refreshProfile: loadProfile,
+    updateProfile,
     emailVerified: !!auth.currentUser?.emailVerified,
   };
 }

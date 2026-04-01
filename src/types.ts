@@ -11,6 +11,7 @@ export type Category =
 
 export type ListingStatus = "available" | "sold";
 export type ListingCondition = "new" | "used" | "refurbished";
+export type VisibilitySetting = "everyone" | "students_only" | "only_me";
 export type ListingSpecValue = string | number | boolean | string[] | null;
 export type ListingSpecValues = Record<string, ListingSpecValue>;
 
@@ -60,6 +61,9 @@ export interface UserProfile {
   // general user fields
   university?: University;
   avatar_url?: string;
+  profile_visibility?: VisibilitySetting;
+  seller_visibility?: VisibilitySetting;
+  saved_visibility?: VisibilitySetting;
 
   // seller-only fields
   business_name?: string;
