@@ -37,7 +37,7 @@ function parseSQLiteDate(ts: string): Date {
 }
 
 export default function BecomeSellerPage() {
-  const { firebaseUser, authLoading, profile, profileLoading, updateProfile } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading, setProfile, updateProfile } = useAccountProfile();
   const [form, setForm] = useState({
     fullLegalName: "",
     institution: UNIVERSITIES[0] as University,
@@ -74,6 +74,7 @@ export default function BecomeSellerPage() {
         const data = await apiFetch("/api/profile/seller-application");
         if (data?.status === "pending" || data?.status === "approved" || data?.status === "rejected") {
           if (data.status === "approved" && !profile?.is_seller) {
+            setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
             try {
               await updateProfile({ is_seller: true });
             } catch (syncErr) {
