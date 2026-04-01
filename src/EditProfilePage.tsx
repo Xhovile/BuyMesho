@@ -116,8 +116,19 @@ export default function EditProfilePage() {
     >
       {authLoading || profileLoading ? (
         <div className="p-8 text-sm text-zinc-500">Loading profile…</div>
-      ) : !firebaseUser || !profile ? (
+      ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
+      ) : !profile ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-500">
+          <p>Your account profile is not ready yet. Complete account setup first.</p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/edit-account")}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Go to Edit Account
+          </button>
+        </div>
       ) : !profile.is_seller ? (
         <div className="p-8 text-sm text-zinc-500">Seller access required.</div>
       ) : (
