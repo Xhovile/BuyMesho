@@ -549,6 +549,59 @@ async function startServer() {
     }
   });
 
+type IncomingSpecFilters = Record<string, unknown>;
+const SPEC_FILTER_KEY_PATTERN = /^[A-Za-z0-9_]+$/;
+
+function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
+  if (typeof raw !== "string" || !raw.trim()) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as IncomingSpecFilters;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+
+    const safe: Record<string, string | string[] | boolean> = {};
+
+    for (const [key, value] of Object.entries(parsed)) {
+      if (!key || key.length > 120 || !SPEC_FILTER_KEY_PATTERN.test(key)) {
+        continue;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (trimmed) {
+          safe[key] = trimmed;
+        }
+        continue;
+      }
+
+      if (typeof value === "boolean") {
+        safe[key] = value;
+        continue;
+      }
+
+      if (Array.isArray(value)) {
+        const cleaned = value
+          .filter((item) => typeof item === "string")
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0)
+          .slice(0, 25);
+
+        if (cleaned.length > 0) {
+          safe[key] = cleaned;
+        }
+      }
+    }
+
+    return safe;
+  } catch {
+    return {};
+  }
+}
+
   app.get("/api/listings", (req, res) => {
   const {
     category,
@@ -563,6 +616,7 @@ async function startServer() {
     hideSoldOut,
     page = "1",
     pageSize = "12",
+    specFilters,
   } = req.query;
 
   let baseQuery = `
@@ -615,6 +669,34 @@ async function startServer() {
   if (maxPrice !== undefined && maxPrice !== "" && !Number.isNaN(Number(maxPrice))) {
     baseQuery += " AND l.price <= ?";
     params.push(Number(maxPrice));
+  }
+
+  const safeSpecFilters = parseSpecFilters(specFilters);
+
+  for (const [fieldKey, value] of Object.entries(safeSpecFilters)) {
+    const jsonPath = `$.${fieldKey}`;
+
+    if (typeof value === "string") {
+      baseQuery += " AND json_extract(l.spec_values, ?) = ?";
+      params.push(jsonPath, value);
+      continue;
+    }
+
+    if (typeof value === "boolean") {
+      baseQuery += " AND json_extract(l.spec_values, ?) = ?";
+      params.push(jsonPath, value ? 1 : 0);
+      continue;
+    }
+
+    if (Array.isArray(value) && value.length > 0) {
+      const placeholders = value.map(() => "?").join(", ");
+      baseQuery += ` AND EXISTS (
+        SELECT 1
+        FROM json_each(json_extract(l.spec_values, ?))
+        WHERE json_each.value IN (${placeholders})
+      )`;
+      params.push(jsonPath, ...value);
+    }
   }
 
   let orderBy =
@@ -670,6 +752,108 @@ async function startServer() {
     res.status(500).json({ error: "Failed to load listings" });
   }
 });
+
+  app.get("/api/listings/:id", (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    try {
+      const row = db
+        .prepare(`
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.id = ? AND l.is_hidden = 0
+          LIMIT 1
+        `)
+        .get(listingId) as any;
+
+      if (!row) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+
+      res.json({
+        ...row,
+        photos: JSON.parse(row.photos || "[]"),
+        spec_values: JSON.parse(row.spec_values || "{}"),
+      });
+    } catch (error) {
+      console.error("Fetch listing by id error:", error);
+      res.status(500).json({ error: "Failed to load listing" });
+    }
+  });
+
+  app.get("/api/listings/:id/related", (req, res) => {
+    const listingId = Number(req.params.id);
+    const requestedLimit = Number(req.query.limit);
+    const parsedLimit = Number.isInteger(requestedLimit) ? requestedLimit : 5;
+    const limit = Math.max(1, Math.min(12, parsedLimit));
+
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    try {
+      const currentListing = db
+        .prepare(`
+          SELECT id, category, subcategory, item_type, university
+          FROM listings
+          WHERE id = ? AND is_hidden = 0
+          LIMIT 1
+        `)
+        .get(listingId) as
+        | {
+            id: number;
+            category: string;
+            subcategory: string | null;
+            item_type: string | null;
+            university: string;
+          }
+        | undefined;
+
+      if (!currentListing) {
+        return res.status(404).json({ error: "Listing not found" });
+      }
+
+      const rows = db
+        .prepare(`
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.is_hidden = 0
+            AND l.id != ?
+            AND l.category = ?
+            AND l.university = ?
+          ORDER BY
+            CASE WHEN l.subcategory = ? THEN 0 ELSE 1 END ASC,
+            CASE WHEN l.item_type = ? THEN 0 ELSE 1 END ASC,
+            CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
+            l.created_at DESC
+          LIMIT ?
+        `)
+        .all(
+          listingId,
+          currentListing.category,
+          currentListing.university,
+          currentListing.subcategory,
+          currentListing.item_type,
+          limit
+        );
+
+      res.json(
+        rows.map((l: any) => ({
+          ...l,
+          photos: JSON.parse(l.photos || "[]"),
+          spec_values: JSON.parse(l.spec_values || "{}"),
+        }))
+      );
+    } catch (error) {
+      console.error("Fetch related listings error:", error);
+      res.status(500).json({ error: "Failed to load related listings" });
+    }
+  });
   
   app.post("/api/sellers", requireAuth, (req, res) => {
     const uid = req.user!.uid; // secure UID from Firebase
@@ -1998,6 +2182,19 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       id
     );
 
+    const updatedApplication = db.prepare(`
+      SELECT
+        id,
+        status,
+        review_notes,
+        reviewed_at,
+        reviewed_by_uid,
+        updated_at
+      FROM seller_applications
+      WHERE id = ?
+      LIMIT 1
+    `).get(id);
+
     if (status === "approved") {
       db.prepare(`
         INSERT INTO sellers (
@@ -2039,7 +2236,7 @@ app.patch("/api/admin/seller-applications/:id/status", requireAuth, (req, res) =
       },
     });
 
-    res.json({ success: true });
+    res.json({ success: true, application: updatedApplication });
   } catch (error) {
     console.error("Admin seller application review error:", error);
     res.status(500).json({ error: "Failed to review seller application" });

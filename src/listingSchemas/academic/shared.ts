@@ -2,7 +2,7 @@ import type {
   ListingFieldGroup,
   ListingItemConfig,
   ListingSpecField,
-} from "../core";
+} from "../core.js";
 
 export const ACADEMIC_CATEGORY = "Academic Services";
 

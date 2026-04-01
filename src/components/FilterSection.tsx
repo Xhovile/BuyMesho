@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import {
   ChevronRight,
   MapPin,
@@ -9,7 +10,8 @@ import {
   X,
 } from "lucide-react";
 import { UNIVERSITIES, CATEGORIES } from "../constants";
-import { getListingItemTypes, getListingSubcategories } from "../listingSchemas";
+import { getListingItemConfig, getListingItemTypes, getListingSubcategories } from "../listingSchemas";
+import type { ListingSpecField } from "../listingSchemas";
 
 type FilterSectionProps = {
   selectedUniv: string;
@@ -20,6 +22,8 @@ type FilterSectionProps = {
   setSelectedSubcategory: (v: string) => void;
   selectedItemType: string;
   setSelectedItemType: (v: string) => void;
+  selectedSpecFilters: Record<string, string | string[] | boolean>;
+  setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -41,6 +45,8 @@ export default function FilterSection({
   setSelectedSubcategory,
   selectedItemType,
   setSelectedItemType,
+  selectedSpecFilters,
+  setSelectedSpecFilters,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -63,6 +69,61 @@ export default function FilterSection({
   >(null);
   const [universityQuery, setUniversityQuery] = useState("");
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+
+  const selectedItemConfig = useMemo(() => {
+    return getListingItemConfig(selectedCat, selectedSubcategory, selectedItemType);
+  }, [selectedCat, selectedSubcategory, selectedItemType]);
+
+  const filterKeywordPriority = [
+    "brand",
+    "size",
+    "gender",
+    "material",
+    "storage",
+    "ram",
+    "os",
+    "operating",
+    "product_type",
+    "product",
+    "target",
+    "skin",
+    "hair",
+  ];
+
+  const filterableSpecFields = useMemo(() => {
+    const fields = selectedItemConfig?.schema?.fields ?? [];
+    const eligible = fields.filter((field) =>
+      field.type === "select" || field.type === "multiselect" || field.type === "boolean"
+    );
+
+    const scored = eligible
+      .map((field) => {
+        const haystack = `${field.key} ${field.label}`.toLowerCase();
+        const priorityIndex = filterKeywordPriority.findIndex((keyword) =>
+          haystack.includes(keyword)
+        );
+
+        return {
+          field,
+          priorityIndex: priorityIndex === -1 ? Number.MAX_SAFE_INTEGER : priorityIndex,
+        };
+      })
+      .sort((a, b) => {
+        if (a.priorityIndex !== b.priorityIndex) {
+          return a.priorityIndex - b.priorityIndex;
+        }
+
+        return a.field.label.localeCompare(b.field.label);
+      });
+
+    return scored.slice(0, 6).map((entry) => entry.field);
+  }, [selectedItemConfig]);
+
+  const canShowSpecFilters =
+    Boolean(selectedCat) &&
+    Boolean(selectedSubcategory) &&
+    Boolean(selectedItemType) &&
+    filterableSpecFields.length > 0;
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -108,6 +169,10 @@ export default function FilterSection({
     minPrice,
     maxPrice,
     sortBy !== "newest" ? sortBy : "",
+    ...Object.values(selectedSpecFilters).map((value) => {
+      if (Array.isArray(value)) return value.length > 0 ? "spec" : "";
+      return value === true || value === false || Boolean(value) ? "spec" : "";
+    }),
   ].filter(Boolean).length;
 
   const activeFilterCount =
@@ -122,6 +187,7 @@ export default function FilterSection({
     setMinPrice("");
     setMaxPrice("");
     setSortBy("newest");
+    setSelectedSpecFilters({});
     setOpenDropdown(null);
   };
 
@@ -143,6 +209,70 @@ export default function FilterSection({
       }
     }
   }, [showMoreFilters, openDropdown]);
+
+  const updateSpecFilter = (field: ListingSpecField, rawValue: string) => {
+    setSelectedSpecFilters((prev) => {
+      const next = { ...prev };
+
+      if (field.type === "boolean") {
+        if (rawValue === "") {
+          delete next[field.key];
+        } else {
+          next[field.key] = rawValue === "true";
+        }
+
+        return next;
+      }
+
+      if (field.type === "select") {
+        if (!rawValue) {
+          delete next[field.key];
+        } else {
+          next[field.key] = rawValue;
+        }
+
+        return next;
+      }
+
+      if (field.type === "multiselect") {
+        const current = Array.isArray(prev[field.key])
+          ? (prev[field.key] as string[])
+          : [];
+
+        if (!rawValue) {
+          delete next[field.key];
+          return next;
+        }
+
+        if (current.includes(rawValue)) {
+          const reduced = current.filter((item) => item !== rawValue);
+          if (reduced.length === 0) {
+            delete next[field.key];
+          } else {
+            next[field.key] = reduced;
+          }
+        } else {
+          next[field.key] = [...current, rawValue];
+        }
+      }
+
+      return next;
+    });
+  };
+
+  const getSpecFilterValue = (field: ListingSpecField) => {
+    const value = selectedSpecFilters[field.key];
+
+    if (field.type === "multiselect") {
+      return Array.isArray(value) ? value : [];
+    }
+
+    if (field.type === "boolean") {
+      return typeof value === "boolean" ? value : null;
+    }
+
+    return typeof value === "string" ? value : "";
+  };
 
   const sortOptions = [
     { value: "newest", label: "Newest First" },
@@ -187,6 +317,51 @@ export default function FilterSection({
           onRemove: () => setSelectedItemType(""),
         }
       : null,
+    ...filterableSpecFields
+      .map((field) => {
+        const value = selectedSpecFilters[field.key];
+
+        if (field.type === "multiselect") {
+          if (!Array.isArray(value) || value.length === 0) return null;
+          return {
+            key: `spec-${field.key}`,
+            label: `${field.label}: ${value.join(", ")}`,
+            onRemove: () =>
+              setSelectedSpecFilters((prev) => {
+                const next = { ...prev };
+                delete next[field.key];
+                return next;
+              }),
+          };
+        }
+
+        if (field.type === "boolean") {
+          if (typeof value !== "boolean") return null;
+          return {
+            key: `spec-${field.key}`,
+            label: `${field.label}: ${value ? "Yes" : "No"}`,
+            onRemove: () =>
+              setSelectedSpecFilters((prev) => {
+                const next = { ...prev };
+                delete next[field.key];
+                return next;
+              }),
+          };
+        }
+
+        if (typeof value !== "string" || !value) return null;
+        return {
+          key: `spec-${field.key}`,
+          label: `${field.label}: ${value}`,
+          onRemove: () =>
+            setSelectedSpecFilters((prev) => {
+              const next = { ...prev };
+              delete next[field.key];
+              return next;
+            }),
+        };
+      })
+      .filter(Boolean),
     hideSoldOut
       ? {
           key: "hideSoldOut",
@@ -723,6 +898,102 @@ export default function FilterSection({
             )}
           </div>
         </div>
+
+        {canShowSpecFilters && (
+          <div className="space-y-3 pt-1">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              Item Specs
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filterableSpecFields.map((field) => {
+                const value = getSpecFilterValue(field);
+
+                if (field.type === "boolean") {
+                  return (
+                    <div key={field.key} className="space-y-2">
+                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                        {field.label}
+                      </label>
+                      <select
+                        value={value === null ? "" : String(value)}
+                        onChange={(e) => updateSpecFilter(field, e.target.value)}
+                        className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Any</option>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    </div>
+                  );
+                }
+
+                if (field.type === "multiselect") {
+                  const selectedValues = value as string[];
+
+                  return (
+                    <div key={field.key} className="space-y-2">
+                      <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                        {field.label}
+                      </label>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          updateSpecFilter(field, e.target.value);
+                          e.currentTarget.value = "";
+                        }}
+                        className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                      >
+                        <option value="">Add option...</option>
+                        {(field.options ?? []).map((option) => (
+                          <option key={option} value={option}>
+                            {selectedValues.includes(option) ? `✓ ${option}` : option}
+                          </option>
+                        ))}
+                      </select>
+
+                      {selectedValues.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedValues.map((selectedValue) => (
+                            <button
+                              key={selectedValue}
+                              type="button"
+                              onClick={() => updateSpecFilter(field, selectedValue)}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 border border-zinc-200 text-[11px] font-semibold text-zinc-700"
+                            >
+                              {selectedValue}
+                              <X className="w-3 h-3" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div key={field.key} className="space-y-2">
+                    <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                      {field.label}
+                    </label>
+                    <select
+                      value={value as string}
+                      onChange={(e) => updateSpecFilter(field, e.target.value)}
+                      className="w-full px-4 py-3 bg-white border border-zinc-200 rounded-2xl text-sm font-semibold text-zinc-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+                    >
+                      <option value="">Any</option>
+                      {(field.options ?? []).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <label className="inline-flex items-center gap-3 text-sm font-semibold text-zinc-700">
           <input

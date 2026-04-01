@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { Loader2, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
@@ -17,6 +18,8 @@ type MarketSectionProps = {
   setSelectedSubcategory: (v: string) => void;
   selectedItemType: string;
   setSelectedItemType: (v: string) => void;
+  selectedSpecFilters: Record<string, string | string[] | boolean>;
+  setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -36,9 +39,7 @@ type MarketSectionProps = {
   savedListingIds: number[];
   onReport: (id: number) => void;
   onDelete: (id: number) => void;
-  onOpenProfile: (uid: string) => void;
   onEdit: (listing: Listing) => void;
-  onOpenDetails: (listing: Listing, startIndex?: number) => void;
   onHideSeller: (uid: string) => void;
   onHideListing: (listingId: number) => void;
   onToggleStatus: (listing: Listing) => void;
@@ -59,6 +60,8 @@ export default function MarketSection({
   setSelectedSubcategory,
   selectedItemType,
   setSelectedItemType,
+  selectedSpecFilters,
+  setSelectedSpecFilters,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -78,9 +81,7 @@ export default function MarketSection({
   savedListingIds,
   onReport,
   onDelete,
-  onOpenProfile,
   onEdit,
-  onOpenDetails,
   onHideSeller,
   onHideListing,
   onToggleStatus,
@@ -113,7 +114,8 @@ export default function MarketSection({
     hideSoldOut ||
     Boolean(minPrice) ||
     Boolean(maxPrice) ||
-    sortBy !== "newest";
+    sortBy !== "newest" ||
+    Object.keys(selectedSpecFilters).length > 0;
 
   const clearAllFilters = () => {
     setSelectedUniv("");
@@ -125,6 +127,7 @@ export default function MarketSection({
     setMinPrice("");
     setMaxPrice("");
     setSortBy("newest");
+    setSelectedSpecFilters({});
     setCurrentPage(1);
   };
 
@@ -139,6 +142,8 @@ export default function MarketSection({
         setSelectedSubcategory={setSelectedSubcategory}
         selectedItemType={selectedItemType}
         setSelectedItemType={setSelectedItemType}
+        selectedSpecFilters={selectedSpecFilters}
+        setSelectedSpecFilters={setSelectedSpecFilters}
         selectedCondition={selectedCondition}
         setSelectedCondition={setSelectedCondition}
         hideSoldOut={hideSoldOut}
@@ -179,9 +184,7 @@ export default function MarketSection({
                   onReport={onReport}
                   currentUid={firebaseUserUid}
                   onDelete={onDelete}
-                  onOpenProfile={onOpenProfile}
                   onEdit={onEdit}
-                  onOpenDetails={onOpenDetails}
                   onHideSeller={onHideSeller}
                   onHideListing={onHideListing}
                   onToggleStatus={onToggleStatus}

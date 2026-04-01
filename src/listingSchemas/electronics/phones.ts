@@ -1,4 +1,4 @@
-import type { ListingItemSchema, ListingFieldGroup } from "../core";
+import type { ListingItemSchema, ListingFieldGroup } from "../core.js";
 
 export const SMARTPHONE_SCHEMA: ListingItemSchema = {
   category: "Electronics & Gadgets",

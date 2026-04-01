@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import {
   Bookmark,
   Lock,
-  MapPin,
   MessageCircle,
   MoreVertical,
   ShieldCheck,
 } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
+import {
+  navigateToEditListing,
+  navigateToListingDetails,
+  navigateToSellerProfile,
+} from "../lib/appNavigation";
 import { buildListingShareUrl } from "../lib/listingUrl";
 
 type ListingCardProps = {
@@ -19,8 +23,6 @@ type ListingCardProps = {
   onEdit?: (listing: Listing) => void;
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
-  onOpenProfile?: (uid: string) => void;
-  onOpenDetails?: (listing: Listing, startIndex?: number) => void;
   onToggleStatus?: (listing: Listing) => void;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
@@ -34,10 +36,8 @@ export default function ListingCard({
   currentUid,
   onDelete,
   onEdit,
-  onOpenProfile,
   onHideSeller,
   onHideListing,
-  onOpenDetails,
   onToggleStatus,
   isSaved,
   onToggleSave,
@@ -49,11 +49,13 @@ export default function ListingCard({
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleOpenProfile = () => {
-    if (sellerUid) onOpenProfile?.(sellerUid);
+    if (sellerUid) {
+      navigateToSellerProfile(sellerUid);
+    }
   };
 
   const handleOpenDetails = (startIndex = 0) => {
-    onOpenDetails?.(listing, startIndex);
+    navigateToListingDetails(listing.id, startIndex);
   };
 
   useEffect(() => {
@@ -109,15 +111,15 @@ export default function ListingCard({
   );
 
   const trackWhatsappClick = async () => {
-  try {
-    await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("Failed to track WhatsApp click", e);
-  }
-};
+    try {
+      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (e) {
+      console.error("Failed to track WhatsApp click", e);
+    }
+  };
 
   const handleCopyWhatsApp = async () => {
     if (!isLoggedIn) {
@@ -218,121 +220,121 @@ Open this listing: ${shareUrl}`;
               <span className="text-xs font-bold text-zinc-800 hover:underline">
                 {listing.business_name}
               </span>
-              <span className="text-[10px] text-zinc-400 font-medium">View profile</span>
+              <span className="text-[10px] text-zinc-400 font-medium">Open seller page</span>
             </div>
           </button>
 
-   <div className="flex items-center gap-3">
-  <span className="max-w-[95px] truncate bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-     {listing.university}
-  </span>
+          <div className="flex items-center gap-3">
+            <span className="max-w-[95px] truncate bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
+              {listing.university}
+            </span>
 
-  <div className="relative" data-listing-menu={listing.id}>
-    <button
-      type="button"
-      onClick={() => setMenuOpen(!menuOpen)}
-      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-      aria-label="Open actions menu"
-      aria-expanded={menuOpen}
-    >
-      <MoreVertical className="w-5 h-5 text-zinc-500" />
-    </button>
+            <div className="relative" data-listing-menu={listing.id}>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
+                aria-label="Open actions menu"
+                aria-expanded={menuOpen}
+              >
+                <MoreVertical className="w-5 h-5 text-zinc-500" />
+              </button>
 
-    {menuOpen && (
-      <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
-        {isOwner ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onEdit?.(listing);
-              }}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onToggleStatus?.(listing);
-              }}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onDelete?.(listing.id);
-              }}
-              className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
-            >
-              Delete
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onToggleSave?.(listing.id);
-              }}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              {isSaved ? "Remove from Saved" : "Save Item"}
-            </button>
-            <button
-              type="button"
-              onClick={handleReportFromMenu}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Report listing
-            </button>
-            <button
-              type="button"
-              onClick={handleCopyWhatsApp}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Copy WhatsApp number
-            </button>
-            <button
-              type="button"
-              onClick={handleShare}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Share listing
-            </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
+                  {isOwner ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          navigateToEditListing(listing.id);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onToggleStatus?.(listing);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onDelete?.(listing.id);
+                        }}
+                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
+                      >
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          onToggleSave?.(listing.id);
+                        }}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        {isSaved ? "Remove from Saved" : "Save Item"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleReportFromMenu}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        Report listing
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCopyWhatsApp}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        Copy WhatsApp number
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleShare}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        Share listing
+                      </button>
 
-            <button
-              type="button"
-              onClick={handleHideListing}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Hide this listing
-            </button>
+                      <button
+                        type="button"
+                        onClick={handleHideListing}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                      >
+                        Hide this listing
+                      </button>
 
-            <div className="h-px bg-zinc-100" />
+                      <div className="h-px bg-zinc-100" />
 
-            <button
-              type="button"
-              onClick={handleHideSeller}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-              disabled={!sellerUid}
-            >
-              Hide this seller
-            </button>
-          </>
-        )}
-      </div>
-    )}
-  </div>
-</div>
-</div>
-                    
+                      <button
+                        type="button"
+                        onClick={handleHideSeller}
+                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
+                        disabled={!sellerUid}
+                      >
+                        Hide this seller
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
           {listing.video_url ? (
             <button
@@ -400,9 +402,7 @@ Open this listing: ${shareUrl}`;
               } ${listing.status === "sold" ? "top-14" : "top-4"}`}
               aria-label={isSaved ? "Remove from saved" : "Save item"}
             >
-              <Bookmark
-                className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`}
-              />
+              <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
             </button>
           )}
 
@@ -437,17 +437,17 @@ Open this listing: ${shareUrl}`;
                 Sold Out
               </span>
             ) : isLoggedIn ? (
-             <a
+              <a
                 href={`https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(
-                `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, 0)}`
+                  `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, 0)}`
                 )}`}
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 onClick={() => {
-                   void trackWhatsappClick();
-               }}
-               className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
-             >
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => {
+                  void trackWhatsappClick();
+                }}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
+              >
                 <MessageCircle className="w-3.5 h-3.5" />
                 Contact
               </a>
@@ -487,4 +487,4 @@ Open this listing: ${shareUrl}`;
       </div>
     </motion.div>
   );
-  }
+}

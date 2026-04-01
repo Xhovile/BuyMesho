@@ -9,6 +9,12 @@ coverage/
 dist-server
 dist-server
 dist-server
+market.db
+market.db.backup-now
+market.db.before-cf5c564
+market.*.db
+market.db-wal
+market.db-shm
 
 market.db
 market.db.backup-now

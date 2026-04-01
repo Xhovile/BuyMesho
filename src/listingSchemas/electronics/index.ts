@@ -1,4 +1,4 @@
-import type { ListingItemConfig } from "../core";
+import type { ListingItemConfig } from "../core.js";
 
 import {
   SMARTPHONE_SCHEMA,
@@ -13,7 +13,7 @@ import {
   SMARTWATCH_FITNESS_BAND_SCHEMA,
   SMARTWATCH_FITNESS_BAND_FIELD_GROUPS,
   SMARTWATCH_FITNESS_BAND_REQUIRED_KEYS,
-} from "./phones";
+} from "./phones.js";
 
 import {
   LAPTOP_SCHEMA,
@@ -25,7 +25,7 @@ import {
   MONITOR_SCHEMA,
   MONITOR_FIELD_GROUPS,
   MONITOR_REQUIRED_KEYS,
-} from "./computers";
+} from "./computers.js";
 
 import {
   HEADPHONES_SCHEMA,
@@ -37,7 +37,7 @@ import {
   BLUETOOTH_SPEAKER_SCHEMA,
   BLUETOOTH_SPEAKER_FIELD_GROUPS,
   BLUETOOTH_SPEAKER_REQUIRED_KEYS,
-} from "./audio";
+} from "./audio.js";
 
 import {
   POWER_BANK_SCHEMA,
@@ -49,7 +49,7 @@ import {
   ROUTER_MIFI_MODEM_SCHEMA,
   ROUTER_MIFI_MODEM_FIELD_GROUPS,
   ROUTER_MIFI_MODEM_REQUIRED_KEYS,
-} from "./power";
+} from "./power.js";
 
 import {
   USB_FLASH_DRIVE_SCHEMA,
@@ -67,7 +67,7 @@ import {
   MOUSE_SCHEMA,
   MOUSE_FIELD_GROUPS,
   MOUSE_REQUIRED_KEYS,
-} from "./storage";
+} from "./storage.js";
 
 import {
   PRINTER_SCHEMA,
@@ -76,14 +76,14 @@ import {
   CALCULATOR_SCHEMA,
   CALCULATOR_FIELD_GROUPS,
   CALCULATOR_REQUIRED_KEYS,
-} from "./studentTools";
+} from "./studentTools.js";
 
-export * from "./phones";
-export * from "./computers";
-export * from "./audio";
-export * from "./power";
-export * from "./storage";
-export * from "./studentTools";
+export * from "./phones.js";
+export * from "./computers.js";
+export * from "./audio.js";
+export * from "./power.js";
+export * from "./storage.js";
+export * from "./studentTools.js";
 
 export const ELECTRONICS_LISTING_ITEM_CONFIGS: ListingItemConfig[] = [
   {

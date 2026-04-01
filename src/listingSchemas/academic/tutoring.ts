@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   AVAILABILITY_OPTIONS,
   DELIVERY_MODE_OPTIONS,
@@ -12,7 +12,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createTutoringConfig(params: {
   itemType: string;

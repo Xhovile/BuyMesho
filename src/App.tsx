@@ -97,6 +97,28 @@ type SellerRatingSummary = {
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
+type SellerApplication = {
+  id: number;
+  applicant_uid: string | null;
+  applicant_email: string | null;
+  full_legal_name: string | null;
+  institution: string | null;
+  applicant_type: string | null;
+  institution_id_number: string | null;
+  whatsapp_number: string | null;
+  business_name: string | null;
+  what_to_sell: string | null;
+  business_description: string | null;
+  reason_for_applying: string | null;
+  proof_document_url: string | null;
+  status: SellerApplicationStatus;
+  review_notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by_uid: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 const createInitialListingDraft = (
   userProfile?: UserProfile | null
 ): ListingDraft => ({
@@ -167,6 +189,7 @@ export default function App() {
   const [selectedCat, setSelectedCat] = useState("");
   const [selectedSubcategory, setSelectedSubcategory] = useState("");
   const [selectedItemType, setSelectedItemType] = useState("");
+  const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>({});
   const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -213,6 +236,7 @@ const [detailsSellerProfile, setDetailsSellerProfile] = useState<any | null>(nul
 const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSummary | null>(null);
 const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
 const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
+const detailsExtrasRequestIdRef = useRef(0);
 const [selectedCondition, setSelectedCondition] = useState("");
 const [hideSoldOut, setHideSoldOut] = useState(false);
 const [minPrice, setMinPrice] = useState("");
@@ -222,6 +246,8 @@ const [pageSize] = useState(12);
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const [showScrollTop, setShowScrollTop] = useState(false);
+const listingsFetchAbortRef = useRef<AbortController | null>(null);
+const listingsRequestIdRef = useRef(0);
   
 // Local-only hides (no backend needed)
 
@@ -403,6 +429,7 @@ const openDetails = (listing: Listing, startIndex = 0) => {
 };
 
 const closeDetails = () => {
+  detailsExtrasRequestIdRef.current += 1;
   setDetailsOpen(false);
   setDetailsListing(null);
   setGalleryIndex(0);
@@ -598,7 +625,7 @@ useEffect(() => {
   proofDocumentUrl: "",
   agreedToRules: false
 });
-  const [sellerApplicationStatus, setSellerApplicationStatus] = useState<SellerApplicationStatus | null>(null);
+  const [sellerApplication, setSellerApplication] = useState<SellerApplication | null>(null);
   
 const [editProfileForm, setEditProfileForm] = useState({
   businessName: "",
@@ -706,7 +733,42 @@ useEffect(() => {
   maxPrice,
   search,
   sortBy,
+  selectedSpecFilters,
 ]);
+
+
+useEffect(() => {
+  if (authLoading || profileLoading) return;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("create") !== "1") return;
+
+  params.delete("create");
+  const nextUrl =
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setCreateFieldErrors({});
+  setShowAddModal(true);
+}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
   
   useEffect(() => {
   fetchListings();
@@ -723,9 +785,21 @@ useEffect(() => {
   sortBy,
   currentPage,
   pageSize,
+  selectedSpecFilters,
 ]);
 
+useEffect(() => {
+  return () => {
+    listingsFetchAbortRef.current?.abort();
+  };
+}, []);
+
   const fetchListings = async () => {
+  const requestId = ++listingsRequestIdRef.current;
+  listingsFetchAbortRef.current?.abort();
+  const controller = new AbortController();
+  listingsFetchAbortRef.current = controller;
+
   setLoading(true);
   try {
     const params = new URLSearchParams();
@@ -740,26 +814,57 @@ useEffect(() => {
     if (maxPrice) params.append("maxPrice", maxPrice);
     if (search) params.append("search", search);
     if (sortBy) params.append("sortBy", sortBy);
+    if (Object.keys(selectedSpecFilters).length > 0) {
+      params.append("specFilters", JSON.stringify(selectedSpecFilters));
+    }
 
     params.append("page", String(currentPage));
     params.append("pageSize", String(pageSize));
 
-    const res = await fetch(`/api/listings?${params.toString()}`);
+    const res = await fetch(`/api/listings?${params.toString()}`, {
+      signal: controller.signal,
+    });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
     const data = await res.json();
 
+    if (requestId !== listingsRequestIdRef.current) return;
+
     setListings(Array.isArray(data.items) ? data.items : []);
     setTotalResults(Number(data.total || 0));
     setTotalPages(Number(data.totalPages || 1));
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return;
+    }
+    if (requestId !== listingsRequestIdRef.current) return;
+
     console.error("Fetch listings error:", err);
     setListings([]);
     setTotalResults(0);
     setTotalPages(1);
   } finally {
+    if (requestId !== listingsRequestIdRef.current) return;
     setLoading(false);
   }
+};
+
+const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory("");
+  setSelectedItemType("");
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType("");
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
 };
 
   const trackListingView = async (listingId: number) => {
@@ -788,46 +893,83 @@ useEffect(() => {
 }; 
 
 const loadDetailsExtras = async (listing: Listing) => {
+  const requestId = ++detailsExtrasRequestIdRef.current;
   setDetailsLoadingExtra(true);
 
+  const isTransientDetailExtrasError = (error: unknown) => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes("failed to fetch") ||
+        msg.includes("networkerror") ||
+        msg.includes("network request failed") ||
+        msg.includes("load failed")
+      );
+    }
+
+    return false;
+  };
+
+  const warnDetailExtrasFailure = (label: string, error: unknown) => {
+    if (isTransientDetailExtrasError(error)) return;
+    console.warn(label, error);
+  };
+
   try {
-    const [sellerProfile, listingsResponse] = await Promise.all([
+    const [sellerProfileResult, relatedResult] = await Promise.allSettled([
      apiFetch(`/api/users/${listing.seller_uid}`),
-     apiFetch("/api/listings?page=1&pageSize=50"),
+     apiFetch(`/api/listings/${listing.id}/related?limit=5`),
    ]);
+
+    if (sellerProfileResult.status === "rejected") {
+      warnDetailExtrasFailure(
+        "Detail extras: seller profile request failed",
+        sellerProfileResult.reason
+      );
+    }
+
+    if (relatedResult.status === "rejected") {
+      warnDetailExtrasFailure(
+        "Detail extras: related listings request failed",
+        relatedResult.reason
+      );
+    }
+
+    const sellerProfile =
+      sellerProfileResult.status === "fulfilled" ? sellerProfileResult.value : null;
+    const relatedResponse =
+      relatedResult.status === "fulfilled" ? relatedResult.value : [];
+
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
 
     setDetailsSellerProfile(sellerProfile || null);
 
     if (firebaseUser) {
       try {
         const summary = await apiFetch(`/api/users/${listing.seller_uid}/rating-summary`);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(summary || null);
-      } catch {
+      } catch (ratingError) {
+        warnDetailExtrasFailure("Detail extras: rating summary request failed", ratingError);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
         setDetailsRatingSummary(null);
       }
     } else {
       setDetailsRatingSummary(null);
     }
 
-    const allListings = Array.isArray(listingsResponse?.items)
-     ? listingsResponse.items
-     : [];
-
-      const related = allListings
-        .filter((item: Listing) =>
-            item.id !== listing.id &&
-            item.category === listing.category &&
-            item.university === listing.university
-          )
-          .slice(0, 5);
-
-    setRelatedListings(related);
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
+    setRelatedListings(Array.isArray(relatedResponse) ? relatedResponse : []);
   } catch (e) {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
     console.error("Failed to load detail extras", e);
     setDetailsSellerProfile(null);
     setDetailsRatingSummary(null);
     setRelatedListings([]);
   } finally {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
     setDetailsLoadingExtra(false);
   }
 };
@@ -863,7 +1005,7 @@ const fetchSellerDashboard = async () => {
   if (firebaseUser && !userProfile?.is_seller) {
     void fetchSellerApplicationStatus();
   } else {
-    setSellerApplicationStatus(null);
+    setSellerApplication(null);
   }
 }, [firebaseUser, userProfile?.is_seller]);
 
@@ -1241,6 +1383,11 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     }
     void fetchSellerDashboard();
 
+    showFeedback(
+      "success",
+      "Listing updated",
+      "Your listing was updated successfully."
+    );
     setEditingListing(null);
   } catch (err: any) {
     showFeedback(
@@ -1765,7 +1912,7 @@ const handleDeleteAccount = async () => {
 
   const fetchSellerApplicationStatus = async () => {
     if (!firebaseUser) {
-      setSellerApplicationStatus(null);
+      setSellerApplication(null);
       return;
     }
 
@@ -1777,7 +1924,7 @@ const handleDeleteAccount = async () => {
         data?.status === "approved" ||
         data?.status === "rejected"
       ) {
-        setSellerApplicationStatus(data.status);
+        setSellerApplication(data as SellerApplication);
 
         if (data.status === "approved" && userProfile && !userProfile.is_seller) {
           await updateDoc(doc(firestore, "users", firebaseUser.uid), {
@@ -1793,11 +1940,11 @@ const handleDeleteAccount = async () => {
           });
         }
       } else {
-        setSellerApplicationStatus(null);
+        setSellerApplication(null);
       }
     } catch (err) {
       console.error("Failed to fetch seller application status", err);
-      setSellerApplicationStatus(null);
+      setSellerApplication(null);
     }
   };
   
@@ -1823,7 +1970,17 @@ const handleDeleteAccount = async () => {
       }),
     });
 
-    setSellerApplicationStatus(submitted?.application?.status || "pending");
+    const nextApplication = submitted?.application;
+    if (
+      nextApplication &&
+      (nextApplication.status === "pending" ||
+        nextApplication.status === "approved" ||
+        nextApplication.status === "rejected")
+    ) {
+      setSellerApplication(nextApplication as SellerApplication);
+    } else {
+      setSellerApplication(null);
+    }
 
     showFeedback(
       "success",
@@ -2830,11 +2987,13 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   selectedUniv={selectedUniv}
   setSelectedUniv={setSelectedUniv}
   selectedCat={selectedCat}
-  setSelectedCat={setSelectedCat}
+  setSelectedCat={handleSelectedCategoryChange}
   selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={setSelectedSubcategory}
+  setSelectedSubcategory={handleSelectedSubcategoryChange}
   selectedItemType={selectedItemType}
-  setSelectedItemType={setSelectedItemType}
+  setSelectedItemType={handleSelectedItemTypeChange}
+  selectedSpecFilters={selectedSpecFilters}
+  setSelectedSpecFilters={setSelectedSpecFilters}
   sortBy={sortBy}
   setSortBy={setSortBy}
   firebaseUserUid={firebaseUser?.uid}
@@ -2842,9 +3001,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   savedListingIds={savedListingIds}
   onReport={handleReport}
   onDelete={handleDeleteListing}
-  onOpenProfile={openPublicProfile}
   onEdit={handleEditListing}
-  onOpenDetails={openDetails}
   onHideSeller={hideSellerLocal}
   onHideListing={hideListingLocal}
   onToggleStatus={handleToggleListingStatus}
@@ -3952,10 +4109,26 @@ setCurrentPage={setCurrentPage}
       Submit Seller Application
     </button>
 
-    {sellerApplicationStatus && (
-      <p className="text-sm text-zinc-600 text-center">
-        Current application status: <span className="font-bold capitalize">{sellerApplicationStatus}</span>
-      </p>
+    {sellerApplication && (
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 space-y-1">
+        <p>
+          Current application status:{" "}
+          <span className="font-bold capitalize">{sellerApplication.status}</span>
+        </p>
+        <p>
+          Reviewed date:{" "}
+          <span className="font-medium">
+            {sellerApplication.reviewed_at
+              ? new Date(sellerApplication.reviewed_at).toLocaleString()
+              : "Not reviewed yet"}
+          </span>
+        </p>
+        {sellerApplication.review_notes ? (
+          <p>
+            Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+          </p>
+        ) : null}
+      </div>
     )}
 
     <button
@@ -4220,6 +4393,28 @@ setCurrentPage={setCurrentPage}
   </button>
 )}
 
+{!isSellerAccount && sellerApplication && (
+  <div className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-left text-sm text-zinc-700 space-y-1">
+    <p>
+      Application status:{" "}
+      <span className="font-bold capitalize">{sellerApplication.status}</span>
+    </p>
+    <p>
+      Reviewed date:{" "}
+      <span className="font-medium">
+        {sellerApplication.reviewed_at
+          ? new Date(sellerApplication.reviewed_at).toLocaleString()
+          : "Not reviewed yet"}
+      </span>
+    </p>
+    {sellerApplication.review_notes ? (
+      <p>
+        Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+      </p>
+    ) : null}
+  </div>
+)}
+
 {!isSellerAccount && (
   <button
     onClick={() => {
@@ -4357,8 +4552,6 @@ setCurrentPage={setCurrentPage}
                   currentUid={firebaseUser?.uid}
                   onDelete={handleDeleteListing}
                   onEdit={handleEditListing}
-                  onOpenProfile={openPublicProfile}
-                  onOpenDetails={openDetails}
                   onHideSeller={hideSellerLocal}
                   onToggleStatus={handleToggleListingStatus}
                   isSaved={savedListingIds.includes(listing.id)}
@@ -4438,8 +4631,6 @@ setCurrentPage={setCurrentPage}
                   currentUid={firebaseUser?.uid}
                   onDelete={handleDeleteListing}
                   onEdit={handleEditListing}
-                  onOpenProfile={openPublicProfile}
-                  onOpenDetails={openDetails}
                   onHideSeller={hideSellerLocal}
                   onHideListing={hideListingLocal}
                   onToggleStatus={handleToggleListingStatus}
@@ -4626,8 +4817,6 @@ setCurrentPage={setCurrentPage}
                       currentUid={firebaseUser?.uid}
                       onDelete={handleDeleteListing}
                       onEdit={handleEditListing}
-                      onOpenProfile={openPublicProfile}
-                      onOpenDetails={openDetails}
                       onHideSeller={hideSellerLocal}
                       onHideListing={hideListingLocal}
                       onToggleStatus={handleToggleListingStatus}
@@ -5189,6 +5378,7 @@ setCurrentPage={setCurrentPage}
     listing={editingListing}
     onClose={() => setEditingListing(null)}
     onSave={(updated) => handleUpdateListing(editingListing.id, updated)}
+    showFeedback={showFeedback}
   />
 )}
       {confirmState && (

@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   FOOD_FRESHNESS_OPTIONS,
   FOOD_PACKAGING_OPTIONS,
@@ -9,7 +9,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createPantryConfig(params: {
   itemType: string;

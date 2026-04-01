@@ -1,4 +1,4 @@
-import type { ListingItemConfig, ListingSpecField } from "../core";
+import type { ListingItemConfig, ListingSpecField } from "../core.js";
 import {
   SERVICE_AVAILABILITY_OPTIONS,
   SERVICE_DURATION_OPTIONS,
@@ -9,7 +9,7 @@ import {
   selectField,
   textField,
   textareaField,
-} from "./shared";
+} from "./shared.js";
 
 function createBeautyServiceConfig(params: {
   itemType: string;
