@@ -138,8 +138,19 @@ export default function BecomeSellerPage() {
     >
       {authLoading || profileLoading ? (
         <div className="p-8 text-sm text-zinc-500">Loading seller application…</div>
-      ) : !firebaseUser || !profile ? (
+      ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
+      ) : !profile ? (
+        <div className="p-8 space-y-3 text-sm text-zinc-500">
+          <p>Your account setup is not complete. Please create your account details before applying to become a seller.</p>
+          <button
+            type="button"
+            onClick={() => navigateToPath("/edit-account")}
+            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Complete account setup
+          </button>
+        </div>
       ) : profile.is_seller ? (
         <div className="p-8 text-sm text-zinc-500">Your account is already a seller account.</div>
       ) : (
