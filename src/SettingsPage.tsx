@@ -18,6 +18,8 @@ import ReportProblemPage from "./components/ReportProblemPage";
 import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
+import AdminReportsModal from "./components/AdminReportsModal";
+import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import {
   BECOME_SELLER_PATH,
   EDIT_ACCOUNT_PATH,
@@ -28,6 +30,7 @@ import {
   SETTINGS_PATH,
   CHANGE_PASSWORD_PATH,
   navigateToPath,
+  navigateToSellerProfile,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
@@ -77,6 +80,8 @@ export default function SettingsPage() {
     title: string;
     message: string;
   } | null>(null);
+  const [adminReportsOpen, setAdminReportsOpen] = useState(false);
+  const [sellerApprovalsOpen, setSellerApprovalsOpen] = useState(false);
 
   const visibilityLabel: Record<VisibilitySetting, string> = {
     everyone: "Everyone",
@@ -359,18 +364,24 @@ export default function SettingsPage() {
                   <>
                     <button
                       type="button"
-                      onClick={() => navigateToPath("/admin/reports")}
+                      onClick={() => setAdminReportsOpen(true)}
                       className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
                     >
-                      <span className="font-bold text-indigo-900">Admin Reports</span>
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Admin Reports
+                      </span>
                       <ChevronRight className="w-4 h-4 text-indigo-400" />
                     </button>
                     <button
                       type="button"
-                      onClick={() => navigateToPath("/admin/seller-applications")}
+                      onClick={() => setSellerApprovalsOpen(true)}
                       className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
                     >
-                      <span className="font-bold text-indigo-900">Seller Approvals</span>
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <UserCheck className="w-4 h-4" />
+                        Seller Approvals
+                      </span>
                       <ChevronRight className="w-4 h-4 text-indigo-400" />
                     </button>
                   </>
@@ -630,6 +641,15 @@ export default function SettingsPage() {
           message={feedback.message}
           onClose={() => setFeedback(null)}
         />
+      )}
+      {adminReportsOpen && (
+        <AdminReportsModal
+          onClose={() => setAdminReportsOpen(false)}
+          onOpenUser={(uid) => navigateToSellerProfile(uid)}
+        />
+      )}
+      {sellerApprovalsOpen && (
+        <AdminSellerApplicationsModal onClose={() => setSellerApprovalsOpen(false)} />
       )}
     </div>
   );
