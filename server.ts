@@ -2336,10 +2336,11 @@ app.patch(
 
       try {
         const firebaseAdmin = getFirebaseAdmin();
-        await firebaseAdmin.firestore().collection("users").doc(application.applicant_uid).set(
-          { is_seller: true },
-          { merge: true }
-        );
+        await firebaseAdmin
+          .firestore()
+          .collection("users")
+          .doc(application.applicant_uid)
+          .set({ is_seller: true }, { merge: true });
       } catch (firestoreSyncError) {
         console.warn(
           "Failed to sync approved seller status to Firestore:",
@@ -2366,6 +2367,7 @@ app.patch(
 
     return res.json({ success: true, application: updatedApplication });
   })
+
 );
 
 app.post("/api/admin/listings/:id/hide", requireAuth, (req, res) => {
