@@ -1,29 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
 import { UNIVERSITIES } from "../constants";
-import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
-const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
-
-async function fetchSellerApplicationWithRetry() {
-  let lastError: unknown = null;
-
-  for (const delayMs of SELLER_STATUS_RETRY_DELAYS_MS) {
-    if (delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-
-    try {
-      return await apiFetch("/api/profile/seller-application");
-    } catch (error) {
-      lastError = error;
-    }
-  }
-
-  throw lastError;
+// Background variant: uses a cached (non-forced) token to avoid unnecessary token refreshes.
+// Throws on network or server errors; returns null only when the user has no application.
+async function fetchSellerApplicationBackground() {
+  const user = auth.currentUser;
+  if (!user) return null;
+  const token = await user.getIdToken(false);
+  const res = await fetch("/api/profile/seller-application", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`Seller application fetch failed (${res.status})`);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export function useAccountProfile() {
@@ -31,6 +24,9 @@ export function useAccountProfile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Only poll for seller-status updates when the user has a pending application.
+  const [sellerApplicationPending, setSellerApplicationPending] = useState(false);
+  const syncInFlight = useRef(false);
 
   const loadProfile = async () => {
     if (!firebaseUser) {
@@ -56,6 +52,29 @@ export function useAccountProfile() {
       if (snap.exists()) {
         const loadedProfile = snap.data() as UserProfile;
         setProfile(loadedProfile);
+
+        if (!loadedProfile.is_seller) {
+          // Check application status on initial load to decide whether background
+          // polling is needed, without forcing a token refresh.
+          try {
+            const application = await fetchSellerApplicationBackground();
+            if (application?.status === "approved") {
+              setSellerApplicationPending(false);
+              setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+              try {
+                await setDoc(userRef, { is_seller: true }, { merge: true });
+              } catch (firestoreWriteErr) {
+                console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+              }
+            } else if (application?.status === "pending") {
+              setSellerApplicationPending(true);
+            }
+            // null = no application; other statuses (rejected) do not need polling
+          } catch {
+            // Transient error: default to polling so an approved status is not missed.
+            setSellerApplicationPending(true);
+          }
+        }
       } else {
         try {
           await setDoc(userRef, fallbackProfile);
@@ -122,22 +141,34 @@ export function useAccountProfile() {
   }, [firebaseUser, authLoading]);
 
   useEffect(() => {
-    if (authLoading || !firebaseUser || profile?.is_seller) return;
+    if (authLoading || !firebaseUser || profile?.is_seller || !sellerApplicationPending) return;
 
     const syncApprovedSellerStatus = async () => {
+      if (syncInFlight.current) return;
+      syncInFlight.current = true;
       try {
-        const sellerApplication = await fetchSellerApplicationWithRetry();
+        const sellerApplication = await fetchSellerApplicationBackground();
+        if (sellerApplication === null) {
+          // Application confirmed gone; stop polling.
+          setSellerApplicationPending(false);
+          return;
+        }
         if (sellerApplication?.status !== "approved") return;
 
         const userRef = doc(firestore, "users", firebaseUser.uid);
-        await setDoc(userRef, { is_seller: true }, { merge: true });
         setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+        setSellerApplicationPending(false);
+        try {
+          await setDoc(userRef, { is_seller: true }, { merge: true });
+        } catch (firestoreWriteErr) {
+          console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
+        }
       } catch (statusErr) {
         console.error("Background seller status sync failed", statusErr);
+      } finally {
+        syncInFlight.current = false;
       }
     };
-
-    void syncApprovedSellerStatus();
 
     const handleFocusSync = () => {
       void syncApprovedSellerStatus();
@@ -154,7 +185,7 @@ export function useAccountProfile() {
       window.removeEventListener("popstate", handleFocusSync);
       window.clearInterval(syncInterval);
     };
-  }, [authLoading, firebaseUser, profile?.is_seller]);
+  }, [authLoading, firebaseUser, profile?.is_seller, sellerApplicationPending]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!firebaseUser) return;
