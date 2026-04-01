@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { ChevronLeft, House, Search } from "lucide-react";
-import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "../lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  HOME_PATH,
+  navigateBackOrPath,
+  navigateToPath,
+} from "../lib/appNavigation";
 
 type AccountPageShellProps = {
   eyebrow: string;
@@ -44,7 +49,7 @@ export default function AccountPageShell({
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
               <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">{description}</p>
             </div>
-            <button type="button" onClick={onBack || (() => navigateToPath(EXPLORE_PATH))} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 self-start"><ChevronLeft className="w-4 h-4" />{backLabel}</button>
+            <button type="button" onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 self-start"><ChevronLeft className="w-4 h-4" />{backLabel}</button>
           </div>
         </section>
         <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">{children}</section>

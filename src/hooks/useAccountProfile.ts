@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
+import { UNIVERSITIES } from "../constants";
 import type { UserProfile } from "../types";
 
 export function useAccountProfile() {
@@ -20,11 +21,22 @@ export function useAccountProfile() {
 
     setProfileLoading(true);
     try {
-      const snap = await getDoc(doc(firestore, "users", firebaseUser.uid));
+      const userRef = doc(firestore, "users", firebaseUser.uid);
+      const snap = await getDoc(userRef);
       if (snap.exists()) {
         setProfile(snap.data() as UserProfile);
       } else {
-        setProfile(null);
+        const fallbackProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          university: UNIVERSITIES[0],
+          avatar_url: "",
+          is_verified: false,
+          is_seller: false,
+          join_date: new Date().toISOString(),
+        };
+        await setDoc(userRef, fallbackProfile);
+        setProfile(fallbackProfile);
       }
       setError(null);
     } catch (err: any) {
@@ -41,6 +53,21 @@ export function useAccountProfile() {
     void loadProfile();
   }, [firebaseUser, authLoading]);
 
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!firebaseUser) return;
+
+    try {
+      const userRef = doc(firestore, "users", firebaseUser.uid);
+      await setDoc(userRef, updates, { merge: true });
+      setProfile((prev) => (prev ? { ...prev, ...updates } : prev));
+      setError(null);
+    } catch (err: any) {
+      console.error("Failed to update account profile", err);
+      setError(err?.message || "Failed to update profile");
+      throw err;
+    }
+  };
+
   return {
     firebaseUser,
     authLoading,
@@ -49,6 +76,7 @@ export function useAccountProfile() {
     profileLoading,
     error,
     refreshProfile: loadProfile,
+    updateProfile,
     emailVerified: !!auth.currentUser?.emailVerified,
   };
 }

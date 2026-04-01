@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bookmark,
@@ -29,6 +29,13 @@ export default function ProfilePage() {
   const { firebaseUser, authLoading, profile, profileLoading, emailVerified } =
     useAccountProfile();
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+
+  useEffect(() => {
+    if (authLoading || profileLoading) return;
+    if (firebaseUser && !profile) {
+      navigateToPath("/edit-account");
+    }
+  }, [authLoading, profileLoading, firebaseUser, profile]);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -73,17 +80,10 @@ export default function ProfilePage() {
         </div>
       ) : !profile ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Profile not found</h2>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Profile setup required</h2>
           <p className="mt-3 text-sm text-zinc-500">
-            Your account exists, but your BuyMesho profile has not been set up properly.
+            We could not find your profile yet. Redirecting you to complete your profile.
           </p>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/signup")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-          >
-            Go to Signup
-          </button>
         </div>
       ) : (
         <div className="p-8 space-y-6">
