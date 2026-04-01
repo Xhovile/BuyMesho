@@ -7,6 +7,7 @@ import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { requireAuth } from "./server/middleware/requireAuth.js";
+import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -910,6 +911,52 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   console.error("Seller sync error:", error);
   res.status(500).json({ error: "Failed to sync seller profile" });
 }
+  });
+
+  app.post("/api/profile/bootstrap", requireAuth, async (req, res) => {
+    const uid = req.user!.uid;
+    const email = req.user?.email || req.body?.email || "";
+    const requestedUniversity =
+      typeof req.body?.university === "string" ? req.body.university.trim() : "";
+    const safeUniversity = requestedUniversity || "University Not Set";
+    const nowIso = new Date().toISOString();
+
+    const fallbackProfile = {
+      uid,
+      email,
+      university: safeUniversity,
+      avatar_url: "",
+      is_verified: !!req.user?.email_verified,
+      is_seller: false,
+      join_date: nowIso,
+    };
+
+    try {
+      db.prepare(
+        `
+          INSERT INTO sellers (
+            uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, NULL, ?, NULL, NULL, ?, 0, ?)
+          ON CONFLICT(uid) DO UPDATE SET
+            email = excluded.email,
+            university = COALESCE(sellers.university, excluded.university),
+            is_verified = CASE
+              WHEN excluded.is_verified = 1 THEN 1
+              ELSE sellers.is_verified
+            END
+        `
+      ).run(uid, email, safeUniversity, req.user?.email_verified ? 1 : 0, nowIso);
+
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set(fallbackProfile, {
+        merge: true,
+      });
+
+      return res.json({ ok: true, profile: fallbackProfile });
+    } catch (error) {
+      console.error("Profile bootstrap failed:", error);
+      return res.status(500).json({ error: "Failed to bootstrap profile" });
+    }
   });
 
   app.put("/api/profile", requireAuth, (req, res) => {

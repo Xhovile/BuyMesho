@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db as firestore } from "../firebase";
 import { useAuthUser } from "./useAuthUser";
 import { UNIVERSITIES } from "../constants";
+import { apiFetch } from "../lib/api";
 import type { UserProfile } from "../types";
 
 export function useAccountProfile() {
@@ -35,7 +36,17 @@ export function useAccountProfile() {
           is_seller: false,
           join_date: new Date().toISOString(),
         };
-        await setDoc(userRef, fallbackProfile);
+        try {
+          await setDoc(userRef, fallbackProfile);
+        } catch (firestoreWriteErr) {
+          console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
+          await apiFetch("/api/profile/bootstrap", {
+            method: "POST",
+            body: JSON.stringify({
+              university: fallbackProfile.university,
+            }),
+          });
+        }
         setProfile(fallbackProfile);
       }
       setError(null);
