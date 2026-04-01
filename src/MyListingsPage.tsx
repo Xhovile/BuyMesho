@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
-import { ExternalLink, Loader2, Pencil } from "lucide-react";
+import { BarChart3, ExternalLink, Loader2, Pencil } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToEditListing, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
-import type { Listing } from "./types";
+import type { Listing, SellerDashboardData } from "./types";
 
 export default function MyListingsPage() {
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
+  const [dashboardOpen, setDashboardOpen] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+  const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -33,6 +37,30 @@ export default function MyListingsPage() {
 
     void loadListings();
   }, [firebaseUser, profile?.is_seller]);
+
+  const handleDashboardToggle = async () => {
+    if (!firebaseUser || !profile?.is_seller) return;
+
+    if (dashboardOpen) {
+      setDashboardOpen(false);
+      return;
+    }
+
+    setDashboardOpen(true);
+    if (dashboard || dashboardLoading) return;
+
+    setDashboardLoading(true);
+    setDashboardError(null);
+    try {
+      const data = await apiFetch("/api/seller/dashboard");
+      setDashboard(data);
+    } catch (error: any) {
+      console.error("Failed to load seller dashboard", error);
+      setDashboardError(error?.message || "Failed to load dashboard.");
+    } finally {
+      setDashboardLoading(false);
+    }
+  };
 
   return (
     <AccountPageShell
@@ -84,8 +112,98 @@ export default function MyListingsPage() {
           </button>
         </div>
       ) : (
-        <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {listings.map((listing) => {
+        <div className="p-8 space-y-6">
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Seller performance</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+              </div>
+              {dashboardOpen ? (
+                <button
+                  type="button"
+                  onClick={() => void handleDashboardToggle()}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-100"
+                >
+                  Hide Seller Dashboard
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleDashboardToggle()}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Seller Dashboard
+                </button>
+              )}
+            </div>
+
+            {dashboardOpen && (
+              <div className="mt-4">
+                {dashboardLoading ? (
+                  <div className="flex items-center gap-2 text-sm text-zinc-500">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Loading dashboard...
+                  </div>
+                ) : dashboardError ? (
+                  <p className="text-sm text-red-600">{dashboardError}</p>
+                ) : dashboard ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-zinc-700">Performance snapshot</p>
+                      <button
+                        type="button"
+                        onClick={() => setDashboardOpen(false)}
+                        className="rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100"
+                      >
+                        Close
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 text-sm">
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Total listings</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Active</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.active_listings}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Sold</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.sold_listings}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Total views</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">WhatsApp clicks</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">
+                        {dashboard.stats.total_whatsapp_clicks}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Profile views</p>
+                      <p className="mt-1 text-lg font-black text-zinc-900">
+                        {dashboard.seller.profile_views}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                      <p className="text-xs font-bold uppercase text-zinc-400">Top listing</p>
+                      <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">
+                        {dashboard.top_listing?.name || "No data"}
+                      </p>
+                    </div>
+                  </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {listings.map((listing) => {
             const availableQuantity = Math.max(
               0,
               Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
@@ -147,7 +265,8 @@ export default function MyListingsPage() {
                 </div>
               </div>
             );
-          })}
+            })}
+          </div>
         </div>
       )}
     </AccountPageShell>

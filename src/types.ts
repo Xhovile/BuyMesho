@@ -111,6 +111,7 @@ export interface SellerDashboardData {
     active_listings: number;
     sold_listings: number;
     total_views: number;
+    total_whatsapp_clicks: number;
     repeat_seller_activity: boolean;
   };
   byCampus: {

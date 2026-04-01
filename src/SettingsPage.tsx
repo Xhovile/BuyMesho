@@ -15,6 +15,8 @@ import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
+import ConfirmModal from "./components/ConfirmModal";
+import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
 import {
   BECOME_SELLER_PATH,
@@ -28,6 +30,7 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useIsAdmin } from "./hooks/useIsAdmin";
 import type { VisibilitySetting } from "./types";
 import {
   EmailAuthProvider,
@@ -61,11 +64,19 @@ export default function SettingsPage() {
     getSettingsViewFromSearch(window.location.search)
   );
   const { firebaseUser, profile, profileLoading, updateProfile } = useAccountProfile();
+  const { isAdmin } = useIsAdmin(firebaseUser);
   const [savingPrivacyField, setSavingPrivacyField] = useState<
     "profile_visibility" | "seller_visibility" | "saved_visibility" | null
   >(null);
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    open: boolean;
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
 
   const visibilityLabel: Record<VisibilitySetting, string> = {
     everyone: "Everyone",
@@ -146,19 +157,18 @@ export default function SettingsPage() {
       navigateToPath(LOGIN_PATH);
     } catch (error) {
       console.error("Logout failed:", error);
-      window.alert("Logout failed. Please try again.");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Logout failed",
+        message: "Please try again.",
+      });
     }
   };
 
-  const handleDeleteAccount = async (skipConfirm = false) => {
+  const handleDeleteAccount = async () => {
     if (!firebaseUser) return;
-
-    if (!skipConfirm) {
-      const confirmed = window.confirm(
-        "Are you sure you want to delete your account? This action cannot be undone."
-      );
-      if (!confirmed) return;
-    }
+    setDeleteConfirmOpen(false);
 
     try {
       await apiFetch("/api/profile", { method: "DELETE" });
@@ -170,20 +180,33 @@ export default function SettingsPage() {
         setPasswordPromptOpen(true);
         return;
       }
-      window.alert(
-        error?.message || "Delete account failed. Please try again."
-      );
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Delete account failed",
+        message: error?.message || "Please try again.",
+      });
     }
   };
 
   const handlePasswordPromptSubmit = async () => {
     if (!firebaseUser?.email) {
-      window.alert("No email found for this account.");
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Missing email",
+        message: "No email found for this account.",
+      });
       return;
     }
 
     if (!reauthPassword.trim()) {
-      window.alert("Please enter your password to continue.");
+      setFeedback({
+        open: true,
+        type: "info",
+        title: "Password required",
+        message: "Please enter your password to continue.",
+      });
       return;
     }
 
@@ -196,11 +219,14 @@ export default function SettingsPage() {
       await reauthenticateWithCredential(firebaseUser, credential);
       setPasswordPromptOpen(false);
       setReauthPassword("");
-      await handleDeleteAccount(true);
+      await handleDeleteAccount();
     } catch (error: any) {
-      window.alert(
-        error?.message || "We could not verify your password. Please try again."
-      );
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Verification failed",
+        message: error?.message || "We could not verify your password. Please try again.",
+      });
     }
   };
 
@@ -302,7 +328,7 @@ export default function SettingsPage() {
                       : profile
                       ? profile.is_seller
                         ? "Seller"
-                        : "Buyer"
+                        : "General"
                       : "Not available"}
                   </p>
                 </div>
@@ -311,8 +337,12 @@ export default function SettingsPage() {
               <div className="mt-4 space-y-2">
                 {[
                   { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
-                  { label: "Edit Profile", path: EDIT_PROFILE_PATH },
-                  { label: "Become Seller", path: BECOME_SELLER_PATH },
+                  ...(profile?.is_seller
+                    ? [{ label: "Edit Seller Profile", path: EDIT_PROFILE_PATH }]
+                    : []),
+                  ...(!profile?.is_seller
+                    ? [{ label: "Become Seller", path: BECOME_SELLER_PATH }]
+                    : []),
                 ].map((item) => (
                   <button
                     key={item.label}
@@ -324,6 +354,27 @@ export default function SettingsPage() {
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 ))}
+
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath("/admin/reports")}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900">Admin Reports</span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath("/admin/seller-applications")}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900">Seller Approvals</span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  </>
+                )}
 
                 <button
                   type="button"
@@ -337,7 +388,7 @@ export default function SettingsPage() {
 
                 <button
                   type="button"
-                  onClick={() => void handleDeleteAccount()}
+                  onClick={() => setDeleteConfirmOpen(true)}
                   disabled={!firebaseUser}
                   className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
                 >
@@ -562,6 +613,24 @@ export default function SettingsPage() {
           setReauthPassword("");
         }}
       />
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Delete account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete"
+        danger
+        onConfirm={() => void handleDeleteAccount()}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+      {feedback && (
+        <FeedbackModal
+          open={feedback.open}
+          type={feedback.type}
+          title={feedback.title}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+        />
+      )}
     </div>
   );
 }

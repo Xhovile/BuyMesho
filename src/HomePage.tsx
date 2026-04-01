@@ -12,7 +12,15 @@ import {
   Check,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { EXPLORE_PATH, navigateToCreateListing, navigateToPath } from "./lib/appNavigation";
+import {
+  BECOME_SELLER_PATH,
+  EXPLORE_PATH,
+  LOGIN_PATH,
+  navigateToCreateListing,
+  navigateToPath,
+  SIGNUP_PATH,
+} from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 
 const quickPaths = [
   {
@@ -79,6 +87,23 @@ const whyBuyMesho = [
 ];
 
 export default function HomePage() {
+  const { firebaseUser, profile } = useAccountProfile();
+  const isLoggedIn = !!firebaseUser;
+
+  const handleStartSelling = () => {
+    if (!firebaseUser) {
+      navigateToPath(LOGIN_PATH);
+      return;
+    }
+
+    if (!profile?.is_seller) {
+      navigateToPath(BECOME_SELLER_PATH);
+      return;
+    }
+
+    navigateToCreateListing();
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
@@ -110,13 +135,23 @@ export default function HomePage() {
             >
               Explore
             </button>
-            <button
-              type="button"
-              onClick={navigateToCreateListing}
-              className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
-            >
-              Start Selling
-            </button>
+            {isLoggedIn ? (
+                <button
+                  type="button"
+                  onClick={handleStartSelling}
+                  className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+                >
+                  Start Selling
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigateToPath(LOGIN_PATH)}
+                className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+              >
+                Log In
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -173,13 +208,23 @@ export default function HomePage() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={navigateToCreateListing}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Start Selling
-                </button>
+                {isLoggedIn ? (
+                  <button
+                    type="button"
+                    onClick={handleStartSelling}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Start Selling
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(LOGIN_PATH)}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Log In
+                  </button>
+                )}
               </motion.div>
 
               <motion.div
@@ -372,14 +417,25 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-wrap gap-3 lg:justify-end">
-                <button
-                  type="button"
-                  onClick={navigateToCreateListing}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
-                >
-                  Start Selling
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                {isLoggedIn ? (
+                  <button
+                    type="button"
+                    onClick={handleStartSelling}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
+                  >
+                    Start Selling
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(SIGNUP_PATH)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
+                  >
+                    Sign Up
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => navigateToPath(EXPLORE_PATH)}
