@@ -13,13 +13,14 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
+  BECOME_SELLER_PATH,
   EXPLORE_PATH,
   LOGIN_PATH,
   navigateToCreateListing,
   navigateToPath,
   SIGNUP_PATH,
 } from "./lib/appNavigation";
-import { useAuthUser } from "./hooks/useAuthUser";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 
 const quickPaths = [
   {
@@ -86,8 +87,22 @@ const whyBuyMesho = [
 ];
 
 export default function HomePage() {
-  const { user } = useAuthUser();
-  const isLoggedIn = !!user;
+  const { firebaseUser, profile } = useAccountProfile();
+  const isLoggedIn = !!firebaseUser;
+
+  const handleStartSelling = () => {
+    if (!firebaseUser) {
+      navigateToPath(LOGIN_PATH);
+      return;
+    }
+
+    if (!profile?.is_seller) {
+      navigateToPath(BECOME_SELLER_PATH);
+      return;
+    }
+
+    navigateToCreateListing();
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -121,12 +136,12 @@ export default function HomePage() {
               Explore
             </button>
             {isLoggedIn ? (
-              <button
-                type="button"
-                onClick={navigateToCreateListing}
-                className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
-              >
-                Start Selling
+                <button
+                  type="button"
+                  onClick={handleStartSelling}
+                  className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+                >
+                  Start Selling
               </button>
             ) : (
               <button
@@ -196,7 +211,7 @@ export default function HomePage() {
                 {isLoggedIn ? (
                   <button
                     type="button"
-                    onClick={navigateToCreateListing}
+                    onClick={handleStartSelling}
                     className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
                   >
                     Start Selling
@@ -405,7 +420,7 @@ export default function HomePage() {
                 {isLoggedIn ? (
                   <button
                     type="button"
-                    onClick={navigateToCreateListing}
+                    onClick={handleStartSelling}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                   >
                     Start Selling

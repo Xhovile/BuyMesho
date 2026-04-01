@@ -5,9 +5,7 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   SETTINGS_PATH,
-  navigateToCreateListing,
   navigateToPath,
-  navigateToProfile,
 } from "../lib/appNavigation";
 
 type HeaderProps = {
@@ -81,13 +79,15 @@ export default function Header({
           </div>
 
           <div className="flex items-center gap-3 flex-shrink-0">
-            <button
-              onClick={navigateToCreateListing}
-              className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">List Item</span>
-            </button>
+            {firebaseUser && userProfile?.is_seller ? (
+              <button
+                onClick={onAddListing}
+                className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">List Item</span>
+              </button>
+            ) : null}
 
             <button
               onClick={() => navigateToPath(SETTINGS_PATH)}
@@ -98,7 +98,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={navigateToProfile}
+              onClick={onProfileClick}
               className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
             >
               {profileImage ? (

@@ -9,8 +9,15 @@ import ReportListingModal from "./components/ReportListingModal";
 import HeroSection from "./sections/HeroSection";
 import MarketSection from "./sections/MarketSection";
 import { Listing } from "./types";
-import { navigateToCreateListing, navigateToLogin, navigateToPath, navigateToProfile } from "./lib/appNavigation";
+import {
+  BECOME_SELLER_PATH,
+  navigateToCreateListing,
+  navigateToLogin,
+  navigateToPath,
+  navigateToProfile,
+} from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 
 export default function App() {
@@ -74,7 +81,22 @@ export default function App() {
   } | null>(null);
 
   const { user: firebaseUser } = useAuthUser();
+  const { profile: userProfile } = useAccountProfile();
   const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
+
+  const handleStartSelling = () => {
+    if (!firebaseUser) {
+      navigateToLogin();
+      return;
+    }
+
+    if (!userProfile?.is_seller) {
+      navigateToPath(BECOME_SELLER_PATH);
+      return;
+    }
+
+    navigateToCreateListing();
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -243,13 +265,14 @@ export default function App() {
     <div className="min-h-screen pb-20 bg-zinc-100">
       <Header
         onSearch={setSearch}
-        onAddListing={navigateToCreateListing}
+        onAddListing={handleStartSelling}
         onProfileClick={navigateToProfile}
+        userProfile={userProfile}
         firebaseUser={firebaseUser}
       />
 
       <main className="max-w-7xl mx-auto px-4">
-        <HeroSection onStartSelling={navigateToCreateListing} />
+        <HeroSection onStartSelling={handleStartSelling} />
         <MarketSection
           loading={loading}
           listings={listings}
