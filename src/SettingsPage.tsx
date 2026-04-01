@@ -362,7 +362,10 @@ export default function SettingsPage() {
                       onClick={() => navigateToPath("/admin/reports")}
                       className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
                     >
-                      <span className="font-bold text-indigo-900">Admin Reports</span>
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Admin Reports
+                      </span>
                       <ChevronRight className="w-4 h-4 text-indigo-400" />
                     </button>
                     <button
@@ -370,7 +373,10 @@ export default function SettingsPage() {
                       onClick={() => navigateToPath("/admin/seller-applications")}
                       className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
                     >
-                      <span className="font-bold text-indigo-900">Seller Approvals</span>
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <UserCheck className="w-4 h-4" />
+                        Seller Approvals
+                      </span>
                       <ChevronRight className="w-4 h-4 text-indigo-400" />
                     </button>
                   </>
