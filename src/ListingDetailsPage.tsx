@@ -438,14 +438,14 @@ export default function ListingDetailsPage() {
                       {firebaseUser ? <MessageCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       {firebaseUser ? "Contact on WhatsApp" : "Log in to Contact"}
                     </button>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <button
                         type="button"
                         onClick={handleToggleSaved}
-                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold ${
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition-all shadow-md ${
                           saved
-                            ? "border-zinc-900 bg-zinc-900 text-white"
-                            : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                            ? "bg-primary text-white shadow-primary/10 hover:bg-primary/90"
+                            : "bg-white text-zinc-700 border border-zinc-200 hover:bg-zinc-50 shadow-sm"
                         }`}
                       >
                         <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
@@ -454,7 +454,7 @@ export default function ListingDetailsPage() {
                       <button
                         type="button"
                         onClick={handleShare}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-md shadow-primary/10 hover:bg-primary/90 transition-all"
                       >
                         <ExternalLink className="w-4 h-4" />
                         Share
