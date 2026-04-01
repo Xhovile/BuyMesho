@@ -23,6 +23,19 @@ type SellerApplication = {
   review_notes?: string | null;
 };
 
+// SQLite's CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (space separator, no timezone).
+// Replace the space with 'T' and append 'Z' so all browsers parse it correctly as UTC ISO-8601.
+// If the string already contains 'T' it is treated as ISO-8601 and returned as-is.
+function parseSQLiteDate(ts: string): Date {
+  const iso = ts.includes("T") ? ts : ts.replace(" ", "T") + "Z";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) {
+    console.warn("parseSQLiteDate: unexpected timestamp format:", ts);
+    return new Date(ts);
+  }
+  return d;
+}
+
 export default function BecomeSellerPage() {
   const { firebaseUser, authLoading, profile, profileLoading, updateProfile } = useAccountProfile();
   const [form, setForm] = useState({
@@ -171,7 +184,7 @@ export default function BecomeSellerPage() {
             <p className="mt-2">
               Reviewed date:{" "}
               <span className="font-medium">
-                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Not reviewed yet"}
+                {application.reviewed_at ? parseSQLiteDate(application.reviewed_at).toLocaleString() : "Not reviewed yet"}
               </span>
             </p>
             {application.review_notes ? (
@@ -189,7 +202,7 @@ export default function BecomeSellerPage() {
             <p className="mt-2">
               Reviewed date:{" "}
               <span className="font-medium">
-                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Approved"}
+                {application.reviewed_at ? parseSQLiteDate(application.reviewed_at).toLocaleString() : "Approved"}
               </span>
             </p>
             {application.review_notes ? (
@@ -212,7 +225,7 @@ export default function BecomeSellerPage() {
             <p className="mt-2">
               Reviewed date:{" "}
               <span className="font-medium">
-                {application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Not available"}
+                {application.reviewed_at ? parseSQLiteDate(application.reviewed_at).toLocaleString() : "Not available"}
               </span>
             </p>
             {application.review_notes ? (
@@ -280,7 +293,7 @@ export default function BecomeSellerPage() {
           {application && (
             <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 space-y-1">
               <p>Current application status: <span className="font-bold capitalize">{application.status}</span></p>
-              <p>Reviewed date: <span className="font-medium">{application.reviewed_at ? new Date(application.reviewed_at).toLocaleString() : "Not reviewed yet"}</span></p>
+              <p>Reviewed date: <span className="font-medium">{application.reviewed_at ? parseSQLiteDate(application.reviewed_at).toLocaleString() : "Not reviewed yet"}</span></p>
               {application.review_notes ? <p>Review note: <span className="font-medium">{application.review_notes}</span></p> : null}
             </div>
           )}
