@@ -9,7 +9,12 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  HOME_PATH,
+  navigateToPath,
+  navigateToSellerProfile,
+} from "./lib/appNavigation";
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
@@ -81,6 +86,7 @@ export default function AdminSellerApplicationsPage() {
     status: Exclude<SellerApplicationStatus, "pending">
   ) => {
     const reviewNotes = reviewNotesById[id]?.trim() || "";
+    const targetApplication = applications.find((application) => application.id === id) || null;
     if (status === "rejected" && !reviewNotes) {
       setActionError("Please provide a rejection reason in review notes before rejecting.");
       setActionSuccess(null);
@@ -125,6 +131,10 @@ export default function AdminSellerApplicationsPage() {
           ? "Application approved successfully."
           : "Application rejected successfully."
       );
+
+      if (status === "approved" && targetApplication?.applicant_uid) {
+        navigateToSellerProfile(targetApplication.applicant_uid);
+      }
     } catch (err: any) {
       setActionError(err?.message || "Failed to update application status.");
     } finally {
@@ -435,6 +445,16 @@ export default function AdminSellerApplicationsPage() {
                     )}
                     Reject
                   </button>
+
+                  {application.status === "approved" && application.applicant_uid ? (
+                    <button
+                      type="button"
+                      onClick={() => navigateToSellerProfile(application.applicant_uid)}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-300 bg-white text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      View seller profile
+                    </button>
+                  ) : null}
                 </div>
               </div>
             ))

@@ -977,7 +977,32 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
       )
       .get(uid);
-    const recoveredIsSeller = hasExistingListings;
+
+    const existingSellerRow = db
+      .prepare(
+        `
+          SELECT is_seller
+          FROM sellers
+          WHERE uid = ?
+          LIMIT 1
+        `
+      )
+      .get(uid) as { is_seller?: number } | undefined;
+
+    const hasApprovedApplication = !!db
+      .prepare(
+        `
+          SELECT 1
+          FROM seller_applications
+          WHERE applicant_uid = ?
+            AND status = 'approved'
+          LIMIT 1
+        `
+      )
+      .get(uid);
+
+    const recoveredIsSeller =
+      existingSellerRow?.is_seller === 1 || hasExistingListings || hasApprovedApplication;
 
     const fallbackProfile = {
       uid,
@@ -2165,6 +2190,17 @@ app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
     console.error("Admin seller applications fetch error:", error);
     res.status(500).json({ error: "Failed to load seller applications" });
   }
+});
+
+app.get("/api/admin/access", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+
+  if (!hasAdminAccess({ email: requesterEmail, uid: requesterUid, is_admin: req.user?.is_admin })) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  return res.json({ isAdmin: true });
 });
 
 app.get("/api/admin/actions", requireAuth, (req, res) => {
