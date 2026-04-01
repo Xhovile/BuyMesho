@@ -920,6 +920,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       typeof req.body?.university === "string" ? req.body.university.trim() : "";
     const safeUniversity = requestedUniversity || "University Not Set";
     const nowIso = new Date().toISOString();
+    const hasExistingListings = !!db
+      .prepare(
+        `
+          SELECT 1
+          FROM listings
+          WHERE seller_uid = ?
+          LIMIT 1
+        `
+      )
+      .get(uid);
+    const recoveredIsSeller = hasExistingListings;
 
     const fallbackProfile = {
       uid,
@@ -927,7 +938,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       university: safeUniversity,
       avatar_url: "",
       is_verified: !!req.user?.email_verified,
-      is_seller: false,
+      is_seller: recoveredIsSeller,
       join_date: nowIso,
     };
 
@@ -936,16 +947,21 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         `
           INSERT INTO sellers (
             uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date
-          ) VALUES (?, ?, NULL, NULL, ?, NULL, NULL, ?, 0, ?)
+          ) VALUES (?, ?, NULL, NULL, ?, NULL, NULL, ?, ?, ?)
           ON CONFLICT(uid) DO UPDATE SET
             email = excluded.email,
             university = COALESCE(sellers.university, excluded.university),
+            is_seller = CASE
+              WHEN sellers.is_seller = 1 THEN 1
+              WHEN excluded.is_seller = 1 THEN 1
+              ELSE 0
+            END,
             is_verified = CASE
               WHEN excluded.is_verified = 1 THEN 1
               ELSE sellers.is_verified
             END
         `
-      ).run(uid, email, safeUniversity, req.user?.email_verified ? 1 : 0, nowIso);
+      ).run(uid, email, safeUniversity, req.user?.email_verified ? 1 : 0, recoveredIsSeller ? 1 : 0, nowIso);
 
       const adminApp = getFirebaseAdmin();
       await adminApp.firestore().collection("users").doc(uid).set(fallbackProfile, {
