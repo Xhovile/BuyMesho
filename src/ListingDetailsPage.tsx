@@ -397,6 +397,43 @@ export default function ListingDetailsPage() {
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
                 <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
                   <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
+                  <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleToggleSaved}
+                      className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                        saved
+                          ? "border-zinc-900 bg-zinc-900 text-white"
+                          : "border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white"
+                      }`}
+                      aria-label={saved ? "Remove from saved" : "Save item"}
+                    >
+                      <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleShare}
+                      className="h-10 w-10 rounded-full border border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white flex items-center justify-center transition-all shadow-sm"
+                      aria-label="Share listing"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="w-4 h-4"
+                      >
+                        <circle cx="18" cy="5" r="3" />
+                        <circle cx="6" cy="12" r="3" />
+                        <circle cx="18" cy="19" r="3" />
+                        <path d="M8.59 13.51 15.42 17.49" />
+                        <path d="M15.41 6.51 8.59 10.49" />
+                      </svg>
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setIsFullscreen(true)}
@@ -451,48 +488,11 @@ export default function ListingDetailsPage() {
                       <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
                         MK {Number(listing.price).toLocaleString()}
                       </p>
-                      <p className="text-sm text-zinc-500 mt-1">
+                      <p className="mt-1 text-base sm:text-lg font-extrabold text-zinc-900">
                         Listed by {listing.business_name}
-                        {seller?.university ? ` · ${seller.university}` : ""}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleToggleSaved}
-                        className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                          saved
-                            ? "border-zinc-900 bg-zinc-900 text-white"
-                            : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                        }`}
-                        aria-label={saved ? "Remove from saved" : "Save item"}
-                      >
-                        <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleShare}
-                        className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
-                        aria-label="Share listing"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="w-4 h-4"
-                        >
-                          <circle cx="18" cy="5" r="3" />
-                          <circle cx="6" cy="12" r="3" />
-                          <circle cx="18" cy="19" r="3" />
-                          <path d="M8.59 13.51 15.42 17.49" />
-                          <path d="M15.41 6.51 8.59 10.49" />
-                        </svg>
-                      </button>
-                    </div>
+                    <div />
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
@@ -595,21 +595,21 @@ export default function ListingDetailsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-1">Rating</p>
-                      <p className="text-lg font-black text-zinc-900">
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Rating</p>
+                      <p className="text-sm font-extrabold text-zinc-900">
                         {ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-1">Ratings</p>
-                      <p className="text-lg font-black text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
+                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Ratings</p>
+                      <p className="text-sm font-extrabold text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-1">Views</p>
-                      <p className="inline-flex items-center gap-2 text-lg font-black text-zinc-900">
-                        <Eye className="w-4 h-4" />
+                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Views</p>
+                      <p className="inline-flex items-center gap-1.5 text-sm font-extrabold text-zinc-900">
+                        <Eye className="w-3.5 h-3.5" />
                         {listing.views_count ?? 0}
                       </p>
                     </div>
@@ -660,7 +660,7 @@ export default function ListingDetailsPage() {
                           aria-label="Scroll specification groups right"
                         >
                           {">"}
-                        </span>
+                        </button>
                       ) : null}
                     </div>
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[320px] overflow-y-auto">
