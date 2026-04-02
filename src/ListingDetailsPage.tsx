@@ -477,7 +477,7 @@ export default function ListingDetailsPage() {
 
               <div className="space-y-6">
                 <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-4">
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                         {listing.category}
@@ -492,7 +492,6 @@ export default function ListingDetailsPage() {
                         Listed by {listing.business_name}
                       </p>
                     </div>
-                    <div />
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
