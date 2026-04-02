@@ -98,8 +98,7 @@ export default function ListingCard({
     .slice(0, 2)
     .toUpperCase();
 
-  const sellerImage =
-    (listing as Listing & { avatar_url?: string }).avatar_url || listing.business_logo;
+  const sellerImage = listing.avatar_url || listing.business_logo;
 
   const metaChips = [
     { key: "subcategory", label: listing.subcategory },
@@ -219,10 +218,10 @@ Open this listing: ${shareUrl}`;
                 <img
                   src={sellerImage}
                   alt={sellerName}
-                  className="w-12 h-12 rounded-2xl object-cover border border-zinc-100 shadow-sm"
+                  className="w-16 h-16 rounded-2xl object-cover border border-zinc-100 shadow-sm"
                 />
               ) : (
-                <div className="w-12 h-12 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
+                <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
                   {sellerInitials}
                 </div>
               )}
