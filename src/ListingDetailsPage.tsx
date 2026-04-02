@@ -39,6 +39,7 @@ type SellerProfile = {
   uid?: string;
   business_name?: string;
   business_logo?: string;
+  avatar_url?: string;
   university?: string;
   bio?: string;
   is_verified?: boolean;
@@ -396,7 +397,7 @@ export default function ListingDetailsPage() {
           <>
             <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <div className="mb-3 flex items-center gap-2">
+                <div className="mb-3 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={handleToggleSaved}
@@ -559,14 +560,23 @@ export default function ListingDetailsPage() {
                         onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
                         className="mt-2 flex items-center gap-2 text-left hover:opacity-80"
                       >
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100">
-                          {seller?.business_logo ? (
+                        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 flex items-center justify-center">
+                          {(seller?.avatar_url || seller?.business_logo) ? (
                             <img
-                              src={seller.business_logo}
+                              src={seller.avatar_url || seller.business_logo}
                               alt={seller.business_name || "Seller"}
                               className="w-full h-full object-cover"
                             />
-                          ) : null}
+                          ) : (
+                            <span className="text-sm font-black text-zinc-500">
+                              {(seller?.business_name || listing.business_name || "S")
+                                .split(/\s+/)
+                                .map((w) => w[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()}
+                            </span>
+                          )}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
