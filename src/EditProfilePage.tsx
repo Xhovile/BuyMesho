@@ -1,10 +1,8 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { Camera } from "lucide-react";
-import { updateDoc, doc } from "firebase/firestore";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import FormDropdown from "./components/FormDropdown";
-import { db as firestore } from "./firebase";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
@@ -81,13 +79,6 @@ export default function EditProfilePage() {
         bio: form.bio,
         whatsapp_number: form.whatsappNumber,
       };
-      await updateDoc(doc(firestore, "users", firebaseUser.uid), {
-        business_name: updatedProfile.business_name,
-        business_logo: updatedProfile.business_logo || "",
-        university: updatedProfile.university,
-        bio: updatedProfile.bio || "",
-        whatsapp_number: updatedProfile.whatsapp_number || "",
-      });
       await apiFetch("/api/profile", {
         method: "PUT",
         body: JSON.stringify({

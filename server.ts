@@ -1075,16 +1075,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     }
   });
 
-  app.put("/api/profile", requireAuth, (req, res) => {
+  app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
   const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
 
   if (!business_name || typeof business_name !== "string") {
     return res.status(400).json({ error: "business_name is required" });
-  }
-
-  if (!business_logo || typeof business_logo !== "string") {
-    return res.status(400).json({ error: "business_logo is required" });
   }
 
   if (!university || typeof university !== "string") {
@@ -1100,18 +1096,34 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       return res.status(404).json({ error: "Seller profile not found" });
     }
 
+    const safeLogoUrl = typeof business_logo === "string" && business_logo.length > 0 ? business_logo : null;
+
     db.prepare(`
       UPDATE sellers
       SET business_name = ?, business_logo = ?, university = ?, bio = ?, whatsapp_number = ?
       WHERE uid = ?
     `).run(
       business_name,
-      business_logo,
+      safeLogoUrl,
       university,
       bio ?? null,
       whatsapp_number ?? null,
       uid
     );
+
+    // Sync profile fields to Firestore via Admin SDK (bypasses client-side security rules)
+    try {
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set({
+        business_name,
+        business_logo: safeLogoUrl,
+        university,
+        bio: bio ?? null,
+        whatsapp_number: whatsapp_number ?? null,
+      }, { merge: true });
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync profile update to Firestore:", firestoreSyncError);
+    }
 
     res.json({ success: true });
   } catch (error) {
