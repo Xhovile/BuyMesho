@@ -20,8 +20,7 @@ import {
   Settings,
   Bookmark,
   Expand,
-  ArrowUp,
-  ChevronRight
+  ArrowUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
@@ -219,7 +218,8 @@ const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
 const [activeDetailSpecGroup, setActiveDetailSpecGroup] = useState("");
 const detailSpecTabsRef = useRef<HTMLDivElement | null>(null);
-const [showDetailSpecTabsChevron, setShowDetailSpecTabsChevron] = useState(false);
+const [showDetailSpecTabsLeftHint, setShowDetailSpecTabsLeftHint] = useState(false);
+const [showDetailSpecTabsRightHint, setShowDetailSpecTabsRightHint] = useState(false);
 const [galleryIndex, setGalleryIndex] = useState(0); 
 const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
@@ -1264,15 +1264,7 @@ const detailGalleryImages = React.useMemo(() => {
   return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
 }, [detailsListing]);
 
-const DETAIL_SPEC_SCROLL_AMOUNT = 180;
 const DETAIL_SPEC_SCROLL_TOLERANCE = 4; // small buffer for rounding differences
-
-const scrollDetailSpecTabsRight = () => {
-  detailSpecTabsRef.current?.scrollBy({
-    left: DETAIL_SPEC_SCROLL_AMOUNT,
-    behavior: "smooth",
-  });
-};
 
 useEffect(() => {
   if (!detailsListing) {
@@ -2919,29 +2911,32 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   useEffect(() => {
     const el = detailSpecTabsRef.current;
 
-    const updateChevronVisibility = () => {
+    const updateScrollHintsVisibility = () => {
       if (!el) {
-        setShowDetailSpecTabsChevron(false);
+        setShowDetailSpecTabsLeftHint(false);
+        setShowDetailSpecTabsRightHint(false);
         return;
       }
 
-    const canScroll = el.scrollWidth > el.clientWidth + DETAIL_SPEC_SCROLL_TOLERANCE;
-    const hasMoreToRight =
-      el.scrollLeft + el.clientWidth < el.scrollWidth - DETAIL_SPEC_SCROLL_TOLERANCE;
+      const canScroll = el.scrollWidth > el.clientWidth + DETAIL_SPEC_SCROLL_TOLERANCE;
+      const hasMoreToLeft = el.scrollLeft > DETAIL_SPEC_SCROLL_TOLERANCE;
+      const hasMoreToRight =
+        el.scrollLeft + el.clientWidth < el.scrollWidth - DETAIL_SPEC_SCROLL_TOLERANCE;
 
-      setShowDetailSpecTabsChevron(canScroll && hasMoreToRight);
+      setShowDetailSpecTabsLeftHint(canScroll && hasMoreToLeft);
+      setShowDetailSpecTabsRightHint(canScroll && hasMoreToRight);
     };
 
-    updateChevronVisibility();
+    updateScrollHintsVisibility();
 
     if (!el) return;
 
-    el.addEventListener("scroll", updateChevronVisibility, { passive: true });
-    window.addEventListener("resize", updateChevronVisibility);
+    el.addEventListener("scroll", updateScrollHintsVisibility, { passive: true });
+    window.addEventListener("resize", updateScrollHintsVisibility);
 
     return () => {
-      el.removeEventListener("scroll", updateChevronVisibility);
-      window.removeEventListener("resize", updateChevronVisibility);
+      el.removeEventListener("scroll", updateScrollHintsVisibility);
+      window.removeEventListener("resize", updateScrollHintsVisibility);
     };
   }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
 
@@ -5054,10 +5049,10 @@ setCurrentPage={setCurrentPage}
     </div>
 
     {detailSpecGroups.length > 0 && (
-      <div className="relative mb-3">
+      <div className="relative mb-3 h-9">
         <div
           ref={detailSpecTabsRef}
-          className="flex gap-2 overflow-x-auto pb-1 pr-10"
+          className="flex h-full items-center gap-2 overflow-x-auto pb-1 px-6"
         >
           {detailSpecGroups.map((group) => (
             <button
@@ -5075,20 +5070,26 @@ setCurrentPage={setCurrentPage}
           ))}
         </div>
 
-        {showDetailSpecTabsChevron && (
-          <button
-            type="button"
-            onClick={scrollDetailSpecTabsRight}
-            className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
-            aria-label="Scroll specification groups"
+        {showDetailSpecTabsLeftHint && (
+          <span
+            className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
+            aria-hidden="true"
           >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+            {"<"}
+          </span>
+        )}
+        {showDetailSpecTabsRightHint && (
+          <span
+            className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
+            aria-hidden="true"
+          >
+            {">"}
+          </span>
         )}
       </div>
     )}
 
-    <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-200 h-[34vh] xl:h-[29vh] overflow-y-auto shadow-sm">
+    <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-200 h-[320px] overflow-y-auto shadow-sm">
       {activeStructuredSpecRows.length > 0 ? (
         activeStructuredSpecRows.map((row) => (
           <div
