@@ -2969,7 +2969,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
       <main className="max-w-7xl mx-auto px-4">
         <HeroSection
-    onStartSelling={() => {
+    onListItem={() => {
   if (!isSellerAccount) {
     promptSellerUpgrade();
     return;

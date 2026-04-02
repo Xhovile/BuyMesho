@@ -12,6 +12,7 @@ import { Listing } from "./types";
 import {
   navigateToCreateListing,
   navigateToLogin,
+  navigateToPath,
   navigateToProfile,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
