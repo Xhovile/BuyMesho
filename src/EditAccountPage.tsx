@@ -8,6 +8,7 @@ import { db as firestore } from "./firebase";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { resolveUniversity } from "./lib/university";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University, UserProfile } from "./types";
 
@@ -21,7 +22,7 @@ type FeedbackState = {
 export default function EditAccountPage() {
   const { firebaseUser, authLoading, profile, profileLoading, setProfile } = useAccountProfile();
   const [form, setForm] = useState({
-    university: UNIVERSITIES[0] as University,
+    university: resolveUniversity(),
     avatarUrl: "",
   });
   const [uploading, setUploading] = useState(false);
@@ -31,7 +32,7 @@ export default function EditAccountPage() {
   useEffect(() => {
     if (!profile) return;
     setForm({
-      university: profile.university || (UNIVERSITIES[0] as University),
+      university: resolveUniversity(profile.university),
       avatarUrl: profile.avatar_url || "",
     });
   }, [profile]);

@@ -7,6 +7,8 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, getEditListingIdFromUrl, navigateToPath } from "./lib/appNavigation";
 import type { Listing, ListingDraft } from "./types";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 
 type FeedbackState = {
   open: boolean;
@@ -15,7 +17,7 @@ type FeedbackState = {
   message: string;
 } | null;
 
-const toListingDraft = (listing: Listing): ListingDraft => ({
+const toListingDraft = (listing: Listing, profileWhatsappNumber?: string): ListingDraft => ({
   name: listing.name || "",
   price: String(listing.price ?? ""),
   description: listing.description || "",
@@ -23,10 +25,10 @@ const toListingDraft = (listing: Listing): ListingDraft => ({
   subcategory: listing.subcategory || "",
   item_type: listing.item_type || "",
   spec_values: listing.spec_values || {},
-  university: listing.university,
+  university: resolveUniversity(listing.university),
   photos: listing.photos || [],
   video_url: listing.video_url || "",
-  whatsapp_number: listing.whatsapp_number || "",
+  whatsapp_number: resolveWhatsappNumber(listing.whatsapp_number, profileWhatsappNumber),
   status: listing.status || "available",
   condition: listing.condition || "used",
   quantity: String(listing.quantity ?? 1),
@@ -68,7 +70,7 @@ export default function EditListingPage() {
     void loadListing();
   }, [listingId, firebaseUser]);
 
-  const listingDraft = useMemo(() => (listing ? toListingDraft(listing) : null), [listing]);
+  const listingDraft = useMemo(() => (listing ? toListingDraft(listing, profile?.whatsapp_number) : null), [listing, profile?.whatsapp_number]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -104,7 +106,7 @@ export default function EditListingPage() {
         await apiFetch("/api/profile/bootstrap", {
           method: "POST",
           body: JSON.stringify({
-            university: profile?.university || listing.university || "",
+            university: resolveUniversity(profile?.university || listing.university || ""),
           }),
         });
         await saveListing();

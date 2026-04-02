@@ -5,6 +5,8 @@ import FormDropdown from "./components/FormDropdown";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University } from "./types";
 
@@ -40,7 +42,7 @@ export default function BecomeSellerPage() {
   const { firebaseUser, authLoading, profile, profileLoading, setProfile, updateProfile } = useAccountProfile();
   const [form, setForm] = useState({
     fullLegalName: "",
-    institution: UNIVERSITIES[0] as University,
+    institution: resolveUniversity(),
     applicantType: "student",
     institutionIdNumber: "",
     whatsappNumber: "",
@@ -61,8 +63,8 @@ export default function BecomeSellerPage() {
     if (!profile) return;
     setForm((prev) => ({
       ...prev,
-      institution: profile.university || (UNIVERSITIES[0] as University),
-      whatsappNumber: profile.whatsapp_number || "",
+      institution: resolveUniversity(profile.university),
+      whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
       businessName: profile.business_name || "",
     }));
   }, [profile]);

@@ -7,6 +7,8 @@ import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES, UNIVERSITIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 import type { ListingDraft, UserProfile } from "./types";
 
 const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
@@ -17,10 +19,10 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   subcategory: "",
   item_type: "",
   spec_values: {},
-  university: userProfile?.university || UNIVERSITIES[0],
+  university: resolveUniversity(userProfile?.university),
   photos: [],
   video_url: "",
-  whatsapp_number: userProfile?.whatsapp_number || "",
+  whatsapp_number: resolveWhatsappNumber(userProfile?.whatsapp_number),
   status: "available",
   condition: "used",
   quantity: "1",
