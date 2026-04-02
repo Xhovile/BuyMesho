@@ -97,6 +97,7 @@ export interface Listing {
   is_hidden?: number;
   business_name: string;
   business_logo: string;
+  avatar_url?: string;
   is_verified: boolean;
 }
 
