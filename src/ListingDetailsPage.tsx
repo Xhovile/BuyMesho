@@ -570,7 +570,9 @@ export default function ListingDetailsPage() {
                           ) : (
                             <span className="text-sm font-black text-zinc-500">
                               {(seller?.business_name || listing.business_name || "S")
+                                .trim()
                                 .split(/\s+/)
+                                .filter((w) => w.length > 0)
                                 .map((w) => w[0])
                                 .join("")
                                 .slice(0, 2)
