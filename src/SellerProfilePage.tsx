@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, Loader2, MapPin, ShieldCheck, Star } from "lucide-react";
+import { ChevronLeft, Loader2, ShieldCheck, Star } from "lucide-react";
 import type { Listing } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -236,17 +236,18 @@ useEffect(() => {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
-                      {profile.business_name || "Seller Profile"}
-                    </h1>
-                    {profile.is_verified ? <ShieldCheck className="w-5 h-5 text-blue-500" /> : null}
-                  </div>
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
+                    {profile.business_name || "Seller Profile"}
+                  </h1>
 
-                  <p className="mt-2 inline-flex items-center gap-2 text-sm text-zinc-500 font-medium">
-                    <MapPin className="w-4 h-4" />
-                    {profile.university || "Campus not set"}
-                  </p>
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                    {profile.is_verified ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-500">
+                        <ShieldCheck className="w-4 h-4" />
+                        Verified
+                      </span>
+                    ) : null}
+                  </div>
 
                   {profile.bio ? (
                     <p className="mt-4 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
@@ -258,6 +259,9 @@ useEffect(() => {
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
                   <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Seller snapshot</p>
                   <div className="mt-3 space-y-2 text-sm text-zinc-600">
+                    <p>
+                      <span className="font-bold text-zinc-900">Campus:</span> {profile.university || "Not set"}
+                    </p>
                     <p>
                       <span className="font-bold text-zinc-900">Joined:</span> {formatDate(profile.join_date)}
                     </p>
