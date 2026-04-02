@@ -288,6 +288,18 @@ export default function ListingDetailsPage() {
     setSaved(nextSaved);
   };
 
+  const handleScrollSpecTabsLeft = () => {
+    const container = specTabsRef.current;
+    if (!container) return;
+    container.scrollBy({ left: -180, behavior: "smooth" });
+  };
+
+  const handleScrollSpecTabsRight = () => {
+    const container = specTabsRef.current;
+    if (!container) return;
+    container.scrollBy({ left: 180, behavior: "smooth" });
+  };
+
   const handleContactSeller = async () => {
     if (!listing) return;
 
@@ -631,17 +643,21 @@ export default function ListingDetailsPage() {
                         ))}
                       </div>
                       {showSpecTabsLeftHint ? (
-                        <span
-                          className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
-                          aria-hidden="true"
+                        <button
+                          type="button"
+                          onClick={handleScrollSpecTabsLeft}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          aria-label="Scroll specification groups left"
                         >
-                          {"<"}
-                        </span>
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
                       ) : null}
                       {showSpecTabsRightHint ? (
-                        <span
-                          className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
-                          aria-hidden="true"
+                        <button
+                          type="button"
+                          onClick={handleScrollSpecTabsRight}
+                          className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          aria-label="Scroll specification groups right"
                         >
                           {">"}
                         </span>
