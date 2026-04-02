@@ -48,5 +48,5 @@ export const resolveUniversity = (rawValue?: string | null): University => {
   const aliased = UNIVERSITY_ALIASES[trimmed.toLowerCase()];
   if (aliased) return aliased;
 
-  return UNIVERSITIES[0] as University;
+  return trimmed as University;
 };
