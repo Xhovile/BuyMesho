@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
-  ChevronRight,
   Expand,
   Eye,
   Loader2,
@@ -660,8 +659,8 @@ export default function ListingDetailsPage() {
                           className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
                           aria-label="Scroll specification groups right"
                         >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
+                          {">"}
+                        </span>
                       ) : null}
                     </div>
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[320px] overflow-y-auto">
