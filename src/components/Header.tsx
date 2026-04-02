@@ -23,7 +23,7 @@ export default function Header({
   userProfile,
   firebaseUser,
 }: HeaderProps) {
-  const profileImage = userProfile?.avatar_url || userProfile?.business_logo;
+  const profileImage = userProfile?.avatar_url;
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
