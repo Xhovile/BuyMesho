@@ -72,7 +72,8 @@ export default function ListingDetailsPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [activeSpecGroupTitle, setActiveSpecGroupTitle] = useState<string>("");
-  const [showSpecTabsChevron, setShowSpecTabsChevron] = useState(false);
+  const [showSpecTabsLeftHint, setShowSpecTabsLeftHint] = useState(false);
+  const [showSpecTabsRightHint, setShowSpecTabsRightHint] = useState(false);
   const specTabsRef = useRef<HTMLDivElement | null>(null);
 
   const listingId = routeState.listing || "";
@@ -230,14 +231,17 @@ export default function ListingDetailsPage() {
   useEffect(() => {
     const container = specTabsRef.current;
     if (!container) {
-      setShowSpecTabsChevron(false);
+      setShowSpecTabsLeftHint(false);
+      setShowSpecTabsRightHint(false);
       return;
     }
 
     const checkOverflow = () => {
       const hasOverflow = container.scrollWidth > container.clientWidth + 2;
+      const canScrollLeft = container.scrollLeft > 2;
       const canScrollRight = container.scrollLeft + container.clientWidth < container.scrollWidth - 2;
-      setShowSpecTabsChevron(hasOverflow && canScrollRight);
+      setShowSpecTabsLeftHint(hasOverflow && canScrollLeft);
+      setShowSpecTabsRightHint(hasOverflow && canScrollRight);
     };
 
     checkOverflow();
@@ -283,6 +287,12 @@ export default function ListingDetailsPage() {
     if (!listing) return;
     const nextSaved = toggleSavedListingId(listing.id, firebaseUser?.uid);
     setSaved(nextSaved);
+  };
+
+  const handleScrollSpecTabsLeft = () => {
+    const container = specTabsRef.current;
+    if (!container) return;
+    container.scrollBy({ left: -180, behavior: "smooth" });
   };
 
   const handleScrollSpecTabsRight = () => {
@@ -616,8 +626,8 @@ export default function ListingDetailsPage() {
                 </p>
                 {groupedSpecs.length > 0 ? (
                   <div className="mt-5">
-                    <div className="relative mb-3">
-                      <div ref={specTabsRef} className="flex gap-2 overflow-x-auto pb-1 pr-10">
+                    <div className="relative mb-3 h-9">
+                      <div ref={specTabsRef} className="flex h-full items-center gap-2 overflow-x-auto pb-1 px-6">
                         {groupedSpecs.map((group) => (
                           <button
                             key={group.title}
@@ -633,18 +643,28 @@ export default function ListingDetailsPage() {
                           </button>
                         ))}
                       </div>
-                      {showSpecTabsChevron ? (
+                      {showSpecTabsLeftHint ? (
+                        <button
+                          type="button"
+                          onClick={handleScrollSpecTabsLeft}
+                          className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          aria-label="Scroll specification groups left"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                      ) : null}
+                      {showSpecTabsRightHint ? (
                         <button
                           type="button"
                           onClick={handleScrollSpecTabsRight}
                           className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
-                          aria-label="Scroll specification groups"
+                          aria-label="Scroll specification groups right"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       ) : null}
                     </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 overflow-hidden">
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[320px] overflow-y-auto">
                       {(activeSpecGroup?.rows || []).map((row) => (
                         <div
                           key={row.key}
