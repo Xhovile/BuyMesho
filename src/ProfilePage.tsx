@@ -133,10 +133,10 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center">
-              {profile.is_seller && profile.business_logo ? (
-                <img src={profile.business_logo} alt="Business logo" className="w-full h-full object-cover" />
-              ) : profile.avatar_url ? (
+              {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : profile.is_seller && profile.business_logo ? (
+                <img src={profile.business_logo} alt="Business logo" className="w-full h-full object-cover" />
               ) : (
                 <User className="w-8 h-8 text-zinc-400" />
               )}
@@ -256,19 +256,17 @@ export default function ProfilePage() {
               </p>
             </button>
 
-            {!profile.is_seller && (
-              <button
-                type="button"
-                onClick={() => navigateToPath("/edit-account")}
-                className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
-              >
-                <div className="flex items-center gap-2">
-                  <Pencil className="w-5 h-5 text-zinc-700" />
-                  <p className="font-bold text-zinc-900">Edit Account</p>
-                </div>
-                <p className="text-sm text-zinc-500 mt-1">Update your university and profile photo.</p>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => navigateToPath("/edit-account")}
+              className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
+            >
+              <div className="flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-zinc-700" />
+                <p className="font-bold text-zinc-900">Edit Account</p>
+              </div>
+              <p className="text-sm text-zinc-500 mt-1">Update your university and profile photo.</p>
+            </button>
 
             {profile.is_seller && (
               <button
