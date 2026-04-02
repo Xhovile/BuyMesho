@@ -545,7 +545,7 @@ export default function ListingStudioForm({
 
   return (
     <div className="flex flex-col min-h-0 flex-1">
-      <div className="p-6 overflow-y-auto flex-1">
+      <div className="p-6">
         <div className="space-y-4 pr-1">
           <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Basic Info</p>
@@ -674,7 +674,7 @@ export default function ListingStudioForm({
         </div>
       </div>
 
-      <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
+      <div className="sticky bottom-0 z-30 p-4 sm:p-6 border-t border-zinc-200 bg-white/95 backdrop-blur-sm flex gap-3 flex-shrink-0">
         <button type="button" onClick={onCancel} className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors">Cancel</button>
         <button type="button" onClick={() => { void handleSave(); }} disabled={uploadingMedia || isSubmitting} className={`flex-1 bg-zinc-900 text-white py-3 rounded-xl font-bold transition-colors ${uploadingMedia || isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-zinc-800"}`}>
           {uploadingMedia || isSubmitting ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
