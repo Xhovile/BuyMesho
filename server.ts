@@ -132,6 +132,7 @@ db.exec(`
   email TEXT NOT NULL,
   business_name TEXT,
   business_logo TEXT,
+  avatar_url TEXT,
   university TEXT,
   bio TEXT,
   whatsapp_number TEXT,
@@ -271,6 +272,17 @@ try {
   }
 } catch (e) {
   console.warn("Sellers migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasAvatarUrl = cols.some((c) => c.name === "avatar_url");
+  if (!hasAvatarUrl) {
+    db.exec("ALTER TABLE sellers ADD COLUMN avatar_url TEXT");
+    console.log("Migration: Added sellers.avatar_url");
+  }
+} catch (e) {
+  console.warn("Sellers avatar_url migration check failed:", e);
 }
 
 try {
@@ -909,6 +921,7 @@ const {
   university,
   bio,
   whatsapp_number,
+  avatar_url,
   is_verified,
   is_seller
 } = req.body;
@@ -922,14 +935,16 @@ const safeBusinessLogo = typeof business_logo === "string" && business_logo.trim
 const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
 const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
 const safeWhatsapp = typeof whatsapp_number === "string" && whatsapp_number.trim() ? whatsapp_number.trim() : null;
+const safeAvatarUrl = typeof avatar_url === "string" && avatar_url.trim() ? avatar_url.trim() : null;
       
 db.prepare(`
-  INSERT INTO sellers (uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO sellers (uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(uid) DO UPDATE SET
     email = excluded.email,
     business_name = excluded.business_name,
     business_logo = excluded.business_logo,
+    avatar_url = excluded.avatar_url,
     university = excluded.university,
     whatsapp_number = excluded.whatsapp_number,
     is_seller = excluded.is_seller,
@@ -944,6 +959,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   email,
   safeBusinessName,
   safeBusinessLogo,
+  safeAvatarUrl,
   safeUniversity,
   safeBio,
   safeWhatsapp,
@@ -1018,10 +1034,14 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       db.prepare(
         `
           INSERT INTO sellers (
-            uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date
-          ) VALUES (?, ?, NULL, NULL, ?, NULL, NULL, ?, ?, ?)
+            uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, NULL, ?, ?, NULL, NULL, ?, ?, ?)
           ON CONFLICT(uid) DO UPDATE SET
             email = excluded.email,
+            avatar_url = CASE
+              WHEN sellers.avatar_url IS NULL OR sellers.avatar_url = '' THEN excluded.avatar_url
+              ELSE sellers.avatar_url
+            END,
             university = COALESCE(sellers.university, excluded.university),
             is_seller = CASE
               WHEN sellers.is_seller = 1 THEN 1
@@ -1033,7 +1053,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
               ELSE sellers.is_verified
             END
         `
-      ).run(uid, email, safeUniversity, req.user?.email_verified ? 1 : 0, recoveredIsSeller ? 1 : 0, nowIso);
+      ).run(
+        uid,
+        email,
+        safeAvatarUrl,
+        safeUniversity,
+        req.user?.email_verified ? 1 : 0,
+        recoveredIsSeller ? 1 : 0,
+        nowIso
+      );
 
       const adminApp = getFirebaseAdmin();
       await adminApp.firestore().collection("users").doc(uid).set(fallbackProfile, {
@@ -1425,7 +1453,7 @@ app.get("/api/users/:uid", (req, res) => {
   try {
     const seller = db
       .prepare(
-        "SELECT uid, business_name, business_logo, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+        "SELECT uid, business_name, business_logo, avatar_url, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
       )
       .get(uid);
 
@@ -1497,10 +1525,30 @@ app.get("/api/users/:uid/rating-summary", requireAuth, (req, res) => {
       `)
       .get(uid, rater_uid) as { stars: number } | undefined;
 
+    const rows = db
+      .prepare(
+        `
+          SELECT stars, COUNT(*) as count
+          FROM seller_ratings
+          WHERE seller_uid = ?
+          GROUP BY stars
+        `
+      )
+      .all(uid) as Array<{ stars: number; count: number }>;
+
+    const distribution = [5, 4, 3, 2, 1].map((star) => {
+      const match = rows.find((row) => row.stars === star);
+      const count = match?.count ?? 0;
+      const ratingCount = summary?.ratingCount ?? 0;
+      const percentage = ratingCount > 0 ? Math.round((count / ratingCount) * 100) : 0;
+      return { stars: star, count, percentage };
+    });
+
     return res.json({
       averageRating: summary?.averageRating ?? 0,
       ratingCount: summary?.ratingCount ?? 0,
       myRating: mine?.stars ?? null,
+      distribution,
     });
   } catch (e: any) {
     console.error("GET /api/users/:uid/rating-summary error:", e);
