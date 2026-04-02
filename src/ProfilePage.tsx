@@ -133,10 +133,12 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center">
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-              ) : profile.is_seller && profile.business_logo ? (
-                <img src={profile.business_logo} alt="Business logo" className="w-full h-full object-cover" />
+              {profile.avatar_url || profile.business_logo ? (
+                <img
+                  src={profile.avatar_url || profile.business_logo}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <User className="w-8 h-8 text-zinc-400" />
               )}
@@ -151,7 +153,7 @@ export default function ProfilePage() {
               </div>
               <p className="text-sm text-zinc-500">{profile.email}</p>
               <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
-              {!profile.business_logo && !profile.avatar_url ? (
+              {!profile.avatar_url && !profile.business_logo ? (
                 <button
                   type="button"
                   onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
