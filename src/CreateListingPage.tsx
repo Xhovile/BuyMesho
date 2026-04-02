@@ -90,7 +90,7 @@ export default function CreateListingPage() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-8">
         {authLoading || profileLoading ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium"><Loader2 className="w-5 h-5 animate-spin" /> Preparing listing studio...</div>
         ) : !firebaseUser ? (
