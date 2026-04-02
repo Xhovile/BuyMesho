@@ -90,6 +90,16 @@ export default function ListingCard({
     Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
   );
 
+  const sellerName = listing.business_name || "Seller";
+  const sellerInitials = sellerName
+    .split(/\s+/)
+    .map((word) => word[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  const sellerImage = listing.avatar_url || listing.business_logo;
+
   const metaChips = [
     { key: "subcategory", label: listing.subcategory },
     { key: "item_type", label: listing.item_type },
@@ -201,14 +211,20 @@ Open this listing: ${shareUrl}`;
           <button
             type="button"
             onClick={handleOpenProfile}
-            className="flex items-center gap-2.5 text-left"
+            className="flex items-center gap-3 text-left"
           >
             <div className="relative">
-              <img
-                src={listing.business_logo}
-                alt={listing.business_name}
-                className="w-9 h-9 rounded-xl object-cover border border-zinc-100 shadow-sm"
-              />
+              {sellerImage ? (
+                <img
+                  src={sellerImage}
+                  alt={sellerName}
+                  className="w-16 h-16 rounded-2xl object-cover border border-zinc-100 shadow-sm"
+                />
+              ) : (
+                <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
+                  {sellerInitials}
+                </div>
+              )}
               {listing.is_verified && (
                 <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
@@ -217,8 +233,8 @@ Open this listing: ${shareUrl}`;
             </div>
 
             <div className="flex flex-col">
-              <span className="text-xs font-bold text-zinc-800 hover:underline">
-                {listing.business_name}
+              <span className="text-sm font-bold text-zinc-800 hover:underline">
+                {sellerName}
               </span>
               <span className="text-[10px] text-zinc-400 font-medium">Open seller page</span>
             </div>

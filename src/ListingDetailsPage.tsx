@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
+  ChevronRight,
   Expand,
   Eye,
   Loader2,
@@ -395,45 +396,45 @@ export default function ListingDetailsPage() {
           <>
             <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <div className="mb-3 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleToggleSaved}
+                    className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                      saved
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                    }`}
+                    aria-label={saved ? "Remove from saved" : "Save item"}
+                  >
+                    <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+                    aria-label="Share listing"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-4 h-4"
+                    >
+                      <circle cx="18" cy="5" r="3" />
+                      <circle cx="6" cy="12" r="3" />
+                      <circle cx="18" cy="19" r="3" />
+                      <path d="M8.59 13.51 15.42 17.49" />
+                      <path d="M15.41 6.51 8.59 10.49" />
+                    </svg>
+                  </button>
+                </div>
                 <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
                   <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
-                  <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={handleToggleSaved}
-                      className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                        saved
-                          ? "border-zinc-900 bg-zinc-900 text-white"
-                          : "border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white"
-                      }`}
-                      aria-label={saved ? "Remove from saved" : "Save item"}
-                    >
-                      <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleShare}
-                      className="h-10 w-10 rounded-full border border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white flex items-center justify-center transition-all shadow-sm"
-                      aria-label="Share listing"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="w-4 h-4"
-                      >
-                        <circle cx="18" cy="5" r="3" />
-                        <circle cx="6" cy="12" r="3" />
-                        <circle cx="18" cy="19" r="3" />
-                        <path d="M8.59 13.51 15.42 17.49" />
-                        <path d="M15.41 6.51 8.59 10.49" />
-                      </svg>
-                    </button>
-                  </div>
                   <button
                     type="button"
                     onClick={() => setIsFullscreen(true)}
@@ -576,9 +577,6 @@ export default function ListingDetailsPage() {
                               <ShieldCheck className="w-4 h-4 text-blue-500" />
                             ) : null}
                           </div>
-                          <p className="text-sm text-zinc-500">
-                            {seller?.university || listing.university}
-                          </p>
                         </div>
                       </button>
                     </div>
@@ -658,7 +656,7 @@ export default function ListingDetailsPage() {
                           className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
                           aria-label="Scroll specification groups right"
                         >
-                          {">"}
+                          <ChevronRight className="w-4 h-4" />
                         </button>
                       ) : null}
                     </div>
