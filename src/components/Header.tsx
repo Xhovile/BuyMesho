@@ -63,7 +63,7 @@ export default function Header({
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
             >
               <Compass className="w-4 h-4" />
               Explore
