@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { doc, getDoc } from "firebase/firestore";
 import ListingStudioForm from "./components/ListingStudioForm";
 import FeedbackModal from "./components/FeedbackModal";
-import { auth, db as firestore } from "./firebase";
-import { useAuthUser } from "./hooks/useAuthUser";
+import { auth } from "./firebase";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, getEditListingIdFromUrl, navigateToPath } from "./lib/appNavigation";
-import type { Listing, ListingDraft, UserProfile } from "./types";
+import type { Listing, ListingDraft } from "./types";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 
 type FeedbackState = {
   open: boolean;
@@ -16,7 +17,7 @@ type FeedbackState = {
   message: string;
 } | null;
 
-const toListingDraft = (listing: Listing): ListingDraft => ({
+const toListingDraft = (listing: Listing, profileWhatsappNumber?: string): ListingDraft => ({
   name: listing.name || "",
   price: String(listing.price ?? ""),
   description: listing.description || "",
@@ -24,10 +25,10 @@ const toListingDraft = (listing: Listing): ListingDraft => ({
   subcategory: listing.subcategory || "",
   item_type: listing.item_type || "",
   spec_values: listing.spec_values || {},
-  university: listing.university,
+  university: resolveUniversity(listing.university),
   photos: listing.photos || [],
   video_url: listing.video_url || "",
-  whatsapp_number: listing.whatsapp_number || "",
+  whatsapp_number: resolveWhatsappNumber(listing.whatsapp_number, profileWhatsappNumber),
   status: listing.status || "available",
   condition: listing.condition || "used",
   quantity: String(listing.quantity ?? 1),
@@ -35,9 +36,7 @@ const toListingDraft = (listing: Listing): ListingDraft => ({
 });
 
 export default function EditListingPage() {
-  const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [profileLoading, setProfileLoading] = useState(true);
+  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listing, setListing] = useState<Listing | null>(null);
   const [loadingListing, setLoadingListing] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -45,29 +44,6 @@ export default function EditListingPage() {
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const listingId = getEditListingIdFromUrl();
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      if (!firebaseUser) {
-        setProfile(null);
-        setProfileLoading(false);
-        return;
-      }
-
-      setProfileLoading(true);
-      try {
-        const snap = await getDoc(doc(firestore, "users", firebaseUser.uid));
-        setProfile(snap.exists() ? (snap.data() as UserProfile) : null);
-      } catch (error) {
-        console.error("Failed to load edit-listing profile state", error);
-        setProfile(null);
-      } finally {
-        setProfileLoading(false);
-      }
-    };
-
-    void loadProfile();
-  }, [firebaseUser]);
 
   useEffect(() => {
     const loadListing = async () => {
@@ -94,7 +70,7 @@ export default function EditListingPage() {
     void loadListing();
   }, [listingId, firebaseUser]);
 
-  const listingDraft = useMemo(() => (listing ? toListingDraft(listing) : null), [listing]);
+  const listingDraft = useMemo(() => (listing ? toListingDraft(listing, profile?.whatsapp_number) : null), [listing, profile?.whatsapp_number]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -113,10 +89,28 @@ export default function EditListingPage() {
 
     setSubmitting(true);
     try {
-      await apiFetch(`/api/listings/${listing.id}`, {
-        method: "PUT",
-        body: JSON.stringify(payload),
-      });
+      const saveListing = async () =>
+        apiFetch(`/api/listings/${listing.id}`, {
+          method: "PUT",
+          body: JSON.stringify(payload),
+        });
+
+      try {
+        await saveListing();
+      } catch (error: any) {
+        const message = typeof error?.message === "string" ? error.message : "";
+        if (!message.toLowerCase().includes("seller profile not found")) {
+          throw error;
+        }
+
+        await apiFetch("/api/profile/bootstrap", {
+          method: "POST",
+          body: JSON.stringify({
+            university: resolveUniversity(profile?.university || listing.university || ""),
+          }),
+        });
+        await saveListing();
+      }
       setRedirectAfterFeedback(true);
       showFeedback("success", "Listing updated", "Your listing was updated successfully.");
     } catch (err: any) {
@@ -126,8 +120,6 @@ export default function EditListingPage() {
       setSubmitting(false);
     }
   };
-
-  const canEdit = !!firebaseUser && !!profile?.is_seller && !!auth.currentUser?.emailVerified;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -153,10 +145,16 @@ export default function EditListingPage() {
             <p className="mt-3 text-sm text-zinc-500">You need to log in before editing a listing.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-        ) : !canEdit ? (
+        ) : !profile?.is_seller ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h1>
             <p className="mt-3 text-sm text-zinc-500">Only verified seller accounts can edit listings from this route-backed surface.</p>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
+          </div>
+        ) : !auth.currentUser?.emailVerified ? (
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+            <h1 className="text-2xl font-black tracking-tight text-zinc-900">Verify your email first</h1>
+            <p className="mt-3 text-sm text-zinc-500">Please verify your account email before editing listings.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
         ) : !listingDraft ? (
@@ -166,8 +164,8 @@ export default function EditListingPage() {
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
         ) : (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-zinc-100 bg-zinc-50">
+          <div className="pb-20">
+            <div className="px-2 sm:px-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Edit your listing in a dedicated page surface.</h1>
             </div>

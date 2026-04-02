@@ -151,6 +151,15 @@ export default function ProfilePage() {
               </div>
               <p className="text-sm text-zinc-500">{profile.email}</p>
               <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
+              {!profile.business_logo && !profile.avatar_url ? (
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
+                  className="mt-2 text-xs font-bold text-zinc-600 hover:text-zinc-900 underline underline-offset-2"
+                >
+                  Add profile picture
+                </button>
+              ) : null}
             </div>
           </div>
 

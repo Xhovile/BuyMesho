@@ -8,6 +8,7 @@ import FormDropdown from "./components/FormDropdown";
 import { auth, db as firestore } from "./firebase";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
+import { resolveUniversity } from "./lib/university";
 import type { University, UserProfile } from "./types";
 
 type FeedbackState = {
@@ -19,7 +20,7 @@ type FeedbackState = {
 
 export default function SignupPage() {
   const [form, setForm] = useState({
-    university: UNIVERSITIES[0] as University,
+    university: resolveUniversity(),
     email: "",
     password: "",
   });

@@ -10,10 +10,8 @@ import HeroSection from "./sections/HeroSection";
 import MarketSection from "./sections/MarketSection";
 import { Listing } from "./types";
 import {
-  BECOME_SELLER_PATH,
   navigateToCreateListing,
   navigateToLogin,
-  navigateToPath,
   navigateToProfile,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -84,17 +82,7 @@ export default function App() {
   const { profile: userProfile } = useAccountProfile();
   const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
 
-  const handleStartSelling = () => {
-    if (!firebaseUser) {
-      navigateToLogin();
-      return;
-    }
-
-    if (!userProfile?.is_seller) {
-      navigateToPath(BECOME_SELLER_PATH);
-      return;
-    }
-
+  const handleListItem = () => {
     navigateToCreateListing();
   };
 
@@ -265,14 +253,14 @@ export default function App() {
     <div className="min-h-screen pb-20 bg-zinc-100">
       <Header
         onSearch={setSearch}
-        onAddListing={handleStartSelling}
+        onAddListing={handleListItem}
         onProfileClick={navigateToProfile}
         userProfile={userProfile}
         firebaseUser={firebaseUser}
       />
 
       <main className="max-w-7xl mx-auto px-4">
-        <HeroSection onStartSelling={handleStartSelling} />
+        <HeroSection onListItem={handleListItem} />
         <MarketSection
           loading={loading}
           listings={listings}

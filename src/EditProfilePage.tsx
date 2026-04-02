@@ -8,6 +8,8 @@ import { db as firestore } from "./firebase";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University, UserProfile } from "./types";
 
@@ -22,7 +24,7 @@ export default function EditProfilePage() {
   const { firebaseUser, authLoading, profile, profileLoading, setProfile } = useAccountProfile();
   const [form, setForm] = useState({
     businessName: "",
-    university: UNIVERSITIES[0] as University,
+    university: resolveUniversity(),
     logoUrl: "",
     bio: "",
     whatsappNumber: "",
@@ -35,10 +37,10 @@ export default function EditProfilePage() {
     if (!profile) return;
     setForm({
       businessName: profile.business_name || "",
-      university: profile.university || (UNIVERSITIES[0] as University),
+      university: resolveUniversity(profile.university),
       logoUrl: profile.business_logo || "",
       bio: profile.bio || "",
-      whatsappNumber: profile.whatsapp_number || "",
+      whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
     });
   }, [profile]);
 

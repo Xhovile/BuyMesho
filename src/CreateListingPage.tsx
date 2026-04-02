@@ -7,6 +7,8 @@ import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES, UNIVERSITIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { resolveUniversity } from "./lib/university";
+import { resolveWhatsappNumber } from "./lib/whatsapp";
 import type { ListingDraft, UserProfile } from "./types";
 
 const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
@@ -17,10 +19,10 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   subcategory: "",
   item_type: "",
   spec_values: {},
-  university: userProfile?.university || UNIVERSITIES[0],
+  university: resolveUniversity(userProfile?.university),
   photos: [],
   video_url: "",
-  whatsapp_number: userProfile?.whatsapp_number || "",
+  whatsapp_number: resolveWhatsappNumber(userProfile?.whatsapp_number),
   status: "available",
   condition: "used",
   quantity: "1",
@@ -39,20 +41,6 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
-
-  const openCurrentCreator = () => {
-    const url = new URL(window.location.href);
-    url.pathname = "/explore";
-    url.searchParams.set("create", "1");
-    url.searchParams.delete("listing");
-    url.searchParams.delete("image");
-    url.searchParams.delete("uid");
-    url.searchParams.delete("id");
-
-    window.history.pushState({}, "", url.toString());
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
 
@@ -124,8 +112,8 @@ export default function CreateListingPage() {
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
         ) : canCreate ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            <div className="p-6 border-b border-zinc-100 bg-zinc-50">
+          <div className="pb-20">
+            <div className="px-2 sm:px-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
