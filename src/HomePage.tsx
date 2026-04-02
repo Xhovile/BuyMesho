@@ -131,7 +131,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
+              className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
             >
               Explore
             </button>
@@ -141,7 +141,7 @@ export default function HomePage() {
                   onClick={handleStartSelling}
                   className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
                 >
-                  Start Selling
+                  Get Started
               </button>
             ) : (
               <button
@@ -202,7 +202,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(EXPLORE_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-300/30 hover:bg-zinc-800"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 hover:bg-red-800"
                 >
                   Explore Listings
                   <ArrowRight className="w-4 h-4" />
@@ -212,9 +212,9 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={handleStartSelling}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                   >
-                    Start Selling
+                    Get Started
                   </button>
                 ) : (
                   <button
@@ -423,7 +423,7 @@ export default function HomePage() {
                     onClick={handleStartSelling}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                   >
-                    Start Selling
+                    Get Started
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
