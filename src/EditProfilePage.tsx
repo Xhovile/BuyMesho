@@ -27,20 +27,29 @@ export default function EditProfilePage() {
     bio: "",
     whatsappNumber: "",
   });
+  const [formReady, setFormReady] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
+  // Fetch the authoritative profile from the server (SQLite) once the user is
+  // known. This ensures the form is prefilled with current data even when
+  // Firestore is missing seller-specific fields (e.g. right after approval).
   useEffect(() => {
-    if (!profile) return;
-    setForm({
-      businessName: profile.business_name || "",
-      university: resolveUniversity(profile.university),
-      logoUrl: profile.business_logo || "",
-      bio: profile.bio || "",
-      whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
-    });
-  }, [profile]);
+    if (!firebaseUser || authLoading) return;
+    apiFetch("/api/profile")
+      .then((serverProfile) => {
+        if (!serverProfile) return;
+        setForm({
+          businessName: serverProfile.business_name || "",
+          university: resolveUniversity(serverProfile.university),
+          logoUrl: serverProfile.business_logo || "",
+          bio: serverProfile.bio || "",
+          whatsappNumber: resolveWhatsappNumber(serverProfile.whatsapp_number),
+        });
+      })
+      .finally(() => setFormReady(true));
+  }, [firebaseUser, authLoading]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -107,7 +116,7 @@ export default function EditProfilePage() {
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
     >
-      {authLoading || profileLoading ? (
+      {authLoading || profileLoading || !formReady ? (
         <div className="p-8 text-sm text-zinc-500">Loading profile…</div>
       ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
@@ -141,11 +150,20 @@ export default function EditProfilePage() {
               <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
                 {form.logoUrl ? <img src={form.logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 text-zinc-400" />}
               </div>
-              <div>
+              <div className="flex flex-col gap-2">
                 <input id="edit-profile-logo" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                 <label htmlFor="edit-profile-logo" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : "Upload Logo"}
+                  {uploading ? "Uploading..." : form.logoUrl ? "Replace Logo" : "Upload Logo"}
                 </label>
+                {form.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
+                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600"
+                  >
+                    Remove Logo
+                  </button>
+                )}
               </div>
             </div>
           </div>
