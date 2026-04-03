@@ -132,11 +132,11 @@ export default function ProfilePage() {
           )}
 
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center">
-              {profile.avatar_url || profile.business_logo ? (
+            <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center flex-shrink-0">
+              {profile.profile_picture ? (
                 <img
-                  src={profile.avatar_url || profile.business_logo}
-                  alt="Avatar"
+                  src={profile.profile_picture}
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               ) : (
@@ -153,15 +153,6 @@ export default function ProfilePage() {
               </div>
               <p className="text-sm text-zinc-500">{profile.email}</p>
               <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
-              {!profile.avatar_url && !profile.business_logo ? (
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
-                  className="mt-2 text-xs font-bold text-zinc-600 hover:text-zinc-900 underline underline-offset-2"
-                >
-                  Add profile picture
-                </button>
-              ) : null}
             </div>
           </div>
 
@@ -267,7 +258,7 @@ export default function ProfilePage() {
                 <Pencil className="w-5 h-5 text-zinc-700" />
                 <p className="font-bold text-zinc-900">Edit Account</p>
               </div>
-              <p className="text-sm text-zinc-500 mt-1">Update your university and profile photo.</p>
+              <p className="text-sm text-zinc-500 mt-1">Update your university and account details.</p>
             </button>
 
             {profile.is_seller && (
