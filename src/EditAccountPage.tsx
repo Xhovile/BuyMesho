@@ -25,17 +25,25 @@ export default function EditAccountPage() {
     university: resolveUniversity(),
     avatarUrl: "",
   });
+  const [formReady, setFormReady] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
+  // Fetch authoritative profile from server (SQLite) once authenticated so the
+  // form is prefilled with current data regardless of Firestore state.
   useEffect(() => {
-    if (!profile) return;
-    setForm({
-      university: resolveUniversity(profile.university),
-      avatarUrl: profile.avatar_url || "",
-    });
-  }, [profile]);
+    if (!firebaseUser || authLoading) return;
+    apiFetch("/api/profile")
+      .then((serverProfile) => {
+        if (!serverProfile) return;
+        setForm({
+          university: resolveUniversity(serverProfile.university),
+          avatarUrl: serverProfile.avatar_url || "",
+        });
+      })
+      .finally(() => setFormReady(true));
+  }, [firebaseUser, authLoading]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -129,7 +137,7 @@ export default function EditAccountPage() {
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
     >
-      {authLoading || profileLoading ? (
+      {authLoading || profileLoading || !formReady ? (
         <div className="p-8 text-sm text-zinc-500">Loading account…</div>
       ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>
@@ -152,11 +160,20 @@ export default function EditAccountPage() {
                   <User className="w-8 h-8 text-zinc-400" />
                 )}
               </div>
-              <div>
+              <div className="flex flex-col gap-2">
                 <input id="edit-account-avatar" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                 <label htmlFor="edit-account-avatar" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : "Upload Photo"}
+                  {uploading ? "Uploading..." : form.avatarUrl ? "Replace Photo" : "Upload Photo"}
                 </label>
+                {form.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, avatarUrl: "" }))}
+                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600"
+                  >
+                    Remove Photo
+                  </button>
+                )}
               </div>
             </div>
           </div>

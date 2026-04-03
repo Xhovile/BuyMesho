@@ -27,6 +27,7 @@ export default function EditProfilePage() {
     bio: "",
     whatsappNumber: "",
   });
+  const [formReady, setFormReady] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -129,7 +130,7 @@ export default function EditProfilePage() {
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
     >
-      {authLoading || profileLoading ? (
+      {authLoading || profileLoading || !formReady ? (
         <div className="p-8 text-sm text-zinc-500">Loading profile…</div>
       ) : !firebaseUser ? (
         <div className="p-8 text-sm text-zinc-500">Login required.</div>

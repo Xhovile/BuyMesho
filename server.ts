@@ -2461,7 +2461,12 @@ app.patch(
           .firestore()
           .collection("users")
           .doc(application.applicant_uid)
-          .set({ is_seller: true }, { merge: true });
+          .set({
+            is_seller: true,
+            business_name: application.business_name ?? null,
+            whatsapp_number: application.whatsapp_number ?? null,
+            university: application.institution ?? null,
+          }, { merge: true });
       } catch (firestoreSyncError) {
         console.warn(
           "Failed to sync approved seller status to Firestore:",
