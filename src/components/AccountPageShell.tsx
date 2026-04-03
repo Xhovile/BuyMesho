@@ -1,15 +1,17 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, LogOut, Search } from "lucide-react";
+import { ChevronLeft, House, LogOut, Search, Settings, User } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
+  PROFILE_PATH,
+  SETTINGS_PATH,
   navigateBackOrPath,
   navigateToPath,
 } from "../lib/appNavigation";
 import { auth } from "../firebase";
-import { useAuthUser } from "../hooks/useAuthUser";
+import { useAccountProfile } from "../hooks/useAccountProfile";
 
 type AccountPageShellProps = {
   eyebrow: string;
@@ -28,7 +30,11 @@ export default function AccountPageShell({
   backLabel = "Back",
   onBack,
 }: AccountPageShellProps) {
-  const { user: firebaseUser } = useAuthUser();
+  const { firebaseUser, profile } = useAccountProfile();
+  const profileImage = profile?.avatar_url || profile?.business_logo;
+  const fallbackLetter = (profile?.email || firebaseUser?.email || "?")
+    .charAt(0)
+    .toUpperCase();
 
   const handleLogout = async () => {
     try {
@@ -58,6 +64,30 @@ export default function AccountPageShell({
             )}
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"><Search className="w-4 h-4" />Explore</button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="w-10 h-10 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 transition-all flex-shrink-0"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5 text-zinc-600" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(PROFILE_PATH)}
+              className="w-10 h-10 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center overflow-hidden hover:border-zinc-300 hover:shadow-md transition-all flex-shrink-0"
+              aria-label="My profile"
+            >
+              {profileImage ? (
+                <img src={profileImage} alt="User profile picture" className="w-full h-full object-cover" />
+              ) : firebaseUser ? (
+                <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-700 font-bold text-sm">
+                  {fallbackLetter}
+                </div>
+              ) : (
+                <User className="w-5 h-5 text-zinc-600" />
+              )}
+            </button>
           </div>
         </div>
       </header>
