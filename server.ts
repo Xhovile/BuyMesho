@@ -131,6 +131,7 @@ db.exec(`
   uid TEXT PRIMARY KEY,
   email TEXT NOT NULL,
   business_name TEXT,
+  business_logo TEXT,
   university TEXT,
   bio TEXT,
   whatsapp_number TEXT,
@@ -270,6 +271,17 @@ try {
   }
 } catch (e) {
   console.warn("Sellers migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasBusinessLogo = cols.some((c) => c.name === "business_logo");
+  if (!hasBusinessLogo) {
+    db.exec("ALTER TABLE sellers ADD COLUMN business_logo TEXT");
+    console.log("Migration: Added sellers.business_logo");
+  }
+} catch (e) {
+  console.warn("Sellers business_logo migration check failed:", e);
 }
 
 try {
@@ -1050,7 +1062,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     try {
       const profile = db
         .prepare(
-          "SELECT uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+          "SELECT uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
         )
         .get(uid);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
@@ -1063,7 +1075,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
   app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
-  const { business_name, university, bio, whatsapp_number } = req.body;
+  const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
 
   if (!business_name || typeof business_name !== "string") {
     return res.status(400).json({ error: "business_name is required" });
@@ -1082,12 +1094,15 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       return res.status(404).json({ error: "Seller profile not found" });
     }
 
+    const safeLogoUrl = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
+
     db.prepare(`
       UPDATE sellers
-      SET business_name = ?, university = ?, bio = ?, whatsapp_number = ?
+      SET business_name = ?, business_logo = ?, university = ?, bio = ?, whatsapp_number = ?
       WHERE uid = ?
     `).run(
       business_name,
+      safeLogoUrl,
       university,
       bio ?? null,
       whatsapp_number ?? null,
@@ -1099,6 +1114,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       const adminApp = getFirebaseAdmin();
       await adminApp.firestore().collection("users").doc(uid).set({
         business_name,
+        business_logo: safeLogoUrl,
         university,
         bio: bio ?? null,
         whatsapp_number: whatsapp_number ?? null,
@@ -1447,7 +1463,7 @@ app.get("/api/users/:uid", (req, res) => {
   try {
     const seller = db
       .prepare(
-        "SELECT uid, business_name, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+        "SELECT uid, business_name, business_logo, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
       )
       .get(uid);
 
@@ -1948,14 +1964,18 @@ app.delete(
     const uid = req.user!.uid;
 
     try {
-      // 1) Load listings
+      // 1) Load seller logo + listings
+      const seller = db
+        .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
+        .get(uid) as { business_logo?: string | null } | undefined;
+
       const listings = db
   .prepare("SELECT id, photos, video_url FROM listings WHERE seller_uid = ?")
   .all(uid) as { id: number; photos: string | null; video_url?: string | null }[];
 
 const listingIds = listings.map((l) => l.id);
 
-// 2) Collect media URLs (photos + video)
+// 2) Collect media URLs (photos + video + seller logo)
 const photoUrls: string[] = [];
 for (const l of listings) {
   // photos
@@ -1968,6 +1988,10 @@ for (const l of listings) {
   if (l.video_url && typeof l.video_url === "string") {
     photoUrls.push(l.video_url);
   }
+}
+
+if (seller?.business_logo) {
+  photoUrls.push(seller.business_logo);
 }
 
       // 3) Convert to Cloudinary public_ids

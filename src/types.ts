@@ -66,6 +66,7 @@ export interface UserProfile {
 
   // seller-only fields
   business_name?: string;
+  business_logo?: string;
   bio?: string;
   whatsapp_number?: string;
 }
