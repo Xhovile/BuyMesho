@@ -291,7 +291,6 @@ const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string
 
   const [editAccountForm, setEditAccountForm] = useState({
   university: UNIVERSITIES[0] as University,
-  avatarUrl: "",
 });
 
 const showFeedback = (
@@ -630,7 +629,6 @@ useEffect(() => {
 const [editProfileForm, setEditProfileForm] = useState({
   businessName: "",
   university: UNIVERSITIES[0] as University,
-  logoUrl: "",
   bio: "",
   whatsappNumber: ""
 });
@@ -1104,7 +1102,6 @@ const openEditProfileFromSettings = () => {
   setEditProfileForm({
     businessName: userProfile.business_name || "",
     university: userProfile.university || UNIVERSITIES[0],
-    logoUrl: userProfile.business_logo || "",
     bio: userProfile.bio || "",
     whatsappNumber: userProfile.whatsapp_number || "",
   });
@@ -1495,7 +1492,6 @@ Open this listing: ${shareUrl}`;
         uid: user.uid,
         email: authForm.email,
         university: authForm.university,
-        avatar_url: "",
         is_verified: false,
         is_seller: false,
         join_date: new Date().toISOString(),
@@ -1687,7 +1683,6 @@ Open this listing: ${shareUrl}`;
   body: JSON.stringify({
     email: firebaseUser?.email,
     business_name: userProfile?.business_name || "",
-    business_logo: userProfile?.business_logo || "",
     university: userProfile?.university || "",
     bio: userProfile?.bio || "",
     whatsapp_number: userProfile?.whatsapp_number || "",
@@ -1823,13 +1818,11 @@ const handleDeleteAccount = async () => {
   const updatedProfile: UserProfile = {
     ...userProfile,
     university: editAccountForm.university,
-    avatar_url: editAccountForm.avatarUrl,
   };
 
   try {
     await updateDoc(doc(firestore, "users", firebaseUser.uid), {
       university: updatedProfile.university,
-      avatar_url: updatedProfile.avatar_url || "",
     });
 
     await apiFetch("/api/sellers", {
@@ -1860,7 +1853,6 @@ const handleDeleteAccount = async () => {
   const updatedProfile: UserProfile = {
     ...userProfile,
     business_name: editProfileForm.businessName,
-    business_logo: editProfileForm.logoUrl,
     university: editProfileForm.university,
     bio: editProfileForm.bio,
     whatsapp_number: editProfileForm.whatsappNumber,
@@ -1869,7 +1861,6 @@ const handleDeleteAccount = async () => {
   try {
     await updateDoc(doc(firestore, "users", firebaseUser.uid), {
       business_name: updatedProfile.business_name,
-      business_logo: updatedProfile.business_logo,
       university: updatedProfile.university,
       bio: updatedProfile.bio || "",
       whatsapp_number: updatedProfile.whatsapp_number || "",
@@ -1879,7 +1870,6 @@ const handleDeleteAccount = async () => {
       method: "PUT",
       body: JSON.stringify({
         business_name: updatedProfile.business_name,
-        business_logo: updatedProfile.business_logo,
         university: updatedProfile.university,
         bio: updatedProfile.bio || "",
         whatsapp_number: updatedProfile.whatsapp_number || "",
@@ -2401,12 +2391,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         if (contentType && contentType.includes("application/json")) {
           const data = JSON.parse(responseText);
         if (data.url) {
-           if (authView === "editProfile") {
-             setEditProfileForm((prev) => ({ ...prev, logoUrl: data.url }));
-           } else if (authView === "becomeSeller") {
+           if (authView === "becomeSeller") {
              setSellerUpgradeForm((prev) => ({ ...prev, proofDocumentUrl: data.url }));
-           } else if (authView === "editAccount") {
-             setEditAccountForm((prev) => ({ ...prev, avatarUrl: data.url }));
            }
         }
         } else {
@@ -3812,37 +3798,7 @@ setCurrentPage={setCurrentPage}
       }
     />
 
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Profile Picture</label>
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
-          {editAccountForm.avatarUrl ? (
-            <img src={editAccountForm.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-400">
-              <User className="w-6 h-6" />
-            </div>
-          )}
-        </div>
-        <div className="flex-1">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-            id="account-avatar-upload"
-          />
-          <label
-            htmlFor="account-avatar-upload"
-            className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
-          >
-            {uploading ? "Uploading..." : "Upload Photo"}
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <button type="submit" disabled={uploading} className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Save Changes</button>
+    <button type="submit" className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Save Changes</button>
     <button type="button" onClick={() => setAuthView("profile")} className="w-full text-sm font-bold text-zinc-500 hover:underline">Back to Profile</button>
   </form>
 )}
@@ -3884,36 +3840,6 @@ setCurrentPage={setCurrentPage}
     </div>
 
     <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Logo</label>
-      <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
-          {editProfileForm.logoUrl ? (
-            <img src={editProfileForm.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-zinc-400">
-              <Camera className="w-6 h-6" />
-            </div>
-          )}
-        </div>
-        <div className="flex-1">
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleFileUpload}
-            className="hidden"
-            id="edit-logo-upload"
-          />
-          <label
-            htmlFor="edit-logo-upload"
-            className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
-          >
-            {uploading ? "Uploading..." : "Upload Logo"}
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio</label>
       <textarea
         className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
@@ -3924,7 +3850,6 @@ setCurrentPage={setCurrentPage}
 
     <button
       type="submit"
-      disabled={uploading}
       className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
     >
       Save Changes
@@ -4180,12 +4105,10 @@ setCurrentPage={setCurrentPage}
 
                     {isSellerAccount ? (
                       <>
-                        <div className="relative w-24 h-24 mx-auto mb-4">
-                          <img
-                            src={userProfile.business_logo}
-                            alt="Logo"
-                            className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm"
-                          />
+                        <div className="relative w-24 h-24 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                          <span className="text-xl font-black text-zinc-500">
+                            {(userProfile.business_name || "S").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
                           {userProfile.is_verified && (
                             <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
                               <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
@@ -4210,12 +4133,8 @@ setCurrentPage={setCurrentPage}
                     ) : (
                       <>
                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden">
-                       {userProfile.avatar_url ? (
-                          <img src={userProfile.avatar_url} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                          <User className="w-10 h-10 text-zinc-400" />
-                        )}
-                      </div>
+                         <User className="w-10 h-10 text-zinc-400" />
+                       </div>
                         <h3 className="text-2xl font-display mb-1">My Account</h3>
                         <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
                           <MapPin className="w-4 h-4" /> {userProfile.university || "University not set"}
@@ -4378,7 +4297,6 @@ setCurrentPage={setCurrentPage}
     onClick={() => {
       setEditAccountForm({
         university: userProfile?.university || UNIVERSITIES[0],
-        avatarUrl: userProfile?.avatar_url || "",
       });
       setAuthView("editAccount");
     }}
@@ -4441,7 +4359,6 @@ setCurrentPage={setCurrentPage}
       setEditProfileForm({
         businessName: userProfile.business_name || "",
         university: userProfile.university || UNIVERSITIES[0],
-        logoUrl: userProfile.business_logo || "",
         bio: userProfile.bio || "",
         whatsappNumber: userProfile.whatsapp_number || ""
       });
@@ -4692,11 +4609,11 @@ setCurrentPage={setCurrentPage}
         ) : publicProfile ? (
           <>
             <div className="flex items-center gap-4 mb-6">
-              <img
-                src={publicProfile.business_logo}
-                alt={publicProfile.business_name}
-                className="w-20 h-20 rounded-2xl object-cover border"
-              />
+              <div className="w-20 h-20 rounded-2xl bg-zinc-100 border flex items-center justify-center">
+                <span className="text-lg font-black text-zinc-500">
+                  {(publicProfile.business_name || "S").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </span>
+              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-2xl font-extrabold">

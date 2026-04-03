@@ -49,7 +49,6 @@ export function useAccountProfile() {
         uid: firebaseUser.uid,
         email: firebaseUser.email || "",
         university: UNIVERSITIES[0],
-        avatar_url: "",
         is_verified: false,
         is_seller: false,
         join_date: new Date().toISOString(),
@@ -58,6 +57,7 @@ export function useAccountProfile() {
       const snap = await getDoc(userRef);
       if (snap.exists()) {
         const loadedProfile = snap.data() as UserProfile;
+
         setProfile(loadedProfile);
 
         if (!loadedProfile.is_seller) {

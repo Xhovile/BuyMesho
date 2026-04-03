@@ -98,7 +98,7 @@ export default function EditProfilePage() {
       const updatedProfile: UserProfile = {
         ...profile,
         business_name: form.businessName,
-        business_logo: form.logoUrl,
+        business_logo: form.logoUrl || undefined,
         university: form.university,
         bio: form.bio,
         whatsapp_number: form.whatsappNumber,
@@ -162,19 +162,26 @@ export default function EditProfilePage() {
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Business Logo</label>
             <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
-                {form.logoUrl ? <img src={form.logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 text-zinc-400" />}
+              <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center flex-shrink-0">
+                {form.logoUrl ? (
+                  <img src={form.logoUrl} alt="Business logo" className="w-full h-full object-cover" />
+                ) : (
+                  <Camera className="w-8 h-8 text-zinc-400" />
+                )}
               </div>
               <div className="flex flex-col gap-2">
                 <input id="edit-profile-logo" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                <label htmlFor="edit-profile-logo" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : form.logoUrl ? "Change Logo" : "Upload Logo"}
+                <label
+                  htmlFor="edit-profile-logo"
+                  className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer"
+                >
+                  {uploading ? "Uploading..." : form.logoUrl ? "Replace Logo" : "Upload Logo"}
                 </label>
                 {form.logoUrl && (
                   <button
                     type="button"
                     onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
-                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600 cursor-pointer"
+                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600"
                   >
                     Remove Logo
                   </button>
@@ -196,3 +203,4 @@ export default function EditProfilePage() {
     </AccountPageShell>
   );
 }
+

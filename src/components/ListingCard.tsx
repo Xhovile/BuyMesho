@@ -98,8 +98,6 @@ export default function ListingCard({
     .slice(0, 2)
     .toUpperCase();
 
-  const sellerImage = listing.avatar_url || listing.business_logo;
-
   const metaChips = [
     { key: "subcategory", label: listing.subcategory },
     { key: "item_type", label: listing.item_type },
@@ -214,17 +212,9 @@ Open this listing: ${shareUrl}`;
             className="flex items-center gap-3 text-left"
           >
             <div className="relative">
-              {sellerImage ? (
-                <img
-                  src={sellerImage}
-                  alt={sellerName}
-                  className="w-16 h-16 rounded-2xl object-cover border border-zinc-100 shadow-sm"
-                />
-              ) : (
-                <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
-                  {sellerInitials}
-                </div>
-              )}
+              <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
+                {sellerInitials}
+              </div>
               {listing.is_verified && (
                 <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />

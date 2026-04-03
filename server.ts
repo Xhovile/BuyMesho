@@ -132,7 +132,7 @@ db.exec(`
   email TEXT NOT NULL,
   business_name TEXT,
   business_logo TEXT,
-  avatar_url TEXT,
+  profile_picture TEXT,
   university TEXT,
   bio TEXT,
   whatsapp_number TEXT,
@@ -276,13 +276,24 @@ try {
 
 try {
   const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
-  const hasAvatarUrl = cols.some((c) => c.name === "avatar_url");
-  if (!hasAvatarUrl) {
-    db.exec("ALTER TABLE sellers ADD COLUMN avatar_url TEXT");
-    console.log("Migration: Added sellers.avatar_url");
+  const hasBusinessLogo = cols.some((c) => c.name === "business_logo");
+  if (!hasBusinessLogo) {
+    db.exec("ALTER TABLE sellers ADD COLUMN business_logo TEXT");
+    console.log("Migration: Added sellers.business_logo");
   }
 } catch (e) {
-  console.warn("Sellers avatar_url migration check failed:", e);
+  console.warn("Sellers business_logo migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasProfilePicture = cols.some((c) => c.name === "profile_picture");
+  if (!hasProfilePicture) {
+    db.exec("ALTER TABLE sellers ADD COLUMN profile_picture TEXT");
+    console.log("Migration: Added sellers.profile_picture");
+  }
+} catch (e) {
+  console.warn("Sellers profile_picture migration check failed:", e);
 }
 
 try {
@@ -783,7 +794,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+        SELECT l.*, s.business_name, s.is_verified
         ${baseQuery}
         ${orderBy}
         LIMIT ? OFFSET ?
@@ -819,7 +830,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     try {
       const row = db
         .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+          SELECT l.*, s.business_name, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.id = ? AND l.is_hidden = 0
@@ -876,7 +887,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
       const rows = db
         .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+          SELECT l.*, s.business_name, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.is_hidden = 0
@@ -917,11 +928,9 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 const {
   email,
   business_name,
-  business_logo,
   university,
   bio,
   whatsapp_number,
-  avatar_url,
   is_verified,
   is_seller
 } = req.body;
@@ -931,20 +940,16 @@ const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0
 const incomingSeller = is_seller === true || is_seller === 1 ? 1 : 0;
 
 const safeBusinessName = typeof business_name === "string" && business_name.trim() ? business_name.trim() : null;
-const safeBusinessLogo = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
 const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
 const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
 const safeWhatsapp = typeof whatsapp_number === "string" && whatsapp_number.trim() ? whatsapp_number.trim() : null;
-const safeAvatarUrl = typeof avatar_url === "string" && avatar_url.trim() ? avatar_url.trim() : null;
       
 db.prepare(`
-  INSERT INTO sellers (uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO sellers (uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(uid) DO UPDATE SET
     email = excluded.email,
     business_name = excluded.business_name,
-    business_logo = excluded.business_logo,
-    avatar_url = excluded.avatar_url,
     university = excluded.university,
     whatsapp_number = excluded.whatsapp_number,
     is_seller = excluded.is_seller,
@@ -958,8 +963,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   uid,
   email,
   safeBusinessName,
-  safeBusinessLogo,
-  safeAvatarUrl,
   safeUniversity,
   safeBio,
   safeWhatsapp,
@@ -979,9 +982,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     const requestedUniversity =
       typeof req.body?.university === "string" ? req.body.university.trim() : "";
     const safeUniversity = requestedUniversity || "University Not Set";
-    const requestedAvatarUrl =
-      typeof req.body?.avatar_url === "string" ? req.body.avatar_url.trim() : "";
-    const safeAvatarUrl = requestedAvatarUrl || "";
     const nowIso = new Date().toISOString();
     const hasExistingListings = !!db
       .prepare(
@@ -1024,7 +1024,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       uid,
       email,
       university: safeUniversity,
-      avatar_url: safeAvatarUrl,
       is_verified: !!req.user?.email_verified,
       is_seller: recoveredIsSeller,
       join_date: nowIso,
@@ -1034,14 +1033,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       db.prepare(
         `
           INSERT INTO sellers (
-            uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date
-          ) VALUES (?, ?, NULL, NULL, ?, ?, NULL, NULL, ?, ?, ?)
+            uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, ?, NULL, NULL, ?, ?, ?)
           ON CONFLICT(uid) DO UPDATE SET
             email = excluded.email,
-            avatar_url = CASE
-              WHEN sellers.avatar_url IS NULL OR sellers.avatar_url = '' THEN excluded.avatar_url
-              ELSE sellers.avatar_url
-            END,
             university = COALESCE(sellers.university, excluded.university),
             is_seller = CASE
               WHEN sellers.is_seller = 1 THEN 1
@@ -1056,7 +1051,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ).run(
         uid,
         email,
-        safeAvatarUrl,
         safeUniversity,
         req.user?.email_verified ? 1 : 0,
         recoveredIsSeller ? 1 : 0,
@@ -1080,7 +1074,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     try {
       const profile = db
         .prepare(
-          "SELECT uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+          "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
         )
         .get(uid);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
@@ -1112,7 +1106,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       return res.status(404).json({ error: "Seller profile not found" });
     }
 
-    const safeLogoUrl = typeof business_logo === "string" && business_logo.length > 0 ? business_logo : null;
+    const safeLogoUrl = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
 
     db.prepare(`
       UPDATE sellers
@@ -1145,6 +1139,48 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   } catch (error) {
     console.error("Profile update error:", error);
     res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+app.put("/api/account", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+  const { university, profile_picture } = req.body;
+
+  if (!university || typeof university !== "string") {
+    return res.status(400).json({ error: "university is required" });
+  }
+
+  try {
+    const existing = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const safePicture = typeof profile_picture === "string" && profile_picture.trim() ? profile_picture.trim() : null;
+
+    db.prepare(`
+      UPDATE sellers
+      SET university = ?, profile_picture = ?
+      WHERE uid = ?
+    `).run(university, safePicture, uid);
+
+    try {
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set({
+        university,
+        profile_picture: safePicture,
+      }, { merge: true });
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync account update to Firestore:", firestoreSyncError);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Account update error:", error);
+    res.status(500).json({ error: "Failed to update account" });
   }
 });
 
@@ -1481,7 +1517,7 @@ app.get("/api/users/:uid", (req, res) => {
   try {
     const seller = db
       .prepare(
-        "SELECT uid, business_name, business_logo, avatar_url, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+        "SELECT uid, business_name, business_logo, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
       )
       .get(uid);
 
@@ -1501,7 +1537,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
   try {
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+        SELECT l.*, s.business_name, s.is_verified
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
         WHERE l.seller_uid = ? AND l.is_hidden = 0
@@ -1982,10 +2018,10 @@ app.delete(
     const uid = req.user!.uid;
 
     try {
-      // 1) Load seller + listings
+      // 1) Load seller logo + listings
       const seller = db
-        .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
-        .get(uid) as { business_logo?: string } | undefined;
+        .prepare("SELECT business_logo, profile_picture FROM sellers WHERE uid = ?")
+        .get(uid) as { business_logo?: string | null; profile_picture?: string | null } | undefined;
 
       const listings = db
   .prepare("SELECT id, photos, video_url FROM listings WHERE seller_uid = ?")
@@ -1993,7 +2029,7 @@ app.delete(
 
 const listingIds = listings.map((l) => l.id);
 
-// 2) Collect media URLs (photos + video)
+// 2) Collect media URLs (photos + video + seller logo)
 const photoUrls: string[] = [];
 for (const l of listings) {
   // photos
@@ -2008,9 +2044,13 @@ for (const l of listings) {
   }
 }
 
-      if (seller?.business_logo) {
-        photoUrls.push(seller.business_logo);
-      }
+if (seller?.business_logo) {
+  photoUrls.push(seller.business_logo);
+}
+
+if (seller?.profile_picture) {
+  photoUrls.push(seller.profile_picture);
+}
 
       // 3) Convert to Cloudinary public_ids
       const publicIds = Array.from(
