@@ -1075,6 +1075,22 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     }
   });
 
+  app.get("/api/profile", requireAuth, (req, res) => {
+    const uid = req.user!.uid;
+    try {
+      const profile = db
+        .prepare(
+          "SELECT uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+        )
+        .get(uid);
+      if (!profile) return res.status(404).json({ error: "Profile not found" });
+      res.json(profile);
+    } catch (e: any) {
+      console.error("GET /api/profile error:", e);
+      res.status(500).json({ error: "Failed to load profile" });
+    }
+  });
+
   app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
   const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
@@ -2445,7 +2461,12 @@ app.patch(
           .firestore()
           .collection("users")
           .doc(application.applicant_uid)
-          .set({ is_seller: true }, { merge: true });
+          .set({
+            is_seller: true,
+            business_name: application.business_name ?? null,
+            whatsapp_number: application.whatsapp_number ?? null,
+            university: application.institution ?? null,
+          }, { merge: true });
       } catch (firestoreSyncError) {
         console.warn(
           "Failed to sync approved seller status to Firestore:",
