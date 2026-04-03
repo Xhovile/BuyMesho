@@ -60,6 +60,7 @@ export default function EditProfilePage() {
         });
       }
       formInitialized.current = true;
+      setFormReady(true);
     };
 
     void initForm();
