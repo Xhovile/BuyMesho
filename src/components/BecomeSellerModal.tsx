@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Loader2, Camera } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { University } from "../types";
 import { UNIVERSITIES } from "../constants";
 import { apiFetch } from "../lib/api";
@@ -7,22 +7,16 @@ import { apiFetch } from "../lib/api";
 type Props = {
   initialName: string;
   initialUniversity: University;
-  initialLogoUrl: string;
   initialBio: string;
   onClose: () => void;
-  onUploadedLogo: (url: string) => void;
-  uploadedLogoUrl: string;
   onSuccess: (updatedProfile: any) => void;
 };
 
 export default function BecomeSellerModal({
   initialName,
   initialUniversity,
-  initialLogoUrl,
   initialBio,
   onClose,
-  onUploadedLogo,
-  uploadedLogoUrl,
   onSuccess,
 }: Props) {
   const [businessName, setBusinessName] = useState(initialName || "");
@@ -31,18 +25,11 @@ export default function BecomeSellerModal({
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const logoUrl = uploadedLogoUrl || initialLogoUrl;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!businessName.trim()) {
       alert("Display name is required.");
-      return;
-    }
-
-    if (!logoUrl.trim()) {
-      alert("Profile photo or logo is required.");
       return;
     }
 
@@ -57,7 +44,6 @@ export default function BecomeSellerModal({
         method: "POST",
         body: JSON.stringify({
           business_name: businessName.trim(),
-          business_logo: logoUrl.trim(),
           university,
           bio: bio.trim(),
           whatsapp_number: whatsappNumber.trim(),
@@ -143,28 +129,6 @@ export default function BecomeSellerModal({
 
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-              Profile Photo / Logo
-            </label>
-
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
-                {logoUrl ? (
-                  <img src={logoUrl} alt="Seller logo" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                    <Camera className="w-6 h-6" />
-                  </div>
-                )}
-              </div>
-
-              <div className="text-sm text-zinc-500">
-                Use the uploaded profile image from your account, or upload one first from your profile edit flow.
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
               Seller Bio (Optional)
             </label>
             <textarea
@@ -186,3 +150,4 @@ export default function BecomeSellerModal({
     </div>
   );
  }
+

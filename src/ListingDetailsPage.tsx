@@ -38,8 +38,6 @@ import {
 type SellerProfile = {
   uid?: string;
   business_name?: string;
-  business_logo?: string;
-  avatar_url?: string;
   university?: string;
   bio?: string;
   is_verified?: boolean;
@@ -561,24 +559,16 @@ export default function ListingDetailsPage() {
                         className="mt-2 flex items-center gap-2 text-left hover:opacity-80"
                       >
                         <div className="w-14 h-14 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 flex items-center justify-center">
-                          {(seller?.avatar_url || seller?.business_logo) ? (
-                            <img
-                              src={seller.avatar_url || seller.business_logo}
-                              alt={seller.business_name || "Seller"}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-black text-zinc-500">
-                              {(seller?.business_name || listing.business_name || "S")
-                                .trim()
-                                .split(/\s+/)
-                                .filter((w) => w.length > 0)
-                                .map((w) => w[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </span>
-                          )}
+                          <span className="text-sm font-black text-zinc-500">
+                            {(seller?.business_name || listing.business_name || "S")
+                              .trim()
+                              .split(/\s+/)
+                              .filter((w) => w.length > 0)
+                              .map((w) => w[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </span>
                         </div>
                         <div>
                           <div className="flex items-center gap-2">

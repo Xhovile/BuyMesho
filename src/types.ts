@@ -60,14 +60,12 @@ export interface UserProfile {
 
   // general user fields
   university?: University;
-  avatar_url?: string;
   profile_visibility?: VisibilitySetting;
   seller_visibility?: VisibilitySetting;
   saved_visibility?: VisibilitySetting;
 
   // seller-only fields
   business_name?: string;
-  business_logo?: string;
   bio?: string;
   whatsapp_number?: string;
 }
@@ -96,8 +94,6 @@ export interface Listing {
   whatsapp_clicks?: number;
   is_hidden?: number;
   business_name: string;
-  business_logo: string;
-  avatar_url?: string;
   is_verified: boolean;
 }
 

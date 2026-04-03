@@ -131,8 +131,6 @@ db.exec(`
   uid TEXT PRIMARY KEY,
   email TEXT NOT NULL,
   business_name TEXT,
-  business_logo TEXT,
-  avatar_url TEXT,
   university TEXT,
   bio TEXT,
   whatsapp_number TEXT,
@@ -272,17 +270,6 @@ try {
   }
 } catch (e) {
   console.warn("Sellers migration check failed:", e);
-}
-
-try {
-  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
-  const hasAvatarUrl = cols.some((c) => c.name === "avatar_url");
-  if (!hasAvatarUrl) {
-    db.exec("ALTER TABLE sellers ADD COLUMN avatar_url TEXT");
-    console.log("Migration: Added sellers.avatar_url");
-  }
-} catch (e) {
-  console.warn("Sellers avatar_url migration check failed:", e);
 }
 
 try {
@@ -783,7 +770,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+        SELECT l.*, s.business_name, s.is_verified
         ${baseQuery}
         ${orderBy}
         LIMIT ? OFFSET ?
@@ -819,7 +806,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     try {
       const row = db
         .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+          SELECT l.*, s.business_name, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.id = ? AND l.is_hidden = 0
@@ -876,7 +863,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
       const rows = db
         .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+          SELECT l.*, s.business_name, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.is_hidden = 0
@@ -917,11 +904,9 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 const {
   email,
   business_name,
-  business_logo,
   university,
   bio,
   whatsapp_number,
-  avatar_url,
   is_verified,
   is_seller
 } = req.body;
@@ -931,20 +916,16 @@ const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0
 const incomingSeller = is_seller === true || is_seller === 1 ? 1 : 0;
 
 const safeBusinessName = typeof business_name === "string" && business_name.trim() ? business_name.trim() : null;
-const safeBusinessLogo = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
 const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
 const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
 const safeWhatsapp = typeof whatsapp_number === "string" && whatsapp_number.trim() ? whatsapp_number.trim() : null;
-const safeAvatarUrl = typeof avatar_url === "string" && avatar_url.trim() ? avatar_url.trim() : null;
       
 db.prepare(`
-  INSERT INTO sellers (uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO sellers (uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(uid) DO UPDATE SET
     email = excluded.email,
     business_name = excluded.business_name,
-    business_logo = excluded.business_logo,
-    avatar_url = excluded.avatar_url,
     university = excluded.university,
     whatsapp_number = excluded.whatsapp_number,
     is_seller = excluded.is_seller,
@@ -958,8 +939,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   uid,
   email,
   safeBusinessName,
-  safeBusinessLogo,
-  safeAvatarUrl,
   safeUniversity,
   safeBio,
   safeWhatsapp,
@@ -979,9 +958,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     const requestedUniversity =
       typeof req.body?.university === "string" ? req.body.university.trim() : "";
     const safeUniversity = requestedUniversity || "University Not Set";
-    const requestedAvatarUrl =
-      typeof req.body?.avatar_url === "string" ? req.body.avatar_url.trim() : "";
-    const safeAvatarUrl = requestedAvatarUrl || "";
     const nowIso = new Date().toISOString();
     const hasExistingListings = !!db
       .prepare(
@@ -1024,7 +1000,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       uid,
       email,
       university: safeUniversity,
-      avatar_url: safeAvatarUrl,
       is_verified: !!req.user?.email_verified,
       is_seller: recoveredIsSeller,
       join_date: nowIso,
@@ -1034,14 +1009,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       db.prepare(
         `
           INSERT INTO sellers (
-            uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date
-          ) VALUES (?, ?, NULL, NULL, ?, ?, NULL, NULL, ?, ?, ?)
+            uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, ?, NULL, NULL, ?, ?, ?)
           ON CONFLICT(uid) DO UPDATE SET
             email = excluded.email,
-            avatar_url = CASE
-              WHEN sellers.avatar_url IS NULL OR sellers.avatar_url = '' THEN excluded.avatar_url
-              ELSE sellers.avatar_url
-            END,
             university = COALESCE(sellers.university, excluded.university),
             is_seller = CASE
               WHEN sellers.is_seller = 1 THEN 1
@@ -1056,7 +1027,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ).run(
         uid,
         email,
-        safeAvatarUrl,
         safeUniversity,
         req.user?.email_verified ? 1 : 0,
         recoveredIsSeller ? 1 : 0,
@@ -1080,7 +1050,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     try {
       const profile = db
         .prepare(
-          "SELECT uid, email, business_name, business_logo, avatar_url, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+          "SELECT uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
         )
         .get(uid);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
@@ -1093,7 +1063,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
   app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
-  const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
+  const { business_name, university, bio, whatsapp_number } = req.body;
 
   if (!business_name || typeof business_name !== "string") {
     return res.status(400).json({ error: "business_name is required" });
@@ -1112,15 +1082,12 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       return res.status(404).json({ error: "Seller profile not found" });
     }
 
-    const safeLogoUrl = typeof business_logo === "string" && business_logo.length > 0 ? business_logo : null;
-
     db.prepare(`
       UPDATE sellers
-      SET business_name = ?, business_logo = ?, university = ?, bio = ?, whatsapp_number = ?
+      SET business_name = ?, university = ?, bio = ?, whatsapp_number = ?
       WHERE uid = ?
     `).run(
       business_name,
-      safeLogoUrl,
       university,
       bio ?? null,
       whatsapp_number ?? null,
@@ -1132,7 +1099,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       const adminApp = getFirebaseAdmin();
       await adminApp.firestore().collection("users").doc(uid).set({
         business_name,
-        business_logo: safeLogoUrl,
         university,
         bio: bio ?? null,
         whatsapp_number: whatsapp_number ?? null,
@@ -1481,7 +1447,7 @@ app.get("/api/users/:uid", (req, res) => {
   try {
     const seller = db
       .prepare(
-        "SELECT uid, business_name, business_logo, avatar_url, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+        "SELECT uid, business_name, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
       )
       .get(uid);
 
@@ -1501,7 +1467,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
   try {
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.business_logo, s.avatar_url, s.is_verified
+        SELECT l.*, s.business_name, s.is_verified
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
         WHERE l.seller_uid = ? AND l.is_hidden = 0
@@ -1982,11 +1948,7 @@ app.delete(
     const uid = req.user!.uid;
 
     try {
-      // 1) Load seller + listings
-      const seller = db
-        .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
-        .get(uid) as { business_logo?: string } | undefined;
-
+      // 1) Load listings
       const listings = db
   .prepare("SELECT id, photos, video_url FROM listings WHERE seller_uid = ?")
   .all(uid) as { id: number; photos: string | null; video_url?: string | null }[];
@@ -2007,10 +1969,6 @@ for (const l of listings) {
     photoUrls.push(l.video_url);
   }
 }
-
-      if (seller?.business_logo) {
-        photoUrls.push(seller.business_logo);
-      }
 
       // 3) Convert to Cloudinary public_ids
       const publicIds = Array.from(

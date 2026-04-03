@@ -31,7 +31,6 @@ export default function AccountPageShell({
   onBack,
 }: AccountPageShellProps) {
   const { firebaseUser, profile } = useAccountProfile();
-  const profileImage = profile?.avatar_url || profile?.business_logo;
   const fallbackLetter = (profile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -78,9 +77,7 @@ export default function AccountPageShell({
               className="w-10 h-10 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center overflow-hidden hover:border-zinc-300 hover:shadow-md transition-all flex-shrink-0"
               aria-label="My profile"
             >
-              {profileImage ? (
-                <img src={profileImage} alt="User profile picture" className="w-full h-full object-cover" />
-              ) : firebaseUser ? (
+              {firebaseUser ? (
                 <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-700 font-bold text-sm">
                   {fallbackLetter}
                 </div>

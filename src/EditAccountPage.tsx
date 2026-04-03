@@ -1,5 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { User } from "lucide-react";
+import { useEffect, useState, type FormEvent } from "react";
 import { updateDoc, setDoc, doc } from "firebase/firestore";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
@@ -23,10 +22,8 @@ export default function EditAccountPage() {
   const { firebaseUser, authLoading, profile, profileLoading, setProfile } = useAccountProfile();
   const [form, setForm] = useState({
     university: resolveUniversity(),
-    avatarUrl: "",
   });
   const [formReady, setFormReady] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
@@ -39,36 +36,13 @@ export default function EditAccountPage() {
         if (!serverProfile) return;
         setForm({
           university: resolveUniversity(serverProfile.university),
-          // Prefer the SQLite value; fall back to the Firestore profile in case they
-          // diverged (e.g. a previous SQLite save failed).
-          avatarUrl: serverProfile.avatar_url || profile?.avatar_url || "",
         });
       })
       .finally(() => setFormReady(true));
-  }, [firebaseUser, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [firebaseUser, authLoading]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
-  };
-
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch("/api/upload/", { method: "POST", body: formData });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || "Upload failed");
-      setForm((prev) => ({ ...prev, avatarUrl: data.url }));
-    } catch (err: any) {
-      showFeedback("error", "Upload failed", err?.message || "We could not upload the image.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
   };
 
   const handleSave = async (e: FormEvent) => {
@@ -80,13 +54,11 @@ export default function EditAccountPage() {
         ? {
             ...profile,
             university: form.university,
-            avatar_url: form.avatarUrl,
           }
         : {
             uid: firebaseUser.uid,
             email: firebaseUser.email || "",
             university: form.university,
-            avatar_url: form.avatarUrl,
             is_verified: false,
             is_seller: false,
             join_date: new Date().toISOString(),
@@ -101,18 +73,14 @@ export default function EditAccountPage() {
         if (profile) {
           await updateDoc(doc(firestore, "users", firebaseUser.uid), {
             university: updatedProfile.university,
-            avatar_url: updatedProfile.avatar_url || "",
           });
         } else {
           await setDoc(doc(firestore, "users", firebaseUser.uid), updatedProfile);
         }
       } catch (firestoreUpdateErr) {
-        // updateDoc can fail if the document doesn't exist or rules are restrictive.
-        // Try setDoc with merge as a more permissive fallback before giving up.
         try {
           await setDoc(doc(firestore, "users", firebaseUser.uid), {
             university: updatedProfile.university,
-            avatar_url: updatedProfile.avatar_url || "",
           }, { merge: true });
         } catch (firestoreErr) {
           console.warn("Firestore account sync skipped; server save succeeded.", firestoreErr);
@@ -120,7 +88,6 @@ export default function EditAccountPage() {
             method: "POST",
             body: JSON.stringify({
               university: updatedProfile.university,
-              avatar_url: updatedProfile.avatar_url || "",
             }),
           });
         }
@@ -142,7 +109,7 @@ export default function EditAccountPage() {
       title={profile ? "Edit account" : "Complete account setup"}
       description={
         profile
-          ? "Update your general account details, including your university and profile picture."
+          ? "Update your general account details, including your university."
           : "Create your account details to finish setting up your profile."
       }
       backLabel="Back to Profile"
@@ -161,35 +128,7 @@ export default function EditAccountPage() {
             onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
           />
 
-          <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Profile Picture</label>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
-                {form.avatarUrl ? (
-                  <img src={form.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <User className="w-8 h-8 text-zinc-400" />
-                )}
-              </div>
-              <div className="flex flex-col gap-2">
-                <input id="edit-account-avatar" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                <label htmlFor="edit-account-avatar" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : form.avatarUrl ? "Replace Photo" : "Upload Photo"}
-                </label>
-                {form.avatarUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, avatarUrl: "" }))}
-                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600"
-                  >
-                    Remove Photo
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" disabled={saving || uploading} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800">
+          <button type="submit" disabled={saving} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800">
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>

@@ -26,8 +26,6 @@ type SellerRatingSummary = {
 type SellerProfile = {
   uid?: string;
   business_name?: string;
-  business_logo?: string;
-  avatar_url?: string;
   university?: string;
   bio?: string;
   is_verified?: boolean;
@@ -217,22 +215,14 @@ useEffect(() => {
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
               <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)_auto] gap-6 items-start">
                 <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm">
-                  {(profile.avatar_url || profile.business_logo) ? (
-                    <img
-                      src={profile.avatar_url || profile.business_logo}
-                      alt={profile.business_name || "Seller"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-500 px-3 text-center">
-                      {(profile.business_name || "Seller")
-                        .split(" ")
-                        .map((word) => word[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </div>
-                  )}
+                  <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-500 px-3 text-center">
+                    {(profile.business_name || "Seller")
+                      .split(" ")
+                      .map((word) => word[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
                 </div>
 
                 <div>

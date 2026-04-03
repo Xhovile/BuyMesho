@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { Camera } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import FormDropdown from "./components/FormDropdown";
@@ -23,12 +22,10 @@ export default function EditProfilePage() {
   const [form, setForm] = useState({
     businessName: "",
     university: resolveUniversity(),
-    logoUrl: "",
     bio: "",
     whatsappNumber: "",
   });
   const [formReady, setFormReady] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const formInitialized = useRef(false);
@@ -44,7 +41,6 @@ export default function EditProfilePage() {
         setForm({
           businessName: serverProfile.business_name || "",
           university: resolveUniversity(serverProfile.university),
-          logoUrl: serverProfile.business_logo || "",
           bio: serverProfile.bio || "",
           whatsappNumber: resolveWhatsappNumber(serverProfile.whatsapp_number),
         });
@@ -54,7 +50,6 @@ export default function EditProfilePage() {
         setForm({
           businessName: profile.business_name || "",
           university: resolveUniversity(profile.university),
-          logoUrl: profile.business_logo || "",
           bio: profile.bio || "",
           whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
         });
@@ -69,26 +64,6 @@ export default function EditProfilePage() {
     setFeedback({ open: true, type, title, message });
   };
 
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("image", file);
-      const res = await fetch("/api/upload/", { method: "POST", body: formData });
-      const text = await res.text();
-      const data = text ? JSON.parse(text) : null;
-      if (!res.ok) throw new Error(data?.error || "Upload failed");
-      setForm((prev) => ({ ...prev, logoUrl: data.url }));
-    } catch (err: any) {
-      showFeedback("error", "Upload failed", err?.message || "We could not upload the logo.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
-  };
-
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!firebaseUser || !profile) return;
@@ -97,7 +72,6 @@ export default function EditProfilePage() {
       const updatedProfile: UserProfile = {
         ...profile,
         business_name: form.businessName,
-        business_logo: form.logoUrl,
         university: form.university,
         bio: form.bio,
         whatsapp_number: form.whatsappNumber,
@@ -106,7 +80,6 @@ export default function EditProfilePage() {
         method: "PUT",
         body: JSON.stringify({
           business_name: updatedProfile.business_name,
-          business_logo: updatedProfile.business_logo || "",
           university: updatedProfile.university,
           bio: updatedProfile.bio || "",
           whatsapp_number: updatedProfile.whatsapp_number || "",
@@ -159,33 +132,10 @@ export default function EditProfilePage() {
             <input type="text" value={form.whatsappNumber} onChange={(e) => setForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Business Logo</label>
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
-                {form.logoUrl ? <img src={form.logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 text-zinc-400" />}
-              </div>
-              <div className="flex flex-col gap-2">
-                <input id="edit-profile-logo" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-                <label htmlFor="edit-profile-logo" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : form.logoUrl ? "Change Logo" : "Upload Logo"}
-                </label>
-                {form.logoUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
-                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600 cursor-pointer"
-                  >
-                    Remove Logo
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-          <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio</label>
             <textarea value={form.bio} onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none" />
           </div>
-          <button type="submit" disabled={saving || uploading} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800">
+          <button type="submit" disabled={saving} className="bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800">
             {saving ? "Saving..." : "Save Changes"}
           </button>
         </form>
@@ -195,3 +145,4 @@ export default function EditProfilePage() {
     </AccountPageShell>
   );
 }
+

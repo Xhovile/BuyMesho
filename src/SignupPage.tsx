@@ -45,7 +45,6 @@ export default function SignupPage() {
         uid: user.uid,
         email: form.email,
         university: form.university,
-        avatar_url: "",
         is_verified: false,
         is_seller: false,
         join_date: new Date().toISOString(),
