@@ -39,11 +39,13 @@ export default function EditAccountPage() {
         if (!serverProfile) return;
         setForm({
           university: resolveUniversity(serverProfile.university),
-          avatarUrl: serverProfile.avatar_url || "",
+          // Prefer the SQLite value; fall back to the Firestore profile in case they
+          // diverged (e.g. a previous SQLite save failed).
+          avatarUrl: serverProfile.avatar_url || profile?.avatar_url || "",
         });
       })
       .finally(() => setFormReady(true));
-  }, [firebaseUser, authLoading]);
+  }, [firebaseUser, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -104,15 +106,24 @@ export default function EditAccountPage() {
         } else {
           await setDoc(doc(firestore, "users", firebaseUser.uid), updatedProfile);
         }
-      } catch (firestoreErr) {
-        console.warn("Firestore account sync skipped; server save succeeded.", firestoreErr);
-        await apiFetch("/api/profile/bootstrap", {
-          method: "POST",
-          body: JSON.stringify({
+      } catch (firestoreUpdateErr) {
+        // updateDoc can fail if the document doesn't exist or rules are restrictive.
+        // Try setDoc with merge as a more permissive fallback before giving up.
+        try {
+          await setDoc(doc(firestore, "users", firebaseUser.uid), {
             university: updatedProfile.university,
             avatar_url: updatedProfile.avatar_url || "",
-          }),
-        });
+          }, { merge: true });
+        } catch (firestoreErr) {
+          console.warn("Firestore account sync skipped; server save succeeded.", firestoreErr);
+          await apiFetch("/api/profile/bootstrap", {
+            method: "POST",
+            body: JSON.stringify({
+              university: updatedProfile.university,
+              avatar_url: updatedProfile.avatar_url || "",
+            }),
+          });
+        }
       }
 
       setProfile(updatedProfile);

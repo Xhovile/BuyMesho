@@ -57,7 +57,24 @@ export function useAccountProfile() {
       const userRef = doc(firestore, "users", firebaseUser.uid);
       const snap = await getDoc(userRef);
       if (snap.exists()) {
-        const loadedProfile = snap.data() as UserProfile;
+        let loadedProfile = snap.data() as UserProfile;
+
+        // If Firestore doesn't have avatar_url (e.g. the updateDoc write in EditAccountPage
+        // failed silently), fall back to the SQLite backend which is always updated first.
+        if (!loadedProfile.avatar_url && !loadedProfile.business_logo) {
+          try {
+            const serverProfile = await apiFetch("/api/profile");
+            if (serverProfile?.avatar_url) {
+              loadedProfile = { ...loadedProfile, avatar_url: serverProfile.avatar_url };
+              // Proactively sync the missing avatar_url back into Firestore so future reads
+              // work correctly without needing this extra round-trip.
+              setDoc(userRef, { avatar_url: serverProfile.avatar_url }, { merge: true }).catch(() => {});
+            }
+          } catch {
+            // Server fallback unavailable – proceed with the Firestore data as-is.
+          }
+        }
+
         setProfile(loadedProfile);
 
         if (!loadedProfile.is_seller) {
