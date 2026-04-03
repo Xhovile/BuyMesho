@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Camera } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
@@ -30,17 +30,39 @@ export default function EditProfilePage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const formInitialized = useRef(false);
 
+  // Fetch fresh profile data from the server (SQLite is the authoritative source for seller fields).
+  // Firestore data is used only as a fallback if the server request fails.
   useEffect(() => {
-    if (!profile) return;
-    setForm({
-      businessName: profile.business_name || "",
-      university: resolveUniversity(profile.university),
-      logoUrl: profile.business_logo || "",
-      bio: profile.bio || "",
-      whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
-    });
-  }, [profile]);
+    if (authLoading || profileLoading || !firebaseUser || !profile?.is_seller || formInitialized.current) return;
+
+    const initForm = async () => {
+      try {
+        const serverProfile = await apiFetch("/api/profile");
+        setForm({
+          businessName: serverProfile.business_name || "",
+          university: resolveUniversity(serverProfile.university),
+          logoUrl: serverProfile.business_logo || "",
+          bio: serverProfile.bio || "",
+          whatsappNumber: resolveWhatsappNumber(serverProfile.whatsapp_number),
+        });
+      } catch (err) {
+        // Log the failure and fall back to Firestore-backed profile data
+        console.error("Could not fetch seller profile from server, using Firestore fallback:", err);
+        setForm({
+          businessName: profile.business_name || "",
+          university: resolveUniversity(profile.university),
+          logoUrl: profile.business_logo || "",
+          bio: profile.bio || "",
+          whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
+        });
+      }
+      formInitialized.current = true;
+    };
+
+    void initForm();
+  }, [authLoading, profileLoading, firebaseUser, profile]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -141,11 +163,20 @@ export default function EditProfilePage() {
               <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center">
                 {form.logoUrl ? <img src={form.logoUrl} alt="Logo" className="w-full h-full object-cover" /> : <Camera className="w-8 h-8 text-zinc-400" />}
               </div>
-              <div>
+              <div className="flex flex-col gap-2">
                 <input id="edit-profile-logo" type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
                 <label htmlFor="edit-profile-logo" className="inline-flex px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold cursor-pointer">
-                  {uploading ? "Uploading..." : "Upload Logo"}
+                  {uploading ? "Uploading..." : form.logoUrl ? "Change Logo" : "Upload Logo"}
                 </label>
+                {form.logoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, logoUrl: "" }))}
+                    className="inline-flex px-4 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-sm font-bold text-red-600 cursor-pointer"
+                  >
+                    Remove Logo
+                  </button>
+                )}
               </div>
             </div>
           </div>
