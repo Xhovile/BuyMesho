@@ -132,8 +132,16 @@ export default function ProfilePage() {
           )}
 
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center">
-              <User className="w-8 h-8 text-zinc-400" />
+            <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center flex-shrink-0">
+              {profile.profile_picture ? (
+                <img
+                  src={profile.profile_picture}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-zinc-400" />
+              )}
             </div>
 
             <div>

@@ -69,6 +69,9 @@ export interface UserProfile {
   business_logo?: string;
   bio?: string;
   whatsapp_number?: string;
+
+  // general user fields (non-seller)
+  profile_picture?: string;
 }
 
 export interface Listing {

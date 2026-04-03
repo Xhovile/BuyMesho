@@ -132,6 +132,7 @@ db.exec(`
   email TEXT NOT NULL,
   business_name TEXT,
   business_logo TEXT,
+  profile_picture TEXT,
   university TEXT,
   bio TEXT,
   whatsapp_number TEXT,
@@ -282,6 +283,17 @@ try {
   }
 } catch (e) {
   console.warn("Sellers business_logo migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
+  const hasProfilePicture = cols.some((c) => c.name === "profile_picture");
+  if (!hasProfilePicture) {
+    db.exec("ALTER TABLE sellers ADD COLUMN profile_picture TEXT");
+    console.log("Migration: Added sellers.profile_picture");
+  }
+} catch (e) {
+  console.warn("Sellers profile_picture migration check failed:", e);
 }
 
 try {
@@ -1062,7 +1074,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     try {
       const profile = db
         .prepare(
-          "SELECT uid, email, business_name, business_logo, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+          "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
         )
         .get(uid);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
@@ -1127,6 +1139,48 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   } catch (error) {
     console.error("Profile update error:", error);
     res.status(500).json({ error: "Failed to update profile" });
+  }
+});
+
+app.put("/api/account", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+  const { university, profile_picture } = req.body;
+
+  if (!university || typeof university !== "string") {
+    return res.status(400).json({ error: "university is required" });
+  }
+
+  try {
+    const existing = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const safePicture = typeof profile_picture === "string" && profile_picture.trim() ? profile_picture.trim() : null;
+
+    db.prepare(`
+      UPDATE sellers
+      SET university = ?, profile_picture = ?
+      WHERE uid = ?
+    `).run(university, safePicture, uid);
+
+    try {
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set({
+        university,
+        profile_picture: safePicture,
+      }, { merge: true });
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync account update to Firestore:", firestoreSyncError);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Account update error:", error);
+    res.status(500).json({ error: "Failed to update account" });
   }
 });
 
@@ -1966,8 +2020,8 @@ app.delete(
     try {
       // 1) Load seller logo + listings
       const seller = db
-        .prepare("SELECT business_logo FROM sellers WHERE uid = ?")
-        .get(uid) as { business_logo?: string | null } | undefined;
+        .prepare("SELECT business_logo, profile_picture FROM sellers WHERE uid = ?")
+        .get(uid) as { business_logo?: string | null; profile_picture?: string | null } | undefined;
 
       const listings = db
   .prepare("SELECT id, photos, video_url FROM listings WHERE seller_uid = ?")
@@ -1992,6 +2046,10 @@ for (const l of listings) {
 
 if (seller?.business_logo) {
   photoUrls.push(seller.business_logo);
+}
+
+if (seller?.profile_picture) {
+  photoUrls.push(seller.profile_picture);
 }
 
       // 3) Convert to Cloudinary public_ids
