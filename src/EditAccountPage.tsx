@@ -18,7 +18,7 @@ type FeedbackState = {
 } | null;
 
 export default function EditAccountPage() {
-  const { firebaseUser, authLoading, profile, profileLoading, setProfile } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading, setProfile, refreshProfile } = useAccountProfile();
   const [form, setForm] = useState({
     university: resolveUniversity(),
     profilePicture: "",
@@ -94,6 +94,7 @@ export default function EditAccountPage() {
 
       setProfile(updatedProfile);
       showFeedback("success", "Account updated", "Your account details were saved successfully.");
+      await refreshProfile();
       navigateToPath("/profile");
     } catch (err: any) {
       showFeedback("error", "Account update failed", err?.message || "We could not update your account.");
