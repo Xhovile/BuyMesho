@@ -8,6 +8,28 @@ import type { UserProfile } from "../types";
 
 const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
 
+const SELLER_CACHE_KEY_PREFIX = "bm:isSeller:";
+
+function getCachedSellerStatus(uid: string): boolean {
+  try {
+    return localStorage.getItem(SELLER_CACHE_KEY_PREFIX + uid) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setCachedSellerStatus(uid: string, isSeller: boolean): void {
+  try {
+    if (isSeller) {
+      localStorage.setItem(SELLER_CACHE_KEY_PREFIX + uid, "1");
+    } else {
+      localStorage.removeItem(SELLER_CACHE_KEY_PREFIX + uid);
+    }
+  } catch {
+    // Ignore storage errors (e.g. private browsing with full quota).
+  }
+}
+
 async function fetchSellerApplicationWithRetry() {
   let lastError: unknown = null;
 
