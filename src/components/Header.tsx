@@ -1,6 +1,7 @@
 import { Search, Plus, User, Compass, House, Settings } from "lucide-react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
+import { getAvatarUrl } from "../lib/avatar";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -26,6 +27,7 @@ export default function Header({
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
+  const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
@@ -101,9 +103,9 @@ export default function Header({
               className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
             >
               {firebaseUser ? (
-                (userProfile?.profile_picture || userProfile?.business_logo) ? (
+                avatarUrl ? (
                   <img
-                    src={(userProfile.profile_picture || userProfile.business_logo)!}
+                    src={avatarUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />

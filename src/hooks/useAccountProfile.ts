@@ -67,7 +67,7 @@ export function useAccountProfile() {
 
     // Immediately seed the profile with the cached seller flag so that
     // seller-gated UI (e.g. the "List Item" button) renders on the first
-    // paint rather than only after the Firestore round-trip completes.
+    // paint rather than only after the server round-trip completes.
     if (getCachedSellerStatus(firebaseUser.uid)) {
       setProfile((prev) =>
         prev
@@ -84,19 +84,19 @@ export function useAccountProfile() {
 
     setProfileLoading(true);
     try {
-      const fallbackProfile: UserProfile = {
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || "",
-        university: UNIVERSITIES[0],
-        is_verified: false,
-        is_seller: false,
-        join_date: new Date().toISOString(),
-      };
-      const userRef = doc(firestore, "users", firebaseUser.uid);
-      const snap = await getDoc(userRef);
-      if (snap.exists()) {
-        const loadedProfile = snap.data() as UserProfile;
+      // --- Primary source: /api/profile (SQLite) ---
+      let loadedProfile: UserProfile | null = null;
+      try {
+        const serverProfile = await apiFetch("/api/profile");
+        if (serverProfile) {
+          loadedProfile = serverProfile as UserProfile;
+        }
+      } catch (apiErr) {
+        // Not found or network error: fall through to Firestore fallback.
+        console.warn("GET /api/profile failed, falling back to Firestore", apiErr);
+      }
 
+      if (loadedProfile) {
         setProfile(loadedProfile);
         setCachedSellerStatus(firebaseUser.uid, !!loadedProfile.is_seller);
 
@@ -110,6 +110,7 @@ export function useAccountProfile() {
               setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
               setCachedSellerStatus(firebaseUser.uid, true);
               try {
+                const userRef = doc(firestore, "users", firebaseUser.uid);
                 await setDoc(userRef, { is_seller: true }, { merge: true });
               } catch (firestoreWriteErr) {
                 console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
@@ -123,29 +124,47 @@ export function useAccountProfile() {
             setSellerApplicationPending(true);
           }
         }
+        setError(null);
       } else {
-        try {
-          await setDoc(userRef, fallbackProfile);
-        } catch (firestoreWriteErr) {
-          console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
-          const token = await firebaseUser.getIdToken(true);
-          const bootstrapRes = await fetch("/api/profile/bootstrap", {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              university: fallbackProfile.university,
-            }),
-          });
-          if (!bootstrapRes.ok) {
-            throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+        // --- Fallback: Firestore ---
+        const fallbackProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email || "",
+          university: UNIVERSITIES[0],
+          is_verified: false,
+          is_seller: false,
+          join_date: new Date().toISOString(),
+        };
+        const userRef = doc(firestore, "users", firebaseUser.uid);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          const firestoreProfile = snap.data() as UserProfile;
+          setProfile(firestoreProfile);
+          setCachedSellerStatus(firebaseUser.uid, !!firestoreProfile.is_seller);
+        } else {
+          try {
+            await setDoc(userRef, fallbackProfile);
+          } catch (firestoreWriteErr) {
+            console.warn("Firestore profile bootstrap failed, using server fallback", firestoreWriteErr);
+            const token = await firebaseUser.getIdToken(true);
+            const bootstrapRes = await fetch("/api/profile/bootstrap", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                university: fallbackProfile.university,
+              }),
+            });
+            if (!bootstrapRes.ok) {
+              throw new Error(`Profile bootstrap failed (${bootstrapRes.status})`);
+            }
           }
+          setProfile(fallbackProfile);
         }
-        setProfile(fallbackProfile);
+        setError(null);
       }
-      setError(null);
     } catch (err: any) {
       console.error("Failed to load account profile", err);
       try {
