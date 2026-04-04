@@ -78,9 +78,17 @@ export default function AccountPageShell({
               aria-label="My profile"
             >
               {firebaseUser ? (
-                <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-700 font-bold text-sm">
-                  {fallbackLetter}
-                </div>
+                (profile?.profile_picture || profile?.business_logo) ? (
+                  <img
+                    src={(profile?.profile_picture || profile?.business_logo)!}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-700 font-bold text-sm">
+                    {fallbackLetter}
+                  </div>
+                )
               ) : (
                 <User className="w-5 h-5 text-zinc-600" />
               )}

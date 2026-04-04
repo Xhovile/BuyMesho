@@ -94,6 +94,33 @@ export default function ProfilePage() {
           </button>
         </div>
       ) : (
+        <div>
+          {/* Profile banner – picture pinned to the top-left corner of the 2nd card */}
+          <div className="flex items-center gap-4 bg-zinc-50 border-b border-zinc-100 px-6 py-5">
+            <div className="w-20 h-20 rounded-2xl bg-white overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center flex-shrink-0">
+              {profile.profile_picture ? (
+                <img
+                  src={profile.profile_picture}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User className="w-8 h-8 text-zinc-400" />
+              )}
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+                  {profile.is_seller ? profile.business_name || "Seller Profile" : "My Account"}
+                </h2>
+                {profile.is_verified && <ShieldCheck className="w-5 h-5 text-blue-500" />}
+              </div>
+              <p className="text-sm text-zinc-500">{profile.email}</p>
+              <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
+            </div>
+          </div>
+
         <div className="p-8 space-y-6">
           {!emailVerified && (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
@@ -130,33 +157,6 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
-
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-zinc-100 overflow-hidden border border-zinc-200 flex items-center justify-center flex-shrink-0">
-              {profile.profile_picture ? (
-                <img
-                  src={profile.profile_picture}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8 text-zinc-400" />
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-2xl font-black tracking-tight text-zinc-900">
-                  {profile.is_seller ? profile.business_name || "Seller Profile" : "My Account"}
-                </h2>
-                {profile.is_verified && <ShieldCheck className="w-5 h-5 text-blue-500" />}
-              </div>
-              <p className="text-sm text-zinc-500">{profile.email}</p>
-              <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
-            </div>
-          </div>
-
-
 
           {isAdmin && (
             <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
@@ -298,6 +298,7 @@ export default function ProfilePage() {
               Log Out
             </button>
           </div>
+        </div>
         </div>
       )}
 

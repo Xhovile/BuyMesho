@@ -98,6 +98,7 @@ export interface Listing {
   whatsapp_clicks?: number;
   is_hidden?: number;
   business_name: string;
+  business_logo?: string | null;
   is_verified: boolean;
 }
 
