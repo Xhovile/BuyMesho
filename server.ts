@@ -794,7 +794,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.is_verified
+        SELECT l.*, s.business_name, s.business_logo, s.is_verified
         ${baseQuery}
         ${orderBy}
         LIMIT ? OFFSET ?
@@ -830,7 +830,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     try {
       const row = db
         .prepare(`
-          SELECT l.*, s.business_name, s.is_verified
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.id = ? AND l.is_hidden = 0
@@ -887,7 +887,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
 
       const rows = db
         .prepare(`
-          SELECT l.*, s.business_name, s.is_verified
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.is_hidden = 0
@@ -1537,7 +1537,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
   try {
     const rows = db
       .prepare(`
-        SELECT l.*, s.business_name, s.is_verified
+        SELECT l.*, s.business_name, s.business_logo, s.is_verified
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
         WHERE l.seller_uid = ? AND l.is_hidden = 0

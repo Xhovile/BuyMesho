@@ -212,8 +212,17 @@ Open this listing: ${shareUrl}`;
             className="flex items-center gap-3 text-left"
           >
             <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600">
-                {sellerInitials}
+              <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600 overflow-hidden">
+                {listing.business_logo ? (
+                  <img
+                    src={listing.business_logo}
+                    alt={sellerName}
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  sellerInitials
+                )}
               </div>
               {listing.is_verified && (
                 <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
