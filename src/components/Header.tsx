@@ -101,9 +101,9 @@ export default function Header({
               className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
             >
               {firebaseUser ? (
-                userProfile?.profile_picture ? (
+                (userProfile?.profile_picture || userProfile?.business_logo) ? (
                   <img
-                    src={userProfile.profile_picture}
+                    src={(userProfile.profile_picture || userProfile.business_logo)!}
                     alt="Profile"
                     className="w-full h-full object-cover"
                   />
