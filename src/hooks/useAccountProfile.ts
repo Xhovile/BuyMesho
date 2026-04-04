@@ -8,6 +8,28 @@ import type { UserProfile } from "../types";
 
 const SELLER_STATUS_RETRY_DELAYS_MS = [0, 800, 1800];
 
+const SELLER_CACHE_KEY_PREFIX = "bm:isSeller:";
+
+function getCachedSellerStatus(uid: string): boolean {
+  try {
+    return localStorage.getItem(SELLER_CACHE_KEY_PREFIX + uid) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setCachedSellerStatus(uid: string, isSeller: boolean): void {
+  try {
+    if (isSeller) {
+      localStorage.setItem(SELLER_CACHE_KEY_PREFIX + uid, "1");
+    } else {
+      localStorage.removeItem(SELLER_CACHE_KEY_PREFIX + uid);
+    }
+  } catch {
+    // Ignore storage errors (e.g. private browsing with full quota).
+  }
+}
+
 async function fetchSellerApplicationWithRetry() {
   let lastError: unknown = null;
 
@@ -43,6 +65,23 @@ export function useAccountProfile() {
       return;
     }
 
+    // Immediately seed the profile with the cached seller flag so that
+    // seller-gated UI (e.g. the "List Item" button) renders on the first
+    // paint rather than only after the Firestore round-trip completes.
+    if (getCachedSellerStatus(firebaseUser.uid)) {
+      setProfile((prev) =>
+        prev
+          ? { ...prev, is_seller: true }
+          : ({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              is_seller: true,
+              is_verified: false,
+              join_date: "",
+            } as UserProfile)
+      );
+    }
+
     setProfileLoading(true);
     try {
       const fallbackProfile: UserProfile = {
@@ -59,6 +98,7 @@ export function useAccountProfile() {
         const loadedProfile = snap.data() as UserProfile;
 
         setProfile(loadedProfile);
+        setCachedSellerStatus(firebaseUser.uid, !!loadedProfile.is_seller);
 
         if (!loadedProfile.is_seller) {
           // Check application status on initial load to decide whether background
@@ -68,6 +108,7 @@ export function useAccountProfile() {
             if (application?.status === "approved") {
               setSellerApplicationPending(false);
               setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+              setCachedSellerStatus(firebaseUser.uid, true);
               try {
                 await setDoc(userRef, { is_seller: true }, { merge: true });
               } catch (firestoreWriteErr) {
@@ -158,6 +199,7 @@ export function useAccountProfile() {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           await setDoc(userRef, { is_seller: true }, { merge: true });
           setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
+          setCachedSellerStatus(firebaseUser.uid, true);
           setSellerApplicationPending(false);
           return;
         }
