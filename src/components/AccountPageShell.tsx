@@ -58,7 +58,36 @@ export default function AccountPageShell({
             )}
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"><Search className="w-4 h-4" />Explore</button>
-
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="w-10 h-10 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 transition-all flex-shrink-0"
+              aria-label="Settings"
+            >
+              <Settings className="w-5 h-5 text-zinc-600" />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(PROFILE_PATH)}
+              className="w-10 h-10 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center overflow-hidden hover:border-zinc-300 hover:shadow-md transition-all flex-shrink-0"
+              aria-label="My profile"
+            >
+              {firebaseUser ? (
+                (profile?.profile_picture || profile?.business_logo) ? (
+                  <img
+                    src={(profile?.profile_picture || profile?.business_logo)!}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-100 flex items-center justify-center text-zinc-700 font-bold text-sm">
+                    {fallbackLetter}
+                  </div>
+                )
+              ) : (
+                <User className="w-5 h-5 text-zinc-600" />
+              )}
+            </button>
           </div>
         </div>
       </header>
