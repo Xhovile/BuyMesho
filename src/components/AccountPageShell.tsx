@@ -1,12 +1,10 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, LogOut, Search, Settings, User } from "lucide-react";
+import { ChevronLeft, House, LogOut, Search } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
-  PROFILE_PATH,
-  SETTINGS_PATH,
   navigateBackOrPath,
   navigateToPath,
 } from "../lib/appNavigation";
@@ -30,10 +28,7 @@ export default function AccountPageShell({
   backLabel = "Back",
   onBack,
 }: AccountPageShellProps) {
-  const { firebaseUser, profile } = useAccountProfile();
-  const fallbackLetter = (profile?.email || firebaseUser?.email || "?")
-    .charAt(0)
-    .toUpperCase();
+  const { firebaseUser } = useAccountProfile();
 
   const handleLogout = async () => {
     try {
