@@ -36,7 +36,14 @@ export default function EditProfilePage() {
   // Fetch fresh profile data from the server (SQLite is the authoritative source for seller fields).
   // Firestore data is used only as a fallback if the server request fails.
   useEffect(() => {
-    if (authLoading || profileLoading || !firebaseUser || !profile?.is_seller || formInitialized.current) return;
+    if (authLoading || profileLoading || formInitialized.current) return;
+
+    // If authentication/profile has loaded but the user is not eligible for the seller form,
+    // mark the form as ready so the appropriate fallback message is shown.
+    if (!firebaseUser || !profile?.is_seller) {
+      setFormReady(true);
+      return;
+    }
 
     const initForm = async () => {
       try {
