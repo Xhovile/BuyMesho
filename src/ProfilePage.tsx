@@ -98,9 +98,9 @@ export default function ProfilePage() {
           {/* Profile banner – picture pinned to the top-left corner of the 2nd card */}
           <div className="flex items-center gap-4 bg-zinc-50 border-b border-zinc-100 px-6 py-5">
             <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center flex-shrink-0">
-              {profile.profile_picture ? (
+              {profile.profile_picture || profile.business_logo ? (
                 <img
-                  src={profile.profile_picture}
+                  src={(profile.profile_picture || profile.business_logo)!}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
