@@ -15,6 +15,7 @@ import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
+import FormDropdown from "./components/FormDropdown";
 import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
@@ -85,6 +86,21 @@ export default function SettingsPage() {
     students_only: "Students only",
     only_me: "Only me",
   };
+  const visibilityOptions = useMemo(
+    () => Object.values(visibilityLabel),
+    [visibilityLabel]
+  );
+  const labelToVisibility = useMemo(
+    () =>
+      Object.entries(visibilityLabel).reduce<Record<string, VisibilitySetting>>(
+        (acc, [key, label]) => {
+          acc[label] = key as VisibilitySetting;
+          return acc;
+        },
+        {}
+      ),
+    [visibilityLabel]
+  );
 
   useEffect(() => {
     const handlePopState = () => {
@@ -450,43 +466,37 @@ export default function SettingsPage() {
               <div className="space-y-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
-                  <label className="mt-2 block">
-                    <span className="sr-only">Profile visibility</span>
-                    <select
-                      value={profile?.profile_visibility || "everyone"}
-                      onChange={(event) =>
-                        void updateVisibility("profile_visibility", event.target.value as VisibilitySetting)
-                      }
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Profile visibility"
+                      value={visibilityLabel[profile?.profile_visibility || "everyone"]}
+                      options={visibilityOptions}
                       disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
-                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-                    >
-                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
-                        <option key={option} value={option}>
-                          {visibilityLabel[option]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "profile_visibility",
+                          labelToVisibility[value] ?? "everyone"
+                        )
+                      }
+                    />
+                  </div>
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Seller visibility</p>
-                  <label className="mt-2 block">
-                    <span className="sr-only">Seller visibility</span>
-                    <select
-                      value={profile?.seller_visibility || "everyone"}
-                      onChange={(event) =>
-                        void updateVisibility("seller_visibility", event.target.value as VisibilitySetting)
-                      }
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Seller visibility"
+                      value={visibilityLabel[profile?.seller_visibility || "everyone"]}
+                      options={visibilityOptions}
                       disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
-                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-                    >
-                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
-                        <option key={option} value={option}>
-                          {visibilityLabel[option]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "seller_visibility",
+                          labelToVisibility[value] ?? "everyone"
+                        )
+                      }
+                    />
+                  </div>
                   {!firebaseUser
                     ? <p className="mt-2 text-xs text-zinc-500">Sign in to view seller status.</p>
                     : profileLoading
@@ -497,23 +507,20 @@ export default function SettingsPage() {
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Saved items visibility</p>
-                  <label className="mt-2 block">
-                    <span className="sr-only">Saved items visibility</span>
-                    <select
-                      value={profile?.saved_visibility || "only_me"}
-                      onChange={(event) =>
-                        void updateVisibility("saved_visibility", event.target.value as VisibilitySetting)
-                      }
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Saved items visibility"
+                      value={visibilityLabel[profile?.saved_visibility || "only_me"]}
+                      options={visibilityOptions}
                       disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
-                      className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-semibold text-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-                    >
-                      {(Object.keys(visibilityLabel) as VisibilitySetting[]).map((option) => (
-                        <option key={option} value={option}>
-                          {visibilityLabel[option]}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "saved_visibility",
+                          labelToVisibility[value] ?? "only_me"
+                        )
+                      }
+                    />
+                  </div>
                 </div>
                 {!firebaseUser && (
                   <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
