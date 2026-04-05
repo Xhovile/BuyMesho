@@ -13,15 +13,17 @@ import {
   ClipboardList,
   Flag,
 } from "lucide-react";
-import { signOut, sendEmailVerification } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
+import { apiFetch } from "./lib/api";
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
+import { getAvatarUrl } from "./lib/avatar";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 
@@ -37,6 +39,7 @@ export default function ProfilePage() {
     useAccountProfile();
   const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const avatarUrl = getAvatarUrl(profile, firebaseUser);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -98,9 +101,9 @@ export default function ProfilePage() {
           {/* Profile banner – picture pinned to the top-left corner of the 2nd card */}
           <div className="flex items-center gap-4 bg-zinc-50 border-b border-zinc-100 px-6 py-5">
             <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center flex-shrink-0">
-              {profile.profile_picture ? (
+              {avatarUrl ? (
                 <img
-                  src={profile.profile_picture}
+                  src={avatarUrl}
                   alt="Profile"
                   className="w-full h-full object-cover"
                 />
@@ -134,7 +137,13 @@ export default function ProfilePage() {
                       onClick={async () => {
                         if (!firebaseUser) return;
                         try {
-                          await sendEmailVerification(firebaseUser);
+                          await apiFetch("/api/auth/resend-verification-email", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              display_name:
+                                profile?.business_name || firebaseUser.email?.split("@")[0] || null,
+                            }),
+                          });
                           showFeedback(
                             "success",
                             "Verification email resent",

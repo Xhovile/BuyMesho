@@ -1,11 +1,12 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import FormDropdown from "./components/FormDropdown";
 import { auth, db as firestore } from "./firebase";
+import { apiFetch } from "./lib/api";
 import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { resolveUniversity } from "./lib/university";
@@ -39,7 +40,6 @@ export default function SignupPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
       const user = userCredential.user;
-      await sendEmailVerification(user);
 
       const profile: UserProfile = {
         uid: user.uid,
@@ -50,23 +50,30 @@ export default function SignupPage() {
         join_date: new Date().toISOString(),
       };
 
+      await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
+
       try {
-        await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
+        const displayName = form.email.split("@")[0] || null;
+        await apiFetch("/api/auth/send-verification-email", {
+          method: "POST",
+          body: JSON.stringify({ display_name: displayName }),
+        });
+
         showFeedback(
           "success",
           "Account created",
-          "Please check your email and verify your account before selling."
+          "A verification email was sent. Check your inbox and verify before you sell."
         );
-        navigateToPath("/profile");
-      } catch (profileErr: any) {
-        console.error("Failed to create Firestore profile during signup", profileErr);
+      } catch (emailErr: any) {
+        console.error("Custom verification email failed", emailErr);
         showFeedback(
           "info",
           "Account created",
-          "Your account was created. Please complete your profile now."
+          "The account was created, but the verification email could not be sent yet. Open your profile and resend it after SMTP is configured."
         );
-        navigateToPath("/edit-account");
       }
+
+      navigateToPath("/profile");
     } catch (err: any) {
       let message = err?.message || "We could not create your account.";
       if (err?.code === "auth/email-already-in-use") {
