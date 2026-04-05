@@ -146,7 +146,7 @@ export default function MyListingsPage() {
           </button>
         </div>
       ) : (
-        <div className="p-4 sm:p-8 space-y-6">
+        <div className="p-3 sm:p-8 space-y-6">
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
