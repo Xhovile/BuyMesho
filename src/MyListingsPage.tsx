@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { BarChart3, ExternalLink, Loader2, Pencil } from "lucide-react";
+import { BarChart3, ExternalLink, Loader2, Pencil, Tag } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
@@ -14,6 +14,7 @@ export default function MyListingsPage() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
+  const [togglingStatus, setTogglingStatus] = useState<number | null>(null);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -59,6 +60,38 @@ export default function MyListingsPage() {
       setDashboardError(error?.message || "Failed to load dashboard.");
     } finally {
       setDashboardLoading(false);
+    }
+  };
+
+  const handleToggleStatus = async (listing: Listing) => {
+    if (togglingStatus === listing.id) return;
+    const newStatus = listing.status === "sold" ? "available" : "sold";
+    setTogglingStatus(listing.id);
+    try {
+      await apiFetch(`/api/listings/${listing.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: newStatus }),
+      });
+      setListings((prev) =>
+        prev.map((l) => (l.id === listing.id ? { ...l, status: newStatus } : l))
+      );
+      const delta = newStatus === "sold" ? 1 : -1;
+      setDashboard((prev) =>
+        prev
+          ? {
+              ...prev,
+              stats: {
+                ...prev.stats,
+                sold_listings: prev.stats.sold_listings + delta,
+                active_listings: prev.stats.active_listings - delta,
+              },
+            }
+          : null
+      );
+    } catch (error) {
+      console.error("Failed to toggle listing status", error);
+    } finally {
+      setTogglingStatus(null);
     }
   };
 
@@ -260,6 +293,19 @@ export default function MyListingsPage() {
                     >
                       <ExternalLink className="w-4 h-4" />
                       Open Listing
+                    </button>
+                    <button
+                      type="button"
+                      disabled={togglingStatus === listing.id}
+                      onClick={() => void handleToggleStatus(listing)}
+                      className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold ${listing.status === "sold" ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"} disabled:opacity-50`}
+                    >
+                      {togglingStatus === listing.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Tag className="w-4 h-4" />
+                      )}
+                      {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
                     </button>
                   </div>
                 </div>
