@@ -34,3 +34,5 @@ export async function verifyIdToken(idToken: string) {
   const adminApp = getFirebaseAdmin();
   return adminApp.auth().verifyIdToken(idToken);
 }
+
+import "./verificationEmailRoutes.js";

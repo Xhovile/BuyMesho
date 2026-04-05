@@ -12,10 +12,11 @@ import {
   ClipboardList,
   Flag,
 } from "lucide-react";
-import { signOut, sendEmailVerification } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
+import { apiFetch } from "./lib/api";
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
@@ -135,7 +136,13 @@ export default function ProfilePage() {
                       onClick={async () => {
                         if (!firebaseUser) return;
                         try {
-                          await sendEmailVerification(firebaseUser);
+                          await apiFetch("/api/auth/resend-verification-email", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              display_name:
+                                profile?.business_name || firebaseUser.email?.split("@")[0] || null,
+                            }),
+                          });
                           showFeedback(
                             "success",
                             "Verification email resent",
