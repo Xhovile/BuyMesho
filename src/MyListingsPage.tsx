@@ -98,10 +98,11 @@ export default function MyListingsPage() {
   return (
     <AccountPageShell
       eyebrow="Seller"
-      title="My listings"
+      title="My Listings & Dashboard"
       description="Manage the listings you posted, review status, and jump straight into edit flow from a dedicated page."
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
+      childrenSectionClassName="md:rounded-[2rem] md:border md:border-zinc-200 md:bg-white md:shadow-sm md:overflow-hidden"
     >
       {authLoading || profileLoading || loadingListings ? (
         <div className="p-10 flex items-center justify-center gap-3 text-zinc-500 font-medium">

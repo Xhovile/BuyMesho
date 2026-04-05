@@ -243,7 +243,7 @@ export default function ProfilePage() {
                   <ShieldCheck className="w-5 h-5 text-zinc-700" />
                 )}
                 <p className="font-bold text-zinc-900">
-                  {profile.is_seller ? "My Listings" : "Become a Seller"}
+                  {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
                 </p>
               </div>
               <p className="text-sm text-zinc-500 mt-1">
