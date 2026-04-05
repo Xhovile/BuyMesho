@@ -47,6 +47,18 @@ import { apiFetch } from "./lib/api";
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
 const SETTINGS_VIEW_QUERY_KEY = "section";
+const VISIBILITY_LABEL: Record<VisibilitySetting, string> = {
+  everyone: "Everyone",
+  students_only: "Students only",
+  only_me: "Only me",
+};
+const VISIBILITY_OPTIONS = Object.values(VISIBILITY_LABEL);
+const LABEL_TO_VISIBILITY = Object.entries(VISIBILITY_LABEL).reduce<
+  Record<string, VisibilitySetting>
+>((acc, [key, label]) => {
+  acc[label] = key as VisibilitySetting;
+  return acc;
+}, {});
 
 const getSettingsViewFromSearch = (search: string): SettingsView => {
   const section = new URLSearchParams(search).get(SETTINGS_VIEW_QUERY_KEY);
@@ -80,27 +92,6 @@ export default function SettingsPage() {
     title: string;
     message: string;
   } | null>(null);
-
-  const visibilityLabel: Record<VisibilitySetting, string> = {
-    everyone: "Everyone",
-    students_only: "Students only",
-    only_me: "Only me",
-  };
-  const visibilityOptions = useMemo(
-    () => Object.values(visibilityLabel),
-    [visibilityLabel]
-  );
-  const labelToVisibility = useMemo(
-    () =>
-      Object.entries(visibilityLabel).reduce<Record<string, VisibilitySetting>>(
-        (acc, [key, label]) => {
-          acc[label] = key as VisibilitySetting;
-          return acc;
-        },
-        {}
-      ),
-    [visibilityLabel]
-  );
 
   useEffect(() => {
     const handlePopState = () => {
@@ -469,13 +460,13 @@ export default function SettingsPage() {
                   <div className="mt-2">
                     <FormDropdown
                       label="Profile visibility"
-                      value={visibilityLabel[profile?.profile_visibility || "everyone"]}
-                      options={visibilityOptions}
+                      value={VISIBILITY_LABEL[profile?.profile_visibility || "everyone"]}
+                      options={VISIBILITY_OPTIONS}
                       disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
                       onChange={(value) =>
                         void updateVisibility(
                           "profile_visibility",
-                          labelToVisibility[value] ?? "everyone"
+                          LABEL_TO_VISIBILITY[value] ?? "everyone"
                         )
                       }
                     />
@@ -486,13 +477,13 @@ export default function SettingsPage() {
                   <div className="mt-2">
                     <FormDropdown
                       label="Seller visibility"
-                      value={visibilityLabel[profile?.seller_visibility || "everyone"]}
-                      options={visibilityOptions}
+                      value={VISIBILITY_LABEL[profile?.seller_visibility || "everyone"]}
+                      options={VISIBILITY_OPTIONS}
                       disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
                       onChange={(value) =>
                         void updateVisibility(
                           "seller_visibility",
-                          labelToVisibility[value] ?? "everyone"
+                          LABEL_TO_VISIBILITY[value] ?? "everyone"
                         )
                       }
                     />
@@ -510,13 +501,13 @@ export default function SettingsPage() {
                   <div className="mt-2">
                     <FormDropdown
                       label="Saved items visibility"
-                      value={visibilityLabel[profile?.saved_visibility || "only_me"]}
-                      options={visibilityOptions}
+                      value={VISIBILITY_LABEL[profile?.saved_visibility || "only_me"]}
+                      options={VISIBILITY_OPTIONS}
                       disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
                       onChange={(value) =>
                         void updateVisibility(
                           "saved_visibility",
-                          labelToVisibility[value] ?? "only_me"
+                          LABEL_TO_VISIBILITY[value] ?? "only_me"
                         )
                       }
                     />
