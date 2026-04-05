@@ -9,7 +9,6 @@ import {
   ShieldCheck,
   User,
   Lock,
-  Pencil,
   ClipboardList,
   Flag,
 } from "lucide-react";
@@ -250,32 +249,6 @@ export default function ProfilePage() {
                 {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
               </p>
             </button>
-
-            <button
-              type="button"
-              onClick={() => navigateToPath("/edit-account")}
-              className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
-            >
-              <div className="flex items-center gap-2">
-                <Pencil className="w-5 h-5 text-zinc-700" />
-                <p className="font-bold text-zinc-900">Edit Account</p>
-              </div>
-              <p className="text-sm text-zinc-500 mt-1">Update your university and account details.</p>
-            </button>
-
-            {profile.is_seller && (
-              <button
-                type="button"
-                onClick={() => navigateToPath("/edit-profile")}
-                className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
-              >
-                <div className="flex items-center gap-2">
-                  <Pencil className="w-5 h-5 text-zinc-700" />
-                  <p className="font-bold text-zinc-900">Edit Seller Profile</p>
-                </div>
-                <p className="text-sm text-zinc-500 mt-1">Update your public seller details.</p>
-              </button>
-            )}
 
             <button
               type="button"

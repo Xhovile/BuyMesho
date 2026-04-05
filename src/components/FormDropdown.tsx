@@ -8,6 +8,7 @@ type FormDropdownProps = {
   onChange: (value: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
+  disabled?: boolean;
 };
 
 export default function FormDropdown({
@@ -17,6 +18,7 @@ export default function FormDropdown({
   onChange,
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
+  disabled = false,
 }: FormDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -50,6 +52,13 @@ export default function FormDropdown({
     }
   }, [open]);
 
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+      setQuery("");
+    }
+  }, [disabled]);
+
   const filteredOptions = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
 
@@ -82,8 +91,13 @@ export default function FormDropdown({
 
       <button
         type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className={triggerBase}
+        onClick={() => {
+          if (!disabled) {
+            setOpen((prev) => !prev);
+          }
+        }}
+        disabled={disabled}
+        className={`${triggerBase} ${disabled ? "cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200 hover:bg-zinc-100" : ""}`}
       >
         <span className="truncate text-left">{value || placeholder}</span>
         <ChevronRight
