@@ -4281,7 +4281,7 @@ setCurrentPage={setCurrentPage}
                           onClick={openMyListings}
                           className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                         >
-                          <Package className="w-4 h-4" /> My Listings
+                          <Package className="w-4 h-4" /> My Listings & Dashboard
                         </button>
                       )}
 

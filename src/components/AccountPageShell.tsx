@@ -18,6 +18,7 @@ type AccountPageShellProps = {
   children: ReactNode;
   backLabel?: string;
   onBack?: () => void;
+  childrenSectionClassName?: string;
 };
 
 export default function AccountPageShell({
@@ -27,6 +28,7 @@ export default function AccountPageShell({
   children,
   backLabel = "Back",
   onBack,
+  childrenSectionClassName,
 }: AccountPageShellProps) {
   const { firebaseUser } = useAccountProfile();
 
@@ -72,7 +74,11 @@ export default function AccountPageShell({
             <button type="button" onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 self-start"><ChevronLeft className="w-4 h-4" />{backLabel}</button>
           </div>
         </section>
-        <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">{children}</section>
+        <section
+          className={childrenSectionClassName || "rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden"}
+        >
+          {children}
+        </section>
       </main>
     </div>
   );
