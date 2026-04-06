@@ -10,7 +10,6 @@ type VerifiedRequestUser = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.verificationEmailRoutesInstalled");
-const LISTEN_PATCH_FLAG = Symbol.for("buymesho.verificationEmailListenPatched");
 
 const APP_URL = process.env.APP_URL?.trim() || "http://localhost:3000";
 const SMTP_HOST = process.env.SMTP_HOST?.trim() || "";
@@ -189,22 +188,5 @@ function registerVerificationEmailRoutes(app: Express) {
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
-
-function patchListenOnce() {
-  if ((express.application as any)[LISTEN_PATCH_FLAG]) {
-    return;
-  }
-
-  const originalListen = express.application.listen;
-
-  express.application.listen = function patchedListen(this: Express, ...args: any[]) {
-    registerVerificationEmailRoutes(this);
-    return originalListen.apply(this, args as any);
-  };
-
-  (express.application as any)[LISTEN_PATCH_FLAG] = true;
-}
-
-patchListenOnce();
 
 export { registerVerificationEmailRoutes };
