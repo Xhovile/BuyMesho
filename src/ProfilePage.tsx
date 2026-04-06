@@ -9,14 +9,14 @@ import {
   ShieldCheck,
   User,
   Lock,
-  Pencil,
   ClipboardList,
   Flag,
 } from "lucide-react";
-import { signOut, sendEmailVerification } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
+import { apiFetch } from "./lib/api";
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
@@ -136,7 +136,13 @@ export default function ProfilePage() {
                       onClick={async () => {
                         if (!firebaseUser) return;
                         try {
-                          await sendEmailVerification(firebaseUser);
+                          await apiFetch("/api/auth/resend-verification-email", {
+                            method: "POST",
+                            body: JSON.stringify({
+                              display_name:
+                                profile?.business_name || firebaseUser.email?.split("@")[0] || null,
+                            }),
+                          });
                           showFeedback(
                             "success",
                             "Verification email resent",
@@ -243,39 +249,13 @@ export default function ProfilePage() {
                   <ShieldCheck className="w-5 h-5 text-zinc-700" />
                 )}
                 <p className="font-bold text-zinc-900">
-                  {profile.is_seller ? "My Listings" : "Become a Seller"}
+                  {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
                 </p>
               </div>
               <p className="text-sm text-zinc-500 mt-1">
                 {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
               </p>
             </button>
-
-            <button
-              type="button"
-              onClick={() => navigateToPath("/edit-account")}
-              className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
-            >
-              <div className="flex items-center gap-2">
-                <Pencil className="w-5 h-5 text-zinc-700" />
-                <p className="font-bold text-zinc-900">Edit Account</p>
-              </div>
-              <p className="text-sm text-zinc-500 mt-1">Update your university and account details.</p>
-            </button>
-
-            {profile.is_seller && (
-              <button
-                type="button"
-                onClick={() => navigateToPath("/edit-profile")}
-                className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
-              >
-                <div className="flex items-center gap-2">
-                  <Pencil className="w-5 h-5 text-zinc-700" />
-                  <p className="font-bold text-zinc-900">Edit Seller Profile</p>
-                </div>
-                <p className="text-sm text-zinc-500 mt-1">Update your public seller details.</p>
-              </button>
-            )}
 
             <button
               type="button"

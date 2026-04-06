@@ -1965,6 +1965,31 @@ const safeSpecValues =
     res.status(500).json({ error: "Failed to update listing" });
   }
 });
+app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid listing id" });
+
+  const { status } = req.body;
+  const safeStatus = status === "sold" ? "sold" : "available";
+
+  try {
+    const listing = db
+      .prepare("SELECT id, seller_uid FROM listings WHERE id = ?")
+      .get(id) as { id: number; seller_uid: string } | undefined;
+
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+    if (listing.seller_uid !== uid) return res.status(403).json({ error: "Forbidden: not your listing" });
+
+    db.prepare("UPDATE listings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(safeStatus, id);
+
+    res.json({ success: true, status: safeStatus });
+  } catch (error) {
+    console.error("PATCH /api/listings/:id/status error:", error);
+    res.status(500).json({ error: "Failed to update listing status" });
+  }
+});
+
 // --- helper: get Cloudinary public_id from a Cloudinary URL ---
 function cloudinaryPublicIdFromUrl(rawUrl: string): string | null {
   try {

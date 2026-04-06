@@ -81,6 +81,12 @@ useEffect(() => {
           apiFetch(`/api/users/${sellerUid}/rating-summary`),
         ]);
 
+        fetch(`/api/users/${sellerUid}/profile-view`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ viewer_uid: firebaseUser?.uid ?? null }),
+        }).catch(() => {});
+
         setProfile(profileResult.status === "fulfilled" ? profileResult.value : null);
         setListings(
           listingsResult.status === "fulfilled" && Array.isArray(listingsResult.value)
@@ -99,7 +105,7 @@ useEffect(() => {
     };
 
     void loadSeller();
-  }, [sellerUid]);
+  }, [sellerUid, firebaseUser?.uid]);
 
   useEffect(() => {
     const loadRatingSummary = async () => {
