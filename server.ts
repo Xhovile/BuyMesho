@@ -8,6 +8,7 @@ import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import { requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
+import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -555,6 +556,7 @@ function logAdminAction({
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  registerVerificationEmailRoutes(app);
 
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
