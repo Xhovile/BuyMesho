@@ -102,6 +102,13 @@ const featuredSections: FeaturedSection[] = [
   },
 ];
 
+const HOME_CATEGORY_TO_API_CATEGORY: Record<string, string> = {
+  phones: "Electronics & Gadgets",
+  fashion: "Fashion & Clothing",
+  books: "Academic Services",
+  services: "Academic Services",
+};
+
 const trustPills = [
   "Campus-based",
   "Structured listings",
@@ -120,17 +127,27 @@ export default function HomePage() {
   useEffect(() => {
     const fetchSections = async () => {
       try {
-        const categories = featuredSections.map((section) => section.key);
         const results: Record<string, SectionListing[]> = {};
 
         await Promise.all(
-          categories.map(async (cat) => {
-            const res = await fetch(`/api/listings?category=${cat}&pageSize=4`);
-            if (!res.ok) {
-              throw new Error(`Failed to fetch ${cat} listings (${res.status})`);
+          featuredSections.map(async (section) => {
+            const apiCategory = HOME_CATEGORY_TO_API_CATEGORY[section.key];
+            if (!apiCategory) {
+              console.warn(`No API category mapping configured for section key "${section.key}"`);
+              results[section.key] = [];
+              return;
             }
+
+            const res = await fetch(
+              `/api/listings?category=${encodeURIComponent(apiCategory)}&pageSize=4`,
+            );
+
+            if (!res.ok) {
+              throw new Error(`Failed to fetch ${section.key} listings (${res.status})`);
+            }
+
             const data = await res.json();
-            results[cat] = Array.isArray(data.items) ? data.items : [];
+            results[section.key] = Array.isArray(data.items) ? data.items : [];
           }),
         );
 
@@ -482,15 +499,16 @@ export default function HomePage() {
             {featuredSections.map((section) => {
               const listings = sectionListings[section.key] || [];
               return (
-                <CategorySection
-                  key={section.key}
-                  title={section.title}
-                  description={section.description}
-                  categoryKey={section.key}
-                  icon={section.icon}
-                  listings={listings}
-                  loading={sectionsLoading}
-                />
+                <React.Fragment key={section.key}>
+                  <CategorySection
+                    title={section.title}
+                    description={section.description}
+                    categoryKey={section.key}
+                    icon={section.icon}
+                    listings={listings}
+                    loading={sectionsLoading}
+                  />
+                </React.Fragment>
               );
             })}
           </div>

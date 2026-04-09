@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import type { ElementType } from "react";
+import { Fragment, type ElementType } from "react";
 import { navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
@@ -52,12 +52,13 @@ export default function CategorySection({
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
           listings.map((item) => (
-            <ListingPreviewCard
-              key={item.id}
-              name={item.name}
-              price={item.price}
-              categoryKey={categoryKey}
-            />
+            <Fragment key={item.id}>
+              <ListingPreviewCard
+                name={item.name}
+                price={item.price}
+                categoryKey={categoryKey}
+              />
+            </Fragment>
           ))
         )}
       </div>
