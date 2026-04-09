@@ -26,7 +26,7 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import type { Listing } from "./types";
+import CategorySection from "./components/home/CategorySection";
 
 type GatewayCategory = {
   key: string;
@@ -42,7 +42,11 @@ type FeaturedSection = {
   icon: ElementType;
 };
 
-type HomeSectionListing = Pick<Listing, "id" | "name" | "price">;
+type SectionListing = {
+  id: number | string;
+  name: string;
+  price: number | string;
+};
 
 const gatewayCategories: GatewayCategory[] = [
   {
@@ -110,14 +114,14 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
-  const [sectionListings, setSectionListings] = useState<Record<string, HomeSectionListing[]>>({});
+  const [sectionListings, setSectionListings] = useState<Record<string, SectionListing[]>>({});
   const [sectionsLoading, setSectionsLoading] = useState(true);
 
   useEffect(() => {
     const fetchSections = async () => {
       try {
         const categories = featuredSections.map((section) => section.key);
-        const results: Record<string, HomeSectionListing[]> = {};
+        const results: Record<string, SectionListing[]> = {};
 
         await Promise.all(
           categories.map(async (cat) => {
@@ -476,60 +480,17 @@ export default function HomePage() {
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {featuredSections.map((section) => {
-              const Icon = section.icon;
               const listings = sectionListings[section.key] || [];
               return (
-                <div key={section.title} className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                        Featured section
-                      </p>
-                      <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
-                        {section.title}
-                      </h3>
-                      <p className="mt-2 text-sm text-zinc-600 leading-relaxed">
-                        {section.description}
-                      </p>
-                    </div>
-                    <div className="w-11 h-11 rounded-2xl bg-red-900/5 text-red-900 flex items-center justify-center flex-shrink-0">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid grid-cols-2 gap-3">
-                    {sectionsLoading ? (
-                      <p className="text-sm text-zinc-400">Loading...</p>
-                    ) : listings.length === 0 ? (
-                      <p className="text-sm text-zinc-400">No listings yet</p>
-                    ) : (
-                      listings.map((item) => (
-                        <div
-                          key={item.id ?? `${section.key}-${item.name}-${item.price}`}
-                          className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
-                        >
-                          <p className="text-sm font-bold text-zinc-800 truncate">
-                            {item.name}
-                          </p>
-                          <p className="text-xs text-zinc-500">
-                            MWK {item.price}
-                          </p>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      navigateToPath(`${EXPLORE_PATH}?category=${section.key}`)
-                    }
-                    className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-                  >
-                    View more
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </div>
+                <CategorySection
+                  key={section.key}
+                  title={section.title}
+                  description={section.description}
+                  categoryKey={section.key}
+                  icon={section.icon}
+                  listings={listings}
+                  loading={sectionsLoading}
+                />
               );
             })}
           </div>
