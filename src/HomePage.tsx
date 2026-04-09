@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { type ElementType, type FormEvent, useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -26,6 +26,7 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import type { Listing } from "./types";
 
 type GatewayCategory = {
   key: string;
@@ -35,11 +36,13 @@ type GatewayCategory = {
 };
 
 type FeaturedSection = {
+  key: string;
   title: string;
   description: string;
   icon: ElementType;
-  items: string[];
 };
+
+type HomeSectionListing = Pick<Listing, "id" | "name" | "price">;
 
 const gatewayCategories: GatewayCategory[] = [
   {
@@ -70,28 +73,28 @@ const gatewayCategories: GatewayCategory[] = [
 
 const featuredSections: FeaturedSection[] = [
   {
+    key: "phones",
     title: "Featured Phones",
     description: "Popular devices and accessories students check first.",
     icon: Smartphone,
-    items: ["iPhone deals", "Android bargains", "Chargers", "Earphones"],
   },
   {
+    key: "fashion",
     title: "Trending Fashion",
     description: "Style items moving quickly inside campus communities.",
     icon: ShoppingBag,
-    items: ["Shoes", "Bags", "Tops", "Streetwear"],
   },
   {
+    key: "books",
     title: "Study Essentials",
     description: "Academic items useful for class, exams, and assignments.",
     icon: BookOpen,
-    items: ["Calculators", "Stationery", "Textbooks", "Rulers"],
   },
   {
+    key: "services",
     title: "Campus Services",
     description: "Useful student services and small business offers.",
     icon: Store,
-    items: ["Printing", "Tutoring", "Repairs", "Food"],
   },
 ];
 
@@ -107,6 +110,36 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
+  const [sectionListings, setSectionListings] = useState<Record<string, HomeSectionListing[]>>({});
+  const [sectionsLoading, setSectionsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSections = async () => {
+      try {
+        const categories = featuredSections.map((section) => section.key);
+        const results: Record<string, HomeSectionListing[]> = {};
+
+        await Promise.all(
+          categories.map(async (cat) => {
+            const res = await fetch(`/api/listings?category=${cat}&pageSize=4`);
+            if (!res.ok) {
+              throw new Error(`Failed to fetch ${cat} listings (${res.status})`);
+            }
+            const data = await res.json();
+            results[cat] = Array.isArray(data.items) ? data.items : [];
+          }),
+        );
+
+        setSectionListings(results);
+      } catch (err) {
+        console.error("Homepage sections error:", err);
+      } finally {
+        setSectionsLoading(false);
+      }
+    };
+
+    fetchSections();
+  }, []);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -444,6 +477,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {featuredSections.map((section) => {
               const Icon = section.icon;
+              const listings = sectionListings[section.key] || [];
               return (
                 <div key={section.title} className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
                   <div className="flex items-start justify-between gap-4">
@@ -464,19 +498,32 @@ export default function HomePage() {
                   </div>
 
                   <div className="mt-5 grid grid-cols-2 gap-3">
-                    {section.items.map((item) => (
-                      <div
-                        key={item}
-                        className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700"
-                      >
-                        {item}
-                      </div>
-                    ))}
+                    {sectionsLoading ? (
+                      <p className="text-sm text-zinc-400">Loading...</p>
+                    ) : listings.length === 0 ? (
+                      <p className="text-sm text-zinc-400">No listings yet</p>
+                    ) : (
+                      listings.map((item) => (
+                        <div
+                          key={item.id ?? `${section.key}-${item.name}-${item.price}`}
+                          className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3"
+                        >
+                          <p className="text-sm font-bold text-zinc-800 truncate">
+                            {item.name}
+                          </p>
+                          <p className="text-xs text-zinc-500">
+                            MWK {item.price}
+                          </p>
+                        </div>
+                      ))
+                    )}
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => navigateToPath(EXPLORE_PATH)}
+                    onClick={() =>
+                      navigateToPath(`${EXPLORE_PATH}?category=${section.key}`)
+                    }
                     className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                   >
                     View more
