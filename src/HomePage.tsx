@@ -1,10 +1,9 @@
-import React, { type ElementType, type FormEvent, useEffect, useState } from "react";
+import { type ElementType, type FormEvent, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
   Check,
   Compass,
-  Laptop2,
   MessageCircle,
   Package,
   Search,
@@ -23,9 +22,11 @@ import {
   SAVED_PATH,
   SIGNUP_PATH,
   navigateToCreateListing,
+  navigateToListingDetails,
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 
 type GatewayCategory = {
@@ -114,44 +115,78 @@ const trustPills = [
   "Built for students",
 ];
 
+function ListingStrip({
+  title,
+  description,
+  listings,
+  loading,
+}: {
+  title: string;
+  description: string;
+  listings: SectionListing[];
+  loading: boolean;
+}) {
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-10">
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            Live preview
+          </p>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+            {title}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-600">{description}</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigateToPath(EXPLORE_PATH)}
+          className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+        >
+          Browse all
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {loading ? (
+          <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+            Loading listings...
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+            No listings yet
+          </div>
+        ) : (
+          listings.slice(0, 6).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => navigateToListingDetails(item.id)}
+              className="rounded-3xl border border-zinc-200 bg-white p-4 text-left shadow-sm hover:bg-zinc-50 transition-colors"
+            >
+              <p className="text-sm font-bold text-zinc-900 truncate">{item.name}</p>
+              <p className="mt-1 text-sm text-zinc-600">MWK {item.price}</p>
+              <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-red-900">
+                Open listing
+                <ArrowRight className="w-3.5 h-3.5" />
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const { firebaseUser, profile } = useAccountProfile();
   const isLoggedIn = !!firebaseUser;
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
-  const [sectionListings, setSectionListings] = useState<Record<string, SectionListing[]>>({});
-  const [sectionsLoading, setSectionsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchSections = async () => {
-      try {
-        const results: Record<string, SectionListing[]> = {};
-
-        await Promise.all(
-          featuredSections.map(async (section) => {
-            const res = await fetch(
-              `/api/listings?category=${encodeURIComponent(section.apiCategory)}&pageSize=4`
-            );
-
-            if (!res.ok) {
-              throw new Error(`Failed to fetch ${section.key} listings (${res.status})`);
-            }
-
-            const data = await res.json();
-            results[section.key] = Array.isArray(data.items) ? data.items : [];
-          })
-        );
-
-        setSectionListings(results);
-      } catch (err) {
-        console.error("Homepage sections error:", err);
-      } finally {
-        setSectionsLoading(false);
-      }
-    };
-
-    fetchSections();
-  }, []);
+  const { newestListings, featuredListings, sectionListings, loading, error } =
+    useHomePageData(featuredSections);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -396,6 +431,14 @@ export default function HomePage() {
           </div>
         </section>
 
+        {error ? (
+          <section className="max-w-7xl mx-auto px-4 pb-2">
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {error}
+            </div>
+          </section>
+        ) : null}
+
         <section className="max-w-7xl mx-auto px-4 pb-6">
           <form
             onSubmit={handleSearchSubmit}
@@ -436,6 +479,20 @@ export default function HomePage() {
             </div>
           </form>
         </section>
+
+        <ListingStrip
+          title="Newest listings"
+          description="Fresh items that just landed on the marketplace."
+          listings={newestListings}
+          loading={loading}
+        />
+
+        <ListingStrip
+          title="Trending now"
+          description="Listings getting the most attention right now."
+          listings={featuredListings}
+          loading={loading}
+        />
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-4 mb-6">
@@ -490,16 +547,15 @@ export default function HomePage() {
             {featuredSections.map((section) => {
               const listings = sectionListings[section.key] || [];
               return (
-                <React.Fragment key={section.key}>
-                  <CategorySection
-                    title={section.title}
-                    description={section.description}
-                    categoryKey={section.key}
-                    icon={section.icon}
-                    listings={listings}
-                    loading={sectionsLoading}
-                  />
-                </React.Fragment>
+                <CategorySection
+                  key={section.key}
+                  title={section.title}
+                  description={section.description}
+                  categoryKey={section.key}
+                  icon={section.icon}
+                  listings={listings}
+                  loading={loading}
+                />
               );
             })}
           </div>
