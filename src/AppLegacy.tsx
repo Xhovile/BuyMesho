@@ -87,6 +87,20 @@ export default function App() {
     navigateToCreateListing();
   };
 
+  const handleCategoryChange = (cat: string) => {
+    const normalizedCat = cat.trim().toLowerCase();
+    setSelectedCat(normalizedCat);
+    const url = new URL(window.location.href);
+
+    if (normalizedCat) {
+      url.searchParams.set("category", normalizedCat);
+    } else {
+      url.searchParams.delete("category");
+    }
+
+    window.history.replaceState({}, "", url.toString());
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, selectedSpecFilters]);
@@ -94,6 +108,15 @@ export default function App() {
   useEffect(() => {
     setSelectedSpecFilters({});
   }, [selectedCat, selectedSubcategory, selectedItemType]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const categoryFromUrl = params.get("category");
+
+    if (categoryFromUrl) {
+      setSelectedCat(categoryFromUrl.toLowerCase());
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -270,7 +293,7 @@ export default function App() {
           selectedUniv={selectedUniv}
           setSelectedUniv={setSelectedUniv}
           selectedCat={selectedCat}
-          setSelectedCat={setSelectedCat}
+          setSelectedCat={handleCategoryChange}
           selectedSubcategory={selectedSubcategory}
           setSelectedSubcategory={setSelectedSubcategory}
           selectedItemType={selectedItemType}
