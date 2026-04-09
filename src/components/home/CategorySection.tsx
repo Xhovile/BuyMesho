@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
-import { navigateToPath } from "../../lib/appNavigation";
-import { EXPLORE_PATH } from "../../lib/appNavigation";
+import type { ElementType } from "react";
+import { navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
 type Listing = {
@@ -13,7 +13,7 @@ type CategorySectionProps = {
   title: string;
   description: string;
   categoryKey: string;
-  icon: React.ElementType;
+  icon: ElementType;
   listings: Listing[];
   loading?: boolean;
 };
@@ -36,7 +36,9 @@ export default function CategorySection({
           <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
             {title}
           </h3>
-          <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{description}</p>
+          <p className="mt-2 text-sm text-zinc-600 leading-relaxed">
+            {description}
+          </p>
         </div>
         <div className="w-11 h-11 rounded-2xl bg-red-900/5 text-red-900 flex items-center justify-center flex-shrink-0">
           <Icon className="w-5 h-5" />
@@ -52,7 +54,6 @@ export default function CategorySection({
           listings.map((item) => (
             <ListingPreviewCard
               key={item.id}
-              id={item.id}
               name={item.name}
               price={item.price}
               categoryKey={categoryKey}
@@ -71,4 +72,4 @@ export default function CategorySection({
       </button>
     </div>
   );
-          }
+}
