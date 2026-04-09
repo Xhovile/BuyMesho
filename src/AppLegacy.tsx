@@ -19,6 +19,13 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 
+const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
+  phones: "Electronics & Gadgets",
+  fashion: "Fashion & Clothing",
+  books: "Academic Services",
+  services: "Academic Services",
+};
+
 export default function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,12 +95,11 @@ export default function App() {
   };
 
   const handleCategoryChange = (cat: string) => {
-    const normalizedCat = cat.trim().toLowerCase();
-    setSelectedCat(normalizedCat);
+    setSelectedCat(cat);
     const url = new URL(window.location.href);
 
-    if (normalizedCat) {
-      url.searchParams.set("category", normalizedCat);
+    if (cat) {
+      url.searchParams.set("category", cat);
     } else {
       url.searchParams.delete("category");
     }
@@ -114,7 +120,7 @@ export default function App() {
     const categoryFromUrl = params.get("category");
 
     if (categoryFromUrl) {
-      setSelectedCat(categoryFromUrl.toLowerCase());
+      setSelectedCat(CATEGORY_QUERY_TO_CANONICAL[categoryFromUrl] ?? categoryFromUrl);
     }
   }, []);
 

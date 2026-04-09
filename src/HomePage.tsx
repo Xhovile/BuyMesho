@@ -1,4 +1,4 @@
-import { type ElementType, type FormEvent, useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -61,7 +61,7 @@ const gatewayCategories: GatewayCategory[] = [
     icon: BookOpen,
   },
   {
-    key: "student-items",
+    key: "services",
     title: "Practical student items",
     description: "Hostel needs, room items, and useful daily essentials.",
     icon: Package,
@@ -421,9 +421,7 @@ export default function HomePage() {
                   key={item.key}
                   type="button"
                   onClick={() =>
-                    navigateToPath(
-                      `${EXPLORE_PATH}?category=${encodeURIComponent(item.key)}`,
-                    )
+                    navigateToPath(`${EXPLORE_PATH}?category=${item.key}`)
                   }
                   className="text-left rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm hover:bg-zinc-50 transition-colors"
                 >
