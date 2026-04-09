@@ -31,13 +31,13 @@ type GatewayCategory = {
   key: string;
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
 };
 
 type FeaturedSection = {
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   items: string[];
 };
 
@@ -122,7 +122,7 @@ export default function HomePage() {
     navigateToCreateListing();
   };
 
-  const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     navigateToPath(EXPLORE_PATH);
   };
