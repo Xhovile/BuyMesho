@@ -11,19 +11,19 @@ type VerifiedRequestUser = {
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.verificationEmailRoutesInstalled");
 
-const APP_URL = process.env.APP_URL?.trim() || "http://localhost:3000";
-const SMTP_HOST = process.env.SMTP_HOST?.trim() || "";
-const SMTP_USER = process.env.SMTP_USER?.trim() || "";
-const SMTP_PASS = process.env.SMTP_PASS?.trim() || "";
-const SMTP_FROM = process.env.SMTP_FROM?.trim() || SMTP_USER;
-const SMTP_REPLY_TO = process.env.SMTP_REPLY_TO?.trim() || SMTP_FROM;
-const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME?.trim() || "BuyMesho";
-const SMTP_PORT = Number(process.env.SMTP_PORT || 465);
-const SMTP_SECURE =
-  (process.env.SMTP_SECURE || (SMTP_PORT === 465 ? "true" : "false")).toLowerCase() ===
-  "true";
+type SmtpConfig = {
+  host: string;
+  user: string;
+  pass: string;
+  from: string;
+  replyTo: string;
+  fromName: string;
+  port: number;
+  secure: boolean;
+};
 
 let transporter: nodemailer.Transporter | null = null;
+let transporterConfigKey: string | null = null;
 
 function escapeHtml(input: string) {
   return input
@@ -35,27 +35,63 @@ function escapeHtml(input: string) {
 }
 
 function getTransporter() {
-  if (transporter) {
-    return transporter;
+  const smtp = getSmtpConfig();
+  const configKey = JSON.stringify({
+    host: smtp.host,
+    user: smtp.user,
+    pass: smtp.pass,
+    port: smtp.port,
+    secure: smtp.secure,
+  });
+
+  if (transporter && transporterConfigKey === configKey) {
+    return { transporter, smtp };
   }
 
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !SMTP_FROM) {
+  if (!smtp.host || !smtp.user || !smtp.pass || !smtp.from) {
     throw new Error(
       "SMTP email settings are missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM."
     );
   }
 
   transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_SECURE,
+    host: smtp.host,
+    port: smtp.port,
+    secure: smtp.secure,
     auth: {
-      user: SMTP_USER,
-      pass: SMTP_PASS,
+      user: smtp.user,
+      pass: smtp.pass,
     },
   });
+  transporterConfigKey = configKey;
 
-  return transporter;
+  return { transporter, smtp };
+}
+
+function getSmtpConfig(): SmtpConfig {
+  const host = process.env.SMTP_HOST?.trim() || "";
+  const user = process.env.SMTP_USER?.trim() || "";
+  const pass = process.env.SMTP_PASS?.trim() || "";
+  const from = process.env.SMTP_FROM?.trim() || user;
+  const replyTo = process.env.SMTP_REPLY_TO?.trim() || from;
+  const fromName = process.env.SMTP_FROM_NAME?.trim() || "BuyMesho";
+  const port = Number(process.env.SMTP_PORT || 465);
+  const secure = (process.env.SMTP_SECURE || (port === 465 ? "true" : "false")).toLowerCase() === "true";
+
+  return {
+    host,
+    user,
+    pass,
+    from,
+    replyTo,
+    fromName,
+    port,
+    secure,
+  };
+}
+
+function getAppUrl() {
+  return process.env.APP_URL?.trim() || "http://localhost:3000";
 }
 
 async function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
@@ -87,26 +123,27 @@ async function verifyBearerIdentity(req: Request, res: Response, next: NextFunct
 
 async function sendVerificationEmail(params: { email: string; displayName?: string | null }) {
   const admin = getFirebaseAdmin();
-  const loginUrl = `${APP_URL.replace(/\/$/, "")}/login`;
+  const loginUrl = `${getAppUrl().replace(/\/$/, "")}/login`;
   const verificationLink = await admin.auth().generateEmailVerificationLink(params.email, {
     url: loginUrl,
     handleCodeInApp: false,
   });
+  const { transporter: mailer, smtp } = getTransporter();
 
   const recipientName = params.displayName?.trim() || params.email.split("@")[0] || "there";
-  const subject = `${SMTP_FROM_NAME} — verify your email`;
-  const from = `"${SMTP_FROM_NAME}" <${SMTP_FROM}>`;
-  const replyTo = SMTP_REPLY_TO;
+  const subject = `${smtp.fromName} — verify your email`;
+  const from = `"${smtp.fromName}" <${smtp.from}>`;
+  const replyTo = smtp.replyTo;
 
   const text = [
     `Hello ${recipientName},`,
     "",
-    `Please verify your email address for ${SMTP_FROM_NAME}.`,
+    `Please verify your email address for ${smtp.fromName}.`,
     `Open this link to complete verification: ${verificationLink}`,
     "",
     `If you did not create this account, you can ignore this email.`,
     "",
-    `${SMTP_FROM_NAME}`,
+    `${smtp.fromName}`,
   ].join("\n");
 
   const html = `
@@ -114,7 +151,7 @@ async function sendVerificationEmail(params: { email: string; displayName?: stri
       <h2 style="margin: 0 0 16px;">Verify your email</h2>
       <p style="margin: 0 0 12px;">Hello ${escapeHtml(recipientName)},</p>
       <p style="margin: 0 0 16px;">
-        Please verify your email address for <strong>${escapeHtml(SMTP_FROM_NAME)}</strong>.
+        Please verify your email address for <strong>${escapeHtml(smtp.fromName)}</strong>.
       </p>
       <p style="margin: 0 0 20px;">
         <a href="${escapeHtml(verificationLink)}"
@@ -132,7 +169,7 @@ async function sendVerificationEmail(params: { email: string; displayName?: stri
     </div>
   `;
 
-  await getTransporter().sendMail({
+  await mailer.sendMail({
     from,
     to: params.email,
     replyTo,
