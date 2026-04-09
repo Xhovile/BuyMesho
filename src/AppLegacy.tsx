@@ -19,6 +19,13 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 
+const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
+  phones: "Electronics & Gadgets",
+  fashion: "Fashion & Clothing",
+  books: "Academic Services",
+  services: "Academic Services",
+};
+
 export default function App() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +94,19 @@ export default function App() {
     navigateToCreateListing();
   };
 
+  const handleCategoryChange = (cat: string) => {
+    setSelectedCat(cat);
+    const url = new URL(window.location.href);
+
+    if (cat) {
+      url.searchParams.set("category", cat);
+    } else {
+      url.searchParams.delete("category");
+    }
+
+    window.history.replaceState({}, "", url.toString());
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, selectedSpecFilters]);
@@ -94,6 +114,15 @@ export default function App() {
   useEffect(() => {
     setSelectedSpecFilters({});
   }, [selectedCat, selectedSubcategory, selectedItemType]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const categoryFromUrl = params.get("category");
+
+    if (categoryFromUrl) {
+      setSelectedCat(CATEGORY_QUERY_TO_CANONICAL[categoryFromUrl] ?? categoryFromUrl);
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -270,7 +299,7 @@ export default function App() {
           selectedUniv={selectedUniv}
           setSelectedUniv={setSelectedUniv}
           selectedCat={selectedCat}
-          setSelectedCat={setSelectedCat}
+          setSelectedCat={handleCategoryChange}
           selectedSubcategory={selectedSubcategory}
           setSelectedSubcategory={setSelectedSubcategory}
           selectedItemType={selectedItemType}

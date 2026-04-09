@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -28,6 +28,7 @@ import {
 import { useAccountProfile } from "./hooks/useAccountProfile";
 
 type GatewayCategory = {
+  key: string;
   title: string;
   description: string;
   icon: React.ElementType;
@@ -42,21 +43,25 @@ type FeaturedSection = {
 
 const gatewayCategories: GatewayCategory[] = [
   {
+    key: "phones",
     title: "Phones & gadgets",
     description: "Student-friendly tech, accessories, and practical electronics.",
     icon: Smartphone,
   },
   {
+    key: "fashion",
     title: "Fashion & shoes",
     description: "Clothes, bags, shoes, and everyday campus style.",
     icon: ShoppingBag,
   },
   {
+    key: "books",
     title: "Books & study tools",
     description: "Books, calculators, stationery, and academic essentials.",
     icon: BookOpen,
   },
   {
+    key: "services",
     title: "Practical student items",
     description: "Hostel needs, room items, and useful daily essentials.",
     icon: Package,
@@ -413,9 +418,11 @@ export default function HomePage() {
               const Icon = item.icon;
               return (
                 <button
-                  key={item.title}
+                  key={item.key}
                   type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  onClick={() =>
+                    navigateToPath(`${EXPLORE_PATH}?category=${item.key}`)
+                  }
                   className="text-left rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm hover:bg-zinc-50 transition-colors"
                 >
                   <div className="w-11 h-11 rounded-2xl bg-zinc-100 text-zinc-900 flex items-center justify-center mb-4">
