@@ -81,19 +81,32 @@ useEffect(() => {
           apiFetch(`/api/users/${sellerUid}/rating-summary`),
         ]);
 
-        fetch(`/api/users/${sellerUid}/profile-view`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ viewer_uid: firebaseUser?.uid ?? null }),
-        }).catch(() => {});
-
-        setProfile(profileResult.status === "fulfilled" ? profileResult.value : null);
+        const loadedProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
+        setProfile(loadedProfile);
         setListings(
           listingsResult.status === "fulfilled" && Array.isArray(listingsResult.value)
             ? listingsResult.value
             : []
         );
         setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
+
+        if (loadedProfile) {
+          const viewTrackResult = await apiFetch(`/api/users/${sellerUid}/profile-view`, {
+            method: "POST",
+            body: JSON.stringify({ viewer_uid: firebaseUser?.uid ?? null }),
+          }).catch(() => null);
+
+          if (viewTrackResult && !viewTrackResult.skipped) {
+            setProfile((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    profile_views: (prev.profile_views ?? 0) + 1,
+                  }
+                : prev
+            );
+          }
+        }
       } catch (error) {
         console.error("Failed to load seller profile page", error);
         setProfile(null);
