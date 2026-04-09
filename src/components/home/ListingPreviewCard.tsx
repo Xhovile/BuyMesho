@@ -1,16 +1,13 @@
 import { ArrowRight } from "lucide-react";
-import { navigateToPath } from "../../lib/appNavigation";
-import { EXPLORE_PATH } from "../../lib/appNavigation";
+import { navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
 
 type ListingPreviewCardProps = {
-  id: number | string;
   name: string;
   price: number | string;
   categoryKey: string;
 };
 
 export default function ListingPreviewCard({
-  id,
   name,
   price,
   categoryKey,
@@ -28,4 +25,4 @@ export default function ListingPreviewCard({
       </div>
     </button>
   );
-}
+ }
