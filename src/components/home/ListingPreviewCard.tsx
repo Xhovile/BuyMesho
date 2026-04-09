@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
+import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 
 type ListingPreviewCardProps = {
   name: string;
@@ -15,7 +15,7 @@ export default function ListingPreviewCard({
   return (
     <button
       type="button"
-      onClick={() => navigateToPath(`${EXPLORE_PATH}?category=${categoryKey}`)}
+      onClick={() => navigateToExploreWithCategory(categoryKey)}
       className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left hover:bg-zinc-100 transition-colors"
     >
       <p className="text-sm font-bold text-zinc-800 truncate">{name}</p>

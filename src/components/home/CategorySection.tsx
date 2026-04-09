@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Fragment, type ElementType } from "react";
-import { navigateToPath, EXPLORE_PATH } from "../../lib/appNavigation";
+import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
 type Listing = {
@@ -65,7 +65,7 @@ export default function CategorySection({
 
       <button
         type="button"
-        onClick={() => navigateToPath(`${EXPLORE_PATH}?category=${categoryKey}`)}
+        onClick={() => navigateToExploreWithCategory(categoryKey)}
         className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
       >
         View more

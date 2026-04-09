@@ -1,4 +1,4 @@
-import { type ElementType, type FormEvent, useState } from "react";
+import { Fragment, type ElementType, type FormEvent, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -22,6 +22,7 @@ import {
   SAVED_PATH,
   SIGNUP_PATH,
   navigateToCreateListing,
+  navigateToExploreWithCategory,
   navigateToListingDetails,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -50,57 +51,64 @@ type SectionListing = {
   price: number | string;
 };
 
+const HOME_CATEGORY_KEYS = {
+  phones: "phones",
+  fashion: "fashion",
+  books: "books",
+  food: "food",
+} as const;
+
 const gatewayCategories: GatewayCategory[] = [
   {
-    key: "phones",
+    key: HOME_CATEGORY_KEYS.phones,
     title: "Phones & gadgets",
     description: "Student-friendly tech, accessories, and practical electronics.",
     icon: Smartphone,
   },
   {
-    key: "fashion",
+    key: HOME_CATEGORY_KEYS.fashion,
     title: "Fashion & shoes",
     description: "Clothes, bags, shoes, and everyday campus style.",
     icon: ShoppingBag,
   },
   {
-    key: "books",
+    key: HOME_CATEGORY_KEYS.books,
     title: "Books & study tools",
     description: "Books, calculators, stationery, and academic essentials.",
     icon: BookOpen,
   },
   {
-    key: "services",
-    title: "Practical student items",
-    description: "Hostel needs, room items, and useful daily essentials.",
-    icon: Package,
+    key: HOME_CATEGORY_KEYS.food,
+    title: "Campus Eats",
+    description: "Quick food and snack listings students check often.",
+    icon: Store,
   },
 ];
 
 const featuredSections: FeaturedSection[] = [
   {
-    key: "phones",
+    key: HOME_CATEGORY_KEYS.phones,
     title: "Featured Phones",
     description: "Popular devices and accessories students check first.",
     icon: Smartphone,
     apiCategory: "Electronics & Gadgets",
   },
   {
-    key: "fashion",
+    key: HOME_CATEGORY_KEYS.fashion,
     title: "Trending Fashion",
     description: "Style items moving quickly inside campus communities.",
     icon: ShoppingBag,
     apiCategory: "Fashion & Clothing",
   },
   {
-    key: "books",
+    key: HOME_CATEGORY_KEYS.books,
     title: "Study Essentials",
     description: "Academic items useful for class, exams, and assignments.",
     icon: BookOpen,
     apiCategory: "Academic Services",
   },
   {
-    key: "food",
+    key: HOME_CATEGORY_KEYS.food,
     title: "Campus Eats",
     description: "Quick food and snack listings students check often.",
     icon: Store,
@@ -480,19 +488,29 @@ export default function HomePage() {
           </form>
         </section>
 
-        <ListingStrip
-          title="Newest listings"
-          description="Fresh items that just landed on the marketplace."
-          listings={newestListings}
-          loading={loading}
-        />
+        {error ? (
+          <section className="max-w-7xl mx-auto px-4 py-6">
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600">
+              Preview strips are unavailable right now.
+            </div>
+          </section>
+        ) : (
+          <>
+            <ListingStrip
+              title="Newest listings"
+              description="Fresh items that just landed on the marketplace."
+              listings={newestListings}
+              loading={loading}
+            />
 
-        <ListingStrip
-          title="Trending now"
-          description="Listings getting the most attention right now."
-          listings={featuredListings}
-          loading={loading}
-        />
+            <ListingStrip
+              title="Trending now"
+              description="Listings getting the most attention right now."
+              listings={featuredListings}
+              loading={loading}
+            />
+          </>
+        )}
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-4 mb-6">
@@ -522,9 +540,7 @@ export default function HomePage() {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() =>
-                    navigateToPath(`${EXPLORE_PATH}?category=${item.key}`)
-                  }
+                  onClick={() => navigateToExploreWithCategory(item.key)}
                   className="text-left rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm hover:bg-zinc-50 transition-colors"
                 >
                   <div className="w-11 h-11 rounded-2xl bg-zinc-100 text-zinc-900 flex items-center justify-center mb-4">
@@ -547,15 +563,16 @@ export default function HomePage() {
             {featuredSections.map((section) => {
               const listings = sectionListings[section.key] || [];
               return (
-                <CategorySection
-                  key={section.key}
-                  title={section.title}
-                  description={section.description}
-                  categoryKey={section.key}
-                  icon={section.icon}
-                  listings={listings}
-                  loading={loading}
-                />
+                <Fragment key={section.key}>
+                  <CategorySection
+                    title={section.title}
+                    description={section.description}
+                    categoryKey={section.key}
+                    icon={section.icon}
+                    listings={listings}
+                    loading={loading}
+                  />
+                </Fragment>
               );
             })}
           </div>
