@@ -40,6 +40,7 @@ type FeaturedSection = {
   title: string;
   description: string;
   icon: ElementType;
+  apiCategory: string;
 };
 
 type SectionListing = {
@@ -81,33 +82,30 @@ const featuredSections: FeaturedSection[] = [
     title: "Featured Phones",
     description: "Popular devices and accessories students check first.",
     icon: Smartphone,
+    apiCategory: "Electronics & Gadgets",
   },
   {
     key: "fashion",
     title: "Trending Fashion",
     description: "Style items moving quickly inside campus communities.",
     icon: ShoppingBag,
+    apiCategory: "Fashion & Clothing",
   },
   {
     key: "books",
     title: "Study Essentials",
     description: "Academic items useful for class, exams, and assignments.",
     icon: BookOpen,
+    apiCategory: "Academic Services",
   },
   {
-    key: "services",
-    title: "Campus Services",
-    description: "Useful student services and small business offers.",
+    key: "food",
+    title: "Campus Eats",
+    description: "Quick food and snack listings students check often.",
     icon: Store,
+    apiCategory: "Food & Snacks",
   },
 ];
-
-const HOME_CATEGORY_TO_API_CATEGORY: Record<string, string> = {
-  phones: "Electronics & Gadgets",
-  fashion: "Fashion & Clothing",
-  books: "Academic Services",
-  services: "Academic Services",
-};
 
 const trustPills = [
   "Campus-based",
@@ -131,15 +129,8 @@ export default function HomePage() {
 
         await Promise.all(
           featuredSections.map(async (section) => {
-            const apiCategory = HOME_CATEGORY_TO_API_CATEGORY[section.key];
-            if (!apiCategory) {
-              console.warn(`No API category mapping configured for section key "${section.key}"`);
-              results[section.key] = [];
-              return;
-            }
-
             const res = await fetch(
-              `/api/listings?category=${encodeURIComponent(apiCategory)}&pageSize=4`,
+              `/api/listings?category=${encodeURIComponent(section.apiCategory)}&pageSize=4`
             );
 
             if (!res.ok) {
@@ -148,7 +139,7 @@ export default function HomePage() {
 
             const data = await res.json();
             results[section.key] = Array.isArray(data.items) ? data.items : [];
-          }),
+          })
         );
 
         setSectionListings(results);
