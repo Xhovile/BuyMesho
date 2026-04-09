@@ -1,4 +1,4 @@
-import { type ElementType, type FormEvent, useState } from "react";
+import { Fragment, type ElementType, type FormEvent, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -563,15 +563,16 @@ export default function HomePage() {
             {featuredSections.map((section) => {
               const listings = sectionListings[section.key] || [];
               return (
-                <CategorySection
-                  key={section.key}
-                  title={section.title}
-                  description={section.description}
-                  categoryKey={section.key}
-                  icon={section.icon}
-                  listings={listings}
-                  loading={loading}
-                />
+                <Fragment key={section.key}>
+                  <CategorySection
+                    title={section.title}
+                    description={section.description}
+                    categoryKey={section.key}
+                    icon={section.icon}
+                    listings={listings}
+                    loading={loading}
+                  />
+                </Fragment>
               );
             })}
           </div>
