@@ -300,7 +300,7 @@ export default function CategoryPage() {
                 No listings found in this category.
               </div>
             ) : (
-              filteredItems.map((item) => (
+              filteredAndSortedItems.map((item) => (
                 <CategoryListingCard
                   key={item.id}
                   item={item}
