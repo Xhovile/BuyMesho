@@ -20,6 +20,8 @@ type MarketSectionProps = {
   setSelectedItemType: (v: string) => void;
   selectedSpecFilters: Record<string, string | string[] | boolean>;
   setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
+  selectedStatus: string;
+  setSelectedStatus: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -62,6 +64,8 @@ export default function MarketSection({
   setSelectedItemType,
   selectedSpecFilters,
   setSelectedSpecFilters,
+  selectedStatus,
+  setSelectedStatus,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -110,6 +114,7 @@ export default function MarketSection({
     Boolean(selectedCat) ||
     Boolean(selectedSubcategory) ||
     Boolean(selectedItemType) ||
+    Boolean(selectedStatus) ||
     Boolean(selectedCondition) ||
     hideSoldOut ||
     Boolean(minPrice) ||
@@ -122,6 +127,7 @@ export default function MarketSection({
     setSelectedCat("");
     setSelectedSubcategory("");
     setSelectedItemType("");
+    setSelectedStatus("");
     setSelectedCondition("");
     setHideSoldOut(false);
     setMinPrice("");
@@ -144,6 +150,8 @@ export default function MarketSection({
         setSelectedItemType={setSelectedItemType}
         selectedSpecFilters={selectedSpecFilters}
         setSelectedSpecFilters={setSelectedSpecFilters}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
         selectedCondition={selectedCondition}
         setSelectedCondition={setSelectedCondition}
         hideSoldOut={hideSoldOut}

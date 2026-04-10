@@ -382,6 +382,8 @@ export default function App() {
           setSelectedItemType={setSelectedItemType}
           selectedSpecFilters={selectedSpecFilters}
           setSelectedSpecFilters={setSelectedSpecFilters}
+          selectedStatus={selectedStatus}
+          setSelectedStatus={setSelectedStatus}
           sortBy={sortBy}
           setSortBy={setSortBy}
           firebaseUserUid={firebaseUser?.uid}
