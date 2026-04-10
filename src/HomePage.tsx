@@ -6,6 +6,7 @@ import {
   Compass,
   Package,
   Search,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Smartphone,
