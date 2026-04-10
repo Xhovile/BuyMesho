@@ -729,13 +729,13 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   }
 
   const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+  const shouldFilterAvailable =
+    normalizedStatus === "available" ||
+    (!normalizedStatus && (hideSoldOut === "1" || hideSoldOut === "true"));
+
   if (normalizedStatus === "sold") {
     baseQuery += " AND (l.status = 'sold' OR l.sold_quantity >= l.quantity)";
-  } else if (normalizedStatus === "available") {
-    baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
-  }
-
-  if (!normalizedStatus && (hideSoldOut === "1" || hideSoldOut === "true")) {
+  } else if (shouldFilterAvailable) {
     baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
   }
 

@@ -57,7 +57,7 @@ function rank(list: HomePreviewListing[], campus: string, mode: string) {
 
       if (campusA !== campusB) return campusB - campusA;
 
-      if (mode === "popular" || mode === "recommended") {
+      if (mode !== "newest") {
         const p = popularityScore(b) - popularityScore(a);
         if (p) return p;
       }

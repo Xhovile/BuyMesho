@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ConfirmModal from "./components/ConfirmModal";
@@ -65,7 +65,10 @@ export default function App() {
   const hasMountedPageResetRef = useRef(false);
   const hasMountedSpecResetRef = useRef(false);
   const syncingFromUrlRef = useRef(false);
-  const serializedSpecFilters = JSON.stringify(selectedSpecFilters);
+  const serializedSpecFilters = useMemo(
+    () => JSON.stringify(selectedSpecFilters),
+    [selectedSpecFilters]
+  );
 
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
     try {
