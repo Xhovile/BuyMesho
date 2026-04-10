@@ -85,17 +85,17 @@ const DEFAULT_EXPLORE_QUERY_STATE: ExploreQueryState = {
   specFilters: {},
 };
 
-const getPositiveInteger = (value: string | null, fallback: number) => {
+const parsePositiveIntegerParam = (value: string | null, fallback: number) => {
   if (!value) return fallback;
   const parsed = Number(value);
   if (!Number.isInteger(parsed) || parsed < 1) return fallback;
   return parsed;
 };
 
-const getBoolean = (value: string | null) =>
+const parseBooleanParam = (value: string | null) =>
   value === "1" || value === "true";
 
-const getSpecFilters = (value: string | null) => {
+const parseSpecFiltersParam = (value: string | null) => {
   if (!value) return {};
   try {
     const parsed = JSON.parse(value);
@@ -122,9 +122,12 @@ export const getExploreStateFromLocation = (
     sortBy: params.get("sortBy") || DEFAULT_EXPLORE_QUERY_STATE.sortBy,
     minPrice: params.get("minPrice") || DEFAULT_EXPLORE_QUERY_STATE.minPrice,
     maxPrice: params.get("maxPrice") || DEFAULT_EXPLORE_QUERY_STATE.maxPrice,
-    hideSoldOut: getBoolean(params.get("hideSoldOut")),
-    page: getPositiveInteger(params.get("page"), DEFAULT_EXPLORE_QUERY_STATE.page),
-    specFilters: getSpecFilters(params.get("specFilters")),
+    hideSoldOut: parseBooleanParam(params.get("hideSoldOut")),
+    page: parsePositiveIntegerParam(
+      params.get("page"),
+      DEFAULT_EXPLORE_QUERY_STATE.page
+    ),
+    specFilters: parseSpecFiltersParam(params.get("specFilters")),
   };
 };
 

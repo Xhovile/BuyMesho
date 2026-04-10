@@ -49,9 +49,9 @@ function popularityScore(item: HomePreviewListing) {
 function rank(list: HomePreviewListing[], campus: string, mode: string) {
   return [...list]
     .map((item, index) => ({ item, index }))
-    .sort((left, right) => {
-      const a = left.item;
-      const b = right.item;
+    .sort((aEntry, bEntry) => {
+      const a = aEntry.item;
+      const b = bEntry.item;
       const campusA = isCampusMatch(a.university, campus) ? 1 : 0;
       const campusB = isCampusMatch(b.university, campus) ? 1 : 0;
 
@@ -71,7 +71,7 @@ function rank(list: HomePreviewListing[], campus: string, mode: string) {
         return idB - idA;
       }
 
-      return left.index - right.index;
+      return aEntry.index - bEntry.index;
     })
     .map(({ item }) => item);
 }
@@ -98,10 +98,16 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const { user, loading: authLoading } = useAuthUser();
 
   const [campus, setCampus] = useState("");
-  const [recommendedListings, setRecommendedListings] = useState([]);
-  const [newestListings, setNewestListings] = useState([]);
-  const [featuredListings, setFeaturedListings] = useState([]);
-  const [sectionListings, setSectionListings] = useState({});
+  const [recommendedListings, setRecommendedListings] = useState<
+    HomePreviewListing[]
+  >([]);
+  const [newestListings, setNewestListings] = useState<HomePreviewListing[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<HomePreviewListing[]>(
+    []
+  );
+  const [sectionListings, setSectionListings] = useState<
+    Record<string, HomePreviewListing[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -152,13 +158,19 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
           })
         );
 
-        const byId = new Map<string, HomePreviewListing>();
-        [...featured, ...newest].forEach((item) => {
-          byId.set(String(item.id), item);
+        const uniqueListingsById = new Map<string, HomePreviewListing>();
+        featured.forEach((item) => {
+          uniqueListingsById.set(String(item.id), item);
+        });
+        newest.forEach((item) => {
+          const key = String(item.id);
+          if (!uniqueListingsById.has(key)) {
+            uniqueListingsById.set(key, item);
+          }
         });
 
         setRecommendedListings(
-          rank(Array.from(byId.values()), campus, "recommended")
+          rank(Array.from(uniqueListingsById.values()), campus, "recommended")
         );
         setNewestListings(rank(newest, campus, "newest"));
         setFeaturedListings(rank(featured, campus, "popular"));

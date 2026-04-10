@@ -60,9 +60,11 @@ export default function App() {
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [urlSyncCounter, setUrlSyncCounter] = useState(0);
   const hasMountedPageResetRef = useRef(false);
   const hasMountedSpecResetRef = useRef(false);
   const syncingFromUrlRef = useRef(false);
+  const serializedSpecFilters = JSON.stringify(selectedSpecFilters);
 
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
     try {
@@ -120,7 +122,7 @@ export default function App() {
     }
     if (syncingFromUrlRef.current) return;
     setCurrentPage(1);
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, selectedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, serializedSpecFilters]);
 
   useEffect(() => {
     if (!hasMountedSpecResetRef.current) {
@@ -153,7 +155,7 @@ export default function App() {
     selectedCat,
     selectedSubcategory,
     selectedItemType,
-    selectedSpecFilters,
+    serializedSpecFilters,
     sortBy,
     selectedCondition,
     hideSoldOut,
@@ -180,14 +182,18 @@ export default function App() {
       setMinPrice(urlState.minPrice);
       setMaxPrice(urlState.maxPrice);
       setCurrentPage(urlState.page);
-      queueMicrotask(() => {
-        syncingFromUrlRef.current = false;
-      });
+      setUrlSyncCounter((value) => value + 1);
     };
 
     window.addEventListener("popstate", syncStateFromUrl);
     return () => window.removeEventListener("popstate", syncStateFromUrl);
   }, []);
+
+  useEffect(() => {
+    if (urlSyncCounter > 0) {
+      syncingFromUrlRef.current = false;
+    }
+  }, [urlSyncCounter]);
 
   useEffect(() => {
     try {
@@ -242,7 +248,7 @@ export default function App() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, selectedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, serializedSpecFilters]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
