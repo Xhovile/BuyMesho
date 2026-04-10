@@ -189,7 +189,7 @@ export default function CategoryPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </header>p
+      </header>
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
