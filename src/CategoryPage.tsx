@@ -1,9 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, Loader2, Search, ShoppingBag, Smartphone, BookOpen, Store, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState, type ElementType } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+  Search,
+  ShoppingBag,
+  Smartphone,
+  BookOpen,
+  Store,
+} from "lucide-react";
 import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
-import { navigateToExplore } from "./lib/appNavigation";
-import { navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+import { navigateToExplore, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food";
 
@@ -12,7 +20,10 @@ type CategoryConfig = {
   title: string;
   subtitle: string;
   description: string;
-  import type { ElementType } from "react";
+  heroIcon: ElementType;
+  apiCategory: string;
+  accent: string;
+};
 
 type CategoryConfig = {
   key: CategoryKey;
