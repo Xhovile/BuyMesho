@@ -682,6 +682,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     itemType,
     minPrice,
     maxPrice,
+    status,
     condition,
     hideSoldOut,
     page = "1",
@@ -727,7 +728,14 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     params.push(condition);
   }
 
-  if (hideSoldOut === "1" || hideSoldOut === "true") {
+  const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+  if (normalizedStatus === "sold") {
+    baseQuery += " AND (l.status = 'sold' OR l.sold_quantity >= l.quantity)";
+  } else if (normalizedStatus === "available") {
+    baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
+  }
+
+  if (!normalizedStatus && (hideSoldOut === "1" || hideSoldOut === "true")) {
     baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
   }
 

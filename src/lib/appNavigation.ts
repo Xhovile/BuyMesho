@@ -46,6 +46,7 @@ export type ExploreQueryState = {
   category: string;
   subcategory: string;
   itemType: string;
+  status: string;
   condition: string;
   sortBy: string;
   minPrice: string;
@@ -61,6 +62,7 @@ const EXPLORE_QUERY_KEYS = [
   "category",
   "subcategory",
   "itemType",
+  "status",
   "condition",
   "sortBy",
   "minPrice",
@@ -76,6 +78,7 @@ const DEFAULT_EXPLORE_QUERY_STATE: ExploreQueryState = {
   category: "",
   subcategory: "",
   itemType: "",
+  status: "",
   condition: "",
   sortBy: "newest",
   minPrice: "",
@@ -118,6 +121,7 @@ export const getExploreStateFromLocation = (
     category: params.get("category") || DEFAULT_EXPLORE_QUERY_STATE.category,
     subcategory: params.get("subcategory") || DEFAULT_EXPLORE_QUERY_STATE.subcategory,
     itemType: params.get("itemType") || DEFAULT_EXPLORE_QUERY_STATE.itemType,
+    status: params.get("status") || DEFAULT_EXPLORE_QUERY_STATE.status,
     condition: params.get("condition") || DEFAULT_EXPLORE_QUERY_STATE.condition,
     sortBy: params.get("sortBy") || DEFAULT_EXPLORE_QUERY_STATE.sortBy,
     minPrice: params.get("minPrice") || DEFAULT_EXPLORE_QUERY_STATE.minPrice,
@@ -142,6 +146,7 @@ export const writeExploreStateToUrl = (
   if (state.category) url.searchParams.set("category", state.category);
   if (state.subcategory) url.searchParams.set("subcategory", state.subcategory);
   if (state.itemType) url.searchParams.set("itemType", state.itemType);
+  if (state.status) url.searchParams.set("status", state.status);
   if (state.condition) url.searchParams.set("condition", state.condition);
   if (state.sortBy && state.sortBy !== "newest") {
     url.searchParams.set("sortBy", state.sortBy);

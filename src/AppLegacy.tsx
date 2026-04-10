@@ -42,6 +42,7 @@ export default function App() {
     initialExploreState.subcategory
   );
   const [selectedItemType, setSelectedItemType] = useState(initialExploreState.itemType);
+  const [selectedStatus, setSelectedStatus] = useState(initialExploreState.status);
   const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>(
     initialExploreState.specFilters
   );
@@ -122,7 +123,7 @@ export default function App() {
     }
     if (syncingFromUrlRef.current) return;
     setCurrentPage(1);
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, serializedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedStatus, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, serializedSpecFilters]);
 
   useEffect(() => {
     if (!hasMountedSpecResetRef.current) {
@@ -141,6 +142,7 @@ export default function App() {
       category: selectedCat,
       subcategory: selectedSubcategory,
       itemType: selectedItemType,
+      status: selectedStatus,
       condition: selectedCondition,
       sortBy,
       minPrice,
@@ -155,6 +157,7 @@ export default function App() {
     selectedCat,
     selectedSubcategory,
     selectedItemType,
+    selectedStatus,
     serializedSpecFilters,
     sortBy,
     selectedCondition,
@@ -175,6 +178,7 @@ export default function App() {
       );
       setSelectedSubcategory(urlState.subcategory);
       setSelectedItemType(urlState.itemType);
+      setSelectedStatus(urlState.status);
       setSelectedSpecFilters(urlState.specFilters);
       setSortBy(urlState.sortBy);
       setSelectedCondition(urlState.condition);
@@ -220,6 +224,7 @@ export default function App() {
       if (selectedCat) params.append("category", selectedCat);
       if (selectedSubcategory) params.append("subcategory", selectedSubcategory);
       if (selectedItemType) params.append("itemType", selectedItemType);
+      if (selectedStatus) params.append("status", selectedStatus);
       if (selectedCondition) params.append("condition", selectedCondition);
       if (hideSoldOut) params.append("hideSoldOut", "1");
       if (minPrice) params.append("minPrice", minPrice);
@@ -248,7 +253,7 @@ export default function App() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, serializedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedStatus, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, serializedSpecFilters]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });

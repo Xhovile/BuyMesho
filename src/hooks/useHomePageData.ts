@@ -168,6 +168,14 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
             uniqueListingsById.set(key, item);
           }
         });
+        Object.values(sections).forEach((items) => {
+          (items as HomePreviewListing[]).forEach((item) => {
+            const key = String(item.id);
+            if (!uniqueListingsById.has(key)) {
+              uniqueListingsById.set(key, item);
+            }
+          });
+        });
 
         setRecommendedListings(
           rank(Array.from(uniqueListingsById.values()), campus, "recommended")
