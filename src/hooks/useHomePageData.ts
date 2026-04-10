@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
 import type { Listing } from "../types";
 
-export type HomePreviewListing = Pick<Listing, "id" | "name" | "price">;
+export type HomePreviewListing = {
+  id: number | string;
+  name: string;
+  price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
+};
 
 export type HomeFeaturedSection = {
   key: string;
