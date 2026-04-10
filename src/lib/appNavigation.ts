@@ -162,6 +162,7 @@ export const navigateToExplore = () => {
   url.searchParams.delete("image");
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
+  url.searchParams.delete("category");
 
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
