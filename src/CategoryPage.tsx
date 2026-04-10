@@ -268,20 +268,34 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-6">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search in ${config.title.toLowerCase()}...`}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-              />
-            </div>
-          </div>
-        </section>
+ <section className="max-w-7xl mx-auto px-4 py-6">
+  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <div className="relative">
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder={`Search in ${config.title.toLowerCase()}...`}
+        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+      />
+    </div>
+
+    <PremiumDropdown
+      label="Sort by"
+      value={sortBy}
+      onChange={(value) =>
+        setSortBy(value as "newest" | "price_asc" | "price_desc")
+      }
+      placeholder="Choose sort order"
+      options={[
+        { label: "Newest first", value: "newest" },
+        { label: "Price: low to high", value: "price_asc" },
+        { label: "Price: high to low", value: "price_desc" },
+      ]}
+    />
+  </div>
+</section>
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-3 mb-5">
