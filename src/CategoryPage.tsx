@@ -295,7 +295,7 @@ export default function CategoryPage() {
                 <Loader2 className="w-5 h-5 animate-spin" />
                 Loading listings...
               </div>
-            ) : filteredItems.length === 0 ? (
+            ) : filteredAndSortedItems.length === 0 ? (
               <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm">
                 No listings found in this category.
               </div>
