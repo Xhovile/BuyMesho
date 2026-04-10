@@ -11,7 +11,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
-import { navigateToExplore, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+import { navigateToExplore, navigateToPath } from "./lib/appNavigation";
+import CategoryListingCard from "./components/category/CategoryListingCard";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food";
 
@@ -284,35 +285,11 @@ export default function CategoryPage() {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <button
+                <CategoryListingCard
                   key={item.id}
-                  type="button"
-                  onClick={() => navigateToListingDetails(item.id)}
-                  className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="aspect-[4/3] bg-zinc-100 overflow-hidden">
-                    <img
-                      src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
-                      alt={item.name}
-                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
-                    />
-                  </div>
-
-                  <div className="p-4">
-                    <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
-                    <p className="mt-1 text-sm font-bold text-red-900">
-                      MWK {Number(item.price).toLocaleString()}
-                    </p>
-                    <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
-                      {item.description || "Tap to open the full listing details."}
-                    </p>
-
-                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
-                      Open listing
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                </button>
+                  item={item}
+                  categoryLabel={config.title}
+                />
               ))
             )}
           </div>
