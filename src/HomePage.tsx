@@ -162,22 +162,22 @@ const trustPills = [
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
-          <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             Loading listings...
           </div>
         ) : listings.length === 0 ? (
-          <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             No listings yet
           </div>
         ) : (
-          listings.slice(0, 6).map((item) => (
+          listings.slice(0, 10).map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => navigateToListingDetails(item.id)}
-              className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
+              className="group snap-start shrink-0 w-[240px] overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
                 <img
