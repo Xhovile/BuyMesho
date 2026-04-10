@@ -86,6 +86,7 @@ export default function CategoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest first");
+  const [campus, setCampus] = useState("All campuses");
 
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -131,40 +132,60 @@ export default function CategoryPage() {
     };
   }, [config.apiCategory]);
 
+  const campusOptions = useMemo(
+    () => [
+      "All campuses",
+      ...Array.from(
+        new Set<string>(
+          items
+            .map((item) => item.university?.trim())
+            .filter((university): university is string => Boolean(university))
+        )
+      ).sort((a, b) => a.localeCompare(b)),
+    ],
+    [items]
+  );
+
   const filteredAndSortedItems = useMemo(() => {
-  const q = search.trim().toLowerCase();
+    const q = search.trim().toLowerCase();
 
-  const filtered = !q
-    ? items
-    : items.filter((item) => {
-        const haystack = [
-          item.name,
-          item.description,
-          item.category,
-          item.university,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
+    const filtered = items.filter((item) => {
+      const campusMatch =
+        campus === "All campuses" ||
+        (item.university || "").toLowerCase().includes(campus.toLowerCase());
 
-        return haystack.includes(q);
-      });
+      if (!campusMatch) return false;
 
-  const sorted = [...filtered].sort((a, b) => {
-    const aPrice = Number(a.price) || 0;
-    const bPrice = Number(b.price) || 0;
+      if (!q) return true;
 
-    if (sortBy === "Price: low to high") return aPrice - bPrice;
-    if (sortBy === "Price: high to low") return bPrice - aPrice;
+      const haystack = [
+        item.name,
+        item.description,
+        item.category,
+        item.university,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
 
-    const aId = Number(a.id) || 0;
-    const bId = Number(b.id) || 0;
-    return bId - aId;
-  });
+      return haystack.includes(q);
+    });
 
-  return sorted;
-}, [items, search, sortBy]);
-  
+    const sorted = [...filtered].sort((a, b) => {
+      const aPrice = Number(a.price) || 0;
+      const bPrice = Number(b.price) || 0;
+
+      if (sortBy === "Price: low to high") return aPrice - bPrice;
+      if (sortBy === "Price: high to low") return bPrice - aPrice;
+
+      const aId = Number(a.id) || 0;
+      const bId = Number(b.id) || 0;
+      return bId - aId;
+    });
+
+    return sorted;
+  }, [items, search, sortBy, campus]);
+
   const HeroIcon = config.heroIcon;
 
   return (
@@ -254,33 +275,42 @@ export default function CategoryPage() {
           </div>
         </section>
 
- <section className="max-w-7xl mx-auto px-4 py-6">
-  <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_240px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-    <div className="relative">
-      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={`Search in ${config.title.toLowerCase()}...`}
-        className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-      />
-    </div>
+        <section className="max-w-7xl mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_220px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={`Search in ${config.title.toLowerCase()}...`}
+                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+              />
+            </div>
 
-    <FormDropdown
-      label="Sort by"
-      value={sortBy}
-      onChange={(value) => setSortBy(value)}
-      placeholder="Choose sort order"
-      searchPlaceholder="Search sort order..."
-      options={[
-        "Newest first",
-        "Price: low to high",
-        "Price: high to low",
-      ]}
-    />
-  </div>
-</section>
+            <FormDropdown
+              label="Campus"
+              value={campus}
+              onChange={(value) => setCampus(value)}
+              placeholder="Choose campus"
+              searchPlaceholder="Search campuses..."
+              options={campusOptions}
+            />
+
+            <FormDropdown
+              label="Sort by"
+              value={sortBy}
+              onChange={(value) => setSortBy(value)}
+              placeholder="Choose sort order"
+              searchPlaceholder="Search sort order..."
+              options={[
+                "Newest first",
+                "Price: low to high",
+                "Price: high to low",
+              ]}
+            />
+          </div>
+        </section>
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-3 mb-5">
