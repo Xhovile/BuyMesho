@@ -12,7 +12,9 @@ type CategoryConfig = {
   title: string;
   subtitle: string;
   description: string;
-  heroIcon: React.ElementType;
+  import type { ElementType } from "react";
+  ...
+  heroIcon: ElementType;
   apiCategory: string;
   accent: string;
 };
