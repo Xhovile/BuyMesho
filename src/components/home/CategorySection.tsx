@@ -10,6 +10,7 @@ type Listing = {
 };
 
 type CategorySectionProps = {
+  key?: string;
   title: string;
   description: string;
   categoryKey: string;
