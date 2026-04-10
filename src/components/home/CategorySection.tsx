@@ -52,13 +52,11 @@ const CategorySection: FC<CategorySectionProps> = ({
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
           listings.map((item) => (
-            <Fragment key={item.id}>
-              <ListingPreviewCard
-                name={item.name}
-                price={item.price}
-                categoryKey={categoryKey}
-              />
-            </Fragment>
+           <ListingPreviewCard
+              key={item.id}
+              item={item}
+              categoryKey={categoryKey}
+            />
           ))
         )}
       </div>
