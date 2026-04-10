@@ -49,6 +49,10 @@ type SectionListing = {
   id: number | string;
   name: string;
   price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
 };
 
 const HOME_CATEGORY_KEYS = {
@@ -123,7 +127,7 @@ const trustPills = [
   "Built for students",
 ];
 
-function ListingStrip({
+ function ListingStrip({
   title,
   description,
   listings,
@@ -172,13 +176,26 @@ function ListingStrip({
               key={item.id}
               type="button"
               onClick={() => navigateToListingDetails(item.id)}
-              className="rounded-3xl border border-zinc-200 bg-white p-4 text-left shadow-sm hover:bg-zinc-50 transition-colors"
+              className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
             >
-              <p className="text-sm font-bold text-zinc-900 truncate">{item.name}</p>
-              <p className="mt-1 text-sm text-zinc-600">MWK {item.price}</p>
-              <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-red-900">
-                Open listing
-                <ArrowRight className="w-3.5 h-3.5" />
+              <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+                <img
+                  src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                />
+              </div>
+
+              <div className="p-4">
+                <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
+                  {item.name}
+                </p>
+                <p className="mt-1 text-sm font-bold text-red-900">
+                  MWK {Number(item.price).toLocaleString()}
+                </p>
+                <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
+                  {item.description || item.university || "Tap to open the full listing details."}
+                </p>
               </div>
             </button>
           ))
@@ -186,7 +203,7 @@ function ListingStrip({
       </div>
     </section>
   );
-}
+}      
 
 export default function HomePage() {
   const { firebaseUser, profile } = useAccountProfile();
