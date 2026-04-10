@@ -189,21 +189,7 @@ export default function CategoryPage() {
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
-      </header>
-
- <PremiumDropdown
-  label="Sort by"
-  value={sortBy}
-  onChange={(value) =>
-    setSortBy(value as "newest" | "price_asc" | "price_desc")
-  }
-  placeholder="Choose sort order"
-  options={[
-    { label: "Newest first", value: "newest" },
-    { label: "Price: low to high", value: "price_asc" },
-    { label: "Price: high to low", value: "price_desc" },
-  ]}
-/>
+      </header>p
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
@@ -308,7 +294,7 @@ export default function CategoryPage() {
               </h3>
             </div>
             <span className="text-sm font-bold text-zinc-500">
-              {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}
+              {filteredAndSortedItems.length} item{filteredAndSortedItems.length === 1 ? "" : "s"}
             </span>
           </div>
 
