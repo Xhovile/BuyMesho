@@ -1,0 +1,337 @@
+import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, ArrowRight, Loader2, Search, ShoppingBag, Smartphone, BookOpen, Store, Sparkles } from "lucide-react";
+import { motion } from "motion/react";
+import { apiFetch } from "./lib/api";
+import { navigateToExplore } from "./lib/appNavigation";
+import { navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+
+type CategoryKey = "phones" | "fashion" | "books" | "food";
+
+type CategoryConfig = {
+  key: CategoryKey;
+  title: string;
+  subtitle: string;
+  description: string;
+  heroIcon: React.ElementType;
+  apiCategory: string;
+  accent: string;
+};
+
+type ListingPreview = {
+  id: number | string;
+  name: string;
+  price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
+};
+
+const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
+  phones: {
+    key: "phones",
+    title: "Phones & Gadgets",
+    subtitle: "Campus tech that moves fast",
+    description:
+      "Browse devices, chargers, earphones, accessories, and practical student tech posted in the marketplace.",
+    heroIcon: Smartphone,
+    apiCategory: "Electronics & Gadgets",
+    accent: "from-red-900/10 to-zinc-100",
+  },
+  fashion: {
+    key: "fashion",
+    title: "Fashion & Clothing",
+    subtitle: "Style for campus life",
+    description:
+      "Find clothes, bags, shoes, and everyday style pieces listed by students and campus sellers.",
+    heroIcon: ShoppingBag,
+    apiCategory: "Fashion & Clothing",
+    accent: "from-zinc-900/10 to-zinc-100",
+  },
+  books: {
+    key: "books",
+    title: "Books & Study Tools",
+    subtitle: "Academic essentials",
+    description:
+      "Books, calculators, stationery, and useful study tools grouped into one clean category page.",
+    heroIcon: BookOpen,
+    apiCategory: "Academic Services",
+    accent: "from-amber-500/10 to-zinc-100",
+  },
+  food: {
+    key: "food",
+    title: "Campus Eats",
+    subtitle: "Quick food and snacks",
+    description:
+      "Food, snacks, and simple campus eats that students can discover quickly without digging through filters.",
+    heroIcon: Store,
+    apiCategory: "Food & Snacks",
+    accent: "from-emerald-500/10 to-zinc-100",
+  },
+};
+
+export default function CategoryPage() {
+  const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<ListingPreview[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const categoryKey = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    const value = params.get("category");
+    if (value === "phones" || value === "fashion" || value === "books" || value === "food") {
+      return value;
+    }
+    return "phones";
+  }, []);
+
+  const config = CATEGORY_CONFIG[categoryKey];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const data = await apiFetch(
+          `/api/listings?category=${encodeURIComponent(config.apiCategory)}&pageSize=24`
+        );
+
+        if (cancelled) return;
+
+        setItems(Array.isArray(data?.items) ? data.items : []);
+      } catch (err: any) {
+        if (!cancelled) {
+          setError(err?.message || "Could not load category listings.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [config.apiCategory]);
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+
+    return items.filter((item) => {
+      const haystack = [
+        item.name,
+        item.description,
+        item.category,
+        item.university,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(q);
+    });
+  }, [items, search]);
+
+  const HeroIcon = config.heroIcon;
+
+  return (
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="border-b border-zinc-200 bg-white/90 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => navigateToPath("/")}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Home
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateToExplore()}
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+          >
+            Explore
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
+          <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 items-center">
+            <div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
+              >
+                Category landing page
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+              >
+                {config.title}
+              </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mt-4 text-sm sm:text-base text-zinc-600 max-w-2xl leading-relaxed"
+              >
+                {config.description}
+              </motion.p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigateToExplore()}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+                >
+                  Browse all filters
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/")}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                >
+                  Back to homepage
+                </button>
+              </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900">
+                <HeroIcon className="w-7 h-7" />
+              </div>
+              <h2 className="mt-4 text-2xl font-black tracking-tight">{config.subtitle}</h2>
+              <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
+                This page is separate from Explore, so the homepage can route here as a real
+                category destination instead of acting like a filter shortcut.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-6">
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={`Search in ${config.title.toLowerCase()}...`}
+                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="flex items-end justify-between gap-3 mb-5">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                Featured listings
+              </p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight">
+                Real cards from this category
+              </h3>
+            </div>
+            <span className="text-sm font-bold text-zinc-500">
+              {filteredItems.length} item{filteredItems.length === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          {error ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              {error}
+            </div>
+          ) : null}
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {loading ? (
+              <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Loading listings...
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm">
+                No listings found in this category.
+              </div>
+            ) : (
+              filteredItems.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => navigateToListingDetails(item.id)}
+                  className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="aspect-[4/3] bg-zinc-100 overflow-hidden">
+                    <img
+                      src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                      alt={item.name}
+                      className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                    />
+                  </div>
+
+                  <div className="p-4">
+                    <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
+                    <p className="mt-1 text-sm font-bold text-red-900">
+                      MWK {Number(item.price).toLocaleString()}
+                    </p>
+                    <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
+                      {item.description || "Tap to open the full listing details."}
+                    </p>
+
+                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
+                      Open listing
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 pb-16">
+          <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h3 className="text-2xl font-black tracking-tight">Need the full marketplace view?</h3>
+                <p className="mt-2 text-sm text-zinc-300">
+                  Open Explore for all filters, sorting, and broader browsing.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigateToExplore()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
+              >
+                Open Explore
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}
