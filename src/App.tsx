@@ -238,6 +238,7 @@ const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
 const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
 const detailsExtrasRequestIdRef = useRef(0);
 const [selectedCondition, setSelectedCondition] = useState("");
+const [selectedStatus, setSelectedStatus] = useState("");
 const [hideSoldOut, setHideSoldOut] = useState(false);
 const [minPrice, setMinPrice] = useState("");
 const [maxPrice, setMaxPrice] = useState("");
@@ -725,6 +726,7 @@ useEffect(() => {
   selectedCat,
   selectedSubcategory,
   selectedItemType,
+  selectedStatus,
   selectedCondition,
   hideSoldOut,
   minPrice,
@@ -775,6 +777,7 @@ useEffect(() => {
   selectedCat,
   selectedSubcategory,
   selectedItemType,
+  selectedStatus,
   selectedCondition,
   hideSoldOut,
   minPrice,
@@ -806,6 +809,7 @@ useEffect(() => {
     if (selectedCat) params.append("category", selectedCat);
     if (selectedSubcategory) params.append("subcategory", selectedSubcategory);
     if (selectedItemType) params.append("itemType", selectedItemType);
+    if (selectedStatus) params.append("status", selectedStatus);
     if (selectedCondition) params.append("condition", selectedCondition);
     if (hideSoldOut) params.append("hideSoldOut", "1");
     if (minPrice) params.append("minPrice", minPrice);
@@ -2975,6 +2979,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   setSelectedItemType={handleSelectedItemTypeChange}
   selectedSpecFilters={selectedSpecFilters}
   setSelectedSpecFilters={setSelectedSpecFilters}
+  selectedStatus={selectedStatus}
+  setSelectedStatus={setSelectedStatus}
   sortBy={sortBy}
   setSortBy={setSortBy}
   firebaseUserUid={firebaseUser?.uid}
