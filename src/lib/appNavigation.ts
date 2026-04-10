@@ -40,6 +40,129 @@ export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 
+export type ExploreQueryState = {
+  search: string;
+  university: string;
+  category: string;
+  subcategory: string;
+  itemType: string;
+  condition: string;
+  sortBy: string;
+  minPrice: string;
+  maxPrice: string;
+  hideSoldOut: boolean;
+  page: number;
+  specFilters: Record<string, string | string[] | boolean>;
+};
+
+const EXPLORE_QUERY_KEYS = [
+  "search",
+  "university",
+  "category",
+  "subcategory",
+  "itemType",
+  "condition",
+  "sortBy",
+  "minPrice",
+  "maxPrice",
+  "hideSoldOut",
+  "page",
+  "specFilters",
+] as const;
+
+const DEFAULT_EXPLORE_QUERY_STATE: ExploreQueryState = {
+  search: "",
+  university: "",
+  category: "",
+  subcategory: "",
+  itemType: "",
+  condition: "",
+  sortBy: "newest",
+  minPrice: "",
+  maxPrice: "",
+  hideSoldOut: false,
+  page: 1,
+  specFilters: {},
+};
+
+const getPositiveInteger = (value: string | null, fallback: number) => {
+  if (!value) return fallback;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed < 1) return fallback;
+  return parsed;
+};
+
+const getBoolean = (value: string | null) =>
+  value === "1" || value === "true";
+
+const getSpecFilters = (value: string | null) => {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, string | string[] | boolean>;
+    }
+  } catch {
+    return {};
+  }
+  return {};
+};
+
+export const getExploreStateFromLocation = (
+  location: Pick<Location, "search">
+): ExploreQueryState => {
+  const params = new URLSearchParams(location.search);
+  return {
+    search: params.get("search") || DEFAULT_EXPLORE_QUERY_STATE.search,
+    university: params.get("university") || DEFAULT_EXPLORE_QUERY_STATE.university,
+    category: params.get("category") || DEFAULT_EXPLORE_QUERY_STATE.category,
+    subcategory: params.get("subcategory") || DEFAULT_EXPLORE_QUERY_STATE.subcategory,
+    itemType: params.get("itemType") || DEFAULT_EXPLORE_QUERY_STATE.itemType,
+    condition: params.get("condition") || DEFAULT_EXPLORE_QUERY_STATE.condition,
+    sortBy: params.get("sortBy") || DEFAULT_EXPLORE_QUERY_STATE.sortBy,
+    minPrice: params.get("minPrice") || DEFAULT_EXPLORE_QUERY_STATE.minPrice,
+    maxPrice: params.get("maxPrice") || DEFAULT_EXPLORE_QUERY_STATE.maxPrice,
+    hideSoldOut: getBoolean(params.get("hideSoldOut")),
+    page: getPositiveInteger(params.get("page"), DEFAULT_EXPLORE_QUERY_STATE.page),
+    specFilters: getSpecFilters(params.get("specFilters")),
+  };
+};
+
+export const writeExploreStateToUrl = (
+  url: URL,
+  state: Partial<ExploreQueryState>
+) => {
+  EXPLORE_QUERY_KEYS.forEach((key) => url.searchParams.delete(key));
+
+  if (state.search) url.searchParams.set("search", state.search);
+  if (state.university) url.searchParams.set("university", state.university);
+  if (state.category) url.searchParams.set("category", state.category);
+  if (state.subcategory) url.searchParams.set("subcategory", state.subcategory);
+  if (state.itemType) url.searchParams.set("itemType", state.itemType);
+  if (state.condition) url.searchParams.set("condition", state.condition);
+  if (state.sortBy && state.sortBy !== "newest") {
+    url.searchParams.set("sortBy", state.sortBy);
+  }
+  if (state.minPrice) url.searchParams.set("minPrice", state.minPrice);
+  if (state.maxPrice) url.searchParams.set("maxPrice", state.maxPrice);
+  if (state.hideSoldOut) url.searchParams.set("hideSoldOut", "1");
+  if (state.page && state.page > 1) url.searchParams.set("page", String(state.page));
+  if (state.specFilters && Object.keys(state.specFilters).length > 0) {
+    url.searchParams.set("specFilters", JSON.stringify(state.specFilters));
+  }
+};
+
+export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
+  const url = new URL(window.location.href);
+  url.pathname = EXPLORE_PATH;
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  writeExploreStateToUrl(url, state);
+  window.history.replaceState({}, "", url.toString());
+};
+
 export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): AppRoute => {
@@ -155,14 +278,14 @@ export const navigateBackOrPath = (fallbackPath: string) => {
   navigateToPath(fallbackPath);
 };
 
-export const navigateToExplore = () => {
+export const navigateToExplore = (state?: Partial<ExploreQueryState>) => {
   const url = new URL(window.location.href);
   url.pathname = EXPLORE_PATH;
   url.searchParams.delete("listing");
   url.searchParams.delete("image");
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
-  url.searchParams.delete("category");
+  writeExploreStateToUrl(url, state || {});
 
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
