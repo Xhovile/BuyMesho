@@ -84,6 +84,7 @@ export default function CategoryPage() {
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc">("newest");
 
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -129,25 +130,40 @@ export default function CategoryPage() {
     };
   }, [config.apiCategory]);
 
-  const filteredItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return items;
+  const filteredAndSortedItems = useMemo(() => {
+  const q = search.trim().toLowerCase();
 
-    return items.filter((item) => {
-      const haystack = [
-        item.name,
-        item.description,
-        item.category,
-        item.university,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  const filtered = !q
+    ? items
+    : items.filter((item) => {
+        const haystack = [
+          item.name,
+          item.description,
+          item.category,
+          item.university,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
 
-      return haystack.includes(q);
-    });
-  }, [items, search]);
+        return haystack.includes(q);
+      });
 
+  const sorted = [...filtered].sort((a, b) => {
+    const aPrice = Number(a.price) || 0;
+    const bPrice = Number(b.price) || 0;
+
+    if (sortBy === "price_asc") return aPrice - bPrice;
+    if (sortBy === "price_desc") return bPrice - aPrice;
+
+    const aId = Number(a.id) || 0;
+    const bId = Number(b.id) || 0;
+    return bId - aId;
+  });
+
+  return sorted;
+}, [items, search, sortBy]);
+  
   const HeroIcon = config.heroIcon;
 
   return (
