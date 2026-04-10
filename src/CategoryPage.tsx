@@ -13,7 +13,7 @@ import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
 import { navigateToExplore, navigateToPath } from "./lib/appNavigation";
 import CategoryListingCard from "./components/category/CategoryListingCard";
-import PremiumDropdown from "./components/ui/PremiumDropdown";
+import FormDropdown from "./components/FormDropdown";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food";
 
@@ -85,7 +85,7 @@ export default function CategoryPage() {
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [sortBy, setSortBy] = useState<"newest" | "price_asc" | "price_desc">("newest");
+  const [sortBy, setSortBy] = useState("Newest first");
 
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -154,8 +154,8 @@ export default function CategoryPage() {
     const aPrice = Number(a.price) || 0;
     const bPrice = Number(b.price) || 0;
 
-    if (sortBy === "price_asc") return aPrice - bPrice;
-    if (sortBy === "price_desc") return bPrice - aPrice;
+    if (sortBy === "Price: low to high") return aPrice - bPrice;
+    if (sortBy === "Price: high to low") return bPrice - aPrice;
 
     const aId = Number(a.id) || 0;
     const bId = Number(b.id) || 0;
@@ -267,17 +267,16 @@ export default function CategoryPage() {
       />
     </div>
 
-    <PremiumDropdown
+    <FormDropdown
       label="Sort by"
       value={sortBy}
-      onChange={(value) =>
-        setSortBy(value as "newest" | "price_asc" | "price_desc")
-      }
+      onChange={(value) => setSortBy(value)}
       placeholder="Choose sort order"
+      searchPlaceholder="Search sort order..."
       options={[
-        { label: "Newest first", value: "newest" },
-        { label: "Price: low to high", value: "price_asc" },
-        { label: "Price: high to low", value: "price_desc" },
+        "Newest first",
+        "Price: low to high",
+        "Price: high to low",
       ]}
     />
   </div>
