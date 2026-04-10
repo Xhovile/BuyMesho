@@ -12,7 +12,6 @@ type ListingPreview = {
 };
 
 type Props = {
-  key?: string | number;
   item: ListingPreview;
   categoryLabel: string;
 };
