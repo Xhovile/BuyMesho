@@ -729,6 +729,8 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
   }
 
   const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+  // `hideSoldOut` remains for backward compatibility with existing clients.
+  // Newer clients can pass `status=available` for the same behavior.
   const shouldFilterAvailable =
     normalizedStatus === "available" ||
     (!normalizedStatus && (hideSoldOut === "1" || hideSoldOut === "true"));

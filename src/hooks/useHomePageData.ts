@@ -144,7 +144,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
           ),
         ]);
 
-        const sections: any = {};
+        const sections: Record<string, HomePreviewListing[]> = {};
 
         await Promise.all(
           featuredSections.map(async (s) => {
@@ -169,7 +169,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
           }
         });
         Object.values(sections).forEach((items) => {
-          (items as HomePreviewListing[]).forEach((item) => {
+          items.forEach((item) => {
             const key = String(item.id);
             if (!uniqueListingsById.has(key)) {
               uniqueListingsById.set(key, item);
