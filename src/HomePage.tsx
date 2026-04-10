@@ -1,4 +1,4 @@
-import { Fragment, type ElementType, type FormEvent, useState } from "react";
+import { type ElementType, type FormEvent, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -488,13 +488,7 @@ export default function HomePage() {
           </form>
         </section>
 
-        {error ? (
-          <section className="max-w-7xl mx-auto px-4 py-6">
-            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600">
-              Preview strips are unavailable right now.
-            </div>
-          </section>
-        ) : (
+        
           <>
             <ListingStrip
               title="Newest listings"
@@ -510,7 +504,7 @@ export default function HomePage() {
               loading={loading}
             />
           </>
-        )}
+        
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-4 mb-6">
@@ -563,16 +557,15 @@ export default function HomePage() {
             {featuredSections.map((section) => {
               const listings = sectionListings[section.key] || [];
               return (
-                <Fragment key={section.key}>
-                  <CategorySection
-                    title={section.title}
-                    description={section.description}
-                    categoryKey={section.key}
-                    icon={section.icon}
-                    listings={listings}
-                    loading={loading}
-                  />
-                </Fragment>
+                <CategorySection
+                  key={section.key}
+                  title={section.title}
+                  description={section.description}
+                  categoryKey={section.key}
+                  icon={section.icon}
+                  listings={listings}
+                  loading={loading}
+                />
               );
             })}
           </div>
