@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { Fragment, type ElementType } from "react";
+import { Fragment, type ElementType, type FC } from "react";
 import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
@@ -10,7 +10,6 @@ type Listing = {
 };
 
 type CategorySectionProps = {
-  key?: string;
   title: string;
   description: string;
   categoryKey: string;
@@ -19,14 +18,14 @@ type CategorySectionProps = {
   loading?: boolean;
 };
 
-export default function CategorySection({
+const CategorySection: FC<CategorySectionProps> = ({
   title,
   description,
   categoryKey,
   icon: Icon,
   listings,
   loading = false,
-}: CategorySectionProps) {
+}) => {
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
@@ -74,4 +73,6 @@ export default function CategorySection({
       </button>
     </div>
   );
-}
+};
+
+export default CategorySection;
