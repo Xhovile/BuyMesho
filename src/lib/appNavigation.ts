@@ -165,7 +165,7 @@ export const navigateToExplore = () => {
 
 export const navigateToExploreWithCategory = (category: string) => {
   const url = new URL(window.location.href);
-  url.pathname = EXPLORE_PATH;
+  url.pathname = "/category";
   url.searchParams.set("category", category);
   url.searchParams.delete("listing");
   url.searchParams.delete("image");
