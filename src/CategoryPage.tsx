@@ -132,27 +132,33 @@ export default function CategoryPage() {
     };
   }, [config.apiCategory]);
 
-  const campusOptions = useMemo(
-    () => [
-      "All campuses",
-      ...Array.from(
-        new Set<string>(
-          items
-            .map((item) => item.university?.trim())
-            .filter((university): university is string => Boolean(university))
-        )
-      ).sort((a, b) => a.localeCompare(b)),
-    ],
-    [items]
-  );
+  const campusOptions = useMemo(() => {
+    const seen = new Set<string>();
+    const campuses: string[] = [];
+
+    for (const item of items) {
+      const university = item.university?.trim();
+      if (!university) continue;
+
+      const normalized = university.toLowerCase();
+      if (seen.has(normalized)) continue;
+
+      seen.add(normalized);
+      campuses.push(university);
+    }
+
+    campuses.sort((a, b) => a.localeCompare(b));
+    return ["All campuses", ...campuses];
+  }, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const normalizedCampus = campus.trim().toLowerCase();
 
     const filtered = items.filter((item) => {
       const campusMatch =
-        campus === "All campuses" ||
-        (item.university || "").toLowerCase().includes(campus.toLowerCase());
+        normalizedCampus === "all campuses" ||
+        (item.university || "").trim().toLowerCase() === normalizedCampus;
 
       if (!campusMatch) return false;
 
