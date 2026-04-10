@@ -7,6 +7,10 @@ type Listing = {
   id: number | string;
   name: string;
   price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
 };
 
 type CategorySectionProps = {
