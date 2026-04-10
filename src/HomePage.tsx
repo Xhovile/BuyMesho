@@ -4,10 +4,8 @@ import {
   BookOpen,
   Check,
   Compass,
-  MessageCircle,
   Package,
   Search,
-  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Smartphone,
@@ -123,8 +121,6 @@ const featuredSections: FeaturedSection[] = [
 
 const trustPills = [
   "Campus-based",
-  "Structured listings",
-  "Direct WhatsApp",
   "Built for students",
 ];
 
@@ -336,13 +332,13 @@ export default function HomePage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden py-14 sm:py-20">
+        <section className="relative overflow-hidden pt-6 pb-14 sm:pt-8 sm:pb-20">
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[26rem] h-[26rem] bg-red-900/10 blur-3xl rounded-full" />
             <div className="absolute bottom-0 right-0 w-56 h-56 bg-amber-200/25 blur-3xl rounded-full" />
           </div>
 
-          <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)] gap-10 items-center">
+          <div className="max-w-7xl mx-auto px-4">
             <div>
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
@@ -362,21 +358,11 @@ export default function HomePage() {
                 <span className="text-red-900"> faster and cleaner.</span>
               </motion.h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-5 max-w-2xl text-base text-zinc-600 font-medium leading-relaxed"
-              >
-                Discover student listings, filter by campus and category, and contact sellers directly
-                through a cleaner marketplace experience.
-              </motion.p>
-
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="mt-8 flex flex-wrap items-center gap-3"
+                className="mt-6 flex flex-wrap items-center gap-3"
               >
                 <button
                   type="button"
@@ -410,7 +396,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mt-8 flex flex-wrap gap-2"
+                className="mt-6 flex flex-wrap gap-2"
               >
                 {trustPills.map((item) => (
                   <span
@@ -423,47 +409,6 @@ export default function HomePage() {
                 ))}
               </motion.div>
             </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 }}
-              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
-            >
-              {[
-                {
-                  icon: ShieldCheck,
-                  title: "Campus-first trust",
-                  text: "Find listings with clearer seller identity and campus relevance.",
-                },
-                {
-                  icon: Search,
-                  title: "Faster discovery",
-                  text: "Browse by category, price, and other useful filters more easily.",
-                },
-                {
-                  icon: MessageCircle,
-                  title: "Simple contact",
-                  text: "Reach sellers directly on WhatsApp without heavy in-app clutter.",
-                },
-                {
-                  icon: Store,
-                  title: "Built for students",
-                  text: "Designed around real student buying and selling behavior.",
-                },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.title} className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
-                    <div className="w-11 h-11 rounded-2xl bg-red-900/5 text-red-900 flex items-center justify-center mb-4">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <h3 className="text-lg font-extrabold text-zinc-900">{item.title}</h3>
-                    <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{item.text}</p>
-                  </div>
-                );
-              })}
-            </motion.div>
           </div>
         </section>
 
