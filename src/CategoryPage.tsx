@@ -13,6 +13,7 @@ import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
 import { navigateToExplore, navigateToPath } from "./lib/appNavigation";
 import CategoryListingCard from "./components/category/CategoryListingCard";
+import PremiumDropdown from "./components/ui/PremiumDropdown";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food";
 
@@ -189,6 +190,20 @@ export default function CategoryPage() {
           </button>
         </div>
       </header>
+
+ <PremiumDropdown
+  label="Sort by"
+  value={sortBy}
+  onChange={(value) =>
+    setSortBy(value as "newest" | "price_asc" | "price_desc")
+  }
+  placeholder="Choose sort order"
+  options={[
+    { label: "Newest first", value: "newest" },
+    { label: "Price: low to high", value: "price_asc" },
+    { label: "Price: high to low", value: "price_desc" },
+  ]}
+/>
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
