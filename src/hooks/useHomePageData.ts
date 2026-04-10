@@ -29,13 +29,19 @@ const homepageCache = new Map<
 
 function isAbortLikeError(error: unknown) {
   if (!error) return false;
+  if (
+    typeof DOMException !== "undefined" &&
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  ) {
+    return true;
+  }
   const e = error as { name?: string; message?: string };
   const name = String(e.name || "").toLowerCase();
   const message = String(e.message || "").toLowerCase();
   return (
     name === "aborterror" ||
     name === "cancelederror" ||
-    message.includes("aborted") ||
     message.includes("abort") ||
     message.includes("canceled") ||
     message.includes("cancelled")
@@ -200,7 +206,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
         setFeaturedListings(rank(featured, campus, "popular"));
         setSectionListings(sections);
       } catch (e: unknown) {
-        if (isAbortLikeError(e) || controller.signal.aborted) {
+        if (controller.signal.aborted || isAbortLikeError(e)) {
           return;
         }
         setError("Unable to load homepage listings. Please try again.");
