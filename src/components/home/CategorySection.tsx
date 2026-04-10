@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { Fragment, type ElementType, type FC } from "react";
+import { type ElementType, type FC } from "react";
 import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
