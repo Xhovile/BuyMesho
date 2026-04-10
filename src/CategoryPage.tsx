@@ -25,16 +25,6 @@ type CategoryConfig = {
   accent: string;
 };
 
-type CategoryConfig = {
-  key: CategoryKey;
-  title: string;
-  subtitle: string;
-  description: string;
-  heroIcon: ElementType;
-  apiCategory: string;
-  accent: string;
-};
-
 type ListingPreview = {
   id: number | string;
   name: string;
