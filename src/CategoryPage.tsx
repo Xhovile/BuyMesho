@@ -13,7 +13,12 @@ type CategoryConfig = {
   subtitle: string;
   description: string;
   import type { ElementType } from "react";
-  ...
+
+type CategoryConfig = {
+  key: CategoryKey;
+  title: string;
+  subtitle: string;
+  description: string;
   heroIcon: ElementType;
   apiCategory: string;
   accent: string;
