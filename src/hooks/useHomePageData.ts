@@ -47,22 +47,33 @@ function popularityScore(item: HomePreviewListing) {
 }
 
 function rank(list: HomePreviewListing[], campus: string, mode: string) {
-  return [...list].sort((a, b) => {
-    const campusA = isCampusMatch(a.university, campus) ? 1 : 0;
-    const campusB = isCampusMatch(b.university, campus) ? 1 : 0;
+  return [...list]
+    .map((item, index) => ({ item, index }))
+    .sort((aEntry, bEntry) => {
+      const a = aEntry.item;
+      const b = bEntry.item;
+      const campusA = isCampusMatch(a.university, campus) ? 1 : 0;
+      const campusB = isCampusMatch(b.university, campus) ? 1 : 0;
 
-    if (campusA !== campusB) return campusB - campusA;
+      if (campusA !== campusB) return campusB - campusA;
 
-    if (mode === "popular") {
-      const p = popularityScore(b) - popularityScore(a);
-      if (p) return p;
-    }
+      if (mode === "popular" || mode === "recommended") {
+        const p = popularityScore(b) - popularityScore(a);
+        if (p) return p;
+      }
 
-    const f = freshnessScore(b) - freshnessScore(a);
-    if (f) return f;
+      const f = freshnessScore(b) - freshnessScore(a);
+      if (f) return f;
 
-    return Number(b.id) - Number(a.id);
-  });
+      const idA = Number(a.id);
+      const idB = Number(b.id);
+      if (!Number.isNaN(idA) && !Number.isNaN(idB) && idA !== idB) {
+        return idB - idA;
+      }
+
+      return aEntry.index - bEntry.index;
+    })
+    .map(({ item }) => item);
 }
 
 async function fetchListings(path: string, signal?: AbortSignal) {
@@ -87,9 +98,16 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const { user, loading: authLoading } = useAuthUser();
 
   const [campus, setCampus] = useState("");
-  const [newestListings, setNewestListings] = useState([]);
-  const [featuredListings, setFeaturedListings] = useState([]);
-  const [sectionListings, setSectionListings] = useState({});
+  const [recommendedListings, setRecommendedListings] = useState<
+    HomePreviewListing[]
+  >([]);
+  const [newestListings, setNewestListings] = useState<HomePreviewListing[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<HomePreviewListing[]>(
+    []
+  );
+  const [sectionListings, setSectionListings] = useState<
+    Record<string, HomePreviewListing[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -116,21 +134,52 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
 
       try {
         const [newest, featured] = await Promise.all([
-          fetchListings("/api/listings?sortBy=newest&pageSize=6"),
-          fetchListings("/api/listings?sortBy=popular&pageSize=6"),
+          fetchListings(
+            "/api/listings?sortBy=newest&pageSize=6",
+            controller.signal
+          ),
+          fetchListings(
+            "/api/listings?sortBy=popular&pageSize=6",
+            controller.signal
+          ),
         ]);
 
-        const sections: any = {};
+        const sections: Record<string, HomePreviewListing[]> = {};
 
         await Promise.all(
           featuredSections.map(async (s) => {
             const items = await fetchListings(
-              `/api/listings?category=${encodeURIComponent(s.apiCategory)}&pageSize=4`
+              `/api/listings?category=${encodeURIComponent(
+                s.apiCategory
+              )}&pageSize=4`,
+              controller.signal
             );
             sections[s.key] = rank(items, campus, "section");
           })
         );
 
+        const uniqueListingsById = new Map<string, HomePreviewListing>();
+        featured.forEach((item) => {
+          uniqueListingsById.set(String(item.id), item);
+        });
+        newest.forEach((item) => {
+          const key = String(item.id);
+          if (!uniqueListingsById.has(key)) {
+            uniqueListingsById.set(key, item);
+          }
+        });
+        Object.values(sections).forEach((items) => {
+          items.forEach((item) => {
+            const key = String(item.id);
+            if (!uniqueListingsById.has(key)) {
+              uniqueListingsById.set(key, item);
+            }
+          });
+        });
+
+        setRecommendedListings(
+          rank(Array.from(uniqueListingsById.values()), campus, "recommended")
+        );
         setNewestListings(rank(newest, campus, "newest"));
         setFeaturedListings(rank(featured, campus, "popular"));
         setSectionListings(sections);
@@ -146,6 +195,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   }, [campus]);
 
   return {
+    recommendedListings,
     newestListings,
     featuredListings,
     sectionListings,

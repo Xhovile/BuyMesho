@@ -24,6 +24,8 @@ type FilterSectionProps = {
   setSelectedItemType: (v: string) => void;
   selectedSpecFilters: Record<string, string | string[] | boolean>;
   setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
+  selectedStatus: string;
+  setSelectedStatus: (v: string) => void;
   selectedCondition: string;
   setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
@@ -47,6 +49,8 @@ export default function FilterSection({
   setSelectedItemType,
   selectedSpecFilters,
   setSelectedSpecFilters,
+  selectedStatus,
+  setSelectedStatus,
   selectedCondition,
   setSelectedCondition,
   hideSoldOut,
@@ -164,6 +168,7 @@ export default function FilterSection({
     selectedCat,
     selectedSubcategory,
     selectedItemType,
+    selectedStatus,
     selectedCondition,
     hideSoldOut ? "sold_out_hidden" : "",
     minPrice,
@@ -182,6 +187,7 @@ export default function FilterSection({
     setSelectedCat("");
     setSelectedSubcategory("");
     setSelectedItemType("");
+    setSelectedStatus("");
     setSelectedCondition("");
     setHideSoldOut(false);
     setMinPrice("");
@@ -374,6 +380,13 @@ export default function FilterSection({
           key: "condition",
           label: `Condition: ${selectedCondition}`,
           onRemove: () => setSelectedCondition(""),
+        }
+      : null,
+    selectedStatus
+      ? {
+          key: "status",
+          label: `Status: ${selectedStatus}`,
+          onRemove: () => setSelectedStatus(""),
         }
       : null,
     minPrice

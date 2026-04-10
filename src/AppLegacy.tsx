@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import ConfirmModal from "./components/ConfirmModal";
@@ -10,10 +10,12 @@ import HeroSection from "./sections/HeroSection";
 import MarketSection from "./sections/MarketSection";
 import { Listing } from "./types";
 import {
+  getExploreStateFromLocation,
   navigateToCreateListing,
   navigateToLogin,
   navigateToPath,
   navigateToProfile,
+  replaceExploreStateInUrl,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -27,27 +29,46 @@ const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
 };
 
 export default function App() {
+  const initialExploreState = getExploreStateFromLocation(window.location);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [selectedUniv, setSelectedUniv] = useState("");
-  const [selectedCat, setSelectedCat] = useState("");
-  const [selectedSubcategory, setSelectedSubcategory] = useState("");
-  const [selectedItemType, setSelectedItemType] = useState("");
-  const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>({});
-  const [sortBy, setSortBy] = useState("newest");
+  const [search, setSearch] = useState(initialExploreState.search);
+  const [selectedUniv, setSelectedUniv] = useState(initialExploreState.university);
+  const [selectedCat, setSelectedCat] = useState(
+    CATEGORY_QUERY_TO_CANONICAL[initialExploreState.category] ??
+      initialExploreState.category
+  );
+  const [selectedSubcategory, setSelectedSubcategory] = useState(
+    initialExploreState.subcategory
+  );
+  const [selectedItemType, setSelectedItemType] = useState(initialExploreState.itemType);
+  const [selectedStatus, setSelectedStatus] = useState(initialExploreState.status);
+  const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>(
+    initialExploreState.specFilters
+  );
+  const [sortBy, setSortBy] = useState(initialExploreState.sortBy);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [reportListingId, setReportListingId] = useState<number | null>(null);
   const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
-  const [selectedCondition, setSelectedCondition] = useState("");
-  const [hideSoldOut, setHideSoldOut] = useState(false);
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [selectedCondition, setSelectedCondition] = useState(
+    initialExploreState.condition
+  );
+  const [hideSoldOut, setHideSoldOut] = useState(initialExploreState.hideSoldOut);
+  const [minPrice, setMinPrice] = useState(initialExploreState.minPrice);
+  const [maxPrice, setMaxPrice] = useState(initialExploreState.maxPrice);
+  const [currentPage, setCurrentPage] = useState(initialExploreState.page);
   const [pageSize] = useState(12);
   const [totalResults, setTotalResults] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [urlSyncCounter, setUrlSyncCounter] = useState(0);
+  const hasMountedPageResetRef = useRef(false);
+  const hasMountedSpecResetRef = useRef(false);
+  const syncingFromUrlRef = useRef(false);
+  const serializedSpecFilters = useMemo(
+    () => JSON.stringify(selectedSpecFilters),
+    [selectedSpecFilters]
+  );
 
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
     try {
@@ -96,33 +117,90 @@ export default function App() {
 
   const handleCategoryChange = (cat: string) => {
     setSelectedCat(cat);
-    const url = new URL(window.location.href);
-
-    if (cat) {
-      url.searchParams.set("category", cat);
-    } else {
-      url.searchParams.delete("category");
-    }
-
-    window.history.replaceState({}, "", url.toString());
   };
 
   useEffect(() => {
+    if (!hasMountedPageResetRef.current) {
+      hasMountedPageResetRef.current = true;
+      return;
+    }
+    if (syncingFromUrlRef.current) return;
     setCurrentPage(1);
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, selectedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedStatus, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, serializedSpecFilters]);
 
   useEffect(() => {
+    if (!hasMountedSpecResetRef.current) {
+      hasMountedSpecResetRef.current = true;
+      return;
+    }
+    if (syncingFromUrlRef.current) return;
     setSelectedSpecFilters({});
   }, [selectedCat, selectedSubcategory, selectedItemType]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const categoryFromUrl = params.get("category");
+    if (syncingFromUrlRef.current) return;
+    replaceExploreStateInUrl({
+      search,
+      university: selectedUniv,
+      category: selectedCat,
+      subcategory: selectedSubcategory,
+      itemType: selectedItemType,
+      status: selectedStatus,
+      condition: selectedCondition,
+      sortBy,
+      minPrice,
+      maxPrice,
+      hideSoldOut,
+      page: currentPage,
+      specFilters: selectedSpecFilters,
+    });
+  }, [
+    search,
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedStatus,
+    serializedSpecFilters,
+    sortBy,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    currentPage,
+  ]);
 
-    if (categoryFromUrl) {
-      setSelectedCat(CATEGORY_QUERY_TO_CANONICAL[categoryFromUrl] ?? categoryFromUrl);
-    }
+  useEffect(() => {
+    const syncStateFromUrl = () => {
+      const urlState = getExploreStateFromLocation(window.location);
+      syncingFromUrlRef.current = true;
+      setSearch(urlState.search);
+      setSelectedUniv(urlState.university);
+      setSelectedCat(
+        CATEGORY_QUERY_TO_CANONICAL[urlState.category] ?? urlState.category
+      );
+      setSelectedSubcategory(urlState.subcategory);
+      setSelectedItemType(urlState.itemType);
+      setSelectedStatus(urlState.status);
+      setSelectedSpecFilters(urlState.specFilters);
+      setSortBy(urlState.sortBy);
+      setSelectedCondition(urlState.condition);
+      setHideSoldOut(urlState.hideSoldOut);
+      setMinPrice(urlState.minPrice);
+      setMaxPrice(urlState.maxPrice);
+      setCurrentPage(urlState.page);
+      setUrlSyncCounter((value) => value + 1);
+    };
+
+    window.addEventListener("popstate", syncStateFromUrl);
+    return () => window.removeEventListener("popstate", syncStateFromUrl);
   }, []);
+
+  useEffect(() => {
+    if (urlSyncCounter > 0) {
+      syncingFromUrlRef.current = false;
+    }
+  }, [urlSyncCounter]);
 
   useEffect(() => {
     try {
@@ -149,6 +227,7 @@ export default function App() {
       if (selectedCat) params.append("category", selectedCat);
       if (selectedSubcategory) params.append("subcategory", selectedSubcategory);
       if (selectedItemType) params.append("itemType", selectedItemType);
+      if (selectedStatus) params.append("status", selectedStatus);
       if (selectedCondition) params.append("condition", selectedCondition);
       if (hideSoldOut) params.append("hideSoldOut", "1");
       if (minPrice) params.append("minPrice", minPrice);
@@ -177,7 +256,7 @@ export default function App() {
 
   useEffect(() => {
     fetchListings();
-  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, selectedSpecFilters]);
+  }, [selectedUniv, selectedCat, selectedSubcategory, selectedItemType, selectedStatus, selectedCondition, hideSoldOut, minPrice, maxPrice, search, sortBy, currentPage, pageSize, serializedSpecFilters]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -306,6 +385,8 @@ export default function App() {
           setSelectedItemType={setSelectedItemType}
           selectedSpecFilters={selectedSpecFilters}
           setSelectedSpecFilters={setSelectedSpecFilters}
+          selectedStatus={selectedStatus}
+          setSelectedStatus={setSelectedStatus}
           sortBy={sortBy}
           setSortBy={setSortBy}
           firebaseUserUid={firebaseUser?.uid}

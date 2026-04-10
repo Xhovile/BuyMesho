@@ -22,6 +22,7 @@ import {
   SAVED_PATH,
   SIGNUP_PATH,
   navigateToCreateListing,
+  navigateToExplore,
   navigateToExploreWithCategory,
   navigateToListingDetails,
   navigateToPath,
@@ -210,8 +211,14 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
-  const { newestListings, featuredListings, sectionListings, loading, error } =
-    useHomePageData(featuredSections);
+  const {
+    recommendedListings,
+    newestListings,
+    featuredListings,
+    sectionListings,
+    loading,
+    error,
+  } = useHomePageData(featuredSections);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -229,7 +236,11 @@ export default function HomePage() {
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigateToPath(EXPLORE_PATH);
+    navigateToExplore({
+      search: searchText.trim(),
+      university:
+        selectedCampus && selectedCampus !== "All campuses" ? selectedCampus : "",
+    });
   };
 
   return (
@@ -508,9 +519,9 @@ export default function HomePage() {
         
           <>
             <ListingStrip
-              title="Newest listings"
-              description="Fresh items that just landed on the marketplace."
-              listings={newestListings}
+              title="Picked for you"
+              description="Campus-aware picks based on what is active and relevant now."
+              listings={recommendedListings}
               loading={loading}
             />
 
@@ -518,6 +529,13 @@ export default function HomePage() {
               title="Trending now"
               description="Listings getting the most attention right now."
               listings={featuredListings}
+              loading={loading}
+            />
+
+            <ListingStrip
+              title="Newest listings"
+              description="Fresh items that just landed on the marketplace."
+              listings={newestListings}
               loading={loading}
             />
           </>

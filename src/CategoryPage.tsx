@@ -351,11 +351,9 @@ export default function CategoryPage() {
               </div>
             ) : (
               filteredAndSortedItems.map((item) => (
-                <CategoryListingCard
-                  key={item.id}
-                  item={item}
-                  categoryLabel={config.title}
-                />
+                <div key={item.id}>
+                  <CategoryListingCard item={item} categoryLabel={config.title} />
+                </div>
               ))
             )}
           </div>

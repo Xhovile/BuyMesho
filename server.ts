@@ -682,6 +682,7 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     itemType,
     minPrice,
     maxPrice,
+    status,
     condition,
     hideSoldOut,
     page = "1",
@@ -727,7 +728,16 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     params.push(condition);
   }
 
-  if (hideSoldOut === "1" || hideSoldOut === "true") {
+  const normalizedStatus = typeof status === "string" ? status.trim().toLowerCase() : "";
+  // `hideSoldOut` remains for backward compatibility with existing clients.
+  // Newer clients can pass `status=available` for the same behavior.
+  const shouldFilterAvailable =
+    normalizedStatus === "available" ||
+    (!normalizedStatus && (hideSoldOut === "1" || hideSoldOut === "true"));
+
+  if (normalizedStatus === "sold") {
+    baseQuery += " AND (l.status = 'sold' OR l.sold_quantity >= l.quantity)";
+  } else if (shouldFilterAvailable) {
     baseQuery += " AND (l.status != 'sold' AND l.sold_quantity < l.quantity)";
   }
 
