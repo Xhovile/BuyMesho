@@ -27,6 +27,27 @@ const homepageCache = new Map<
   { data: HomePreviewListing[]; timestamp: number }
 >();
 
+function isAbortLikeError(error: unknown) {
+  if (!error) return false;
+  if (
+    typeof DOMException !== "undefined" &&
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  ) {
+    return true;
+  }
+  const e = error as { name?: string; message?: string };
+  const name = String(e.name || "").toLowerCase();
+  const message = String(e.message || "").toLowerCase();
+  return (
+    name === "aborterror" ||
+    name === "cancelederror" ||
+    message.includes("abort") ||
+    message.includes("canceled") ||
+    message.includes("cancelled")
+  );
+}
+
 function normalize(v?: string | null) {
   return v?.toLowerCase().trim() || "";
 }
@@ -131,6 +152,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
 
     const load = async () => {
       setLoading(true);
+      setError(null);
 
       try {
         const [newest, featured] = await Promise.all([
@@ -183,10 +205,15 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
         setNewestListings(rank(newest, campus, "newest"));
         setFeaturedListings(rank(featured, campus, "popular"));
         setSectionListings(sections);
-      } catch (e: any) {
-        setError(e.message || "Failed");
+      } catch (e: unknown) {
+        if (controller.signal.aborted || isAbortLikeError(e)) {
+          return;
+        }
+        setError("Unable to load homepage listings. Please try again.");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
