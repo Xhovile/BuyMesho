@@ -1,5 +1,6 @@
 export type AppRoute =
   | "home"
+  | "category"
   | "explore"
   | "saved"
   | "settings"
@@ -50,6 +51,10 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === EDIT_PATH && params.has("id")) {
     return "edit";
+  }
+
+  if (location.pathname === "/category" && params.has("category")) {
+    return "category";
   }
 
   if (location.pathname === CREATE_PATH) {

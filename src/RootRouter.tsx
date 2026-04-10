@@ -5,6 +5,7 @@ import AdminSellerApplicationsPage from "./AdminSellerApplicationsPage";
 import AdminRouteGuard from "./components/AdminRouteGuard";
 import BecomeSellerPage from "./BecomeSellerPage";
 import ChangePasswordPage from "./ChangePasswordPage";
+import CategoryPage from "./CategoryPage";
 import CreateListingPage from "./CreateListingPage";
 import EditAccountPage from "./EditAccountPage";
 import EditListingPage from "./EditListingPage";
@@ -38,6 +39,7 @@ export default function RootRouter() {
     };
   }, []);
 
+  if (route === "category") return <CategoryPage />;
   if (route === "explore") return <App />;
   if (route === "saved") return <SavedPage />;
   if (route === "settings") return <SettingsPage />;
