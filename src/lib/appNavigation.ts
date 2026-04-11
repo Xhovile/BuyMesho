@@ -135,7 +135,7 @@ export const getExploreStateFromLocation = (
   };
 };
 
-export const writeExploreStateToUrl = (
+const writeExploreStateToUrl = (
   url: URL,
   state: Partial<ExploreQueryState>
 ) => {
@@ -160,7 +160,10 @@ export const writeExploreStateToUrl = (
   }
 };
 
-export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
+const syncExploreStateInUrl = (
+  state: Partial<ExploreQueryState>,
+  mode: "replace" | "push" = "replace"
+) => {
   const url = new URL(window.location.href);
   url.pathname = EXPLORE_PATH;
   url.searchParams.delete("listing");
@@ -168,7 +171,20 @@ export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
   writeExploreStateToUrl(url, state);
-  window.history.replaceState({}, "", url.toString());
+
+  if (mode === "push") {
+    window.history.pushState({}, "", url.toString());
+  } else {
+    window.history.replaceState({}, "", url.toString());
+  }
+};
+
+export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
+  syncExploreStateInUrl(state, "replace");
+};
+
+export const pushExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
+  syncExploreStateInUrl(state, "push");
 };
 
 export const getAppRouteFromLocation = (
