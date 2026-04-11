@@ -16,6 +16,7 @@ import {
   navigateToPath,
   navigateToProfile,
   replaceExploreStateInUrl,
+  pushExploreStateInUrl,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -65,6 +66,22 @@ export default function App() {
   const hasMountedPageResetRef = useRef(false);
   const hasMountedSpecResetRef = useRef(false);
   const syncingFromUrlRef = useRef(false);
+  const hasMountedUrlSyncRef = useRef(false);
+  const previousSyncStateRef = useRef<{
+    search: string;
+    selectedUniv: string;
+    selectedCat: string;
+    selectedSubcategory: string;
+    selectedItemType: string;
+    selectedStatus: string;
+    selectedCondition: string;
+    hideSoldOut: boolean;
+    minPrice: string;
+    maxPrice: string;
+    sortBy: string;
+    currentPage: number;
+    selectedSpecFilters: Record<string, string | string[] | boolean>;
+  } | null>(null);
   const serializedSpecFilters = useMemo(
     () => JSON.stringify(selectedSpecFilters),
     [selectedSpecFilters]
@@ -139,7 +156,7 @@ export default function App() {
 
   useEffect(() => {
     if (syncingFromUrlRef.current) return;
-    replaceExploreStateInUrl({
+    const syncPayload = {
       search,
       university: selectedUniv,
       category: selectedCat,
@@ -153,7 +170,78 @@ export default function App() {
       hideSoldOut,
       page: currentPage,
       specFilters: selectedSpecFilters,
-    });
+    };
+
+    const previous = previousSyncStateRef.current;
+    const changedKeys = previous
+      ? (
+          [
+            previous.search !== syncPayload.search ? "search" : null,
+            previous.selectedUniv !== syncPayload.university ? "university" : null,
+            previous.selectedCat !== syncPayload.category ? "category" : null,
+            previous.selectedSubcategory !== syncPayload.subcategory ? "subcategory" : null,
+            previous.selectedItemType !== syncPayload.itemType ? "itemType" : null,
+            previous.selectedStatus !== syncPayload.status ? "status" : null,
+            previous.selectedCondition !== syncPayload.condition ? "condition" : null,
+            previous.hideSoldOut !== syncPayload.hideSoldOut ? "hideSoldOut" : null,
+            previous.minPrice !== syncPayload.minPrice ? "minPrice" : null,
+            previous.maxPrice !== syncPayload.maxPrice ? "maxPrice" : null,
+            previous.sortBy !== syncPayload.sortBy ? "sortBy" : null,
+            previous.currentPage !== syncPayload.page ? "page" : null,
+            JSON.stringify(previous.selectedSpecFilters) !== JSON.stringify(syncPayload.specFilters)
+              ? "specFilters"
+              : null,
+          ].filter(Boolean) as string[]
+        )
+      : [];
+
+    const searchOnlyChange =
+      changedKeys.length > 0 &&
+      changedKeys.every((key) => key === "search" || key === "page") &&
+      (!changedKeys.includes("page") || syncPayload.page === 1);
+
+    if (!hasMountedUrlSyncRef.current) {
+      hasMountedUrlSyncRef.current = true;
+      previousSyncStateRef.current = {
+        search,
+        selectedUniv,
+        selectedCat,
+        selectedSubcategory,
+        selectedItemType,
+        selectedStatus,
+        selectedCondition,
+        hideSoldOut,
+        minPrice,
+        maxPrice,
+        sortBy,
+        currentPage,
+        selectedSpecFilters,
+      };
+      replaceExploreStateInUrl(syncPayload);
+      return;
+    }
+
+    if (searchOnlyChange) {
+      replaceExploreStateInUrl(syncPayload);
+    } else {
+      pushExploreStateInUrl(syncPayload);
+    }
+
+    previousSyncStateRef.current = {
+      search,
+      selectedUniv,
+      selectedCat,
+      selectedSubcategory,
+      selectedItemType,
+      selectedStatus,
+      selectedCondition,
+      hideSoldOut,
+      minPrice,
+      maxPrice,
+      sortBy,
+      currentPage,
+      selectedSpecFilters,
+    };
   }, [
     search,
     selectedUniv,
@@ -199,8 +287,38 @@ export default function App() {
   useEffect(() => {
     if (urlSyncCounter > 0) {
       syncingFromUrlRef.current = false;
+      previousSyncStateRef.current = {
+        search,
+        selectedUniv,
+        selectedCat,
+        selectedSubcategory,
+        selectedItemType,
+        selectedStatus,
+        selectedCondition,
+        hideSoldOut,
+        minPrice,
+        maxPrice,
+        sortBy,
+        currentPage,
+        selectedSpecFilters,
+      };
     }
-  }, [urlSyncCounter]);
+  }, [
+    urlSyncCounter,
+    search,
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedStatus,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    sortBy,
+    currentPage,
+    serializedSpecFilters,
+  ]);
 
   useEffect(() => {
     try {

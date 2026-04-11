@@ -49,14 +49,14 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-5 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className="mt-6 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
           <p className="text-sm text-zinc-400">Loading...</p>
         ) : listings.length === 0 ? (
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
           listings.slice(0, 10).map((item) => (
-            <div key={item.id} className="snap-start shrink-0 w-[220px]">
+            <div key={item.id} className="snap-start shrink-0 w-[260px] sm:w-[300px]">
               <ListingPreviewCard item={item} categoryKey={categoryKey} />
             </div>
           ))
@@ -66,7 +66,7 @@ const CategorySection: FC<CategorySectionProps> = ({
       <button
         type="button"
         onClick={() => navigateToExploreWithCategory(categoryKey)}
-        className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+        className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
       >
         View more
         <ArrowRight className="w-4 h-4" />
