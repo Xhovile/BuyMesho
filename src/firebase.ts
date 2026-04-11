@@ -17,7 +17,16 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+
+let analytics: ReturnType<typeof getAnalytics> | null = null;
+try {
+  analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
+} catch (error) {
+  console.warn("Firebase Analytics unavailable, continuing without analytics.", error);
+  analytics = null;
+}
+
+export { analytics };
 
 // Long polling helps in proxied/restricted networks
 export const db = initializeFirestore(app, {
