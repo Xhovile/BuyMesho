@@ -34,10 +34,7 @@ const CategorySection: FC<CategorySectionProps> = ({
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-            Featured section
-          </p>
-          <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
+          <h3 className="text-xl font-black tracking-tight text-zinc-900">
             {title}
           </h3>
           <p className="mt-2 text-sm text-zinc-600 leading-relaxed">

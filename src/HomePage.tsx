@@ -138,9 +138,6 @@ function ListingStrip({
     <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-            Live preview
-          </p>
           <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
@@ -465,49 +462,9 @@ export default function HomePage() {
 
         <section className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
           <div className="mb-5 max-w-3xl">
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-              Marketplace pulse
-            </p>
-            <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
-              Start with what matters now.
-            </h2>
-            <p className="mt-2 text-sm text-zinc-600">
-              Curated picks first, then the fastest-moving and newest listings.
-            </p>
-          </div>
-
-          <ListingStrip
-            title="Picked for you"
-            description="Campus-aware picks based on what is active and relevant now."
-            listings={recommendedListings}
-            loading={loading}
-            maxItems={8}
-          />
-
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ListingStrip
-              title="Trending now"
-              description="Listings getting the most attention right now."
-              listings={featuredListings}
-              loading={loading}
-              maxItems={6}
-            />
-
-            <ListingStrip
-              title="Newest listings"
-              description="Fresh items that just landed on the marketplace."
-              listings={newestListings}
-              loading={loading}
-              maxItems={6}
-            />
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="mb-6">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+            <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
               Browse by category
-            </p>
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
