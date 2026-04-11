@@ -49,15 +49,15 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-6 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className="mt-6 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
           <p className="text-sm text-zinc-400">Loading...</p>
         ) : listings.length === 0 ? (
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
           listings.slice(0, 10).map((item) => (
-            <div key={item.id} className="snap-start shrink-0 w-[260px] sm:w-[300px]">
-              <ListingPreviewCard item={item} categoryKey={categoryKey} />
+            <div key={item.id} className="snap-start shrink-0 w-[220px] sm:w-[260px]">
+              <ListingPreviewCard item={item} />
             </div>
           ))
         )}
