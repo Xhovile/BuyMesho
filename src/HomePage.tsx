@@ -4,7 +4,6 @@ import {
   BookOpen,
   Check,
   Compass,
-  MapPin,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -92,7 +91,7 @@ const gatewayCategories: GatewayCategory[] = [
 const featuredSections: FeaturedSection[] = [
   {
     key: HOME_CATEGORY_KEYS.phones,
-    title: "Featured Phones",
+    title: "Featured Gadgets",
     description: "Popular devices and accessories students check first.",
     icon: Smartphone,
     apiCategory: "Electronics & Gadgets",
@@ -122,36 +121,27 @@ const featuredSections: FeaturedSection[] = [
 
 const trustPills = ["Campus-based", "Built for students"];
 
-type ListingStripVariant = "featured" | "compact";
-
 function ListingStrip({
   title,
   description,
   listings,
   loading,
-  variant = "featured",
   maxItems = 8,
 }: {
   title: string;
   description: string;
   listings: SectionListing[];
   loading: boolean;
-  variant?: ListingStripVariant;
   maxItems?: number;
 }) {
-  const isCompact = variant === "compact";
-  const cardWidthClass = isCompact ? "w-[220px] sm:w-[260px]" : "w-[280px] sm:w-[320px]";
-  const headingClass = isCompact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
-  const listGapClass = isCompact ? "gap-3" : "gap-4";
-
   return (
-    <section className={`rounded-[2rem] border border-zinc-200 bg-white shadow-sm ${isCompact ? "p-5 sm:p-6" : "p-6 sm:p-8"}`}>
+    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
             Live preview
           </p>
-          <h2 className={`mt-2 font-black tracking-tight text-zinc-900 ${headingClass}`}>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">{description}</p>
@@ -167,7 +157,7 @@ function ListingStrip({
         </button>
       </div>
 
-      <div className={`flex ${listGapClass} overflow-x-auto pb-2 snap-x snap-mandatory`}>
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             Loading listings...
@@ -182,7 +172,7 @@ function ListingStrip({
               key={item.id}
               type="button"
               onClick={() => navigateToListingDetails(item.id)}
-              className={`group snap-start shrink-0 ${cardWidthClass} overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow`}
+              className="group snap-start shrink-0 w-[220px] sm:w-[260px] overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
                 <img
@@ -192,25 +182,17 @@ function ListingStrip({
                 />
               </div>
 
-              <div className={isCompact ? "p-4" : "p-4 sm:p-5"}>
-                <p className={`${isCompact ? "text-sm" : "text-base sm:text-[1.05rem]"} font-extrabold text-zinc-900 line-clamp-1`}>
+              <div className="p-4">
+                <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
                   {item.name}
                 </p>
-
-                <div className="mt-2 flex items-center justify-between gap-3">
-                  <p className={`${isCompact ? "text-sm" : "text-base"} font-bold text-red-900`}>
-                    MWK {Number(item.price).toLocaleString()}
-                  </p>
-
-                  {item.university ? (
-                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
-                      <MapPin className="w-3 h-3" />
-                      {item.university}
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+                <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
+                  {item.description || item.university || "Tap to open the full listing details."}
+                </p>
+                <p className="mt-2 text-sm font-bold text-red-900">
+                  MWK {Number(item.price).toLocaleString()}
+                </p>
+                <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-900">
                   Open listing <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               </div>
@@ -499,7 +481,6 @@ export default function HomePage() {
             description="Campus-aware picks based on what is active and relevant now."
             listings={recommendedListings}
             loading={loading}
-            variant="featured"
             maxItems={8}
           />
 
@@ -509,7 +490,6 @@ export default function HomePage() {
               description="Listings getting the most attention right now."
               listings={featuredListings}
               loading={loading}
-              variant="compact"
               maxItems={6}
             />
 
@@ -518,31 +498,16 @@ export default function HomePage() {
               description="Fresh items that just landed on the marketplace."
               listings={newestListings}
               loading={loading}
-              variant="compact"
               maxItems={6}
             />
           </div>
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="flex items-end justify-between gap-4 mb-6">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                Browse by category
-              </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
-                Open the category that fits the item.
-              </h2>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
-            >
-              Open Explore
-              <ArrowRight className="w-4 h-4" />
-            </button>
+          <div className="mb-6">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+              Browse by category
+            </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
