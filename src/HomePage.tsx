@@ -4,7 +4,7 @@ import {
   BookOpen,
   Check,
   Compass,
-  Package,
+  MapPin,
   Search,
   ShieldCheck,
   ShoppingBag,
@@ -120,30 +120,38 @@ const featuredSections: FeaturedSection[] = [
   },
 ];
 
-const trustPills = [
-  "Campus-based",
-  "Built for students",
-];
+const trustPills = ["Campus-based", "Built for students"];
 
- function ListingStrip({
+type ListingStripVariant = "featured" | "compact";
+
+function ListingStrip({
   title,
   description,
   listings,
   loading,
+  variant = "featured",
+  maxItems = 8,
 }: {
   title: string;
   description: string;
   listings: SectionListing[];
   loading: boolean;
+  variant?: ListingStripVariant;
+  maxItems?: number;
 }) {
+  const isCompact = variant === "compact";
+  const cardWidthClass = isCompact ? "w-[220px] sm:w-[260px]" : "w-[280px] sm:w-[320px]";
+  const headingClass = isCompact ? "text-xl sm:text-2xl" : "text-2xl sm:text-3xl";
+  const listGapClass = isCompact ? "gap-3" : "gap-4";
+
   return (
-    <section className="max-w-7xl mx-auto px-4 py-10">
+    <section className={`rounded-[2rem] border border-zinc-200 bg-white shadow-sm ${isCompact ? "p-5 sm:p-6" : "p-6 sm:p-8"}`}>
       <div className="flex items-end justify-between gap-4 mb-6">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
             Live preview
           </p>
-          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+          <h2 className={`mt-2 font-black tracking-tight text-zinc-900 ${headingClass}`}>
             {title}
           </h2>
           <p className="mt-2 text-sm text-zinc-600">{description}</p>
@@ -159,7 +167,7 @@ const trustPills = [
         </button>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className={`flex ${listGapClass} overflow-x-auto pb-2 snap-x snap-mandatory`}>
         {loading ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             Loading listings...
@@ -169,12 +177,12 @@ const trustPills = [
             No listings yet
           </div>
         ) : (
-          listings.slice(0, 10).map((item) => (
+          listings.slice(0, maxItems).map((item) => (
             <button
               key={item.id}
               type="button"
               onClick={() => navigateToListingDetails(item.id)}
-              className="group snap-start shrink-0 w-[240px] overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
+              className={`group snap-start shrink-0 ${cardWidthClass} overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow`}
             >
               <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
                 <img
@@ -184,16 +192,27 @@ const trustPills = [
                 />
               </div>
 
-              <div className="p-4">
-                <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
+              <div className={isCompact ? "p-4" : "p-4 sm:p-5"}>
+                <p className={`${isCompact ? "text-sm" : "text-base sm:text-[1.05rem]"} font-extrabold text-zinc-900 line-clamp-1`}>
                   {item.name}
                 </p>
-                <p className="mt-1 text-sm font-bold text-red-900">
-                  MWK {Number(item.price).toLocaleString()}
-                </p>
-                <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
-                  {item.description || item.university || "Tap to open the full listing details."}
-                </p>
+
+                <div className="mt-2 flex items-center justify-between gap-3">
+                  <p className={`${isCompact ? "text-sm" : "text-base"} font-bold text-red-900`}>
+                    MWK {Number(item.price).toLocaleString()}
+                  </p>
+
+                  {item.university ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
+                      <MapPin className="w-3 h-3" />
+                      {item.university}
+                    </span>
+                  ) : null}
+                </div>
+
+                <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+                  Open listing <ArrowRight className="w-3.5 h-3.5" />
+                </div>
               </div>
             </button>
           ))
@@ -201,7 +220,7 @@ const trustPills = [
       </div>
     </section>
   );
-}      
+}
 
 export default function HomePage() {
   const { firebaseUser, profile } = useAccountProfile();
@@ -421,7 +440,7 @@ export default function HomePage() {
           </section>
         ) : null}
 
-        <section className="max-w-7xl mx-auto px-4 pb-6">
+        <section className="max-w-7xl mx-auto px-4 pb-8">
           <form
             onSubmit={handleSearchSubmit}
             className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm"
@@ -462,20 +481,36 @@ export default function HomePage() {
           </form>
         </section>
 
-        
-          <>
-            <ListingStrip
-              title="Picked for you"
-              description="Campus-aware picks based on what is active and relevant now."
-              listings={recommendedListings}
-              loading={loading}
-            />
+        <section className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
+          <div className="mb-5 max-w-3xl">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              Marketplace pulse
+            </p>
+            <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+              Start with what matters now.
+            </h2>
+            <p className="mt-2 text-sm text-zinc-600">
+              Curated picks first, then the fastest-moving and newest listings.
+            </p>
+          </div>
 
+          <ListingStrip
+            title="Picked for you"
+            description="Campus-aware picks based on what is active and relevant now."
+            listings={recommendedListings}
+            loading={loading}
+            variant="featured"
+            maxItems={8}
+          />
+
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ListingStrip
               title="Trending now"
               description="Listings getting the most attention right now."
               listings={featuredListings}
               loading={loading}
+              variant="compact"
+              maxItems={6}
             />
 
             <ListingStrip
@@ -483,9 +518,11 @@ export default function HomePage() {
               description="Fresh items that just landed on the marketplace."
               listings={newestListings}
               loading={loading}
+              variant="compact"
+              maxItems={6}
             />
-          </>
-        
+          </div>
+        </section>
 
         <section className="max-w-7xl mx-auto px-4 py-10">
           <div className="flex items-end justify-between gap-4 mb-6">
