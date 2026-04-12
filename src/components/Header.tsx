@@ -133,20 +133,6 @@ export default function Header({
           </div>
         </div>
 
-        <div className="md:hidden">
-          <button
-            type="button"
-            onClick={() => { closeMenu(); navigateToPath(EXPLORE_PATH); }}
-            className="w-full inline-flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/15"
-          >
-            <span className="inline-flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              Browse Market
-            </span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
         {mobileMenuOpen ? (
           <div
             id="mobile-header-menu"
