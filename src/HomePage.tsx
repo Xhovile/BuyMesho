@@ -18,8 +18,9 @@ import { motion } from "motion/react";
 import {
   BECOME_SELLER_PATH,
   EXPLORE_PATH,
+  HOME_PATH,
   LOGIN_PATH,
-  SAVED_PATH,
+  SETTINGS_PATH,
   SIGNUP_PATH,
   navigateToCreateListing,
   navigateToExplore,

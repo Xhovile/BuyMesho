@@ -99,7 +99,7 @@ export default function Header({
             <button
               onClick={() => setMobileMenuOpen((value) => !value)}
               className="md:hidden w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-              aria-label="Open menu"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-header-menu"
             >
@@ -136,7 +136,7 @@ export default function Header({
         <div className="md:hidden">
           <button
             type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
+            onClick={() => { closeMenu(); navigateToPath(EXPLORE_PATH); }}
             className="w-full inline-flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/15"
           >
             <span className="inline-flex items-center gap-2">
