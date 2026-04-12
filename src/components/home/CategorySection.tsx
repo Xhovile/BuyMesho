@@ -9,8 +9,6 @@ type Listing = {
   price: number | string;
   description?: string | null;
   photos?: string[];
-  category?: string;
-  university?: string;
 };
 
 type CategorySectionProps = {
@@ -54,7 +52,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         ) : (
           listings.slice(0, 10).map((item) => (
             <div key={item.id} className="snap-start shrink-0 w-[220px] sm:w-[260px]">
-              <ListingPreviewCard item={item} categoryKey={categoryKey} />
+              <ListingPreviewCard item={item} />
             </div>
           ))
         )}
