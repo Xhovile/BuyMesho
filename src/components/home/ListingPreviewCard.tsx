@@ -1,13 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
-
-type HomePreviewListing = {
-  id: number | string;
-  name: string;
-  price: number | string;
-  description?: string | null;
-  photos?: string[];
-};
+import type { HomePreviewListing } from "../../hooks/useHomePageData";
 
 type ListingPreviewCardProps = {
   item: HomePreviewListing;

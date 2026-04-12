@@ -123,6 +123,8 @@ const featuredSections: FeaturedSection[] = [
 
 const trustPills = ["Campus-based", "Built for students"];
 
+type ListingStripVariant = "featured" | "supporting";
+
 function ListingStrip({
   title,
   description,
@@ -138,6 +140,8 @@ function ListingStrip({
   maxItems?: number;
   variant?: ListingStripVariant;
 }) {
+  const isFeatured = variant === "featured";
+
   return (
     <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
       <div className="flex items-end justify-between gap-4 mb-6">
