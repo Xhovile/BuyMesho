@@ -28,7 +28,11 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
+  PRIVACY_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
   SETTINGS_PATH,
+  TERMS_PATH,
   CHANGE_PASSWORD_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -60,8 +64,15 @@ const LABEL_TO_VISIBILITY = Object.entries(VISIBILITY_LABEL).reduce<
   return acc;
 }, {});
 
-const getSettingsViewFromSearch = (search: string): SettingsView => {
-  const section = new URLSearchParams(search).get(SETTINGS_VIEW_QUERY_KEY);
+const getSettingsViewFromLocation = (
+  location: Pick<Location, "pathname" | "search">
+): SettingsView => {
+  if (location.pathname === PRIVACY_PATH) return "privacy";
+  if (location.pathname === TERMS_PATH) return "terms";
+  if (location.pathname === SAFETY_PATH) return "safety";
+  if (location.pathname === REPORT_PATH) return "report";
+
+  const section = new URLSearchParams(location.search).get(SETTINGS_VIEW_QUERY_KEY);
   if (
     section === "privacy" ||
     section === "terms" ||
@@ -76,7 +87,7 @@ const getSettingsViewFromSearch = (search: string): SettingsView => {
 
 export default function SettingsPage() {
   const [view, setView] = useState<SettingsView>(() =>
-    getSettingsViewFromSearch(window.location.search)
+    getSettingsViewFromLocation(window.location)
   );
   const { firebaseUser, profile, profileLoading, updateProfile } = useAccountProfile();
   const { isAdmin } = useIsAdmin(firebaseUser);
@@ -95,7 +106,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const handlePopState = () => {
-      setView(getSettingsViewFromSearch(window.location.search));
+      setView(getSettingsViewFromLocation(window.location));
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -106,11 +117,6 @@ export default function SettingsPage() {
 
   const openView = (nextView: SettingsView) => {
     if (nextView === "menu") {
-      if (window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-
       const url = new URL(window.location.href);
       url.pathname = SETTINGS_PATH;
       url.searchParams.delete(SETTINGS_VIEW_QUERY_KEY);

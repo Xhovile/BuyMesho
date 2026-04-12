@@ -284,6 +284,22 @@ export const getAppRouteFromLocation = (
     return "settings";
   }
 
+  if (location.pathname === PRIVACY_PATH) {
+    return "privacy";
+  }
+
+  if (location.pathname === TERMS_PATH) {
+    return "terms";
+  }
+
+  if (location.pathname === SAFETY_PATH) {
+    return "safety";
+  }
+
+  if (location.pathname === REPORT_PATH) {
+    return "report";
+  }
+
   if (location.pathname === SAVED_PATH) {
     return "saved";
   }
