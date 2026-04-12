@@ -561,7 +561,7 @@ export default function App() {
             <button type="button" onClick={() => navigateToPath(PRIVACY_PATH)} className="hover:text-primary transition-colors">Privacy</button>
             <button type="button" onClick={() => navigateToPath(TERMS_PATH)} className="hover:text-primary transition-colors">Terms</button>
             <button type="button" onClick={() => navigateToPath(SAFETY_PATH)} className="hover:text-primary transition-colors">Safety</button>
-            <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="hover:text-primary transition-colors">Contact</button>
+            <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="hover:text-primary transition-colors">Report</button>
           </div>
           <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
         </div>
