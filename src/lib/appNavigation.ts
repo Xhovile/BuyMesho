@@ -4,6 +4,10 @@ export type AppRoute =
   | "explore"
   | "saved"
   | "settings"
+  | "privacy"
+  | "terms"
+  | "safety"
+  | "report"
   | "seller"
   | "listing_details"
   | "create"
@@ -24,6 +28,10 @@ export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
 export const SETTINGS_PATH = "/settings";
+export const PRIVACY_PATH = "/privacy";
+export const TERMS_PATH = "/terms";
+export const SAFETY_PATH = "/safety";
+export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
 export const LISTING_PATH = "/listing";
 export const CREATE_PATH = "/create";
@@ -258,6 +266,22 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === SETTINGS_PATH) {
     return "settings";
+  }
+
+  if (location.pathname === PRIVACY_PATH) {
+    return "privacy";
+  }
+
+  if (location.pathname === TERMS_PATH) {
+    return "terms";
+  }
+
+  if (location.pathname === SAFETY_PATH) {
+    return "safety";
+  }
+
+  if (location.pathname === REPORT_PATH) {
+    return "report";
   }
 
   if (location.pathname === SAVED_PATH) {

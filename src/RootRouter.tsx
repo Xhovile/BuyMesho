@@ -43,6 +43,10 @@ export default function RootRouter() {
   if (route === "explore") return <App />;
   if (route === "saved") return <SavedPage />;
   if (route === "settings") return <SettingsPage />;
+  if (route === "privacy") return <SettingsPage />;
+  if (route === "terms") return <SettingsPage />;
+  if (route === "safety") return <SettingsPage />;
+  if (route === "report") return <SettingsPage />;
   if (route === "seller") return <SellerProfilePage />;
   if (route === "listing_details") return <ListingDetailsPage />;
   if (route === "create") return <CreateListingPage />;
