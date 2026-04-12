@@ -44,7 +44,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-6 flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className="mt-6 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
           <p className="text-sm text-zinc-400">Loading...</p>
         ) : listings.length === 0 ? (

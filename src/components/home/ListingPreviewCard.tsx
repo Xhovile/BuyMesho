@@ -13,7 +13,16 @@ type ListingPreviewCardProps = {
   item: HomePreviewListing;
 };
 
+function truncateWords(text: string, maxWords: number) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
 export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
+  const descriptionSource = item.description || item.category || "Tap to open the listing.";
+  const description = truncateWords(descriptionSource, 8);
+
   return (
     <button
       type="button"
@@ -28,8 +37,8 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
         />
       </div>
 
-      <div className="p-4 sm:p-5">
-        <p className="text-base sm:text-[1.05rem] font-extrabold text-zinc-900 line-clamp-1">
+      <div className="p-4">
+        <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
           {item.name}
         </p>
 
