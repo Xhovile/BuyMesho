@@ -5,6 +5,7 @@ import {
   Check,
   Compass,
   Search,
+  Settings,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
@@ -121,37 +122,57 @@ const featuredSections: FeaturedSection[] = [
 
 const trustPills = ["Campus-based", "Built for students"];
 
+type ListingStripVariant = "featured" | "supporting";
+
 function ListingStrip({
   title,
   description,
   listings,
   loading,
   maxItems = 8,
+  variant = "featured",
 }: {
   title: string;
   description: string;
   listings: SectionListing[];
   loading: boolean;
   maxItems?: number;
+  variant?: ListingStripVariant;
 }) {
+  const isFeatured = variant === "featured";
+  const shellClass = isFeatured
+    ? "rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm"
+    : "rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm"
+  ;
+  const titleClass = isFeatured
+    ? "mt-2 text-2xl sm:text-3xl"
+    : "text-xl sm:text-2xl";
+
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-      <div className="flex items-end justify-between gap-4 mb-6">
+    <section className={shellClass}>
+      <div className={`flex items-end justify-between gap-4 ${isFeatured ? "mb-6" : "mb-4"}`}>
         <div>
-          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+          {isFeatured ? (
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              Featured now
+            </p>
+          ) : null}
+          <h2 className={`font-black tracking-tight text-zinc-900 ${titleClass}`}>
             {title}
           </h2>
-          <p className="mt-2 text-sm text-zinc-600">{description}</p>
+          {isFeatured ? <p className="mt-2 text-sm text-zinc-600">{description}</p> : null}
         </div>
 
-        <button
-          type="button"
-          onClick={() => navigateToPath(EXPLORE_PATH)}
-          className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
-        >
-          Browse all
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {isFeatured ? (
+          <button
+            type="button"
+            onClick={() => navigateToPath(EXPLORE_PATH)}
+            className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Browse all
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : null}
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
@@ -302,14 +323,14 @@ export default function HomePage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden pt-6 pb-14 sm:pt-8 sm:pb-20">
+        <section className="relative overflow-hidden pt-10 pb-16 sm:pt-12 sm:pb-24">
           <div className="absolute inset-0 -z-10 pointer-events-none">
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[26rem] h-[26rem] bg-red-900/10 blur-3xl rounded-full" />
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-red-900/10 blur-3xl rounded-full" />
             <div className="absolute bottom-0 right-0 w-56 h-56 bg-amber-200/25 blur-3xl rounded-full" />
           </div>
 
-          <div className="max-w-7xl mx-auto px-4">
-            <div>
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="max-w-3xl">
               <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -322,17 +343,26 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.95]"
+                className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
               >
                 Buy and sell on campus,
-                <span className="text-red-900"> faster and cleaner.</span>
+                <span className="text-red-900"> with less noise.</span>
               </motion.h1>
+
+              <motion.p
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mt-5 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed"
+              >
+                A cleaner way to browse, compare, and move fast on campus listings without the clutter.
+              </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="mt-6 flex flex-wrap items-center gap-3"
+                className="mt-7 flex flex-wrap items-center gap-3"
               >
                 <button
                   type="button"
@@ -342,31 +372,13 @@ export default function HomePage() {
                   Browse Market
                   <ArrowRight className="w-4 h-4" />
                 </button>
-
-                {isLoggedIn ? (
-                  <button
-                    type="button"
-                    onClick={handleStartSelling}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-                  >
-                    Start Selling
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(SIGNUP_PATH)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                  >
-                    Sign Up
-                  </button>
-                )}
               </motion.div>
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mt-6 flex flex-wrap gap-2"
+                className="mt-7 flex flex-wrap gap-2"
               >
                 {trustPills.map((item) => (
                   <span
@@ -446,20 +458,66 @@ export default function HomePage() {
                   key={item.key}
                   type="button"
                   onClick={() => navigateToExploreWithCategory(item.key)}
-                  className="text-left rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm hover:bg-zinc-50 transition-colors"
+                  className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
                 >
-                  <div className="w-11 h-11 rounded-2xl bg-zinc-100 text-zinc-900 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5" />
+                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <div className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      Browse
+                    </div>
                   </div>
-                  <h3 className="text-lg font-extrabold text-zinc-900">{item.title}</h3>
-                  <p className="mt-2 text-sm text-zinc-600 leading-relaxed">{item.description}</p>
-                  <div className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-red-900">
-                    View category
+
+                  <h3 className="mt-5 text-lg font-extrabold text-zinc-900">
+                    {item.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-zinc-600 leading-relaxed line-clamp-2">
+                    {item.description}
+                  </p>
+
+                  <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-red-900">
+                    Open category
                     <ArrowRight className="w-4 h-4" />
                   </div>
                 </button>
               );
             })}
+          </div>
+        </section>
+
+        <section className="max-w-7xl mx-auto px-4 py-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ListingStrip
+              title="Picked for you"
+              description="Campus-aware picks based on what is active and relevant now."
+              listings={recommendedListings}
+              loading={loading}
+              maxItems={8}
+              variant="featured"
+            />
+
+            <div className="grid grid-cols-1 gap-4">
+              <ListingStrip
+                title="Trending now"
+                description=""
+                listings={featuredListings}
+                loading={loading}
+                maxItems={6}
+                variant="supporting"
+              />
+
+              <ListingStrip
+                title="New"
+                description=""
+                listings={newestListings}
+                loading={loading}
+                maxItems={6}
+                variant="supporting"
+              />
+            </div>
           </div>
         </section>
 

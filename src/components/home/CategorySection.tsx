@@ -34,10 +34,10 @@ const CategorySection: FC<CategorySectionProps> = ({
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <h3 className="text-xl font-black tracking-tight text-zinc-900">
+          <h3 className="text-xl font-black tracking-tight text-zinc-950">
             {title}
           </h3>
-          <p className="mt-2 text-sm text-zinc-600 leading-relaxed">
+          <p className="mt-2 text-sm text-zinc-500 leading-relaxed">
             {description}
           </p>
         </div>
@@ -54,7 +54,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         ) : (
           listings.slice(0, 10).map((item) => (
             <div key={item.id} className="snap-start shrink-0 w-[220px] sm:w-[260px]">
-              <ListingPreviewCard item={item} />
+              <ListingPreviewCard item={item} categoryKey={categoryKey} />
             </div>
           ))
         )}
