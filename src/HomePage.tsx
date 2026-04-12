@@ -4,7 +4,6 @@ import {
   BookOpen,
   Check,
   Compass,
-  House,
   Search,
   Settings,
   ShieldCheck,
@@ -124,8 +123,6 @@ const featuredSections: FeaturedSection[] = [
 
 const trustPills = ["Campus-based", "Built for students"];
 
-type ListingStripVariant = "featured" | "supporting";
-
 function ListingStrip({
   title,
   description,
@@ -141,24 +138,11 @@ function ListingStrip({
   maxItems?: number;
   variant?: ListingStripVariant;
 }) {
-  const isFeatured = variant === "featured";
-  const shellClass = isFeatured
-    ? "rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm"
-    : "rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6 shadow-sm";
-  const titleClass = isFeatured
-    ? "mt-2 text-2xl sm:text-[2rem] leading-tight"
-    : "text-xl sm:text-2xl leading-tight";
-
   return (
-    <section className={shellClass}>
-      <div className={`flex items-end justify-between gap-4 ${isFeatured ? "mb-6" : "mb-4"}`}>
+    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="flex items-end justify-between gap-4 mb-6">
         <div>
-          {isFeatured ? (
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.24em] text-zinc-400">
-              Featured now
-            </p>
-          ) : null}
-          <h2 className={`font-black tracking-tight text-zinc-900 ${titleClass}`}>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
           {isFeatured ? <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p> : null}
@@ -202,10 +186,10 @@ function ListingStrip({
               </div>
 
               <div className="p-4">
-                <p className="text-sm font-extrabold text-zinc-950 line-clamp-1">
+                <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
                   {item.name}
                 </p>
-                <p className="mt-1 text-sm text-zinc-500 line-clamp-2 leading-relaxed">
+                <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
                   {item.description || item.university || "Tap to open the full listing details."}
                 </p>
                 <p className="mt-2 text-sm font-bold text-red-900">
@@ -289,7 +273,7 @@ export default function HomePage() {
               onClick={() => navigateToPath(HOME_PATH)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
             >
-              <House className="w-4 h-4" />
+              <Compass className="w-4 h-4" />
               Home
             </button>
             <button
@@ -344,7 +328,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.95] text-zinc-950"
+                className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
               >
                 Buy and sell on campus,
                 <span className="text-red-900"> with less noise.</span>
@@ -354,7 +338,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="mt-5 max-w-2xl text-sm sm:text-base text-zinc-500 leading-relaxed"
+                className="mt-5 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed"
               >
                 A cleaner way to browse, compare, and move fast on campus listings without the clutter.
               </motion.p>
@@ -446,7 +430,7 @@ export default function HomePage() {
 
         <section className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
           <div className="mb-5 max-w-3xl">
-            <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-950">
+            <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
               Browse by category
             </h2>
           </div>
