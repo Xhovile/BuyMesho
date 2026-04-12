@@ -82,7 +82,7 @@ const gatewayCategories: GatewayCategory[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Campus Eats",
+    title: "Food",
     description: "Quick food and snack listings students check often.",
     icon: Store,
   },
@@ -112,7 +112,7 @@ const featuredSections: FeaturedSection[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Campus Eats",
+    title: "Food",
     description: "Quick food and snack listings students check often.",
     icon: Store,
     apiCategory: "Food & Snacks",
@@ -256,7 +256,7 @@ export default function HomePage() {
                 <span className="text-zinc-700">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                Campus marketplace
+                Market
               </p>
             </div>
           </button>
@@ -264,67 +264,38 @@ export default function HomePage() {
           <div className="hidden md:flex items-center gap-2">
             <button
               type="button"
+              onClick={() => navigateToPath(HOME_PATH)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              <Compass className="w-4 h-4" />
+              Home
+            </button>
+            <button
+              type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
             >
               <Compass className="w-4 h-4" />
-              Explore
+              Market
             </button>
-
             <button
               type="button"
-              onClick={() => navigateToPath(SAVED_PATH)}
+              onClick={() => navigateToPath(SETTINGS_PATH)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
             >
-              <ShieldCheck className="w-4 h-4" />
-              Saved
+              <Settings className="w-4 h-4" />
+              Settings
             </button>
-
-            <button
-              type="button"
-              onClick={handleStartSelling}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
-            >
-              <Sparkles className="w-4 h-4" />
-              Sell
-            </button>
-
-            {!isLoggedIn ? (
-              <button
-                type="button"
-                onClick={() => navigateToPath(LOGIN_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
-                Log In
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => navigateToPath("/profile")}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
-                <UserRound className="w-4 h-4" />
-                Profile
-              </button>
-            )}
           </div>
 
           <div className="flex md:hidden items-center gap-2">
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="w-11 h-11 rounded-2xl bg-red-900 text-white flex items-center justify-center"
-              aria-label="Explore"
+              className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold"
+              aria-label="Open Market"
             >
-              <Compass className="w-5 h-5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleStartSelling}
-              className="w-11 h-11 rounded-2xl bg-zinc-900 text-white flex items-center justify-center"
-              aria-label="Sell"
-            >
-              <Sparkles className="w-5 h-5" />
+              Market
             </button>
           </div>
         </div>
@@ -368,7 +339,7 @@ export default function HomePage() {
                   onClick={() => navigateToPath(EXPLORE_PATH)}
                   className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 hover:bg-red-800"
                 >
-                  Explore Listings
+                  Browse Market
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
