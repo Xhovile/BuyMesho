@@ -1,4 +1,4 @@
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
 
 type HomePreviewListing = {
@@ -7,8 +7,6 @@ type HomePreviewListing = {
   price: number | string;
   description?: string | null;
   photos?: string[];
-  category?: string;
-  university?: string;
 };
 
 type ListingPreviewCardProps = {
@@ -43,13 +41,16 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
         <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
           {item.name}
         </p>
-        <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
-          {description}
+
+        <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
+          {item.description || "Tap to open the full listing details."}
         </p>
-        <p className="mt-2 text-sm font-bold text-red-900">
+
+        <p className="mt-3 text-base font-bold text-red-900">
           MWK {Number(item.price).toLocaleString()}
         </p>
-        <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+
+        <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
           Open listing <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
