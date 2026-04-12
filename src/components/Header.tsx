@@ -125,7 +125,7 @@ export default function Header({
                   <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
                     {fallbackLetter}
                   </div>
-                )}
+                )
               ) : (
                 <User className="w-5 h-5 text-zinc-600" />
               )}
