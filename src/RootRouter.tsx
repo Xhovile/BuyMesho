@@ -15,12 +15,16 @@ import HomePage from "./HomePage";
 import ListingDetailsPage from "./ListingDetailsPage";
 import LoginPage from "./LoginPage";
 import MyListingsPage from "./MyListingsPage";
+import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import ProfilePage from "./ProfilePage";
+import ReportProblemPage from "./components/ReportProblemPage";
+import SafetyTipsPage from "./components/SafetyTipsPage";
 import SavedPage from "./SavedPage";
 import SettingsPage from "./SettingsPage";
 import SellerProfilePage from "./SellerProfilePage";
 import SignupPage from "./SignupPage";
-import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
+import TermsPage from "./components/TermsPage";
+import { getAppRouteFromLocation, navigateToPath, type AppRoute } from "./lib/appNavigation";
 
 export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -43,10 +47,43 @@ export default function RootRouter() {
   if (route === "explore") return <App />;
   if (route === "saved") return <SavedPage />;
   if (route === "settings") return <SettingsPage />;
-  if (route === "privacy") return <SettingsPage />;
-  if (route === "terms") return <SettingsPage />;
-  if (route === "safety") return <SettingsPage />;
-  if (route === "report") return <SettingsPage />;
+  if (route === "privacy") {
+    return (
+      <PrivacyPolicyPage
+        onBack={() => navigateToPath("/")}
+        onClose={() => navigateToPath("/")}
+        showBackButton={false}
+      />
+    );
+  }
+  if (route === "terms") {
+    return (
+      <TermsPage
+        onBack={() => navigateToPath("/")}
+        onClose={() => navigateToPath("/")}
+        showBackButton={false}
+      />
+    );
+  }
+  if (route === "safety") {
+    return (
+      <SafetyTipsPage
+        onBack={() => navigateToPath("/")}
+        onClose={() => navigateToPath("/")}
+        showBackButton={false}
+      />
+    );
+  }
+  if (route === "report") {
+    return (
+      <ReportProblemPage
+        onBack={() => navigateToPath("/")}
+        onClose={() => navigateToPath("/")}
+        showBackButton={false}
+        isLoggedIn={false}
+      />
+    );
+  }
   if (route === "seller") return <SellerProfilePage />;
   if (route === "listing_details") return <ListingDetailsPage />;
   if (route === "create") return <CreateListingPage />;

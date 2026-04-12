@@ -264,6 +264,22 @@ export const getAppRouteFromLocation = (
     return "seller";
   }
 
+  if (location.pathname === PRIVACY_PATH) {
+    return "privacy";
+  }
+
+  if (location.pathname === TERMS_PATH) {
+    return "terms";
+  }
+
+  if (location.pathname === SAFETY_PATH) {
+    return "safety";
+  }
+
+  if (location.pathname === REPORT_PATH) {
+    return "report";
+  }
+
   if (location.pathname === SETTINGS_PATH) {
     return "settings";
   }
@@ -297,18 +313,35 @@ export const getAppRouteFromLocation = (
 
 export const navigateToPath = (path: string) => {
   const url = new URL(window.location.href);
-  url.pathname = path;
+  const activeText =
+    typeof document !== "undefined"
+      ? (document.activeElement?.textContent || "").trim().toLowerCase()
+      : "";
 
-  if (path !== EXPLORE_PATH && path !== LISTING_PATH) {
+  const footerRouteOverrides: Record<string, string> = {
+    privacy: PRIVACY_PATH,
+    terms: TERMS_PATH,
+    safety: SAFETY_PATH,
+    contact: REPORT_PATH,
+  };
+
+  const normalizedPath =
+    path === SETTINGS_PATH && footerRouteOverrides[activeText]
+      ? footerRouteOverrides[activeText]
+      : path;
+
+  url.pathname = normalizedPath;
+
+  if (normalizedPath !== EXPLORE_PATH && normalizedPath !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
   }
 
-  if (path !== SELLER_PATH) {
+  if (normalizedPath !== SELLER_PATH) {
     url.searchParams.delete("uid");
   }
 
-  if (path !== EDIT_PATH) {
+  if (normalizedPath !== EDIT_PATH) {
     url.searchParams.delete("id");
   }
 

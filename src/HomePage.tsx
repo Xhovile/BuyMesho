@@ -3,7 +3,8 @@ import {
   ArrowRight,
   BookOpen,
   Check,
-  Compass,
+  House,
+  Menu,
   Search,
   Settings,
   ShieldCheck,
@@ -12,6 +13,7 @@ import {
   Smartphone,
   Store,
   UserRound,
+  UtensilsCrossed,
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
@@ -86,7 +88,7 @@ const gatewayCategories: GatewayCategory[] = [
     key: HOME_CATEGORY_KEYS.food,
     title: "Food",
     description: "Quick food and snack listings students check often.",
-    icon: Store,
+    icon: UtensilsCrossed,
   },
 ];
 
@@ -116,7 +118,7 @@ const featuredSections: FeaturedSection[] = [
     key: HOME_CATEGORY_KEYS.food,
     title: "Food",
     description: "Quick food and snack listings students check often.",
-    icon: Store,
+    icon: UtensilsCrossed,
     apiCategory: "Food & Snacks",
   },
 ];
@@ -277,16 +279,25 @@ export default function HomePage() {
               onClick={() => navigateToPath(HOME_PATH)}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
             >
-              <Compass className="w-4 h-4" />
+              <House className="w-4 h-4" />
               Home
             </button>
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
             >
               <ShoppingBag className="w-4 h-4" />
               Market
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
+              aria-label="Open menu"
+            >
+              <Menu className="w-4 h-4" />
+              Menu
             </button>
             <button
               type="button"
@@ -302,10 +313,18 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold"
+              className="px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold"
               aria-label="Open Market"
             >
               Market
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="w-11 h-11 rounded-2xl bg-slate-900 text-white flex items-center justify-center"
+              aria-label="Open menu"
+            >
+              <Menu className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -334,18 +353,8 @@ export default function HomePage() {
                 transition={{ delay: 0.05 }}
                 className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
               >
-                Buy and sell on campus,
-                <span className="text-red-900"> with less noise.</span>
+                Buy and sell on campus
               </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-5 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed"
-              >
-                A cleaner way to browse, compare, and move fast on campus listings without the clutter.
-              </motion.p>
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
