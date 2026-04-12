@@ -13,10 +13,18 @@ type HomePreviewListing = {
 
 type ListingPreviewCardProps = {
   item: HomePreviewListing;
-  categoryKey: string;
 };
 
+function truncateWords(text: string, maxWords: number) {
+  const words = text.trim().split(/\s+/).filter(Boolean);
+  if (words.length <= maxWords) return words.join(" ");
+  return `${words.slice(0, maxWords).join(" ")}...`;
+}
+
 export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
+  const descriptionSource = item.description || item.category || "Tap to open the listing.";
+  const description = truncateWords(descriptionSource, 8);
+
   return (
     <button
       type="button"
@@ -31,25 +39,17 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
         />
       </div>
 
-      <div className="p-4 sm:p-5">
-        <p className="text-base sm:text-[1.05rem] font-extrabold text-zinc-900 line-clamp-1">
+      <div className="p-4">
+        <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
           {item.name}
         </p>
-
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="text-base font-bold text-red-900">
-            MWK {Number(item.price).toLocaleString()}
-          </p>
-
-          {item.university ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
-              <MapPin className="w-3 h-3" />
-              {item.university}
-            </span>
-          ) : null}
-        </div>
-
-        <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+        <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
+          {description}
+        </p>
+        <p className="mt-2 text-sm font-bold text-red-900">
+          MWK {Number(item.price).toLocaleString()}
+        </p>
+        <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-900">
           Open listing <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>

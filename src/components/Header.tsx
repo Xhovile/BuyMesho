@@ -1,4 +1,5 @@
-import { Search, Plus, User, Compass, House, Settings } from "lucide-react";
+import { Search, Plus, User, Menu, X, House, Settings, Compass } from "lucide-react";
+import { useState } from "react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
@@ -24,10 +25,13 @@ export default function Header({
   userProfile,
   firebaseUser,
 }: HeaderProps) {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
+
+  const closeMenu = () => setMobileMenuOpen(false);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
@@ -47,7 +51,7 @@ export default function Header({
                 <span className="text-zinc-700">Mesho</span>
               </h1>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                Explore marketplace
+                Market
               </p>
             </div>
           </button>
@@ -67,7 +71,7 @@ export default function Header({
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
             >
               <Compass className="w-4 h-4" />
-              Explore
+              Market
             </button>
             <button
               type="button"
@@ -79,7 +83,7 @@ export default function Header({
             </button>
           </div>
 
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0">
             {firebaseUser && userProfile?.is_seller ? (
               <button
                 onClick={onAddListing}
@@ -91,11 +95,17 @@ export default function Header({
             ) : null}
 
             <button
-              onClick={() => navigateToPath(SETTINGS_PATH)}
+              onClick={() => setMobileMenuOpen((value) => !value)}
               className="md:hidden w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-              aria-label="Open settings"
+              aria-label="Open menu"
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-header-menu"
             >
-              <Settings className="w-5 h-5 text-zinc-600" />
+              {mobileMenuOpen ? (
+                <X className="w-5 h-5 text-zinc-600" />
+              ) : (
+                <Menu className="w-5 h-5 text-zinc-600" />
+              )}
             </button>
 
             <button
@@ -120,6 +130,84 @@ export default function Header({
             </button>
           </div>
         </div>
+
+        {mobileMenuOpen ? (
+          <div
+            id="mobile-header-menu"
+            className="md:hidden rounded-3xl border border-zinc-200 bg-white p-3 shadow-lg shadow-zinc-200/60"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                closeMenu();
+                navigateToPath(HOME_PATH);
+              }}
+              className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              <House className="w-4 h-4" />
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                closeMenu();
+                navigateToPath(EXPLORE_PATH);
+              }}
+              className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              <Compass className="w-4 h-4" />
+              Market
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                closeMenu();
+                navigateToPath(SETTINGS_PATH);
+              }}
+              className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              <Settings className="w-4 h-4" />
+              Settings
+            </button>
+            <div className="my-2 h-px bg-zinc-100" />
+            {firebaseUser ? (
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  onProfileClick();
+                }}
+                className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <User className="w-4 h-4" />
+                Profile
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath("/signup");
+                  }}
+                  className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Sign Up
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath("/login");
+                  }}
+                  className="w-full flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                >
+                  Sign In
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
 
         <div className="relative group">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
