@@ -2901,6 +2901,15 @@ app.post("/api/listings/:id/view", (req, res) => {
     res.status(500).json({ error: "Failed to load seller dashboard" });
   }
 });
+
+  /**
+   * Codespaces tunnel callback guard.
+   * Some forwarded-port flows can hit this path before landing on the app root.
+   * Redirecting to "/" avoids a white-screen 404 handoff in those cases.
+   */
+  app.get("/auth/postback/tunnel", (_req, res) => {
+    res.redirect(302, "/");
+  });
   
   // API 404 Handler
   app.all("/api/*", (req, res) => {
