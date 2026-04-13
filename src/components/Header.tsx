@@ -150,6 +150,9 @@ export default function Header({
             <motion.div
               key="drawer-panel"
               id="mobile-header-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="drawer-title"
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
@@ -162,7 +165,7 @@ export default function Header({
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                     Menu
                   </p>
-                  <h2 className="mt-1 text-base font-black text-zinc-900">
+                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">
                     Start here
                   </h2>
                 </div>
