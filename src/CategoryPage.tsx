@@ -212,7 +212,7 @@ export default function CategoryPage() {
             onClick={() => navigateToExplore()}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
-            Explore
+            Market
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
@@ -374,7 +374,7 @@ export default function CategoryPage() {
                 onClick={() => navigateToExplore()}
                 className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
               >
-                Open Explore
+                Open Market
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
