@@ -10,6 +10,7 @@ import {
   navigateToPath,
 } from "../lib/appNavigation";
 import BrandMark from "./BrandMark";
+import FeedbackModal from "./FeedbackModal";
 
 type HeaderProps = {
   onSearch: (val: string) => void;
@@ -27,12 +28,31 @@ export default function Header({
   firebaseUser,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
 
   const closeMenu = () => setMobileMenuOpen(false);
+
+  const handleSettingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SETTINGS_PATH);
+  };
+
+  const handleProfileClick = () => {
+    if (!firebaseUser) {
+      setAuthGuardOpen(true);
+      return;
+    }
+    onProfileClick();
+  };
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
@@ -61,7 +81,7 @@ export default function Header({
             </button>
             <button
               type="button"
-              onClick={() => navigateToPath(SETTINGS_PATH)}
+              onClick={() => handleSettingsClick()}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
             >
               <Settings className="w-4 h-4" />
@@ -95,7 +115,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={onProfileClick}
+              onClick={handleProfileClick}
               className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
             >
               {firebaseUser ? (
@@ -179,10 +199,7 @@ export default function Header({
 
               <button
                 type="button"
-                onClick={() => {
-                  closeMenu();
-                  navigateToPath(SETTINGS_PATH);
-                }}
+                onClick={() => handleSettingsClick(closeMenu)}
                 className={navButtonClass}
               >
                 <span className="inline-flex items-center gap-3">
@@ -245,6 +262,14 @@ export default function Header({
           />
         </div>
       </div>
+
+      <FeedbackModal
+        open={authGuardOpen}
+        type="error"
+        title="Login required"
+        message="You need to be logged in to access this page. Sign in or create an account to continue."
+        onClose={() => setAuthGuardOpen(false)}
+      />
     </nav>
   );
 }
