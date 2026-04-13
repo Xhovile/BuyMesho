@@ -1,5 +1,6 @@
 import React from "react";
 import { ShieldCheck, AlertTriangle, UserCheck, Lock, Flag } from "lucide-react";
+import LegalPageShell from "./LegalPageShell";
 
 type Props = {
   onBack: () => void;
@@ -46,28 +47,7 @@ export default function SafetyTipsPage({
   onBack,
 }: Props) {
   return (
-    <div className="flex flex-col flex-1 min-h-0">
-      <div className="sticky top-0 z-20 border-b border-zinc-100 bg-white/95 backdrop-blur">
-        <div className="px-6 py-4 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-              BuyMesho
-            </p>
-            <h2 className="text-2xl font-extrabold text-zinc-900">
-              Safe Shopping &amp; Security Tips
-            </h2>
-          </div>
-
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
-            aria-label="Go back"
-          >
-            ← Back
-          </button>
-        </div>
-      </div>
-
+    <LegalPageShell title="Safe Shopping & Security Tips" onBack={onBack}>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
@@ -305,7 +285,6 @@ export default function SafetyTipsPage({
           </div>
         </div>
       </div>
-
-    </div>
+    </LegalPageShell>
   );
 }
