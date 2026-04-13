@@ -47,7 +47,7 @@ export default function SafetyTipsPage({
   onBack,
 }: Props) {
   return (
-    <LegalPageShell title="Safe Shopping &amp; Security Tips" onBack={onBack}>
+    <LegalPageShell title="Safe Shopping & Security Tips" onBack={onBack}>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">

@@ -26,7 +26,7 @@ export default function TermsPage({
   onBack,
 }: Props) {
   return (
-    <LegalPageShell title="Terms &amp; Conditions" onBack={onBack}>
+    <LegalPageShell title="Terms & Conditions" onBack={onBack}>
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
