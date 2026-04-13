@@ -313,35 +313,18 @@ export const getAppRouteFromLocation = (
 
 export const navigateToPath = (path: string) => {
   const url = new URL(window.location.href);
-  const activeText =
-    typeof document !== "undefined"
-      ? (document.activeElement?.textContent || "").trim().toLowerCase()
-      : "";
+  url.pathname = path;
 
-  const footerRouteOverrides: Record<string, string> = {
-    privacy: PRIVACY_PATH,
-    terms: TERMS_PATH,
-    safety: SAFETY_PATH,
-    contact: REPORT_PATH,
-  };
-
-  const normalizedPath =
-    path === SETTINGS_PATH && footerRouteOverrides[activeText]
-      ? footerRouteOverrides[activeText]
-      : path;
-
-  url.pathname = normalizedPath;
-
-  if (normalizedPath !== EXPLORE_PATH && normalizedPath !== LISTING_PATH) {
+  if (path !== EXPLORE_PATH && path !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
   }
 
-  if (normalizedPath !== SELLER_PATH) {
+  if (path !== SELLER_PATH) {
     url.searchParams.delete("uid");
   }
 
-  if (normalizedPath !== EDIT_PATH) {
+  if (path !== EDIT_PATH) {
     url.searchParams.delete("id");
   }
 
