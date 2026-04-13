@@ -39,6 +39,7 @@ import {
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
+import BrandMark from "./components/BrandMark";
 
 type GatewayCategory = {
   key: string;
@@ -267,24 +268,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div className="flex items-center justify-between gap-4">
-            <button
-              type="button"
-              className="flex items-center gap-2.5 group min-w-0"
-              onClick={() => navigateToPath(HOME_PATH)}
-            >
-              <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20 group-hover:scale-105 transition-transform flex-shrink-0">
-                B
-              </div>
-              <div className="min-w-0 text-left">
-                <h1 className="text-lg sm:text-xl font-sans font-extrabold tracking-tight truncate">
-                  <span className="text-red-900">Buy</span>
-                  <span className="text-zinc-700">Mesho</span>
-                </h1>
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                  Home
-                </p>
-              </div>
-            </button>
+            <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
               <button

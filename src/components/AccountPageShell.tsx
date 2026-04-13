@@ -10,6 +10,7 @@ import {
 } from "../lib/appNavigation";
 import { auth } from "../firebase";
 import { useAccountProfile } from "../hooks/useAccountProfile";
+import BrandMark from "./BrandMark";
 
 type AccountPageShellProps = {
   eyebrow: string;
@@ -44,13 +45,7 @@ export default function AccountPageShell({
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">B</div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight"><span className="text-red-900">Buy</span><span className="text-zinc-700">Mesho</span></p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p>
-            </div>
-          </button>
+          <BrandMark />
           <div className="flex items-center gap-3">
             {firebaseUser && (
               <button type="button" onClick={() => void handleLogout()} className="inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2">
