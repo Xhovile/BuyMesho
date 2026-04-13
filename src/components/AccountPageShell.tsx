@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { ChevronLeft, House, LogOut, Search } from "lucide-react";
+import { ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
   EXPLORE_PATH,
@@ -26,7 +26,7 @@ export default function AccountPageShell({
   title,
   description,
   children,
-  backLabel = "Back",
+  backLabel = "Back to Market",
   onBack,
   childrenSectionClassName,
 }: AccountPageShellProps) {
@@ -59,7 +59,7 @@ export default function AccountPageShell({
               </button>
             )}
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"><Search className="w-4 h-4" />Explore</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800 items-center gap-2 inline-flex"><ShoppingBag className="w-4 h-4" />Market</button>
           </div>
         </div>
       </header>

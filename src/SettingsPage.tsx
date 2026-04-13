@@ -5,9 +5,9 @@ import {
   FileText,
   HelpCircle,
   House,
-  Search,
   Settings,
   ShieldCheck,
+  ShoppingBag,
   User,
   UserCheck,
 } from "lucide-react";
@@ -280,10 +280,10 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"
+              className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800 items-center gap-2 inline-flex"
             >
-              <Search className="w-4 h-4" />
-              Explore
+              <ShoppingBag className="w-4 h-4" />
+              Market
             </button>
           </div>
         </div>
