@@ -114,7 +114,7 @@ export default function SettingsPage() {
   } | null>(null);
   const [expandedSections, setExpandedSections] = useState(() => {
     try {
-      const saved = localStorage.getItem("settings-accordion-state");
+      const saved = localStorage.getItem(ACCORDION_STORAGE_KEY);
       if (saved) return JSON.parse(saved) as typeof defaultExpandedSections;
     } catch {
       // ignore parse errors
