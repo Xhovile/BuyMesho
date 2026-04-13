@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
 
 const App = lazy(() => import("./App.new"));
@@ -45,7 +46,7 @@ export default function RootRouter() {
   }, []);
 
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
       {route === "category" ? <CategoryPage /> :
       route === "explore" ? <App /> :
       route === "saved" ? <SavedPage /> :
