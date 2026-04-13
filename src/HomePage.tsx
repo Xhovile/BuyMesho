@@ -455,7 +455,7 @@ export default function HomePage() {
       </header>
 
       <main>
-        <section className="relative overflow-hidden pt-10 pb-16 sm:pt-12 sm:pb-24">
+        <section className="relative overflow-hidden pt-6 pb-10 sm:pt-12 sm:pb-24">
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-red-900/10 blur-3xl rounded-full" />
             <div className="absolute bottom-0 right-0 w-56 h-56 bg-amber-200/25 blur-3xl rounded-full" />
@@ -500,7 +500,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mt-7 flex flex-wrap gap-2"
+                className="mt-6 hidden sm:flex flex-wrap gap-2"
               >
                 {trustPills.map((item) => (
                   <span
