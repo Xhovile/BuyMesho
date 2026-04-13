@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ChevronLeft,
   ChevronRight,
   FileText,
   HelpCircle,
@@ -136,21 +135,6 @@ export default function SettingsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const headerSubtitle = useMemo(() => {
-    switch (view) {
-      case "privacy":
-        return "Privacy policy";
-      case "terms":
-        return "Terms of use";
-      case "safety":
-        return "Safety tips";
-      case "report":
-        return "Report a problem";
-      default:
-        return "Settings";
-    }
-  }, [view]);
-
   const updateVisibility = async (
     field: "profile_visibility" | "seller_visibility" | "saved_visibility",
     nextValue: VisibilitySetting
@@ -246,6 +230,19 @@ export default function SettingsPage() {
     }
   };
 
+  if (view === "privacy") {
+    return <PrivacyPolicyPage onBack={() => openView("menu")} />;
+  }
+  if (view === "terms") {
+    return <TermsPage onBack={() => openView("menu")} />;
+  }
+  if (view === "safety") {
+    return <SafetyTipsPage onBack={() => openView("menu")} />;
+  }
+  if (view === "report") {
+    return <ReportProblemPage onBack={() => openView("menu")} isLoggedIn={!!firebaseUser} />;
+  }
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
@@ -300,8 +297,7 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        {view === "menu" ? (
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-5">
                 <User className="w-5 h-5 text-zinc-700" />
@@ -545,48 +541,6 @@ export default function SettingsPage() {
               </div>
             </section>
           </section>
-        ) : (
-          <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            <div className="p-4 border-b border-zinc-100 bg-zinc-50 flex items-center justify-between gap-4">
-              <button
-                type="button"
-                onClick={() => openView("menu")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold hover:bg-zinc-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Back to Settings
-              </button>
-              <div className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                {headerSubtitle}
-              </div>
-            </div>
-
-            {view === "privacy" && (
-              <PrivacyPolicyPage
-                onBack={() => openView("menu")}
-              />
-            )}
-
-            {view === "terms" && (
-              <TermsPage
-                onBack={() => openView("menu")}
-              />
-            )}
-
-            {view === "safety" && (
-              <SafetyTipsPage
-                onBack={() => openView("menu")}
-              />
-            )}
-
-            {view === "report" && (
-              <ReportProblemPage
-                onBack={() => openView("menu")}
-                isLoggedIn={!!firebaseUser}
-              />
-            )}
-          </section>
-        )}
       </main>
 
       <PasswordPromptModal
