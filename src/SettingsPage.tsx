@@ -65,6 +65,14 @@ const LABEL_TO_VISIBILITY = Object.entries(VISIBILITY_LABEL).reduce<
   return acc;
 }, {});
 
+const ACCORDION_STORAGE_KEY = "settings-accordion-state";
+const defaultExpandedSections = {
+  account: true,
+  security: true,
+  privacy: false,
+  helpLegal: false,
+};
+
 const getSettingsViewFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): SettingsView => {
@@ -104,11 +112,14 @@ export default function SettingsPage() {
     title: string;
     message: string;
   } | null>(null);
-  const [expandedSections, setExpandedSections] = useState({
-    account: true,
-    security: true,
-    privacy: false,
-    helpLegal: false,
+  const [expandedSections, setExpandedSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ACCORDION_STORAGE_KEY);
+      if (saved) return JSON.parse(saved) as typeof defaultExpandedSections;
+    } catch {
+      // ignore parse errors
+    }
+    return defaultExpandedSections;
   });
 
   useEffect(() => {
@@ -121,6 +132,14 @@ export default function SettingsPage() {
       window.removeEventListener("popstate", handlePopState);
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(expandedSections));
+    } catch {
+      // ignore storage errors
+    }
+  }, [expandedSections]);
 
   const openView = (nextView: SettingsView) => {
     if (nextView === "menu") {
@@ -359,7 +378,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-1 sm:space-y-2">
                 {[
                   { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
                   ...(profile?.is_seller
@@ -373,7 +392,7 @@ export default function SettingsPage() {
                     key={item.label}
                     type="button"
                     onClick={() => navigateToPath(item.path)}
-                    className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left"
+                    className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left"
                   >
                     <span className="font-bold text-zinc-900">{item.label}</span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -385,7 +404,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
-                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <FileText className="w-4 h-4" />
@@ -396,7 +415,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
-                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-3 text-left"
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <UserCheck className="w-4 h-4" />
@@ -411,7 +430,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => void handleLogout()}
                   disabled={!firebaseUser}
-                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left disabled:cursor-not-allowed disabled:bg-zinc-100"
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
                   <span className="font-bold text-zinc-900">Logout</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -421,7 +440,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => setDeleteConfirmOpen(true)}
                   disabled={!firebaseUser}
-                  className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
+                  className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
                 >
                   <span className="font-bold text-red-700">Delete Account</span>
                   <ChevronRight className="w-4 h-4 text-red-300" />
@@ -449,11 +468,11 @@ export default function SettingsPage() {
                 </span>
               </button>
 
-              {expandedSections.security && <div className="mt-5 space-y-3">
+              {expandedSections.security && <div className="mt-5 space-y-2 sm:space-y-3">
                 <button
                   type="button"
                   onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
-                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-3 text-left"
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left"
                 >
                   <span className="font-bold text-zinc-900">Change Password</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -497,7 +516,7 @@ export default function SettingsPage() {
                 </span>
               </button>
 
-              {expandedSections.privacy && <div className="mt-5 space-y-3 text-sm">
+              {expandedSections.privacy && <div className="mt-5 space-y-2 sm:space-y-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
                   <div className="mt-2">
@@ -583,7 +602,7 @@ export default function SettingsPage() {
                 </span>
               </button>
 
-              {expandedSections.helpLegal && <div className="mt-5 space-y-3">
+              {expandedSections.helpLegal && <div className="mt-5 space-y-2 sm:space-y-3">
                 {[
                   { key: "privacy", label: "Privacy Policy", icon: FileText },
                   { key: "terms", label: "Terms of Use", icon: FileText },
@@ -596,7 +615,7 @@ export default function SettingsPage() {
                       key={item.key}
                       type="button"
                       onClick={() => openView(item.key as SettingsView)}
-                      className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 px-4 py-4 text-left transition-colors"
+                      className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 px-4 py-3 sm:py-4 text-left transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-10 h-10 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center">
