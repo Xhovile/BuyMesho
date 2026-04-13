@@ -11,6 +11,7 @@ import {
   User,
   UserCheck,
 } from "lucide-react";
+import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
 import TermsPage from "./components/TermsPage";
 import SafetyTipsPage from "./components/SafetyTipsPage";
@@ -249,24 +250,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
-          >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
-              B
-            </div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Secure Marketplace
-              </p>
-            </div>
-          </button>
+          <BrandMark />
 
           <div className="flex items-center gap-3">
             <button
