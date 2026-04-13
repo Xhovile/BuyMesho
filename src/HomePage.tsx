@@ -325,6 +325,7 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
                 className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+                aria-label="Go to Market"
               >
                 <ShoppingBag className="w-4 h-4" />
                 Market
