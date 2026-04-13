@@ -98,15 +98,15 @@ export default function Header({
 
             <button
               onClick={() => setMobileMenuOpen((value) => !value)}
-              className="md:hidden w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+              className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-header-menu"
             >
               {mobileMenuOpen ? (
-                <X className="w-5 h-5 text-zinc-700" />
+                <X className="w-5 h-5 text-white" />
               ) : (
-                <Menu className="w-5 h-5 text-zinc-700" />
+                <Menu className="w-5 h-5 text-white" />
               )}
             </button>
 

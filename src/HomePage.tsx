@@ -295,7 +295,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
               >
                 <ShoppingBag className="w-4 h-4" />
                 Market
@@ -322,16 +322,25 @@ export default function HomePage() {
               ) : null}
 
               <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Market
+              </button>
+
+              <button
                 onClick={() => setMobileMenuOpen((value) => !value)}
-                className="md:hidden w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-home-menu"
               >
                 {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-zinc-700" />
+                  <X className="w-5 h-5 text-white" />
                 ) : (
-                  <Menu className="w-5 h-5 text-zinc-700" />
+                  <Menu className="w-5 h-5 text-white" />
                 )}
               </button>
             </div>
