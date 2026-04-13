@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import {
+  ChevronDown,
   ChevronRight,
   FileText,
   HelpCircle,
@@ -103,6 +104,12 @@ export default function SettingsPage() {
     title: string;
     message: string;
   } | null>(null);
+  const [expandedSections, setExpandedSections] = useState({
+    account: true,
+    security: true,
+    privacy: false,
+    helpLegal: false,
+  });
 
   useEffect(() => {
     const handlePopState = () => {
@@ -230,6 +237,15 @@ export default function SettingsPage() {
     }
   };
 
+  const toggleSection = (
+    section: "account" | "security" | "privacy" | "helpLegal"
+  ) => {
+    setExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
+
   if (view === "privacy") {
     return <PrivacyPolicyPage onBack={() => openView("menu")} />;
   }
@@ -299,12 +315,25 @@ export default function SettingsPage() {
 
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <User className="w-5 h-5 text-zinc-700" />
-                <h2 className="text-xl font-extrabold text-zinc-900">Account</h2>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("account")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.account}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <User className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Account</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.account ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.account ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
 
-              <div className="space-y-3 text-sm">
+              {expandedSections.account && <div className="mt-5 space-y-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
                   <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
@@ -396,16 +425,29 @@ export default function SettingsPage() {
                   <span className="font-bold text-red-700">Delete Account</span>
                   <ChevronRight className="w-4 h-4 text-red-300" />
                 </button>
-              </div>
+              </div>}
             </section>
 
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <ShieldCheck className="w-5 h-5 text-zinc-700" />
-                <h2 className="text-xl font-extrabold text-zinc-900">Security</h2>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("security")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.security}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Security</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.security ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.security ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
 
-              <div className="space-y-3">
+              {expandedSections.security && <div className="mt-5 space-y-3">
                 <button
                   type="button"
                   onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
@@ -431,16 +473,29 @@ export default function SettingsPage() {
                 <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
                   Later: login controls and authentication settings.
                 </div>
-              </div>
+              </div>}
             </section>
 
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <UserCheck className="w-5 h-5 text-zinc-700" />
-                <h2 className="text-xl font-extrabold text-zinc-900">Privacy</h2>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("privacy")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.privacy}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <UserCheck className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Privacy</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.privacy ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.privacy ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
 
-              <div className="space-y-3 text-sm">
+              {expandedSections.privacy && <div className="mt-5 space-y-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
                   <div className="mt-2">
@@ -504,16 +559,29 @@ export default function SettingsPage() {
                     Sign in to save privacy preferences.
                   </div>
                 )}
-              </div>
+              </div>}
             </section>
 
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-5">
-                <Settings className="w-5 h-5 text-zinc-700" />
-                <h2 className="text-xl font-extrabold text-zinc-900">Help & Legal</h2>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection("helpLegal")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.helpLegal}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Help & Legal</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.helpLegal ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.helpLegal ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
 
-              <div className="space-y-3">
+              {expandedSections.helpLegal && <div className="mt-5 space-y-3">
                 {[
                   { key: "privacy", label: "Privacy Policy", icon: FileText },
                   { key: "terms", label: "Terms of Use", icon: FileText },
@@ -538,7 +606,7 @@ export default function SettingsPage() {
                     </button>
                   );
                 })}
-              </div>
+              </div>}
             </section>
           </section>
       </main>

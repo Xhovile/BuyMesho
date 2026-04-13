@@ -565,120 +565,126 @@ export default function HomePage() {
           </form>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-4 sm:py-6">
-          <div className="mb-5 max-w-3xl">
-            <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
-              Browse by category
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-            {gatewayCategories.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  onClick={() => navigateToExploreWithCategory(item.key)}
-                  className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
-                >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                  </div>
-
-                  <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
-                    {item.description}
-                  </p>
-
-                  <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-red-900">
-                    Open category
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ListingStrip
-              title="Picked for you"
-              description="Campus-aware picks based on what is active and relevant now."
-              listings={recommendedListings}
-              loading={loading}
-              maxItems={8}
-              variant="featured"
-            />
-
-            <div className="grid grid-cols-1 gap-4">
-              <ListingStrip
-                title="Trending now"
-                description=""
-                listings={featuredListings}
-                loading={loading}
-                maxItems={6}
-                variant="supporting"
-              />
-
-              <ListingStrip
-                title="New"
-                description=""
-                listings={newestListings}
-                loading={loading}
-                maxItems={6}
-                variant="supporting"
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {featuredSections.map((section) => {
-              const listings = sectionListings[section.key] || [];
-              return (
-                <CategorySection
-                  key={section.key}
-                  title={section.title}
-                  description={section.description}
-                  categoryKey={section.key}
-                  icon={section.icon}
-                  listings={listings}
-                  loading={loading}
-                />
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="max-w-3xl">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                Why BuyMesho
-              </p>
-              <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
-                More structure than random campus group selling.
-              </h2>
-            </div>
-
-            <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {trustPills.map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-600"
-                >
-                  {item}
+        <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+            <div className="space-y-6">
+              <section>
+                <div className="mb-5 max-w-3xl">
+                  <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
+                    Browse by category
+                  </h2>
                 </div>
-              ))}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {gatewayCategories.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.key}
+                        type="button"
+                        onClick={() => navigateToExploreWithCategory(item.key)}
+                        className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
+                      >
+                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
+                            <Icon className="w-5 h-5" />
+                          </div>
+                        </div>
+
+                        <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
+                          {item.title}
+                        </h3>
+                        <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
+                          {item.description}
+                        </p>
+
+                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-red-900">
+                          Open category
+                          <ArrowRight className="w-4 h-4" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <section>
+                <div className="grid grid-cols-1 gap-4">
+                  {featuredSections.map((section) => {
+                    const listings = sectionListings[section.key] || [];
+                    return (
+                      <CategorySection
+                        key={section.key}
+                        title={section.title}
+                        description={section.description}
+                        categoryKey={section.key}
+                        icon={section.icon}
+                        listings={listings}
+                        loading={loading}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            </div>
+
+            <div className="space-y-6">
+              <section>
+                <div className="grid grid-cols-1 gap-4">
+                  <ListingStrip
+                    title="Picked for you"
+                    description="Campus-aware picks based on what is active and relevant now."
+                    listings={recommendedListings}
+                    loading={loading}
+                    maxItems={8}
+                    variant="featured"
+                  />
+
+                  <ListingStrip
+                    title="Trending now"
+                    description=""
+                    listings={featuredListings}
+                    loading={loading}
+                    maxItems={6}
+                    variant="supporting"
+                  />
+
+                  <ListingStrip
+                    title="New"
+                    description=""
+                    listings={newestListings}
+                    loading={loading}
+                    maxItems={6}
+                    variant="supporting"
+                  />
+                </div>
+              </section>
+
+              <section>
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+                  <div className="max-w-3xl">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                      Why BuyMesho
+                    </p>
+                    <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+                      More structure than random campus group selling.
+                    </h2>
+                  </div>
+
+                  <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    {trustPills.map((item) => (
+                      <div
+                        key={item}
+                        className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-600"
+                      >
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
             </div>
           </div>
         </section>
