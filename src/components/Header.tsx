@@ -172,7 +172,7 @@ export default function Header({
             >
               <span className="inline-flex items-center gap-3">
                 <ShoppingBag className="w-4 h-4" />
-                Browse Market
+                Market
               </span>
               <ChevronRight className="w-4 h-4" />
             </button>

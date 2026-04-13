@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  HelpCircle,
   Loader2,
   X,
   AlertTriangle,
@@ -90,16 +89,30 @@ export default function ReportProblemPage({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
+      <div className="sticky top-0 z-20 border-b border-zinc-100 bg-white/95 backdrop-blur">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              BuyMesho
+            </p>
+            <h2 className="text-2xl font-extrabold text-zinc-900">
+              Report a Problem
+            </h2>
+          </div>
+
+          <button
+            onClick={onClose}
+            className="h-11 w-11 rounded-2xl border border-zinc-200 bg-white shadow-sm hover:bg-zinc-50 hover:shadow-md transition-all flex items-center justify-center"
+            aria-label="Close page"
+          >
+            <X className="w-5 h-5 text-zinc-700" />
+          </button>
+        </div>
+      </div>
+
       <div className="p-6 overflow-y-auto flex-1">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <HelpCircle className="w-6 h-6 text-zinc-700" />
-              <h2 className="text-2xl font-extrabold text-zinc-900">
-                Report a Problem
-              </h2>
-            </div>
-
             <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5 space-y-3">
               <p className="text-sm font-semibold text-zinc-900">
                 Help keep BuyMesho safer, more trustworthy, and more useful.
@@ -277,25 +290,15 @@ export default function ReportProblemPage({
         </div>
       </div>
 
-      <div className="sticky bottom-0 border-t border-zinc-100 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-between">
+      <div className="sticky bottom-0 border-t border-zinc-100 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-start">
         {showBackButton ? (
           <button
             onClick={onBack}
-            className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-sm font-bold"
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
           >
-            ← Back to Settings
+            ← Back
           </button>
-        ) : (
-          <div />
-        )}
-
-        <button
-          onClick={onClose}
-          className="p-2 rounded-full bg-zinc-100 hover:bg-zinc-200 transition-colors"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        ) : null}
       </div>
     </div>
   );
