@@ -1,30 +1,31 @@
-import { useEffect, useState } from "react";
-import App from "./App.new";
-import AdminReportsPage from "./AdminReportsPage";
-import AdminSellerApplicationsPage from "./AdminSellerApplicationsPage";
-import AdminRouteGuard from "./components/AdminRouteGuard";
-import BecomeSellerPage from "./BecomeSellerPage";
-import ChangePasswordPage from "./ChangePasswordPage";
-import CategoryPage from "./CategoryPage";
-import CreateListingPage from "./CreateListingPage";
-import EditAccountPage from "./EditAccountPage";
-import EditListingPage from "./EditListingPage";
-import EditProfilePage from "./EditProfilePage";
-import ForgotPasswordPage from "./ForgotPasswordPage";
-import HomePage from "./HomePage";
-import ListingDetailsPage from "./ListingDetailsPage";
-import LoginPage from "./LoginPage";
-import MyListingsPage from "./MyListingsPage";
-import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
-import ProfilePage from "./ProfilePage";
-import ReportProblemPage from "./components/ReportProblemPage";
-import SafetyTipsPage from "./components/SafetyTipsPage";
-import SavedPage from "./SavedPage";
-import SettingsPage from "./SettingsPage";
-import SellerProfilePage from "./SellerProfilePage";
-import SignupPage from "./SignupPage";
-import TermsPage from "./components/TermsPage";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
+
+const App = lazy(() => import("./App.new"));
+const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
+const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
+const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
+const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
+const ChangePasswordPage = lazy(() => import("./ChangePasswordPage"));
+const CategoryPage = lazy(() => import("./CategoryPage"));
+const CreateListingPage = lazy(() => import("./CreateListingPage"));
+const EditAccountPage = lazy(() => import("./EditAccountPage"));
+const EditListingPage = lazy(() => import("./EditListingPage"));
+const EditProfilePage = lazy(() => import("./EditProfilePage"));
+const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
+const HomePage = lazy(() => import("./HomePage"));
+const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
+const LoginPage = lazy(() => import("./LoginPage"));
+const MyListingsPage = lazy(() => import("./MyListingsPage"));
+const PrivacyPolicyPage = lazy(() => import("./components/PrivacyPolicyPage"));
+const ProfilePage = lazy(() => import("./ProfilePage"));
+const ReportProblemPage = lazy(() => import("./components/ReportProblemPage"));
+const SafetyTipsPage = lazy(() => import("./components/SafetyTipsPage"));
+const SavedPage = lazy(() => import("./SavedPage"));
+const SettingsPage = lazy(() => import("./SettingsPage"));
+const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
+const SignupPage = lazy(() => import("./SignupPage"));
+const TermsPage = lazy(() => import("./components/TermsPage"));
 
 export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -43,65 +44,36 @@ export default function RootRouter() {
     };
   }, []);
 
-  if (route === "category") return <CategoryPage />;
-  if (route === "explore") return <App />;
-  if (route === "saved") return <SavedPage />;
-  if (route === "settings") return <SettingsPage />;
-  if (route === "privacy") {
-    return (
-      <PrivacyPolicyPage
-        onBack={() => window.history.back()}
-      />
-    );
-  }
-  if (route === "terms") {
-    return (
-      <TermsPage
-        onBack={() => window.history.back()}
-      />
-    );
-  }
-  if (route === "safety") {
-    return (
-      <SafetyTipsPage
-        onBack={() => window.history.back()}
-      />
-    );
-  }
-  if (route === "report") {
-    return (
-      <ReportProblemPage
-        onBack={() => window.history.back()}
-        isLoggedIn={false}
-      />
-    );
-  }
-  if (route === "seller") return <SellerProfilePage />;
-  if (route === "listing_details") return <ListingDetailsPage />;
-  if (route === "create") return <CreateListingPage />;
-  if (route === "edit") return <EditListingPage />;
-  if (route === "login") return <LoginPage />;
-  if (route === "signup") return <SignupPage />;
-  if (route === "forgot_password") return <ForgotPasswordPage />;
-  if (route === "profile") return <ProfilePage />;
-  if (route === "edit_profile") return <EditProfilePage />;
-  if (route === "edit_account") return <EditAccountPage />;
-  if (route === "become_seller") return <BecomeSellerPage />;
-  if (route === "change_password") return <ChangePasswordPage />;
-  if (route === "my_listings") return <MyListingsPage />;
-
-  if (route === "admin_reports")
-    return (
-      <AdminRouteGuard>
-        <AdminReportsPage />
-      </AdminRouteGuard>
-    );
-  if (route === "admin_seller_applications")
-    return (
-      <AdminRouteGuard>
-        <AdminSellerApplicationsPage />
-      </AdminRouteGuard>
-    );
-
-  return <HomePage />;
+  return (
+    <Suspense fallback={null}>
+      {route === "category" ? <CategoryPage /> :
+      route === "explore" ? <App /> :
+      route === "saved" ? <SavedPage /> :
+      route === "settings" ? <SettingsPage /> :
+      route === "privacy" ? <PrivacyPolicyPage onBack={() => window.history.back()} /> :
+      route === "terms" ? <TermsPage onBack={() => window.history.back()} /> :
+      route === "safety" ? <SafetyTipsPage onBack={() => window.history.back()} /> :
+      route === "report" ? <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} /> :
+      route === "seller" ? <SellerProfilePage /> :
+      route === "listing_details" ? <ListingDetailsPage /> :
+      route === "create" ? <CreateListingPage /> :
+      route === "edit" ? <EditListingPage /> :
+      route === "login" ? <LoginPage /> :
+      route === "signup" ? <SignupPage /> :
+      route === "forgot_password" ? <ForgotPasswordPage /> :
+      route === "profile" ? <ProfilePage /> :
+      route === "edit_profile" ? <EditProfilePage /> :
+      route === "edit_account" ? <EditAccountPage /> :
+      route === "become_seller" ? <BecomeSellerPage /> :
+      route === "change_password" ? <ChangePasswordPage /> :
+      route === "my_listings" ? <MyListingsPage /> :
+      route === "admin_reports" ? (
+        <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
+      ) :
+      route === "admin_seller_applications" ? (
+        <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
+      ) :
+      <HomePage />}
+    </Suspense>
+  );
 }
