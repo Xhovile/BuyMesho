@@ -333,32 +333,33 @@ export default function SettingsPage() {
                 </span>
               </button>
 
-              {expandedSections.account && <div className="mt-5 space-y-3 text-sm">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
-                  <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
+              {expandedSections.account && <>
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
+                    <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">University</p>
+                    <p className="mt-1 font-semibold text-zinc-900">{profile?.university || "Not set"}</p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
+                    <p className="mt-1 font-semibold text-zinc-900">
+                      {profileLoading
+                        ? "Loading..."
+                        : !firebaseUser
+                        ? "Login required"
+                        : profile
+                        ? profile.is_seller
+                          ? "Seller"
+                          : "General"
+                        : "Not available"}
+                    </p>
+                  </div>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">University</p>
-                  <p className="mt-1 font-semibold text-zinc-900">{profile?.university || "Not set"}</p>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
-                  <p className="mt-1 font-semibold text-zinc-900">
-                    {profileLoading
-                      ? "Loading..."
-                      : !firebaseUser
-                      ? "Login required"
-                      : profile
-                      ? profile.is_seller
-                        ? "Seller"
-                        : "General"
-                      : "Not available"}
-                  </p>
-                </div>
-              </div>
 
-              <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2">
                 {[
                   { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
                   ...(profile?.is_seller
@@ -425,7 +426,8 @@ export default function SettingsPage() {
                   <span className="font-bold text-red-700">Delete Account</span>
                   <ChevronRight className="w-4 h-4 text-red-300" />
                 </button>
-              </div>}
+                </div>
+              </>}
             </section>
 
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
