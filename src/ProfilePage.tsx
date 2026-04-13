@@ -60,7 +60,7 @@ export default function ProfilePage() {
       eyebrow="Account"
       title="My profile"
       description="Manage your account, see your current status, and move into the rest of the BuyMesho account tools."
-      backLabel="Back to Explore"
+      backLabel="Back to Market"
     >
       {authLoading || profileLoading ? (
         <div className="p-10 flex items-center justify-center gap-3 text-zinc-500 font-medium">

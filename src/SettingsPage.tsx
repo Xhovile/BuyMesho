@@ -280,7 +280,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800 items-center gap-2 inline-flex"
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
             >
               <ShoppingBag className="w-4 h-4" />
               Market

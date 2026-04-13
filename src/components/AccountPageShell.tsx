@@ -26,7 +26,7 @@ export default function AccountPageShell({
   title,
   description,
   children,
-  backLabel = "Back to Market",
+  backLabel = "Back",
   onBack,
   childrenSectionClassName,
 }: AccountPageShellProps) {
@@ -59,7 +59,7 @@ export default function AccountPageShell({
               </button>
             )}
             <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800 items-center gap-2 inline-flex"><ShoppingBag className="w-4 h-4" />Market</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><ShoppingBag className="w-4 h-4" />Market</button>
           </div>
         </div>
       </header>
