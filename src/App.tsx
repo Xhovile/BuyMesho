@@ -1075,6 +1075,15 @@ const openFooterView = (view: "privacy" | "terms" | "safety" | "report") => {
   setSettingsView(view);
 };
 
+const handleFooterPageBack = () => {
+  if (settingsEntrySource === "settings") {
+    setSettingsView("menu");
+    return;
+  }
+
+  closeSettings();
+};
+
 const promptSellerUpgrade = () => {
   setShowAddModal(false);
 
@@ -5222,7 +5231,7 @@ setCurrentPage={setCurrentPage}
     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <PrivacyPolicyPage
-        onBack={() => setSettingsView("menu")}
+        onBack={handleFooterPageBack}
         onClose={closeSettings}
         showBackButton={settingsEntrySource === "settings"}
       />
@@ -5235,7 +5244,7 @@ setCurrentPage={setCurrentPage}
     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <TermsPage
-        onBack={() => setSettingsView("menu")}
+        onBack={handleFooterPageBack}
         onClose={closeSettings}
         showBackButton={settingsEntrySource === "settings"}
       />
@@ -5248,7 +5257,7 @@ setCurrentPage={setCurrentPage}
     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <SafetyTipsPage
-        onBack={() => setSettingsView("menu")}
+        onBack={handleFooterPageBack}
         onClose={closeSettings}
         showBackButton={settingsEntrySource === "settings"}
       />
@@ -5261,7 +5270,7 @@ setCurrentPage={setCurrentPage}
     <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <ReportProblemPage
-       onBack={() => setSettingsView("menu")}
+       onBack={handleFooterPageBack}
        onClose={closeSettings}
        showBackButton={settingsEntrySource === "settings"}
        isLoggedIn={!!firebaseUser}
