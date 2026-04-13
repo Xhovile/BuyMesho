@@ -24,7 +24,7 @@ import SettingsPage from "./SettingsPage";
 import SellerProfilePage from "./SellerProfilePage";
 import SignupPage from "./SignupPage";
 import TermsPage from "./components/TermsPage";
-import { getAppRouteFromLocation, navigateToPath, type AppRoute } from "./lib/appNavigation";
+import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
 
 export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -50,36 +50,36 @@ export default function RootRouter() {
   if (route === "privacy") {
     return (
       <PrivacyPolicyPage
-        onBack={() => navigateToPath("/")}
-        onClose={() => navigateToPath("/")}
-        showBackButton={false}
+        onBack={() => window.history.back()}
+        onClose={() => window.history.back()}
+        showBackButton
       />
     );
   }
   if (route === "terms") {
     return (
       <TermsPage
-        onBack={() => navigateToPath("/")}
-        onClose={() => navigateToPath("/")}
-        showBackButton={false}
+        onBack={() => window.history.back()}
+        onClose={() => window.history.back()}
+        showBackButton
       />
     );
   }
   if (route === "safety") {
     return (
       <SafetyTipsPage
-        onBack={() => navigateToPath("/")}
-        onClose={() => navigateToPath("/")}
-        showBackButton={false}
+        onBack={() => window.history.back()}
+        onClose={() => window.history.back()}
+        showBackButton
       />
     );
   }
   if (route === "report") {
     return (
       <ReportProblemPage
-        onBack={() => navigateToPath("/")}
-        onClose={() => navigateToPath("/")}
-        showBackButton={false}
+        onBack={() => window.history.back()}
+        onClose={() => window.history.back()}
+        showBackButton
         isLoggedIn={false}
       />
     );
