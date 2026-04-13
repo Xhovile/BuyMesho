@@ -1,10 +1,8 @@
 import React from "react";
-import { ShieldCheck, X, AlertTriangle, UserCheck, Lock, Flag } from "lucide-react";
+import { ShieldCheck, AlertTriangle, UserCheck, Lock, Flag } from "lucide-react";
 
 type Props = {
   onBack: () => void;
-  onClose: () => void;
-  showBackButton?: boolean;
 };
 
 function Section({
@@ -46,8 +44,6 @@ function TipList({ items }: { items: React.ReactNode[] }) {
 
 export default function SafetyTipsPage({
   onBack,
-  onClose,
-  showBackButton = true,
 }: Props) {
   return (
     <div className="flex flex-col flex-1 min-h-0">
@@ -63,11 +59,11 @@ export default function SafetyTipsPage({
           </div>
 
           <button
-            onClick={onClose}
-            className="h-11 w-11 rounded-2xl border border-zinc-200 bg-white shadow-sm hover:bg-zinc-50 hover:shadow-md transition-all flex items-center justify-center"
-            aria-label="Close page"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
+            aria-label="Go back"
           >
-            <X className="w-5 h-5 text-zinc-700" />
+            ← Back
           </button>
         </div>
       </div>
@@ -310,16 +306,6 @@ export default function SafetyTipsPage({
         </div>
       </div>
 
-      {showBackButton ? (
-        <div className="sticky bottom-0 border-t border-zinc-100 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-start">
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
-          >
-            ← Back
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

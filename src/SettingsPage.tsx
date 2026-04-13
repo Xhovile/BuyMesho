@@ -580,32 +580,24 @@ export default function SettingsPage() {
             {view === "privacy" && (
               <PrivacyPolicyPage
                 onBack={() => openView("menu")}
-                onClose={() => navigateToPath(HOME_PATH)}
-                showBackButton={false}
               />
             )}
 
             {view === "terms" && (
               <TermsPage
                 onBack={() => openView("menu")}
-                onClose={() => navigateToPath(HOME_PATH)}
-                showBackButton={false}
               />
             )}
 
             {view === "safety" && (
               <SafetyTipsPage
                 onBack={() => openView("menu")}
-                onClose={() => navigateToPath(HOME_PATH)}
-                showBackButton={false}
               />
             )}
 
             {view === "report" && (
               <ReportProblemPage
                 onBack={() => openView("menu")}
-                onClose={() => navigateToPath(HOME_PATH)}
-                showBackButton={false}
                 isLoggedIn={!!firebaseUser}
               />
             )}

@@ -51,8 +51,6 @@ export default function RootRouter() {
     return (
       <PrivacyPolicyPage
         onBack={() => window.history.back()}
-        onClose={() => window.history.back()}
-        showBackButton
       />
     );
   }
@@ -60,8 +58,6 @@ export default function RootRouter() {
     return (
       <TermsPage
         onBack={() => window.history.back()}
-        onClose={() => window.history.back()}
-        showBackButton
       />
     );
   }
@@ -69,8 +65,6 @@ export default function RootRouter() {
     return (
       <SafetyTipsPage
         onBack={() => window.history.back()}
-        onClose={() => window.history.back()}
-        showBackButton
       />
     );
   }
@@ -78,8 +72,6 @@ export default function RootRouter() {
     return (
       <ReportProblemPage
         onBack={() => window.history.back()}
-        onClose={() => window.history.back()}
-        showBackButton
         isLoggedIn={false}
       />
     );
