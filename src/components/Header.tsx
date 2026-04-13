@@ -47,48 +47,15 @@ export default function Header({
     navigateToPath(SETTINGS_PATH);
   };
 
-  const handleProfileClick = () => {
-    if (!firebaseUser) {
-      setAuthGuardOpen(true);
-      return;
-    }
-    onProfileClick();
-  };
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
-      <div className="max-w-7xl mx-auto flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-4">
-          <BrandMark />
-
-          <div className="hidden md:flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => navigateToPath(HOME_PATH)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-            >
-              <House className="w-4 h-4" />
-              Home
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
-            >
-              <ShoppingBag className="w-4 h-4" />
-              Market
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSettingsClick()}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-            >
-              <Settings className="w-4 h-4" />
-              Settings
-            </button>
-          </div>
+    <>
+      <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
               <button
@@ -99,44 +66,23 @@ export default function Header({
                 <House className="w-4 h-4" />
                 Home
               </button>
-            ) : null}
-
-            <button
-              onClick={() => setMobileMenuOpen((value) => !value)}
-              className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={mobileMenuOpen}
-              aria-controls="mobile-header-menu"
-            >
-              {mobileMenuOpen ? (
-                <X className="w-5 h-5 text-white" />
-              ) : (
-                <Menu className="w-5 h-5 text-white" />
-              )}
-            </button>
-
-            <button
-              onClick={handleProfileClick}
-              className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-            >
-              {firebaseUser ? (
-                avatarUrl ? (
-                  <img
-                    src={avatarUrl}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                    {fallbackLetter}
-                  </div>
-                )
-              ) : (
-                <User className="w-5 h-5 text-zinc-600" />
-              )}
-            </button>
-          </div>
-        </div>
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Market
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSettingsClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+            </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
               {firebaseUser && userProfile?.is_seller ? (
@@ -164,9 +110,8 @@ export default function Header({
               </button>
 
               <button
-                type="button"
-                onClick={() => handleSettingsClick(closeMenu)}
-                className={navButtonClass}
+                onClick={onProfileClick}
+                className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
               >
                 {firebaseUser ? (
                   avatarUrl ? (
@@ -298,10 +243,7 @@ export default function Header({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(SETTINGS_PATH);
-                  }}
+                  onClick={() => handleSettingsClick(closeMenu)}
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
@@ -326,22 +268,35 @@ export default function Header({
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-
-        <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search listings, products, or services..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-zinc-300 rounded-2xl text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md outline-none transition-all"
-            onChange={(e) => onSearch(e.target.value)}
-          />
-        </div>
-      </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath("/signup");
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign Up
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath("/login");
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <FeedbackModal
         open={authGuardOpen}
@@ -350,6 +305,6 @@ export default function Header({
         message="You need to be logged in to access this page. Sign in or create an account to continue."
         onClose={() => setAuthGuardOpen(false)}
       />
-    </nav>
+    </>
   );
 }
