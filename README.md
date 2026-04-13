@@ -92,6 +92,17 @@ BuyMesho focuses on:
 
 ---
 
+## SPA Route Fallback (Avoid 404 on Refresh/Deep Links)
+
+This project uses client-side routing, so hosts must always serve `index.html` for non-file routes.
+
+- `vercel.json` adds a filesystem-first route and then falls back to `index.html`.
+- `public/_redirects` adds Netlify-style SPA fallback: `/* /index.html 200`.
+
+Without these rewrites, opening or refreshing deep URLs like `/explore`, `/settings`, or `/listing?...` can return a host-level 404.
+
+---
+
 ## Project Structure
 
 ```bash
