@@ -262,8 +262,8 @@ export default function SettingsPage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                {headerSubtitle}
+              <p className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                Secure Marketplace
               </p>
             </div>
           </button>

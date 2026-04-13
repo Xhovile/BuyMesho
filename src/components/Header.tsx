@@ -52,8 +52,8 @@ export default function Header({
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </h1>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                Market
+              <p className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                Secure Marketplace
               </p>
             </div>
           </button>
