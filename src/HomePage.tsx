@@ -23,15 +23,18 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
+  PRIVACY_PATH,
   PROFILE_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
   SETTINGS_PATH,
   SIGNUP_PATH,
+  TERMS_PATH,
   navigateToCreateListing,
   navigateToExplore,
   navigateToExploreWithCategory,
   navigateToListingDetails,
-  navigateToPath,
-  navigateToSettingsSection,
+  navigateToPath
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
@@ -750,31 +753,31 @@ export default function HomePage() {
           <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
             <button
               type="button"
-              onClick={() => navigateToSettingsSection("privacy")}
+              onClick={() => navigateToPath(PRIVACY_PATH)}
               className="hover:text-primary transition-colors"
             >
               Privacy
             </button>
             <button
               type="button"
-              onClick={() => navigateToSettingsSection("terms")}
+              onClick={() => navigateToPath(TERMS_PATH)}
               className="hover:text-primary transition-colors"
             >
               Terms
             </button>
             <button
               type="button"
-              onClick={() => navigateToSettingsSection("safety")}
+              onClick={() => navigateToPath(SAFETY_PATH)}
               className="hover:text-primary transition-colors"
             >
               Safety
             </button>
             <button
               type="button"
-              onClick={() => navigateToSettingsSection("report")}
+              onClick={() => navigateToPath(REPORT_PATH)}
               className="hover:text-primary transition-colors"
             >
-              Contact
+              Report
             </button>
           </div>
 

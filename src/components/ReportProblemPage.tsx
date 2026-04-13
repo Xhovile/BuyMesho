@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   Loader2,
-  X,
   AlertTriangle,
   CheckCircle2,
   ShieldAlert,
@@ -11,8 +10,6 @@ import { apiFetch } from "../lib/api";
 
 type Props = {
   onBack: () => void;
-  onClose: () => void;
-  showBackButton?: boolean;
   isLoggedIn: boolean;
 };
 
@@ -40,8 +37,6 @@ function Section({
 
 export default function ReportProblemPage({
   onBack,
-  onClose,
-  showBackButton = true,
   isLoggedIn,
 }: Props) {
   const [subject, setSubject] = useState("");
@@ -101,11 +96,11 @@ export default function ReportProblemPage({
           </div>
 
           <button
-            onClick={onClose}
-            className="h-11 w-11 rounded-2xl border border-zinc-200 bg-white shadow-sm hover:bg-zinc-50 hover:shadow-md transition-all flex items-center justify-center"
-            aria-label="Close page"
+            onClick={onBack}
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
+            aria-label="Go back"
           >
-            <X className="w-5 h-5 text-zinc-700" />
+            ← Back
           </button>
         </div>
       </div>
@@ -224,10 +219,10 @@ export default function ReportProblemPage({
               <div className="mt-3 flex justify-end">
                 <button
                   type="button"
-                  onClick={onClose}
+                  onClick={onBack}
                   className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold transition-colors"
                 >
-                  Close
+                  Back
                 </button>
               </div>
             </div>
@@ -290,16 +285,6 @@ export default function ReportProblemPage({
         </div>
       </div>
 
-      {showBackButton ? (
-        <div className="sticky bottom-0 border-t border-zinc-100 bg-white/95 backdrop-blur px-6 py-4 flex items-center justify-start">
-          <button
-            onClick={onBack}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800 transition-colors"
-          >
-            ← Back
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }

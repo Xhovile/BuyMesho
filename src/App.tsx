@@ -5232,8 +5232,6 @@ setCurrentPage={setCurrentPage}
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <PrivacyPolicyPage
         onBack={handleFooterPageBack}
-        onClose={closeSettings}
-        showBackButton={settingsEntrySource === "settings"}
       />
     </div>
   </div>
@@ -5245,8 +5243,6 @@ setCurrentPage={setCurrentPage}
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <TermsPage
         onBack={handleFooterPageBack}
-        onClose={closeSettings}
-        showBackButton={settingsEntrySource === "settings"}
       />
     </div>
   </div>
@@ -5258,8 +5254,6 @@ setCurrentPage={setCurrentPage}
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <SafetyTipsPage
         onBack={handleFooterPageBack}
-        onClose={closeSettings}
-        showBackButton={settingsEntrySource === "settings"}
       />
     </div>
   </div>
@@ -5271,8 +5265,6 @@ setCurrentPage={setCurrentPage}
     <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
       <ReportProblemPage
        onBack={handleFooterPageBack}
-       onClose={closeSettings}
-       showBackButton={settingsEntrySource === "settings"}
        isLoggedIn={!!firebaseUser}
       />
     </div>
