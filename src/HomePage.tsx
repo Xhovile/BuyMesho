@@ -82,7 +82,7 @@ const gatewayCategories: GatewayCategory[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.fashion,
-    title: "Fashion & shoes",
+    title: "Fashion and Clothing",
     description: "Clothes, bags, shoes, and everyday campus style.",
     icon: ShoppingBag,
   },
