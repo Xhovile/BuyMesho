@@ -333,6 +333,22 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export type SettingsSection = "privacy" | "terms" | "safety" | "report";
+
+export const navigateToSettingsSection = (section: SettingsSection) => {
+  const url = new URL(window.location.href);
+  url.pathname = SETTINGS_PATH;
+  url.searchParams.set("section", section);
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState({}, "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 export const navigateBackOrPath = (fallbackPath: string) => {
   if (window.history.length > 1) {
     window.history.back();

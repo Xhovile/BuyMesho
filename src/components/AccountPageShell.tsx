@@ -26,7 +26,7 @@ export default function AccountPageShell({
   title,
   description,
   children,
-  backLabel = "Back to Market",
+  backLabel = "Back",
   onBack,
   childrenSectionClassName,
 }: AccountPageShellProps) {
