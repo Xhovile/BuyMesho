@@ -40,6 +40,7 @@ import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
+import { UNIVERSITIES } from "./constants";
 
 type GatewayCategory = {
   key: string;
