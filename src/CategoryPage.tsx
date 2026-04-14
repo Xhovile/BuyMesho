@@ -23,7 +23,6 @@ import CategoryListingCard from "./components/category/CategoryListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { UNIVERSITIES } from "./constants";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
@@ -168,8 +167,23 @@ export default function CategoryPage() {
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
-  return ["All campuses", ...UNIVERSITIES];
-  }, []);
+  const seen = new Set<string>();
+  const campuses: string[] = [];
+
+  for (const item of items) {
+    const university = item.university?.trim();
+    if (!university) continue;
+
+    const normalized = university.toLowerCase();
+    if (seen.has(normalized)) continue;
+
+    seen.add(normalized);
+    campuses.push(university);
+  }
+
+  campuses.sort((a, b) => a.localeCompare(b));
+  return ["All campuses", ...campuses];
+}, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
