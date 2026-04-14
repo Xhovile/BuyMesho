@@ -42,13 +42,6 @@ import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES } from "./constants";
 
-type GatewayCategory = {
-  key: string;
-  title: string;
-  description: string;
-  icon: ElementType;
-};
-
 type FeaturedSection = {
   key: string;
   title: string;
@@ -75,39 +68,6 @@ const HOME_CATEGORY_KEYS = {
   beauty: "beauty",
 } as const;
 
-const gatewayCategories: GatewayCategory[] = [
-  {
-    key: HOME_CATEGORY_KEYS.phones,
-    title: "Phones & gadgets",
-    description: "Student-friendly tech, accessories, and practical electronics.",
-    icon: Smartphone,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.fashion,
-    title: "Fashion and Clothing",
-    description: "Clothes, bags, shoes, and everyday campus style.",
-    icon: ShoppingBag,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.books,
-    title: "Books & study tools",
-    description: "Books, calculators, stationery, and academic essentials.",
-    icon: BookOpen,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.food,
-    title: "Food & Snacks",
-    description: "Quick meals, snacks, and drinks students check often.",
-    icon: UtensilsCrossed,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.beauty,
-    title: "Beauty & personal care",
-    description: "Hair care, skincare, fragrances, and personal care essentials.",
-    icon: Sparkles,
-  },
-];
-
 const featuredSections: FeaturedSection[] = [
   {
     key: HOME_CATEGORY_KEYS.phones,
@@ -132,7 +92,7 @@ const featuredSections: FeaturedSection[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Food & Snacks",
+    title: "Eatery & Fast Foods",
     description: "Quick meals, snacks, and drinks students check often.",
     icon: UtensilsCrossed,
     apiCategory: "Food & Snacks",
@@ -653,48 +613,6 @@ export default function HomePage() {
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             <div className="space-y-6">
-              <section>
-                <div className="mb-5 max-w-3xl">
-                  <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
-                    Browse by category
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {gatewayCategories.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => navigateToPath(`/category?category=${item.key}`)}
-                        className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
-                      >
-                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
-                            <Icon className="w-5 h-5" />
-                          </div>
-                        </div>
-
-                        <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
-                          {item.title}
-                        </h3>
-                        <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
-                          {item.description}
-                        </p>
-
-                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-red-900">
-                          Open category
-                          <ArrowRight className="w-4 h-4" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
               <section>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
