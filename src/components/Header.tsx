@@ -7,6 +7,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   EXPLORE_PATH,
   HOME_PATH,
+  LOGIN_PATH,
   SETTINGS_PATH,
   navigateToPath,
 } from "../lib/appNavigation";
@@ -110,7 +111,13 @@ export default function Header({
               </button>
 
               <button
-                onClick={onProfileClick}
+                onClick={() => {
+                  if (!firebaseUser) {
+                    setAuthGuardOpen(true);
+                    return;
+                  }
+                  onProfileClick();
+                }}
                 className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
               >
                 {firebaseUser ? (
@@ -304,6 +311,20 @@ export default function Header({
         title="Login required"
         message="You need to be logged in to access this page. Sign in or create an account to continue."
         onClose={() => setAuthGuardOpen(false)}
+        actions={[
+          {
+            label: "Log in",
+            onClick: () => {
+              setAuthGuardOpen(false);
+              navigateToPath(LOGIN_PATH);
+            },
+          },
+          {
+            label: "Cancel",
+            onClick: () => setAuthGuardOpen(false),
+            variant: "secondary",
+          },
+        ]}
       />
     </>
   );
