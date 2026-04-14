@@ -167,6 +167,8 @@ export default function CategoryPage() {
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
+  return ["All campuses", ...UNIVERSITIES];
+  }, []);
     const seen = new Set<string>();
     const campuses: string[] = [];
 
