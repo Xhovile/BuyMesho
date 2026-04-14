@@ -12,6 +12,7 @@ import {
   ShoppingBag,
   Smartphone,
   Store,
+  Sparkles,
   UserRound,
   UtensilsCrossed,
   X,
@@ -71,6 +72,7 @@ const HOME_CATEGORY_KEYS = {
   fashion: "fashion",
   books: "books",
   food: "food",
+  beauty: "beauty",
 } as const;
 
 const gatewayCategories: GatewayCategory[] = [
@@ -97,6 +99,12 @@ const gatewayCategories: GatewayCategory[] = [
     title: "Food",
     description: "Quick food and snack listings students check often.",
     icon: UtensilsCrossed,
+  },
+  {
+    key: HOME_CATEGORY_KEYS.beauty,
+    title: "Beauty & personal care",
+    description: "Hair care, skincare, fragrances, and personal care essentials.",
+    icon: Sparkles,
   },
 ];
 
@@ -128,6 +136,13 @@ const featuredSections: FeaturedSection[] = [
     description: "Quick food and snack listings students check often.",
     icon: UtensilsCrossed,
     apiCategory: "Food & Snacks",
+  },
+  {
+    key: HOME_CATEGORY_KEYS.beauty,
+    title: "Beauty & Personal Care",
+    description: "Skincare, hair care, fragrances, and personal care essentials.",
+    icon: Sparkles,
+    apiCategory: "Beauty & Personal Care",
   },
 ];
 
