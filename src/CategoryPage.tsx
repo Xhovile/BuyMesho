@@ -171,21 +171,6 @@ export default function CategoryPage() {
   return ["All campuses", ...UNIVERSITIES];
   }, []);
 
-    for (const item of items) {
-      const university = item.university?.trim();
-      if (!university) continue;
-
-      const normalized = university.toLowerCase();
-      if (seen.has(normalized)) continue;
-
-      seen.add(normalized);
-      campuses.push(university);
-    }
-
-    campuses.sort((a, b) => a.localeCompare(b));
-    return ["All campuses", ...campuses];
-  }, [items]);
-
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     const normalizedCampus = campus.trim().toLowerCase();
