@@ -167,23 +167,23 @@ export default function CategoryPage() {
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const campuses: string[] = [];
+  const seen = new Set<string>();
+  const campuses: string[] = [];
 
-    for (const item of items) {
-      const university = item.university?.trim();
-      if (!university) continue;
+  for (const item of items) {
+    const university = item.university?.trim();
+    if (!university) continue;
 
-      const normalized = university.toLowerCase();
-      if (seen.has(normalized)) continue;
+    const normalized = university.toLowerCase();
+    if (seen.has(normalized)) continue;
 
-      seen.add(normalized);
-      campuses.push(university);
-    }
+    seen.add(normalized);
+    campuses.push(university);
+  }
 
-    campuses.sort((a, b) => a.localeCompare(b));
-    return ["All campuses", ...campuses];
-  }, [items]);
+  campuses.sort((a, b) => a.localeCompare(b));
+  return ["All campuses", ...campuses];
+}, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();

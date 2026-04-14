@@ -32,7 +32,6 @@ import {
   TERMS_PATH,
   navigateToCreateListing,
   navigateToExplore,
-  navigateToExploreWithCategory,
   navigateToListingDetails,
   navigateToPath
 } from "./lib/appNavigation";
@@ -41,6 +40,7 @@ import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
+import { UNIVERSITIES } from "./constants";
 
 type GatewayCategory = {
   key: string;
@@ -626,29 +626,18 @@ export default function HomePage() {
                 />
               </div>
 
-              <select
-                value={selectedCampus}
-                onChange={(e) => setSelectedCampus(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-              >
-                <option>All campuses</option>
-                <option>Bunda</option>
-                <option>UNIMA</option>
-                <option>MUBAS</option>
-                <option>LUANAR</option>
-                <option>Other</option>
-              </select>
-
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
-              >
-                Search
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </form>
-        </section>
+<select
+  value={selectedCampus}
+  onChange={(e) => setSelectedCampus(e.target.value)}
+  className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+>
+  <option>All campuses</option>
+  {UNIVERSITIES.map((university) => (
+    <option key={university} value={university}>
+      {university}
+    </option>
+  ))}
+</select>
 
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
@@ -667,7 +656,7 @@ export default function HomePage() {
                       <button
                         key={item.key}
                         type="button"
-                        onClick={() => navigateToExploreWithCategory(item.key)}
+                        onClick={() => navigateToPath(`/category?category=${item.key}`)}
                         className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
                       >
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
