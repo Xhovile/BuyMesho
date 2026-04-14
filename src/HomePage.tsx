@@ -651,13 +651,12 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {gatewayCategories.map((item) => {
-                      onClick={() => navigateToPath(`/category?category=${item.key}`)}
                     const Icon = item.icon;
                     return (
                       <button
                         key={item.key}
                         type="button"
-                        onClick={() => navigateToExploreWithCategory(item.key)}
+                        onClick={() => navigateToPath(`/category?category=${item.key}`)}
                         className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
                       >
                         <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
