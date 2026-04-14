@@ -423,7 +423,7 @@ export default function CategoryPage() {
         open={authGuardOpen}
         type="error"
         title="Login required"
-        message="You need to be logged in to become a seller. Sign in or create an account to continue."
+        message="Log in to continue."
         onClose={() => setAuthGuardOpen(false)}
         actions={[
           {
