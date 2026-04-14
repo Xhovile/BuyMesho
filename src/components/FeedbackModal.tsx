@@ -96,9 +96,9 @@ export default function FeedbackModal({
             <div className="px-6 pb-6">
               {actions && actions.length > 0 ? (
                 <div className="flex gap-3">
-                  {actions.map((action) => (
+                  {actions.map((action, index) => (
                     <button
-                      key={action.label}
+                      key={index}
                       type="button"
                       onClick={action.onClick}
                       className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
