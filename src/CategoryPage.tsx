@@ -14,6 +14,7 @@ import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
 import {
   BECOME_SELLER_PATH,
+  LOGIN_PATH,
   navigateToExplore,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -110,7 +111,13 @@ export default function CategoryPage() {
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("category");
-    if (value === "phones" || value === "fashion" || value === "books" || value === "food" || value === "beauty") {
+    if (
+      value === "phones" ||
+      value === "fashion" ||
+      value === "books" ||
+      value === "food" ||
+      value === "beauty"
+    ) {
       return value;
     }
     return "phones";
@@ -423,7 +430,7 @@ export default function CategoryPage() {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(BECOME_SELLER_PATH);
+              navigateToPath(LOGIN_PATH);
             },
           },
           {
