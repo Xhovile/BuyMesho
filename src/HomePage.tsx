@@ -6,18 +6,17 @@ import {
   ChevronRight,
   House,
   Menu,
+  Plus,
   Search,
   Settings,
-  ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Smartphone,
   Store,
   UserRound,
   UtensilsCrossed,
   X,
 } from "lucide-react";
-import { motion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
 import {
   BECOME_SELLER_PATH,
   EXPLORE_PATH,
@@ -40,6 +39,7 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
+import FeedbackModal from "./components/FeedbackModal";
 
 type GatewayCategory = {
   key: string;
@@ -225,6 +225,7 @@ export default function HomePage() {
   const { firebaseUser, profile } = useAccountProfile();
   const isLoggedIn = !!firebaseUser;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
   const {
@@ -259,6 +260,16 @@ export default function HomePage() {
     });
   };
 
+  const handleSettingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SETTINGS_PATH);
+  };
+
   const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
@@ -289,7 +300,7 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => navigateToPath(SETTINGS_PATH)}
+                onClick={() => handleSettingsClick()}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
               >
                 <Settings className="w-4 h-4" />
@@ -334,20 +345,59 @@ export default function HomePage() {
             </div>
           </div>
 
-          {mobileMenuOpen ? (
-            <div
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
+              onClick={closeMenu}
+              aria-hidden="true"
+            />
+
+            {/* Drawer */}
+            <motion.div
+              key="drawer-panel"
               id="mobile-home-menu"
-              className="md:hidden rounded-3xl border border-zinc-200 bg-white p-4 shadow-lg shadow-zinc-200/60"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="home-drawer-title"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
-              <div className="flex items-center justify-between gap-3 mb-4">
+              {/* Drawer header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                     Menu
                   </p>
-                  <h2 className="mt-1 text-base font-black text-zinc-900">
+                  <h2 id="home-drawer-title" className="mt-1 text-base font-black text-zinc-900">
                     Start here
                   </h2>
                 </div>
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  aria-label="Close menu"
+                  className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-600" />
+                </button>
+              </div>
+
+              {/* Drawer body */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                 {isLoggedIn && profile?.is_seller ? (
                   <button
                     type="button"
@@ -355,30 +405,31 @@ export default function HomePage() {
                       closeMenu();
                       handleStartSelling();
                     }}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
+                    className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
                   >
-                    <Store className="w-4 h-4" />
-                    List Item
+                    <span className="inline-flex items-center gap-3">
+                      <Plus className="w-4 h-4" />
+                      List Item
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 ) : null}
-              </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  navigateToPath(EXPLORE_PATH);
-                }}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800"
-              >
-                <span className="inline-flex items-center gap-3">
-                  <ShoppingBag className="w-4 h-4" />
-                  Market
-                </span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath(EXPLORE_PATH);
+                  }}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <ShoppingBag className="w-4 h-4" />
+                    Market
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
 
-              <div className="mt-3 space-y-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -396,10 +447,7 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(SETTINGS_PATH);
-                  }}
+                  onClick={() => handleSettingsClick(closeMenu)}
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
@@ -449,10 +497,32 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-            </div>
-          ) : null}
-        </div>
-      </header>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <FeedbackModal
+        open={authGuardOpen}
+        type="error"
+        title="Login required"
+        message="You need to be logged in to access this page. Sign in or create an account to continue."
+        onClose={() => setAuthGuardOpen(false)}
+        actions={[
+          {
+            label: "Log in",
+            onClick: () => {
+              setAuthGuardOpen(false);
+              navigateToPath(LOGIN_PATH);
+            },
+          },
+          {
+            label: "Cancel",
+            onClick: () => setAuthGuardOpen(false),
+            variant: "secondary",
+          },
+        ]}
+      />
 
       <main>
         <section className="relative overflow-hidden pt-6 pb-10 sm:pt-12 sm:pb-24">

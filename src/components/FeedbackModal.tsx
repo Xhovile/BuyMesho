@@ -3,12 +3,19 @@ import { CheckCircle2, AlertTriangle, Info, X } from "lucide-react";
 
 type FeedbackType = "success" | "error" | "info";
 
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
 type FeedbackModalProps = {
   open: boolean;
   type: FeedbackType;
   title: string;
   message: string;
   onClose: () => void;
+  actions?: FeedbackAction[];
 };
 
 export default function FeedbackModal({
@@ -17,6 +24,7 @@ export default function FeedbackModal({
   title,
   message,
   onClose,
+  actions,
 }: FeedbackModalProps) {
   const config = {
     success: {
@@ -86,13 +94,32 @@ export default function FeedbackModal({
             </div>
 
             <div className="px-6 pb-6">
-              <button
-                type="button"
-                onClick={onClose}
-                className={`w-full py-3 rounded-2xl font-bold transition-colors ${config.button}`}
-              >
-                Okay
-              </button>
+              {actions && actions.length > 0 ? (
+                <div className="flex gap-3">
+                  {actions.map((action) => (
+                    <button
+                      key={action.label}
+                      type="button"
+                      onClick={action.onClick}
+                      className={`flex-1 py-3 rounded-2xl font-bold transition-colors ${
+                        action.variant === "secondary"
+                          ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                          : config.button
+                      }`}
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className={`w-full py-3 rounded-2xl font-bold transition-colors ${config.button}`}
+                >
+                  Okay
+                </button>
+              )}
             </div>
           </motion.div>
         </div>
