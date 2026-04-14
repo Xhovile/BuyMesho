@@ -676,6 +676,8 @@ export default function HomePage() {
                             <Icon className="w-5 h-5" />
                           </div>
                         </div>
+                       
+                      onClick={() => navigateToPath(`/category?category=${item.key}`)}
 
                         <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
                           {item.title}
