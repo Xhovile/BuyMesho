@@ -8,14 +8,21 @@ import {
   Smartphone,
   BookOpen,
   Store,
+  Sparkles,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
-import { navigateToExplore, navigateToPath } from "./lib/appNavigation";
+import {
+  BECOME_SELLER_PATH,
+  navigateToExplore,
+  navigateToPath,
+} from "./lib/appNavigation";
 import CategoryListingCard from "./components/category/CategoryListingCard";
 import FormDropdown from "./components/FormDropdown";
+import FeedbackModal from "./components/FeedbackModal";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 
-type CategoryKey = "phones" | "fashion" | "books" | "food";
+type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
 type CategoryConfig = {
   key: CategoryKey;
@@ -78,20 +85,32 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",
   },
+  beauty: {
+    key: "beauty",
+    title: "Beauty & Personal Care",
+    subtitle: "Beauty products and personal care",
+    description:
+      "Browse beauty products, hair care, skincare, fragrances, and personal care essentials posted by campus sellers.",
+    heroIcon: Sparkles,
+    apiCategory: "Beauty & Personal Care",
+    accent: "from-pink-500/10 to-zinc-100",
+  },
 };
 
 export default function CategoryPage() {
+  const { firebaseUser } = useAccountProfile();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest first");
   const [campus, setCampus] = useState("All campuses");
+  const [authGuardOpen, setAuthGuardOpen] = useState(false);
 
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("category");
-    if (value === "phones" || value === "fashion" || value === "books" || value === "food") {
+    if (value === "phones" || value === "fashion" || value === "books" || value === "food" || value === "beauty") {
       return value;
     }
     return "phones";
@@ -164,12 +183,7 @@ export default function CategoryPage() {
 
       if (!q) return true;
 
-      const haystack = [
-        item.name,
-        item.description,
-        item.category,
-        item.university,
-      ]
+      const haystack = [item.name, item.description, item.category, item.university]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -193,6 +207,13 @@ export default function CategoryPage() {
   }, [items, search, sortBy, campus]);
 
   const HeroIcon = config.heroIcon;
+  const handleSellClick = () => {
+    if (!firebaseUser) {
+      setAuthGuardOpen(true);
+      return;
+    }
+    navigateToPath(BECOME_SELLER_PATH);
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -256,6 +277,15 @@ export default function CategoryPage() {
                 >
                   Browse all filters
                   <ArrowRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSellClick}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                >
+                  Sell
+                  <Store className="w-4 h-4" />
                 </button>
 
                 <button
@@ -381,6 +411,28 @@ export default function CategoryPage() {
           </div>
         </section>
       </main>
+
+      <FeedbackModal
+        open={authGuardOpen}
+        type="error"
+        title="Login required"
+        message="You need to be logged in to become a seller. Sign in or create an account to continue."
+        onClose={() => setAuthGuardOpen(false)}
+        actions={[
+          {
+            label: "Log in",
+            onClick: () => {
+              setAuthGuardOpen(false);
+              navigateToPath(BECOME_SELLER_PATH);
+            },
+          },
+          {
+            label: "Cancel",
+            onClick: () => setAuthGuardOpen(false),
+            variant: "secondary",
+          },
+        ]}
+      />
     </div>
   );
 }
