@@ -651,6 +651,7 @@ export default function HomePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {gatewayCategories.map((item) => {
+                      onClick={() => navigateToPath(`/category?category=${item.key}`)}
                     const Icon = item.icon;
                     return (
                       <button
@@ -666,8 +667,6 @@ export default function HomePage() {
                             <Icon className="w-5 h-5" />
                           </div>
                         </div>
-                       
-                      onClick={() => navigateToPath(`/category?category=${item.key}`)}
 
                         <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
                           {item.title}
