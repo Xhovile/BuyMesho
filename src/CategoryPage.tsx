@@ -18,6 +18,7 @@ import {
   navigateToExplore,
   navigateToPath,
 } from "./lib/appNavigation";
+import { getListingSubcategories } from "./listingSchemas/registry";
 import CategoryListingCard from "./components/category/CategoryListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
@@ -42,6 +43,7 @@ type ListingPreview = {
   description?: string | null;
   photos?: string[];
   category?: string;
+  subcategory?: string | null;
   university?: string;
 };
 
@@ -106,6 +108,7 @@ export default function CategoryPage() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest first");
   const [campus, setCampus] = useState("All campuses");
+  const [subcategory, setSubcategory] = useState("All subcategories");
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
 
   const categoryKey = useMemo(() => {
@@ -158,6 +161,11 @@ export default function CategoryPage() {
     };
   }, [config.apiCategory]);
 
+  const subcategoryOptions = useMemo(() => {
+    const subs = getListingSubcategories(config.apiCategory);
+    return ["All subcategories", ...subs];
+  }, [config.apiCategory]);
+
   const campusOptions = useMemo(() => {
     const seen = new Set<string>();
     const campuses: string[] = [];
@@ -180,6 +188,7 @@ export default function CategoryPage() {
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
     const normalizedCampus = campus.trim().toLowerCase();
+    const normalizedSubcategory = subcategory.trim().toLowerCase();
 
     const filtered = items.filter((item) => {
       const campusMatch =
@@ -188,9 +197,15 @@ export default function CategoryPage() {
 
       if (!campusMatch) return false;
 
+      const subcategoryMatch =
+        normalizedSubcategory === "all subcategories" ||
+        (item.subcategory || "").trim().toLowerCase() === normalizedSubcategory;
+
+      if (!subcategoryMatch) return false;
+
       if (!q) return true;
 
-      const haystack = [item.name, item.description, item.category, item.university]
+      const haystack = [item.name, item.description, item.category, item.subcategory, item.university]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -211,7 +226,7 @@ export default function CategoryPage() {
     });
 
     return sorted;
-  }, [items, search, sortBy, campus]);
+  }, [items, search, sortBy, campus, subcategory]);
 
   const HeroIcon = config.heroIcon;
   const handleSellClick = () => {
@@ -319,7 +334,7 @@ export default function CategoryPage() {
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_220px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input
@@ -330,6 +345,15 @@ export default function CategoryPage() {
                 className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
               />
             </div>
+
+            <FormDropdown
+              label="Subcategory"
+              value={subcategory}
+              onChange={(value) => setSubcategory(value)}
+              placeholder="Choose subcategory"
+              searchPlaceholder="Search subcategories..."
+              options={subcategoryOptions}
+            />
 
             <FormDropdown
               label="Campus"
