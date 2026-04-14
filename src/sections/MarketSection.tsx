@@ -164,11 +164,16 @@ export default function MarketSection({
         setSortBy={setSortBy}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-8">
-        <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-          Recent Listings
-          <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-        </h3>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            Listings
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-zinc-900 flex items-center gap-2">
+            Recent listings
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          </h3>
+        </div>
 
         <div className="text-xs font-bold text-zinc-400">
           {visibleListings.length > 0
@@ -253,7 +258,8 @@ export default function MarketSection({
           <p className="text-zinc-500">
             {hasActiveFilters
               ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
-              : "Try adjusting your search terms or check again later for new listings."}
+              : "Try adjusting your search terms or check again later for new listings."
+            }
           </p>
           {hasActiveFilters && (
             <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
