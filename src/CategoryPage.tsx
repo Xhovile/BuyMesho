@@ -78,10 +78,10 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   },
   food: {
     key: "food",
-    title: "Campus Eats",
-    subtitle: "Quick food and snacks",
+    title: "Food & Snacks",
+    subtitle: "Quick meals, snacks, and drinks",
     description:
-      "Food, snacks, and simple campus eats that students can discover quickly without digging through filters.",
+      "Browse food, snacks, and drinks that students can discover quickly without digging through filters.",
     heroIcon: Store,
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",

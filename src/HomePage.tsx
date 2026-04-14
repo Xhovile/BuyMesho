@@ -96,8 +96,8 @@ const gatewayCategories: GatewayCategory[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Food",
-    description: "Quick food and snack listings students check often.",
+    title: "Food & Snacks",
+    description: "Quick meals, snacks, and drinks students check often.",
     icon: UtensilsCrossed,
   },
   {
@@ -132,8 +132,8 @@ const featuredSections: FeaturedSection[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Food",
-    description: "Quick food and snack listings students check often.",
+    title: "Food & Snacks",
+    description: "Quick meals, snacks, and drinks students check often.",
     icon: UtensilsCrossed,
     apiCategory: "Food & Snacks",
   },
