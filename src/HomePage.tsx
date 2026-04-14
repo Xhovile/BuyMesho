@@ -626,18 +626,29 @@ export default function HomePage() {
                 />
               </div>
 
-<select
-  value={selectedCampus}
-  onChange={(e) => setSelectedCampus(e.target.value)}
-  className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
->
-  <option>All campuses</option>
-  {UNIVERSITIES.map((university) => (
-    <option key={university} value={university}>
-      {university}
-    </option>
-  ))}
-</select>
+              <select
+                value={selectedCampus}
+                onChange={(e) => setSelectedCampus(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+              >
+                <option>All campuses</option>
+                {UNIVERSITIES.map((university) => (
+                  <option key={university} value={university}>
+                    {university}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+              >
+                Search
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </section>
 
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
