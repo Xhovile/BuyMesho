@@ -32,7 +32,6 @@ import {
   TERMS_PATH,
   navigateToCreateListing,
   navigateToExplore,
-  navigateToExploreWithCategory,
   navigateToListingDetails,
   navigateToPath
 } from "./lib/appNavigation";
