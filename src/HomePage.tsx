@@ -608,48 +608,48 @@ export default function HomePage() {
             </div>
           </section>
         ) : null}
+        
+     <section className="max-w-7xl mx-auto px-4 pb-8">
+  <form
+    onSubmit={handleSearchSubmit}
+    className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm"
+  >
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_auto] gap-3">
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Search items, services, books, phones..."
+          className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+        />
+      </div>
 
-        <section className="max-w-7xl mx-auto px-4 pb-8">
-          <form
-            onSubmit={handleSearchSubmit}
-            className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm"
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_auto] gap-3">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                <input
-                  type="text"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Search items, services, books, phones..."
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-                />
-              </div>
+      <select
+        value={selectedCampus}
+        onChange={(e) => setSelectedCampus(e.target.value)}
+        className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+      >
+        <option>All campuses</option>
+        {UNIVERSITIES.map((university) => (
+          <option key={university} value={university}>
+            {university}
+          </option>
+        ))}
+      </select>
 
-              <select
-                value={selectedCampus}
-                onChange={(e) => setSelectedCampus(e.target.value)}
-                className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-              >
-                <option>All campuses</option>
-                {UNIVERSITIES.map((university) => (
-                  <option key={university} value={university}>
-                    {university}
-                  </option>
-                ))}
-              </select>
-
-              <button
-                type="submit"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
-              >
-                Search
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </form>
-        </section>
-
+      <button
+        type="submit"
+        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+      >
+        Search
+        <ArrowRight className="w-4 h-4" />
+      </button>
+    </div>
+  </form>
+</section>
+        
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             <div className="space-y-6">
