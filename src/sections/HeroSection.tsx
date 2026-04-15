@@ -31,8 +31,13 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               transition={{ delay: 0.05 }}
               className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-black tracking-[-0.06em] leading-[0.95] text-zinc-900"
             >
-              Browse campus listings.
+              Browse products and services on BuyMesho.
             </motion.h1>
+
+            <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed">
+              Built for campus sellers, nearby buyers, and anyone looking for practical deals around
+              universities and the surrounding communities.
+            </p>
           </div>
 
           <motion.div
