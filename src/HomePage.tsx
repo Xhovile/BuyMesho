@@ -40,7 +40,6 @@ import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
-import { UNIVERSITIES } from "./constants";
 
 type FeaturedSection = {
   key: string;
@@ -204,7 +203,6 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
-  const [selectedCampus, setSelectedCampus] = useState("All campuses");
   const {
     recommendedListings,
     newestListings,
@@ -234,8 +232,6 @@ export default function HomePage() {
     event.preventDefault();
     navigateToExplore({
       search: searchText.trim(),
-      university:
-        selectedCampus && selectedCampus !== "All campuses" ? selectedCampus : "",
     });
   };
 
@@ -325,39 +321,24 @@ export default function HomePage() {
             </div>
           </div>
 
-          <form
-            onSubmit={handleSearchSubmit}
-            className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)_220px] gap-2"
-          >
-            <button
-              type="submit"
-              aria-label="Search listings"
-              className="inline-flex items-center justify-center rounded-2xl bg-red-900 px-4 py-3 text-sm font-extrabold text-white hover:bg-red-800"
-            >
-              Search
-            </button>
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
+          <form onSubmit={handleSearchSubmit} className="w-full">
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm">
+              <Search className="ml-2 w-5 h-5 text-zinc-500" />
               <input
                 type="text"
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 placeholder="Search items, services, books, phones..."
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-300 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md transition-all"
+                className="w-full bg-transparent text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
               />
+              <button
+                type="submit"
+                aria-label="Search listings"
+                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-red-800"
+              >
+                Search
+              </button>
             </div>
-            <select
-              value={selectedCampus}
-              onChange={(e) => setSelectedCampus(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl border border-zinc-300 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-            >
-              <option>All campuses</option>
-              {UNIVERSITIES.map((university) => (
-                <option key={university} value={university}>
-                  {university}
-                </option>
-              ))}
-            </select>
           </form>
         </div>
       </header>
@@ -611,9 +592,9 @@ export default function HomePage() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             <div className="space-y-6">
               <section>
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-500 mb-4">
+                <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 sm:text-4xl">
                   FEATURED CATEGORIES
-                </p>
+                </h2>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
                     const listings = sectionListings[section.key] || [];
