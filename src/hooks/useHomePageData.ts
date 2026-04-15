@@ -21,11 +21,16 @@ export type HomeFeaturedSection = {
 };
 
 const HOMEPAGE_CACHE_TTL_MS = 60_000;
+const CATEGORY_SECTION_FETCH_DELAY_MS = 250;
 
 const homepageCache = new Map<
   string,
   { data: HomePreviewListing[]; timestamp: number }
 >();
+
+export const invalidateHomepageCache = () => {
+  homepageCache.clear();
+};
 
 function isAbortLikeError(error: unknown) {
   if (!error) return false;
@@ -115,6 +120,33 @@ async function fetchListings(path: string, signal?: AbortSignal) {
   return items;
 }
 
+async function waitWithAbort(ms: number, signal?: AbortSignal) {
+  if (!ms) return;
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return;
+  }
+
+  if (signal.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      clearTimeout(timeout);
+      signal.removeEventListener("abort", onAbort);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const { user, loading: authLoading } = useAuthUser();
 
@@ -167,6 +199,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
         ]);
 
         const sections: Record<string, HomePreviewListing[]> = {};
+        await waitWithAbort(CATEGORY_SECTION_FETCH_DELAY_MS, controller.signal);
 
         await Promise.all(
           featuredSections.map(async (s) => {
