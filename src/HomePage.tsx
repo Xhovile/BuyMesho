@@ -200,7 +200,7 @@ export default function HomePage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
   const isLoggedIn = !!firebaseUser;
   const isSeller = !!(isLoggedIn && profile?.is_seller);
-  const sellerStatusPending = isLoggedIn && profileLoading;
+  const isSellerProfileLoading = isLoggedIn && profileLoading;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -290,12 +290,12 @@ export default function HomePage() {
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={handleStartSelling}
-                disabled={sellerStatusPending}
+                disabled={isSellerProfileLoading}
                 className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
               >
                 {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
                 <span className="hidden sm:inline">
-                  {sellerStatusPending ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
                 </span>
               </button>
 
@@ -418,12 +418,12 @@ export default function HomePage() {
                     closeMenu();
                     handleStartSelling();
                   }}
-                  disabled={sellerStatusPending}
+                  disabled={isSellerProfileLoading}
                   className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-zinc-900"
                 >
                   <span className="inline-flex items-center gap-3">
                     {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                    {sellerStatusPending ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                    {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
                   </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
@@ -713,10 +713,10 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={handleStartSelling}
-                    disabled={sellerStatusPending}
+                    disabled={isSellerProfileLoading}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {sellerStatusPending ? "Loading..." : "Get Started"}
+                    {isSellerProfileLoading ? "Loading..." : "Get Started"}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (

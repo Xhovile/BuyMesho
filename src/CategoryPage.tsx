@@ -313,7 +313,7 @@ export default function CategoryPage() {
               <button
                 type="button"
                 onClick={handleSellClick}
-                disabled={!!firebaseUser && profileLoading}
+                disabled={profileLoading}
                 className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Sell
