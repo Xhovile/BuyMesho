@@ -325,6 +325,7 @@ export default function HomePage() {
           >
             <button
               type="submit"
+              aria-label="Search listings"
               className="inline-flex items-center justify-center rounded-2xl bg-red-900 px-4 py-3 text-sm font-extrabold text-white hover:bg-red-800"
             >
               Search

@@ -338,6 +338,7 @@ export default function CategoryPage() {
               type="button"
               onClick={() => setFiltersOpen((value) => !value)}
               className="mt-3 w-full inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
+              aria-label="Toggle filter options"
               aria-expanded={filtersOpen}
               aria-controls="category-filter-panel"
             >
