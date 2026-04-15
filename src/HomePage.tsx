@@ -11,11 +11,11 @@ import {
   Settings,
   ShoppingBag,
   Smartphone,
-  Store,
   Sparkles,
-  UserRound,
+  Store,
   UtensilsCrossed,
   X,
+  UserRound,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
@@ -33,7 +33,7 @@ import {
   navigateToCreateListing,
   navigateToExplore,
   navigateToListingDetails,
-  navigateToPath
+  navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
@@ -41,13 +41,6 @@ import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES } from "./constants";
-
-type GatewayCategory = {
-  key: string;
-  title: string;
-  description: string;
-  icon: ElementType;
-};
 
 type FeaturedSection = {
   key: string;
@@ -75,39 +68,6 @@ const HOME_CATEGORY_KEYS = {
   beauty: "beauty",
 } as const;
 
-const gatewayCategories: GatewayCategory[] = [
-  {
-    key: HOME_CATEGORY_KEYS.phones,
-    title: "Phones & gadgets",
-    description: "Student-friendly tech, accessories, and practical electronics.",
-    icon: Smartphone,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.fashion,
-    title: "Fashion and Clothing",
-    description: "Clothes, bags, shoes, and everyday campus style.",
-    icon: ShoppingBag,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.books,
-    title: "Books & study tools",
-    description: "Books, calculators, stationery, and academic essentials.",
-    icon: BookOpen,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.food,
-    title: "Food & Snacks",
-    description: "Quick meals, snacks, and drinks students check often.",
-    icon: UtensilsCrossed,
-  },
-  {
-    key: HOME_CATEGORY_KEYS.beauty,
-    title: "Beauty & personal care",
-    description: "Hair care, skincare, fragrances, and personal care essentials.",
-    icon: Sparkles,
-  },
-];
-
 const featuredSections: FeaturedSection[] = [
   {
     key: HOME_CATEGORY_KEYS.phones,
@@ -132,7 +92,7 @@ const featuredSections: FeaturedSection[] = [
   },
   {
     key: HOME_CATEGORY_KEYS.food,
-    title: "Food & Snacks",
+    title: "Eatery & Fast Foods",
     description: "Quick meals, snacks, and drinks students check often.",
     icon: UtensilsCrossed,
     apiCategory: "Food & Snacks",
@@ -174,7 +134,9 @@ function ListingStrip({
           <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
-          {isFeatured ? <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p> : null}
+          {isFeatured ? (
+            <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p>
+          ) : null}
         </div>
 
         {isFeatured ? (
@@ -243,6 +205,7 @@ export default function HomePage() {
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [selectedCampus, setSelectedCampus] = useState("All campuses");
+
   const {
     recommendedListings,
     newestListings,
@@ -252,13 +215,16 @@ export default function HomePage() {
     error,
   } = useHomePageData(featuredSections);
 
-  const handleStartSelling = () => {
+  const isSeller = !!profile?.is_seller;
+  const sellLabel = isSeller ? "List Item" : "Sell";
+
+  const handleSellClick = () => {
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      setAuthGuardOpen(true);
       return;
     }
 
-    if (!profile?.is_seller) {
+    if (!isSeller) {
       navigateToPath(BECOME_SELLER_PATH);
       return;
     }
@@ -297,54 +263,32 @@ export default function HomePage() {
             <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50">
                 <House className="w-4 h-4" />
                 Home
               </button>
-              <button
-                type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
-              >
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800">
                 <ShoppingBag className="w-4 h-4" />
                 Market
               </button>
-              <button
-                type="button"
-                onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={() => handleSettingsClick()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50">
                 <Settings className="w-4 h-4" />
                 Settings
               </button>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {isLoggedIn && profile?.is_seller ? (
-                <button
-                  onClick={handleStartSelling}
-                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                >
-                  <Store className="w-4 h-4" />
-                  <span className="hidden sm:inline">List Item</span>
-                </button>
-              ) : null}
-
               <button
                 type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
-                aria-label="Go to Market"
+                onClick={handleSellClick}
+                className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
               >
-                <ShoppingBag className="w-4 h-4" />
-                Market
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">{sellLabel}</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setMobileMenuOpen((value) => !value)}
                 className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -360,13 +304,21 @@ export default function HomePage() {
             </div>
           </div>
 
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search listings, products, or services..."
+              className="w-full pl-12 pr-4 py-3 bg-white border border-zinc-300 rounded-2xl text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md outline-none transition-all"
+              onChange={(e) => setSearchText(e.target.value)}
+            />
+          </div>
         </div>
       </header>
 
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -378,7 +330,6 @@ export default function HomePage() {
               aria-hidden="true"
             />
 
-            {/* Drawer */}
             <motion.div
               key="drawer-panel"
               id="mobile-home-menu"
@@ -391,7 +342,6 @@ export default function HomePage() {
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
-              {/* Drawer header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
@@ -411,24 +361,21 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                {isLoggedIn && profile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      handleStartSelling();
-                    }}
-                    className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <Plus className="w-4 h-4" />
-                      List Item
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    handleSellClick();
+                  }}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <Plus className="w-4 h-4" />
+                    {sellLabel}
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
 
                 <button
                   type="button"
@@ -503,11 +450,11 @@ export default function HomePage() {
                       type="button"
                       onClick={() => {
                         closeMenu();
-                        navigateToPath(LOGIN_PATH);
+                        setAuthGuardOpen(true);
                       }}
                       className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
                     >
-                      Sign In
+                      Sell
                     </button>
                   </div>
                 )}
@@ -521,7 +468,7 @@ export default function HomePage() {
         open={authGuardOpen}
         type="error"
         title="Login required"
-        message="You need to be logged in to access this page. Sign in or create an account to continue."
+        message="You need to be logged in to continue. Sign in or create an account first."
         onClose={() => setAuthGuardOpen(false)}
         actions={[
           {
@@ -564,6 +511,10 @@ export default function HomePage() {
               >
                 Buy and sell on campus
               </motion.h1>
+
+              <p className="mt-4 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed">
+                Browse products and services around universities and surrounding communities, not just student-only posts.
+              </p>
 
               <motion.div
                 initial={{ opacity: 0, y: 18 }}
@@ -621,23 +572,34 @@ export default function HomePage() {
                   type="text"
                   value={searchText}
                   onChange={(e) => setSearchText(e.target.value)}
-                  placeholder="Search items, services, books, phones..."
-                  className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+                  placeholder="Search listings, products, or services..."
+                  className="w-full pl-12 pr-4 py-3 bg-white border border-zinc-300 rounded-2xl text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md outline-none transition-all"
                 />
               </div>
 
-<select
-  value={selectedCampus}
-  onChange={(e) => setSelectedCampus(e.target.value)}
-  className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
->
-  <option>All campuses</option>
-  {UNIVERSITIES.map((university) => (
-    <option key={university} value={university}>
-      {university}
-    </option>
-  ))}
-</select>
+              <select
+                value={selectedCampus}
+                onChange={(e) => setSelectedCampus(e.target.value)}
+                className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+              >
+                <option>All campuses</option>
+                {UNIVERSITIES.map((university) => (
+                  <option key={university} value={university}>
+                    {university}
+                  </option>
+                ))}
+              </select>
+
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+              >
+                Search
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </section>
 
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
@@ -645,46 +607,10 @@ export default function HomePage() {
               <section>
                 <div className="mb-5 max-w-3xl">
                   <h2 className="text-lg sm:text-xl font-black uppercase tracking-[0.24em] text-zinc-900">
-                    Browse by category
+                    Featured Categories
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {gatewayCategories.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <button
-                        key={item.key}
-                        type="button"
-                        onClick={() => navigateToPath(`/category?category=${item.key}`)}
-                        className="group relative overflow-hidden text-left rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-red-900/10 hover:shadow-xl"
-                      >
-                        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="w-12 h-12 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
-                            <Icon className="w-5 h-5" />
-                          </div>
-                        </div>
-
-                        <h3 className="mt-5 text-lg font-extrabold text-zinc-950">
-                          {item.title}
-                        </h3>
-                        <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
-                          {item.description}
-                        </p>
-
-                        <div className="mt-5 inline-flex items-center gap-2 text-sm font-bold text-red-900">
-                          Open category
-                          <ArrowRight className="w-4 h-4" />
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-
-              <section>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
                     const listings = sectionListings[section.key] || [];
@@ -783,10 +709,10 @@ export default function HomePage() {
                 {isLoggedIn ? (
                   <button
                     type="button"
-                    onClick={handleStartSelling}
+                    onClick={handleSellClick}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                   >
-                    Get Started
+                    {sellLabel}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
@@ -825,32 +751,16 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            <button
-              type="button"
-              onClick={() => navigateToPath(PRIVACY_PATH)}
-              className="hover:text-primary transition-colors"
-            >
+            <button type="button" onClick={() => navigateToPath(PRIVACY_PATH)} className="hover:text-primary transition-colors">
               Privacy
             </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(TERMS_PATH)}
-              className="hover:text-primary transition-colors"
-            >
+            <button type="button" onClick={() => navigateToPath(TERMS_PATH)} className="hover:text-primary transition-colors">
               Terms
             </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(SAFETY_PATH)}
-              className="hover:text-primary transition-colors"
-            >
+            <button type="button" onClick={() => navigateToPath(SAFETY_PATH)} className="hover:text-primary transition-colors">
               Safety
             </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(REPORT_PATH)}
-              className="hover:text-primary transition-colors"
-            >
+            <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="hover:text-primary transition-colors">
               Report
             </button>
           </div>
