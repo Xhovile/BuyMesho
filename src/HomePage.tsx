@@ -106,7 +106,11 @@ export default function HomePage() {
   };
 
   const handleSettingsClick = (afterClose?: () => void) => {
-    if (!firebaseUser) return afterClose?.() ?? setAuthGuardOpen(true);
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
     afterClose?.();
     navigateToPath(SETTINGS_PATH);
   };
