@@ -289,7 +289,7 @@ export default function HomePage() {
                 onClick={handleStartSelling}
                 className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
               >
-                {isSeller ? <Store className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
                 <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
               </button>
 
@@ -414,7 +414,7 @@ export default function HomePage() {
                   className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
                 >
                   <span className="inline-flex items-center gap-3">
-                    <Plus className="w-4 h-4" />
+                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
                     {isSeller ? "List Item" : "Sell"}
                   </span>
                   <ChevronRight className="w-4 h-4" />
