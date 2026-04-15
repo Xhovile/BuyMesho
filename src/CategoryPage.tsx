@@ -389,10 +389,15 @@ export default function CategoryPage() {
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-10">
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-500 mb-5">
-            FEATURED CATEGORIES
-          </p>
           <div className="flex items-end justify-between gap-3 mb-5">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                Featured listings
+              </p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight">
+                Real cards from this category
+              </h3>
+            </div>
             <span className="text-sm font-bold text-zinc-500">
               {filteredAndSortedItems.length} item{filteredAndSortedItems.length === 1 ? "" : "s"}
             </span>
