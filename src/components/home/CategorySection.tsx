@@ -44,7 +44,7 @@ const CategorySection: FC<CategorySectionProps> = ({
           <h3 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-[1.75rem]">
             {title}
           </h3>
-          <p className="mt-2 text-sm text-zinc-500 leading-relaxed">
+          <p className="mt-2 hidden sm:block text-sm text-zinc-500 leading-relaxed">
             {description}
           </p>
         </div>
