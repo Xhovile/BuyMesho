@@ -5,6 +5,7 @@ import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
+  BECOME_SELLER_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -31,10 +32,10 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
-    .charAt(0)
-    .toUpperCase();
+  const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?").charAt(0).toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
+  const isSeller = !!firebaseUser && !!userProfile?.is_seller;
+  const sellLabel = isSeller ? "List Item" : "Sell";
 
   const closeMenu = () => setMobileMenuOpen(false);
 
@@ -48,6 +49,20 @@ export default function Header({
     navigateToPath(SETTINGS_PATH);
   };
 
+  const handleSellClick = () => {
+    if (!firebaseUser) {
+      setAuthGuardOpen(true);
+      return;
+    }
+
+    if (isSeller) {
+      onAddListing();
+      return;
+    }
+
+    navigateToPath(BECOME_SELLER_PATH);
+  };
+
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
@@ -59,42 +74,29 @@ export default function Header({
             <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50">
                 <House className="w-4 h-4" />
                 Home
               </button>
-              <button
-                type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
-              >
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800">
                 <ShoppingBag className="w-4 h-4" />
                 Market
               </button>
-              <button
-                type="button"
-                onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={() => handleSettingsClick()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50">
                 <Settings className="w-4 h-4" />
                 Settings
               </button>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {firebaseUser && userProfile?.is_seller ? (
-                <button
-                  onClick={onAddListing}
-                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">List Item</span>
-                </button>
-              ) : null}
+              <button
+                type="button"
+                onClick={handleSellClick}
+                className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">{sellLabel}</span>
+              </button>
 
               <button
                 onClick={() => setMobileMenuOpen((value) => !value)}
@@ -103,11 +105,7 @@ export default function Header({
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-header-menu"
               >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-white" />
-                ) : (
-                  <Menu className="w-5 h-5 text-white" />
-                )}
+                {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
               </button>
 
               <button
@@ -122,11 +120,7 @@ export default function Header({
               >
                 {firebaseUser ? (
                   avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
                       {fallbackLetter}
@@ -154,7 +148,6 @@ export default function Header({
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -166,7 +159,6 @@ export default function Header({
               aria-hidden="true"
             />
 
-            {/* Drawer */}
             <motion.div
               key="drawer-panel"
               id="mobile-header-menu"
@@ -179,124 +171,56 @@ export default function Header({
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
-              {/* Drawer header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                    Menu
-                  </p>
-                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">
-                    Start here
-                  </h2>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeMenu}
-                  aria-label="Close menu"
-                  className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
-                >
+                <button type="button" onClick={closeMenu} aria-label="Close menu" className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors">
                   <X className="w-4 h-4 text-zinc-600" />
                 </button>
               </div>
 
-              {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                {firebaseUser && userProfile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onAddListing();
-                    }}
-                    className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <Plus className="w-4 h-4" />
-                      List Item
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : null}
-
                 <button
                   type="button"
                   onClick={() => {
                     closeMenu();
-                    navigateToPath(EXPLORE_PATH);
+                    handleSellClick();
                   }}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
                 >
                   <span className="inline-flex items-center gap-3">
-                    <ShoppingBag className="w-4 h-4" />
-                    Market
+                    <Plus className="w-4 h-4" />
+                    {sellLabel}
                   </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(HOME_PATH);
-                  }}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <House className="w-4 h-4 text-zinc-500" />
-                    Home
-                  </span>
+                <button type="button" onClick={() => { closeMenu(); navigateToPath(EXPLORE_PATH); }} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors">
+                  <span className="inline-flex items-center gap-3"><ShoppingBag className="w-4 h-4" />Market</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button type="button" onClick={() => { closeMenu(); navigateToPath(HOME_PATH); }} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3"><House className="w-4 h-4 text-zinc-500" />Home</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSettingsClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <Settings className="w-4 h-4 text-zinc-500" />
-                    Settings
-                  </span>
+                <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3"><Settings className="w-4 h-4 text-zinc-500" />Settings</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 {firebaseUser ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onProfileClick();
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <User className="w-4 h-4 text-zinc-500" />
-                      Profile
-                    </span>
+                  <button type="button" onClick={() => { closeMenu(); onProfileClick(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3"><User className="w-4 h-4 text-zinc-500" />Profile</span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath("/signup");
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign Up
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath("/login");
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign In
-                    </button>
+                    <button type="button" onClick={() => { closeMenu(); navigateToPath(LOGIN_PATH); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">Sign In</button>
+                    <button type="button" onClick={() => { closeMenu(); setAuthGuardOpen(true); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">Sell</button>
                   </div>
                 )}
               </div>

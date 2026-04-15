@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ElementType } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   Loader2,
   Search,
   ShoppingBag,
@@ -20,7 +21,7 @@ import {
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import CategoryListingCard from "./components/category/CategoryListingCard";
-import FormDropdown from "./components/FormDropdown";
+import FilterSection from "./components/FilterSection";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 
@@ -80,10 +81,10 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   },
   food: {
     key: "food",
-    title: "Food & Snacks",
-    subtitle: "Quick meals, snacks, and drinks",
+    title: "Eatery & Fast Foods",
+    subtitle: "Campus meals, fast foods, and drinks",
     description:
-      "Browse food, snacks, and drinks that students can discover quickly without digging through filters.",
+      "Browse eatery options, fast foods, and drinks that students can discover quickly without digging through filters.",
     heroIcon: Store,
     apiCategory: "Food & Snacks",
     accent: "from-emerald-500/10 to-zinc-100",
@@ -110,23 +111,19 @@ export default function CategoryPage() {
   const [campus, setCampus] = useState("All campuses");
   const [subcategory, setSubcategory] = useState("All subcategories");
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const categoryKey = useMemo(() => {
+  const categoryKey = useMemo<CategoryKey>(() => {
     const params = new URLSearchParams(window.location.search);
     const value = params.get("category");
-    if (
-      value === "phones" ||
-      value === "fashion" ||
-      value === "books" ||
-      value === "food" ||
-      value === "beauty"
-    ) {
+    if (value === "phones" || value === "fashion" || value === "books" || value === "food" || value === "beauty") {
       return value;
     }
     return "phones";
   }, []);
 
   const config = CATEGORY_CONFIG[categoryKey];
+  const HeroIcon = config.heroIcon;
 
   useEffect(() => {
     let cancelled = false;
@@ -134,56 +131,42 @@ export default function CategoryPage() {
     const load = async () => {
       setLoading(true);
       setError(null);
-
       try {
         const data = await apiFetch(
           `/api/listings?category=${encodeURIComponent(config.apiCategory)}&pageSize=24`
         );
-
-        if (cancelled) return;
-
-        setItems(Array.isArray(data?.items) ? data.items : []);
+        if (!cancelled) setItems(Array.isArray(data?.items) ? data.items : []);
       } catch (err: any) {
-        if (!cancelled) {
-          setError(err?.message || "Could not load category listings.");
-        }
+        if (!cancelled) setError(err?.message || "Could not load category listings.");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     };
 
     void load();
-
     return () => {
       cancelled = true;
     };
   }, [config.apiCategory]);
 
-  const subcategoryOptions = useMemo(() => {
-    const subs = getListingSubcategories(config.apiCategory);
-    return ["All subcategories", ...subs];
-  }, [config.apiCategory]);
+  const subcategoryOptions = useMemo(() => ["All subcategories", ...getListingSubcategories(config.apiCategory)], [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
-  const seen = new Set<string>();
-  const campuses: string[] = [];
+    const seen = new Set<string>();
+    const campuses: string[] = [];
 
-  for (const item of items) {
-    const university = item.university?.trim();
-    if (!university) continue;
+    for (const item of items) {
+      const university = item.university?.trim();
+      if (!university) continue;
+      const normalized = university.toLowerCase();
+      if (seen.has(normalized)) continue;
+      seen.add(normalized);
+      campuses.push(university);
+    }
 
-    const normalized = university.toLowerCase();
-    if (seen.has(normalized)) continue;
-
-    seen.add(normalized);
-    campuses.push(university);
-  }
-
-  campuses.sort((a, b) => a.localeCompare(b));
-  return ["All campuses", ...campuses];
-}, [items]);
+    campuses.sort((a, b) => a.localeCompare(b));
+    return ["All campuses", ...campuses];
+  }, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -194,13 +177,11 @@ export default function CategoryPage() {
       const campusMatch =
         normalizedCampus === "all campuses" ||
         (item.university || "").trim().toLowerCase() === normalizedCampus;
-
       if (!campusMatch) return false;
 
       const subcategoryMatch =
         normalizedSubcategory === "all subcategories" ||
         (item.subcategory || "").trim().toLowerCase() === normalizedSubcategory;
-
       if (!subcategoryMatch) return false;
 
       if (!q) return true;
@@ -209,26 +190,20 @@ export default function CategoryPage() {
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-
       return haystack.includes(q);
     });
 
-    const sorted = [...filtered].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
       const aPrice = Number(a.price) || 0;
       const bPrice = Number(b.price) || 0;
-
       if (sortBy === "Price: low to high") return aPrice - bPrice;
       if (sortBy === "Price: high to low") return bPrice - aPrice;
-
       const aId = Number(a.id) || 0;
       const bId = Number(b.id) || 0;
       return bId - aId;
     });
-
-    return sorted;
   }, [items, search, sortBy, campus, subcategory]);
 
-  const HeroIcon = config.heroIcon;
   const handleSellClick = () => {
     if (!firebaseUser) {
       setAuthGuardOpen(true);
@@ -263,78 +238,72 @@ export default function CategoryPage() {
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
-          <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 items-center">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
-              >
-                Category landing page
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
-              >
-                {config.title}
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-4 text-sm sm:text-base text-zinc-600 max-w-2xl leading-relaxed"
-              >
-                {config.description}
-              </motion.p>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigateToExplore()}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+          <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16">
+            <div className="grid grid-cols-1 gap-8">
+              <div className="max-w-4xl">
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
                 >
-                  Browse all filters
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  Category landing page
+                </motion.div>
 
-                <button
-                  type="button"
-                  onClick={handleSellClick}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                <motion.h1
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
                 >
-                  Sell
-                  <Store className="w-4 h-4" />
-                </button>
+                  {config.title}
+                </motion.h1>
 
-                <button
-                  type="button"
-                  onClick={() => navigateToPath("/")}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                <motion.p
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="mt-4 text-sm sm:text-base text-zinc-600 max-w-2xl leading-relaxed"
                 >
-                  Back to homepage
-                </button>
+                  {config.description}
+                </motion.p>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigateToExplore()}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+                  >
+                    Browse all filters
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleSellClick}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Sell
+                    <Store className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900">
-                <HeroIcon className="w-7 h-7" />
+              <div className="max-w-md rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900">
+                  <HeroIcon className="w-7 h-7" />
+                </div>
+                <h2 className="mt-4 text-2xl font-black tracking-tight">{config.subtitle}</h2>
+                <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
+                  This page is separate from Explore, so the homepage can route here as a real
+                  category destination.
+                </p>
               </div>
-              <h2 className="mt-4 text-2xl font-black tracking-tight">{config.subtitle}</h2>
-              <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
-                This page is separate from Explore, so the homepage can route here as a real
-                category destination instead of acting like a filter shortcut.
-              </p>
             </div>
           </div>
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input
@@ -346,36 +315,45 @@ export default function CategoryPage() {
               />
             </div>
 
-            <FormDropdown
-              label="Subcategory"
-              value={subcategory}
-              onChange={(value) => setSubcategory(value)}
-              placeholder="Choose subcategory"
-              searchPlaceholder="Search subcategories..."
-              options={subcategoryOptions}
-            />
+            <div className="mt-4 border-t border-zinc-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowFilters((prev) => !prev)}
+                className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-100"
+              >
+                <span>Filter</span>
+                <ChevronDown className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : "rotate-0"}`} />
+              </button>
 
-            <FormDropdown
-              label="Campus"
-              value={campus}
-              onChange={(value) => setCampus(value)}
-              placeholder="Choose campus"
-              searchPlaceholder="Search campuses..."
-              options={campusOptions}
-            />
-
-            <FormDropdown
-              label="Sort by"
-              value={sortBy}
-              onChange={(value) => setSortBy(value)}
-              placeholder="Choose sort order"
-              searchPlaceholder="Search sort order..."
-              options={[
-                "Newest first",
-                "Price: low to high",
-                "Price: high to low",
-              ]}
-            />
+              {showFilters ? (
+                <div className="mt-4">
+                  <FilterSection
+                    selectedUniv={campus}
+                    setSelectedUniv={setCampus}
+                    selectedCat={config.apiCategory}
+                    setSelectedCat={() => undefined}
+                    selectedSubcategory={subcategory}
+                    setSelectedSubcategory={setSubcategory}
+                    selectedItemType=""
+                    setSelectedItemType={() => undefined}
+                    selectedSpecFilters={{}}
+                    setSelectedSpecFilters={() => undefined}
+                    selectedStatus=""
+                    setSelectedStatus={() => undefined}
+                    selectedCondition=""
+                    setSelectedCondition={() => undefined}
+                    hideSoldOut={false}
+                    setHideSoldOut={() => undefined}
+                    minPrice=""
+                    setMinPrice={() => undefined}
+                    maxPrice=""
+                    setMaxPrice={() => undefined}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                  />
+                </div>
+              ) : null}
+            </div>
           </div>
         </section>
 
@@ -417,28 +395,6 @@ export default function CategoryPage() {
                 </div>
               ))
             )}
-          </div>
-        </section>
-
-        <section className="max-w-7xl mx-auto px-4 pb-16">
-          <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h3 className="text-2xl font-black tracking-tight">Need the full marketplace view?</h3>
-                <p className="mt-2 text-sm text-zinc-300">
-                  Open Market for all filters, sorting, and broader browsing.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigateToExplore()}
-                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
-              >
-                Open Market
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         </section>
       </main>
