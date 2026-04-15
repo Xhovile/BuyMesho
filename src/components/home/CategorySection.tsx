@@ -37,14 +37,9 @@ const CategorySection: FC<CategorySectionProps> = ({
 
   return (
     <div className="group overflow-hidden rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-70" />
-
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500 shadow-sm">
-            Featured category
-          </div>
-          <h3 className="mt-4 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
+          <h3 className="text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
             {title}
           </h3>
           <p className="mt-2 text-sm text-zinc-500 leading-relaxed">
@@ -57,7 +52,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white">
+      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white">
         {liveLabel}
       </div>
 
