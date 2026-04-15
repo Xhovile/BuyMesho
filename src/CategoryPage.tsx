@@ -16,6 +16,7 @@ import { apiFetch } from "./lib/api";
 import {
   BECOME_SELLER_PATH,
   LOGIN_PATH,
+  navigateToCreateListing,
   navigateToExplore,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -102,7 +103,7 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
 };
 
 export default function CategoryPage() {
-  const { firebaseUser } = useAccountProfile();
+  const { firebaseUser, profile, profileLoading } = useAccountProfile();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -235,6 +236,14 @@ export default function CategoryPage() {
       setAuthGuardOpen(true);
       return;
     }
+
+    if (profileLoading) return;
+
+    if (profile?.is_seller) {
+      navigateToCreateListing();
+      return;
+    }
+
     navigateToPath(BECOME_SELLER_PATH);
   };
 
@@ -304,7 +313,8 @@ export default function CategoryPage() {
               <button
                 type="button"
                 onClick={handleSellClick}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                disabled={!!firebaseUser && profileLoading}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Sell
                 <Store className="w-4 h-4" />
