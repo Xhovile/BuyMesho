@@ -199,6 +199,7 @@ function ListingStrip({
 export default function HomePage() {
   const { firebaseUser, profile } = useAccountProfile();
   const isLoggedIn = !!firebaseUser;
+  const isSeller = !!(isLoggedIn && profile?.is_seller);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
@@ -214,7 +215,7 @@ export default function HomePage() {
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      setAuthGuardOpen(true);
       return;
     }
 
@@ -260,7 +261,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
               >
                 <House className="w-4 h-4" />
                 Home
@@ -276,7 +277,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
               >
                 <Settings className="w-4 h-4" />
                 Settings
@@ -284,15 +285,13 @@ export default function HomePage() {
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {isLoggedIn && profile?.is_seller ? (
-                <button
-                  onClick={handleStartSelling}
-                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                >
-                  <Store className="w-4 h-4" />
-                  <span className="hidden sm:inline">List Item</span>
-                </button>
-              ) : null}
+              <button
+                onClick={handleStartSelling}
+                className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+              >
+                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+              </button>
 
               <button
                 type="button"
@@ -320,6 +319,40 @@ export default function HomePage() {
             </div>
           </div>
 
+          <form
+            onSubmit={handleSearchSubmit}
+            className="grid grid-cols-1 md:grid-cols-[auto_minmax(0,1fr)_220px] gap-2"
+          >
+            <button
+              type="submit"
+              aria-label="Search listings"
+              className="inline-flex items-center justify-center rounded-2xl bg-red-900 px-4 py-3 text-sm font-extrabold text-white hover:bg-red-800"
+            >
+              Search
+            </button>
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                placeholder="Search items, services, books, phones..."
+                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-300 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md transition-all"
+              />
+            </div>
+            <select
+              value={selectedCampus}
+              onChange={(e) => setSelectedCampus(e.target.value)}
+              className="w-full px-4 py-3 rounded-2xl border border-zinc-300 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
+            >
+              <option>All campuses</option>
+              {UNIVERSITIES.map((university) => (
+                <option key={university} value={university}>
+                  {university}
+                </option>
+              ))}
+            </select>
+          </form>
         </div>
       </header>
 
@@ -373,22 +406,20 @@ export default function HomePage() {
 
               {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                {isLoggedIn && profile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      handleStartSelling();
-                    }}
-                    className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <Plus className="w-4 h-4" />
-                      List Item
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    handleStartSelling();
+                  }}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                    {isSeller ? "List Item" : "Sell"}
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
 
                 <button
                   type="button"
@@ -500,7 +531,7 @@ export default function HomePage() {
       />
 
       <main>
-        <section className="relative overflow-hidden pt-6 pb-10 sm:pt-12 sm:pb-24">
+        <section className="relative overflow-hidden pt-4 pb-6 sm:pt-8 sm:pb-14">
           <div className="absolute inset-0 -z-10 pointer-events-none">
             <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-red-900/10 blur-3xl rounded-full" />
             <div className="absolute bottom-0 right-0 w-56 h-56 bg-amber-200/25 blur-3xl rounded-full" />
@@ -520,7 +551,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 }}
-                className="mt-6 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
+                className="mt-5 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
               >
                 Buy and sell on campus
               </motion.h1>
@@ -529,7 +560,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                className="mt-7 flex flex-wrap items-center gap-3"
+                className="mt-5 flex flex-wrap items-center gap-3"
               >
                 <button
                   type="button"
@@ -545,7 +576,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 18 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="mt-6 hidden sm:flex flex-wrap gap-2"
+                className="mt-5 hidden sm:flex flex-wrap gap-2"
               >
                 {trustPills.map((item) => (
                   <span
@@ -569,51 +600,13 @@ export default function HomePage() {
           </section>
         ) : null}
         
-     <section className="max-w-7xl mx-auto px-4 pb-8">
-  <form
-    onSubmit={handleSearchSubmit}
-    className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm"
-  >
-    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,0.9fr)_auto] gap-3">
-      <div className="relative">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-        <input
-          type="text"
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          placeholder="Search items, services, books, phones..."
-          className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm text-zinc-800 placeholder:text-zinc-400 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-        />
-      </div>
-
-      <select
-        value={selectedCampus}
-        onChange={(e) => setSelectedCampus(e.target.value)}
-        className="w-full px-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-      >
-        <option>All campuses</option>
-        {UNIVERSITIES.map((university) => (
-          <option key={university} value={university}>
-            {university}
-          </option>
-        ))}
-      </select>
-
-      <button
-        type="submit"
-        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-red-800"
-      >
-        Search
-        <ArrowRight className="w-4 h-4" />
-      </button>
-    </div>
-  </form>
-</section>
-        
         <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             <div className="space-y-6">
               <section>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-500 mb-4">
+                  FEATURED CATEGORIES
+                </p>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
                     const listings = sectionListings[section.key] || [];

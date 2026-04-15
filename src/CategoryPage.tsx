@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ElementType } from "react";
 import {
   ArrowLeft,
   ArrowRight,
+  ChevronDown,
   Loader2,
   Search,
   ShoppingBag,
@@ -109,6 +110,7 @@ export default function CategoryPage() {
   const [sortBy, setSortBy] = useState("Newest first");
   const [campus, setCampus] = useState("All campuses");
   const [subcategory, setSubcategory] = useState("All subcategories");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
 
   const categoryKey = useMemo(() => {
@@ -228,7 +230,6 @@ export default function CategoryPage() {
     return sorted;
   }, [items, search, sortBy, campus, subcategory]);
 
-  const HeroIcon = config.heroIcon;
   const handleSellClick = () => {
     if (!firebaseUser) {
       setAuthGuardOpen(true);
@@ -263,78 +264,65 @@ export default function CategoryPage() {
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
-          <div className="max-w-7xl mx-auto px-4 py-12 sm:py-16 grid grid-cols-1 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] gap-8 items-center">
-            <div>
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
+          <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-500"
+            >
+              Category landing page
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+            >
+              {config.title}
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mt-4 text-sm sm:text-base text-zinc-600 max-w-2xl leading-relaxed"
+            >
+              {config.description}
+            </motion.p>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => navigateToExplore()}
+                className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
               >
-                Category landing page
-              </motion.div>
+                Browse all filters
+                <ArrowRight className="w-4 h-4" />
+              </button>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="mt-5 text-4xl sm:text-5xl font-black tracking-[-0.05em] leading-[0.95]"
+              <button
+                type="button"
+                onClick={handleSellClick}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
               >
-                {config.title}
-              </motion.h1>
+                Sell
+                <Store className="w-4 h-4" />
+              </button>
 
-              <motion.p
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="mt-4 text-sm sm:text-base text-zinc-600 max-w-2xl leading-relaxed"
+              <button
+                type="button"
+                onClick={() => navigateToPath("/")}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
               >
-                {config.description}
-              </motion.p>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => navigateToExplore()}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-red-800"
-                >
-                  Browse all filters
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleSellClick}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Sell
-                  <Store className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigateToPath("/")}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Back to homepage
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center text-zinc-900">
-                <HeroIcon className="w-7 h-7" />
-              </div>
-              <h2 className="mt-4 text-2xl font-black tracking-tight">{config.subtitle}</h2>
-              <p className="mt-3 text-sm text-zinc-600 leading-relaxed">
-                This page is separate from Explore, so the homepage can route here as a real
-                category destination instead of acting like a filter shortcut.
-              </p>
+                Back to homepage
+              </button>
             </div>
           </div>
         </section>
 
         <section className="max-w-7xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px] gap-3 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+          <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
               <input
@@ -346,36 +334,57 @@ export default function CategoryPage() {
               />
             </div>
 
-            <FormDropdown
-              label="Subcategory"
-              value={subcategory}
-              onChange={(value) => setSubcategory(value)}
-              placeholder="Choose subcategory"
-              searchPlaceholder="Search subcategories..."
-              options={subcategoryOptions}
-            />
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((value) => !value)}
+              className="mt-3 w-full inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
+              aria-label="Toggle filter options"
+              aria-expanded={filtersOpen}
+              aria-controls="category-filter-panel"
+            >
+              <span>Filter</span>
+              <ChevronDown
+                className={`w-4 h-4 text-zinc-600 transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+              />
+            </button>
 
-            <FormDropdown
-              label="Campus"
-              value={campus}
-              onChange={(value) => setCampus(value)}
-              placeholder="Choose campus"
-              searchPlaceholder="Search campuses..."
-              options={campusOptions}
-            />
+            {filtersOpen ? (
+              <div
+                id="category-filter-panel"
+                className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-3"
+              >
+                <FormDropdown
+                  label="Subcategory"
+                  value={subcategory}
+                  onChange={(value) => setSubcategory(value)}
+                  placeholder="Choose subcategory"
+                  searchPlaceholder="Search subcategories..."
+                  options={subcategoryOptions}
+                />
 
-            <FormDropdown
-              label="Sort by"
-              value={sortBy}
-              onChange={(value) => setSortBy(value)}
-              placeholder="Choose sort order"
-              searchPlaceholder="Search sort order..."
-              options={[
-                "Newest first",
-                "Price: low to high",
-                "Price: high to low",
-              ]}
-            />
+                <FormDropdown
+                  label="Campus"
+                  value={campus}
+                  onChange={(value) => setCampus(value)}
+                  placeholder="Choose campus"
+                  searchPlaceholder="Search campuses..."
+                  options={campusOptions}
+                />
+
+                <FormDropdown
+                  label="Sort by"
+                  value={sortBy}
+                  onChange={(value) => setSortBy(value)}
+                  placeholder="Choose sort order"
+                  searchPlaceholder="Search sort order..."
+                  options={[
+                    "Newest first",
+                    "Price: low to high",
+                    "Price: high to low",
+                  ]}
+                />
+              </div>
+            ) : null}
           </div>
         </section>
 
