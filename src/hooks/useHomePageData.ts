@@ -139,7 +139,6 @@ async function waitWithAbort(ms: number, signal?: AbortSignal) {
 
     const onAbort = () => {
       clearTimeout(timeout);
-      signal.removeEventListener("abort", onAbort);
       reject(new DOMException("Aborted", "AbortError"));
     };
 
