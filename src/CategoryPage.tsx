@@ -21,7 +21,6 @@ import {
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import CategoryListingCard from "./components/category/CategoryListingCard";
-import FilterSection from "./components/FilterSection";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 
@@ -326,31 +325,45 @@ export default function CategoryPage() {
               </button>
 
               {showFilters ? (
-                <div className="mt-4">
-                  <FilterSection
-                    selectedUniv={campus}
-                    setSelectedUniv={setCampus}
-                    selectedCat={config.apiCategory}
-                    setSelectedCat={() => undefined}
-                    selectedSubcategory={subcategory}
-                    setSelectedSubcategory={setSubcategory}
-                    selectedItemType=""
-                    setSelectedItemType={() => undefined}
-                    selectedSpecFilters={{}}
-                    setSelectedSpecFilters={() => undefined}
-                    selectedStatus=""
-                    setSelectedStatus={() => undefined}
-                    selectedCondition=""
-                    setSelectedCondition={() => undefined}
-                    hideSoldOut={false}
-                    setHideSoldOut={() => undefined}
-                    minPrice=""
-                    setMinPrice={() => undefined}
-                    maxPrice=""
-                    setMaxPrice={() => undefined}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                  />
+                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 mb-1.5">Campus</label>
+                    <select
+                      value={campus}
+                      onChange={(e) => setCampus(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-2 focus:ring-red-900/10"
+                    >
+                      {campusOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 mb-1.5">Subcategory</label>
+                    <select
+                      value={subcategory}
+                      onChange={(e) => setSubcategory(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-2 focus:ring-red-900/10"
+                    >
+                      {subcategoryOptions.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-zinc-500 mb-1.5">Sort by</label>
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-medium text-zinc-800 outline-none focus:border-red-900 focus:ring-2 focus:ring-red-900/10"
+                    >
+                      <option value="Newest first">Newest first</option>
+                      <option value="Price: low to high">Price: low to high</option>
+                      <option value="Price: high to low">Price: high to low</option>
+                    </select>
+                  </div>
                 </div>
               ) : null}
             </div>
