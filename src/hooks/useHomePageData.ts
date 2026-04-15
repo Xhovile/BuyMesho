@@ -21,11 +21,16 @@ export type HomeFeaturedSection = {
 };
 
 const HOMEPAGE_CACHE_TTL_MS = 60_000;
+const CATEGORY_SECTION_FETCH_DELAY_MS = 250;
 
 const homepageCache = new Map<
   string,
   { data: HomePreviewListing[]; timestamp: number }
 >();
+
+export const invalidateHomepageCache = () => {
+  homepageCache.clear();
+};
 
 function isAbortLikeError(error: unknown) {
   if (!error) return false;
@@ -115,6 +120,41 @@ async function fetchListings(path: string, signal?: AbortSignal) {
   return items;
 }
 
+function hasFreshHomepageCache(path: string) {
+  const cached = homepageCache.get(path);
+  return !!cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS;
+}
+
+async function waitWithAbort(ms: number, signal?: AbortSignal) {
+  if (ms <= 0) return;
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
+    if (signal.aborted) {
+      onAbort();
+    }
+  });
+}
+
 export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const { user, loading: authLoading } = useAuthUser();
 
@@ -167,6 +207,15 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
         ]);
 
         const sections: Record<string, HomePreviewListing[]> = {};
+        const hasSectionCacheMiss = featuredSections.some((s) => {
+          const sectionPath = `/api/listings?category=${encodeURIComponent(
+            s.apiCategory
+          )}&pageSize=4`;
+          return !hasFreshHomepageCache(sectionPath);
+        });
+        if (hasSectionCacheMiss) {
+          await waitWithAbort(CATEGORY_SECTION_FETCH_DELAY_MS, controller.signal);
+        }
 
         await Promise.all(
           featuredSections.map(async (s) => {
