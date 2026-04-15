@@ -5,6 +5,7 @@ import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
+  BECOME_SELLER_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -35,6 +36,7 @@ export default function Header({
     .charAt(0)
     .toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
+  const isSeller = !!(firebaseUser && userProfile?.is_seller);
 
   const closeMenu = () => setMobileMenuOpen(false);
 
@@ -46,6 +48,22 @@ export default function Header({
     }
     afterClose?.();
     navigateToPath(SETTINGS_PATH);
+  };
+
+  const handleSellClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+
+    afterClose?.();
+    if (userProfile?.is_seller) {
+      onAddListing();
+      return;
+    }
+
+    navigateToPath(BECOME_SELLER_PATH);
   };
 
   const navButtonClass =
@@ -86,15 +104,13 @@ export default function Header({
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
-              {firebaseUser && userProfile?.is_seller ? (
-                <button
-                  onClick={onAddListing}
-                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline">List Item</span>
-                </button>
-              ) : null}
+              <button
+                onClick={() => handleSellClick()}
+                className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+              </button>
 
               <button
                 onClick={() => setMobileMenuOpen((value) => !value)}
@@ -201,22 +217,17 @@ export default function Header({
 
               {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                {firebaseUser && userProfile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onAddListing();
-                    }}
-                    className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <Plus className="w-4 h-4" />
-                      List Item
-                    </span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => handleSellClick(closeMenu)}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <Plus className="w-4 h-4" />
+                    {isSeller ? "List Item" : "Sell"}
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
 
                 <button
                   type="button"
