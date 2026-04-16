@@ -38,7 +38,6 @@ export default function ListingCard({
   showActionsMenu = true,
 }: ListingCardProps) {
   const sellerUid = listing.seller_uid;
-  const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
 
   const handleOpenProfile = () => {
     if (sellerUid) {
