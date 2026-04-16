@@ -108,8 +108,19 @@ export default function ListingActionsMenu({
 
   const handleShare = async () => {
     const shareUrl = buildListingShareUrl(listing.id, 0);
-    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${listing.whatsapp_number}\n\nOpen this listing: ${shareUrl}`;
+    const shareLines = [
+      "BuyMesho Listing",
+      listing.name,
+      `Price: MK ${Number(listing.price).toLocaleString()}`,
+      `Campus: ${listing.university}`,
+    ];
 
+    if (isLoggedIn && listing.whatsapp_number) {
+      shareLines.push(`WhatsApp: ${listing.whatsapp_number}`);
+    }
+
+    shareLines.push("", `Open this listing: ${shareUrl}`);
+    const shareText = shareLines.join("\n");
     try {
       if ((navigator as any).share) {
         await (navigator as any).share({
