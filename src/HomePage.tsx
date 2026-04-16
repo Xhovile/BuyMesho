@@ -1,4 +1,4 @@
-import { type ElementType, type FormEvent, useState } from "react";
+import { type ElementType, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -7,7 +7,6 @@ import {
   House,
   Menu,
   Plus,
-  Search,
   Settings,
   ShoppingBag,
   Smartphone,
@@ -31,7 +30,6 @@ import {
   SIGNUP_PATH,
   TERMS_PATH,
   navigateToCreateListing,
-  navigateToExplore,
   navigateToListingDetails,
   navigateToPath
 } from "./lib/appNavigation";
@@ -202,7 +200,6 @@ export default function HomePage() {
   const isSellerProfileLoading = isLoggedIn && profileLoading;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const [searchText, setSearchText] = useState("");
   const {
     recommendedListings,
     newestListings,
@@ -226,13 +223,6 @@ export default function HomePage() {
     }
 
     navigateToCreateListing();
-  };
-
-  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    navigateToExplore({
-      search: searchText.trim(),
-    });
   };
 
   const handleSettingsClick = (afterClose?: () => void) => {
@@ -321,25 +311,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="w-full">
-            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm">
-              <Search className="ml-2 w-5 h-5 text-zinc-500" />
-              <input
-                type="text"
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                placeholder="Search items, services, books, phones..."
-                className="w-full bg-transparent text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
-              />
-              <button
-                type="submit"
-                aria-label="Search listings"
-                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-red-800"
-              >
-                Search
-              </button>
-            </div>
-          </form>
         </div>
       </header>
 
