@@ -64,11 +64,28 @@ const CategorySection: FC<CategorySectionProps> = ({
         ) : listings.length === 0 ? (
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
-          listings.slice(0, 10).map((item) => (
-            <div key={item.id} className="snap-start shrink-0 w-[220px] sm:w-[260px]">
-              <ListingPreviewCard item={item} />
-            </div>
-          ))
+          <>
+            {listings.slice(0, 10).map((item) => (
+              <div
+                key={item.id}
+                className="snap-start shrink-0 w-[220px] sm:w-[260px]"
+              >
+                <ListingPreviewCard item={item} />
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => navigateToExploreWithCategory(categoryKey)}
+              className="snap-start shrink-0 w-[220px] sm:w-[260px] rounded-2xl border border-zinc-200 bg-white/90 p-4 text-left shadow-sm transition-colors hover:bg-zinc-50"
+            >
+              <div className="flex h-full min-h-[220px] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 text-center">
+                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-zinc-900">
+                  View more listings
+                  <ArrowRight className="w-4 h-4" />
+                </span>
+              </div>
+            </button>
+          </>
         )}
       </div>
 
