@@ -1,0 +1,281 @@
+import { useEffect, useState } from "react";
+import { apiFetch } from "../lib/api";
+import { useAuthUser } from "./useAuthUser";
+
+export type HomePreviewListing = {
+  id: number | string;
+  name: string;
+  price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
+  views_count?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type HomeFeaturedSection = {
+  key: string;
+  apiCategory: string;
+};
+
+const HOMEPAGE_CACHE_TTL_MS = 60_000;
+const CATEGORY_SECTION_FETCH_DELAY_MS = 250;
+
+const homepageCache = new Map<
+  string,
+  { data: HomePreviewListing[]; timestamp: number }
+>();
+
+export const invalidateHomepageCache = () => {
+  homepageCache.clear();
+};
+
+function isAbortLikeError(error: unknown) {
+  if (!error) return false;
+  if (
+    typeof DOMException !== "undefined" &&
+    error instanceof DOMException &&
+    error.name === "AbortError"
+  ) {
+    return true;
+  }
+  const e = error as { name?: string; message?: string };
+  const name = String(e.name || "").toLowerCase();
+  const message = String(e.message || "").toLowerCase();
+  return (
+    name === "aborterror" ||
+    name === "cancelederror" ||
+    message.includes("abort") ||
+    message.includes("canceled") ||
+    message.includes("cancelled")
+  );
+}
+
+function normalize(v?: string | null) {
+  return v?.toLowerCase().trim() || "";
+}
+
+function isCampusMatch(item?: string, user?: string) {
+  return normalize(item) && normalize(item) === normalize(user);
+}
+
+function freshnessScore(item: HomePreviewListing) {
+  const ts = Date.parse(item.updated_at || item.created_at || "");
+  if (!ts) return 0;
+  const hours = (Date.now() - ts) / (1000 * 60 * 60);
+  return Math.max(0, 96 - hours);
+}
+
+function popularityScore(item: HomePreviewListing) {
+  return Number(item.views_count || 0);
+}
+
+function rank(list: HomePreviewListing[], campus: string, mode: string) {
+  return [...list]
+    .map((item, index) => ({ item, index }))
+    .sort((aEntry, bEntry) => {
+      const a = aEntry.item;
+      const b = bEntry.item;
+      const campusA = isCampusMatch(a.university, campus) ? 1 : 0;
+      const campusB = isCampusMatch(b.university, campus) ? 1 : 0;
+
+      if (campusA !== campusB) return campusB - campusA;
+
+      if (mode === "popular" || mode === "recommended") {
+        const p = popularityScore(b) - popularityScore(a);
+        if (p) return p;
+      }
+
+      const f = freshnessScore(b) - freshnessScore(a);
+      if (f) return f;
+
+      const idA = Number(a.id);
+      const idB = Number(b.id);
+      if (!Number.isNaN(idA) && !Number.isNaN(idB) && idA !== idB) {
+        return idB - idA;
+      }
+
+      return aEntry.index - bEntry.index;
+    })
+    .map(({ item }) => item);
+}
+
+async function fetchListings(path: string, signal?: AbortSignal) {
+  const cached = homepageCache.get(path);
+  if (cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const res = await fetch(path, { signal });
+  const data = await res.json();
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  homepageCache.set(path, {
+    data: items,
+    timestamp: Date.now(),
+  });
+
+  return items;
+}
+
+function hasFreshHomepageCache(path: string) {
+  const cached = homepageCache.get(path);
+  return !!cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS;
+}
+
+async function waitWithAbort(ms: number, signal?: AbortSignal) {
+  if (ms <= 0) return;
+  if (!signal) {
+    await new Promise<void>((resolve) => setTimeout(resolve, ms));
+    return;
+  }
+
+  await new Promise<void>((resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+
+    const onAbort = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    signal.addEventListener("abort", onAbort, { once: true });
+    if (signal.aborted) {
+      onAbort();
+    }
+  });
+}
+
+export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
+  const { user, loading: authLoading } = useAuthUser();
+
+  const [campus, setCampus] = useState("");
+  const [recommendedListings, setRecommendedListings] = useState<
+    HomePreviewListing[]
+  >([]);
+  const [newestListings, setNewestListings] = useState<HomePreviewListing[]>([]);
+  const [featuredListings, setFeaturedListings] = useState<HomePreviewListing[]>(
+    []
+  );
+  const [sectionListings, setSectionListings] = useState<
+    Record<string, HomePreviewListing[]>
+  >({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Get campus
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setCampus("");
+      return;
+    }
+
+    apiFetch("/api/profile")
+      .then((p) => setCampus(p?.university || ""))
+      .catch(() => setCampus(""));
+  }, [user, authLoading]);
+
+  // Load + rank
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const [newest, featured] = await Promise.all([
+          fetchListings(
+            "/api/listings?sortBy=newest&pageSize=6",
+            controller.signal
+          ),
+          fetchListings(
+            "/api/listings?sortBy=popular&pageSize=6",
+            controller.signal
+          ),
+        ]);
+
+        const sections: Record<string, HomePreviewListing[]> = {};
+        const hasSectionCacheMiss = featuredSections.some((s) => {
+          const sectionPath = `/api/listings?category=${encodeURIComponent(
+            s.apiCategory
+          )}&pageSize=4`;
+          return !hasFreshHomepageCache(sectionPath);
+        });
+        if (hasSectionCacheMiss) {
+          await waitWithAbort(CATEGORY_SECTION_FETCH_DELAY_MS, controller.signal);
+        }
+
+        await Promise.all(
+          featuredSections.map(async (s) => {
+            const items = await fetchListings(
+              `/api/listings?category=${encodeURIComponent(
+                s.apiCategory
+              )}&pageSize=4`,
+              controller.signal
+            );
+            sections[s.key] = rank(items, campus, "section");
+          })
+        );
+
+        const uniqueListingsById = new Map<string, HomePreviewListing>();
+        featured.forEach((item) => {
+          uniqueListingsById.set(String(item.id), item);
+        });
+        newest.forEach((item) => {
+          const key = String(item.id);
+          if (!uniqueListingsById.has(key)) {
+            uniqueListingsById.set(key, item);
+          }
+        });
+        Object.values(sections).forEach((items) => {
+          items.forEach((item) => {
+            const key = String(item.id);
+            if (!uniqueListingsById.has(key)) {
+              uniqueListingsById.set(key, item);
+            }
+          });
+        });
+
+        setRecommendedListings(
+          rank(Array.from(uniqueListingsById.values()), campus, "recommended")
+        );
+        setNewestListings(rank(newest, campus, "newest"));
+        setFeaturedListings(rank(featured, campus, "popular"));
+        setSectionListings(sections);
+      } catch (e: unknown) {
+        if (controller.signal.aborted || isAbortLikeError(e)) {
+          return;
+        }
+        setError("Unable to load homepage listings. Please try again.");
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+    return () => controller.abort();
+  }, [campus]);
+
+  return {
+    recommendedListings,
+    newestListings,
+    featuredListings,
+    sectionListings,
+    loading,
+    error,
+  };
+}

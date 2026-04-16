@@ -15,10 +15,42 @@ export default defineConfig(({mode}) => {
         '@': path.resolve(__dirname, '.'),
       },
     },
-    server: {
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
+              return 'vendor-react';
+            }
+            if (id.includes('node_modules/firebase')) {
+              return 'vendor-firebase';
+            }
+            if (id.includes('node_modules/@google/genai')) {
+              return 'vendor-genai';
+            }
+            if (id.includes('node_modules/motion')) {
+              return 'vendor-motion';
+            }
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-lucide';
+            }
+          },
+        },
+      },
     },
+    server: {
+  // Forward /api requests to the Express server (server.ts)
+  proxy: {
+    "/api": {
+      target: "http://localhost:3000",
+      changeOrigin: true,
+      secure: false,
+    },
+  },
+
+  // HMR is disabled in AI Studio via DISABLE_HMR env var.
+  // Do not modify—file watching is disabled to prevent flickering during agent edits.
+  hmr: process.env.DISABLE_HMR !== "true",
+},
   };
 });

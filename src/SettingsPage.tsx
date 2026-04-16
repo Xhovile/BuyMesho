@@ -1,0 +1,667 @@
+import { useEffect, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  HelpCircle,
+  House,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+  User,
+  UserCheck,
+} from "lucide-react";
+import BrandMark from "./components/BrandMark";
+import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
+import TermsPage from "./components/TermsPage";
+import SafetyTipsPage from "./components/SafetyTipsPage";
+import ReportProblemPage from "./components/ReportProblemPage";
+import FormDropdown from "./components/FormDropdown";
+import ConfirmModal from "./components/ConfirmModal";
+import FeedbackModal from "./components/FeedbackModal";
+import PasswordPromptModal from "./components/PasswordPromptModal";
+import {
+  ADMIN_REPORTS_PATH,
+  ADMIN_SELLER_APPLICATIONS_PATH,
+  BECOME_SELLER_PATH,
+  EDIT_ACCOUNT_PATH,
+  EDIT_PROFILE_PATH,
+  EXPLORE_PATH,
+  HOME_PATH,
+  LOGIN_PATH,
+  PRIVACY_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
+  SETTINGS_PATH,
+  TERMS_PATH,
+  CHANGE_PASSWORD_PATH,
+  navigateToPath,
+} from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useIsAdmin } from "./hooks/useIsAdmin";
+import type { VisibilitySetting } from "./types";
+import {
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  signOut,
+} from "firebase/auth";
+import { auth } from "./firebase";
+import { apiFetch } from "./lib/api";
+
+type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
+
+const SETTINGS_VIEW_QUERY_KEY = "section";
+const VISIBILITY_LABEL: Record<VisibilitySetting, string> = {
+  everyone: "Everyone",
+  students_only: "Students only",
+  only_me: "Only me",
+};
+const VISIBILITY_OPTIONS = Object.values(VISIBILITY_LABEL);
+const LABEL_TO_VISIBILITY = Object.entries(VISIBILITY_LABEL).reduce<
+  Record<string, VisibilitySetting>
+>((acc, [key, label]) => {
+  acc[label] = key as VisibilitySetting;
+  return acc;
+}, {});
+
+const ACCORDION_STORAGE_KEY = "settings-accordion-state";
+const defaultExpandedSections = {
+  account: true,
+  security: true,
+  privacy: false,
+  helpLegal: false,
+};
+
+const getSettingsViewFromLocation = (
+  location: Pick<Location, "pathname" | "search">
+): SettingsView => {
+  if (location.pathname === PRIVACY_PATH) return "privacy";
+  if (location.pathname === TERMS_PATH) return "terms";
+  if (location.pathname === SAFETY_PATH) return "safety";
+  if (location.pathname === REPORT_PATH) return "report";
+
+  const section = new URLSearchParams(location.search).get(SETTINGS_VIEW_QUERY_KEY);
+  if (
+    section === "privacy" ||
+    section === "terms" ||
+    section === "safety" ||
+    section === "report"
+  ) {
+    return section;
+  }
+
+  return "menu";
+};
+
+export default function SettingsPage() {
+  const [view, setView] = useState<SettingsView>(() =>
+    getSettingsViewFromLocation(window.location)
+  );
+  const { firebaseUser, profile, profileLoading, updateProfile } = useAccountProfile();
+  const { isAdmin } = useIsAdmin(firebaseUser);
+  const [savingPrivacyField, setSavingPrivacyField] = useState<
+    "profile_visibility" | "seller_visibility" | "saved_visibility" | null
+  >(null);
+  const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
+  const [reauthPassword, setReauthPassword] = useState("");
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [feedback, setFeedback] = useState<{
+    open: boolean;
+    type: "success" | "error" | "info";
+    title: string;
+    message: string;
+  } | null>(null);
+  const [expandedSections, setExpandedSections] = useState(() => {
+    try {
+      const saved = localStorage.getItem(ACCORDION_STORAGE_KEY);
+      if (saved) return JSON.parse(saved) as typeof defaultExpandedSections;
+    } catch {
+      // ignore parse errors
+    }
+    return defaultExpandedSections;
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setView(getSettingsViewFromLocation(window.location));
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(expandedSections));
+    } catch {
+      // ignore storage errors
+    }
+  }, [expandedSections]);
+
+  const openView = (nextView: SettingsView) => {
+    if (nextView === "menu") {
+      const url = new URL(window.location.href);
+      url.pathname = SETTINGS_PATH;
+      url.searchParams.delete(SETTINGS_VIEW_QUERY_KEY);
+
+      window.history.pushState({}, "", url.toString());
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      return;
+    }
+
+    const url = new URL(window.location.href);
+    url.pathname = SETTINGS_PATH;
+    url.searchParams.set(SETTINGS_VIEW_QUERY_KEY, nextView);
+
+    window.history.pushState({}, "", url.toString());
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const updateVisibility = async (
+    field: "profile_visibility" | "seller_visibility" | "saved_visibility",
+    nextValue: VisibilitySetting
+  ) => {
+    if (!firebaseUser) return;
+
+    setSavingPrivacyField(field);
+    try {
+      await updateProfile({ [field]: nextValue });
+    } finally {
+      setSavingPrivacyField(null);
+    }
+  };
+
+  const handleLogout = async () => {
+    if (!firebaseUser) return;
+
+    try {
+      await signOut(auth);
+      navigateToPath(LOGIN_PATH);
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Logout failed",
+        message: "Please try again.",
+      });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!firebaseUser) return;
+    setDeleteConfirmOpen(false);
+
+    try {
+      await apiFetch("/api/profile", { method: "DELETE" });
+      await deleteUser(firebaseUser);
+      navigateToPath(LOGIN_PATH);
+    } catch (error: any) {
+      console.error("Delete account failed:", error);
+      if (error?.code === "auth/requires-recent-login") {
+        setPasswordPromptOpen(true);
+        return;
+      }
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Delete account failed",
+        message: error?.message || "Please try again.",
+      });
+    }
+  };
+
+  const handlePasswordPromptSubmit = async () => {
+    if (!firebaseUser?.email) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Missing email",
+        message: "No email found for this account.",
+      });
+      return;
+    }
+
+    if (!reauthPassword.trim()) {
+      setFeedback({
+        open: true,
+        type: "info",
+        title: "Password required",
+        message: "Please enter your password to continue.",
+      });
+      return;
+    }
+
+    try {
+      const credential = EmailAuthProvider.credential(
+        firebaseUser.email,
+        reauthPassword
+      );
+
+      await reauthenticateWithCredential(firebaseUser, credential);
+      setPasswordPromptOpen(false);
+      setReauthPassword("");
+      await handleDeleteAccount();
+    } catch (error: any) {
+      setFeedback({
+        open: true,
+        type: "error",
+        title: "Verification failed",
+        message: error?.message || "We could not verify your password. Please try again.",
+      });
+    }
+  };
+
+  const toggleSection = (
+    section: "account" | "security" | "privacy" | "helpLegal"
+  ) => {
+    setExpandedSections((current) => ({
+      ...current,
+      [section]: !current[section],
+    }));
+  };
+
+  if (view === "privacy") {
+    return <PrivacyPolicyPage onBack={() => openView("menu")} />;
+  }
+  if (view === "terms") {
+    return <TermsPage onBack={() => openView("menu")} />;
+  }
+  if (view === "safety") {
+    return <SafetyTipsPage onBack={() => openView("menu")} />;
+  }
+  if (view === "report") {
+    return <ReportProblemPage onBack={() => openView("menu")} isLoggedIn={!!firebaseUser} />;
+  }
+
+  return (
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <BrandMark />
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigateToPath(HOME_PATH)}
+              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"
+            >
+              <House className="w-4 h-4" />
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Market
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                Settings
+              </p>
+              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
+                Your account control center.
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
+                Manage your account details, security posture, visibility controls,
+                and legal/help resources from one page.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                Current section
+              </p>
+              <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900 capitalize">
+                {view === "menu" ? "Settings" : view}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <button
+                type="button"
+                onClick={() => toggleSection("account")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.account}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <User className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Account</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.account ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.account ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
+
+              {expandedSections.account && <>
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
+                    <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">University</p>
+                    <p className="mt-1 font-semibold text-zinc-900">{profile?.university || "Not set"}</p>
+                  </div>
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
+                    <p className="mt-1 font-semibold text-zinc-900">
+                      {profileLoading
+                        ? "Loading..."
+                        : !firebaseUser
+                        ? "Login required"
+                        : profile
+                        ? profile.is_seller
+                          ? "Seller"
+                          : "General"
+                        : "Not available"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-1 sm:space-y-2">
+                {[
+                  { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
+                  ...(profile?.is_seller
+                    ? [{ label: "Edit Seller Profile", path: EDIT_PROFILE_PATH }]
+                    : []),
+                  ...(!profile?.is_seller
+                    ? [{ label: "Become Seller", path: BECOME_SELLER_PATH }]
+                    : []),
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => navigateToPath(item.path)}
+                    className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left"
+                  >
+                    <span className="font-bold text-zinc-900">{item.label}</span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ))}
+
+                {isAdmin && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <FileText className="w-4 h-4" />
+                        Admin Reports
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
+                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
+                    >
+                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                        <UserCheck className="w-4 h-4" />
+                        Seller Approvals
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-indigo-400" />
+                    </button>
+                  </>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900">Logout</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmOpen(true)}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-red-700">Delete Account</span>
+                  <ChevronRight className="w-4 h-4 text-red-300" />
+                </button>
+                </div>
+              </>}
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <button
+                type="button"
+                onClick={() => toggleSection("security")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.security}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <ShieldCheck className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Security</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.security ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.security ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
+
+              {expandedSections.security && <div className="mt-5 space-y-2 sm:space-y-3">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
+                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left"
+                >
+                  <span className="font-bold text-zinc-900">Change Password</span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email verification</p>
+                  <p className="mt-1 font-semibold text-zinc-900">
+                    {profileLoading
+                      ? "Checking..."
+                      : !firebaseUser
+                        ? "Login required"
+                        : firebaseUser.emailVerified
+                          ? "Verified"
+                          : "Not verified"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-sm text-zinc-600">
+                  Later: login controls and authentication settings.
+                </div>
+              </div>}
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <button
+                type="button"
+                onClick={() => toggleSection("privacy")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.privacy}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <UserCheck className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Privacy</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.privacy ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.privacy ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
+
+              {expandedSections.privacy && <div className="mt-5 space-y-2 sm:space-y-3 text-sm">
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Profile visibility</p>
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Profile visibility"
+                      value={VISIBILITY_LABEL[profile?.profile_visibility || "everyone"]}
+                      options={VISIBILITY_OPTIONS}
+                      disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "profile_visibility",
+                          LABEL_TO_VISIBILITY[value] ?? "everyone"
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Seller visibility</p>
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Seller visibility"
+                      value={VISIBILITY_LABEL[profile?.seller_visibility || "everyone"]}
+                      options={VISIBILITY_OPTIONS}
+                      disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "seller_visibility",
+                          LABEL_TO_VISIBILITY[value] ?? "everyone"
+                        )
+                      }
+                    />
+                  </div>
+                  {!firebaseUser
+                    ? <p className="mt-2 text-xs text-zinc-500">Sign in to view seller status.</p>
+                    : profileLoading
+                    ? <p className="mt-2 text-xs text-zinc-500">Loading seller status...</p>
+                    : !profile?.is_seller && (
+                      <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
+                    )}
+                </div>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Saved items visibility</p>
+                  <div className="mt-2">
+                    <FormDropdown
+                      label="Saved items visibility"
+                      value={VISIBILITY_LABEL[profile?.saved_visibility || "only_me"]}
+                      options={VISIBILITY_OPTIONS}
+                      disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
+                      onChange={(value) =>
+                        void updateVisibility(
+                          "saved_visibility",
+                          LABEL_TO_VISIBILITY[value] ?? "only_me"
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                {!firebaseUser && (
+                  <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-3 text-zinc-600">
+                    Sign in to save privacy preferences.
+                  </div>
+                )}
+              </div>}
+            </section>
+
+            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <button
+                type="button"
+                onClick={() => toggleSection("helpLegal")}
+                className="w-full flex items-center justify-between gap-3 text-left"
+                aria-expanded={expandedSections.helpLegal}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <Settings className="w-5 h-5 text-zinc-700" />
+                  <h2 className="text-xl font-extrabold text-zinc-900">Help & Legal</h2>
+                </span>
+                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                  {expandedSections.helpLegal ? "Hide" : "Show"}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${expandedSections.helpLegal ? "rotate-180" : ""}`}
+                  />
+                </span>
+              </button>
+
+              {expandedSections.helpLegal && <div className="mt-5 space-y-2 sm:space-y-3">
+                {[
+                  { key: "privacy", label: "Privacy Policy", icon: FileText },
+                  { key: "terms", label: "Terms of Use", icon: FileText },
+                  { key: "safety", label: "Safety Tips", icon: ShieldCheck },
+                  { key: "report", label: "Report a Problem", icon: HelpCircle },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => openView(item.key as SettingsView)}
+                      className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 px-4 py-3 sm:py-4 text-left transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="w-10 h-10 rounded-2xl bg-white border border-zinc-200 flex items-center justify-center">
+                          <Icon className="w-4 h-4 text-zinc-700" />
+                        </span>
+                        <span className="font-bold text-zinc-900">{item.label}</span>
+                      </div>
+                      <span className="text-sm font-bold text-zinc-400">Open</span>
+                    </button>
+                  );
+                })}
+              </div>}
+            </section>
+          </section>
+      </main>
+
+      <PasswordPromptModal
+        open={passwordPromptOpen}
+        title="Verify your identity"
+        message="For security, please re-enter your password before deleting your account."
+        password={reauthPassword}
+        onPasswordChange={setReauthPassword}
+        onSubmit={() => void handlePasswordPromptSubmit()}
+        onCancel={() => {
+          setPasswordPromptOpen(false);
+          setReauthPassword("");
+        }}
+      />
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Delete account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete"
+        danger
+        onConfirm={() => void handleDeleteAccount()}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+      {feedback && (
+        <FeedbackModal
+          open={feedback.open}
+          type={feedback.type}
+          title={feedback.title}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+        />
+      )}
+    </div>
+  );
+}
