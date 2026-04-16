@@ -7,6 +7,7 @@ import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES, UNIVERSITIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { resolveUniversity } from "./lib/university";
 import { resolveWhatsappNumber } from "./lib/whatsapp";
 import type { ListingDraft, UserProfile } from "./types";
@@ -63,6 +64,9 @@ export default function CreateListingPage() {
         method: "POST",
         body: JSON.stringify(payload),
       });
+
+      invalidateHomepageCache();
+
       setRedirectAfterFeedback(true);
       showFeedback("success", "Listing posted", "Your listing was created successfully.");
     } catch (err: any) {
