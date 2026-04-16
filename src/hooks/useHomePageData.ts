@@ -32,6 +32,15 @@ export const invalidateHomepageCache = () => {
   homepageCache.clear();
 };
 
+function createAbortError() {
+  if (typeof DOMException !== "undefined") {
+    return new DOMException("Aborted", "AbortError");
+  }
+  const error = new Error("Aborted");
+  error.name = "AbortError";
+  return error;
+}
+
 function isAbortLikeError(error: unknown) {
   if (!error) return false;
   if (
@@ -102,9 +111,14 @@ function rank(list: HomePreviewListing[], campus: string, mode: string) {
     .map(({ item }) => item);
 }
 
+function hasFreshHomepageCache(path: string) {
+  const cached = homepageCache.get(path);
+  return !!cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS;
+}
+
 async function fetchListings(path: string, signal?: AbortSignal) {
   const cached = homepageCache.get(path);
-  if (cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS) {
+  if (cached && hasFreshHomepageCache(path)) {
     return cached.data;
   }
 
@@ -118,11 +132,6 @@ async function fetchListings(path: string, signal?: AbortSignal) {
   });
 
   return items;
-}
-
-function hasFreshHomepageCache(path: string) {
-  const cached = homepageCache.get(path);
-  return !!cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS;
 }
 
 async function waitWithAbort(ms: number, signal?: AbortSignal) {
@@ -145,13 +154,15 @@ async function waitWithAbort(ms: number, signal?: AbortSignal) {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
-      reject(new DOMException("Aborted", "AbortError"));
+      signal.removeEventListener("abort", onAbort);
+      reject(createAbortError());
     };
 
-    signal.addEventListener("abort", onAbort, { once: true });
     if (signal.aborted) {
       onAbort();
+      return;
     }
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -268,7 +279,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
 
     load();
     return () => controller.abort();
-  }, [campus]);
+  }, [campus, featuredSections]);
 
   return {
     recommendedListings,

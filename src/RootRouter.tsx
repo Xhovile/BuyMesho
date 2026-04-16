@@ -56,9 +56,11 @@ export default function RootRouter() {
   }, []);
 
   useEffect(() => {
-    void import("./App.new");
-    void import("./HomePage");
-    void import("./CategoryPage");
+    void Promise.allSettled([
+      import("./App.new"),
+      import("./HomePage"),
+      import("./CategoryPage"),
+    ]);
   }, []);
 
   return (
