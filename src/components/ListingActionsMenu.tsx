@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, MoreVertical, ShieldCheck, Share2 } from "lucide-react";
+import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { buildListingShareUrl } from "../lib/listingUrl";
 
