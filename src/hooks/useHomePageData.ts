@@ -111,14 +111,16 @@ function rank(list: HomePreviewListing[], campus: string, mode: string) {
     .map(({ item }) => item);
 }
 
-function hasFreshHomepageCache(path: string) {
-  const cached = homepageCache.get(path);
+function hasFreshHomepageCache(
+  path: string,
+  cached = homepageCache.get(path)
+) {
   return !!cached && Date.now() - cached.timestamp < HOMEPAGE_CACHE_TTL_MS;
 }
 
 async function fetchListings(path: string, signal?: AbortSignal) {
   const cached = homepageCache.get(path);
-  if (cached && hasFreshHomepageCache(path)) {
+  if (cached && hasFreshHomepageCache(path, cached)) {
     return cached.data;
   }
 

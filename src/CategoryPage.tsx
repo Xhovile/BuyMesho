@@ -104,6 +104,9 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
 const DEFAULT_SORT_BY = "Newest first";
 const DEFAULT_CAMPUS = "All campuses";
 const DEFAULT_SUBCATEGORY = "All subcategories";
+const DEFAULT_CAMPUS_NORMALIZED = DEFAULT_CAMPUS.trim().toLowerCase();
+const DEFAULT_SUBCATEGORY_NORMALIZED =
+  DEFAULT_SUBCATEGORY.trim().toLowerCase();
 
 export default function CategoryPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
@@ -202,13 +205,13 @@ export default function CategoryPage() {
 
     const filtered = items.filter((item) => {
       const campusMatch =
-        normalizedCampus === "all campuses" ||
+        normalizedCampus === DEFAULT_CAMPUS_NORMALIZED ||
         (item.university || "").trim().toLowerCase() === normalizedCampus;
 
       if (!campusMatch) return false;
 
       const subcategoryMatch =
-        normalizedSubcategory === "all subcategories" ||
+        normalizedSubcategory === DEFAULT_SUBCATEGORY_NORMALIZED ||
         (item.subcategory || "").trim().toLowerCase() === normalizedSubcategory;
 
       if (!subcategoryMatch) return false;
