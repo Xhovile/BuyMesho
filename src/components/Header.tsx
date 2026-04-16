@@ -80,7 +80,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
               >
                 <House className="w-4 h-4" />
                 Home
@@ -88,7 +88,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-900 text-white text-sm font-bold hover:bg-red-800"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition-colors"
               >
                 <ShoppingBag className="w-4 h-4" />
                 Market
@@ -96,7 +96,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
               >
                 <Settings className="w-4 h-4" />
                 Settings

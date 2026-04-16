@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ChevronDown,
   Loader2,
-  Search,
   ShoppingBag,
   Smartphone,
   BookOpen,
@@ -107,7 +106,6 @@ export default function CategoryPage() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest first");
   const [campus, setCampus] = useState("All campuses");
   const [subcategory, setSubcategory] = useState("All subcategories");
@@ -188,8 +186,13 @@ export default function CategoryPage() {
   return ["All campuses", ...campuses];
 }, [items]);
 
+  const clearFilters = () => {
+    setSortBy("Newest first");
+    setCampus("All campuses");
+    setSubcategory("All subcategories");
+  };
+
   const filteredAndSortedItems = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const normalizedCampus = campus.trim().toLowerCase();
     const normalizedSubcategory = subcategory.trim().toLowerCase();
 
@@ -205,15 +208,7 @@ export default function CategoryPage() {
         (item.subcategory || "").trim().toLowerCase() === normalizedSubcategory;
 
       if (!subcategoryMatch) return false;
-
-      if (!q) return true;
-
-      const haystack = [item.name, item.description, item.category, item.subcategory, item.university]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(q);
+      return true;
     });
 
     const sorted = [...filtered].sort((a, b) => {
@@ -229,7 +224,7 @@ export default function CategoryPage() {
     });
 
     return sorted;
-  }, [items, search, sortBy, campus, subcategory]);
+  }, [items, sortBy, campus, subcategory]);
 
   const handleSellClick = () => {
     if (!firebaseUser) {
@@ -333,30 +328,29 @@ export default function CategoryPage() {
 
         <section className="max-w-7xl mx-auto px-4 py-6">
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={`Search in ${config.title.toLowerCase()}...`}
-                className="w-full pl-12 pr-4 py-3 rounded-2xl border border-zinc-200 bg-white text-sm outline-none focus:border-red-900 focus:ring-4 focus:ring-red-900/10"
-              />
-            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((value) => !value)}
+                className="w-full inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                aria-label="Toggle filter options"
+                aria-expanded={filtersOpen}
+                aria-controls="category-filter-panel"
+              >
+                <span>Filter</span>
+                <ChevronDown
+                  className={`w-4 h-4 text-zinc-600 transition-transform ${filtersOpen ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setFiltersOpen((value) => !value)}
-              className="mt-3 w-full inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
-              aria-label="Toggle filter options"
-              aria-expanded={filtersOpen}
-              aria-controls="category-filter-panel"
-            >
-              <span>Filter</span>
-              <ChevronDown
-                className={`w-4 h-4 text-zinc-600 transition-transform ${filtersOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="inline-flex shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                Clear filters
+              </button>
+            </div>
 
             {filtersOpen ? (
               <div
