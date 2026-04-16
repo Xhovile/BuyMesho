@@ -189,7 +189,7 @@ export default function MarketSection({
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-5">
             {visibleListings.map((listing) => (
               <Fragment key={listing.id}>
                 <ListingCard
@@ -205,6 +205,8 @@ export default function MarketSection({
                   onToggleSave={onToggleSave}
                   isLoggedIn={isLoggedIn}
                   requireLoginForContact={requireLoginForContact}
+                  compact
+                  showActionsMenu
                 />
               </Fragment>
             ))}
@@ -283,4 +285,4 @@ export default function MarketSection({
       )}
     </>
   );
- }
+}

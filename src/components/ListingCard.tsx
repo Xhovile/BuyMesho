@@ -1,20 +1,15 @@
-import { useEffect, useState } from "react";
-import {
-  Bookmark,
-  Lock,
-  MessageCircle,
-  MoreVertical,
-  ShieldCheck,
-} from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
-import {
-  navigateToEditListing,
-  navigateToListingDetails,
-  navigateToSellerProfile,
-} from "../lib/appNavigation";
-import { buildListingShareUrl } from "../lib/listingUrl";
+import ListingActionsMenu from "./ListingActionsMenu";
 
+function navigateToListingDetails(listingId: number) {
+  window.location.assign(`/listing/${encodeURIComponent(String(listingId))}`);
+}
+
+function navigateToSellerProfile(sellerUid: string) {
+  window.location.assign(`/seller/${encodeURIComponent(sellerUid)}`);
+}
 type ListingCardProps = {
   listing: Listing;
   onReport: (id: number) => any;
@@ -28,6 +23,8 @@ type ListingCardProps = {
   onToggleSave?: (listingId: number) => void;
   requireLoginForContact?: () => void;
   isLoggedIn?: boolean;
+  compact?: boolean;
+  showActionsMenu?: boolean;
 };
 
 export default function ListingCard({
@@ -43,10 +40,10 @@ export default function ListingCard({
   onToggleSave,
   requireLoginForContact,
   isLoggedIn,
+  compact = false,
+  showActionsMenu = true,
 }: ListingCardProps) {
   const sellerUid = listing.seller_uid;
-  const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleOpenProfile = () => {
     if (sellerUid) {
@@ -56,33 +53,6 @@ export default function ListingCard({
 
   const handleOpenDetails = (startIndex = 0) => {
     navigateToListingDetails(listing.id, startIndex);
-  };
-
-  useEffect(() => {
-    if (!menuOpen) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest?.(`[data-listing-menu="${listing.id}"]`)) return;
-      setMenuOpen(false);
-    };
-
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("click", onClick);
-
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("click", onClick);
-    };
-  }, [menuOpen, listing.id]);
-
-  const safeAlert = (msg: string) => {
-    alert(msg);
   };
 
   const availableQuantity = Math.max(
@@ -98,408 +68,151 @@ export default function ListingCard({
     .slice(0, 2)
     .toUpperCase();
 
-  const metaChips = [
-    { key: "subcategory", label: listing.subcategory },
-    { key: "item_type", label: listing.item_type },
-    {
-      key: "condition",
-      label: listing.condition
-        ? listing.condition.charAt(0).toUpperCase() + listing.condition.slice(1)
-        : null,
-    },
-    {
-      key: "availability",
-      label:
-        listing.status !== "sold" && availableQuantity > 0
-          ? `${availableQuantity} left`
-          : "Sold out",
-    },
-  ].filter(
-    (chip): chip is { key: string; label: string } => Boolean(chip.label)
-  );
+  const statusLabel =
+    availableQuantity > 0 ? `${availableQuantity} left` : "Sold out";
 
-  const trackWhatsappClick = async () => {
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (e) {
-      console.error("Failed to track WhatsApp click", e);
-    }
-  };
-
-  const handleCopyWhatsApp = async () => {
-    if (!isLoggedIn) {
-      setMenuOpen(false);
-      requireLoginForContact?.();
-      return;
-    }
-
-    const text = listing.whatsapp_number || "";
-    if (!text) return safeAlert("No WhatsApp number found.");
-
-    try {
-      await navigator.clipboard.writeText(text);
-      safeAlert("✅ WhatsApp number copied.");
-    } catch {
-      prompt("Copy WhatsApp number:", text);
-    } finally {
-      setMenuOpen(false);
-    }
-  };
-
-  const handleShare = async () => {
-    const shareUrl = buildListingShareUrl(listing.id, 0);
-    const shareText = `BuyMesho Listing
-${listing.name}
-Price: MK ${Number(listing.price).toLocaleString()}
-Campus: ${listing.university}
-WhatsApp: ${listing.whatsapp_number}
-
-Open this listing: ${shareUrl}`;
-
-    try {
-      if ((navigator as any).share) {
-        await (navigator as any).share({
-          title: `BuyMesho: ${listing.name}`,
-          text: shareText,
-          url: shareUrl,
-        });
-        return;
-      }
-
-      await navigator.clipboard.writeText(shareText);
-      safeAlert("✅ Share text copied. Paste it on WhatsApp or anywhere.");
-    } catch {
-      prompt("Copy to share:", shareText);
-    } finally {
-      setMenuOpen(false);
-    }
-  };
-
-  const handleReportFromMenu = () => {
-    setMenuOpen(false);
-    onReport(listing.id);
-  };
-
-  const handleHideSeller = () => {
-    if (!sellerUid) return;
-    setMenuOpen(false);
-    onHideSeller?.(sellerUid);
-  };
-
-  const handleHideListing = () => {
-    setMenuOpen(false);
-    onHideListing?.(listing.id);
-  };
+  const description =
+    listing.description && listing.description.trim().length > 0
+      ? listing.description.trim()
+      : "";
 
   return (
-    <motion.div
+    <motion.article
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -4 }}
-      className="relative group"
+      whileHover={{ y: -3 }}
+      className="group relative"
     >
-      <div className="absolute -inset-2 rounded-[28px] bg-white/60 blur-xl opacity-70 group-hover:opacity-100 transition pointer-events-none" />
+      <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 group-hover:opacity-100 transition pointer-events-none" />
 
-      <div className="relative bg-amber-50/70 rounded-3xl border border-zinc-200/70 overflow-hidden shadow-lg shadow-zinc-400/20 hover:shadow-xl hover:shadow-zinc-500/25 transition-all">
-        <div className="p-4 flex items-center justify-between">
+      <div
+        className={`relative overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white shadow-[0_10px_30px_rgba(24,24,27,0.06)] transition-all ${
+          compact ? "hover:shadow-[0_14px_40px_rgba(24,24,27,0.09)]" : "hover:shadow-[0_16px_46px_rgba(24,24,27,0.12)]"
+        }`}
+      >
+        <div className="px-4 pt-4 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleOpenProfile}
-            className="flex items-center gap-3 text-left"
+            className="flex min-w-0 items-center gap-3 text-left"
           >
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-200 border border-zinc-100 shadow-sm flex items-center justify-center text-sm font-black text-zinc-600 overflow-hidden">
+            <div className="relative shrink-0">
+              <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-zinc-100 bg-zinc-100 text-[10px] font-black text-zinc-600 shadow-sm">
                 {listing.business_logo ? (
                   <img
                     src={listing.business_logo}
                     alt={sellerName}
-                    className="w-full h-full object-cover"
+                    className="h-full w-full object-cover"
                     referrerPolicy="no-referrer"
                   />
                 ) : (
                   sellerInitials
                 )}
               </div>
-              {listing.is_verified && (
-                <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
+              {listing.is_verified ? (
+                <div className="absolute -bottom-1.5 -right-1.5 rounded-full bg-white p-0.5 shadow-sm">
+                  <ShieldCheck className="w-3.5 h-3.5 fill-blue-50 text-blue-500" />
                 </div>
-              )}
+              ) : null}
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-sm font-bold text-zinc-800 hover:underline">
-                {sellerName}
-              </span>
-              <span className="text-[10px] text-zinc-400 font-medium">Open seller page</span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-zinc-800">{sellerName}</p>
+              <p className="text-[10px] font-medium text-zinc-400">Open seller page</p>
             </div>
           </button>
 
-          <div className="flex items-center gap-3">
-            <span className="max-w-[95px] truncate bg-zinc-100 text-zinc-600 px-2.5 py-1 rounded-lg text-[11px] font-semibold">
-              {listing.university}
-            </span>
-
-            <div className="relative" data-listing-menu={listing.id}>
-              <button
-                type="button"
-                onClick={() => setMenuOpen(!menuOpen)}
-                className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-                aria-label="Open actions menu"
-                aria-expanded={menuOpen}
-              >
-                <MoreVertical className="w-5 h-5 text-zinc-500" />
-              </button>
-
-              {menuOpen && (
-                <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
-                  {isOwner ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          navigateToEditListing(listing.id);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onToggleStatus?.(listing);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onDelete?.(listing.id);
-                        }}
-                        className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
-                      >
-                        Delete
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMenuOpen(false);
-                          onToggleSave?.(listing.id);
-                        }}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        {isSaved ? "Remove from Saved" : "Save Item"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleReportFromMenu}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        Report listing
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleCopyWhatsApp}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        Copy WhatsApp number
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleShare}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        Share listing
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={handleHideListing}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                      >
-                        Hide this listing
-                      </button>
-
-                      <div className="h-px bg-zinc-100" />
-
-                      <button
-                        type="button"
-                        onClick={handleHideSeller}
-                        className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-                        disabled={!sellerUid}
-                      >
-                        Hide this seller
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <span className="shrink-0 max-w-[120px] truncate rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
+            {listing.university}
+          </span>
         </div>
 
-        <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
+        <div className="relative mt-4 aspect-[1/1] overflow-hidden bg-zinc-100">
+          <button
+            type="button"
+            onClick={() => handleOpenDetails(0)}
+            className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
+          >
+            <img
+              src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
+              alt={listing.name}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              referrerPolicy="no-referrer"
+            />
+          </button>
+
           {listing.video_url ? (
-            <button
-              type="button"
-              onClick={() => handleOpenDetails(0)}
-              className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            >
-              <img
-                src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-                alt={listing.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-              />
-
-              <div
-                className="absolute inset-0 flex items-center justify-center bg-black/30"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleOpenDetails(0);
-                }}
-              >
-                <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
-                  ▶ Play
-                </span>
-              </div>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => handleOpenDetails(0)}
-              className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-            >
-              <img
-                src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-                alt={listing.name}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-              />
-            </button>
-          )}
-
-          {listing.status === "sold" && (
-            <div className="absolute inset-0 bg-black/30 pointer-events-none" />
-          )}
-
-          {listing.status === "sold" && (
-            <div className="absolute top-4 right-4">
-              <span className="bg-red-900 text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider shadow-sm">
-                Sold
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/20">
+              <span className="rounded-xl bg-white/90 px-4 py-2 text-sm font-bold text-zinc-900 shadow-sm backdrop-blur-md">
+                ▶ Play
               </span>
             </div>
-          )}
+          ) : null}
 
-          {!isOwner && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onToggleSave?.(listing.id);
-              }}
-              className={`absolute right-4 z-10 h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                isSaved
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white/95 backdrop-blur-md text-zinc-700 hover:bg-white"
-              } ${listing.status === "sold" ? "top-14" : "top-4"}`}
-              aria-label={isSaved ? "Remove from saved" : "Save item"}
-            >
-              <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
-            </button>
-          )}
+          {listing.status === "sold" ? (
+            <>
+              <div className="pointer-events-none absolute inset-0 bg-black/30" />
+              <div className="absolute right-4 top-4">
+                <span className="rounded-xl bg-red-900 px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider text-white shadow-sm">
+                  Sold
+                </span>
+              </div>
+            </>
+          ) : null}
 
-          {listing.photos?.length > 1 && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleOpenDetails(0);
-              }}
-              className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm"
-            >
-              +{listing.photos.length - 1}
-            </button>
-          )}
+          {showActionsMenu ? (
+            <ListingActionsMenu
+              listing={listing}
+              currentUid={currentUid}
+              isLoggedIn={isLoggedIn}
+              isSaved={isSaved}
+              onReport={onReport}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              onHideSeller={onHideSeller}
+              onHideListing={onHideListing}
+              onToggleStatus={onToggleStatus}
+              onToggleSave={onToggleSave}
+              requireLoginForContact={requireLoginForContact}
+            />
+          ) : null}
 
           <div className="absolute bottom-4 left-4">
-            <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
+            <div className="rounded-xl border border-white/20 bg-white/92 px-3 py-1.5 text-sm font-extrabold text-zinc-900 shadow-sm backdrop-blur-md">
               MK {listing.price.toLocaleString()}
             </div>
           </div>
         </div>
 
-        <div className="p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-extrabold text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-wider">
+        <div className="space-y-3 px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
               {listing.category}
             </span>
 
-            {listing.status === "sold" ? (
-              <span className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-200 text-zinc-500 text-[10px] font-extrabold uppercase tracking-wider cursor-not-allowed">
-                Sold Out
-              </span>
-            ) : isLoggedIn ? (
-              <a
-                href={`https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(
-                  `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, 0)}`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => {
-                  void trackWhatsappClick();
-                }}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Contact
-              </a>
-            ) : (
-              <button
-                type="button"
-                onClick={requireLoginForContact}
-                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white text-[10px] font-extrabold uppercase tracking-wider transition-all active:scale-95 shadow-sm"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                Log in to Contact
-              </button>
-            )}
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider ${
+                listing.status === "sold"
+                  ? "cursor-not-allowed bg-zinc-200 text-zinc-500"
+                  : "bg-zinc-100 text-zinc-600"
+              }`}
+            >
+              {statusLabel}
+            </span>
           </div>
 
-          <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary">
             {listing.name}
           </h3>
 
-          {metaChips.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {metaChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600"
-                >
-                  {chip.label}
-                </span>
-              ))}
-            </div>
-          )}
-
-          <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">
-            {listing.description}
-          </p>
+          {!compact && description ? (
+            <p className="line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-zinc-500">
+              {description}
+            </p>
+          ) : null}
         </div>
       </div>
-    </motion.div>
+    </motion.article>
   );
 }
