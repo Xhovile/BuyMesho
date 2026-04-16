@@ -1,0 +1,288 @@
+import { Fragment } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { Loader2, Search } from "lucide-react";
+import type { Listing } from "../types";
+import FilterSection from "../components/FilterSection";
+import ListingCard from "../components/ListingCard";
+
+type MarketSectionProps = {
+  loading: boolean;
+  listings: Listing[];
+  hiddenSellerUids: string[];
+  hiddenListingIds: number[];
+  selectedUniv: string;
+  setSelectedUniv: (v: string) => void;
+  selectedCat: string;
+  setSelectedCat: (v: string) => void;
+  selectedSubcategory: string;
+  setSelectedSubcategory: (v: string) => void;
+  selectedItemType: string;
+  setSelectedItemType: (v: string) => void;
+  selectedSpecFilters: Record<string, string | string[] | boolean>;
+  setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
+  selectedStatus: string;
+  setSelectedStatus: (v: string) => void;
+  selectedCondition: string;
+  setSelectedCondition: (v: string) => void;
+  hideSoldOut: boolean;
+  setHideSoldOut: (v: boolean) => void;
+  minPrice: string;
+  setMinPrice: (v: string) => void;
+  maxPrice: string;
+  setMaxPrice: (v: string) => void;
+  sortBy: string;
+  setSortBy: (v: string) => void;
+  currentPage: number;
+  setCurrentPage: (v: number) => void;
+  totalPages: number;
+  totalListingsCount: number;
+  firebaseUserUid?: string;
+  isLoggedIn: boolean;
+  savedListingIds: number[];
+  onReport: (id: number) => void;
+  onDelete: (id: number) => void;
+  onEdit: (listing: Listing) => void;
+  onHideSeller: (uid: string) => void;
+  onHideListing: (listingId: number) => void;
+  onToggleStatus: (listing: Listing) => void;
+  onToggleSave: (listingId: number) => void;
+  requireLoginForContact: () => void;
+};
+
+export default function MarketSection({
+  loading,
+  listings,
+  hiddenSellerUids,
+  hiddenListingIds,
+  selectedUniv,
+  setSelectedUniv,
+  selectedCat,
+  setSelectedCat,
+  selectedSubcategory,
+  setSelectedSubcategory,
+  selectedItemType,
+  setSelectedItemType,
+  selectedSpecFilters,
+  setSelectedSpecFilters,
+  selectedStatus,
+  setSelectedStatus,
+  selectedCondition,
+  setSelectedCondition,
+  hideSoldOut,
+  setHideSoldOut,
+  minPrice,
+  setMinPrice,
+  maxPrice,
+  setMaxPrice,
+  sortBy,
+  setSortBy,
+  currentPage,
+  setCurrentPage,
+  totalPages,
+  totalListingsCount,
+  firebaseUserUid,
+  isLoggedIn,
+  savedListingIds,
+  onReport,
+  onDelete,
+  onEdit,
+  onHideSeller,
+  onHideListing,
+  onToggleStatus,
+  onToggleSave,
+  requireLoginForContact,
+}: MarketSectionProps) {
+  const visibleListings = listings.filter(
+    (listing) =>
+      !hiddenSellerUids.includes(listing.seller_uid) &&
+      !hiddenListingIds.includes(listing.id)
+  );
+
+  const startItem =
+    visibleListings.length > 0 ? (currentPage - 1) * 12 + 1 : 0;
+  const endItem =
+    visibleListings.length > 0
+      ? startItem + visibleListings.length - 1
+      : 0;
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
+    Math.max(0, currentPage - 3),
+    Math.min(totalPages, currentPage + 2)
+  );
+  const hasActiveFilters =
+    Boolean(selectedUniv) ||
+    Boolean(selectedCat) ||
+    Boolean(selectedSubcategory) ||
+    Boolean(selectedItemType) ||
+    Boolean(selectedStatus) ||
+    Boolean(selectedCondition) ||
+    hideSoldOut ||
+    Boolean(minPrice) ||
+    Boolean(maxPrice) ||
+    sortBy !== "newest" ||
+    Object.keys(selectedSpecFilters).length > 0;
+
+  const clearAllFilters = () => {
+    setSelectedUniv("");
+    setSelectedCat("");
+    setSelectedSubcategory("");
+    setSelectedItemType("");
+    setSelectedStatus("");
+    setSelectedCondition("");
+    setHideSoldOut(false);
+    setMinPrice("");
+    setMaxPrice("");
+    setSortBy("newest");
+    setSelectedSpecFilters({});
+    setCurrentPage(1);
+  };
+
+  return (
+    <>
+      <FilterSection
+        selectedUniv={selectedUniv}
+        setSelectedUniv={setSelectedUniv}
+        selectedCat={selectedCat}
+        setSelectedCat={setSelectedCat}
+        selectedSubcategory={selectedSubcategory}
+        setSelectedSubcategory={setSelectedSubcategory}
+        selectedItemType={selectedItemType}
+        setSelectedItemType={setSelectedItemType}
+        selectedSpecFilters={selectedSpecFilters}
+        setSelectedSpecFilters={setSelectedSpecFilters}
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        selectedCondition={selectedCondition}
+        setSelectedCondition={setSelectedCondition}
+        hideSoldOut={hideSoldOut}
+        setHideSoldOut={setHideSoldOut}
+        minPrice={minPrice}
+        setMinPrice={setMinPrice}
+        maxPrice={maxPrice}
+        setMaxPrice={setMaxPrice}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+      />
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            Listings
+          </p>
+          <h3 className="mt-2 text-xl font-bold text-zinc-900 flex items-center gap-2">
+            Recent listings
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+          </h3>
+        </div>
+
+        <div className="text-xs font-bold text-zinc-400">
+          {visibleListings.length > 0
+            ? `Showing ${startItem}–${endItem} of ${totalListingsCount} listings`
+            : `Showing 0 of ${totalListingsCount} listings`}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <p className="text-zinc-500 font-medium">Loading marketplace...</p>
+        </div>
+      ) : visibleListings.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-5">
+            {visibleListings.map((listing) => (
+              <Fragment key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={onReport}
+                  currentUid={firebaseUserUid}
+                  onDelete={onDelete}
+                  onEdit={onEdit}
+                  onHideSeller={onHideSeller}
+                  onHideListing={onHideListing}
+                  onToggleStatus={onToggleStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={onToggleSave}
+                  isLoggedIn={isLoggedIn}
+                  requireLoginForContact={requireLoginForContact}
+                  compact
+                  showActionsMenu
+                />
+              </Fragment>
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 disabled:opacity-50"
+              >
+                Prev
+              </button>
+
+              {pageNumbers.map((pageNum) => (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-4 py-2 rounded-xl text-sm font-bold border ${
+                    currentPage === pageNum
+                      ? "bg-zinc-900 text-white border-zinc-900"
+                      : "bg-white text-zinc-700 border-zinc-200"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, currentPage + 1))
+                }
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-20">
+          <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-zinc-300" />
+          </div>
+          <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
+          <p className="text-zinc-500">
+            {hasActiveFilters
+              ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
+              : "Try adjusting your search terms or check again later for new listings."
+            }
+          </p>
+          {hasActiveFilters && (
+            <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+              >
+                Clear all filters
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentPage(1)}
+                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                Start from first page
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
