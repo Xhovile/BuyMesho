@@ -69,9 +69,7 @@ export default function ListingCard({
     .toUpperCase();
 
   const statusLabel =
-    listing.status !== "sold" && availableQuantity > 0
-      ? `${availableQuantity} left`
-      : "Sold out";
+    availableQuantity > 0 ? `${availableQuantity} left` : "Sold out";
 
   const description =
     listing.description && listing.description.trim().length > 0
