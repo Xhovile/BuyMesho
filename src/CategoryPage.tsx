@@ -268,7 +268,7 @@ export default function CategoryPage() {
 
       <main>
         <section className={`bg-gradient-to-br ${config.accent} border-b border-zinc-200`}>
-          <div className="max-w-7xl mx-auto px-4 py-10 sm:py-12">
+          <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -295,7 +295,7 @@ export default function CategoryPage() {
               {config.description}
             </motion.p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={() => navigateToExplore()}

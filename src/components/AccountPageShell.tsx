@@ -58,9 +58,9 @@ export default function AccountPageShell({
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+      <main className="max-w-7xl mx-auto px-4 py-5 sm:py-6">
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm mb-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p>
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
