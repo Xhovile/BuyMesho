@@ -1,9 +1,15 @@
 import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
-import { navigateToListingDetails, navigateToSellerProfile } from "../lib/appNavigation";
 import ListingActionsMenu from "./ListingActionsMenu";
 
+function navigateToListingDetails(listingId: number) {
+  window.location.assign(`/listing/${encodeURIComponent(String(listingId))}`);
+}
+
+function navigateToSellerProfile(sellerUid: string) {
+  window.location.assign(`/seller/${encodeURIComponent(sellerUid)}`);
+}
 type ListingCardProps = {
   listing: Listing;
   onReport: (id: number) => any;
