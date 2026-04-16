@@ -1,5 +1,5 @@
-import { Search, Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight } from "lucide-react";
+import { type FormEvent, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
@@ -32,6 +32,7 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -155,15 +156,33 @@ export default function Header({
             </div>
           </div>
 
-          <div className="relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-red-900 transition-colors" />
-            <input
-              type="text"
-              placeholder="Search listings, products, or services..."
-              className="w-full pl-12 pr-4 py-3 bg-white border border-zinc-300 rounded-2xl text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md outline-none transition-all"
-              onChange={(e) => onSearch(e.target.value)}
-            />
-          </div>
+          <form
+            onSubmit={(e: FormEvent<HTMLFormElement>) => {
+              e.preventDefault();
+              onSearch(searchText.trim());
+            }}
+            className="w-full"
+          >
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm">
+              <input
+                type="text"
+                value={searchText}
+                onChange={(e) => {
+                  setSearchText(e.target.value);
+                  onSearch(e.target.value);
+                }}
+                placeholder="Search listings, products, or services..."
+                className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+              />
+              <button
+                type="submit"
+                aria-label="Search listings"
+                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-red-800"
+              >
+                Search
+              </button>
+            </div>
+          </form>
         </div>
       </nav>
 

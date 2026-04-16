@@ -9,6 +9,7 @@ import {
   Lock,
   MessageCircle,
   ShieldCheck,
+  X,
 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
@@ -301,6 +302,21 @@ export default function ListingDetailsPage() {
     container.scrollBy({ left: 180, behavior: "smooth" });
   };
 
+  const handlePrevImage = () => {
+    if (!listing || galleryImages.length <= 1) return;
+    const prevIndex =
+      (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    syncListingParamsInUrl(listing.id, prevIndex);
+    setRouteState((prev) => ({ ...prev, imageIndex: prevIndex }));
+  };
+
+  const handleNextImage = () => {
+    if (!listing || galleryImages.length <= 1) return;
+    const nextIndex = (currentGalleryIndex + 1) % galleryImages.length;
+    syncListingParamsInUrl(listing.id, nextIndex);
+    setRouteState((prev) => ({ ...prev, imageIndex: nextIndex }));
+  };
+
   const handleContactSeller = async () => {
     if (!listing) return;
 
@@ -432,6 +448,14 @@ export default function ListingDetailsPage() {
                       <path d="M15.41 6.51 8.59 10.49" />
                     </svg>
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateToExplore()}
+                    className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+                    aria-label="Close listing"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
                 <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
                   <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
@@ -443,9 +467,27 @@ export default function ListingDetailsPage() {
                     <Expand className="w-5 h-5" />
                   </button>
                   {galleryImages.length > 1 && (
-                    <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/75 text-white text-xs font-bold">
-                      {currentGalleryIndex + 1} / {galleryImages.length}
-                    </div>
+                    <>
+                      <button
+                        type="button"
+                        onClick={handlePrevImage}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNextImage}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </button>
+                      <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/75 text-white text-xs font-bold">
+                        {currentGalleryIndex + 1} / {galleryImages.length}
+                      </div>
+                    </>
                   )}
                 </div>
 
