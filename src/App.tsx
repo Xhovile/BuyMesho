@@ -84,6 +84,7 @@ import ChangePasswordModal from "./components/ChangePasswordModal";
 import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
+import ListingActionsMenu from "./components/ListingActionsMenu";
                 
 // --- Main App ---
 
@@ -4793,65 +4794,37 @@ setCurrentPage={setCurrentPage}
             className="w-full h-full object-contain"
           />
 
-          <div className="absolute top-3 right-3 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2">
-            {!isDetailsOwner && (
-              <button
-                type="button"
-                onClick={() => toggleSavedListing(detailsListing.id)}
-                className={`h-9 w-9 sm:h-10 sm:w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                  savedListingIds.includes(detailsListing.id)
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white"
-                }`}
-                aria-label={savedListingIds.includes(detailsListing.id) ? "Remove from saved" : "Save item"}
-              >
-                <Bookmark
-                  className={`w-4 h-4 ${
-                    savedListingIds.includes(detailsListing.id) ? "fill-current" : ""
-                  }`}
-                />
-              </button>
-            )}
+<div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+  <ListingActionsMenu
+    listing={detailsListing}
+    currentUid={firebaseUser?.uid}
+    isLoggedIn={!!firebaseUser}
+    isSaved={savedListingIds.includes(detailsListing.id)}
+    variant="detail"
+    onReport={handleReport}
+    onDelete={handleDeleteListing}
+    onEdit={handleEditListing}
+    onHideSeller={hideSellerLocal}
+    onHideListing={hideListingLocal}
+    onToggleStatus={handleToggleListingStatus}
+    onToggleSave={toggleSavedListing}
+    requireLoginForContact={requireLoginForContact}
+  />
 
-            <button
-              type="button"
-              onClick={() => handleDetailShare(detailsListing)}
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-full border border-zinc-200 bg-white/90 text-zinc-700 hover:bg-white flex items-center justify-center transition-all shadow-sm"
-              aria-label="Share listing"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-4 h-4"
-              >
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <path d="M8.59 13.51 15.42 17.49" />
-                <path d="M15.41 6.51 8.59 10.49" />
-              </svg>
-            </button>
-
-            {detailGalleryImages.length > 0 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsImageFullscreenOpen(true);
-                }}
-                className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/85 hover:bg-white text-zinc-900 border border-white/60 shadow flex items-center justify-center"
-                aria-label="Open fullscreen image"
-              >
-                <Expand className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            )}
-          </div>
-
+  {detailGalleryImages.length > 0 && (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsImageFullscreenOpen(true);
+      }}
+      className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/85 hover:bg-white text-zinc-900 border border-white/60 shadow flex items-center justify-center"
+      aria-label="Open fullscreen image"
+    >
+      <Expand className="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
+  )}
+</div>
           {detailGalleryImages.length > 1 && (
             <div className="absolute bottom-3 left-3 sm:left-auto sm:right-3 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-bold">
               {galleryIndex + 1} / {detailGalleryImages.length}
