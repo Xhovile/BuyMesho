@@ -1,8 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
-import { buildListingShareUrl } from "../lib/listingUrl";
 
+function buildListingShareUrl(listing: Listing) {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const listingWithUrls = listing as Listing & {
+    shareUrl?: string;
+    url?: string;
+    permalink?: string;
+    slug?: string;
+  };
+
+  const explicitUrl =
+    listingWithUrls.shareUrl ||
+    listingWithUrls.url ||
+    listingWithUrls.permalink;
+
+  if (explicitUrl) {
+    try {
+      return new URL(explicitUrl, origin || undefined).toString();
+    } catch {
+      return explicitUrl;
+    }
+  }
+
+  const slugSegment =
+    typeof listingWithUrls.slug === "string" && listingWithUrls.slug.length > 0
+      ? `/${listingWithUrls.slug}`
+      : "";
+
+  return `${origin}/listing/${listing.id}${slugSegment}`;
+}
 type ListingActionsMenuProps = {
   listing: Listing;
   currentUid?: string;
