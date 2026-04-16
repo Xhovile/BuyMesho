@@ -483,6 +483,7 @@ export default function App() {
   return (
     <div className="min-h-screen pb-20 bg-zinc-100">
       <Header
+        searchValue={search}
         onSearch={setSearch}
         onAddListing={handleListItem}
         onProfileClick={navigateToProfile}

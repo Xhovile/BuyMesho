@@ -101,14 +101,18 @@ const CATEGORY_CONFIG: Record<CategoryKey, CategoryConfig> = {
   },
 };
 
+const DEFAULT_SORT_BY = "Newest first";
+const DEFAULT_CAMPUS = "All campuses";
+const DEFAULT_SUBCATEGORY = "All subcategories";
+
 export default function CategoryPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<ListingPreview[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [sortBy, setSortBy] = useState("Newest first");
-  const [campus, setCampus] = useState("All campuses");
-  const [subcategory, setSubcategory] = useState("All subcategories");
+  const [sortBy, setSortBy] = useState(DEFAULT_SORT_BY);
+  const [campus, setCampus] = useState(DEFAULT_CAMPUS);
+  const [subcategory, setSubcategory] = useState(DEFAULT_SUBCATEGORY);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
 
@@ -164,7 +168,7 @@ export default function CategoryPage() {
 
   const subcategoryOptions = useMemo(() => {
     const subs = getListingSubcategories(config.apiCategory);
-    return ["All subcategories", ...subs];
+    return [DEFAULT_SUBCATEGORY, ...subs];
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
@@ -183,13 +187,13 @@ export default function CategoryPage() {
   }
 
   campuses.sort((a, b) => a.localeCompare(b));
-  return ["All campuses", ...campuses];
+  return [DEFAULT_CAMPUS, ...campuses];
 }, [items]);
 
   const clearFilters = () => {
-    setSortBy("Newest first");
-    setCampus("All campuses");
-    setSubcategory("All subcategories");
+    setSortBy(DEFAULT_SORT_BY);
+    setCampus(DEFAULT_CAMPUS);
+    setSubcategory(DEFAULT_SUBCATEGORY);
   };
 
   const filteredAndSortedItems = useMemo(() => {
@@ -332,7 +336,7 @@ export default function CategoryPage() {
               <button
                 type="button"
                 onClick={() => setFiltersOpen((value) => !value)}
-                className="w-full inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                className="min-w-0 flex-1 inline-flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 transition-colors"
                 aria-label="Toggle filter options"
                 aria-expanded={filtersOpen}
                 aria-controls="category-filter-panel"

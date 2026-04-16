@@ -2928,6 +2928,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
+        searchValue={search}
         onSearch={setSearch} 
         onAddListing={() => {
   if (!isSellerAccount) {

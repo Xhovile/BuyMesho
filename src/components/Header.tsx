@@ -16,6 +16,7 @@ import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
 
 type HeaderProps = {
+  searchValue: string;
   onSearch: (val: string) => void;
   onAddListing: () => void;
   onProfileClick: () => void;
@@ -24,6 +25,7 @@ type HeaderProps = {
 };
 
 export default function Header({
+  searchValue,
   onSearch,
   onAddListing,
   onProfileClick,
@@ -32,7 +34,6 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const [searchText, setSearchText] = useState("");
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -159,18 +160,15 @@ export default function Header({
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
               e.preventDefault();
-              onSearch(searchText.trim());
+              onSearch(searchValue.trim());
             }}
             className="w-full"
           >
             <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm">
               <input
                 type="text"
-                value={searchText}
-                onChange={(e) => {
-                  setSearchText(e.target.value);
-                  onSearch(e.target.value);
-                }}
+                value={searchValue}
+                onChange={(e) => onSearch(e.target.value)}
                 placeholder="Search listings, products, or services..."
                 className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
               />
