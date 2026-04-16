@@ -139,10 +139,6 @@ export default function ListingActionsMenu({
     setOpen(false);
   };
 
-  const handleContactCopy = async () => {
-    await handleCopyWhatsApp();
-  };
-
   const menuLabel = useMemo(() => (isOwner ? "Listing actions" : "More options"), [isOwner]);
 
   return (
