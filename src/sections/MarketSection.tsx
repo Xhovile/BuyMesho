@@ -192,22 +192,6 @@ export default function MarketSection({
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-5">
             {visibleListings.map((listing) => (
               <Fragment key={listing.id}>
-                <ListingCard
-                  listing={listing}
-                  onReport={onReport}
-                  currentUid={firebaseUserUid}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  onHideSeller={onHideSeller}
-                  onHideListing={onHideListing}
-                  onToggleStatus={onToggleStatus}
-                  isSaved={savedListingIds.includes(listing.id)}
-                  onToggleSave={onToggleSave}
-                  isLoggedIn={isLoggedIn}
-                  requireLoginForContact={requireLoginForContact}
-                  compact
-                  showActionsMenu
-                />
               </Fragment>
             ))}
           </div>
