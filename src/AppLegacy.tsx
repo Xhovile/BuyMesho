@@ -520,6 +520,7 @@ export default function App() {
     setCurrentPage,
     totalPages,
     totalListingsCount: totalResults,
+    pageSize,
   };
 
   const marketActions: MarketSectionActions = {

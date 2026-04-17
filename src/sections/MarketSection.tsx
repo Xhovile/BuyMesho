@@ -37,6 +37,7 @@ export type MarketSectionPagination = {
   setCurrentPage: (v: number) => void;
   totalPages: number;
   totalListingsCount: number;
+  pageSize: number;
 };
 
 export type MarketSectionActions = {
@@ -105,7 +106,7 @@ export default function MarketSection({
     setMaxPrice,
     setSortBy,
   } = setFilters;
-  const { currentPage, setCurrentPage, totalPages, totalListingsCount } = pagination;
+  const { currentPage, setCurrentPage, totalPages, totalListingsCount, pageSize } = pagination;
   const {
     onReport,
     onDelete,
@@ -125,7 +126,7 @@ export default function MarketSection({
       !hiddenListingIds.includes(listing.id)
   );
 
-  const startItem = visibleListings.length > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
+  const startItem = visibleListings.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endItem = visibleListings.length > 0 ? startItem + visibleListings.length - 1 : 0;
 
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
