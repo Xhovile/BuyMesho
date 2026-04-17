@@ -4,44 +4,42 @@ import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
 
-const PAGE_SIZE = 12;
-
-// TODO(refactor): MarketSection currently has a very large prop surface.
-// Keep behavior unchanged for now; split responsibilities in a follow-up cleanup.
-type MarketSectionProps = {
-  loading: boolean;
-  listings: Listing[];
-  hiddenSellerUids: string[];
-  hiddenListingIds: number[];
+export type MarketSectionFilters = {
   selectedUniv: string;
-  setSelectedUniv: (v: string) => void;
   selectedCat: string;
-  setSelectedCat: (v: string) => void;
   selectedSubcategory: string;
-  setSelectedSubcategory: (v: string) => void;
   selectedItemType: string;
-  setSelectedItemType: (v: string) => void;
   selectedSpecFilters: Record<string, string | string[] | boolean>;
-  setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
   selectedStatus: string;
-  setSelectedStatus: (v: string) => void;
   selectedCondition: string;
-  setSelectedCondition: (v: string) => void;
   hideSoldOut: boolean;
-  setHideSoldOut: (v: boolean) => void;
   minPrice: string;
-  setMinPrice: (v: string) => void;
   maxPrice: string;
-  setMaxPrice: (v: string) => void;
   sortBy: string;
+};
+
+export type MarketSectionSetFilters = {
+  setSelectedUniv: (v: string) => void;
+  setSelectedCat: (v: string) => void;
+  setSelectedSubcategory: (v: string) => void;
+  setSelectedItemType: (v: string) => void;
+  setSelectedSpecFilters: Dispatch<SetStateAction<Record<string, string | string[] | boolean>>>;
+  setSelectedStatus: (v: string) => void;
+  setSelectedCondition: (v: string) => void;
+  setHideSoldOut: (v: boolean) => void;
+  setMinPrice: (v: string) => void;
+  setMaxPrice: (v: string) => void;
   setSortBy: (v: string) => void;
+};
+
+export type MarketSectionPagination = {
   currentPage: number;
   setCurrentPage: (v: number) => void;
   totalPages: number;
   totalListingsCount: number;
-  firebaseUserUid?: string;
-  isLoggedIn: boolean;
-  savedListingIds: number[];
+};
+
+export type MarketSectionActions = {
   onReport: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (listing: Listing) => void;
@@ -54,51 +52,73 @@ type MarketSectionProps = {
   onOpenSeller: (uid: string) => void;
 };
 
+type MarketSectionProps = {
+  loading: boolean;
+  listings: Listing[];
+  hiddenSellerUids: string[];
+  hiddenListingIds: number[];
+  filters: MarketSectionFilters;
+  setFilters: MarketSectionSetFilters;
+  pagination: MarketSectionPagination;
+  firebaseUserUid?: string;
+  isLoggedIn: boolean;
+  savedListingIds: number[];
+  actions: MarketSectionActions;
+};
+
 export default function MarketSection({
   loading,
   listings,
   hiddenSellerUids,
   hiddenListingIds,
-  selectedUniv,
-  setSelectedUniv,
-  selectedCat,
-  setSelectedCat,
-  selectedSubcategory,
-  setSelectedSubcategory,
-  selectedItemType,
-  setSelectedItemType,
-  selectedSpecFilters,
-  setSelectedSpecFilters,
-  selectedStatus,
-  setSelectedStatus,
-  selectedCondition,
-  setSelectedCondition,
-  hideSoldOut,
-  setHideSoldOut,
-  minPrice,
-  setMinPrice,
-  maxPrice,
-  setMaxPrice,
-  sortBy,
-  setSortBy,
-  currentPage,
-  setCurrentPage,
-  totalPages,
-  totalListingsCount,
+  filters,
+  setFilters,
+  pagination,
   firebaseUserUid,
   isLoggedIn,
   savedListingIds,
-  onReport,
-  onDelete,
-  onEdit,
-  onHideSeller,
-  onHideListing,
-  onToggleStatus,
-  onToggleSave,
-  requireLoginForContact,
-  onOpenDetails,
-  onOpenSeller,
+  actions,
 }: MarketSectionProps) {
+  const {
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedSpecFilters,
+    selectedStatus,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    sortBy,
+  } = filters;
+  const {
+    setSelectedUniv,
+    setSelectedCat,
+    setSelectedSubcategory,
+    setSelectedItemType,
+    setSelectedSpecFilters,
+    setSelectedStatus,
+    setSelectedCondition,
+    setHideSoldOut,
+    setMinPrice,
+    setMaxPrice,
+    setSortBy,
+  } = setFilters;
+  const { currentPage, setCurrentPage, totalPages, totalListingsCount } = pagination;
+  const {
+    onReport,
+    onDelete,
+    onEdit,
+    onHideSeller,
+    onHideListing,
+    onToggleStatus,
+    onToggleSave,
+    requireLoginForContact,
+    onOpenDetails,
+    onOpenSeller,
+  } = actions;
+
   const visibleListings = listings.filter(
     (listing) =>
       !hiddenSellerUids.includes(listing.seller_uid) &&

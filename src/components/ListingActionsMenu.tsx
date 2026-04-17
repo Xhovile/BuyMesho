@@ -24,12 +24,12 @@ function buildListingShareUrl(listing: Listing) {
     }
   }
 
-  const slugSegment =
-    typeof listingWithUrls.slug === "string" && listingWithUrls.slug.length > 0
-      ? `/${listingWithUrls.slug}`
-      : "";
+  const searchParams = new URLSearchParams({
+    listing: String(listing.id),
+    image: "0",
+  });
 
-  return `${origin}/listing/${listing.id}${slugSegment}`;
+  return `${origin}/listing?${searchParams.toString()}`;
 }
 type ListingActionsMenuProps = {
   listing: Listing;

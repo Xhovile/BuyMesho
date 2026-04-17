@@ -7,12 +7,18 @@ import Header from "./components/Header";
 import EditListingModal from "./components/EditListingModal";
 import ReportListingModal from "./components/ReportListingModal";
 import HeroSection from "./sections/HeroSection";
-import MarketSection from "./sections/MarketSection";
+import MarketSection, {
+  type MarketSectionActions,
+  type MarketSectionFilters,
+  type MarketSectionPagination,
+  type MarketSectionSetFilters,
+} from "./sections/MarketSection";
 import { Listing } from "./types";
 import {
   getExploreStateFromLocation,
   navigateToCreateListing,
   navigateToLogin,
+  navigateToListingDetails,
   navigateToPath,
   PRIVACY_PATH,
   REPORT_PATH,
@@ -481,6 +487,69 @@ export default function App() {
     }
   };
 
+  const marketFilters: MarketSectionFilters = {
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedSpecFilters,
+    selectedStatus,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    sortBy,
+  };
+
+  const marketSetFilters: MarketSectionSetFilters = {
+    setSelectedUniv,
+    setSelectedCat: handleCategoryChange,
+    setSelectedSubcategory,
+    setSelectedItemType,
+    setSelectedSpecFilters,
+    setSelectedStatus,
+    setSelectedCondition,
+    setHideSoldOut,
+    setMinPrice,
+    setMaxPrice,
+    setSortBy,
+  };
+
+  const marketPagination: MarketSectionPagination = {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalListingsCount: totalResults,
+  };
+
+  const marketActions: MarketSectionActions = {
+    onReport: (listingId) => setReportListingId(listingId),
+    onDelete: (listingId) => {
+      askConfirm({
+        title: "Delete listing",
+        message: "Are you sure you want to delete this listing?",
+        confirmText: "Delete",
+        danger: true,
+        onConfirm: () => {
+          setConfirmState(null);
+          void performDeleteListing(listingId);
+        },
+      });
+    },
+    onEdit: setEditingListing,
+    onHideSeller: hideSellerLocal,
+    onHideListing: hideListingLocal,
+    onToggleStatus: (listing) =>
+      void handleUpdateListing(listing.id, {
+        ...listing,
+        status: listing.status === "sold" ? "available" : "sold",
+      }),
+    onToggleSave: toggleSavedListing,
+    requireLoginForContact: navigateToLogin,
+    onOpenDetails: (listing) => navigateToListingDetails(listing.id),
+    onOpenSeller: (uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`),
+  };
+
   return (
     <div className="min-h-screen pb-20 bg-zinc-100">
       <Header
@@ -499,56 +568,13 @@ export default function App() {
           listings={listings}
           hiddenSellerUids={hiddenSellerUids}
           hiddenListingIds={hiddenListingIds}
-          selectedUniv={selectedUniv}
-          setSelectedUniv={setSelectedUniv}
-          selectedCat={selectedCat}
-          setSelectedCat={handleCategoryChange}
-          selectedSubcategory={selectedSubcategory}
-          setSelectedSubcategory={setSelectedSubcategory}
-          selectedItemType={selectedItemType}
-          setSelectedItemType={setSelectedItemType}
-          selectedSpecFilters={selectedSpecFilters}
-          setSelectedSpecFilters={setSelectedSpecFilters}
-          selectedStatus={selectedStatus}
-          setSelectedStatus={setSelectedStatus}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
+          filters={marketFilters}
+          setFilters={marketSetFilters}
+          pagination={marketPagination}
           firebaseUserUid={firebaseUser?.uid}
           isLoggedIn={!!firebaseUser}
           savedListingIds={savedListingIds}
-          onReport={(listingId) => setReportListingId(listingId)}
-          onDelete={(listingId) => {
-            askConfirm({
-              title: "Delete listing",
-              message: "Are you sure you want to delete this listing?",
-              confirmText: "Delete",
-              danger: true,
-              onConfirm: () => {
-                setConfirmState(null);
-                void performDeleteListing(listingId);
-              },
-            });
-          }}
-          onEdit={setEditingListing}
-          onHideSeller={hideSellerLocal}
-          onHideListing={hideListingLocal}
-          onToggleStatus={(listing) => void handleUpdateListing(listing.id, { ...listing, status: listing.status === "sold" ? "available" : "sold" })}
-          onToggleSave={toggleSavedListing}
-          requireLoginForContact={navigateToLogin}
-          onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-          onOpenSeller={(uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`)}
-          selectedCondition={selectedCondition}
-          setSelectedCondition={setSelectedCondition}
-          hideSoldOut={hideSoldOut}
-          setHideSoldOut={setHideSoldOut}
-          minPrice={minPrice}
-          setMinPrice={setMinPrice}
-          maxPrice={maxPrice}
-          setMaxPrice={setMaxPrice}
-          totalListingsCount={totalResults}
-          currentPage={currentPage}
-          totalPages={totalPages}
-          setCurrentPage={setCurrentPage}
+          actions={marketActions}
         />
       </main>
 
