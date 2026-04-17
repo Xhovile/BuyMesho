@@ -535,7 +535,6 @@ export default function App() {
           onToggleSave={toggleSavedListing}
           requireLoginForContact={navigateToLogin}
           onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-          onOpenSeller={(uid) => navigateToSellerProfile(uid)}
           onOpenSeller={(uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`)}
           selectedCondition={selectedCondition}
           setSelectedCondition={setSelectedCondition}
