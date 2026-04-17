@@ -135,7 +135,7 @@ export default function ListingActionsMenu({
   };
 
   const handleShare = async () => {
-    const shareUrl = buildListingShareUrl(listing.id, 0);
+    const shareUrl = buildListingShareUrl(listing);
     const shareLines = [
       "BuyMesho Listing",
       listing.name,

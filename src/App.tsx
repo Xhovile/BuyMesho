@@ -51,7 +51,12 @@ import {
   syncListingParamsInUrl,
   clearListingParamFromUrl
 } from "./lib/listingUrl";
-import MarketSection from "./sections/MarketSection";
+import MarketSection, {
+  type MarketSectionActions,
+  type MarketSectionFilters,
+  type MarketSectionPagination,
+  type MarketSectionSetFilters,
+} from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
 import ListingCard from "./components/ListingCard";
 import Header from "./components/Header";
@@ -2925,6 +2930,54 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     };
   }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
 
+  const marketFilters: MarketSectionFilters = {
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedSpecFilters,
+    selectedStatus,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    sortBy,
+  };
+
+  const marketSetFilters: MarketSectionSetFilters = {
+    setSelectedUniv,
+    setSelectedCat: handleSelectedCategoryChange,
+    setSelectedSubcategory: handleSelectedSubcategoryChange,
+    setSelectedItemType: handleSelectedItemTypeChange,
+    setSelectedSpecFilters,
+    setSelectedStatus,
+    setSelectedCondition,
+    setHideSoldOut,
+    setMinPrice,
+    setMaxPrice,
+    setSortBy,
+  };
+
+  const marketPagination: MarketSectionPagination = {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalListingsCount: totalResults,
+  };
+
+  const marketActions: MarketSectionActions = {
+    onReport: handleReport,
+    onDelete: handleDeleteListing,
+    onEdit: handleEditListing,
+    onHideSeller: hideSellerLocal,
+    onHideListing: hideListingLocal,
+    onToggleStatus: handleToggleListingStatus,
+    onToggleSave: toggleSavedListing,
+    requireLoginForContact,
+    onOpenDetails: openDetails,
+    onOpenSeller: openPublicProfile,
+  };
+
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
       <Header 
@@ -2960,46 +3013,14 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   loading={loading}
   listings={listings}
   hiddenSellerUids={hiddenSellerUids}
-        hiddenListingIds={hiddenListingIds}
-  selectedUniv={selectedUniv}
-  setSelectedUniv={setSelectedUniv}
-  selectedCat={selectedCat}
-  setSelectedCat={handleSelectedCategoryChange}
-  selectedSubcategory={selectedSubcategory}
-  setSelectedSubcategory={handleSelectedSubcategoryChange}
-  selectedItemType={selectedItemType}
-  setSelectedItemType={handleSelectedItemTypeChange}
-  selectedSpecFilters={selectedSpecFilters}
-  setSelectedSpecFilters={setSelectedSpecFilters}
-  selectedStatus={selectedStatus}
-  setSelectedStatus={setSelectedStatus}
-  sortBy={sortBy}
-  setSortBy={setSortBy}
+  hiddenListingIds={hiddenListingIds}
+  filters={marketFilters}
+  setFilters={marketSetFilters}
+  pagination={marketPagination}
   firebaseUserUid={firebaseUser?.uid}
   isLoggedIn={!!firebaseUser}
   savedListingIds={savedListingIds}
-  onReport={handleReport}
-  onDelete={handleDeleteListing}
-  onEdit={handleEditListing}
-  onHideSeller={hideSellerLocal}
-  onHideListing={hideListingLocal}
-  onToggleStatus={handleToggleListingStatus}
-  onToggleSave={toggleSavedListing}
-  requireLoginForContact={requireLoginForContact}
-  onOpenDetails={openDetails}
-  onOpenSeller={openPublicProfile}
-  selectedCondition={selectedCondition}
-setSelectedCondition={setSelectedCondition}
-hideSoldOut={hideSoldOut}
-setHideSoldOut={setHideSoldOut}
-minPrice={minPrice}
-setMinPrice={setMinPrice}
-maxPrice={maxPrice}
-setMaxPrice={setMaxPrice}
-totalListingsCount={totalResults}
-currentPage={currentPage}
-totalPages={totalPages}
-setCurrentPage={setCurrentPage}
+  actions={marketActions}
 />
       </main>
 
