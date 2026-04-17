@@ -210,6 +210,7 @@ export default function MarketSection({
                 requireLoginForContact={requireLoginForContact}
                 onOpenDetails={onOpenDetails}
                 onOpenSeller={onOpenSeller}
+                showActionsMenu={false}
               />
             ))}
           </div>
