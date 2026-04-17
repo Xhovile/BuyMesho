@@ -46,6 +46,8 @@ type MarketSectionProps = {
   onToggleStatus: (listing: Listing) => void;
   onToggleSave: (listingId: number) => void;
   requireLoginForContact: () => void;
+  onOpenDetails: (listing: Listing) => void;
+  onOpenSeller: (uid: string) => void;
 };
 
 export default function MarketSection({
@@ -90,6 +92,8 @@ export default function MarketSection({
   onToggleStatus,
   onToggleSave,
   requireLoginForContact,
+  onOpenDetails,
+  onOpenSeller,
 }: MarketSectionProps) {
   const visibleListings = listings.filter(
     (listing) =>
@@ -190,6 +194,23 @@ export default function MarketSection({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-5">
             {visibleListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onReport={onReport}
+                currentUid={firebaseUserUid}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onHideSeller={onHideSeller}
+                onHideListing={onHideListing}
+                onToggleStatus={onToggleStatus}
+                isSaved={savedListingIds.includes(listing.id)}
+                onToggleSave={onToggleSave}
+                isLoggedIn={isLoggedIn}
+                requireLoginForContact={requireLoginForContact}
+                onOpenDetails={onOpenDetails}
+                onOpenSeller={onOpenSeller}
+              />
             ))}
           </div>
 

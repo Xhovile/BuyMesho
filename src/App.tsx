@@ -2986,6 +2986,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   onToggleStatus={handleToggleListingStatus}
   onToggleSave={toggleSavedListing}
   requireLoginForContact={requireLoginForContact}
+  onOpenDetails={openDetails}
+  onOpenSeller={openPublicProfile}
   selectedCondition={selectedCondition}
 setSelectedCondition={setSelectedCondition}
 hideSoldOut={hideSoldOut}
@@ -4468,6 +4470,8 @@ setCurrentPage={setCurrentPage}
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
                   requireLoginForContact={requireLoginForContact}
+                  onOpenDetails={openDetails}
+                  onOpenSeller={openPublicProfile}
                 />
               </div>
             ))}
@@ -4548,6 +4552,8 @@ setCurrentPage={setCurrentPage}
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
                   requireLoginForContact={requireLoginForContact}
+                  onOpenDetails={openDetails}
+                  onOpenSeller={openPublicProfile}
                 />
               </div>
             ))}
@@ -4734,6 +4740,8 @@ setCurrentPage={setCurrentPage}
                       onToggleSave={toggleSavedListing}
                       isLoggedIn={!!firebaseUser}
                       requireLoginForContact={requireLoginForContact}
+                      onOpenDetails={openDetails}
+                      onOpenSeller={openPublicProfile}
                     />
                   </div>
                 ))}
