@@ -101,17 +101,14 @@ export default function MarketSection({
       !hiddenListingIds.includes(listing.id)
   );
 
-  const startItem =
-    visibleListings.length > 0 ? (currentPage - 1) * 12 + 1 : 0;
-  const endItem =
-    visibleListings.length > 0
-      ? startItem + visibleListings.length - 1
-      : 0;
+  const startItem = visibleListings.length > 0 ? (currentPage - 1) * 12 + 1 : 0;
+  const endItem = visibleListings.length > 0 ? startItem + visibleListings.length - 1 : 0;
 
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
     Math.max(0, currentPage - 3),
     Math.min(totalPages, currentPage + 2)
   );
+
   const hasActiveFilters =
     Boolean(selectedUniv) ||
     Boolean(selectedCat) ||
@@ -192,7 +189,7 @@ export default function MarketSection({
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 xl:gap-5">
             {visibleListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -210,6 +207,7 @@ export default function MarketSection({
                 requireLoginForContact={requireLoginForContact}
                 onOpenDetails={onOpenDetails}
                 onOpenSeller={onOpenSeller}
+                compact
                 showActionsMenu={false}
               />
             ))}
@@ -243,9 +241,7 @@ export default function MarketSection({
 
               <button
                 type="button"
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
+                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 disabled:opacity-50"
               >
@@ -263,8 +259,7 @@ export default function MarketSection({
           <p className="text-zinc-500">
             {hasActiveFilters
               ? "Your current filters may be too restrictive. Remove one filter or clear all to broaden results."
-              : "Try adjusting your search terms or check again later for new listings."
-            }
+              : "Try adjusting your search terms or check again later for new listings."}
           </p>
           {hasActiveFilters && (
             <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
