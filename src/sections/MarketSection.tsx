@@ -4,6 +4,10 @@ import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
 
+const PAGE_SIZE = 12;
+
+// TODO(refactor): MarketSection currently has a very large prop surface.
+// Keep behavior unchanged for now; split responsibilities in a follow-up cleanup.
 type MarketSectionProps = {
   loading: boolean;
   listings: Listing[];
@@ -101,7 +105,7 @@ export default function MarketSection({
       !hiddenListingIds.includes(listing.id)
   );
 
-  const startItem = visibleListings.length > 0 ? (currentPage - 1) * 12 + 1 : 0;
+  const startItem = visibleListings.length > 0 ? (currentPage - 1) * PAGE_SIZE + 1 : 0;
   const endItem = visibleListings.length > 0 ? startItem + visibleListings.length - 1 : 0;
 
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).slice(
