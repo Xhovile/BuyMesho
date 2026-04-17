@@ -42,8 +42,11 @@ export default function ListingCard({
   onOpenDetails,
   onOpenSeller,
 }: ListingCardProps) {
-  const sellerUid = listing.seller_uid;
-  const sellerName = listing.business_name || "Seller";
+  const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
+  const sellerName =
+    typeof listing.business_name === "string" && listing.business_name.trim()
+      ? listing.business_name.trim()
+      : "Seller";
 
   const handleOpenProfile = () => {
     if (sellerUid) onOpenSeller(sellerUid);
@@ -53,21 +56,45 @@ export default function ListingCard({
     onOpenDetails(listing);
   };
 
-  const availableQuantity = Math.max(
-    0,
-    Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
-  );
+  const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
+  const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
+    ? Number(listing.sold_quantity)
+    : 0;
 
+  const availableQuantity = Math.max(0, quantity - soldQuantity);
   const statusLabel = availableQuantity > 0 ? `${availableQuantity} left` : "Sold out";
 
   const description =
-    listing.description && listing.description.trim().length > 0
+    typeof listing.description === "string" && listing.description.trim().length > 0
       ? listing.description.trim()
       : "";
+
+  const safePriceValue = Number(listing.price);
+  const safePrice = Number.isFinite(safePriceValue) ? safePriceValue : 0;
+
+  const firstPhoto =
+    Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
+      ? listing.photos[0]
+      : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
   const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
   const outerPadding = ultraCompact ? "px-3 pt-3" : "px-4 pt-4";
   const imageAspect = ultraCompact ? "aspect-[4/5]" : "aspect-[1/1]";
+
+  const universityLabel =
+    typeof listing.university === "string" && listing.university.trim()
+      ? listing.university
+      : "Unknown campus";
+
+  const categoryLabel =
+    typeof listing.category === "string" && listing.category.trim()
+      ? listing.category
+      : "Uncategorized";
+
+  const titleLabel =
+    typeof listing.name === "string" && listing.name.trim()
+      ? listing.name
+      : "Untitled listing";
 
   return (
     <motion.article
@@ -116,7 +143,7 @@ export default function ListingCard({
                 : "max-w-[120px] px-3 py-1 text-[11px]"
             }`}
           >
-            {listing.university}
+            {universityLabel}
           </span>
         </div>
 
@@ -127,8 +154,8 @@ export default function ListingCard({
             className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <img
-              src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-              alt={listing.name}
+              src={firstPhoto}
+              alt={titleLabel}
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
@@ -168,7 +195,7 @@ export default function ListingCard({
                 ultraCompact ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
               }`}
             >
-              MK {listing.price.toLocaleString()}
+              MK {safePrice.toLocaleString()}
             </div>
           </div>
         </div>
@@ -181,7 +208,7 @@ export default function ListingCard({
                 : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
             }
           >
-            {listing.name}
+            {titleLabel}
           </h3>
 
           {!compact && !ultraCompact && description ? (
@@ -193,7 +220,7 @@ export default function ListingCard({
           {!ultraCompact ? (
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                {listing.category}
+                {categoryLabel}
               </span>
               <span
                 className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider ${
@@ -210,4 +237,4 @@ export default function ListingCard({
       </div>
     </motion.article>
   );
-}
+}   
