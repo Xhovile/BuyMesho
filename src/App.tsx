@@ -90,7 +90,7 @@ import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
-import { navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+import { navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
                 
 // --- Main App ---
 
@@ -2975,8 +2975,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     onToggleStatus: handleToggleListingStatus,
     onToggleSave: toggleSavedListing,
     requireLoginForContact,
-    onOpenDetails: openDetails,
-    onOpenSeller: openPublicProfile,
+    onOpenDetails: (listing) => navigateToListingDetails(listing.id, 0),
+    onOpenSeller: (uid) => navigateToSellerProfile(uid),
   };
 
   return (
@@ -4492,8 +4492,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
                   requireLoginForContact={requireLoginForContact}
-                  onOpenDetails={openDetails}
-                  onOpenSeller={openPublicProfile}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
+                  onOpenSeller={(uid) => navigateToSellerProfile(uid)}
                 />
               </div>
             ))}
@@ -4574,8 +4574,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
                   requireLoginForContact={requireLoginForContact}
-                  onOpenDetails={openDetails}
-                  onOpenSeller={openPublicProfile}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
+                  onOpenSeller={(uid) => navigateToSellerProfile(uid)}
                 />
               </div>
             ))}

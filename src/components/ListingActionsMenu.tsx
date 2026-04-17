@@ -1,36 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
-
-function buildListingShareUrl(listing: Listing) {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const listingWithUrls = listing as Listing & {
-    shareUrl?: string;
-    url?: string;
-    permalink?: string;
-    slug?: string;
-  };
-
-  const explicitUrl =
-    listingWithUrls.shareUrl ||
-    listingWithUrls.url ||
-    listingWithUrls.permalink;
-
-  if (explicitUrl) {
-    try {
-      return new URL(explicitUrl, origin || undefined).toString();
-    } catch {
-      return explicitUrl;
-    }
-  }
-
-  const searchParams = new URLSearchParams({
-    listing: String(listing.id),
-    image: "0",
-  });
-
-  return `${origin}/listing?${searchParams.toString()}`;
-}
+import { buildListingShareUrl } from "../lib/listingUrl";
 type ListingActionsMenuProps = {
   listing: Listing;
   currentUid?: string;
@@ -135,7 +106,8 @@ export default function ListingActionsMenu({
   };
 
   const handleShare = async () => {
-    const shareUrl = buildListingShareUrl(listing);
+    const shareUrl = buildListingShareUrl(listing.id, 0);
+
     const shareLines = [
       "BuyMesho Listing",
       listing.name,
