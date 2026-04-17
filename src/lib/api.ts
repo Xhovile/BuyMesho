@@ -1,0 +1,31 @@
+import { auth } from "../firebase";
+
+async function authHeader() {
+  const user = auth.currentUser;
+  if (!user) return {} as Record<string, string>;
+  const token = await user.getIdToken(true);
+  return { Authorization: `Bearer ${token}` };
+}
+
+export async function apiFetch(url: string, init: RequestInit = {}) {
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string> | undefined),
+    ...(await authHeader()),
+  };
+
+  // ✅ If sending a JSON body and no content-type set, set it
+  if (init.body && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch(url, { ...init, headers });
+
+  if (!res.ok) {
+    let body: any = null;
+    try { body = await res.json(); } catch {}
+    throw new Error(body?.error || `Request failed (${res.status})`);
+  }
+
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}

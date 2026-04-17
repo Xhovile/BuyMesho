@@ -1,12 +1,6 @@
-export type University = 
-  | "MUBAS" 
-  | "LUANAR" 
-  | "MZUNI" 
-  | "UNIMA" 
-  | "MUST" 
-  | "Catholic University (CU)" 
-  | "Livingstonia" 
-  | "MAGU";
+import { UNIVERSITIES } from "./constants";
+
+export type University = (typeof UNIVERSITIES)[number];
 
 export type Category = 
   | "Food & Snacks" 
@@ -15,15 +9,69 @@ export type Category =
   | "Electronics & Gadgets" 
   | "Beauty & Personal Care";
 
-export interface Seller {
+export type ListingStatus = "available" | "sold";
+export type ListingCondition = "new" | "used" | "refurbished";
+export type VisibilitySetting = "everyone" | "students_only" | "only_me";
+export type ListingSpecValue = string | number | boolean | string[] | null;
+export type ListingSpecValues = Record<string, ListingSpecValue>;
+
+export interface ListingDraft {
+  name: string;
+  price: string;
+  description: string;
+  category: Category;
+  subcategory: string;
+  item_type: string;
+  spec_values: ListingSpecValues;
+  university: University;
+  photos: string[];
+  video_url: string;
+  whatsapp_number: string;
+  status: ListingStatus;
+  condition: ListingCondition;
+  quantity: string;
+  sold_quantity: string;
+}
+
+export interface CreateListingPayload {
+  name: string;
+  price: number;
+  description: string;
+  category: Category;
+  subcategory?: string | null;
+  item_type?: string | null;
+  spec_values?: ListingSpecValues;
+  university: University;
+  photos: string[];
+  video_url?: string | null;
+  whatsapp_number: string;
+  status: ListingStatus;
+  condition: ListingCondition;
+  quantity: number;
+  sold_quantity: number;
+}
+
+export interface UserProfile {
   uid: string;
   email: string;
-  business_name: string;
-  business_logo: string;
-  university: University;
-  bio?: string;
+  is_seller: boolean;
   is_verified: boolean;
   join_date: string;
+
+  // general user fields
+  university?: University;
+  profile_visibility?: VisibilitySetting;
+  seller_visibility?: VisibilitySetting;
+  saved_visibility?: VisibilitySetting;
+
+  // seller-only fields
+  business_name?: string;
+  business_logo?: string;
+  bio?: string;
+  whatsapp_number?: string;
+
+  // general user fields (non-seller)
+  profile_picture?: string;
 }
 
 export interface Listing {
@@ -33,12 +81,56 @@ export interface Listing {
   price: number;
   description: string;
   category: Category;
+  subcategory?: string | null;
+  item_type?: string | null;
+  spec_values?: ListingSpecValues | null;
   university: University;
   photos: string[];
+  video_url?: string | null;
   whatsapp_number: string;
+  status: ListingStatus;
+  condition?: ListingCondition;
   created_at: string;
-  // Joined fields
+  updated_at?: string;
+  quantity?: number;
+  sold_quantity?: number;
+  views_count?: number;
+  whatsapp_clicks?: number;
+  is_hidden?: number;
   business_name: string;
-  business_logo: string;
+  business_logo?: string | null;
   is_verified: boolean;
+}
+
+export interface SellerDashboardData {
+  seller: {
+    uid: string;
+    business_name: string | null;
+    profile_views: number;
+  };
+  stats: {
+    total_listings: number;
+    active_listings: number;
+    sold_listings: number;
+    total_views: number;
+    total_whatsapp_clicks: number;
+    repeat_seller_activity: boolean;
+  };
+  byCampus: {
+    university: string;
+    count: number;
+  }[];
+  top_listing: {
+    id: number;
+    name: string;
+    views_count: number;
+    status: string;
+    created_at: string;
+  } | null;
+}
+
+export interface RatingSummary {
+  averageRating: number;
+  ratingCount: number;
+  myRating: number | null;
 }
