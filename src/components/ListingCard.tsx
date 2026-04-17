@@ -3,13 +3,6 @@ import { motion } from "motion/react";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
-function navigateToListingDetails(listingId: number) {
-  window.location.assign(`/listing/${encodeURIComponent(String(listingId))}`);
-}
-
-function navigateToSellerProfile(sellerUid: string) {
-  window.location.assign(`/seller/${encodeURIComponent(sellerUid)}`);
-}
 type ListingCardProps = {
   listing: Listing;
   onReport: (id: number) => any;
@@ -25,6 +18,8 @@ type ListingCardProps = {
   isLoggedIn?: boolean;
   compact?: boolean;
   showActionsMenu?: boolean;
+  onOpenDetails?: (listing: Listing) => void;
+  onOpenSeller?: (sellerUid: string) => void;
 };
 
 export default function ListingCard({
@@ -42,17 +37,17 @@ export default function ListingCard({
   isLoggedIn,
   compact = false,
   showActionsMenu = true,
+  onOpenDetails,
+  onOpenSeller,
 }: ListingCardProps) {
   const sellerUid = listing.seller_uid;
 
   const handleOpenProfile = () => {
-    if (sellerUid) {
-      navigateToSellerProfile(sellerUid);
-    }
+    if (sellerUid) onOpenSeller?.(sellerUid);
   };
 
-  const handleOpenDetails = (startIndex = 0) => {
-    navigateToListingDetails(listing.id, startIndex);
+  const handleOpenDetails = () => {
+    onOpenDetails?.(listing);
   };
 
   const availableQuantity = Math.max(
@@ -131,7 +126,7 @@ export default function ListingCard({
         <div className="relative mt-4 aspect-[1/1] overflow-hidden bg-zinc-100">
           <button
             type="button"
-            onClick={() => handleOpenDetails(0)}
+            onClick={() => handleOpenDetails()}
             className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <img
