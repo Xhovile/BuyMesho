@@ -189,29 +189,30 @@ export default function MarketSection({
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 xl:gap-5">
-            {visibleListings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                onReport={onReport}
-                currentUid={firebaseUserUid}
-                onDelete={onDelete}
-                onEdit={onEdit}
-                onHideSeller={onHideSeller}
-                onHideListing={onHideListing}
-                onToggleStatus={onToggleStatus}
-                isSaved={savedListingIds.includes(listing.id)}
-                onToggleSave={onToggleSave}
-                isLoggedIn={isLoggedIn}
-                requireLoginForContact={requireLoginForContact}
-                onOpenDetails={onOpenDetails}
-                onOpenSeller={onOpenSeller}
-                compact
-                showActionsMenu={false}
-              />
-            ))}
-          </div>
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+  {visibleListings.map((listing) => (
+    <ListingCard
+      key={listing.id}
+      listing={listing}
+      onReport={onReport}
+      currentUid={firebaseUserUid}
+      onDelete={onDelete}
+      onEdit={onEdit}
+      onHideSeller={onHideSeller}
+      onHideListing={onHideListing}
+      onToggleStatus={onToggleStatus}
+      isSaved={savedListingIds.includes(listing.id)}
+      onToggleSave={onToggleSave}
+      isLoggedIn={isLoggedIn}
+      requireLoginForContact={requireLoginForContact}
+      onOpenDetails={onOpenDetails}
+      onOpenSeller={onOpenSeller}
+      compact
+      ultraCompact
+      showActionsMenu={false}
+    />
+  ))}
+</div>
 
           {totalPages > 1 && (
             <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
