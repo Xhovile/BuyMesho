@@ -534,7 +534,8 @@ export default function App() {
           onToggleStatus={(listing) => void handleUpdateListing(listing.id, { ...listing, status: listing.status === "sold" ? "available" : "sold" })}
           onToggleSave={toggleSavedListing}
           requireLoginForContact={navigateToLogin}
-          onOpenDetails={(listing) => navigateToPath(`/listing/${encodeURIComponent(String(listing.id))}`)}
+          onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
+          onOpenSeller={(uid) => navigateToSellerProfile(uid)}
           onOpenSeller={(uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`)}
           selectedCondition={selectedCondition}
           setSelectedCondition={setSelectedCondition}
