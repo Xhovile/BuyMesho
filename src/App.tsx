@@ -2964,6 +2964,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     setCurrentPage,
     totalPages,
     totalListingsCount: totalResults,
+    pageSize,
   };
 
   const marketActions: MarketSectionActions = {
