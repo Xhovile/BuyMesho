@@ -85,6 +85,7 @@ import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
+import { navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
                 
 // --- Main App ---
 
@@ -2986,8 +2987,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   onToggleStatus={handleToggleListingStatus}
   onToggleSave={toggleSavedListing}
   requireLoginForContact={requireLoginForContact}
-  onOpenDetails={openDetails}
-  onOpenSeller={openPublicProfile}
+  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
+  onOpenSeller={(uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`)}
   selectedCondition={selectedCondition}
 setSelectedCondition={setSelectedCondition}
 hideSoldOut={hideSoldOut}

@@ -19,8 +19,8 @@ type ListingCardProps = {
   compact?: boolean;
   ultraCompact?: boolean;
   showActionsMenu?: boolean;
-  onOpenDetails?: (listing: Listing) => void;
-  onOpenSeller?: (sellerUid: string) => void;
+  onOpenDetails: (listing: Listing) => void;
+  onOpenSeller: (sellerUid: string) => void;
 };
 
 export default function ListingCard({
@@ -46,11 +46,11 @@ export default function ListingCard({
   const sellerName = listing.business_name || "Seller";
 
   const handleOpenProfile = () => {
-    if (sellerUid) onOpenSeller?.(sellerUid);
+    if (sellerUid) onOpenSeller(sellerUid);
   };
 
   const handleOpenDetails = () => {
-    onOpenDetails?.(listing);
+    onOpenDetails(listing);
   };
 
   const availableQuantity = Math.max(
