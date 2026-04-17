@@ -90,6 +90,7 @@ import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
+import { navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
                 
 // --- Main App ---
 

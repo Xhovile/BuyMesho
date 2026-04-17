@@ -25,6 +25,7 @@ import {
   SAFETY_PATH,
   TERMS_PATH,
   navigateToProfile,
+  navigateToListingDetails,
   replaceExploreStateInUrl,
   pushExploreStateInUrl,
 } from "./lib/appNavigation";
