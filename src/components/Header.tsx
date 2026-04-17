@@ -115,7 +115,7 @@ export default function Header({
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div
             className={`flex items-center justify-between gap-4 overflow-hidden transition-all duration-200 ${
-              mobileCompact ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0" : "max-h-24 opacity-100 translate-y-0"
+              mobileCompact ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0" : "max-h-screen opacity-100 translate-y-0"
             } md:max-h-none md:opacity-100 md:translate-y-0 md:pointer-events-auto`}
           >
             <BrandMark />
