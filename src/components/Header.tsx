@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
@@ -34,6 +34,8 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [mobileCompact, setMobileCompact] = useState(false);
+  const lastScrollYRef = useRef(0);
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -71,11 +73,51 @@ export default function Header({
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
+  useEffect(() => {
+    const onScroll = () => {
+      const isMobile = window.innerWidth < 768;
+      const currentY = window.scrollY;
+
+      if (!isMobile) {
+        setMobileCompact(false);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      const lastY = lastScrollYRef.current;
+      const scrollingDown = currentY > lastY + 6 && currentY > 80;
+      const scrollingUp = currentY < lastY - 6 || currentY < 40;
+
+      setMobileCompact((prev) => {
+        if (scrollingDown) return true;
+        if (scrollingUp) return false;
+        return prev;
+      });
+
+      lastScrollYRef.current = currentY;
+    };
+
+    lastScrollYRef.current = window.scrollY;
+    onScroll();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
     <>
       <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4">
+          <div
+            className={`flex items-center justify-between gap-4 overflow-hidden transition-all duration-200 ${
+              mobileCompact ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none mb-0" : "max-h-24 opacity-100 translate-y-0"
+            } md:max-h-none md:opacity-100 md:translate-y-0 md:pointer-events-auto`}
+          >
             <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
