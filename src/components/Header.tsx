@@ -123,7 +123,6 @@ export default function Header({
 
   return (
     <>
-      <nav
         <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white px-4 py-2.5">
           mobileNavHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
         } md:translate-y-0`}
