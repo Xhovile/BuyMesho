@@ -17,6 +17,7 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   SETTINGS_PATH,
+  REPORT_PATH,
   navigateToExplore,
   navigateToListingDetails,
   navigateToPath,
@@ -36,7 +37,6 @@ import {
   toggleSavedListingId,
 } from "./lib/savedListings";
 import ListingActionsMenu from "./components/ListingActionsMenu";
-import { ..., REPORT_PATH, ... } from "./lib/appNavigation";
   
 type SellerProfile = {
   uid?: string;
