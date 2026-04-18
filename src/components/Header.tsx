@@ -115,7 +115,7 @@ export default function Header({
   return (
     <>
       <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col gap-3">
+        <div className={`max-w-7xl mx-auto flex flex-col ${mobileCompact ? "gap-0 md:gap-3" : "gap-3"}`}>
           <div
             className={`grid overflow-hidden transition-all duration-200 ${
               mobileCompact
