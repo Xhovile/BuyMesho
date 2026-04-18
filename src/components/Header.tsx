@@ -36,9 +36,6 @@ export default function Header({
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [mobileCompact, setMobileCompact] = useState(false);
   const lastScrollYRef = useRef(0);
-  const SCROLL_DELTA_THRESHOLD = 6;
-  const MIN_SCROLL_FOR_COMPACT = 80;
-  const SCROLL_TOP_RESET = 40;
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -88,13 +85,16 @@ export default function Header({
       }
 
       const lastY = lastScrollYRef.current;
-      const scrollingDown = currentY > lastY + SCROLL_DELTA_THRESHOLD && currentY > MIN_SCROLL_FOR_COMPACT;
-      const scrollingUp = currentY < lastY - SCROLL_DELTA_THRESHOLD || currentY < SCROLL_TOP_RESET;
+      const scrollingDown = currentY > lastY + 6 && currentY > 80;
+      const scrollingUp = currentY < lastY - 6 || currentY < 40;
 
-      if (scrollingDown || scrollingUp) {
-        setMobileCompact(scrollingDown);
-        lastScrollYRef.current = currentY;
-      }
+      setMobileCompact((prev) => {
+        if (scrollingDown) return true;
+        if (scrollingUp) return false;
+        return prev;
+      });
+
+      lastScrollYRef.current = currentY;
     };
 
     lastScrollYRef.current = window.scrollY;
@@ -114,13 +114,12 @@ export default function Header({
       <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
         <div className={`max-w-7xl mx-auto flex flex-col ${mobileCompact ? "gap-0 md:gap-3" : "gap-3"}`}>
           <div
-            className={`grid overflow-hidden transition-all duration-200 ${
+            className={`flex items-center justify-between gap-4 overflow-hidden transition-all duration-300 ${
               mobileCompact
-                ? "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none"
-                : "grid-rows-[1fr] opacity-100 translate-y-0"
-            } md:grid-rows-[1fr] md:opacity-100 md:translate-y-0 md:pointer-events-auto`}
+                ? "max-h-0 opacity-0 -translate-y-2 pointer-events-none"
+                : "max-h-24 opacity-100 translate-y-0"
+            }`}
           >
-            <div className="min-h-0 flex items-center justify-between gap-4">
               <BrandMark />
 
               <div className="hidden md:flex items-center gap-2">
@@ -200,7 +199,6 @@ export default function Header({
                   )}
                 </button>
               </div>
-            </div>
           </div>
 
           <form
