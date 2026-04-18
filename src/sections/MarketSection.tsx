@@ -189,7 +189,7 @@ export default function MarketSection({
         setSortBy={setSortBy}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3 md:mb-6 -mt-1 md:mt-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-2 md:mb-6 -mt-1 md:mt-0">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
             Listings

@@ -429,7 +429,7 @@ export default function FilterSection({
 
   return (
      <>
-  <div className="py-4 md:py-6 space-y-3 md:space-y-4">
+  <div className="py-3 space-y-3 md:py-6 md:space-y-4">
     <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-3 md:gap-4 items-end">
       <div className="space-y-2 relative" data-filter-dropdown>
         <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
@@ -573,7 +573,7 @@ export default function FilterSection({
     )}
 
     {showMoreFilters && (
-      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-3 md:p-5 space-y-4">
+      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm p-3 md:p-5 space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
@@ -913,7 +913,7 @@ export default function FilterSection({
         </div>
 
         {canShowSpecFilters && (
-          <div className="space-y-3 pt-1">
+          <div className="space-y-3 pt-0.5">
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
               Item Specs
             </p>
