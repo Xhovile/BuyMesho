@@ -189,12 +189,12 @@ export default function MarketSection({
         setSortBy={setSortBy}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-3 md:mb-6 -mt-1 md:mt-0">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
             Listings
           </p>
-          <h3 className="mt-2 text-xl font-bold text-zinc-900 flex items-center gap-2">
+          <h3 className="mt-1 text-lg sm:text-xl font-bold text-zinc-900 flex items-center gap-2">
             Recent listings
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
           </h3>
@@ -214,7 +214,7 @@ export default function MarketSection({
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
+<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
   {visibleListings.map((listing) => (
     <ListingCard
       key={listing.id}
