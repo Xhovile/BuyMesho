@@ -78,8 +78,8 @@ export default function ListingCard({
       : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
   const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
-  const outerPadding = ultraCompact ? "px-3 pt-3" : "px-4 pt-4";
-  const imageAspect = ultraCompact ? "aspect-[4/5]" : "aspect-[1/1]";
+  const outerPadding = ultraCompact ? "px-2.5 pt-2.5" : "px-4 pt-4";
+  const imageAspect = "aspect-[1/1] md:aspect-[4/5]";
 
   const universityLabel =
     typeof listing.university === "string" && listing.university.trim()
@@ -200,11 +200,11 @@ export default function ListingCard({
           </div>
         </div>
 
-        <div className={ultraCompact ? "px-3 py-3" : "space-y-3 px-4 py-4"}>
+        <div className={ultraCompact ? "px-2.5 py-2.5" : "space-y-3 px-4 py-4"}>
           <h3
             className={
               ultraCompact
-                ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900"
+                ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900"
                 : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
             }
           >
