@@ -124,7 +124,8 @@ export default function Header({
   return (
     <>
       <nav
-        <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white px-4 py-2.5">
+        className={`sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3 transform-gpu will-change-transform transition-transform duration-300 ease-out ${
+        }`}
           mobileNavHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
         } md:translate-y-0`}
       >
