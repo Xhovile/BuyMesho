@@ -91,13 +91,10 @@ export default function Header({
       const scrollingDown = currentY > lastY + SCROLL_DELTA_THRESHOLD && currentY > MIN_SCROLL_FOR_COMPACT;
       const scrollingUp = currentY < lastY - SCROLL_DELTA_THRESHOLD || currentY < SCROLL_TOP_RESET;
 
-      setMobileCompact((prev) => {
-        if (scrollingDown) return true;
-        if (scrollingUp) return false;
-        return prev;
-      });
-
-      lastScrollYRef.current = currentY;
+      if (scrollingDown || scrollingUp) {
+        setMobileCompact(scrollingDown);
+        lastScrollYRef.current = currentY;
+      }
     };
 
     lastScrollYRef.current = window.scrollY;
