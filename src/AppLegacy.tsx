@@ -547,7 +547,7 @@ export default function App() {
     onToggleSave: toggleSavedListing,
     requireLoginForContact: navigateToLogin,
     onOpenDetails: (listing) => navigateToListingDetails(listing.id),
-    onOpenSeller: (uid) => navigateToPath(`/seller/${encodeURIComponent(uid)}`),
+    onOpenSeller: (uid) => navigateToSellerProfile(uid),
   };
 
   return (
