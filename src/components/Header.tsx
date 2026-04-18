@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight } from "lucide-react";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import type { UserProfile } from "../types";
@@ -34,6 +34,11 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [mobileCompact, setMobileCompact] = useState(false);
+  const lastScrollYRef = useRef(0);
+  const SCROLL_DELTA_THRESHOLD = 6;
+  const MIN_SCROLL_FOR_COMPACT = 80;
+  const SCROLL_TOP_RESET = 40;
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
     .toUpperCase();
@@ -71,89 +76,130 @@ export default function Header({
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
+  useEffect(() => {
+    const onScroll = () => {
+      const isMobile = window.innerWidth < 768;
+      const currentY = window.scrollY;
+
+      if (!isMobile) {
+        setMobileCompact(false);
+        lastScrollYRef.current = currentY;
+        return;
+      }
+
+      const lastY = lastScrollYRef.current;
+      const scrollingDown = currentY > lastY + SCROLL_DELTA_THRESHOLD && currentY > MIN_SCROLL_FOR_COMPACT;
+      const scrollingUp = currentY < lastY - SCROLL_DELTA_THRESHOLD || currentY < SCROLL_TOP_RESET;
+
+      if (scrollingDown || scrollingUp) {
+        setMobileCompact(scrollingDown);
+        lastScrollYRef.current = currentY;
+      }
+    };
+
+    lastScrollYRef.current = window.scrollY;
+    onScroll();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, []);
+
   return (
     <>
       <nav className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col gap-3">
-          <div className="flex items-center justify-between gap-4">
-            <BrandMark />
+        <div className={`max-w-7xl mx-auto flex flex-col ${mobileCompact ? "gap-0 md:gap-3" : "gap-3"}`}>
+          <div
+            className={`grid overflow-hidden transition-all duration-200 ${
+              mobileCompact
+                ? "grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none"
+                : "grid-rows-[1fr] opacity-100 translate-y-0"
+            } md:grid-rows-[1fr] md:opacity-100 md:translate-y-0 md:pointer-events-auto`}
+          >
+            <div className="min-h-0 flex items-center justify-between gap-4">
+              <BrandMark />
 
-            <div className="hidden md:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
-              >
-                <House className="w-4 h-4" />
-                Home
-              </button>
-              <button
-                type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition-colors"
-              >
-                <ShoppingBag className="w-4 h-4" />
-                Market
-              </button>
-              <button
-                type="button"
-                onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(HOME_PATH)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                >
+                  <House className="w-4 h-4" />
+                  Home
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition-colors"
+                >
+                  <ShoppingBag className="w-4 h-4" />
+                  Market
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSettingsClick()}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => handleSellClick()}
-                className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-              >
-                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
-              </button>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleSellClick()}
+                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                >
+                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+                </button>
 
-              <button
-                onClick={() => setMobileMenuOpen((value) => !value)}
-                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-header-menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-white" />
-                ) : (
-                  <Menu className="w-5 h-5 text-white" />
-                )}
-              </button>
-
-              <button
-                onClick={() => {
-                  if (!firebaseUser) {
-                    setAuthGuardOpen(true);
-                    return;
-                  }
-                  onProfileClick();
-                }}
-                className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-              >
-                {firebaseUser ? (
-                  avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                <button
+                  onClick={() => setMobileMenuOpen((value) => !value)}
+                  className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-header-menu"
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-5 h-5 text-white" />
                   ) : (
-                    <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                      {fallbackLetter}
-                    </div>
-                  )
-                ) : (
-                  <User className="w-5 h-5 text-zinc-600" />
-                )}
-              </button>
+                    <Menu className="w-5 h-5 text-white" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    if (!firebaseUser) {
+                      setAuthGuardOpen(true);
+                      return;
+                    }
+                    onProfileClick();
+                  }}
+                  className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                >
+                  {firebaseUser ? (
+                    avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                        {fallbackLetter}
+                      </div>
+                    )
+                  ) : (
+                    <User className="w-5 h-5 text-zinc-600" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
