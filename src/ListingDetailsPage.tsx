@@ -414,7 +414,8 @@ export default function ListingDetailsPage() {
           <>
             <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
- <div className="mb-3 flex items-center justify-end gap-2">
+ 
+<div className="mb-3 flex items-center justify-end gap-2 relative">
   <button
     type="button"
     onClick={handleToggleSaved}
@@ -438,15 +439,6 @@ export default function ListingDetailsPage() {
     onToggleSave={handleToggleSaved}
     requireLoginForContact={() => navigateToPath("/login")}
   />
-
-  <button
-    type="button"
-    onClick={() => navigateToExplore()}
-    className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
-    aria-label="Close listing"
-  >
-    <X className="w-4 h-4" />
-  </button>
 </div>
                 <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
                   <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
