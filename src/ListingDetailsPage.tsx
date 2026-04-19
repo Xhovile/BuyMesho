@@ -793,13 +793,14 @@ export default function ListingDetailsPage() {
           className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
           onClick={() => setIsFullscreen(false)}
         >
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(false)}
-            className="absolute top-5 right-5 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
-          >
-            ×
-          </button>
+      <button
+        type="button"
+        onClick={() => setIsFullscreen(false)}
+        className="absolute top-5 right-5 h-11 w-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
+        aria-label="Exit fullscreen"
+      >
+        <FullscreenToggleIcon isFullscreen />
+      </button>
           <div
             className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
