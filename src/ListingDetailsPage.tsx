@@ -516,7 +516,11 @@ export default function ListingDetailsPage() {
                     currentUid={firebaseUser?.uid}
                     isLoggedIn={!!firebaseUser}
                     isSaved={saved}
-                    onReport={() => navigateToPath(REPORT_PATH)}
+                    onReport={(listingId) =>
+                      navigateToPath(
+                        `${REPORT_PATH}?listingId=${encodeURIComponent(String(listingId ?? listing.id))}`,
+                      )
+                    }
                     onDelete={handleDetailDelete}
                     onEdit={handleDetailEdit}
                     onHideSeller={handleDetailHideSeller}
