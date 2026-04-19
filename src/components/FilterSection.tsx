@@ -37,7 +37,7 @@ type FilterSectionProps = {
   sortBy: string;
   setSortBy: (v: string) => void;
   showMoreFilters: boolean;
-  setShowMoreFilters: (v: boolean) => void;
+  setShowMoreFilters: Dispatch<SetStateAction<boolean>>;
 };
 
 export default function FilterSection({
