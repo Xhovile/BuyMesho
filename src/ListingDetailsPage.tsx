@@ -22,7 +22,8 @@ import {
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
-  navigateBackOrPath, 
+  navigateBackOrPath,
+  navigateToEditListing,
 } from "./lib/appNavigation";
 import {
   buildListingShareUrl,
@@ -310,6 +311,66 @@ export default function ListingDetailsPage() {
     setSaved(nextSaved);
   };
 
+  const handleDetailEdit = () => {
+    if (!listing) return;
+    navigateToEditListing(listing.id);
+  };
+
+  const handleDetailDelete = async (listingIdToDelete: number) => {
+    const ok = window.confirm("Delete this listing?");
+    if (!ok) return;
+
+    try {
+      await apiFetch(`/api/listings/${listingIdToDelete}`, { method: "DELETE" });
+      navigateBackOrPath(EXPLORE_PATH);
+    } catch (error: any) {
+      alert(error?.message || "Failed to delete listing.");
+    }
+  };
+
+  const handleDetailToggleStatus = async (item: Listing) => {
+    const nextStatus = item.status === "sold" ? "available" : "sold";
+
+    try {
+      await apiFetch(`/api/listings/${item.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      setListing((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+    } catch (error: any) {
+      alert(error?.message || "Failed to update listing status.");
+    }
+  };
+
+  const handleDetailHideListing = (listingIdToHide: number) => {
+    try {
+      const raw = localStorage.getItem("hiddenListingIds");
+      const parsed = raw ? JSON.parse(raw) : [];
+      const current = Array.isArray(parsed) ? parsed.filter((x) => Number.isInteger(x)) : [];
+      if (!current.includes(listingIdToHide)) {
+        localStorage.setItem("hiddenListingIds", JSON.stringify([...current, listingIdToHide]));
+      }
+    } catch {
+      localStorage.setItem("hiddenListingIds", JSON.stringify([listingIdToHide]));
+    }
+    navigateBackOrPath(EXPLORE_PATH);
+  };
+
+  const handleDetailHideSeller = (sellerUid?: string) => {
+    if (!sellerUid) return;
+    try {
+      const raw = localStorage.getItem("hiddenSellerUids");
+      const parsed = raw ? JSON.parse(raw) : [];
+      const current = Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+      if (!current.includes(sellerUid)) {
+        localStorage.setItem("hiddenSellerUids", JSON.stringify([...current, sellerUid]));
+      }
+    } catch {
+      localStorage.setItem("hiddenSellerUids", JSON.stringify([sellerUid]));
+    }
+    navigateBackOrPath(EXPLORE_PATH);
+  };
+
   const handleScrollSpecTabsLeft = () => {
     const container = specTabsRef.current;
     if (!container) return;
@@ -454,6 +515,11 @@ export default function ListingDetailsPage() {
     isSaved={saved}
     variant="detail"
     onReport={() => navigateToPath(REPORT_PATH)}
+    onDelete={handleDetailDelete}
+    onEdit={handleDetailEdit}
+    onHideSeller={handleDetailHideSeller}
+    onHideListing={handleDetailHideListing}
+    onToggleStatus={handleDetailToggleStatus}
     onToggleSave={handleToggleSaved}
     requireLoginForContact={() => navigateToPath("/login")}
   />
