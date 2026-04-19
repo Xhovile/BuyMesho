@@ -404,11 +404,11 @@ export default function ListingDetailsPage() {
             <button
               type="button"
               onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Return to Explore
-            </button>
+             className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
+           >
+             <ChevronLeft className="w-4 h-4" />
+             Back
+           </button>
           </div>
         ) : (
           <>
