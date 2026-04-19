@@ -3,21 +3,23 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  Expand,
   Eye,
   Loader2,
   Lock,
+  Maximize2,
   MessageCircle,
+  Minimize2,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import {
   EXPLORE_PATH,
   HOME_PATH,
+  REPORT_PATH,
   SETTINGS_PATH,
-  navigateToExplore,
+  navigateBackOrPath,
+  navigateToEditListing,
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
@@ -35,6 +37,7 @@ import {
   subscribeToSavedListingChanges,
   toggleSavedListingId,
 } from "./lib/savedListings";
+import ListingActionsMenu from "./components/ListingActionsMenu";
 
 type SellerProfile = {
   uid?: string;
@@ -62,6 +65,23 @@ function formatSpecValue(value: unknown): string {
   return String(value);
 }
 
+function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
+  return (
+    <span className="relative h-5 w-5">
+      <Maximize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+        }`}
+      />
+      <Minimize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"
+        }`}
+      />
+    </span>
+  );
+}
+
 export default function ListingDetailsPage() {
   const { user: firebaseUser } = useAuthUser();
   const [routeState, setRouteState] = useState(() => getListingParamsFromUrl());
@@ -78,6 +98,10 @@ export default function ListingDetailsPage() {
   const specTabsRef = useRef<HTMLDivElement | null>(null);
 
   const listingId = routeState.listing || "";
+  const sellerDisplayName = seller?.business_name || listing?.business_name || "Seller";
+  const sellerVerified = !!(seller?.is_verified || listing?.is_verified);
+  const ratingValue = ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—";
+  const ratingCount = ratingSummary?.ratingCount ?? 0;
 
   useEffect(() => {
     const syncRouteState = () => setRouteState(getListingParamsFromUrl());
@@ -205,10 +229,7 @@ export default function ListingDetailsPage() {
           rows: rows as Array<{ key: string; label: string; value: string }>,
         };
       })
-      .filter(Boolean) as Array<{
-      title: string;
-      rows: Array<{ key: string; label: string; value: string }>;
-    }>;
+      .filter(Boolean) as Array<{ title: string; rows: Array<{ key: string; label: string; value: string }> }>;
   }, [listing, itemConfig]);
 
   const availableQuantity = listing
@@ -262,19 +283,11 @@ export default function ListingDetailsPage() {
   const handleShare = async () => {
     if (!listing) return;
     const shareUrl = buildListingShareUrl(listing.id, currentGalleryIndex);
-    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(
-      listing.price
-    ).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${
-      listing.whatsapp_number
-    }\n\nOpen this listing: ${shareUrl}`;
+    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${listing.whatsapp_number}\n\nOpen this listing: ${shareUrl}`;
 
     try {
       if ((navigator as any).share) {
-        await (navigator as any).share({
-          title: `BuyMesho: ${listing.name}`,
-          text: shareText,
-          url: shareUrl,
-        });
+        await (navigator as any).share({ title: `BuyMesho: ${listing.name}`, text: shareText, url: shareUrl });
         return;
       }
       await navigator.clipboard.writeText(shareText);
@@ -288,6 +301,66 @@ export default function ListingDetailsPage() {
     if (!listing) return;
     const nextSaved = toggleSavedListingId(listing.id, firebaseUser?.uid);
     setSaved(nextSaved);
+  };
+
+  const handleDetailEdit = () => {
+    if (!listing) return;
+    navigateToEditListing(listing.id);
+  };
+
+  const handleDetailDelete = async (listingIdToDelete: number) => {
+    const ok = window.confirm("Delete this listing?");
+    if (!ok) return;
+
+    try {
+      await apiFetch(`/api/listings/${listingIdToDelete}`, { method: "DELETE" });
+      navigateBackOrPath(EXPLORE_PATH);
+    } catch (error: any) {
+      alert(error?.message || "Failed to delete listing.");
+    }
+  };
+
+  const handleDetailToggleStatus = async (item: Listing) => {
+    const nextStatus = item.status === "sold" ? "available" : "sold";
+
+    try {
+      await apiFetch(`/api/listings/${item.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      setListing((prev) => (prev ? { ...prev, status: nextStatus } : prev));
+    } catch (error: any) {
+      alert(error?.message || "Failed to update listing status.");
+    }
+  };
+
+  const handleDetailHideListing = (listingIdToHide: number) => {
+    try {
+      const raw = localStorage.getItem("hiddenListingIds");
+      const parsed = raw ? JSON.parse(raw) : [];
+      const current = Array.isArray(parsed) ? parsed.filter((x) => Number.isInteger(x)) : [];
+      if (!current.includes(listingIdToHide)) {
+        localStorage.setItem("hiddenListingIds", JSON.stringify([...current, listingIdToHide]));
+      }
+    } catch {
+      localStorage.setItem("hiddenListingIds", JSON.stringify([listingIdToHide]));
+    }
+    navigateBackOrPath(EXPLORE_PATH);
+  };
+
+  const handleDetailHideSeller = (sellerUid?: string) => {
+    if (!sellerUid) return;
+    try {
+      const raw = localStorage.getItem("hiddenSellerUids");
+      const parsed = raw ? JSON.parse(raw) : [];
+      const current = Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
+      if (!current.includes(sellerUid)) {
+        localStorage.setItem("hiddenSellerUids", JSON.stringify([...current, sellerUid]));
+      }
+    } catch {
+      localStorage.setItem("hiddenSellerUids", JSON.stringify([sellerUid]));
+    }
+    navigateBackOrPath(EXPLORE_PATH);
   };
 
   const handleScrollSpecTabsLeft = () => {
@@ -304,8 +377,7 @@ export default function ListingDetailsPage() {
 
   const handlePrevImage = () => {
     if (!listing || galleryImages.length <= 1) return;
-    const prevIndex =
-      (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    const prevIndex = (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
     syncListingParamsInUrl(listing.id, prevIndex);
     setRouteState((prev) => ({ ...prev, imageIndex: prevIndex }));
   };
@@ -336,26 +408,30 @@ export default function ListingDetailsPage() {
 
     window.open(
       `https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(
-        `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(
-          listing.id,
-          currentGalleryIndex
-        )}`
+        `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, currentGalleryIndex)}`
       )}`,
       "_blank",
       "noopener,noreferrer"
     );
   };
 
+  const quickFacts = [
+    { label: "Campus", value: listing?.university || "—" },
+    { label: "Condition", value: listing?.condition || "—" },
+    { label: "Views", value: String(listing?.views_count ?? 0) },
+    {
+      label: "Stock",
+      value:
+        listing?.status === "sold" || availableQuantity === 0 ? "Sold out" : `${availableQuantity} left`,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
-          >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">
               B
             </div>
             <div className="text-left">
@@ -363,84 +439,69 @@ export default function ListingDetailsPage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Listing details
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Listing details</p>
             </div>
           </button>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => navigateToPath(SETTINGS_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
+              className="hidden rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
             >
               Settings
             </button>
             <button
               type="button"
-              onClick={() => navigateToExplore()}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
             >
-              Back to Explore
+              Back
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8">
         {loading ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium">
-            <Loader2 className="w-5 h-5 animate-spin" />
+          <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 font-medium text-zinc-500 shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin" />
             Loading listing details...
           </div>
         ) : !listing ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
-            <p className="mt-3 text-sm text-zinc-500">
-              This listing could not be loaded or may no longer be available.
-            </p>
+            <p className="mt-3 text-sm text-zinc-500">This listing could not be loaded or may no longer be available.</p>
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
             >
-              <ChevronLeft className="w-4 h-4" />
-              Return to Explore
+              <ChevronLeft className="h-4 w-4" />
+              Back
             </button>
           </div>
         ) : (
           <>
-            <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
                 <div className="mb-3 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     onClick={handleToggleSaved}
-                    className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-                      saved
-                        ? "border-zinc-900 bg-zinc-900 text-white"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
+                      saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
                     }`}
                     aria-label={saved ? "Remove from saved" : "Save item"}
                   >
-                    <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                    <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
                   </button>
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
                     aria-label="Share listing"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-4 h-4"
-                    >
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
                       <circle cx="18" cy="5" r="3" />
                       <circle cx="6" cy="12" r="3" />
                       <circle cx="18" cy="19" r="3" />
@@ -448,50 +509,67 @@ export default function ListingDetailsPage() {
                       <path d="M15.41 6.51 8.59 10.49" />
                     </svg>
                   </button>
+                  <ListingActionsMenu
+                    listing={listing}
+                    currentUid={firebaseUser?.uid}
+                    isLoggedIn={!!firebaseUser}
+                    isSaved={saved}
+                    variant="detail"
+                    onReport={() => navigateToPath(REPORT_PATH)}
+                    onDelete={handleDetailDelete}
+                    onEdit={handleDetailEdit}
+                    onHideSeller={handleDetailHideSeller}
+                    onHideListing={handleDetailHideListing}
+                    onToggleStatus={handleDetailToggleStatus}
+                    onToggleSave={handleToggleSaved}
+                    requireLoginForContact={() => navigateToPath("/login")}
+                  />
                   <button
                     type="button"
-                    onClick={() => navigateToExplore()}
-                    className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+                    onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-sm transition-all hover:bg-zinc-50"
                     aria-label="Close listing"
                   >
-                    <X className="w-4 h-4" />
+                    <ChevronLeft className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
-                  <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
+
+                <div className="relative h-[360px] overflow-hidden rounded-[1.5rem] bg-zinc-100 sm:h-[460px] md:h-[540px]">
+                  <img src={currentImage} alt={listing.name} className="h-full w-full object-contain" />
                   <button
                     type="button"
                     onClick={() => setIsFullscreen(true)}
-                    className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
+                    className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
+                    aria-label="Open fullscreen"
                   >
-                    <Expand className="w-5 h-5" />
+                    <FullscreenToggleIcon isFullscreen={false} />
                   </button>
                   {galleryImages.length > 1 && (
                     <>
                       <button
                         type="button"
                         onClick={handlePrevImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
+                        className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
                         aria-label="Previous image"
                       >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="h-5 w-5" />
                       </button>
                       <button
                         type="button"
                         onClick={handleNextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
+                        className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
                         aria-label="Next image"
                       >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="h-5 w-5" />
                       </button>
-                      <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/75 text-white text-xs font-bold">
+                      <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
                         {currentGalleryIndex + 1} / {galleryImages.length}
                       </div>
                     </>
                   )}
                 </div>
 
-                {galleryImages.length > 1 && (
+                {galleryImages.length > 1 ? (
                   <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
                     {galleryImages.map((url, idx) => (
                       <button
@@ -501,313 +579,336 @@ export default function ListingDetailsPage() {
                           syncListingParamsInUrl(listing.id, idx);
                           setRouteState((prev) => ({ ...prev, imageIndex: idx }));
                         }}
-                        className={`w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0 ${
+                        className={`h-16 w-16 flex-shrink-0 overflow-hidden rounded-xl border ${
                           idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200"
                         }`}
                       >
-                        <img src={url} alt="" className="w-full h-full object-cover" />
+                        <img src={url} alt="" className="h-full w-full object-cover" />
                       </button>
                     ))}
                   </div>
-                )}
+                ) : null}
 
                 {listing.video_url ? (
-                  <div className="mt-4 rounded-[1.5rem] overflow-hidden border bg-black">
+                  <div className="mt-4 overflow-hidden rounded-[1.5rem] border bg-black">
                     <video src={listing.video_url} controls className="w-full" />
                   </div>
                 ) : null}
               </div>
 
-              <div className="space-y-6">
+              <aside className="space-y-5 xl:sticky xl:top-24">
                 <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start gap-4">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">{listing.category}</p>
+                  <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">{listing.name}</h1>
+                  <div className="mt-3 flex items-end justify-between gap-4">
                     <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        {listing.category}
-                      </p>
-                      <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">
-                        {listing.name}
-                      </h1>
-                      <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
-                        MK {Number(listing.price).toLocaleString()}
-                      </p>
-                      <p className="mt-1 text-base sm:text-lg font-extrabold text-zinc-900">
-                        Listed by {listing.business_name}
-                      </p>
+                      <p className="text-3xl font-black tracking-tight text-zinc-900">MK {Number(listing.price).toLocaleString()}</p>
+                      <p className="mt-1 text-sm font-extrabold text-zinc-900">Listed by {listing.business_name}</p>
+                    </div>
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">Rating</p>
+                      <p className="text-sm font-extrabold text-zinc-900">{ratingValue}</p>
+                      <p className="mt-0.5 text-[10px] font-semibold text-zinc-500">{ratingCount} review{ratingCount === 1 ? "" : "s"}</p>
                     </div>
                   </div>
 
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
-                      {listing.university}
-                    </span>
-                    {listing.subcategory ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
-                        {listing.subcategory}
-                      </span>
-                    ) : null}
-                    {listing.item_type ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
-                        {listing.item_type}
-                      </span>
-                    ) : null}
-                    {listing.condition ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
-                        {listing.condition}
-                      </span>
-                    ) : null}
+                  <button
+                    type="button"
+                    onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
+                    className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left hover:bg-zinc-100"
+                  >
+                    <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+                      {seller?.business_logo ? (
+                        <img src={seller.business_logo} alt={sellerDisplayName} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-sm font-black text-zinc-500">
+                          {sellerDisplayName
+                            .trim()
+                            .split(/\s+/)
+                            .filter((word) => word.length > 0)
+                            .map((word) => word[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h2 className="truncate text-base font-black tracking-tight text-zinc-900">{sellerDisplayName}</h2>
+                        {sellerVerified ? <ShieldCheck className="h-4 w-4 flex-shrink-0 text-blue-500" /> : null}
+                      </div>
+                      <p className="mt-0.5 text-xs text-zinc-500">Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views</p>
+                    </div>
+                  </button>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    {quickFacts.map((fact) => (
+                      <div key={fact.label} className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5">
+                        <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400">{fact.label}</p>
+                        <p className="mt-0.5 text-sm font-extrabold text-zinc-900">{fact.value}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="mt-4 space-y-3">
-                    <span
-                      className={`inline-flex px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
-                        listing.status === "sold" || availableQuantity === 0
-                          ? "bg-zinc-200 text-zinc-600"
-                          : "bg-emerald-100 text-emerald-700"
-                      }`}
-                    >
-                      {listing.status === "sold" || availableQuantity === 0
-                        ? "Sold out"
-                        : `${availableQuantity} left`}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={handleContactSeller}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-                    >
-                      {firebaseUser ? <MessageCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                      {firebaseUser ? "Contact on WhatsApp" : "Log in to Contact"}
-                    </button>
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                      Description
-                    </p>
-                    <p className="mt-3 text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                      {listing.description}
-                    </p>
-                  </div>
-                </section>
-
-                <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                        Seller
-                      </p>
+                  <div className="mt-5 rounded-[1.5rem] border border-zinc-900 bg-zinc-900 p-5 text-white shadow-lg shadow-zinc-900/10">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Contact</p>
+                        <h2 className="mt-2 text-xl font-black tracking-tight">Talk to the seller now</h2>
+                        <p className="mt-2 text-sm text-zinc-300">WhatsApp is the fastest way to reach this seller.</p>
+                      </div>
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">Action</span>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide ${
+                          listing.status === "sold" || availableQuantity === 0 ? "bg-white/15 text-white" : "bg-emerald-400/15 text-emerald-300"
+                        }`}
+                      >
+                        {listing.status === "sold" || availableQuantity === 0 ? "Sold out" : `${availableQuantity} left`}
+                      </span>
                       <button
                         type="button"
-                        onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
-                        className="mt-2 flex items-center gap-2 text-left hover:opacity-80"
+                        onClick={handleContactSeller}
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                       >
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 flex items-center justify-center">
-                          {seller?.business_logo ? (
-                            <img
-                              src={seller.business_logo}
-                              alt={seller.business_name || listing.business_name || "Seller"}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-black text-zinc-500">
-                              {(seller?.business_name || listing.business_name || "S")
-                                .trim()
-                                .split(/\s+/)
-                                .filter((w) => w.length > 0)
-                                .map((w) => w[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h2 className="text-xl font-black tracking-tight text-zinc-900">
-                              {seller?.business_name || listing.business_name}
-                            </h2>
-                            {seller?.is_verified || listing.is_verified ? (
-                              <ShieldCheck className="w-4 h-4 text-blue-500" />
-                            ) : null}
-                          </div>
-                        </div>
+                        {firebaseUser ? <MessageCircle className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        {firebaseUser ? "Contact on WhatsApp" : "Log in to Contact"}
                       </button>
-                    </div>
-                    <div className="text-right text-sm text-zinc-500">
-                      <p>
-                        Joined:{" "}
-                        <span className="font-semibold text-zinc-900">{formatDate(seller?.join_date)}</span>
-                      </p>
-                      <p className="mt-1">
-                        Profile views:{" "}
-                        <span className="font-semibold text-zinc-900">{seller?.profile_views ?? 0}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Rating</p>
-                      <p className="text-sm font-extrabold text-zinc-900">
-                        {ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Ratings</p>
-                      <p className="text-sm font-extrabold text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
-                    </div>
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Views</p>
-                      <p className="inline-flex items-center gap-1.5 text-sm font-extrabold text-zinc-900">
-                        <Eye className="w-3.5 h-3.5" />
-                        {listing.views_count ?? 0}
-                      </p>
                     </div>
                   </div>
                 </section>
-              </div>
+              </aside>
             </section>
 
-            <section className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                  Specifications
-                </p>
-                {groupedSpecs.length > 0 ? (
-                  <div className="mt-5">
-                    <div className="relative mb-3 h-9">
-                      <div ref={specTabsRef} className="flex h-full items-center gap-2 overflow-x-auto pb-1 px-6">
-                        {groupedSpecs.map((group) => (
-                          <button
-                            key={group.title}
-                            type="button"
-                            onClick={() => setActiveSpecGroupTitle(group.title)}
-                            className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
-                              activeSpecGroup?.title === group.title
-                                ? "bg-zinc-900 text-white border-zinc-900"
-                                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
-                            }`}
-                          >
-                            {group.title}
-                          </button>
-                        ))}
-                      </div>
-                      {showSpecTabsLeftHint ? (
-                        <button
-                          type="button"
-                          onClick={handleScrollSpecTabsLeft}
-                          className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
-                          aria-label="Scroll specification groups left"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                      {showSpecTabsRightHint ? (
-                        <button
-                          type="button"
-                          onClick={handleScrollSpecTabsRight}
-                          className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
-                          aria-label="Scroll specification groups right"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      ) : null}
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[320px] overflow-y-auto">
-                      {(activeSpecGroup?.rows || []).map((row) => (
-                        <div
-                          key={row.key}
-                          className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
-                        >
-                          <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
-                            {row.label}
-                          </p>
-                          <p className="text-sm font-semibold text-zinc-900 text-right break-words">
-                            {row.value}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
-                    No structured specifications were added for this listing.
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between gap-4 mb-5">
+            <section className="mt-8 grid gap-6">
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                      Related
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
-                      You may also want these
-                    </h2>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Description</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">What the listing says</h2>
                   </div>
-                  <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                    {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
+                  <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                    {listing.university}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {listing.subcategory ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
+                      {listing.subcategory}
+                    </span>
+                  ) : null}
+                  {listing.item_type ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
+                      {listing.item_type}
+                    </span>
+                  ) : null}
+                  {listing.condition ? (
+                    <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
+                      {listing.condition}
+                    </span>
+                  ) : null}
+                </div>
+
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">{listing.description}</p>
+              </section>
+
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller</p>
+                    <button
+                      type="button"
+                      onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
+                      className="mt-2 flex items-center gap-2 text-left hover:opacity-80"
+                    >
+                      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
+                        {seller?.business_logo ? (
+                          <img src={seller.business_logo} alt={sellerDisplayName} className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-black text-zinc-500">
+                            {sellerDisplayName
+                              .trim()
+                              .split(/\s+/)
+                              .filter((word) => word.length > 0)
+                              .map((word) => word[0])
+                              .join("")
+                              .slice(0, 2)
+                              .toUpperCase()}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl font-black tracking-tight text-zinc-900">{sellerDisplayName}</h2>
+                          {sellerVerified ? <ShieldCheck className="h-4 w-4 text-blue-500" /> : null}
+                        </div>
+                        <p className="mt-1 text-sm text-zinc-500">Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views</p>
+                      </div>
+                    </button>
+                  </div>
+                  <div className="text-right text-sm text-zinc-500">
+                    <p>
+                      Rating:{" "}
+                      <span className="font-semibold text-zinc-900">{ratingValue}</span>
+                    </p>
+                    <p className="mt-1">
+                      Reviews:{" "}
+                      <span className="font-semibold text-zinc-900">{ratingCount}</span>
+                    </p>
                   </div>
                 </div>
 
-                {visibleRelatedListings.length > 0 ? (
-                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
-                    {visibleRelatedListings.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => navigateToListingDetails(item.id, 0)}
-                        className="snap-start shrink-0 w-[240px] text-left rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-3 hover:bg-zinc-100 transition-colors"
-                      >
-                        <div className="aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-3">
-                          <img
-                            src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
+                {seller?.bio ? <p className="mt-4 text-sm leading-relaxed text-zinc-600">{seller.bio}</p> : null}
+
+                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                    <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-400">Rating</p>
+                    <p className="text-sm font-extrabold text-zinc-900">{ratingValue}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                    <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-400">Ratings</p>
+                    <p className="text-sm font-extrabold text-zinc-900">{ratingCount}</p>
+                  </div>
+                  <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                    <p className="mb-0.5 text-[10px] font-bold uppercase tracking-wide text-zinc-400">Views</p>
+                    <p className="inline-flex items-center gap-1.5 text-sm font-extrabold text-zinc-900">
+                      <Eye className="h-3.5 w-3.5" />
+                      {listing.views_count ?? 0}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Specifications</p>
+                  {groupedSpecs.length > 0 ? (
+                    <div className="mt-5">
+                      <div className="relative mb-3 h-9">
+                        <div ref={specTabsRef} className="flex h-full items-center gap-2 overflow-x-auto px-6 pb-1">
+                          {groupedSpecs.map((group) => (
+                            <button
+                              key={group.title}
+                              type="button"
+                              onClick={() => setActiveSpecGroupTitle(group.title)}
+                              className={`flex-shrink-0 rounded-lg border px-3 py-1 text-xs font-bold transition ${
+                                activeSpecGroup?.title === group.title
+                                  ? "border-zinc-900 bg-zinc-900 text-white"
+                                  : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                              }`}
+                            >
+                              {group.title}
+                            </button>
+                          ))}
                         </div>
-                        <h3 className="text-base font-extrabold text-zinc-900 line-clamp-1">
-                          {item.name}
-                        </h3>
-                        <p className="mt-1.5 text-xs text-zinc-500 line-clamp-2">{item.description}</p>
-                        <p className="mt-2.5 text-xl font-black tracking-tight text-zinc-900">
-                          MK {Number(item.price).toLocaleString()}
-                        </p>
-                      </button>
-                    ))}
+                        {showSpecTabsLeftHint ? (
+                          <button
+                            type="button"
+                            onClick={handleScrollSpecTabsLeft}
+                            className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
+                            aria-label="Scroll specification groups left"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                        {showSpecTabsRightHint ? (
+                          <button
+                            type="button"
+                            onClick={handleScrollSpecTabsRight}
+                            className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
+                            aria-label="Scroll specification groups right"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        ) : null}
+                      </div>
+                      <div className="h-[320px] divide-y divide-zinc-200 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50">
+                        {(activeSpecGroup?.rows || []).map((row) => (
+                          <div key={row.key} className="grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] items-start gap-4 px-4 py-3">
+                            <p className="border-r border-zinc-200 pr-4 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                              {row.label}
+                            </p>
+                            <p className="break-words text-right text-sm font-semibold text-zinc-900">
+                              {row.value}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
+                      No structured specifications were added for this listing.
+                    </div>
+                  )}
+                </div>
+
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Related</p>
+                      <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">You may also want these</h2>
+                    </div>
+                    <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                      {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
+                    </div>
                   </div>
-                ) : (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                    No related listings available right now.
-                  </div>
-                )}
-              </div>
+
+                  {visibleRelatedListings.length > 0 ? (
+                    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+                      {visibleRelatedListings.map((item) => (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => navigateToListingDetails(item.id, 0)}
+                          className="snap-start shrink-0 w-[176px] rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-2.5 text-left transition-colors hover:bg-zinc-100 sm:w-[210px] md:w-[240px]"
+                        >
+                          <div className="mb-2.5 aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+                            <img
+                              src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900 sm:text-base">{item.name}</h3>
+                          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500 line-clamp-2 sm:text-xs">
+                            {item.description}
+                          </p>
+                          <p className="mt-2 text-lg font-black tracking-tight text-zinc-900 sm:text-xl">
+                            MK {Number(item.price).toLocaleString()}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
+                      No related listings available right now.
+                    </div>
+                  )}
+                </div>
+              </section>
             </section>
           </>
         )}
       </main>
 
-      {isFullscreen && listing && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
-          onClick={() => setIsFullscreen(false)}
-        >
+      {isFullscreen && listing ? (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4" onClick={() => setIsFullscreen(false)}>
           <button
             type="button"
             onClick={() => setIsFullscreen(false)}
-            className="absolute top-5 right-5 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+            className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-transform duration-200 hover:scale-105 hover:bg-white/20 active:scale-95"
+            aria-label="Exit fullscreen"
           >
-            ×
+            <FullscreenToggleIcon isFullscreen />
           </button>
-          <div
-            className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <img src={currentImage} alt={listing.name} className="max-w-full max-h-full object-contain rounded-2xl" />
+          <div className="flex h-full w-full max-w-[95vw] max-h-[90vh] items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img src={currentImage} alt={listing.name} className="max-h-full max-w-full rounded-2xl object-contain" />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
