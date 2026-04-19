@@ -3,13 +3,13 @@ import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
-  Expand,
   Eye,
   Loader2,
   Lock,
+  Maximize2,
   MessageCircle,
+  Minimize2,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
@@ -62,6 +62,23 @@ function formatSpecValue(value: unknown): string {
   if (typeof value === "boolean") return value ? "Yes" : "No";
   if (value === null || value === undefined || value === "") return "—";
   return String(value);
+}
+
+function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
+  return (
+    <span className="relative h-5 w-5">
+      <Maximize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+        }`}
+      />
+      <Minimize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"
+        }`}
+      />
+    </span>
+  );
 }
 
 export default function ListingDetailsPage() {
