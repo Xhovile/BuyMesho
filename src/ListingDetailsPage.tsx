@@ -398,7 +398,7 @@ export default function ListingDetailsPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigateToExplore()}
+              onClick={() => navigateToExplore(EXPLORE_PATH)}
               className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800" 
               >
                 Back
