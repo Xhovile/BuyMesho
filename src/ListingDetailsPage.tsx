@@ -516,7 +516,6 @@ export default function ListingDetailsPage() {
                     currentUid={firebaseUser?.uid}
                     isLoggedIn={!!firebaseUser}
                     isSaved={saved}
-                    variant="detail"
                     onReport={() => navigateToPath(REPORT_PATH)}
                     onDelete={handleDetailDelete}
                     onEdit={handleDetailEdit}
