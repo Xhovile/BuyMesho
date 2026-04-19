@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { MoreVertical, Share2 } from "lucide-react";
+import { Bookmark, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
+import { apiFetch } from "../lib/api";
 import { buildListingShareUrl } from "../lib/listingUrl";
+import {
+  EXPLORE_PATH,
+  navigateBackOrPath,
+  navigateToEditListing,
+} from "../lib/appNavigation";
 
 type ListingActionsMenuProps = {
   listing: Listing;
@@ -18,6 +24,20 @@ type ListingActionsMenuProps = {
   onToggleSave?: (listingId: number) => void;
   requireLoginForContact?: () => void;
 };
+
+function loadIdList(storageKey: string, itemValidator: (value: unknown) => boolean) {
+  try {
+    const raw = localStorage.getItem(storageKey);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter(itemValidator) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveIdList(storageKey: string, values: string[] | number[]) {
+  localStorage.setItem(storageKey, JSON.stringify(values));
+}
 
 export default function ListingActionsMenu({
   listing,
@@ -68,6 +88,17 @@ export default function ListingActionsMenu({
 
   const safeAlert = (msg: string) => {
     alert(msg);
+  };
+
+  const trackWhatsAppClick = async () => {
+    try {
+      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+    } catch (error) {
+      console.error("Failed to track WhatsApp click", error);
+    }
   };
 
   const handleCopyWhatsApp = async () => {
@@ -127,6 +158,81 @@ export default function ListingActionsMenu({
     }
   };
 
+  const handleEdit = () => {
+    setOpen(false);
+    if (onEdit) {
+      onEdit(listing);
+      return;
+    }
+    navigateToEditListing(listing.id);
+  };
+
+  const handleDelete = async () => {
+    setOpen(false);
+    if (onDelete) {
+      onDelete(listing.id);
+      return;
+    }
+
+    const confirmed = window.confirm("Delete this listing?");
+    if (!confirmed) return;
+
+    try {
+      await apiFetch(`/api/listings/${listing.id}`, { method: "DELETE" });
+      navigateBackOrPath(EXPLORE_PATH);
+    } catch (error: any) {
+      safeAlert(error?.message || "Failed to delete listing.");
+    }
+  };
+
+  const handleToggleStatus = async () => {
+    setOpen(false);
+    if (onToggleStatus) {
+      onToggleStatus(listing);
+      return;
+    }
+
+    const nextStatus = listing.status === "sold" ? "available" : "sold";
+    try {
+      await apiFetch(`/api/listings/${listing.id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      safeAlert(`Listing marked as ${nextStatus}.`);
+    } catch (error: any) {
+      safeAlert(error?.message || "Failed to update listing status.");
+    }
+  };
+
+  const handleHideListing = () => {
+    setOpen(false);
+    if (onHideListing) {
+      onHideListing(listing.id);
+      return;
+    }
+
+    const hiddenListingIds = loadIdList("hiddenListingIds", (value) => Number.isInteger(value)) as number[];
+    if (!hiddenListingIds.includes(listing.id)) {
+      saveIdList("hiddenListingIds", [...hiddenListingIds, listing.id]);
+    }
+    navigateBackOrPath(EXPLORE_PATH);
+  };
+
+  const handleHideSeller = () => {
+    setOpen(false);
+    if (!sellerUid) return;
+    if (onHideSeller) {
+      onHideSeller(sellerUid);
+      return;
+    }
+
+    const hiddenSellerUids = loadIdList("hiddenSellerUids", (value) => typeof value === "string") as string[];
+    if (!hiddenSellerUids.includes(sellerUid)) {
+      saveIdList("hiddenSellerUids", [...hiddenSellerUids, sellerUid]);
+    }
+    navigateBackOrPath(EXPLORE_PATH);
+  };
+
   const menuLabel = useMemo(() => (isOwner ? "Listing actions" : "More options"), [isOwner]);
 
   return (
@@ -157,30 +263,21 @@ export default function ListingActionsMenu({
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onEdit?.(listing);
-                }}
+                onClick={handleEdit}
                 className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
               >
                 Edit listing
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onToggleStatus?.(listing);
-                }}
+                onClick={handleToggleStatus}
                 className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
               >
                 {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onDelete?.(listing.id);
-                }}
+                onClick={handleDelete}
                 className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
               >
                 Delete listing
@@ -217,10 +314,7 @@ export default function ListingActionsMenu({
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onHideListing?.(listing.id);
-                }}
+                onClick={handleHideListing}
                 className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
               >
                 Hide this listing
@@ -228,10 +322,7 @@ export default function ListingActionsMenu({
               <div className="h-px bg-zinc-100" />
               <button
                 type="button"
-                onClick={() => {
-                  setOpen(false);
-                  if (sellerUid) onHideSeller?.(sellerUid);
-                }}
+                onClick={handleHideSeller}
                 className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
                 disabled={!sellerUid}
               >
