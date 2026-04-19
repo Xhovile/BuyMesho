@@ -459,13 +459,14 @@ export default function ListingDetailsPage() {
 </div>
                 <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
                   <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
-                  <button
-                    type="button"
-                    onClick={() => setIsFullscreen(true)}
-                    className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
-                  >
-                    <Expand className="w-5 h-5" />
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFullscreen(true)}
+                  className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
+                  aria-label="Open fullscreen"
+                >
+                 <FullscreenToggleIcon isFullscreen={false} />
+              </button>
                   {galleryImages.length > 1 && (
                     <>
                       <button
