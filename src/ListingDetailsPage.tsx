@@ -619,8 +619,16 @@ export default function ListingDetailsPage() {
 
                   <button
                     type="button"
-                    onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
-                    className="mt-5 flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left hover:bg-zinc-100"
+                    disabled={!seller?.uid}
+                    onClick={() => {
+                      if (!seller?.uid) return;
+                      navigateToSellerProfile(seller.uid);
+                    }}
+                    className={`mt-5 flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left ${
+                      seller?.uid
+                        ? "transition hover:bg-zinc-100"
+                        : "cursor-not-allowed opacity-60"
+                    }`}
                   >
                     <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
                       {seller?.business_logo ? (
