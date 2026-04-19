@@ -23,8 +23,6 @@ import {
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
-  navigateBackOrPath,
-  navigateToEditListing,
 } from "./lib/appNavigation";
 import {
   buildListingShareUrl,
@@ -69,7 +67,7 @@ function formatSpecValue(value: unknown): string {
 
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
   return (
-    <span className="relative inline-flex h-5 w-5">
+    <span className="relative h-5 w-5">
       <Maximize2
         className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
           isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
@@ -231,7 +229,10 @@ export default function ListingDetailsPage() {
           rows: rows as Array<{ key: string; label: string; value: string }>,
         };
       })
-      .filter(Boolean) as Array<{ title: string; rows: Array<{ key: string; label: string; value: string }> }>;
+      .filter(Boolean) as Array<{
+      title: string;
+      rows: Array<{ key: string; label: string; value: string }>;
+    }>;
   }, [listing, itemConfig]);
 
   const availableQuantity = listing
@@ -410,7 +411,10 @@ export default function ListingDetailsPage() {
 
     window.open(
       `https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(
-        `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, currentGalleryIndex)}`
+        `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(
+          listing.id,
+          currentGalleryIndex
+        )}`
       )}`,
       "_blank",
       "noopener,noreferrer"
@@ -516,11 +520,8 @@ export default function ListingDetailsPage() {
                     currentUid={firebaseUser?.uid}
                     isLoggedIn={!!firebaseUser}
                     isSaved={saved}
-                    onReport={(listingId) =>
-                      navigateToPath(
-                        `${REPORT_PATH}?listingId=${encodeURIComponent(String(listingId ?? listing.id))}`,
-                      )
-                    }
+                    variant="detail"
+                    onReport={(id) => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(String(id))}`)}
                     onDelete={handleDetailDelete}
                     onEdit={handleDetailEdit}
                     onHideSeller={handleDetailHideSeller}
@@ -625,9 +626,7 @@ export default function ListingDetailsPage() {
                       navigateToSellerProfile(seller.uid);
                     }}
                     className={`mt-5 flex w-full items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-3 text-left ${
-                      seller?.uid
-                        ? "transition hover:bg-zinc-100"
-                        : "cursor-not-allowed opacity-60"
+                      seller?.uid ? "transition hover:bg-zinc-100" : "cursor-not-allowed opacity-60"
                     }`}
                   >
                     <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
@@ -651,7 +650,9 @@ export default function ListingDetailsPage() {
                         <h2 className="truncate text-base font-black tracking-tight text-zinc-900">{sellerDisplayName}</h2>
                         {sellerVerified ? <ShieldCheck className="h-4 w-4 flex-shrink-0 text-blue-500" /> : null}
                       </div>
-                      <p className="mt-0.5 text-xs text-zinc-500">Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views</p>
+                      <p className="mt-0.5 text-xs text-zinc-500">
+                        Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views
+                      </p>
                     </div>
                   </button>
 
@@ -671,7 +672,9 @@ export default function ListingDetailsPage() {
                         <h2 className="mt-2 text-xl font-black tracking-tight">Talk to the seller now</h2>
                         <p className="mt-2 text-sm text-zinc-300">WhatsApp is the fastest way to reach this seller.</p>
                       </div>
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">Action</span>
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/80">
+                        Action
+                      </span>
                     </div>
                     <div className="mt-4 space-y-3">
                       <span
@@ -758,18 +761,18 @@ export default function ListingDetailsPage() {
                           <h2 className="text-xl font-black tracking-tight text-zinc-900">{sellerDisplayName}</h2>
                           {sellerVerified ? <ShieldCheck className="h-4 w-4 text-blue-500" /> : null}
                         </div>
-                        <p className="mt-1 text-sm text-zinc-500">Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views</p>
+                        <p className="mt-1 text-sm text-zinc-500">
+                          Joined {formatDate(seller?.join_date)} · {seller?.profile_views ?? 0} profile views
+                        </p>
                       </div>
                     </button>
                   </div>
                   <div className="text-right text-sm text-zinc-500">
                     <p>
-                      Rating:{" "}
-                      <span className="font-semibold text-zinc-900">{ratingValue}</span>
+                      Rating: <span className="font-semibold text-zinc-900">{ratingValue}</span>
                     </p>
                     <p className="mt-1">
-                      Reviews:{" "}
-                      <span className="font-semibold text-zinc-900">{ratingCount}</span>
+                      Reviews: <span className="font-semibold text-zinc-900">{ratingCount}</span>
                     </p>
                   </div>
                 </div>
@@ -795,112 +798,108 @@ export default function ListingDetailsPage() {
                 </div>
               </section>
 
-              <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Specifications</p>
-                  {groupedSpecs.length > 0 ? (
-                    <div className="mt-5">
-                      <div className="relative mb-3 h-9">
-                        <div ref={specTabsRef} className="flex h-full items-center gap-2 overflow-x-auto px-6 pb-1">
-                          {groupedSpecs.map((group) => (
-                            <button
-                              key={group.title}
-                              type="button"
-                              onClick={() => setActiveSpecGroupTitle(group.title)}
-                              className={`flex-shrink-0 rounded-lg border px-3 py-1 text-xs font-bold transition ${
-                                activeSpecGroup?.title === group.title
-                                  ? "border-zinc-900 bg-zinc-900 text-white"
-                                  : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
-                              }`}
-                            >
-                              {group.title}
-                            </button>
-                          ))}
-                        </div>
-                        {showSpecTabsLeftHint ? (
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Specifications</p>
+                {groupedSpecs.length > 0 ? (
+                  <div className="mt-5">
+                    <div className="relative mb-3 h-9">
+                      <div ref={specTabsRef} className="flex h-full items-center gap-2 overflow-x-auto px-6 pb-1">
+                        {groupedSpecs.map((group) => (
                           <button
+                            key={group.title}
                             type="button"
-                            onClick={handleScrollSpecTabsLeft}
-                            className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
-                            aria-label="Scroll specification groups left"
+                            onClick={() => setActiveSpecGroupTitle(group.title)}
+                            className={`flex-shrink-0 rounded-lg border px-3 py-1 text-xs font-bold transition ${
+                              activeSpecGroup?.title === group.title
+                                ? "border-zinc-900 bg-zinc-900 text-white"
+                                : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                            }`}
                           >
-                            <ChevronLeft className="h-4 w-4" />
+                            {group.title}
                           </button>
-                        ) : null}
-                        {showSpecTabsRightHint ? (
-                          <button
-                            type="button"
-                            onClick={handleScrollSpecTabsRight}
-                            className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
-                            aria-label="Scroll specification groups right"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        ) : null}
-                      </div>
-                      <div className="h-[320px] divide-y divide-zinc-200 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50">
-                        {(activeSpecGroup?.rows || []).map((row) => (
-                          <div key={row.key} className="grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] items-start gap-4 px-4 py-3">
-                            <p className="border-r border-zinc-200 pr-4 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
-                              {row.label}
-                            </p>
-                            <p className="break-words text-right text-sm font-semibold text-zinc-900">
-                              {row.value}
-                            </p>
-                          </div>
                         ))}
                       </div>
-                    </div>
-                  ) : (
-                    <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
-                      No structured specifications were added for this listing.
-                    </div>
-                  )}
-                </div>
-
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="mb-5 flex items-center justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Related</p>
-                      <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">You may also want these</h2>
-                    </div>
-                    <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                      {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
-                    </div>
-                  </div>
-
-                  {visibleRelatedListings.length > 0 ? (
-                    <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
-                      {visibleRelatedListings.map((item) => (
+                      {showSpecTabsLeftHint ? (
                         <button
-                          key={item.id}
                           type="button"
-                          onClick={() => navigateToListingDetails(item.id, 0)}
-                          className="snap-start shrink-0 w-[176px] rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-2.5 text-left transition-colors hover:bg-zinc-100 sm:w-[210px] md:w-[240px]"
+                          onClick={handleScrollSpecTabsLeft}
+                          className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
+                          aria-label="Scroll specification groups left"
                         >
-                          <div className="mb-2.5 aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
-                            <img
-                              src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                            />
-                          </div>
-                          <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900 sm:text-base">{item.name}</h3>
-                          <p className="mt-1 text-[11px] leading-relaxed text-zinc-500 line-clamp-2 sm:text-xs">
-                            {item.description}
-                          </p>
-                          <p className="mt-2 text-lg font-black tracking-tight text-zinc-900 sm:text-xl">
-                            MK {Number(item.price).toLocaleString()}
-                          </p>
+                          <ChevronLeft className="h-4 w-4" />
                         </button>
+                      ) : null}
+                      {showSpecTabsRightHint ? (
+                        <button
+                          type="button"
+                          onClick={handleScrollSpecTabsRight}
+                          className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
+                          aria-label="Scroll specification groups right"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      ) : null}
+                    </div>
+                    <div className="h-[320px] divide-y divide-zinc-200 overflow-y-auto rounded-2xl border border-zinc-200 bg-zinc-50">
+                      {(activeSpecGroup?.rows || []).map((row) => (
+                        <div key={row.key} className="grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] items-start gap-4 px-4 py-3">
+                          <p className="border-r border-zinc-200 pr-4 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
+                            {row.label}
+                          </p>
+                          <p className="break-words text-right text-sm font-semibold text-zinc-900">{row.value}</p>
+                        </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                      No related listings available right now.
-                    </div>
-                  )}
+                  </div>
+                ) : (
+                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
+                    No structured specifications were added for this listing.
+                  </div>
+                )}
+              </section>
+
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="mb-5 flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Related</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">You may also want these</h2>
+                  </div>
+                  <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                    {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
+                  </div>
                 </div>
+
+                {visibleRelatedListings.length > 0 ? (
+                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+                    {visibleRelatedListings.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => navigateToListingDetails(item.id, 0)}
+                        className="snap-start shrink-0 w-[176px] rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-2.5 text-left transition-colors hover:bg-zinc-100 sm:w-[210px] md:w-[240px]"
+                      >
+                        <div className="mb-2.5 aspect-[4/3] overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+                          <img
+                            src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                            alt={item.name}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900 sm:text-base">{item.name}</h3>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-zinc-500 sm:text-xs">
+                          {item.description}
+                        </p>
+                        <p className="mt-2 text-lg font-black tracking-tight text-zinc-900 sm:text-xl">
+                          MK {Number(item.price).toLocaleString()}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
+                    No related listings available right now.
+                  </div>
+                )}
               </section>
             </section>
           </>
