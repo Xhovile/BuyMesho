@@ -166,7 +166,11 @@ export default function ListingActionsMenu({
 
       {open ? (
         <div
-          className={`absolute ${variant === "detail" ? "right-0 top-12 w-72" : "right-0 top-12 w-56"} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+          className={`absolute ${
+           variant === "detail"
+           ? "right-0 top-full mt-2 w-72 z-[70]"
+           : "right-0 top-12 w-56"
+         } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
         >
           <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
             {isOwner ? "Owner tools" : "Actions"}
