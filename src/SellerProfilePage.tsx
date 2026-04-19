@@ -10,6 +10,7 @@ import {
   getSellerUidFromUrl,
   navigateToListingDetails,
   navigateToPath,
+  navigateBackOrPath, 
 } from "./lib/appNavigation";
 
 type SellerRatingSummary = {
@@ -202,11 +203,11 @@ useEffect(() => {
             </button>
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+              className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800" 
             >
-              Back to Explore
-            </button>
+               Back
+           </button>
           </div>
         </div>
       </header>
@@ -223,11 +224,11 @@ useEffect(() => {
             <p className="mt-3 text-sm text-zinc-500">This seller could not be loaded or may no longer be available.</p>
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
             >
               <ChevronLeft className="w-4 h-4" />
-              Return to Explore
+              Back
             </button>
           </div>
         ) : (
