@@ -398,7 +398,7 @@ export default function ListingDetailsPage() {
             </button>
             <button
               type="button"
-              onClick={() => navigateToExplore(EXPLORE_PATH)}
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
               className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800" 
               >
                 Back
@@ -421,7 +421,7 @@ export default function ListingDetailsPage() {
             </p>
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
            >
              <ChevronLeft className="w-4 h-4" />
