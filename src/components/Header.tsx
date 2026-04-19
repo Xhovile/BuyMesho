@@ -76,6 +76,9 @@ export default function Header({
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
+  const desktopNavButtonClass =
+    "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
+
   useEffect(() => {
     const updateHeaderVisibility = () => {
       const isMobile = window.innerWidth < 768;
@@ -136,7 +139,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                className={desktopNavButtonClass}
               >
                 <House className="w-4 h-4" />
                 Home
@@ -145,7 +148,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800 transition-colors"
+                className={desktopNavButtonClass}
               >
                 <ShoppingBag className="w-4 h-4" />
                 Market
@@ -154,7 +157,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-bold text-zinc-900 hover:bg-zinc-100 transition-colors"
+                className={desktopNavButtonClass}
               >
                 <Settings className="w-4 h-4" />
                 Settings
@@ -220,7 +223,7 @@ export default function Header({
             }}
             className="w-full"
           >
-            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm">
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm md:max-w-4xl md:border-zinc-200 md:shadow-md">
               <input
                 type="text"
                 value={searchValue}
