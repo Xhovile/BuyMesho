@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, MoreVertical, Share2 } from "lucide-react";
+import { MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { buildListingShareUrl } from "../lib/listingUrl";
+
 type ListingActionsMenuProps = {
   listing: Listing;
   currentUid?: string;
@@ -22,7 +23,6 @@ export default function ListingActionsMenu({
   listing,
   currentUid,
   isLoggedIn,
-  isSaved,
   variant = "card",
   onReport,
   onDelete,
@@ -30,7 +30,6 @@ export default function ListingActionsMenu({
   onHideSeller,
   onHideListing,
   onToggleStatus,
-  onToggleSave,
   requireLoginForContact,
 }: ListingActionsMenuProps) {
   const [open, setOpen] = useState(false);
@@ -40,10 +39,10 @@ export default function ListingActionsMenu({
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
 
   const wrapperClassName =
-  variant === "detail"
-    ? "relative inline-flex"
-    : "absolute right-3 top-3 z-20";
-  
+    variant === "detail"
+      ? "relative inline-flex"
+      : "absolute right-3 top-3 z-20";
+
   useEffect(() => {
     if (!open) return;
 
@@ -69,17 +68,6 @@ export default function ListingActionsMenu({
 
   const safeAlert = (msg: string) => {
     alert(msg);
-  };
-
-  const trackWhatsAppClick = async () => {
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Failed to track WhatsApp click", error);
-    }
   };
 
   const handleCopyWhatsApp = async () => {
@@ -139,17 +127,6 @@ export default function ListingActionsMenu({
     }
   };
 
-  const handleSaveToggle = () => {
-    if (!isLoggedIn) {
-      setOpen(false);
-      requireLoginForContact?.();
-      return;
-    }
-
-    onToggleSave?.(listing.id);
-    setOpen(false);
-  };
-
   const menuLabel = useMemo(() => (isOwner ? "Listing actions" : "More options"), [isOwner]);
 
   return (
@@ -167,10 +144,10 @@ export default function ListingActionsMenu({
       {open ? (
         <div
           className={`absolute ${
-           variant === "detail"
-           ? "right-0 top-full mt-2 w-72 z-[70]"
-           : "right-0 top-12 w-56"
-         } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            variant === "detail"
+              ? "right-0 top-full mt-2 w-72 z-[70]"
+              : "right-0 top-12 w-56"
+          } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
         >
           <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
             {isOwner ? "Owner tools" : "Actions"}
@@ -211,16 +188,6 @@ export default function ListingActionsMenu({
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={handleSaveToggle}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Bookmark className={`w-4 h-4 ${isSaved ? "fill-current" : ""}`} />
-                  {isSaved ? "Remove from saved" : "Save item"}
-                </span>
-              </button>
               <button
                 type="button"
                 onClick={() => {
