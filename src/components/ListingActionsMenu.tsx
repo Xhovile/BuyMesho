@@ -40,9 +40,9 @@ export default function ListingActionsMenu({
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
 
   const wrapperClassName =
-    variant === "detail"
-  ? "absolute right-0 top-12 z-[95]"
-  : "absolute right-3 top-3 z-20"
+  variant === "detail"
+    ? "relative inline-flex"
+    : "absolute right-3 top-3 z-20";
   
   useEffect(() => {
     if (!open) return;
