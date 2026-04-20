@@ -20,10 +20,10 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
-import CategoryListingCard from "./components/category/CategoryListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import ListingCard from "./components/ListingCard";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
