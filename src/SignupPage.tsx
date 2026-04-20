@@ -24,6 +24,7 @@ export default function SignupPage() {
     university: resolveUniversity(),
     email: "",
     password: "",
+    confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -36,6 +37,16 @@ export default function SignupPage() {
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
+
+    if (form.password !== form.confirmPassword) {
+      showFeedback(
+        "error",
+        "Passwords do not match",
+        "Make sure both password fields are the same before creating the account."
+      );
+      return;
+    }
+
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
@@ -94,7 +105,7 @@ export default function SignupPage() {
       eyebrow="Account"
       title="Create account"
       description="Join BuyMesho with a university-linked account so you can save items, build your profile, and apply to sell."
-      backLabel="Back to Explore"
+      backLabel="Back"
     >
       <form onSubmit={handleSignUp} className="p-8 space-y-5 w-full">
         <FormDropdown
@@ -122,6 +133,17 @@ export default function SignupPage() {
             type="password"
             value={form.password}
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Confirm Password</label>
+          <input
+            required
+            type="password"
+            value={form.confirmPassword}
+            onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
             className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
           />
         </div>
