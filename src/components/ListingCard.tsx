@@ -12,6 +12,8 @@ type ListingCardProps = {
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
   onToggleStatus?: (listing: Listing) => void;
+  onRecordSale?: (listing: Listing) => void;
+  onRestock?: (listing: Listing) => void;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
   requireLoginForContact?: () => void;
