@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, MoreVertical, Share2 } from "lucide-react";
+import { Bookmark, CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { buildListingShareUrl } from "../lib/listingUrl";
@@ -22,6 +22,8 @@ type ListingActionsMenuProps = {
   onHideListing?: (listingId: number) => void;
   onToggleStatus?: (listing: Listing) => void;
   onToggleSave?: (listingId: number) => void;
+  onRecordSale?: (listing: Listing) => void;
+  onRestock?: (listing: Listing) => void;
   requireLoginForContact?: () => void;
 };
 
@@ -50,6 +52,8 @@ export default function ListingActionsMenu({
   onHideSeller,
   onHideListing,
   onToggleStatus,
+  onRecordSale,
+  onRestock,
   requireLoginForContact,
 }: ListingActionsMenuProps) {
   const [open, setOpen] = useState(false);
@@ -87,18 +91,7 @@ export default function ListingActionsMenu({
   }, [open]);
 
   const safeAlert = (msg: string) => {
-    alert(msg);
-  };
-
-  const trackWhatsAppClick = async () => {
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Failed to track WhatsApp click", error);
-    }
+    window.alert(msg);
   };
 
   const handleCopyWhatsApp = async () => {
@@ -126,7 +119,6 @@ export default function ListingActionsMenu({
 
   const handleShare = async () => {
     const shareUrl = buildListingShareUrl(listing.id, 0);
-
     const shareLines = [
       "BuyMesho Listing",
       listing.name,
@@ -204,6 +196,24 @@ export default function ListingActionsMenu({
     }
   };
 
+  const handleRecordSale = () => {
+    setOpen(false);
+    if (onRecordSale) {
+      onRecordSale(listing);
+      return;
+    }
+    safeAlert("Record sale is not wired on this page yet.");
+  };
+
+  const handleRestock = () => {
+    setOpen(false);
+    if (onRestock) {
+      onRestock(listing);
+      return;
+    }
+    safeAlert("Restock is not wired on this page yet.");
+  };
+
   const handleHideListing = () => {
     setOpen(false);
     if (onHideListing) {
@@ -261,25 +271,19 @@ export default function ListingActionsMenu({
 
           {isOwner ? (
             <>
-              <button
-                type="button"
-                onClick={handleEdit}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                 Edit listing
               </button>
-              <button
-                type="button"
-                onClick={handleToggleStatus}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <span className="inline-flex items-center gap-2"><HandCoins className="w-4 h-4" />Record sale</span>
+              </button>
+              <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
+              </button>
+              <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                 {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
               </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
-              >
+              <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
                 Delete listing
               </button>
             </>
@@ -295,37 +299,20 @@ export default function ListingActionsMenu({
               >
                 Report listing
               </button>
-              <button
-                type="button"
-                onClick={handleCopyWhatsApp}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={handleCopyWhatsApp} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                 Copy WhatsApp number
               </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                 <span className="inline-flex items-center gap-2">
                   <Share2 className="w-4 h-4" />
                   Share listing
                 </span>
               </button>
-              <button
-                type="button"
-                onClick={handleHideListing}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
+              <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                 Hide this listing
               </button>
               <div className="h-px bg-zinc-100" />
-              <button
-                type="button"
-                onClick={handleHideSeller}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-                disabled={!sellerUid}
-              >
+              <button type="button" onClick={handleHideSeller} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50" disabled={!sellerUid}>
                 Hide this seller
               </button>
             </>
