@@ -7,7 +7,6 @@ coverage/
 .env*
 !.env.example
 dist-server
-market.db
 market.db.backup-now
 market.db.before-cf5c564
 market.*.db
