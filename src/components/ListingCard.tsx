@@ -118,11 +118,7 @@ export default function ListingCard({
         }`}
       >
         <div className={`${outerPadding} flex items-center justify-between gap-2`}>
-          <button
-            type="button"
-            onClick={handleOpenProfile}
-            className="min-w-0 text-left"
-          >
+          <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
             <div className="inline-flex items-center gap-1.5 min-w-0">
               <p
                 className={`truncate ${
