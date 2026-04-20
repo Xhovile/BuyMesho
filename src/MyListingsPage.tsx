@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { BarChart3, ExternalLink, Loader2, Pencil, Tag } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
+import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToEditListing, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
@@ -14,7 +15,7 @@ export default function MyListingsPage() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
-  const [togglingStatus, setTogglingStatus] = useState<number | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -63,19 +64,24 @@ export default function MyListingsPage() {
     }
   };
 
+  const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
+    setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
+  };
+
   const handleToggleStatus = async (listing: Listing) => {
-    if (togglingStatus === listing.id) return;
-    const newStatus = listing.status === "sold" ? "available" : "sold";
-    setTogglingStatus(listing.id);
+    if (actionLoadingId === listing.id) return;
+
+    const nextStatus = listing.status === "sold" ? "available" : "sold";
+    setActionLoadingId(listing.id);
     try {
       await apiFetch(`/api/listings/${listing.id}/status`, {
         method: "PATCH",
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: nextStatus }),
       });
-      setListings((prev) =>
-        prev.map((l) => (l.id === listing.id ? { ...l, status: newStatus } : l))
-      );
-      const delta = newStatus === "sold" ? 1 : -1;
+
+      applyListingUpdate(listing.id, (current) => ({ ...current, status: nextStatus }));
+
+      const delta = nextStatus === "sold" ? 1 : -1;
       setDashboard((prev) =>
         prev
           ? {
@@ -90,8 +96,48 @@ export default function MyListingsPage() {
       );
     } catch (error) {
       console.error("Failed to toggle listing status", error);
+      window.alert("Failed to update listing status.");
     } finally {
-      setTogglingStatus(null);
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleDeleteListing = async (listingId: number) => {
+    if (actionLoadingId === listingId) return;
+    const target = listings.find((item) => item.id === listingId);
+    if (!target) return;
+
+    const confirmed = window.confirm(`Delete \"${target.name}\"?`);
+    if (!confirmed) return;
+
+    setActionLoadingId(listingId);
+    try {
+      await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      setListings((prev) => prev.filter((item) => item.id !== listingId));
+      setDashboard((prev) =>
+        prev
+          ? {
+              ...prev,
+              stats: {
+                ...prev.stats,
+                total_listings: Math.max(0, prev.stats.total_listings - 1),
+                active_listings:
+                  target.status === "sold"
+                    ? prev.stats.active_listings
+                    : Math.max(0, prev.stats.active_listings - 1),
+                sold_listings:
+                  target.status === "sold"
+                    ? Math.max(0, prev.stats.sold_listings - 1)
+                    : prev.stats.sold_listings,
+              },
+            }
+          : null
+      );
+    } catch (error) {
+      console.error("Failed to delete listing", error);
+      window.alert("Failed to delete listing.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -102,7 +148,7 @@ export default function MyListingsPage() {
       description="Manage the listings you posted, review status, and jump straight into edit flow from a dedicated page."
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
-      childrenSectionClassName="md:rounded-[2rem] md:border md:border-zinc-200 md:bg-white md:shadow-sm md:overflow-hidden"
+      childrenSectionClassName="w-full"
     >
       {authLoading || profileLoading || loadingListings ? (
         <div className="p-10 flex items-center justify-center gap-3 text-zinc-500 font-medium">
@@ -146,31 +192,21 @@ export default function MyListingsPage() {
           </button>
         </div>
       ) : (
-        <div className="p-3 sm:p-8 space-y-6">
-          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+        <div className="space-y-6">
+          <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Seller performance</p>
                 <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
               </div>
-              {dashboardOpen ? (
-                <button
-                  type="button"
-                  onClick={() => void handleDashboardToggle()}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-100"
-                >
-                  Hide Seller Dashboard
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => void handleDashboardToggle()}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Seller Dashboard
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => void handleDashboardToggle()}
+                className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-extrabold transition-colors ${dashboardOpen ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100" : "bg-zinc-900 text-white hover:bg-zinc-800"}`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                {dashboardOpen ? "Hide Seller Dashboard" : "Seller Dashboard"}
+              </button>
             </div>
 
             {dashboardOpen && (
@@ -195,124 +231,59 @@ export default function MyListingsPage() {
                       </button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 text-sm">
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Total listings</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Total listings</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Active</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.active_listings}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Sold</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.sold_listings}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Total views</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">WhatsApp clicks</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Profile views</p>
+                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        <p className="text-xs font-bold uppercase text-zinc-400">Top listing</p>
+                        <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">{dashboard.top_listing?.name || "No data"}</p>
+                      </div>
                     </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Active</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.active_listings}</p>
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Sold</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.sold_listings}</p>
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Total views</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">WhatsApp clicks</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">
-                        {dashboard.stats.total_whatsapp_clicks}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Profile views</p>
-                      <p className="mt-1 text-lg font-black text-zinc-900">
-                        {dashboard.seller.profile_views}
-                      </p>
-                    </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Top listing</p>
-                      <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">
-                        {dashboard.top_listing?.name || "No data"}
-                      </p>
-                    </div>
-                  </div>
                   </div>
                 ) : null}
               </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {listings.map((listing) => {
-            const availableQuantity = Math.max(
-              0,
-              Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
-            );
-
-            return (
-              <div key={listing.id} className="rounded-3xl border border-zinc-200 bg-zinc-50 overflow-hidden">
-                <div className="aspect-[4/3] bg-zinc-100">
-                  <img
-                    src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/700/500`}
-                    alt={listing.name}
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-
-                <div className="p-5 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">{listing.category}</p>
-                      <h3 className="mt-1 text-xl font-black tracking-tight text-zinc-900">{listing.name}</h3>
-                    </div>
-                    <span className={`px-3 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${listing.status === "sold" ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-                      {listing.status === "sold" ? "Sold" : "Available"}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-sm">
-                    <div className="rounded-2xl bg-white border border-zinc-200 p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-1">Price</p>
-                      <p className="font-bold text-zinc-900">MK {Number(listing.price).toLocaleString()}</p>
-                    </div>
-                    <div className="rounded-2xl bg-white border border-zinc-200 p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400 mb-1">Stock</p>
-                      <p className="font-bold text-zinc-900">{availableQuantity} left</p>
-                    </div>
-                  </div>
-
-                  <p className="text-sm text-zinc-500 line-clamp-2">{listing.description}</p>
-
-                  <div className="flex flex-wrap gap-3 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => navigateToEditListing(listing.id)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
-                    >
-                      <Pencil className="w-4 h-4" />
-                      Edit Listing
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateToListingDetails(listing.id, 0)}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                      Open Listing
-                    </button>
-                    <button
-                      type="button"
-                      disabled={togglingStatus === listing.id}
-                      onClick={() => void handleToggleStatus(listing)}
-                      className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold ${listing.status === "sold" ? "border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "border-red-200 bg-red-50 text-red-700 hover:bg-red-100"} disabled:opacity-50`}
-                    >
-                      {togglingStatus === listing.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Tag className="w-4 h-4" />
-                      )}
-                      {listing.status === "sold" ? "Mark as Available" : "Mark as Sold"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-            })}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+            {listings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                currentUid={firebaseUser?.uid}
+                isLoggedIn={!!firebaseUser}
+                showActionsMenu
+                compact={false}
+                ultraCompact={false}
+                onReport={() => undefined}
+                onEdit={(item) => navigateToEditListing(item.id)}
+                onDelete={(id) => void handleDeleteListing(id)}
+                onToggleStatus={(item) => void handleToggleStatus(item)}
+                onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
+                onOpenSeller={(sellerUid) => navigateToPath(`/seller/${sellerUid}`)}
+              />
+            ))}
           </div>
         </div>
       )}
