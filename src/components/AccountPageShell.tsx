@@ -20,6 +20,7 @@ type AccountPageShellProps = {
   backLabel?: string;
   onBack?: () => void;
   childrenSectionClassName?: string;
+  tone?: "default" | "minimal";
 };
 
 export default function AccountPageShell({
@@ -30,8 +31,10 @@ export default function AccountPageShell({
   backLabel = "Back",
   onBack,
   childrenSectionClassName,
+  tone = "default",
 }: AccountPageShellProps) {
   const { firebaseUser } = useAccountProfile();
+  const isMinimal = tone === "minimal";
 
   const handleLogout = async () => {
     try {
@@ -48,29 +51,85 @@ export default function AccountPageShell({
           <BrandMark />
           <div className="flex items-center gap-3">
             {firebaseUser && (
-              <button type="button" onClick={() => void handleLogout()} className="inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleLogout()}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+              >
                 <LogOut className="w-4 h-4" />
                 Log out
               </button>
             )}
-            <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"><House className="w-4 h-4" />Home</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"><ShoppingBag className="w-4 h-4" />Market</button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(HOME_PATH)}
+              className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+            >
+              <House className="w-4 h-4" />
+              Home
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Market
+            </button>
           </div>
         </div>
       </header>
-      <main className="max-w-7xl mx-auto px-4 py-5 sm:py-6">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm mb-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">{description}</p>
+
+      <main className={`${isMinimal ? "mx-auto max-w-5xl px-4 py-8 sm:py-10" : "max-w-7xl mx-auto px-4 py-5 sm:py-6"}`}>
+        {isMinimal ? (
+          <section className="mb-8">
+            <div className="flex flex-col gap-4">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
+                <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
+                  {description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
+                className="inline-flex items-center gap-2 self-start rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                {backLabel}
+              </button>
             </div>
-            <button type="button" onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 self-start"><ChevronLeft className="w-4 h-4" />{backLabel}</button>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <section className="mb-4 rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{eyebrow}</p>
+                <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
+                <p className="mt-3 max-w-2xl text-sm sm:text-base font-medium leading-relaxed text-zinc-600">
+                  {description}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
+                className="inline-flex items-center gap-2 self-start rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                {backLabel}
+              </button>
+            </div>
+          </section>
+        )}
+
         <section
-          className={childrenSectionClassName || "rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden"}
+          className={
+            childrenSectionClassName ||
+            (isMinimal
+              ? "overflow-visible"
+              : "overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm")
+          }
         >
           {children}
         </section>
