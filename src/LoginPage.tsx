@@ -54,8 +54,8 @@ export default function LoginPage() {
       tone="minimal"
       childrenSectionClassName="overflow-visible"
     >
-      <form onSubmit={handleLogin} className="max-w-xl space-y-5">
-        <div className="grid gap-5 rounded-[2rem] border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+      <form onSubmit={handleLogin} className="max-w-xl space-y-6">
+        <div className="space-y-5">
           <div>
             <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">Email Address</label>
             <input
@@ -63,7 +63,7 @@ export default function LoginPage() {
               type="email"
               value={form.email}
               onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
               type="password"
               value={form.password}
               onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -86,15 +86,15 @@ export default function LoginPage() {
               Create account
             </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="inline-flex min-w-[180px] items-center justify-center gap-2 self-start rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}
-          </button>
         </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex min-w-[180px] items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}
+        </button>
       </form>
 
       {feedback && (
