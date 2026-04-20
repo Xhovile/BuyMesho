@@ -317,21 +317,23 @@ const handleRestock = async (listing: Listing) => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
             {listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                currentUid={firebaseUser?.uid}
-                isLoggedIn={!!firebaseUser}
-                showActionsMenu
-                compact={false}
-                ultraCompact={false}
-                onReport={() => undefined}
-                onEdit={(item) => navigateToEditListing(item.id)}
-                onDelete={(id) => void handleDeleteListing(id)}
-                onToggleStatus={(item) => void handleToggleStatus(item)}
-                onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
-                onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
-              />
+<ListingCard
+  key={listing.id}
+  listing={listing}
+  currentUid={firebaseUser?.uid}
+  isLoggedIn={!!firebaseUser}
+  showActionsMenu
+  compact={false}
+  ultraCompact={false}
+  onReport={() => undefined}
+  onEdit={(item) => navigateToEditListing(item.id)}
+  onDelete={(id) => void handleDeleteListing(id)}
+  onToggleStatus={(item) => void handleToggleStatus(item)}
+  onRecordSale={(item) => void handleRecordSale(item)}
+  onRestock={(item) => void handleRestock(item)}
+  onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
+  onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
+/>
             ))}
           </div>
         </div>
