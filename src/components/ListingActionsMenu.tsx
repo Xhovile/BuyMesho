@@ -57,6 +57,8 @@ export default function ListingActionsMenu({
 
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
+  const hasOwnerTools = isOwner && Boolean(onEdit || onDelete || onToggleStatus);
+  const hasPrivacyTools = Boolean(onHideListing || onHideSeller);
 
   const wrapperClassName =
     variant === "detail"
@@ -88,17 +90,6 @@ export default function ListingActionsMenu({
 
   const safeAlert = (msg: string) => {
     alert(msg);
-  };
-
-  const trackWhatsAppClick = async () => {
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-    } catch (error) {
-      console.error("Failed to track WhatsApp click", error);
-    }
   };
 
   const handleCopyWhatsApp = async () => {
@@ -259,82 +250,91 @@ export default function ListingActionsMenu({
             {isOwner ? "Owner tools" : "Actions"}
           </div>
 
-          {isOwner ? (
-            <>
-              <button
-                type="button"
-                onClick={handleEdit}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                Edit listing
-              </button>
-              <button
-                type="button"
-                onClick={handleToggleStatus}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
-              >
-                Delete listing
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onReport(listing.id);
-                }}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                Report listing
-              </button>
-              <button
-                type="button"
-                onClick={handleCopyWhatsApp}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                Copy WhatsApp number
-              </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Share2 className="w-4 h-4" />
-                  Share listing
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={handleHideListing}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                Hide this listing
-              </button>
-              <div className="h-px bg-zinc-100" />
-              <button
-                type="button"
-                onClick={handleHideSeller}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-                disabled={!sellerUid}
-              >
-                Hide this seller
-              </button>
-            </>
-          )}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onReport(listing.id);
+            }}
+            className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+          >
+            Report listing
+          </button>
 
-          {variant === "detail" && !isOwner ? (
-            <div className="border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500">
-              Use this menu for quick account actions.
-            </div>
+          <button
+            type="button"
+            onClick={handleCopyWhatsApp}
+            className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+          >
+            Copy WhatsApp number
+          </button>
+
+          <button
+            type="button"
+            onClick={handleShare}
+            className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
+              Share listing
+            </span>
+          </button>
+
+          {hasPrivacyTools ? <div className="h-px bg-zinc-100" /> : null}
+
+          {onHideListing ? (
+            <button
+              type="button"
+              onClick={handleHideListing}
+              className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+            >
+              Hide this listing
+            </button>
+          ) : null}
+
+          {onHideSeller ? (
+            <button
+              type="button"
+              onClick={handleHideSeller}
+              className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+              disabled={!sellerUid}
+            >
+              Hide this seller
+            </button>
+          ) : null}
+
+          {hasOwnerTools ? <div className="h-px bg-zinc-100" /> : null}
+
+          {hasOwnerTools ? (
+            <>
+              {onEdit ? (
+                <button
+                  type="button"
+                  onClick={handleEdit}
+                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+                >
+                  Edit listing
+                </button>
+              ) : null}
+              {onToggleStatus ? (
+                <button
+                  type="button"
+                  onClick={handleToggleStatus}
+                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+                >
+                  {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
+                </button>
+              ) : null}
+              {onDelete ? (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+                >
+                  Delete listing
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
       ) : null}
