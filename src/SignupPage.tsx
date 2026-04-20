@@ -28,6 +28,20 @@ const getPasswordStrength = (password: string) => {
   return score;
 };
 
+const getPasswordStrengthLabel = (strength: number) => {
+  if (strength <= 1) return "Weak";
+  if (strength === 2) return "Fair";
+  if (strength === 3) return "Strong";
+  return "Very strong";
+};
+
+const getPasswordTip = (strength: number) => {
+  if (strength <= 1) return "Use at least 6 characters, with a number or symbol.";
+  if (strength === 2) return "Add an uppercase letter to improve it.";
+  if (strength === 3) return "Add a symbol to make it stronger.";
+  return "This password is in good shape.";
+};
+
 export default function SignupPage() {
   const [form, setForm] = useState({
     university: resolveUniversity(),
@@ -39,7 +53,8 @@ export default function SignupPage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   const strength = getPasswordStrength(form.password);
-  const passwordsMatch = form.password && form.confirmPassword && form.password === form.confirmPassword;
+  const passwordsMatch =
+    form.password.length > 0 && form.confirmPassword.length > 0 && form.password === form.confirmPassword;
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -71,13 +86,39 @@ export default function SignupPage() {
 
       await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
 
+      try {
+        const displayName = form.email.split("@")[0] || null;
+        await apiFetch("/api/auth/send-verification-email", {
+          method: "POST",
+          body: JSON.stringify({ display_name: displayName }),
+        });
+      } catch (emailErr: any) {
+        console.error("Custom verification email failed", emailErr);
+      }
+
+      showFeedback(
+        "success",
+        "Account created",
+        "A verification email was sent. Check your inbox and verify before you sell."
+      );
       navigateToPath("/profile");
     } catch (err: any) {
-      showFeedback("error", "Signup failed", err?.message || "Try again.");
+      let message = err?.message || "We could not create your account.";
+      if (err?.code === "auth/email-already-in-use") {
+        message = "This email is already registered. Please log in instead.";
+      } else if (err?.code === "auth/invalid-email") {
+        message = "Please enter a valid email address.";
+      } else if (err?.code === "auth/weak-password") {
+        message = "Password should be at least 6 characters.";
+      }
+      showFeedback("error", "Signup failed", message);
     } finally {
       setLoading(false);
     }
   };
+
+  const fieldClass =
+    "w-full bg-transparent px-0 py-3 text-base text-zinc-900 border-0 border-b border-zinc-300 outline-none transition focus:border-zinc-900";
 
   return (
     <AccountPageShell
@@ -101,7 +142,7 @@ export default function SignupPage() {
             type="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
+            className={fieldClass}
           />
         </div>
 
@@ -112,19 +153,30 @@ export default function SignupPage() {
             type="password"
             value={form.password}
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
+            className={fieldClass}
           />
 
-          {/* Strength meter */}
-          <div className="mt-2 h-1 bg-zinc-200 rounded">
-            <div
-              className={`h-1 rounded transition-all ${
-                strength <= 1 ? "bg-red-500 w-1/4" :
-                strength === 2 ? "bg-yellow-500 w-2/4" :
-                strength === 3 ? "bg-blue-500 w-3/4" :
-                "bg-green-500 w-full"
-              }`}
-            />
+          <div className="mt-3 space-y-2">
+            <div className="h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  strength <= 1
+                    ? "bg-red-500 w-1/4"
+                    : strength === 2
+                      ? "bg-amber-500 w-2/4"
+                      : strength === 3
+                        ? "bg-blue-500 w-3/4"
+                        : "bg-emerald-500 w-full"
+                }`}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500">
+              <span>Password strength</span>
+              <span className={strength <= 1 ? "text-red-600" : strength === 2 ? "text-amber-600" : strength === 3 ? "text-blue-600" : "text-emerald-600"}>
+                {getPasswordStrengthLabel(strength)}
+              </span>
+            </div>
+            <p className="text-xs text-zinc-500">{getPasswordTip(strength)}</p>
           </div>
         </div>
 
@@ -135,11 +187,11 @@ export default function SignupPage() {
             type="password"
             value={form.confirmPassword}
             onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
+            className={fieldClass}
           />
 
-          {form.confirmPassword && (
-            <p className={`text-sm mt-2 ${passwordsMatch ? "text-green-600" : "text-red-600"}`}>
+          {form.confirmPassword.length > 0 && (
+            <p className={`text-sm mt-2 ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>
               {passwordsMatch ? "Passwords match" : "Passwords do not match"}
             </p>
           )}
@@ -148,7 +200,7 @@ export default function SignupPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800"
+          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
         </button>
