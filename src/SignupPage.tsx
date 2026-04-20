@@ -94,50 +94,54 @@ export default function SignupPage() {
       eyebrow="Account"
       title="Create account"
       description="Join BuyMesho with a university-linked account so you can save items, build your profile, and apply to sell."
-      backLabel="Back to Explore"
+      backLabel="Back"
+      tone="minimal"
+      childrenSectionClassName="overflow-visible"
     >
-      <form onSubmit={handleSignUp} className="p-8 space-y-5 w-full">
-        <FormDropdown
-          label="University"
-          value={form.university}
-          options={UNIVERSITIES}
-          onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
-        />
-
-        <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
-          <input
-            required
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+      <form onSubmit={handleSignUp} className="max-w-xl space-y-6">
+        <div className="space-y-5">
+          <FormDropdown
+            label="University"
+            value={form.university}
+            options={UNIVERSITIES}
+            onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
           />
-        </div>
 
-        <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
-          <input
-            required
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">Email Address</label>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div className="flex flex-wrap gap-4 text-sm font-bold">
-          <button type="button" onClick={() => navigateToPath("/login")} className="text-primary hover:underline">
-            Already have an account?
-          </button>
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">Password</label>
+            <input
+              required
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm font-bold">
+            <button type="button" onClick={() => navigateToPath("/login")} className="text-primary hover:underline">
+              Already have an account?
+            </button>
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          className="inline-flex min-w-[200px] items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create Account"}
         </button>
       </form>
 
