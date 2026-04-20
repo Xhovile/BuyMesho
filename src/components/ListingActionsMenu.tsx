@@ -197,13 +197,22 @@ export default function ListingActionsMenu({
   };
 
   const handleRecordSale = () => {
-    setOpen(false);
-    if (onRecordSale) {
-      onRecordSale(listing);
-      return;
-    }
-    safeAlert("Record sale is not wired on this page yet.");
-  };
+  setOpen(false);
+  if (onRecordSale) {
+    onRecordSale(listing);
+    return;
+  }
+  safeAlert("Record sale is not wired on this page yet.");
+};
+
+const handleRestock = () => {
+  setOpen(false);
+  if (onRestock) {
+    onRestock(listing);
+    return;
+  }
+  safeAlert("Restock is not wired on this page yet.");
+};
 
   const handleRestock = () => {
     setOpen(false);
@@ -269,25 +278,35 @@ export default function ListingActionsMenu({
             {isOwner ? "Owner tools" : "Actions"}
           </div>
 
-          {isOwner ? (
-            <>
-              <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                Edit listing
-              </button>
-              <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2"><HandCoins className="w-4 h-4" />Record sale</span>
-              </button>
-              <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
-              </button>
-              <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
-              </button>
-              <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
-                Delete listing
-              </button>
-            </>
-          ) : (
+{isOwner ? (
+  <>
+    <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+      Edit listing
+    </button>
+
+    <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+      <span className="inline-flex items-center gap-2">
+        <HandCoins className="w-4 h-4" />
+        Record sale
+      </span>
+    </button>
+
+    <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+      <span className="inline-flex items-center gap-2">
+        <CirclePlus className="w-4 h-4" />
+        Restock
+      </span>
+    </button>
+
+    <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+      {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
+    </button>
+
+    <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
+      Delete listing
+    </button>
+  </>
+) : (  
             <>
               <button
                 type="button"
