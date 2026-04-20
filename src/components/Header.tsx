@@ -1,7 +1,8 @@
-import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight, LogOut } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
+import { signOut } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
@@ -14,6 +15,7 @@ import {
 } from "../lib/appNavigation";
 import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
+import { auth } from "../firebase";
 
 type HeaderProps = {
   searchValue: string;
@@ -71,6 +73,16 @@ export default function Header({
     }
 
     navigateToPath(BECOME_SELLER_PATH);
+  };
+
+  const handleLogout = async (afterClose?: () => void) => {
+    afterClose?.();
+    try {
+      await signOut(auth);
+      navigateToPath(LOGIN_PATH);
+    } catch {
+      // No-op: the UI remains usable even if sign-out fails briefly.
+    }
   };
 
   const navButtonClass =
@@ -246,7 +258,6 @@ export default function Header({
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -258,7 +269,6 @@ export default function Header({
               aria-hidden="true"
             />
 
-            {/* Drawer */}
             <motion.div
               key="drawer-panel"
               id="mobile-header-menu"
@@ -271,7 +281,6 @@ export default function Header({
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
-              {/* Drawer header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
@@ -291,7 +300,6 @@ export default function Header({
                 </button>
               </div>
 
-              {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                 <button
                   type="button"
@@ -348,20 +356,34 @@ export default function Header({
                 </button>
 
                 {firebaseUser ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onProfileClick();
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <User className="w-4 h-4 text-zinc-500" />
-                      Profile
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        onProfileClick();
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <User className="w-4 h-4 text-zinc-500" />
+                        Profile
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLogout(closeMenu)}
+                      className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-3 text-red-600">
+                        <LogOut className="w-4 h-4" />
+                        Log Out
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <button
