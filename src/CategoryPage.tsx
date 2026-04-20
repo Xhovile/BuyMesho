@@ -20,10 +20,10 @@ import {
   navigateToPath,
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
-import CategoryListingCard from "./components/category/CategoryListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import ListingCard from "./components/ListingCard";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
@@ -419,26 +419,34 @@ export default function CategoryPage() {
               {error}
             </div>
           ) : null}
-
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {loading ? (
-              <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Loading listings...
-              </div>
-            ) : filteredAndSortedItems.length === 0 ? (
-              <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm">
-                No listings found in this category.
-              </div>
-            ) : (
-              filteredAndSortedItems.map((item) => (
-                <div key={item.id}>
-                  <CategoryListingCard item={item} categoryLabel={config.title} />
-                </div>
-              ))
-            )}
-          </div>
-        </section>
+<div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+  {loading ? (
+    <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
+      <Loader2 className="w-5 h-5 animate-spin" />
+      Listings Loading...
+    </div>
+  ) : filteredAndSortedItems.length === 0 ? (
+    <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm">
+      No listings found in this category.
+    </div>
+  ) : (
+    filteredAndSortedItems.map((item) => (
+      <ListingCard
+        key={item.id}
+        listing={item as any}
+        currentUid={firebaseUser?.uid}
+        isLoggedIn={!!firebaseUser}
+        onReport={() => undefined}
+        showActionsMenu={false}
+        compact
+        ultraCompact
+        onOpenDetails={(listing) => navigateToPath(`/listing/${listing.id}`)}
+        onOpenSeller={(sellerUid) => navigateToPath(`/seller/${sellerUid}`)}
+      />
+    ))
+  )}
+</div>
+</section>
 
         <section className="max-w-7xl mx-auto px-4 pb-16">
           <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 shadow-xl">
