@@ -19,6 +19,15 @@ type FeedbackState = {
   message: string;
 } | null;
 
+const getPasswordStrength = (password: string) => {
+  let score = 0;
+  if (password.length >= 6) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  return score;
+};
+
 export default function SignupPage() {
   const [form, setForm] = useState({
     university: resolveUniversity(),
@@ -29,6 +38,9 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
+  const strength = getPasswordStrength(form.password);
+  const passwordsMatch = form.password && form.confirmPassword && form.password === form.confirmPassword;
+
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
@@ -38,12 +50,8 @@ export default function SignupPage() {
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
 
-    if (form.password !== form.confirmPassword) {
-      showFeedback(
-        "error",
-        "Passwords do not match",
-        "Make sure both password fields are the same before creating the account."
-      );
+    if (!passwordsMatch) {
+      showFeedback("error", "Passwords do not match", "Ensure both passwords are identical.");
       return;
     }
 
@@ -63,38 +71,9 @@ export default function SignupPage() {
 
       await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
 
-      try {
-        const displayName = form.email.split("@")[0] || null;
-        await apiFetch("/api/auth/send-verification-email", {
-          method: "POST",
-          body: JSON.stringify({ display_name: displayName }),
-        });
-
-        showFeedback(
-          "success",
-          "Account created",
-          "A verification email was sent. Check your inbox and verify before you sell."
-        );
-      } catch (emailErr: any) {
-        console.error("Custom verification email failed", emailErr);
-        showFeedback(
-          "info",
-          "Account created",
-          "The account was created, but the verification email could not be sent yet. Open your profile and resend it after SMTP is configured."
-        );
-      }
-
       navigateToPath("/profile");
     } catch (err: any) {
-      let message = err?.message || "We could not create your account.";
-      if (err?.code === "auth/email-already-in-use") {
-        message = "This email is already registered. Please log in instead.";
-      } else if (err?.code === "auth/invalid-email") {
-        message = "Please enter a valid email address.";
-      } else if (err?.code === "auth/weak-password") {
-        message = "Password should be at least 6 characters.";
-      }
-      showFeedback("error", "Signup failed", message);
+      showFeedback("error", "Signup failed", err?.message || "Try again.");
     } finally {
       setLoading(false);
     }
@@ -104,10 +83,10 @@ export default function SignupPage() {
     <AccountPageShell
       eyebrow="Account"
       title="Create account"
-      description="Join BuyMesho with a university-linked account so you can save items, build your profile, and apply to sell."
+      description="Join BuyMesho and start buying or selling easily."
       backLabel="Back"
     >
-      <form onSubmit={handleSignUp} className="p-8 space-y-5 w-full">
+      <form onSubmit={handleSignUp} className="space-y-6 w-full">
         <FormDropdown
           label="University"
           value={form.university}
@@ -116,48 +95,60 @@ export default function SignupPage() {
         />
 
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">Email Address</label>
           <input
             required
             type="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
           <input
             required
             type="password"
             value={form.password}
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
           />
+
+          {/* Strength meter */}
+          <div className="mt-2 h-1 bg-zinc-200 rounded">
+            <div
+              className={`h-1 rounded transition-all ${
+                strength <= 1 ? "bg-red-500 w-1/4" :
+                strength === 2 ? "bg-yellow-500 w-2/4" :
+                strength === 3 ? "bg-blue-500 w-3/4" :
+                "bg-green-500 w-full"
+              }`}
+            />
+          </div>
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Confirm Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">Confirm Password</label>
           <input
             required
             type="password"
             value={form.confirmPassword}
             onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full bg-transparent px-0 py-3 border-b border-zinc-300 focus:border-zinc-900 outline-none"
           />
-        </div>
 
-        <div className="flex flex-wrap gap-4 text-sm font-bold">
-          <button type="button" onClick={() => navigateToPath("/login")} className="text-primary hover:underline">
-            Already have an account?
-          </button>
+          {form.confirmPassword && (
+            <p className={`text-sm mt-2 ${passwordsMatch ? "text-green-600" : "text-red-600"}`}>
+              {passwordsMatch ? "Passwords match" : "Passwords do not match"}
+            </p>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
         </button>
