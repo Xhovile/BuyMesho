@@ -12,6 +12,8 @@ type ListingCardProps = {
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
   onToggleStatus?: (listing: Listing) => void;
+  onRecordSale?: (listing: Listing) => void;
+  onRestock?: (listing: Listing) => void;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
   requireLoginForContact?: () => void;
@@ -32,6 +34,8 @@ export default function ListingCard({
   onHideSeller,
   onHideListing,
   onToggleStatus,
+  onRecordSale,
+  onRestock,
   isSaved,
   onToggleSave,
   requireLoginForContact,
@@ -114,11 +118,7 @@ export default function ListingCard({
         }`}
       >
         <div className={`${outerPadding} flex items-center justify-between gap-2`}>
-          <button
-            type="button"
-            onClick={handleOpenProfile}
-            className="min-w-0 text-left"
-          >
+          <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
             <div className="inline-flex items-center gap-1.5 min-w-0">
               <p
                 className={`truncate ${
@@ -184,6 +184,8 @@ export default function ListingCard({
               onHideSeller={onHideSeller}
               onHideListing={onHideListing}
               onToggleStatus={onToggleStatus}
+              onRecordSale={onRecordSale}
+              onRestock={onRestock}
               onToggleSave={onToggleSave}
               requireLoginForContact={requireLoginForContact}
             />
@@ -237,4 +239,4 @@ export default function ListingCard({
       </div>
     </motion.article>
   );
-}   
+}
