@@ -12,6 +12,12 @@ import {
 } from "./lib/appNavigation";
 import type { Listing, SellerDashboardData } from "./types";
 
+type ListingActionResponse = {
+  success: boolean;
+  listing?: Listing;
+  available_quantity?: number;
+};
+
 export default function MyListingsPage() {
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
@@ -66,6 +72,79 @@ export default function MyListingsPage() {
       setDashboardError(error?.message || "Failed to load dashboard.");
     } finally {
       setDashboardLoading(false);
+    }
+  };
+
+  const applyListingResponse = (updated: Listing) => {
+    setListings((prev) =>
+      prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+    );
+  };
+
+  const applyDashboardStatusDelta = (before: Listing, after: Listing) => {
+    if (before.status === after.status) return;
+
+    const delta = after.status === "sold" ? 1 : -1;
+
+    setDashboard((prev) =>
+      prev
+        ? {
+            ...prev,
+            stats: {
+              ...prev.stats,
+              sold_listings: Math.max(0, prev.stats.sold_listings + delta),
+              active_listings: Math.max(0, prev.stats.active_listings - delta),
+            },
+          }
+        : prev
+    );
+  };
+
+  const handleRecordSale = async (listing: Listing) => {
+    const qty = Number(prompt("Enter quantity sold:", "1"));
+    if (!qty || qty <= 0) return;
+    if (actionLoadingId === listing.id) return;
+
+    setActionLoadingId(listing.id);
+    try {
+      const result = (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+        method: "POST",
+        body: JSON.stringify({ quantity: qty }),
+      })) as ListingActionResponse;
+
+      if (result?.listing) {
+        applyListingResponse(result.listing);
+        applyDashboardStatusDelta(listing, result.listing);
+      }
+    } catch (error) {
+      console.error("Failed to record sale", error);
+      window.alert("Failed to record sale.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRestock = async (listing: Listing) => {
+    const qty = Number(prompt("Enter quantity to add:", "1"));
+    if (!qty || qty <= 0) return;
+    if (actionLoadingId === listing.id) return;
+
+    setActionLoadingId(listing.id);
+    try {
+      const result = (await apiFetch(`/api/listings/${listing.id}/restock`, {
+        method: "POST",
+        body: JSON.stringify({ quantity: qty }),
+      })) as ListingActionResponse;
+
+      if (result?.listing) {
+        applyListingResponse(result.listing);
+        applyDashboardStatusDelta(listing, result.listing);
+      }
+    } catch (error) {
+      console.error("Failed to restock listing", error);
+      window.alert("Failed to restock listing.");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -285,6 +364,8 @@ export default function MyListingsPage() {
                 onEdit={(item) => navigateToEditListing(item.id)}
                 onDelete={(id) => void handleDeleteListing(id)}
                 onToggleStatus={(item) => void handleToggleStatus(item)}
+                onRecordSale={(item) => void handleRecordSale(item)}
+                onRestock={(item) => void handleRestock(item)}
                 onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                 onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
               />
