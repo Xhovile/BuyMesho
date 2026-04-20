@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -50,47 +50,51 @@ export default function LoginPage() {
       eyebrow="Account"
       title="Log in"
       description="Access your BuyMesho account, manage your profile, and continue buying or selling."
-      backLabel="Back to Explore"
+      backLabel="Back"
+      tone="minimal"
+      childrenSectionClassName="overflow-visible"
     >
-      <form onSubmit={handleLogin} className="p-8 space-y-5 w-full">
-        <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
-          <input
-            required
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
+      <form onSubmit={handleLogin} className="max-w-xl space-y-5">
+        <div className="grid gap-5 rounded-[2rem] border border-zinc-200 bg-white/80 p-6 shadow-sm backdrop-blur-sm sm:p-8">
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">Email Address</label>
+            <input
+              required
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
-          <input
-            required
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-          />
-        </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold uppercase text-zinc-400">Password</label>
+            <input
+              required
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
 
-        <div className="flex flex-wrap gap-4 text-sm font-bold">
-          <button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">
-            Forgot Password?
+          <div className="flex flex-wrap items-center justify-between gap-3 text-sm font-bold">
+            <button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">
+              Forgot Password?
+            </button>
+            <button type="button" onClick={() => navigateToPath("/signup")} className="text-zinc-500 hover:text-zinc-900 hover:underline">
+              Create account
+            </button>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex min-w-[180px] items-center justify-center gap-2 self-start rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}
           </button>
-          <button type="button" onClick={() => navigateToPath("/signup")} className="text-zinc-500 hover:text-zinc-900 hover:underline">
-            Create account
-          </button>
         </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
-        </button>
       </form>
 
       {feedback && (
