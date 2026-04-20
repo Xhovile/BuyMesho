@@ -34,6 +34,8 @@ export default function ListingCard({
   onHideSeller,
   onHideListing,
   onToggleStatus,
+  onRecordSale,
+  onRestock,
   isSaved,
   onToggleSave,
   requireLoginForContact,
@@ -239,4 +241,4 @@ export default function ListingCard({
       </div>
     </motion.article>
   );
-}   
+}
