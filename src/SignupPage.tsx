@@ -51,6 +51,7 @@ export default function SignupPage() {
   });
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const strength = getPasswordStrength(form.password);
   const passwordsMatch =
@@ -61,6 +62,14 @@ export default function SignupPage() {
     title: string,
     message: string
   ) => setFeedback({ open: true, type, title, message });
+
+  const closeFeedback = () => {
+    setFeedback(null);
+    if (redirectAfterFeedback) {
+      setRedirectAfterFeedback(false);
+      navigateToPath("/profile");
+    }
+  };
 
   const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
@@ -86,6 +95,7 @@ export default function SignupPage() {
 
       await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
 
+      let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";
       try {
         const displayName = form.email.split("@")[0] || null;
         await apiFetch("/api/auth/send-verification-email", {
@@ -94,14 +104,16 @@ export default function SignupPage() {
         });
       } catch (emailErr: any) {
         console.error("Custom verification email failed", emailErr);
+        emailNotice =
+          "The account was created, but the verification email could not be sent yet. Open your profile and resend it after SMTP is configured.";
       }
 
+      setRedirectAfterFeedback(true);
       showFeedback(
-        "success",
+        "info",
         "Account created",
-        "A verification email was sent. Check your inbox and verify before you sell."
+        emailNotice
       );
-      navigateToPath("/profile");
     } catch (err: any) {
       let message = err?.message || "We could not create your account.";
       if (err?.code === "auth/email-already-in-use") {
@@ -172,7 +184,17 @@ export default function SignupPage() {
             </div>
             <div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500">
               <span>Password strength</span>
-              <span className={strength <= 1 ? "text-red-600" : strength === 2 ? "text-amber-600" : strength === 3 ? "text-blue-600" : "text-emerald-600"}>
+              <span
+                className={
+                  strength <= 1
+                    ? "text-red-600"
+                    : strength === 2
+                      ? "text-amber-600"
+                      : strength === 3
+                        ? "text-blue-600"
+                        : "text-emerald-600"
+                }
+              >
                 {getPasswordStrengthLabel(strength)}
               </span>
             </div>
@@ -212,7 +234,7 @@ export default function SignupPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
-          onClose={() => setFeedback(null)}
+          onClose={closeFeedback}
         />
       )}
     </AccountPageShell>
