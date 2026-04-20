@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -50,28 +50,28 @@ export default function LoginPage() {
       eyebrow="Account"
       title="Log in"
       description="Access your BuyMesho account, manage your profile, and continue buying or selling."
-      backLabel="Back to Explore"
+      backLabel="Back"
     >
-      <form onSubmit={handleLogin} className="p-8 space-y-5 w-full">
+      <form onSubmit={handleLogin} className="space-y-6 w-full">
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">Email Address</label>
           <input
             required
             type="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full px-0 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
           />
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
           <input
             required
             type="password"
             value={form.password}
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+            className="w-full px-0 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
           />
         </div>
 
@@ -87,7 +87,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
         </button>
