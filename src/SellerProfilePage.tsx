@@ -10,7 +10,7 @@ import {
   getSellerUidFromUrl,
   navigateToListingDetails,
   navigateToPath,
-  navigateBackOrPath, 
+  navigateBackOrPath,
 } from "./lib/appNavigation";
 
 type SellerRatingSummary = {
@@ -61,12 +61,12 @@ export default function SellerProfilePage() {
     return "Needs improvement";
   };
 
-useEffect(() => {
-  const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
-  window.addEventListener("popstate", syncSellerUid);
-  return () => window.removeEventListener("popstate", syncSellerUid);
-}, []);
-  
+  useEffect(() => {
+    const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
+    window.addEventListener("popstate", syncSellerUid);
+    return () => window.removeEventListener("popstate", syncSellerUid);
+  }, []);
+
   useEffect(() => {
     const loadSeller = async () => {
       if (!sellerUid) {
@@ -204,15 +204,15 @@ useEffect(() => {
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800" 
+              className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800"
             >
-               Back
-           </button>
+              Back
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {loading ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium">
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -221,7 +221,9 @@ useEffect(() => {
         ) : !sellerUid || !profile ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller profile not found</h1>
-            <p className="mt-3 text-sm text-zinc-500">This seller could not be loaded or may no longer be available.</p>
+            <p className="mt-3 text-sm text-zinc-500">
+              This seller could not be loaded or may no longer be available.
+            </p>
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
@@ -304,7 +306,9 @@ useEffect(() => {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
                     <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-                    {ratingSummary ? `${ratingSummary.ratingCount} rating${ratingSummary.ratingCount === 1 ? "" : "s"}` : "No ratings yet"}
+                    {ratingSummary
+                      ? `${ratingSummary.ratingCount} rating${ratingSummary.ratingCount === 1 ? "" : "s"}`
+                      : "No ratings yet"}
                   </div>
                   {ratingSummary && ratingSummary.ratingCount > 0 ? (
                     <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-[0.1em]">
@@ -318,7 +322,10 @@ useEffect(() => {
                 ) : ratingSummary?.distribution?.length ? (
                   <div className="mt-5 space-y-2">
                     {ratingSummary.distribution.map((row) => (
-                      <div key={row.stars} className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2">
+                      <div
+                        key={row.stars}
+                        className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2"
+                      >
                         <span className="text-xs font-bold text-zinc-600">{row.stars} ★</span>
                         <div className="h-2 rounded-full bg-zinc-200 overflow-hidden">
                           <div className="h-full bg-amber-400" style={{ width: `${row.percentage}%` }} />
@@ -348,7 +355,9 @@ useEffect(() => {
                               type="button"
                               onClick={() => void handleRateSeller(star)}
                               disabled={ratingSubmitting}
-                              className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${ratingSubmitting ? "opacity-60" : "hover:text-amber-500"}`}
+                              className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${
+                                ratingSubmitting ? "opacity-60" : "hover:text-amber-500"
+                              }`}
                               aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
                             >
                               <Star className={`w-5 h-5 ${active ? "fill-amber-400" : ""}`} />
@@ -376,7 +385,7 @@ useEffect(() => {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+              <div className="p-0 sm:p-0">
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listings</p>
@@ -420,8 +429,16 @@ useEffect(() => {
                             <span className="px-3 py-1.5 rounded-full bg-white text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em] border border-zinc-200">
                               {listing.category}
                             </span>
-                            <span className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${availableQuantity > 0 && listing.status !== "sold" ? "bg-emerald-50 text-emerald-700" : "bg-zinc-200 text-zinc-600"}`}>
-                              {availableQuantity > 0 && listing.status !== "sold" ? `${availableQuantity} left` : "Sold out"}
+                            <span
+                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
+                                availableQuantity > 0 && listing.status !== "sold"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-zinc-200 text-zinc-600"
+                              }`}
+                            >
+                              {availableQuantity > 0 && listing.status !== "sold"
+                                ? `${availableQuantity} left`
+                                : "Sold out"}
                             </span>
                           </div>
                         </button>
