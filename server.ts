@@ -2002,6 +2002,146 @@ app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
   }
 });
 
+app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  const quantity = Number(req.body?.quantity ?? 1);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be greater than 0" });
+  }
+
+  try {
+    const listing = db
+      .prepare(
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ?"
+      )
+      .get(id) as
+      | {
+          id: number;
+          seller_uid: string;
+          quantity: number;
+          sold_quantity: number;
+          status: string;
+        }
+      | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    if (listing.seller_uid !== uid) {
+      return res.status(403).json({ error: "Forbidden: not your listing" });
+    }
+
+    const available = Math.max(0, Number(listing.quantity) - Number(listing.sold_quantity));
+    if (quantity > available) {
+      return res.status(400).json({
+        error: `Cannot record ${quantity} sale(s). Only ${available} item(s) available.`,
+      });
+    }
+
+    const nextSoldQuantity = Number(listing.sold_quantity) + quantity;
+    const nextStatus = nextSoldQuantity >= Number(listing.quantity) ? "sold" : listing.status;
+
+    db.prepare(`
+      UPDATE listings
+      SET
+        sold_quantity = ?,
+        status = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(nextSoldQuantity, nextStatus, id);
+
+    const updated = db
+      .prepare(
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? LIMIT 1"
+      )
+      .get(id);
+
+    return res.json({
+      success: true,
+      listing: updated,
+      available_quantity: Math.max(0, Number(listing.quantity) - nextSoldQuantity),
+    });
+  } catch (error) {
+    console.error("POST /api/listings/:id/record-sale error:", error);
+    return res.status(500).json({ error: "Failed to record sale" });
+  }
+});
+
+app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  const quantity = Number(req.body?.quantity ?? 1);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be greater than 0" });
+  }
+
+  try {
+    const listing = db
+      .prepare(
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ?"
+      )
+      .get(id) as
+      | {
+          id: number;
+          seller_uid: string;
+          quantity: number;
+          sold_quantity: number;
+          status: string;
+        }
+      | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    if (listing.seller_uid !== uid) {
+      return res.status(403).json({ error: "Forbidden: not your listing" });
+    }
+
+    const nextQuantity = Number(listing.quantity) + quantity;
+    const nextStatus =
+      listing.status === "sold" && Number(listing.sold_quantity) < nextQuantity
+        ? "available"
+        : listing.status;
+
+    db.prepare(`
+      UPDATE listings
+      SET
+        quantity = ?,
+        status = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(nextQuantity, nextStatus, id);
+
+    const updated = db
+      .prepare(
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? LIMIT 1"
+      )
+      .get(id);
+
+    return res.json({
+      success: true,
+      listing: updated,
+      available_quantity: Math.max(0, nextQuantity - Number(listing.sold_quantity)),
+    });
+  } catch (error) {
+    console.error("POST /api/listings/:id/restock error:", error);
+    return res.status(500).json({ error: "Failed to restock listing" });
+  }
+});
+
 // --- helper: get Cloudinary public_id from a Cloudinary URL ---
 function cloudinaryPublicIdFromUrl(rawUrl: string): string | null {
   try {
