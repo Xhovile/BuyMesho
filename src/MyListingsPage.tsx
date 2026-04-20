@@ -4,7 +4,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
-import { navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
+import { navigateToEditListing, navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
 import type { Listing, SellerDashboardData } from "./types";
 
 export default function MyListingsPage() {
@@ -224,13 +224,10 @@ export default function MyListingsPage() {
                   await apiFetch(`/api/listings/${id}`, { method: "DELETE" });
                   setListings((prev) => prev.filter((item) => item.id !== id));
                 }}
-                onEdit={() => navigateToPath(`/edit-listing/${listing.id}`)}
-                onHideSeller={() => undefined}
-                onHideListing={() => undefined}
+                onEdit={(item) => navigateToEditListing(item.id)}
                 onToggleStatus={handleToggleStatus}
                 isLoggedIn
                 requireLoginForContact={() => navigateToPath("/login")}
-                onToggleSave={() => undefined}
                 onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                 onOpenSeller={(uid) => navigateToSellerProfile(uid)}
                 compact
