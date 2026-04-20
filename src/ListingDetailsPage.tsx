@@ -10,15 +10,14 @@ import {
   MessageCircle,
   Minimize2,
   ShieldCheck,
+  Store,
 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import {
   EXPLORE_PATH,
   HOME_PATH,
-  SETTINGS_PATH,
   REPORT_PATH,
-  navigateToExplore,
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
@@ -39,7 +38,7 @@ import {
   toggleSavedListingId,
 } from "./lib/savedListings";
 import ListingActionsMenu from "./components/ListingActionsMenu";
-  
+
 type SellerProfile = {
   uid?: string;
   business_name?: string;
@@ -80,6 +79,15 @@ function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
         }`}
       />
     </span>
+  );
+}
+
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white/70 px-4 py-3">
+      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="mt-1 text-sm font-extrabold text-zinc-900">{value}</p>
+    </div>
   );
 }
 
@@ -237,7 +245,7 @@ export default function ListingDetailsPage() {
     : 0;
 
   const currentImage = galleryImages[currentGalleryIndex] || galleryImages[0] || "";
-  const visibleRelatedListings = relatedListings.slice(0, 20);
+  const visibleRelatedListings = relatedListings.slice(0, 10);
 
   useEffect(() => {
     if (!groupedSpecs.length) {
@@ -283,11 +291,7 @@ export default function ListingDetailsPage() {
   const handleShare = async () => {
     if (!listing) return;
     const shareUrl = buildListingShareUrl(listing.id, currentGalleryIndex);
-    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(
-      listing.price
-    ).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${
-      listing.whatsapp_number
-    }\n\nOpen this listing: ${shareUrl}`;
+    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}`;
 
     try {
       if ((navigator as any).share) {
@@ -298,10 +302,10 @@ export default function ListingDetailsPage() {
         });
         return;
       }
-      await navigator.clipboard.writeText(shareText);
+      await navigator.clipboard.writeText(`${shareText}\n\nOpen this listing: ${shareUrl}`);
       alert("Share text copied.");
     } catch {
-      prompt("Copy to share:", shareText);
+      prompt("Copy to share:", `${shareText}\n\nOpen this listing: ${shareUrl}`);
     }
   };
 
@@ -385,8 +389,7 @@ export default function ListingDetailsPage() {
 
   const handlePrevImage = () => {
     if (!listing || galleryImages.length <= 1) return;
-    const prevIndex =
-      (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
+    const prevIndex = (currentGalleryIndex - 1 + galleryImages.length) % galleryImages.length;
     syncListingParamsInUrl(listing.id, prevIndex);
     setRouteState((prev) => ({ ...prev, imageIndex: prevIndex }));
   };
@@ -427,15 +430,15 @@ export default function ListingDetailsPage() {
     );
   };
 
+  const moreFromSeller = () => {
+    if (seller?.uid) navigateToSellerProfile(seller.uid);
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
-          >
+          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
               B
             </div>
@@ -444,303 +447,266 @@ export default function ListingDetailsPage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Listing details
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Listing details</p>
             </div>
           </button>
+
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigateToPath(SETTINGS_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
-            >
-              Settings
-            </button>
-            <button
-              type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800" 
-              >
-                Back
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="mx-auto max-w-7xl px-4 py-8">
         {loading ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium">
-            <Loader2 className="w-5 h-5 animate-spin" />
+          <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-500 shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin" />
             Loading listing details...
           </div>
         ) : !listing ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
-            <p className="mt-3 text-sm text-zinc-500">
-              This listing could not be loaded or may no longer be available.
-            </p>
+            <p className="mt-3 text-sm text-zinc-500">This listing could not be loaded or may no longer be available.</p>
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-             className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
-           >
-             <ChevronLeft className="w-4 h-4" />
-             Back
-           </button>
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-black hover:bg-zinc-50"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Back
+            </button>
           </div>
         ) : (
-          <>
-            <section className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] gap-6">
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
- 
-<div className="mb-3 flex items-center justify-end gap-2 relative">
-  <button
-    type="button"
-    onClick={handleToggleSaved}
-    className={`h-10 w-10 rounded-full border flex items-center justify-center transition-all shadow-sm ${
-      saved
-        ? "border-zinc-900 bg-zinc-900 text-white"
-        : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-    }`}
-    aria-label={saved ? "Remove from saved" : "Save item"}
-  >
-    <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
-  </button>
-
-  <ListingActionsMenu
-    listing={listing}
-    currentUid={firebaseUser?.uid}
-    isLoggedIn={!!firebaseUser}
-    isSaved={saved}
-    variant="detail"
-    onReport={() => navigateToPath(REPORT_PATH)}
-    onDelete={handleDetailDelete}
-    onEdit={handleDetailEdit}
-    onHideSeller={handleDetailHideSeller}
-    onHideListing={handleDetailHideListing}
-    onToggleStatus={handleDetailToggleStatus}
-    onToggleSave={handleToggleSaved}
-    requireLoginForContact={() => navigateToPath("/login")}
-  />
-</div>
-                <div className="relative rounded-[1.5rem] overflow-hidden bg-zinc-100 h-[360px] sm:h-[460px] md:h-[540px]">
-                  <img src={currentImage} alt={listing.name} className="w-full h-full object-contain" />
-                <button
-                  type="button"
-                  onClick={() => setIsFullscreen(true)}
-                  className="absolute top-4 right-4 h-11 w-11 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
-                  aria-label="Open fullscreen"
-                >
-                 <FullscreenToggleIcon isFullscreen={false} />
-              </button>
-                  {galleryImages.length > 1 && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={handlePrevImage}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
-                        aria-label="Previous image"
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleNextImage}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 hover:bg-white border border-zinc-200 shadow flex items-center justify-center"
-                        aria-label="Next image"
-                      >
-                        <ChevronRight className="w-5 h-5" />
-                      </button>
-                      <div className="absolute bottom-4 right-4 px-3 py-1.5 rounded-full bg-black/75 text-white text-xs font-bold">
-                        {currentGalleryIndex + 1} / {galleryImages.length}
-                      </div>
-                    </>
-                  )}
+          <div className="space-y-8">
+            <section className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+              <div>
+                <div className="flex items-center justify-between gap-3 pb-4">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
+                    <span>{listing.category || "Listing"}</span>
+                    <span className="h-1 w-1 rounded-full bg-zinc-300" />
+                    <span>{listing.university || "Campus"}</span>
+                  </div>
+                  <ListingActionsMenu
+                    listing={listing}
+                    currentUid={firebaseUser?.uid}
+                    isLoggedIn={!!firebaseUser}
+                    isSaved={saved}
+                    variant="detail"
+                    onReport={() => navigateToPath(REPORT_PATH)}
+                    onDelete={handleDetailDelete}
+                    onEdit={handleDetailEdit}
+                    onHideSeller={handleDetailHideSeller}
+                    onHideListing={handleDetailHideListing}
+                    onToggleStatus={handleDetailToggleStatus}
+                    onToggleSave={handleToggleSaved}
+                    requireLoginForContact={() => navigateToPath("/login")}
+                  />
                 </div>
 
-                {galleryImages.length > 1 && (
-                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                    {galleryImages.map((url, idx) => (
-                      <button
-                        key={`${url}-${idx}`}
-                        type="button"
-                        onClick={() => {
-                          syncListingParamsInUrl(listing.id, idx);
-                          setRouteState((prev) => ({ ...prev, imageIndex: idx }));
-                        }}
-                        className={`w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0 ${
-                          idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200"
-                        }`}
-                      >
-                        <img src={url} alt="" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="relative overflow-hidden border border-zinc-200 bg-zinc-50">
+                  <div className="relative aspect-[4/3] bg-zinc-100">
+                    <img src={currentImage} alt={listing.name} className="h-full w-full object-contain" />
 
-                {listing.video_url ? (
-                  <div className="mt-4 rounded-[1.5rem] overflow-hidden border bg-black">
-                    <video src={listing.video_url} controls className="w-full" />
+                    <button
+                      type="button"
+                      onClick={() => setIsFullscreen(true)}
+                      className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm hover:bg-white"
+                      aria-label="Open fullscreen"
+                    >
+                      <FullscreenToggleIcon isFullscreen={false} />
+                    </button>
+
+                    {galleryImages.length > 1 ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handlePrevImage}
+                          className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm hover:bg-white"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleNextImage}
+                          className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-700 shadow-sm hover:bg-white"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                        <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
+                          {currentGalleryIndex + 1} / {galleryImages.length}
+                        </div>
+                      </>
+                    ) : null}
                   </div>
-                ) : null}
+
+                  {galleryImages.length > 1 ? (
+                    <div className="flex gap-2 overflow-x-auto border-t border-zinc-200 bg-white p-3">
+                      {galleryImages.map((url, idx) => (
+                        <button
+                          key={`${url}-${idx}`}
+                          type="button"
+                          onClick={() => {
+                            syncListingParamsInUrl(listing.id, idx);
+                            setRouteState((prev) => ({ ...prev, imageIndex: idx }));
+                          }}
+                          className={`h-16 w-16 shrink-0 overflow-hidden border ${
+                            idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200"
+                          }`}
+                        >
+                          <img src={url} alt="" className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="space-y-6">
-                <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start gap-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        {listing.category}
-                      </p>
-                      <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">
-                        {listing.name}
-                      </h1>
+              <aside className="space-y-4">
+                <div className="border border-zinc-200 bg-white p-6 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing</p>
+                      <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">{listing.name}</h1>
                       <p className="mt-3 text-3xl font-black tracking-tight text-zinc-900">
                         MK {Number(listing.price).toLocaleString()}
                       </p>
-                      <p className="mt-1 text-base sm:text-lg font-extrabold text-zinc-900">
-                        Listed by {listing.business_name}
-                      </p>
+                      <p className="mt-1 text-base font-extrabold text-zinc-900">Listed by {listing.business_name}</p>
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={handleToggleSaved}
+                      className={`h-11 w-11 rounded-full border flex items-center justify-center transition-all shadow-sm ${
+                        saved
+                          ? "border-zinc-900 bg-zinc-900 text-white"
+                          : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                      }`}
+                      aria-label={saved ? "Remove from saved" : "Save item"}
+                    >
+                      <Bookmark className={`w-4 h-4 ${saved ? "fill-current" : ""}`} />
+                    </button>
                   </div>
 
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
-                      {listing.university}
-                    </span>
                     {listing.subcategory ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
+                      <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
                         {listing.subcategory}
                       </span>
                     ) : null}
                     {listing.item_type ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
+                      <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
                         {listing.item_type}
                       </span>
                     ) : null}
                     {listing.condition ? (
-                      <span className="px-3 py-1.5 rounded-full bg-zinc-100 text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em]">
+                      <span className="rounded-full bg-zinc-100 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-700">
                         {listing.condition}
                       </span>
                     ) : null}
                   </div>
 
-                  <div className="mt-4 space-y-3">
+                  <div className="mt-5 flex items-center gap-3">
                     <span
-                      className={`inline-flex px-3 py-1.5 rounded-full text-[11px] font-extrabold uppercase tracking-wide ${
+                      className={`inline-flex rounded-full px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide ${
                         listing.status === "sold" || availableQuantity === 0
                           ? "bg-zinc-200 text-zinc-600"
                           : "bg-emerald-100 text-emerald-700"
                       }`}
                     >
-                      {listing.status === "sold" || availableQuantity === 0
-                        ? "Sold out"
-                        : `${availableQuantity} left`}
+                      {listing.status === "sold" || availableQuantity === 0 ? "Sold out" : `${availableQuantity} left`}
                     </span>
                     <button
                       type="button"
                       onClick={handleContactSeller}
-                      className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                     >
                       {firebaseUser ? <MessageCircle className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                       {firebaseUser ? "Contact on WhatsApp" : "Log in to Contact"}
                     </button>
                   </div>
+                </div>
 
-                  <div className="mt-4">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                      Description
-                    </p>
-                    <p className="mt-3 text-sm text-zinc-600 leading-relaxed whitespace-pre-wrap">
-                      {listing.description}
-                    </p>
-                  </div>
-                </section>
-
-                <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                        Seller
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
-                        className="mt-2 flex items-center gap-2 text-left hover:opacity-80"
-                      >
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-100 flex items-center justify-center">
-                          {seller?.business_logo ? (
-                            <img
-                              src={seller.business_logo}
-                              alt={seller.business_name || listing.business_name || "Seller"}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-sm font-black text-zinc-500">
-                              {(seller?.business_name || listing.business_name || "S")
-                                .trim()
-                                .split(/\s+/)
-                                .filter((w) => w.length > 0)
-                                .map((w) => w[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()}
-                            </span>
-                          )}
+                <div className="border border-zinc-200 bg-white p-6 shadow-sm">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller</p>
+                  <div className="mt-3 flex items-start gap-4">
+                    <button
+                      type="button"
+                      onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)}
+                      className="h-16 w-16 shrink-0 overflow-hidden border border-zinc-200 bg-zinc-100"
+                    >
+                      {seller?.business_logo ? (
+                        <img
+                          src={seller.business_logo}
+                          alt={seller.business_name || listing.business_name || "Seller"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-sm font-black text-zinc-500">
+                          {(seller?.business_name || listing.business_name || "S")
+                            .trim()
+                            .split(/\s+/)
+                            .filter((w) => w.length > 0)
+                            .map((w) => w[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
                         </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h2 className="text-xl font-black tracking-tight text-zinc-900">
-                              {seller?.business_name || listing.business_name}
-                            </h2>
-                            {seller?.is_verified || listing.is_verified ? (
-                              <ShieldCheck className="w-4 h-4 text-blue-500" />
-                            ) : null}
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                    <div className="text-right text-sm text-zinc-500">
-                      <p>
-                        Joined:{" "}
-                        <span className="font-semibold text-zinc-900">{formatDate(seller?.join_date)}</span>
-                      </p>
-                      <p className="mt-1">
-                        Profile views:{" "}
-                        <span className="font-semibold text-zinc-900">{seller?.profile_views ?? 0}</span>
-                      </p>
+                      )}
+                    </button>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h2 className="truncate text-xl font-black tracking-tight text-zinc-900">
+                          {seller?.business_name || listing.business_name}
+                        </h2>
+                        {seller?.is_verified || listing.is_verified ? <ShieldCheck className="h-4 w-4 text-blue-500" /> : null}
+                      </div>
+                      <p className="mt-1 text-sm text-zinc-500">{seller?.university || listing.university}</p>
+                      <p className="mt-1 text-sm text-zinc-500">Joined {formatDate(seller?.join_date)}</p>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Rating</p>
-                      <p className="text-sm font-extrabold text-zinc-900">
-                        {ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
-                      </p>
-                    </div>
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Ratings</p>
-                      <p className="text-sm font-extrabold text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
-                    </div>
-                    <div className="rounded-xl bg-zinc-50 border border-zinc-200 px-3 py-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-400 mb-0.5">Views</p>
-                      <p className="inline-flex items-center gap-1.5 text-sm font-extrabold text-zinc-900">
-                        <Eye className="w-3.5 h-3.5" />
-                        {listing.views_count ?? 0}
-                      </p>
-                    </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={moreFromSeller}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      <Store className="h-4 w-4" />
+                      More from this seller
+                    </button>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-2 text-xs font-bold text-zinc-600">
+                      <Eye className="h-3.5 w-3.5" />
+                      {seller?.profile_views ?? 0} profile views
+                    </span>
                   </div>
-                </section>
-              </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <StatPill label="Rating" value={ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"} />
+                    <StatPill label="Reviews" value={String(ratingSummary?.ratingCount ?? 0)} />
+                    <StatPill label="Views" value={String(listing.views_count ?? 0)} />
+                  </div>
+                </div>
+              </aside>
             </section>
 
-            <section className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                  Specifications
-                </p>
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+              <div className="border border-zinc-200 bg-white p-6 shadow-sm">
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Description</p>
+                <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-zinc-600">{listing.description}</p>
+              </div>
+
+              <div className="border border-zinc-200 bg-white p-6 shadow-sm">
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Specifications</p>
                 {groupedSpecs.length > 0 ? (
                   <div className="mt-5">
                     <div className="relative mb-3 h-9">
@@ -750,10 +716,10 @@ export default function ListingDetailsPage() {
                             key={group.title}
                             type="button"
                             onClick={() => setActiveSpecGroupTitle(group.title)}
-                            className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                            className={`flex-shrink-0 rounded-full border px-3 py-1 text-xs font-bold transition ${
                               activeSpecGroup?.title === group.title
-                                ? "bg-zinc-900 text-white border-zinc-900"
-                                : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+                                ? "border-zinc-900 bg-zinc-900 text-white"
+                                : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
                             }`}
                           >
                             {group.title}
@@ -764,7 +730,7 @@ export default function ListingDetailsPage() {
                         <button
                           type="button"
                           onClick={handleScrollSpecTabsLeft}
-                          className="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          className="absolute left-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
                           aria-label="Scroll specification groups left"
                         >
                           <ChevronLeft className="w-4 h-4" />
@@ -774,23 +740,21 @@ export default function ListingDetailsPage() {
                         <button
                           type="button"
                           onClick={handleScrollSpecTabsRight}
-                          className="absolute right-0 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm flex items-center justify-center"
+                          className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-600 shadow-sm"
                           aria-label="Scroll specification groups right"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
                       ) : null}
                     </div>
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 divide-y divide-zinc-200 h-[320px] overflow-y-auto">
+
+                    <div className="divide-y divide-zinc-200 border border-zinc-200 bg-zinc-50">
                       {(activeSpecGroup?.rows || []).map((row) => (
-                        <div
-                          key={row.key}
-                          className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
-                        >
-                          <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+                        <div key={row.key} className="grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 px-4 py-3">
+                          <p className="border-r border-zinc-200 pr-4 text-[11px] font-semibold uppercase tracking-wide text-zinc-600">
                             {row.label}
                           </p>
-                          <p className="text-sm font-semibold text-zinc-900 text-right break-words">
+                          <p className="break-words text-right text-sm font-semibold text-zinc-900">
                             {row.value}
                           </p>
                         </div>
@@ -798,85 +762,75 @@ export default function ListingDetailsPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
+                  <div className="mt-5 border border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
                     No structured specifications were added for this listing.
                   </div>
                 )}
               </div>
+            </section>
 
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between gap-4 mb-5">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                      Related
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
-                      You may also want these
-                    </h2>
-                  </div>
-                  <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                    {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
-                  </div>
+            <section className="border-t border-zinc-200 pt-6">
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Related</p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">You may also want these</h2>
                 </div>
+                <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
+                  {visibleRelatedListings.length} item{visibleRelatedListings.length === 1 ? "" : "s"}
+                </div>
+              </div>
 
-                {visibleRelatedListings.length > 0 ? (
-                  <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
-                    {visibleRelatedListings.map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => navigateToListingDetails(item.id, 0)}
-                        className="snap-start shrink-0 w-[240px] text-left rounded-[1.35rem] border border-zinc-200 bg-zinc-50 p-3 hover:bg-zinc-100 transition-colors"
-                      >
-                        <div className="aspect-[4/3] rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-3">
-                          <img
-                            src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
-                            alt={item.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h3 className="text-base font-extrabold text-zinc-900 line-clamp-1">
-                          {item.name}
-                        </h3>
-                        <p className="mt-1.5 text-xs text-zinc-500 line-clamp-2">{item.description}</p>
-                        <p className="mt-2.5 text-xl font-black tracking-tight text-zinc-900">
+              {visibleRelatedListings.length > 0 ? (
+                <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  {visibleRelatedListings.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => navigateToListingDetails(item.id, 0)}
+                      className="group overflow-hidden border border-zinc-200 bg-white text-left shadow-sm transition-all hover:shadow-md"
+                    >
+                      <div className="aspect-[4/3] overflow-hidden bg-zinc-100">
+                        <img
+                          src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                          alt={item.name}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <h3 className="line-clamp-1 text-base font-extrabold text-zinc-900">{item.name}</h3>
+                        <p className="mt-1.5 line-clamp-2 text-xs text-zinc-500">{item.description}</p>
+                        <p className="mt-3 text-xl font-black tracking-tight text-zinc-900">
                           MK {Number(item.price).toLocaleString()}
                         </p>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                    No related listings available right now.
-                  </div>
-                )}
-              </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-5 border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+                  No related listings available right now.
+                </div>
+              )}
             </section>
-          </>
+          </div>
         )}
       </main>
 
-      {isFullscreen && listing && (
-        <div
-          className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
-          onClick={() => setIsFullscreen(false)}
-        >
-      <button
-        type="button"
-        onClick={() => setIsFullscreen(false)}
-        className="absolute top-5 right-5 h-11 w-11 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-transform duration-200 hover:scale-105 active:scale-95"
-        aria-label="Exit fullscreen"
-      >
-        <FullscreenToggleIcon isFullscreen />
-      </button>
-          <div
-            className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
+      {isFullscreen && listing ? (
+        <div className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4" onClick={() => setIsFullscreen(false)}>
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(false)}
+            className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-transform duration-200 hover:scale-105 hover:bg-white/20"
+            aria-label="Exit fullscreen"
           >
-            <img src={currentImage} alt={listing.name} className="max-w-full max-h-full object-contain rounded-2xl" />
+            <FullscreenToggleIcon isFullscreen />
+          </button>
+          <div className="flex h-full w-full max-w-[95vw] max-h-[90vh] items-center justify-center" onClick={(e) => e.stopPropagation()}>
+            <img src={currentImage} alt={listing.name} className="max-h-full max-w-full rounded-2xl object-contain" />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
