@@ -42,7 +42,9 @@ export default function ListingCard({
   ultraCompact = false,
   showActionsMenu = true,
   onOpenDetails,
-  onOpenSeller,
+  onOpenSeller, 
+  onRecordSale, 
+  onRestock, 
 }: ListingCardProps) {
   const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
   const sellerName =
@@ -186,6 +188,8 @@ export default function ListingCard({
               onHideSeller={onHideSeller}
               onHideListing={onHideListing}
               onToggleStatus={onToggleStatus}
+              onRecordSale={onRecordSale}
+              onRestock={onRestock}
               onToggleSave={onToggleSave}
               requireLoginForContact={requireLoginForContact}
             />
