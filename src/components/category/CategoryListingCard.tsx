@@ -1,5 +1,5 @@
-import { ArrowRight, MapPin } from "lucide-react";
-import { navigateToListingDetails } from "../../lib/appNavigation";
+import { ArrowRight, MapPin, ShieldCheck } from "lucide-react";
+import { navigateToListingDetails, navigateToSellerProfile } from "../../lib/appNavigation";
 
 type ListingPreview = {
   id: number | string;
@@ -9,6 +9,9 @@ type ListingPreview = {
   photos?: string[];
   category?: string;
   university?: string;
+  business_name?: string | null;
+  seller_uid?: string | null;
+  is_verified?: boolean;
 };
 
 type Props = {
@@ -17,49 +20,72 @@ type Props = {
 };
 
 export default function CategoryListingCard({ item, categoryLabel }: Props) {
+  const sellerName = item.business_name?.trim() || "Seller";
+  const handleOpenSeller = () => {
+    if (item.seller_uid) navigateToSellerProfile(item.seller_uid);
+  };
+
   return (
-    <button
-      type="button"
-      onClick={() => navigateToListingDetails(item.id)}
-      className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
-    >
-      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+    <article className="group relative overflow-hidden rounded-[28px] border border-zinc-200/80 bg-white shadow-[0_10px_30px_rgba(24,24,27,0.06)] transition-all hover:shadow-[0_16px_46px_rgba(24,24,27,0.12)]">
+      <div className="flex items-center justify-between gap-2 px-4 pt-4">
+        <button type="button" onClick={handleOpenSeller} className="min-w-0 text-left">
+          <div className="inline-flex items-center gap-1.5 min-w-0">
+            <p className="truncate text-sm font-bold text-zinc-800">{sellerName}</p>
+            {item.is_verified ? <ShieldCheck className="w-3.5 h-3.5 shrink-0 fill-blue-50 text-blue-500" /> : null}
+          </div>
+          <p className="text-[10px] font-medium text-zinc-400">Open seller page</p>
+        </button>
+
+        <span className="shrink-0 truncate rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600 max-w-[120px]">
+          {item.university || "Unknown campus"}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => navigateToListingDetails(item.id)}
+        className="relative mt-3 block w-full overflow-hidden bg-zinc-100 aspect-[4/5] focus:outline-none"
+      >
         <img
-          src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+          src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/750`}
           alt={item.name}
-          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
         <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm">
           {categoryLabel}
         </div>
-      </div>
 
-      <div className="p-4">
-        <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
-
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-red-900">
-            MWK {Number(item.price).toLocaleString()}
-          </p>
-
-          {item.university ? (
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
-              <MapPin className="w-3 h-3" />
-              {item.university}
-            </span>
-          ) : null}
+        <div className="absolute bottom-3 left-3 rounded-xl border border-white/20 bg-white/92 px-3 py-1.5 text-sm font-extrabold text-zinc-900 shadow-sm backdrop-blur-md">
+          MK {Number(item.price).toLocaleString()}
         </div>
+      </button>
 
-        <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
+      <div className="space-y-3 px-4 py-4">
+        <h3 className="line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary">
+          {item.name}
+        </h3>
+
+        <p className="line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-zinc-500">
           {item.description || "Tap to open the full listing details."}
         </p>
 
-        <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
+        <div className="flex items-center justify-between gap-3">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
+            {item.category || categoryLabel}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider bg-zinc-100 text-zinc-600">
+            <MapPin className="w-3.5 h-3.5" />
+            {item.university || "Campus"}
+          </span>
+        </div>
+
+        <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
           Open listing
           <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
-    </button>
+    </article>
   );
 }
