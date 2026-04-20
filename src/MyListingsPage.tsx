@@ -69,6 +69,50 @@ export default function MyListingsPage() {
     }
   };
 
+  const handleRecordSale = async (listing: Listing) => {
+  const qty = Number(prompt("Enter quantity sold:", "1"));
+  if (!qty || qty <= 0) return;
+
+  try {
+    await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+      method: "POST",
+      body: JSON.stringify({ quantity: qty }),
+    });
+
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === listing.id
+          ? { ...item, sold_quantity: (Number(item.sold_quantity) || 0) + qty }
+          : item
+      )
+    );
+  } catch {
+    window.alert("Failed to record sale.");
+  }
+};
+
+const handleRestock = async (listing: Listing) => {
+  const qty = Number(prompt("Enter quantity to add:", "1"));
+  if (!qty || qty <= 0) return;
+
+  try {
+    await apiFetch(`/api/listings/${listing.id}/restock`, {
+      method: "POST",
+      body: JSON.stringify({ quantity: qty }),
+    });
+
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === listing.id
+          ? { ...item, quantity: (Number(item.quantity) || 0) + qty }
+          : item
+      )
+    );
+  } catch {
+    window.alert("Failed to restock.");
+  }
+};
+
   const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
     setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
   };
