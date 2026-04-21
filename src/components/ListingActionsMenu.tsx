@@ -223,69 +223,65 @@ export default function ListingActionsMenu({
     }
   };
 
-  const submitQuantityAction = async (action: "record-sale" | "restock") => {
-    if (dialogBusy) return;
+const submitQuantityAction = async (action: "record-sale" | "restock") => {
+  if (dialogBusy) return;
 
-    const qty = Number(quantityInput);
-    if (!Number.isInteger(qty) || qty <= 0) {
-      setActiveDialog("notice");
-      setNoticeMessage("Enter a valid quantity greater than zero.");
-      return;
-    }
+  const qty = Number(quantityInput);
+  if (!Number.isInteger(qty) || qty <= 0) {
+    setActiveDialog("notice");
+    setNoticeMessage("Enter a valid quantity greater than zero.");
+    return;
+  }
 
-    if (action === "record-sale" && qty > currentAvailable) {
-      setActiveDialog("notice");
-      setNoticeMessage(`You only have ${currentAvailable} left in stock.`);
-      return;
-    }
+  if (action === "record-sale" && qty > currentAvailable) {
+    setActiveDialog("notice");
+    setNoticeMessage(`You only have ${currentAvailable} left in stock.`);
+    return;
+  }
 
-    setDialogBusy(true);
-    try {
-      let response: StockActionResponse | void;
+  setDialogBusy(true);
+  try {
+    let response: StockActionResponse | void;
 
-      if (action === "record-sale") {
-        if (onRecordSale) {
-          response = await onRecordSale(listing, qty);
-        } else {
-          response = (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+    if (action === "record-sale") {
+      response = onRecordSale
+        ? await onRecordSale(listing, qty)
+        : (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
             method: "POST",
             body: JSON.stringify({ quantity: qty }),
           })) as StockActionResponse;
-        }
-      } else {
-        if (onRestock) {
-          response = await onRestock(listing, qty);
-        } else {
-          response = (await apiFetch(`/api/listings/${listing.id}/restock`, {
+    } else {
+      response = onRestock
+        ? await onRestock(listing, qty)
+        : (await apiFetch(`/api/listings/${listing.id}/restock`, {
             method: "POST",
             body: JSON.stringify({ quantity: qty }),
           })) as StockActionResponse;
-        }
-      }
-
-      const nextListing = response && typeof response === "object" && response.listing ? response.listing : null;
-      const nextAvailable =
-        response && typeof response === "object" && typeof response.available_quantity === "number"
-          ? response.available_quantity
-          : nextListing
-            ? getAvailableQuantity(nextListing)
-            : action === "record-sale"
-              ? Math.max(0, currentAvailable - qty)
-              : currentAvailable + qty;
-
-      setActiveDialog("notice");
-      setNoticeMessage(
-        action === "record-sale"
-          ? `Sale recorded. Remaining stock: ${nextAvailable}.`
-          : `Restocked successfully. Remaining stock: ${nextAvailable}.`
-      );
-    } catch (error: any) {
-      setActiveDialog("notice");
-      setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
-    } finally {
-      setDialogBusy(false);
     }
-  };
+
+    const nextListing = response && typeof response === "object" && response.listing ? response.listing : null;
+    const nextAvailable =
+      response && typeof response === "object" && typeof response.available_quantity === "number"
+        ? response.available_quantity
+        : nextListing
+          ? getAvailableQuantity(nextListing)
+          : action === "record-sale"
+            ? Math.max(0, currentAvailable - qty)
+            : currentAvailable + qty;
+
+    setActiveDialog("notice");
+    setNoticeMessage(
+      action === "record-sale"
+        ? `Sale recorded. Remaining stock: ${nextAvailable}.`
+        : `Restocked successfully. Remaining stock: ${nextAvailable}.`
+    );
+  } catch (error: any) {
+    setActiveDialog("notice");
+    setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
+  } finally {
+    setDialogBusy(false);
+  }
+};
 
   const handleRecordSale = () => {
     setOpen(false);
