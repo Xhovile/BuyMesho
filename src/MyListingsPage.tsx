@@ -28,6 +28,28 @@ export default function MyListingsPage() {
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
+const stockSnapshot = useMemo(() => {
+  const totalListed = listings.length;
+  const totalStock = listings.reduce((sum, listing) => sum + getListingQuantity(listing), 0);
+  const soldUnits = listings.reduce((sum, listing) => sum + getListingSoldQuantity(listing), 0);
+  const remainingStock = listings.reduce((sum, listing) => sum + getRemainingQuantity(listing), 0);
+  const activeListings = listings.filter((listing) => getRemainingQuantity(listing) > 0).length;
+  const soldOutListings = listings.filter((listing) => getRemainingQuantity(listing) === 0).length;
+  const lowStockListings = listings.filter(
+    (listing) => getRemainingQuantity(listing) > 0 && getRemainingQuantity(listing) <= 2
+  ).length;
+
+  return {
+    totalListed,
+    totalStock,
+    soldUnits,
+    remainingStock,
+    activeListings,
+    soldOutListings,
+    lowStockListings,
+  };
+}, [listings]);
+  
   useEffect(() => {
     const loadListings = async () => {
       if (!firebaseUser || !profile?.is_seller) {
