@@ -96,13 +96,34 @@ export default function EditListingPage() {
 
     setSubmitting(true);
     try {
-      await apiFetch(`/api/listings/${listing.id}`, {
-        method: "PUT",
-        body: JSON.stringify({
-          ...payload,
-          id: listing.id,
-        }),
-      });
+      const saveListing = async () =>
+        apiFetch(`/api/listings/${listing.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            ...payload,
+            id: listing.id,
+          }),
+        });
+
+      try {
+        await saveListing();
+      } catch (error: any) {
+        const message = typeof error?.message === "string" ? error.message : "";
+        const sellerProfileMissing = message.toLowerCase().includes("seller profile not found");
+
+        if (!sellerProfileMissing) {
+          throw error;
+        }
+
+        await apiFetch("/api/profile/bootstrap", {
+          method: "POST",
+          body: JSON.stringify({
+            university: resolveUniversity(profile?.university || listing.university || ""),
+          }),
+        });
+
+        await saveListing();
+      }
 
       invalidateHomepageCache();
       setRedirectAfterFeedback(true);
