@@ -18,7 +18,6 @@ import {
   HOME_PATH,
   SETTINGS_PATH,
   REPORT_PATH,
-  navigateToExplore,
   navigateToListingDetails,
   navigateToPath,
   navigateToSellerProfile,
@@ -39,6 +38,7 @@ import {
   toggleSavedListingId,
 } from "./lib/savedListings";
 import ListingActionsMenu from "./components/ListingActionsMenu";
+import ActionModal from "./components/ActionModal";
   
 type SellerProfile = {
   uid?: string;
@@ -96,6 +96,8 @@ export default function ListingDetailsPage() {
   const [activeSpecGroupTitle, setActiveSpecGroupTitle] = useState<string>("");
   const [showSpecTabsLeftHint, setShowSpecTabsLeftHint] = useState(false);
   const [showSpecTabsRightHint, setShowSpecTabsRightHint] = useState(false);
+  const [shareNoticeOpen, setShareNoticeOpen] = useState(false);
+  const [shareNoticeMessage, setShareNoticeMessage] = useState("");
   const specTabsRef = useRef<HTMLDivElement | null>(null);
 
   const listingId = routeState.listing || "";
@@ -280,6 +282,11 @@ export default function ListingDetailsPage() {
     [groupedSpecs, activeSpecGroupTitle]
   );
 
+  const openShareNotice = (message: string) => {
+    setShareNoticeMessage(message);
+    setShareNoticeOpen(true);
+  };
+
   const handleShare = async () => {
     if (!listing) return;
     const shareUrl = buildListingShareUrl(listing.id, currentGalleryIndex);
@@ -298,10 +305,15 @@ export default function ListingDetailsPage() {
         });
         return;
       }
-      await navigator.clipboard.writeText(shareText);
-      alert("Share text copied.");
+
+      try {
+        await navigator.clipboard.writeText(shareText);
+        openShareNotice("Share text copied to clipboard.");
+      } catch {
+        openShareNotice(`Copy this manually:\n\n${shareText}`);
+      }
     } catch {
-      prompt("Copy to share:", shareText);
+      openShareNotice(`Copy this manually:\n\n${shareText}`);
     }
   };
 
@@ -314,32 +326,6 @@ export default function ListingDetailsPage() {
   const handleDetailEdit = () => {
     if (!listing) return;
     navigateToEditListing(listing.id);
-  };
-
-  const handleDetailDelete = async (listingIdToDelete: number) => {
-    const ok = window.confirm("Delete this listing?");
-    if (!ok) return;
-
-    try {
-      await apiFetch(`/api/listings/${listingIdToDelete}`, { method: "DELETE" });
-      navigateBackOrPath(EXPLORE_PATH);
-    } catch (error: any) {
-      alert(error?.message || "Failed to delete listing.");
-    }
-  };
-
-  const handleDetailToggleStatus = async (item: Listing) => {
-    const nextStatus = item.status === "sold" ? "available" : "sold";
-
-    try {
-      await apiFetch(`/api/listings/${item.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      setListing((prev) => (prev ? { ...prev, status: nextStatus } : prev));
-    } catch (error: any) {
-      alert(error?.message || "Failed to update listing status.");
-    }
   };
 
   const handleDetailHideListing = (listingIdToHide: number) => {
@@ -515,11 +501,9 @@ export default function ListingDetailsPage() {
     isSaved={saved}
     variant="detail"
     onReport={() => navigateToPath(REPORT_PATH)}
-    onDelete={handleDetailDelete}
     onEdit={handleDetailEdit}
     onHideSeller={handleDetailHideSeller}
     onHideListing={handleDetailHideListing}
-    onToggleStatus={handleDetailToggleStatus}
     onToggleSave={handleToggleSaved}
     requireLoginForContact={() => navigateToPath("/login")}
   />
@@ -877,6 +861,14 @@ export default function ListingDetailsPage() {
           </div>
         </div>
       )}
+
+      <ActionModal
+        open={shareNoticeOpen}
+        type="info"
+        title="Share listing"
+        message={shareNoticeMessage}
+        onClose={() => setShareNoticeOpen(false)}
+      />
     </div>
   );
 }

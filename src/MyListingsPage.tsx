@@ -76,9 +76,7 @@ export default function MyListingsPage() {
   };
 
   const applyListingResponse = (updated: Listing) => {
-    setListings((prev) =>
-      prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
-    );
+    setListings((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
   };
 
   const applyDashboardStatusDelta = (before: Listing, after: Listing) => {
@@ -100,16 +98,15 @@ export default function MyListingsPage() {
     );
   };
 
-  const handleRecordSale = async (listing: Listing) => {
-    const qty = Number(prompt("Enter quantity sold:", "1"));
-    if (!qty || qty <= 0) return;
+  const handleRecordSale = async (listing: Listing, quantity: number) => {
+    if (!quantity || quantity <= 0) return;
     if (actionLoadingId === listing.id) return;
 
     setActionLoadingId(listing.id);
     try {
       const result = (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
         method: "POST",
-        body: JSON.stringify({ quantity: qty }),
+        body: JSON.stringify({ quantity }),
       })) as ListingActionResponse;
 
       if (result?.listing) {
@@ -124,16 +121,15 @@ export default function MyListingsPage() {
     }
   };
 
-  const handleRestock = async (listing: Listing) => {
-    const qty = Number(prompt("Enter quantity to add:", "1"));
-    if (!qty || qty <= 0) return;
+  const handleRestock = async (listing: Listing, quantity: number) => {
+    if (!quantity || quantity <= 0) return;
     if (actionLoadingId === listing.id) return;
 
     setActionLoadingId(listing.id);
     try {
       const result = (await apiFetch(`/api/listings/${listing.id}/restock`, {
         method: "POST",
-        body: JSON.stringify({ quantity: qty }),
+        body: JSON.stringify({ quantity }),
       })) as ListingActionResponse;
 
       if (result?.listing) {
@@ -188,11 +184,9 @@ export default function MyListingsPage() {
 
   const handleDeleteListing = async (listingId: number) => {
     if (actionLoadingId === listingId) return;
+
     const target = listings.find((item) => item.id === listingId);
     if (!target) return;
-
-    const confirmed = window.confirm(`Delete \"${target.name}\"?`);
-    if (!confirmed) return;
 
     setActionLoadingId(listingId);
     try {
@@ -350,7 +344,7 @@ export default function MyListingsPage() {
             )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {listings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -358,14 +352,14 @@ export default function MyListingsPage() {
                 currentUid={firebaseUser?.uid}
                 isLoggedIn={!!firebaseUser}
                 showActionsMenu
-                compact={false}
-                ultraCompact={false}
+                compact
+                ultraCompact
                 onReport={() => undefined}
                 onEdit={(item) => navigateToEditListing(item.id)}
                 onDelete={(id) => void handleDeleteListing(id)}
                 onToggleStatus={(item) => void handleToggleStatus(item)}
-                onRecordSale={(item) => void handleRecordSale(item)}
-                onRestock={(item) => void handleRestock(item)}
+                onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
+                onRestock={(item, quantity) => void handleRestock(item, quantity)}
                 onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                 onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
               />
