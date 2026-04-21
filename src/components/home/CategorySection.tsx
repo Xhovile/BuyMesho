@@ -36,29 +36,29 @@ const CategorySection: FC<CategorySectionProps> = ({
       : "No listings yet";
 
   return (
-    <div className="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-4 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group relative overflow-hidden rounded-[1.65rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-70" />
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
         <div className="min-w-0">
-          <h3 className="text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
+          <h3 className="text-[1rem] font-black tracking-tight text-zinc-950 sm:text-2xl">
             {title}
           </h3>
-          <p className="mt-2 hidden text-sm leading-relaxed text-zinc-500 sm:block">
+          <p className="mt-1.5 hidden text-sm leading-relaxed text-zinc-500 sm:block">
             {description}
           </p>
         </div>
 
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-[1.1rem] bg-zinc-950 text-white shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
-          <Icon className="w-5 h-5" />
+        <div className="flex h-9 w-9 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-[0.95rem] bg-zinc-950 text-white shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
+          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
 
-      <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] text-white">
+      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white sm:mt-4 sm:px-3 sm:py-1.5 sm:text-[11px]">
         {liveLabel}
       </div>
 
-      <div className="mt-4 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3">
         {loading ? (
           <p className="text-sm text-zinc-400">Loading...</p>
         ) : listings.length === 0 ? (
@@ -68,7 +68,7 @@ const CategorySection: FC<CategorySectionProps> = ({
             {listings.slice(0, 10).map((item) => (
               <div
                 key={item.id}
-                className="snap-start shrink-0 w-[220px] sm:w-[260px]"
+                className="snap-start shrink-0 w-[174px] sm:w-[260px]"
               >
                 <ListingPreviewCard item={item} />
               </div>
@@ -76,9 +76,9 @@ const CategorySection: FC<CategorySectionProps> = ({
             <button
               type="button"
               onClick={() => navigateToExploreWithCategory(categoryKey)}
-              className="snap-start shrink-0 w-[220px] sm:w-[260px] rounded-2xl border border-zinc-200 bg-white/90 p-4 text-left shadow-sm transition-colors hover:bg-zinc-50"
+              className="snap-start shrink-0 w-[174px] sm:w-[260px] rounded-2xl border border-zinc-200 bg-white/90 p-3 text-left shadow-sm transition-colors hover:bg-zinc-50"
             >
-              <div className="flex h-full min-h-[220px] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 text-center">
+              <div className="flex h-full min-h-[168px] sm:min-h-[220px] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 text-center">
                 <span className="inline-flex items-center gap-2 text-sm font-extrabold text-zinc-900">
                   View more listings
                   <ArrowRight className="w-4 h-4" />
