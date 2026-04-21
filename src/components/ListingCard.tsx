@@ -7,13 +7,13 @@ type ListingCardProps = {
   listing: Listing;
   onReport: (id: number) => any;
   currentUid?: string;
-  onDelete?: (id: number) => void;
+  onDelete?: (id: number) => void | Promise<void>;
   onEdit?: (listing: Listing) => void;
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
-  onToggleStatus?: (listing: Listing) => void;
-  onRecordSale?: (listing: Listing) => void;
-  onRestock?: (listing: Listing) => void;
+  onToggleStatus?: (listing: Listing) => void | Promise<void>;
+  onRecordSale?: (listing: Listing, quantity: number) => void | Promise<void>;
+  onRestock?: (listing: Listing, quantity: number) => void | Promise<void>;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
   requireLoginForContact?: () => void;
@@ -44,23 +44,13 @@ export default function ListingCard({
   ultraCompact = false,
   showActionsMenu = true,
   onOpenDetails,
-  onOpenSeller, 
-  onRecordSale, 
-  onRestock, 
+  onOpenSeller,
 }: ListingCardProps) {
   const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
   const sellerName =
     typeof listing.business_name === "string" && listing.business_name.trim()
       ? listing.business_name.trim()
       : "Seller";
-
-  const handleOpenProfile = () => {
-    if (sellerUid) onOpenSeller(sellerUid);
-  };
-
-  const handleOpenDetails = () => {
-    onOpenDetails(listing);
-  };
 
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
@@ -120,11 +110,11 @@ export default function ListingCard({
         }`}
       >
         <div className={`${outerPadding} flex items-center justify-between gap-2`}>
-          <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
+          <button type="button" onClick={() => sellerUid && onOpenSeller(sellerUid)} className="min-w-0 text-left">
             <div className="inline-flex items-center gap-1.5 min-w-0">
               <p
                 className={`truncate ${
-                  ultraCompact ? "text-[11px]" : "text-sm"
+                  ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"
                 } font-bold text-zinc-800`}
               >
                 {sellerName}
@@ -133,16 +123,16 @@ export default function ListingCard({
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0 fill-blue-50 text-blue-500" />
               ) : null}
             </div>
-            {!ultraCompact ? (
-              <p className="text-[10px] font-medium text-zinc-400">Open seller page</p>
-            ) : null}
+            {!ultraCompact ? <p className="text-[10px] font-medium text-zinc-400">Open seller page</p> : null}
           </button>
 
           <span
             className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
               ultraCompact
-                ? "max-w-[92px] px-2 py-0.5 text-[10px]"
-                : "max-w-[120px] px-3 py-1 text-[11px]"
+                ? "max-w-[82px] px-2 py-0.5 text-[9px]"
+                : compact
+                  ? "max-w-[104px] px-2.5 py-1 text-[10px]"
+                  : "max-w-[120px] px-3 py-1 text-[11px]"
             }`}
           >
             {universityLabel}
@@ -152,7 +142,7 @@ export default function ListingCard({
         <div className={`relative mt-3 overflow-hidden bg-zinc-100 ${imageAspect}`}>
           <button
             type="button"
-            onClick={handleOpenDetails}
+            onClick={() => onOpenDetails(listing)}
             className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <img
@@ -204,7 +194,7 @@ export default function ListingCard({
           </div>
         </div>
 
-        <div className={ultraCompact ? "px-2.5 py-2.5" : "space-y-3 px-4 py-4"}>
+        <div className={ultraCompact ? "px-2.5 py-2.5" : compact ? "space-y-2 px-3 py-3" : "space-y-3 px-4 py-4"}>
           <h3
             className={
               ultraCompact
