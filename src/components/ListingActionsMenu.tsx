@@ -205,15 +205,6 @@ export default function ListingActionsMenu({
   safeAlert("Record sale is not wired on this page yet.");
 };
 
-const handleRestock = () => {
-  setOpen(false);
-  if (onRestock) {
-    onRestock(listing);
-    return;
-  }
-  safeAlert("Restock is not wired on this page yet.");
-};
-
   const handleRestock = () => {
     setOpen(false);
     if (onRestock) {
