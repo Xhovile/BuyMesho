@@ -279,81 +279,145 @@ const stockSnapshot = useMemo(() => {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                  Seller performance
-                </p>
-                <h2 className="text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+ <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5 shadow-sm">
+  <div className="flex flex-wrap items-center justify-between gap-4">
+    <div className="flex flex-col gap-1">
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+        Seller performance
+      </p>
+      <h2 className="text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+    </div>
+
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => void handleDashboardToggle()}
+        className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold transition-all active:scale-95 shadow-sm ${
+          dashboardOpen
+            ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
+            : "bg-indigo-700 text-white hover:bg-indigo-700 shadow-indigo-100"
+        }`}
+      >
+        <BarChart3 className="w-4 h-4" />
+        {dashboardOpen ? "Hide Stats" : "Show Stats"}
+      </button>
+    </div>
+  </div>
+
+  <div
+    className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${
+      dashboardOpen ? "max-h-[1200px] p-4 sm:p-5" : "max-h-0 p-0 border-transparent"
+    }`}
+  >
+    {dashboardOpen ? (
+      <div className="space-y-5">
+        {dashboardLoading ? (
+          <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-zinc-500">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Loading dashboard...
+          </div>
+        ) : dashboardError ? (
+          <p className="text-sm text-red-600">{dashboardError}</p>
+        ) : dashboard ? (
+          <>
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Storage stock</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.remainingStock}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Units still available</p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleDashboardToggle()}
-                  className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold transition-all active:scale-95 shadow-sm ${
-                    dashboardOpen
-                      ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
-                      : "bg-indigo-700 text-white hover:bg-indigo-700 shadow-indigo-100"
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  {dashboardOpen ? "Hide Stats" : "Show Stats"}
-                </button>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Sold units</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldUnits}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Units already sold</p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Total listed stock</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.totalStock}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">All stock listed</p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Active listings</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.activeListings}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Listings still available</p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Sold out listings</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldOutListings}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Listings with zero stock</p>
+              </div>
+
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Low stock</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.lowStockListings}</p>
+                <p className="mt-1 text-[11px] text-zinc-500">Listings with 1–2 left</p>
               </div>
             </div>
 
-            {dashboardOpen ? (
-              <div className="mt-4">
-                {dashboardLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-zinc-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading dashboard...
-                  </div>
-                ) : dashboardError ? (
-                  <p className="text-sm text-red-600">{dashboardError}</p>
-                ) : dashboard ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 text-sm">
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Total listings</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Active</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.active_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Sold</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.sold_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Total views</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">WhatsApp clicks</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Profile views</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
-                      </div>
-                    </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Total listings</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Total views</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">WhatsApp clicks</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
+              </div>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                <p className="text-[10px] font-bold uppercase text-zinc-400">Profile views</p>
+                <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
+              </div>
+            </div>
 
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Top listing</p>
-                      <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">
-                        {dashboard.top_listing?.name || "No data"}
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                    Top listing
+                  </p>
+                  <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">
+                    {dashboard.top_listing?.name || "No data"}
+                  </p>
+                </div>
+                <div className="text-right text-[11px] text-zinc-500">
+                  <p className="font-semibold text-zinc-900">
+                    {dashboard.stats.repeat_seller_activity ? "Returning seller" : "New seller activity"}
+                  </p>
+                  <p>Dashboard refreshed from your live listings</p>
+                </div>
+              </div>
+            </div>
+
+            {dashboard.byCampus?.length ? (
+              <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">By campus</p>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                  {dashboard.byCampus.map((campusItem) => (
+                    <div key={campusItem.university} className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                      <p className="text-sm font-semibold text-zinc-900 line-clamp-1">{campusItem.university}</p>
+                      <p className="text-xs text-zinc-500">
+                        {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
                       </p>
                     </div>
-                  </div>
-                ) : null}
+                  ))}
+                </div>
               </div>
             ) : null}
-          </div>
-
+          </>
+        ) : null}
+      </div>
+    ) : null}
+  </div>
+</div>
+                      
           <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3">
             {listings.map((listing) => (
               <ListingCard
