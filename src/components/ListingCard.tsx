@@ -1,3 +1,4 @@
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
 import type { Listing } from "../types";
@@ -20,6 +21,7 @@ type ListingCardProps = {
   isLoggedIn?: boolean;
   compact?: boolean;
   ultraCompact?: boolean;
+  clickable?: boolean;
   showActionsMenu?: boolean;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
@@ -34,12 +36,15 @@ export default function ListingCard({
   onHideSeller,
   onHideListing,
   onToggleStatus,
+  onRecordSale,
+  onRestock,
   isSaved,
   onToggleSave,
   requireLoginForContact,
   isLoggedIn,
   compact = false,
   ultraCompact = false,
+  clickable = false,
   showActionsMenu = true,
   onOpenDetails,
   onOpenSeller,
@@ -72,8 +77,8 @@ export default function ListingCard({
       : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
   const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
-  const outerPadding = ultraCompact ? "px-2.5 pt-2.5" : "px-4 pt-4";
-  const imageAspect = "aspect-[1/1] md:aspect-[4/5]";
+  const outerPadding = ultraCompact ? "px-2 pt-2" : "px-4 pt-4";
+  const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
 
   const universityLabel =
     typeof listing.university === "string" && listing.university.trim()
@@ -90,13 +95,35 @@ export default function ListingCard({
       ? listing.name
       : "Untitled listing";
 
+  const handleOpenProfile = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (sellerUid) onOpenSeller(sellerUid);
+  };
+
+  const handleOpenDetails = () => {
+    onOpenDetails(listing);
+  };
+
   return (
     <motion.article
       layout
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ y: ultraCompact ? -1 : -3 }}
-      className="group relative"
+      onClick={clickable ? handleOpenDetails : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleOpenDetails();
+              }
+            }
+          : undefined
+      }
+      tabIndex={clickable ? 0 : undefined}
+      role={clickable ? "button" : undefined}
+      className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
     >
       <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 group-hover:opacity-100 transition pointer-events-none" />
 
@@ -108,7 +135,7 @@ export default function ListingCard({
         }`}
       >
         <div className={`${outerPadding} flex items-center justify-between gap-2`}>
-          <button type="button" onClick={() => sellerUid && onOpenSeller(sellerUid)} className="min-w-0 text-left">
+          <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
             <div className="inline-flex items-center gap-1.5 min-w-0">
               <p
                 className={`truncate ${
@@ -127,7 +154,7 @@ export default function ListingCard({
           <span
             className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
               ultraCompact
-                ? "max-w-[82px] px-2 py-0.5 text-[9px]"
+                ? "max-w-[76px] px-2 py-0.5 text-[9px]"
                 : compact
                   ? "max-w-[104px] px-2.5 py-1 text-[10px]"
                   : "max-w-[120px] px-3 py-1 text-[11px]"
@@ -140,7 +167,10 @@ export default function ListingCard({
         <div className={`relative mt-3 overflow-hidden bg-zinc-100 ${imageAspect}`}>
           <button
             type="button"
-            onClick={() => onOpenDetails(listing)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenDetails();
+            }}
             className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <img
@@ -184,7 +214,7 @@ export default function ListingCard({
           <div className="absolute bottom-3 left-3">
             <div
               className={`rounded-xl border border-white/20 bg-white/92 font-extrabold text-zinc-900 shadow-sm backdrop-blur-md ${
-                ultraCompact ? "px-2 py-1 text-xs" : "px-3 py-1.5 text-sm"
+                ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
               }`}
             >
               MK {safePrice.toLocaleString()}
@@ -192,12 +222,14 @@ export default function ListingCard({
           </div>
         </div>
 
-        <div className={ultraCompact ? "px-2.5 py-2.5" : compact ? "space-y-2 px-3 py-3" : "space-y-3 px-4 py-4"}>
+        <div className={ultraCompact ? "px-2 py-2" : compact ? "space-y-1.5 px-3 py-3" : "space-y-3 px-4 py-4"}>
           <h3
             className={
               ultraCompact
-                ? "line-clamp-1 text-[13px] font-extrabold tracking-tight text-zinc-900"
-                : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                : compact
+                  ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                  : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
             }
           >
             {titleLabel}
