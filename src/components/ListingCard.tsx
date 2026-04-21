@@ -140,7 +140,7 @@ export default function ListingCard({
               <p
                 className={`truncate ${
                   ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"
-                } font-bold text-zinc-800`}
+                } font-bold text-red-900`}
               >
                 {sellerName}
               </p>
