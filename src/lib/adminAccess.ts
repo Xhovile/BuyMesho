@@ -1,9 +1,13 @@
 import type { User } from "firebase/auth";
 
-const ADMIN_UIDS = ((import.meta.env.VITE_ADMIN_UIDS as string | undefined) || "")
-  .split(",")
-  .map((value) => value.trim())
-  .filter(Boolean);
+const parseCsvEnv = (value: unknown) =>
+  String(value ?? "")
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+const ADMIN_UIDS = parseCsvEnv(import.meta.env.VITE_ADMIN_UIDS);
+const ADMIN_EMAILS = parseCsvEnv(import.meta.env.VITE_ADMIN_EMAILS);
 
 const hasAdminClaim = async (user: User) => {
   try {
@@ -18,7 +22,13 @@ const hasAdminClaim = async (user: User) => {
 export const isConfiguredAdminUser = (user: User | null | undefined) => {
   if (!user) return false;
 
-  return Boolean(user.uid && ADMIN_UIDS.includes(user.uid));
+  const uid = user.uid?.trim();
+  const email = user.email?.trim().toLowerCase();
+
+  return Boolean(
+    (uid && ADMIN_UIDS.includes(uid)) ||
+      (email && ADMIN_EMAILS.includes(email))
+  );
 };
 
 export const resolveIsAdminUser = async (user: User | null | undefined) => {
