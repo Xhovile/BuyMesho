@@ -323,10 +323,8 @@ export default function ListingDetailsPage() {
     setSaved(nextSaved);
   };
 
-  const handleDetailEdit = () => {
-    if (!listing) return;
-    navigateToEditListing(listing.id);
-  };
+  const handleDetailEdit = (item: Listing) => {
+    navigateToEditListing(item.id);
 
   const handleDetailHideListing = (listingIdToHide: number) => {
     try {
