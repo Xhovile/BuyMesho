@@ -105,8 +105,7 @@ const DEFAULT_SORT_BY = "Newest first";
 const DEFAULT_CAMPUS = "All campuses";
 const DEFAULT_SUBCATEGORY = "All subcategories";
 const DEFAULT_CAMPUS_NORMALIZED = DEFAULT_CAMPUS.trim().toLowerCase();
-const DEFAULT_SUBCATEGORY_NORMALIZED =
-  DEFAULT_SUBCATEGORY.trim().toLowerCase();
+const DEFAULT_SUBCATEGORY_NORMALIZED = DEFAULT_SUBCATEGORY.trim().toLowerCase();
 
 export default function CategoryPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
@@ -144,9 +143,7 @@ export default function CategoryPage() {
       setError(null);
 
       try {
-        const data = await apiFetch(
-          `/api/listings?category=${encodeURIComponent(config.apiCategory)}&pageSize=24`
-        );
+        const data = await apiFetch(`/api/listings?category=${encodeURIComponent(config.apiCategory)}&pageSize=24`);
 
         if (cancelled) return;
 
@@ -175,23 +172,23 @@ export default function CategoryPage() {
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
-  const seen = new Set<string>();
-  const campuses: string[] = [];
+    const seen = new Set<string>();
+    const campuses: string[] = [];
 
-  for (const item of items) {
-    const university = item.university?.trim();
-    if (!university) continue;
+    for (const item of items) {
+      const university = item.university?.trim();
+      if (!university) continue;
 
-    const normalized = university.toLowerCase();
-    if (seen.has(normalized)) continue;
+      const normalized = university.toLowerCase();
+      if (seen.has(normalized)) continue;
 
-    seen.add(normalized);
-    campuses.push(university);
-  }
+      seen.add(normalized);
+      campuses.push(university);
+    }
 
-  campuses.sort((a, b) => a.localeCompare(b));
-  return [DEFAULT_CAMPUS, ...campuses];
-}, [items]);
+    campuses.sort((a, b) => a.localeCompare(b));
+    return [DEFAULT_CAMPUS, ...campuses];
+  }, [items]);
 
   const clearFilters = () => {
     setSortBy(DEFAULT_SORT_BY);
@@ -333,7 +330,7 @@ export default function CategoryPage() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-6">
+        <section className="max-w-7xl mx-auto px-4 py-5">
           <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-3">
               <button
@@ -360,10 +357,7 @@ export default function CategoryPage() {
             </div>
 
             {filtersOpen ? (
-              <div
-                id="category-filter-panel"
-                className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-3"
-              >
+              <div id="category-filter-panel" className="mt-3 grid grid-cols-1 lg:grid-cols-3 gap-3">
                 <FormDropdown
                   label="Subcategory"
                   value={subcategory}
@@ -388,26 +382,18 @@ export default function CategoryPage() {
                   onChange={(value) => setSortBy(value)}
                   placeholder="Choose sort order"
                   searchPlaceholder="Search sort order..."
-                  options={[
-                    "Newest first",
-                    "Price: low to high",
-                    "Price: high to low",
-                  ]}
+                  options={["Newest first", "Price: low to high", "Price: high to low"]}
                 />
               </div>
             ) : null}
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-4 py-10">
-          <div className="flex items-end justify-between gap-3 mb-5">
+        <section className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-end justify-between gap-3 mb-4">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                Featured listings
-              </p>
-              <h3 className="mt-2 text-2xl font-black tracking-tight">
-                Real cards from this category
-              </h3>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Featured listings</p>
+              <h3 className="mt-2 text-2xl font-black tracking-tight">Tap any card to open details</h3>
             </div>
             <span className="text-sm font-bold text-zinc-500">
               {filteredAndSortedItems.length} item{filteredAndSortedItems.length === 1 ? "" : "s"}
@@ -420,7 +406,7 @@ export default function CategoryPage() {
             </div>
           ) : null}
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-3">
             {loading ? (
               <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -441,6 +427,7 @@ export default function CategoryPage() {
                   showActionsMenu={false}
                   compact
                   ultraCompact
+                  clickable
                   onOpenDetails={(listing) => navigateToListingDetails(Number(listing.id), 0)}
                   onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
                 />
@@ -454,9 +441,7 @@ export default function CategoryPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
                 <h3 className="text-2xl font-black tracking-tight">Need the full marketplace view?</h3>
-                <p className="mt-2 text-sm text-zinc-300">
-                  Open Market for all filters, sorting, and broader browsing.
-                </p>
+                <p className="mt-2 text-sm text-zinc-300">Open Market for all filters, sorting, and broader browsing.</p>
               </div>
 
               <button
