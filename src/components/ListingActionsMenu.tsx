@@ -18,7 +18,6 @@ type ListingActionsMenuProps = {
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
   onToggleStatus?: (listing: Listing) => void | Promise<void>;
-  onToggleSave?: (listingId: number) => void;
   onRecordSale?: (listing: Listing, quantity: number) => void | Promise<void>;
   onRestock?: (listing: Listing, quantity: number) => void | Promise<void>;
   requireLoginForContact?: () => void;
@@ -49,7 +48,6 @@ export default function ListingActionsMenu({
   onHideSeller,
   onHideListing,
   onToggleStatus,
-  onToggleSave,
   onRecordSale,
   onRestock,
   requireLoginForContact,
@@ -63,7 +61,6 @@ export default function ListingActionsMenu({
 
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
-
   const wrapperClassName = variant === "detail" ? "relative inline-flex" : "absolute right-3 top-3 z-20";
 
   useEffect(() => {
@@ -317,9 +314,7 @@ export default function ListingActionsMenu({
 
         {open ? (
           <div
-            className={`absolute ${
-              variant === "detail" ? "right-0 top-full mt-2 w-72 z-[70]" : "right-0 top-12 w-56"
-            } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            className={`absolute ${variant === "detail" ? "right-0 top-full mt-2 w-72 z-[70]" : "right-0 top-12 w-56"} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
           >
             <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
               {isOwner ? "Owner tools" : "Actions"}
