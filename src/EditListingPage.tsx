@@ -106,6 +106,23 @@ export default function EditListingPage() {
         });
 
       try {
+       await apiFetch(`/api/listings/${listing.id}`, {
+         method: "PUT",
+         body: JSON.stringify(payload),
+       });
+     } catch (error: any) {
+       if (String(error?.message || "").toLowerCase().includes("seller profile")) {
+         await apiFetch("/api/profile/bootstrap", { method: "POST" });
+         await apiFetch(`/api/listings/${listing.id}`, {
+            method: "PUT",
+            body: JSON.stringify(payload),
+          });
+          return;
+        }
+        throw error;
+      }
+
+      try {
         await saveListing();
       } catch (error: any) {
         const message = typeof error?.message === "string" ? error.message : "";
