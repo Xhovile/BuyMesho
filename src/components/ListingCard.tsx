@@ -34,8 +34,6 @@ export default function ListingCard({
   onHideSeller,
   onHideListing,
   onToggleStatus,
-  onRecordSale,
-  onRestock,
   isSaved,
   onToggleSave,
   requireLoginForContact,
