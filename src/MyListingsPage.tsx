@@ -268,7 +268,7 @@ export default function MyListingsPage() {
                   className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold transition-all active:scale-95 shadow-sm ${
                     dashboardOpen
                       ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
-                      : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100"
+                      : "bg-indigo-700 text-white hover:bg-indigo-700 shadow-indigo-100"
                   }`}
                 >
                   <BarChart3 className="w-4 h-4" />
