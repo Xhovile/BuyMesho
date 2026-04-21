@@ -6,6 +6,11 @@ import { buildListingShareUrl } from "../lib/listingUrl";
 import { EXPLORE_PATH, navigateBackOrPath, navigateToEditListing } from "../lib/appNavigation";
 import ActionModal from "./ActionModal";
 
+type StockActionResponse = {
+  listing?: Listing;
+  available_quantity?: number;
+};
+
 type ListingActionsMenuProps = {
   listing: Listing;
   currentUid?: string;
@@ -18,8 +23,8 @@ type ListingActionsMenuProps = {
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
   onToggleStatus?: (listing: Listing) => void | Promise<void>;
-  onRecordSale?: (listing: Listing, quantity: number) => void | Promise<void>;
-  onRestock?: (listing: Listing, quantity: number) => void | Promise<void>;
+  onRecordSale?: (listing: Listing, quantity: number) => Promise<StockActionResponse | void> | StockActionResponse | void;
+  onRestock?: (listing: Listing, quantity: number) => Promise<StockActionResponse | void> | StockActionResponse | void;
   requireLoginForContact?: () => void;
 };
 
@@ -36,6 +41,9 @@ function loadIdList(storageKey: string, itemValidator: (value: unknown) => boole
 function saveIdList(storageKey: string, values: string[] | number[]) {
   localStorage.setItem(storageKey, JSON.stringify(values));
 }
+
+const getAvailableQuantity = (listing: Listing) =>
+  Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
 
 export default function ListingActionsMenu({
   listing,
@@ -62,6 +70,7 @@ export default function ListingActionsMenu({
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
   const wrapperClassName = variant === "detail" ? "relative inline-flex" : "absolute right-3 top-3 z-20";
+  const currentAvailable = getAvailableQuantity(listing);
 
   useEffect(() => {
     if (!open) return;
@@ -214,47 +223,65 @@ export default function ListingActionsMenu({
     }
   };
 
-  const submitQuantityAction = async (action: "record-sale" | "restock") => {
-    if (dialogBusy) return;
+const submitQuantityAction = async (action: "record-sale" | "restock") => {
+  if (dialogBusy) return;
 
-    const qty = Number(quantityInput);
-    if (!Number.isInteger(qty) || qty <= 0) {
-      setActiveDialog("notice");
-      setNoticeMessage("Enter a valid quantity greater than zero.");
-      return;
-    }
+  const qty = Number(quantityInput);
+  if (!Number.isInteger(qty) || qty <= 0) {
+    setActiveDialog("notice");
+    setNoticeMessage("Enter a valid quantity greater than zero.");
+    return;
+  }
 
-    setDialogBusy(true);
-    try {
-      if (action === "record-sale") {
-        if (onRecordSale) {
-          await onRecordSale(listing, qty);
-        } else {
-          await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+  if (action === "record-sale" && qty > currentAvailable) {
+    setActiveDialog("notice");
+    setNoticeMessage(`You only have ${currentAvailable} left in stock.`);
+    return;
+  }
+
+  setDialogBusy(true);
+  try {
+    let response: StockActionResponse | void;
+
+    if (action === "record-sale") {
+      response = onRecordSale
+        ? await onRecordSale(listing, qty)
+        : (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
             method: "POST",
             body: JSON.stringify({ quantity: qty }),
-          });
-        }
-        openNotice("Sale recorded successfully.");
-      } else {
-        if (onRestock) {
-          await onRestock(listing, qty);
-        } else {
-          await apiFetch(`/api/listings/${listing.id}/restock`, {
+          })) as StockActionResponse;
+    } else {
+      response = onRestock
+        ? await onRestock(listing, qty)
+        : (await apiFetch(`/api/listings/${listing.id}/restock`, {
             method: "POST",
             body: JSON.stringify({ quantity: qty }),
-          });
-        }
-        openNotice("Listing restocked successfully.");
-      }
-      setActiveDialog("notice");
-    } catch (error: any) {
-      setActiveDialog("notice");
-      setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
-    } finally {
-      setDialogBusy(false);
+          })) as StockActionResponse;
     }
-  };
+
+    const nextListing = response && typeof response === "object" && response.listing ? response.listing : null;
+    const nextAvailable =
+      response && typeof response === "object" && typeof response.available_quantity === "number"
+        ? response.available_quantity
+        : nextListing
+          ? getAvailableQuantity(nextListing)
+          : action === "record-sale"
+            ? Math.max(0, currentAvailable - qty)
+            : currentAvailable + qty;
+
+    setActiveDialog("notice");
+    setNoticeMessage(
+      action === "record-sale"
+        ? `Sale recorded. Remaining stock: ${nextAvailable}.`
+        : `Restocked successfully. Remaining stock: ${nextAvailable}.`
+    );
+  } catch (error: any) {
+    setActiveDialog("notice");
+    setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
+  } finally {
+    setDialogBusy(false);
+  }
+};
 
   const handleRecordSale = () => {
     setOpen(false);
@@ -381,7 +408,7 @@ export default function ListingActionsMenu({
       <ActionModal
         open={activeDialog === "record-sale"}
         title="Record sale"
-        message={`Record how many units of “${listing.name}” were sold.`}
+        message={`Record how many units of “${listing.name}” were sold. Current stock: ${currentAvailable}.`}
         confirmLabel="Record sale"
         cancelLabel="Back"
         loading={dialogBusy}
@@ -397,7 +424,7 @@ export default function ListingActionsMenu({
       <ActionModal
         open={activeDialog === "restock"}
         title="Restock listing"
-        message={`Add stock back to “${listing.name}”.`}
+        message={`Add stock back to “${listing.name}”. Current stock: ${currentAvailable}.`}
         confirmLabel="Restock"
         cancelLabel="Back"
         loading={dialogBusy}

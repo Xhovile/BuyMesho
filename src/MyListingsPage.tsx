@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
@@ -18,6 +18,11 @@ type ListingActionResponse = {
   available_quantity?: number;
 };
 
+const getListingQuantity = (listing: Listing) => Number(listing.quantity ?? 1);
+const getListingSoldQuantity = (listing: Listing) => Number(listing.sold_quantity ?? 0);
+const getRemainingQuantity = (listing: Listing) =>
+  Math.max(0, getListingQuantity(listing) - getListingSoldQuantity(listing));
+
 export default function MyListingsPage() {
   const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
@@ -27,6 +32,28 @@ export default function MyListingsPage() {
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+  const stockSnapshot = useMemo(() => {
+    const totalListed = listings.length;
+    const totalStock = listings.reduce((sum, listing) => sum + getListingQuantity(listing), 0);
+    const soldUnits = listings.reduce((sum, listing) => sum + getListingSoldQuantity(listing), 0);
+    const remainingStock = listings.reduce((sum, listing) => sum + getRemainingQuantity(listing), 0);
+    const activeListings = listings.filter((listing) => getRemainingQuantity(listing) > 0).length;
+    const soldOutListings = listings.filter((listing) => getRemainingQuantity(listing) === 0).length;
+    const lowStockListings = listings.filter(
+      (listing) => getRemainingQuantity(listing) > 0 && getRemainingQuantity(listing) <= 2
+    ).length;
+
+    return {
+      totalListed,
+      totalStock,
+      soldUnits,
+      remainingStock,
+      activeListings,
+      soldOutListings,
+      lowStockListings,
+    };
+  }, [listings]);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -79,6 +106,10 @@ export default function MyListingsPage() {
     setListings((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
   };
 
+  const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
+    setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
+  };
+
   const handleRecordSale = async (listing: Listing, quantity: number) => {
     if (!quantity || quantity <= 0) return;
     if (actionLoadingId === listing.id) return;
@@ -123,10 +154,6 @@ export default function MyListingsPage() {
     }
   };
 
-  const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
-    setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
-  };
-
   const handleToggleStatus = async (listing: Listing) => {
     if (actionLoadingId === listing.id) return;
 
@@ -139,7 +166,6 @@ export default function MyListingsPage() {
       });
 
       applyListingUpdate(listing.id, (current) => ({ ...current, status: nextStatus }));
-
       setDashboard((prev) =>
         prev
           ? {
@@ -165,9 +191,6 @@ export default function MyListingsPage() {
 
     const target = listings.find((item) => item.id === listingId);
     if (!target) return;
-
-    const confirmed = window.confirm(`Delete "${target.name}"?`);
-    if (!confirmed) return;
 
     setActionLoadingId(listingId);
     try {
@@ -210,8 +233,8 @@ export default function MyListingsPage() {
       childrenSectionClassName="w-full"
     >
       {authLoading || profileLoading || loadingListings ? (
-        <div className="p-10 flex items-center justify-center gap-3 text-zinc-500 font-medium">
-          <Loader2 className="w-5 h-5 animate-spin" />
+        <div className="flex items-center justify-center gap-3 p-10 font-medium text-zinc-500">
+          <Loader2 className="h-5 w-5 animate-spin" />
           Loading your listings...
         </div>
       ) : !firebaseUser ? (
@@ -252,79 +275,146 @@ export default function MyListingsPage() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 sm:p-5">
+          <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex flex-col gap-1">
+              <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                   Seller performance
                 </p>
-                <h2 className="text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => void handleDashboardToggle()}
-                  className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold transition-all active:scale-95 shadow-sm ${
-                    dashboardOpen
-                      ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
-                      : "bg-indigo-700 text-white hover:bg-indigo-700 shadow-indigo-100"
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  {dashboardOpen ? "Hide Stats" : "Show Stats"}
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => void handleDashboardToggle()}
+                className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold shadow-sm transition-all active:scale-95 ${
+                  dashboardOpen
+                    ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
+                    : "bg-indigo-700 text-white shadow-indigo-100 hover:bg-indigo-700"
+                }`}
+              >
+                <BarChart3 className="h-4 w-4" />
+                {dashboardOpen ? "Hide Stats" : "Show Stats"}
+              </button>
             </div>
 
-            {dashboardOpen ? (
-              <div className="mt-4">
-                {dashboardLoading ? (
-                  <div className="flex items-center gap-2 text-sm text-zinc-500">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Loading dashboard...
-                  </div>
-                ) : dashboardError ? (
-                  <p className="text-sm text-red-600">{dashboardError}</p>
-                ) : dashboard ? (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 text-sm">
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Total listings</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Active</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.active_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Sold</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.sold_listings}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Total views</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">WhatsApp clicks</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
-                      </div>
-                      <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                        <p className="text-xs font-bold uppercase text-zinc-400">Profile views</p>
-                        <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
-                      </div>
+            <div
+              className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${
+                dashboardOpen ? "max-h-[1200px] p-4 sm:p-5" : "max-h-0 p-0 border-transparent"
+              }`}
+            >
+              {dashboardOpen ? (
+                <div className="space-y-5">
+                  {dashboardLoading ? (
+                    <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-zinc-500">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Loading dashboard...
                     </div>
+                  ) : dashboardError ? (
+                    <p className="text-sm text-red-600">{dashboardError}</p>
+                  ) : dashboard ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Storage stock</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.remainingStock}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">Units still available</p>
+                        </div>
 
-                    <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                      <p className="text-xs font-bold uppercase text-zinc-400">Top listing</p>
-                      <p className="mt-1 font-semibold text-zinc-900 line-clamp-1">
-                        {dashboard.top_listing?.name || "No data"}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold units</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldUnits}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">Units already sold</p>
+                        </div>
+
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listed stock</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.totalStock}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">All stock listed</p>
+                        </div>
+
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Active listings</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.activeListings}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">Listings still available</p>
+                        </div>
+
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold out listings</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldOutListings}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">Listings with zero stock</p>
+                        </div>
+
+                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Low stock</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.lowStockListings}</p>
+                          <p className="mt-1 text-[11px] text-zinc-500">Listings with 1–2 left</p>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listings</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total views</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">WhatsApp clicks</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
+                        </div>
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">Profile views</p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                              Top listing
+                            </p>
+                            <p className="mt-1 line-clamp-1 font-semibold text-zinc-900">
+                              {dashboard.top_listing?.name || "No data"}
+                            </p>
+                          </div>
+                          <div className="text-right text-[11px] text-zinc-500">
+                            <p className="font-semibold text-zinc-900">
+                              {dashboard.stats.repeat_seller_activity ? "Returning seller" : "New seller activity"}
+                            </p>
+                            <p>Dashboard refreshed from your live listings</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {dashboard.byCampus?.length ? (
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">By campus</p>
+                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {dashboard.byCampus.map((campusItem) => (
+                              <div
+                                key={campusItem.university}
+                                className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2"
+                              >
+                                <p className="line-clamp-1 text-sm font-semibold text-zinc-900">
+                                  {campusItem.university}
+                                </p>
+                                <p className="text-xs text-zinc-500">
+                                  {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3">

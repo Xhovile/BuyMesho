@@ -449,6 +449,15 @@ export default function HomePage() {
                     >
                       Sign Up
                     </button>
+                    {firebaseUser ? (
+                     <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+                     >
+                      Logout
+                   </button>
+                     ) : ( 
                     <button
                       type="button"
                       onClick={() => {
