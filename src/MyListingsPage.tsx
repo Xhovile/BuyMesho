@@ -275,9 +275,8 @@ export default function MyListingsPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Seller performance</p>
-               <div className="flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-indigo-200 cursor-pointer">
-                 <h2 className="text-sm font-black tracking-tight uppercase">Dashboard</h2>
-                </div>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+              </div>
                </div>
               <button
                 type="button"
