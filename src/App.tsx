@@ -3579,7 +3579,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                         setCreateFieldErrors({});
                         setShowAddModal(false);
                       }}
-                      className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+                      className="flex-1 flex-shrink-0 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
                     >
                       Cancel
                     </button>
@@ -3587,7 +3587,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                     <button
                       type="submit"
                       disabled={uploading || creatingListing}
-                      className={`flex-1 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
+                      className={`flex-1 flex-shrink-0 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
                         uploading || creatingListing
                           ? "opacity-50 cursor-not-allowed"
                           : "hover:bg-primary-dark"
