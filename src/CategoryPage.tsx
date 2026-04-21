@@ -406,7 +406,7 @@ export default function CategoryPage() {
             </div>
           ) : null}
 
-          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-3">
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 lg:gap-3">
             {loading ? (
               <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -428,7 +428,7 @@ export default function CategoryPage() {
                   compact
                   ultraCompact
                   clickable
-                  onOpenDetails={(listing) => navigateToListingDetails(Number(listing.id), 0)}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
                   onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
                 />
               ))
