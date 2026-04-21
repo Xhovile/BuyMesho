@@ -2613,7 +2613,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, null)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === null
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
@@ -2624,7 +2624,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, true)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === true
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
@@ -2635,7 +2635,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, false)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === false
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
