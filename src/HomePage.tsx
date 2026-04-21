@@ -38,6 +38,8 @@ import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
 
 type FeaturedSection = {
   key: string;
@@ -224,6 +226,12 @@ export default function HomePage() {
 
     navigateToCreateListing();
   };
+
+  const handleLogout = async () => {
+     await signOut(auth);
+     closeMenu();
+     navigateToPath(HOME_PATH);
+   };
 
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
@@ -422,54 +430,42 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                {isLoggedIn ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath(PROFILE_PATH);
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <UserRound className="w-4 h-4 text-zinc-500" />
-                      Profile
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath(SIGNUP_PATH);
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign Up
-                    </button>
-                    {firebaseUser ? (
-                     <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="w-full rounded-2xl px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
-                     >
-                      Logout
-                   </button>
-                     ) : ( 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath(LOGIN_PATH);
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign In
-                    </button>
-                  </div>
-                )}
+ {isLoggedIn ? (
+  <button
+    type="button"
+    onClick={() => {
+      closeMenu();
+      void handleLogout();
+    }}
+    className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100"
+  >
+    Logout
+  </button>
+) : (
+  <div className="grid grid-cols-2 gap-2">
+    <button
+      type="button"
+      onClick={() => {
+        closeMenu();
+        navigateToPath(SIGNUP_PATH);
+      }}
+      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+    >
+      Sign Up
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        closeMenu();
+        navigateToPath(LOGIN_PATH);
+      }}
+      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+    >
+      Sign In
+    </button>
+  </div>
+)}
               </div>
             </motion.div>
           </>
