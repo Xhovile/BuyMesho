@@ -316,32 +316,6 @@ export default function ListingDetailsPage() {
     navigateToEditListing(listing.id);
   };
 
-  const handleDetailDelete = async (listingIdToDelete: number) => {
-    const ok = window.confirm("Delete this listing?");
-    if (!ok) return;
-
-    try {
-      await apiFetch(`/api/listings/${listingIdToDelete}`, { method: "DELETE" });
-      navigateBackOrPath(EXPLORE_PATH);
-    } catch (error: any) {
-      alert(error?.message || "Failed to delete listing.");
-    }
-  };
-
-  const handleDetailToggleStatus = async (item: Listing) => {
-    const nextStatus = item.status === "sold" ? "available" : "sold";
-
-    try {
-      await apiFetch(`/api/listings/${item.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      setListing((prev) => (prev ? { ...prev, status: nextStatus } : prev));
-    } catch (error: any) {
-      alert(error?.message || "Failed to update listing status.");
-    }
-  };
-
   const handleDetailHideListing = (listingIdToHide: number) => {
     try {
       const raw = localStorage.getItem("hiddenListingIds");
@@ -515,11 +489,9 @@ export default function ListingDetailsPage() {
     isSaved={saved}
     variant="detail"
     onReport={() => navigateToPath(REPORT_PATH)}
-    onDelete={handleDetailDelete}
     onEdit={handleDetailEdit}
     onHideSeller={handleDetailHideSeller}
     onHideListing={handleDetailHideListing}
-    onToggleStatus={handleDetailToggleStatus}
     onToggleSave={handleToggleSaved}
     requireLoginForContact={() => navigateToPath("/login")}
   />
