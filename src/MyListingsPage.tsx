@@ -185,6 +185,9 @@ export default function MyListingsPage() {
   const handleDeleteListing = async (listingId: number) => {
     if (actionLoadingId === listingId) return;
 
+    const target = listings.find((item) => item.id === listingId);
+    if (!target) return;
+
     setActionLoadingId(listingId);
     try {
       await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
@@ -197,11 +200,11 @@ export default function MyListingsPage() {
                 ...prev.stats,
                 total_listings: Math.max(0, prev.stats.total_listings - 1),
                 active_listings:
-                  listings.find((item) => item.id === listingId)?.status === "sold"
+                  target.status === "sold"
                     ? prev.stats.active_listings
                     : Math.max(0, prev.stats.active_listings - 1),
                 sold_listings:
-                  listings.find((item) => item.id === listingId)?.status === "sold"
+                  target.status === "sold"
                     ? Math.max(0, prev.stats.sold_listings - 1)
                     : prev.stats.sold_listings,
               },
