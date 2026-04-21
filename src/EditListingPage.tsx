@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import ListingStudioForm from "./components/ListingStudioForm";
 import FeedbackModal from "./components/FeedbackModal";
-import { auth } from "./firebase";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { apiFetch } from "./lib/api";
@@ -89,6 +88,42 @@ export default function EditListingPage() {
     }
   };
 
+  const saveListing = async (payload: CreateListingPayload) => {
+    if (!listing) {
+      throw new Error("Listing not loaded.");
+    }
+
+    const body = JSON.stringify({
+      ...payload,
+      id: listing.id,
+    });
+
+    try {
+      await apiFetch(`/api/listings/${listing.id}`, {
+        method: "PUT",
+        body,
+      });
+      return;
+    } catch (error: any) {
+      const message = String(error?.message || "").toLowerCase();
+      if (!message.includes("seller profile")) {
+        throw error;
+      }
+
+      await apiFetch("/api/profile/bootstrap", {
+        method: "POST",
+        body: JSON.stringify({
+          university: resolveUniversity(profile?.university || listing.university || ""),
+        }),
+      });
+
+      await apiFetch(`/api/listings/${listing.id}`, {
+        method: "PUT",
+        body,
+      });
+    }
+  };
+
   const handleSave = async (payload: CreateListingPayload) => {
     if (!listing) {
       throw new Error("Listing not loaded.");
@@ -96,52 +131,7 @@ export default function EditListingPage() {
 
     setSubmitting(true);
     try {
-      const saveListing = async () =>
-        apiFetch(`/api/listings/${listing.id}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            ...payload,
-            id: listing.id,
-          }),
-        });
-
-      try {
-       await apiFetch(`/api/listings/${listing.id}`, {
-         method: "PUT",
-         body: JSON.stringify(payload),
-       });
-     } catch (error: any) {
-       if (String(error?.message || "").toLowerCase().includes("seller profile")) {
-         await apiFetch("/api/profile/bootstrap", { method: "POST" });
-         await apiFetch(`/api/listings/${listing.id}`, {
-            method: "PUT",
-            body: JSON.stringify(payload),
-          });
-          return;
-        }
-        throw error;
-      }
-
-      try {
-        await saveListing();
-      } catch (error: any) {
-        const message = typeof error?.message === "string" ? error.message : "";
-        const sellerProfileMissing = message.toLowerCase().includes("seller profile not found");
-
-        if (!sellerProfileMissing) {
-          throw error;
-        }
-
-        await apiFetch("/api/profile/bootstrap", {
-          method: "POST",
-          body: JSON.stringify({
-            university: resolveUniversity(profile?.university || listing.university || ""),
-          }),
-        });
-
-        await saveListing();
-      }
-
+      await saveListing(payload);
       invalidateHomepageCache();
       setRedirectAfterFeedback(true);
       showFeedback("success", "Listing updated", "Your listing was updated successfully.");
@@ -158,13 +148,13 @@ export default function EditListingPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <button
             type="button"
             onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
+            className="flex min-w-0 items-center gap-2.5"
           >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">
               B
             </div>
             <div className="text-left">
@@ -181,21 +171,21 @@ export default function EditListingPage() {
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
           >
             Back
           </button>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-2 sm:px-4 py-8">
+      <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
         {authLoading || profileLoading || loadingListing ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium">
-            <Loader2 className="w-5 h-5 animate-spin" />
+          <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 font-medium text-zinc-500 shadow-sm">
+            <Loader2 className="h-5 w-5 animate-spin" />
             Loading listing editor...
           </div>
         ) : !firebaseUser ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
             <p className="mt-3 text-sm text-zinc-500">You need to log in before editing a listing.</p>
             <button
@@ -207,7 +197,7 @@ export default function EditListingPage() {
             </button>
           </div>
         ) : !profile?.is_seller ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
             <p className="mt-3 text-sm text-zinc-500">Only seller accounts can edit listings.</p>
             <button
@@ -215,12 +205,12 @@ export default function EditListingPage() {
               onClick={() => navigateToPath(EXPLORE_PATH)}
               className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
               Return to Explore
             </button>
           </div>
         ) : !listing ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Listing not found</h1>
             <p className="mt-3 text-sm text-zinc-500">The listing could not be loaded or may no longer exist.</p>
             <button
@@ -228,12 +218,12 @@ export default function EditListingPage() {
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
               className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
               Back
             </button>
           </div>
         ) : listing.seller_uid !== firebaseUser.uid ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Access denied</h1>
             <p className="mt-3 text-sm text-zinc-500">This listing does not belong to your account.</p>
             <button
@@ -241,7 +231,7 @@ export default function EditListingPage() {
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
               className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="h-4 w-4" />
               Back
             </button>
           </div>
