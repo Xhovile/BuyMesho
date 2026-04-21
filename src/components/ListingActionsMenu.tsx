@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
+import { CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { buildListingShareUrl } from "../lib/listingUrl";
@@ -101,6 +101,13 @@ export default function ListingActionsMenu({
     setNoticeMessage("");
   };
 
+  const resetDialogs = () => {
+    setDialogBusy(false);
+    setActiveDialog(null);
+    setQuantityInput("1");
+    setNoticeMessage("");
+  };
+
   const handleCopyWhatsApp = async () => {
     if (!isLoggedIn) {
       setOpen(false);
@@ -169,6 +176,7 @@ export default function ListingActionsMenu({
 
   const handleDelete = () => {
     setOpen(false);
+    setQuantityInput("1");
     setActiveDialog("delete");
   };
 
@@ -182,12 +190,11 @@ export default function ListingActionsMenu({
         await apiFetch(`/api/listings/${listing.id}`, { method: "DELETE" });
         navigateBackOrPath(EXPLORE_PATH);
       }
-      closeDialogs();
+      resetDialogs();
     } catch (error: any) {
-      setActiveDialog("notice");
-      setNoticeMessage(error?.message || "Failed to delete listing.");
-    } finally {
       setDialogBusy(false);
+      setNoticeMessage(error?.message || "Failed to delete listing.");
+      setActiveDialog("notice");
     }
   };
 
