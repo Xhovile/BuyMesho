@@ -4963,8 +4963,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
 <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-4">
   <div>
-    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-      Specifications
+    <div className="text-xs font-black text-zinc-900 uppercase mb-3">
+      Specs
     </div>
 
     {detailSpecGroups.length > 0 && (
