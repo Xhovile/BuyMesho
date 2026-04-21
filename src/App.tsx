@@ -2613,7 +2613,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, null)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === null
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
@@ -2624,7 +2624,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, true)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === true
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
@@ -2635,7 +2635,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
             <button
               type="button"
               onClick={() => handleSpecValueChange(field.key, false)}
-              className={`px-3 py-2 rounded-xl border text-sm font-bold transition ${
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 boolValue === false
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
@@ -3579,7 +3579,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                         setCreateFieldErrors({});
                         setShowAddModal(false);
                       }}
-                      className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+                      className="flex-1 flex-shrink-0 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
                     >
                       Cancel
                     </button>
@@ -3587,7 +3587,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                     <button
                       type="submit"
                       disabled={uploading || creatingListing}
-                      className={`flex-1 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
+                      className={`flex-1 flex-shrink-0 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
                         uploading || creatingListing
                           ? "opacity-50 cursor-not-allowed"
                           : "hover:bg-primary-dark"
@@ -4963,8 +4963,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
 <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-4">
   <div>
-    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
-      Specifications
+    <div className="text-xs font-black text-zinc-900 uppercase mb-3">
+      Specs
     </div>
 
     {detailSpecGroups.length > 0 && (
@@ -4978,7 +4978,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
               key={group.title}
               type="button"
               onClick={() => setActiveDetailSpecGroup(group.title)}
-              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+              className="relative w-full max-w-3xl mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
                 activeSpecGroup?.title === group.title
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
@@ -5063,8 +5063,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           </span>
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">No ratings yet.</p>
-      )}
+        <p className="text-sm text-zinc-500">Seller ratings are not available. Sign in to view ratings, or this seller may not have any yet.</p>
+       )}
     </div>
 
     <div className="flex flex-wrap gap-2 pt-1">

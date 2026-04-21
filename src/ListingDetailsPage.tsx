@@ -323,10 +323,8 @@ export default function ListingDetailsPage() {
     setSaved(nextSaved);
   };
 
-  const handleDetailEdit = () => {
-    if (!listing) return;
-    navigateToEditListing(listing.id);
-  };
+  const handleDetailEdit = (item: Listing) => {
+    navigateToEditListing(item.id);
 
   const handleDetailHideListing = (listingIdToHide: number) => {
     try {
@@ -500,7 +498,7 @@ export default function ListingDetailsPage() {
     isLoggedIn={!!firebaseUser}
     isSaved={saved}
     variant="detail"
-    onReport={() => navigateToPath(REPORT_PATH)}
+    onReport={(listingId) =>navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listingId)}`)} 
     onEdit={handleDetailEdit}
     onHideSeller={handleDetailHideSeller}
     onHideListing={handleDetailHideListing}
