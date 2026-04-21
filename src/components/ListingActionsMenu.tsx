@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bookmark, CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
+import { CirclePlus, HandCoins, MoreVertical, Share2 } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { buildListingShareUrl } from "../lib/listingUrl";
-import {
-  EXPLORE_PATH,
-  navigateBackOrPath,
-  navigateToEditListing,
-} from "../lib/appNavigation";
+import { EXPLORE_PATH, navigateBackOrPath, navigateToEditListing } from "../lib/appNavigation";
+import ActionModal from "./ActionModal";
 
 type ListingActionsMenuProps = {
   listing: Listing;
@@ -16,14 +13,13 @@ type ListingActionsMenuProps = {
   isSaved?: boolean;
   variant?: "card" | "detail";
   onReport: (id: number) => void;
-  onDelete?: (id: number) => void;
+  onDelete?: (id: number) => void | Promise<void>;
   onEdit?: (listing: Listing) => void;
   onHideSeller?: (uid: string) => void;
   onHideListing?: (listingId: number) => void;
-  onToggleStatus?: (listing: Listing) => void;
-  onToggleSave?: (listingId: number) => void;
-  onRecordSale?: (listing: Listing) => void;
-  onRestock?: (listing: Listing) => void;
+  onToggleStatus?: (listing: Listing) => void | Promise<void>;
+  onRecordSale?: (listing: Listing, quantity: number) => void | Promise<void>;
+  onRestock?: (listing: Listing, quantity: number) => void | Promise<void>;
   requireLoginForContact?: () => void;
 };
 
@@ -57,15 +53,15 @@ export default function ListingActionsMenu({
   requireLoginForContact,
 }: ListingActionsMenuProps) {
   const [open, setOpen] = useState(false);
+  const [activeDialog, setActiveDialog] = useState<"record-sale" | "restock" | "delete" | "notice" | null>(null);
+  const [quantityInput, setQuantityInput] = useState("1");
+  const [dialogBusy, setDialogBusy] = useState(false);
+  const [noticeMessage, setNoticeMessage] = useState("");
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const sellerUid = listing.seller_uid;
   const isOwner = !!currentUid && !!sellerUid && currentUid === sellerUid;
-
-  const wrapperClassName =
-    variant === "detail"
-      ? "relative inline-flex"
-      : "absolute right-3 top-3 z-20";
+  const wrapperClassName = variant === "detail" ? "relative inline-flex" : "absolute right-3 top-3 z-20";
 
   useEffect(() => {
     if (!open) return;
@@ -90,8 +86,23 @@ export default function ListingActionsMenu({
     };
   }, [open]);
 
-  const safeAlert = (msg: string) => {
-    window.alert(msg);
+  const openNotice = (message: string) => {
+    setNoticeMessage(message);
+    setActiveDialog("notice");
+  };
+
+  const closeDialogs = () => {
+    if (dialogBusy) return;
+    setActiveDialog(null);
+    setQuantityInput("1");
+    setNoticeMessage("");
+  };
+
+  const resetDialogs = () => {
+    setDialogBusy(false);
+    setActiveDialog(null);
+    setQuantityInput("1");
+    setNoticeMessage("");
   };
 
   const handleCopyWhatsApp = async () => {
@@ -103,15 +114,15 @@ export default function ListingActionsMenu({
 
     const number = listing.whatsapp_number || "";
     if (!number) {
-      safeAlert("No WhatsApp number found.");
+      openNotice("No WhatsApp number found for this listing.");
       return;
     }
 
     try {
       await navigator.clipboard.writeText(number);
-      safeAlert("WhatsApp number copied.");
+      openNotice("WhatsApp number copied.");
     } catch {
-      prompt("Copy WhatsApp number:", number);
+      openNotice(`Copy this number manually:\n${number}`);
     } finally {
       setOpen(false);
     }
@@ -132,6 +143,7 @@ export default function ListingActionsMenu({
 
     shareLines.push("", `Open this listing: ${shareUrl}`);
     const shareText = shareLines.join("\n");
+
     try {
       if ((navigator as any).share) {
         await (navigator as any).share({
@@ -141,10 +153,10 @@ export default function ListingActionsMenu({
         });
       } else {
         await navigator.clipboard.writeText(shareText);
-        safeAlert("Share text copied.");
+        openNotice("Share text copied.");
       }
     } catch {
-      prompt("Copy to share:", shareText);
+      openNotice("Could not open the system share sheet. Copy the listing details from the page.");
     } finally {
       setOpen(false);
     }
@@ -159,28 +171,34 @@ export default function ListingActionsMenu({
     navigateToEditListing(listing.id);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     setOpen(false);
-    if (onDelete) {
-      onDelete(listing.id);
-      return;
-    }
+    setQuantityInput("1");
+    setActiveDialog("delete");
+  };
 
-    const confirmed = window.confirm("Delete this listing?");
-    if (!confirmed) return;
-
+  const submitDelete = async () => {
+    if (dialogBusy) return;
+    setDialogBusy(true);
     try {
-      await apiFetch(`/api/listings/${listing.id}`, { method: "DELETE" });
-      navigateBackOrPath(EXPLORE_PATH);
+      if (onDelete) {
+        await onDelete(listing.id);
+      } else {
+        await apiFetch(`/api/listings/${listing.id}`, { method: "DELETE" });
+        navigateBackOrPath(EXPLORE_PATH);
+      }
+      resetDialogs();
     } catch (error: any) {
-      safeAlert(error?.message || "Failed to delete listing.");
+      setDialogBusy(false);
+      setNoticeMessage(error?.message || "Failed to delete listing.");
+      setActiveDialog("notice");
     }
   };
 
   const handleToggleStatus = async () => {
     setOpen(false);
     if (onToggleStatus) {
-      onToggleStatus(listing);
+      await onToggleStatus(listing);
       return;
     }
 
@@ -190,28 +208,64 @@ export default function ListingActionsMenu({
         method: "PATCH",
         body: JSON.stringify({ status: nextStatus }),
       });
-      safeAlert(`Listing marked as ${nextStatus}.`);
+      openNotice(`Listing marked as ${nextStatus}.`);
     } catch (error: any) {
-      safeAlert(error?.message || "Failed to update listing status.");
+      openNotice(error?.message || "Failed to update listing status.");
+    }
+  };
+
+  const submitQuantityAction = async (action: "record-sale" | "restock") => {
+    if (dialogBusy) return;
+
+    const qty = Number(quantityInput);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      setActiveDialog("notice");
+      setNoticeMessage("Enter a valid quantity greater than zero.");
+      return;
+    }
+
+    setDialogBusy(true);
+    try {
+      if (action === "record-sale") {
+        if (onRecordSale) {
+          await onRecordSale(listing, qty);
+        } else {
+          await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+            method: "POST",
+            body: JSON.stringify({ quantity: qty }),
+          });
+        }
+        openNotice("Sale recorded successfully.");
+      } else {
+        if (onRestock) {
+          await onRestock(listing, qty);
+        } else {
+          await apiFetch(`/api/listings/${listing.id}/restock`, {
+            method: "POST",
+            body: JSON.stringify({ quantity: qty }),
+          });
+        }
+        openNotice("Listing restocked successfully.");
+      }
+      setActiveDialog("notice");
+    } catch (error: any) {
+      setActiveDialog("notice");
+      setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
+    } finally {
+      setDialogBusy(false);
     }
   };
 
   const handleRecordSale = () => {
-  setOpen(false);
-  if (onRecordSale) {
-    onRecordSale(listing);
-    return;
-  }
-  safeAlert("Record sale is not wired on this page yet.");
-};
+    setOpen(false);
+    setQuantityInput("1");
+    setActiveDialog("record-sale");
+  };
 
   const handleRestock = () => {
     setOpen(false);
-    if (onRestock) {
-      onRestock(listing);
-      return;
-    }
-    safeAlert("Restock is not wired on this page yet.");
+    setQuantityInput("1");
+    setActiveDialog("restock");
   };
 
   const handleHideListing = () => {
@@ -246,95 +300,138 @@ export default function ListingActionsMenu({
   const menuLabel = useMemo(() => (isOwner ? "Listing actions" : "More options"), [isOwner]);
 
   return (
-    <div ref={wrapperRef} className={wrapperClassName}>
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="h-10 w-10 rounded-full border border-zinc-200 bg-white/95 backdrop-blur-md text-zinc-700 shadow-sm hover:bg-white flex items-center justify-center transition-all"
-        aria-label={menuLabel}
-        aria-expanded={open}
-      >
-        <MoreVertical className="w-5 h-5" />
-      </button>
-
-      {open ? (
-        <div
-          className={`absolute ${
-            variant === "detail"
-              ? "right-0 top-full mt-2 w-72 z-[70]"
-              : "right-0 top-12 w-56"
-          } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+    <>
+      <div ref={wrapperRef} className={wrapperClassName}>
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-sm backdrop-blur-md transition-all hover:bg-white"
+          aria-label={menuLabel}
+          aria-expanded={open}
         >
-          <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
-            {isOwner ? "Owner tools" : "Actions"}
-          </div>
+          <MoreVertical className="w-5 h-5" />
+        </button>
 
-{isOwner ? (
-  <>
-    <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-      Edit listing
-    </button>
-
-    <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-      <span className="inline-flex items-center gap-2">
-        <HandCoins className="w-4 h-4" />
-        Record sale
-      </span>
-    </button>
-
-    <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-      <span className="inline-flex items-center gap-2">
-        <CirclePlus className="w-4 h-4" />
-        Restock
-      </span>
-    </button>
-
-    <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-      {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
-    </button>
-
-    <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
-      Delete listing
-    </button>
-  </>
-) : (  
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setOpen(false);
-                  onReport(listing.id);
-                }}
-                className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
-              >
-                Report listing
-              </button>
-              <button type="button" onClick={handleCopyWhatsApp} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                Copy WhatsApp number
-              </button>
-              <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                <span className="inline-flex items-center gap-2">
-                  <Share2 className="w-4 h-4" />
-                  Share listing
-                </span>
-              </button>
-              <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                Hide this listing
-              </button>
-              <div className="h-px bg-zinc-100" />
-              <button type="button" onClick={handleHideSeller} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50" disabled={!sellerUid}>
-                Hide this seller
-              </button>
-            </>
-          )}
-
-          {variant === "detail" && !isOwner ? (
-            <div className="border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500">
-              Use this menu for quick account actions.
+        {open ? (
+          <div
+            className={`absolute ${variant === "detail" ? "right-0 top-full mt-2 w-72 z-[70]" : "right-0 top-12 w-56"} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+          >
+            <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+              {isOwner ? "Owner tools" : "Actions"}
             </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+
+            {isOwner ? (
+              <>
+                <button type="button" onClick={handleEdit} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  Edit listing
+                </button>
+                <button type="button" onClick={handleRecordSale} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  <span className="inline-flex items-center gap-2"><HandCoins className="w-4 h-4" />Record sale</span>
+                </button>
+                <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
+                </button>
+                <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
+                </button>
+                <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
+                  Delete listing
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOpen(false);
+                    onReport(listing.id);
+                  }}
+                  className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
+                >
+                  Report listing
+                </button>
+                <button type="button" onClick={handleCopyWhatsApp} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  Copy WhatsApp number
+                </button>
+                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  <span className="inline-flex items-center gap-2">
+                    <Share2 className="w-4 h-4" />
+                    Share listing
+                  </span>
+                </button>
+                <button type="button" onClick={handleHideListing} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                  Hide this listing
+                </button>
+                <div className="h-px bg-zinc-100" />
+                <button type="button" onClick={handleHideSeller} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50" disabled={!sellerUid}>
+                  Hide this seller
+                </button>
+              </>
+            )}
+
+            {variant === "detail" && !isOwner ? (
+              <div className="border-t border-zinc-100 px-4 py-3 text-xs text-zinc-500">
+                Use this menu for quick account actions.
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <ActionModal
+        open={activeDialog === "record-sale"}
+        title="Record sale"
+        message={`Record how many units of “${listing.name}” were sold.`}
+        confirmLabel="Record sale"
+        cancelLabel="Back"
+        loading={dialogBusy}
+        danger={false}
+        inputLabel="Quantity sold"
+        inputValue={quantityInput}
+        inputPlaceholder="1"
+        onInputChange={setQuantityInput}
+        onConfirm={() => void submitQuantityAction("record-sale")}
+        onCancel={closeDialogs}
+      />
+
+      <ActionModal
+        open={activeDialog === "restock"}
+        title="Restock listing"
+        message={`Add stock back to “${listing.name}”.`}
+        confirmLabel="Restock"
+        cancelLabel="Back"
+        loading={dialogBusy}
+        danger={false}
+        inputLabel="Quantity to add"
+        inputValue={quantityInput}
+        inputPlaceholder="1"
+        onInputChange={setQuantityInput}
+        onConfirm={() => void submitQuantityAction("restock")}
+        onCancel={closeDialogs}
+      />
+
+      <ActionModal
+        open={activeDialog === "delete"}
+        title="Delete listing"
+        message={`Delete “${listing.name}”? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        loading={dialogBusy}
+        danger
+        onConfirm={() => void submitDelete()}
+        onCancel={closeDialogs}
+      />
+
+      <ActionModal
+        open={activeDialog === "notice"}
+        title="Notice"
+        message={noticeMessage}
+        confirmLabel="Okay"
+        cancelLabel="Close"
+        loading={dialogBusy}
+        onConfirm={closeDialogs}
+        onCancel={closeDialogs}
+      />
+    </>
   );
 }

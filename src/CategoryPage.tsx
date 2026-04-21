@@ -18,14 +18,12 @@ import {
   navigateToCreateListing,
   navigateToExplore,
   navigateToPath,
-  navigateToListingDetails,
-  navigateToSellerProfile,
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
+import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import ListingCard from "./components/ListingCard";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
@@ -107,7 +105,8 @@ const DEFAULT_SORT_BY = "Newest first";
 const DEFAULT_CAMPUS = "All campuses";
 const DEFAULT_SUBCATEGORY = "All subcategories";
 const DEFAULT_CAMPUS_NORMALIZED = DEFAULT_CAMPUS.trim().toLowerCase();
-const DEFAULT_SUBCATEGORY_NORMALIZED = DEFAULT_SUBCATEGORY.trim().toLowerCase();
+const DEFAULT_SUBCATEGORY_NORMALIZED =
+  DEFAULT_SUBCATEGORY.trim().toLowerCase();
 
 export default function CategoryPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
@@ -176,23 +175,23 @@ export default function CategoryPage() {
   }, [config.apiCategory]);
 
   const campusOptions = useMemo(() => {
-    const seen = new Set<string>();
-    const campuses: string[] = [];
+  const seen = new Set<string>();
+  const campuses: string[] = [];
 
-    for (const item of items) {
-      const university = item.university?.trim();
-      if (!university) continue;
+  for (const item of items) {
+    const university = item.university?.trim();
+    if (!university) continue;
 
-      const normalized = university.toLowerCase();
-      if (seen.has(normalized)) continue;
+    const normalized = university.toLowerCase();
+    if (seen.has(normalized)) continue;
 
-      seen.add(normalized);
-      campuses.push(university);
-    }
+    seen.add(normalized);
+    campuses.push(university);
+  }
 
-    campuses.sort((a, b) => a.localeCompare(b));
-    return [DEFAULT_CAMPUS, ...campuses];
-  }, [items]);
+  campuses.sort((a, b) => a.localeCompare(b));
+  return [DEFAULT_CAMPUS, ...campuses];
+}, [items]);
 
   const clearFilters = () => {
     setSortBy(DEFAULT_SORT_BY);
@@ -389,7 +388,11 @@ export default function CategoryPage() {
                   onChange={(value) => setSortBy(value)}
                   placeholder="Choose sort order"
                   searchPlaceholder="Search sort order..."
-                  options={["Newest first", "Price: low to high", "Price: high to low"]}
+                  options={[
+                    "Newest first",
+                    "Price: low to high",
+                    "Price: high to low",
+                  ]}
                 />
               </div>
             ) : null}
@@ -417,7 +420,7 @@ export default function CategoryPage() {
             </div>
           ) : null}
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {loading ? (
               <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -437,6 +440,7 @@ export default function CategoryPage() {
                   onReport={() => undefined}
                   showActionsMenu={false}
                   compact
+                  ultraCompact
                   onOpenDetails={(listing) => navigateToListingDetails(Number(listing.id), 0)}
                   onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
                 />
