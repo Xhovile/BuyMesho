@@ -5063,8 +5063,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           </span>
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">No ratings yet.</p>
-      )}
+        <p className="text-sm text-zinc-500">Seller ratings are not available. Sign in to view ratings, or this seller may not have any yet.</p>
+       )}
     </div>
 
     <div className="flex flex-wrap gap-2 pt-1">
