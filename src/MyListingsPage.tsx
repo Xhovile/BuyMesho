@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BarChart3, Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
@@ -123,6 +123,11 @@ export default function MyListingsPage() {
     }
   };
 
+  const getListingQuantity = (listing: Listing) => Number(listing.quantity ?? 1);
+    const getListingSoldQuantity = (listing: Listing) => Number(listing.sold_quantity ?? 0);
+    const getRemainingQuantity = (listing: Listing) =>
+      Math.max(0, getListingQuantity(listing) - getListingSoldQuantity(listing));
+  
   const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
     setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
   };
