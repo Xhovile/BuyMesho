@@ -17,7 +17,9 @@ import {
   LOGIN_PATH,
   navigateToCreateListing,
   navigateToExplore,
+  navigateToListingDetails,
   navigateToPath,
+  navigateToSellerProfile,
 } from "./lib/appNavigation";
 import { getListingSubcategories } from "./listingSchemas/registry";
 import ListingCard from "./components/ListingCard";

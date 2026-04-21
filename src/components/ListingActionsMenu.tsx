@@ -55,7 +55,6 @@ export default function ListingActionsMenu({
   onEdit,
   onHideSeller,
   onHideListing,
-  onToggleStatus,
   onRecordSale,
   onRestock,
   requireLoginForContact,
@@ -204,84 +203,65 @@ export default function ListingActionsMenu({
     }
   };
 
-  const handleToggleStatus = async () => {
-    setOpen(false);
-    if (onToggleStatus) {
-      await onToggleStatus(listing);
+  const submitQuantityAction = async (action: "record-sale" | "restock") => {
+    if (dialogBusy) return;
+
+    const qty = Number(quantityInput);
+    if (!Number.isInteger(qty) || qty <= 0) {
+      setActiveDialog("notice");
+      setNoticeMessage("Enter a valid quantity greater than zero.");
       return;
     }
 
-    const nextStatus = listing.status === "sold" ? "available" : "sold";
+    if (action === "record-sale" && qty > currentAvailable) {
+      setActiveDialog("notice");
+      setNoticeMessage(`You only have ${currentAvailable} left in stock.`);
+      return;
+    }
+
+    setDialogBusy(true);
     try {
-      await apiFetch(`/api/listings/${listing.id}/status`, {
-        method: "PATCH",
-        body: JSON.stringify({ status: nextStatus }),
-      });
-      openNotice(`Listing marked as ${nextStatus}.`);
+      let response: StockActionResponse | void;
+
+      if (action === "record-sale") {
+        response = onRecordSale
+          ? await onRecordSale(listing, qty)
+          : (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+              method: "POST",
+              body: JSON.stringify({ quantity: qty }),
+            })) as StockActionResponse;
+      } else {
+        response = onRestock
+          ? await onRestock(listing, qty)
+          : (await apiFetch(`/api/listings/${listing.id}/restock`, {
+              method: "POST",
+              body: JSON.stringify({ quantity: qty }),
+            })) as StockActionResponse;
+      }
+
+      const nextListing = response && typeof response === "object" && response.listing ? response.listing : null;
+      const nextAvailable =
+        response && typeof response === "object" && typeof response.available_quantity === "number"
+          ? response.available_quantity
+          : nextListing
+            ? getAvailableQuantity(nextListing)
+            : action === "record-sale"
+              ? Math.max(0, currentAvailable - qty)
+              : currentAvailable + qty;
+
+      setActiveDialog("notice");
+      setNoticeMessage(
+        action === "record-sale"
+          ? `Sale recorded. Remaining stock: ${nextAvailable}.`
+          : `Restocked successfully. Remaining stock: ${nextAvailable}.`
+      );
     } catch (error: any) {
-      openNotice(error?.message || "Failed to update listing status.");
+      setActiveDialog("notice");
+      setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
+    } finally {
+      setDialogBusy(false);
     }
   };
-
-const submitQuantityAction = async (action: "record-sale" | "restock") => {
-  if (dialogBusy) return;
-
-  const qty = Number(quantityInput);
-  if (!Number.isInteger(qty) || qty <= 0) {
-    setActiveDialog("notice");
-    setNoticeMessage("Enter a valid quantity greater than zero.");
-    return;
-  }
-
-  if (action === "record-sale" && qty > currentAvailable) {
-    setActiveDialog("notice");
-    setNoticeMessage(`You only have ${currentAvailable} left in stock.`);
-    return;
-  }
-
-  setDialogBusy(true);
-  try {
-    let response: StockActionResponse | void;
-
-    if (action === "record-sale") {
-      response = onRecordSale
-        ? await onRecordSale(listing, qty)
-        : (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
-            method: "POST",
-            body: JSON.stringify({ quantity: qty }),
-          })) as StockActionResponse;
-    } else {
-      response = onRestock
-        ? await onRestock(listing, qty)
-        : (await apiFetch(`/api/listings/${listing.id}/restock`, {
-            method: "POST",
-            body: JSON.stringify({ quantity: qty }),
-          })) as StockActionResponse;
-    }
-
-    const nextListing = response && typeof response === "object" && response.listing ? response.listing : null;
-    const nextAvailable =
-      response && typeof response === "object" && typeof response.available_quantity === "number"
-        ? response.available_quantity
-        : nextListing
-          ? getAvailableQuantity(nextListing)
-          : action === "record-sale"
-            ? Math.max(0, currentAvailable - qty)
-            : currentAvailable + qty;
-
-    setActiveDialog("notice");
-    setNoticeMessage(
-      action === "record-sale"
-        ? `Sale recorded. Remaining stock: ${nextAvailable}.`
-        : `Restocked successfully. Remaining stock: ${nextAvailable}.`
-    );
-  } catch (error: any) {
-    setActiveDialog("notice");
-    setNoticeMessage(error?.message || `Failed to ${action === "record-sale" ? "record sale" : "restock listing"}.`);
-  } finally {
-    setDialogBusy(false);
-  }
-};
 
   const handleRecordSale = () => {
     setOpen(false);
@@ -328,10 +308,18 @@ const submitQuantityAction = async (action: "record-sale" | "restock") => {
 
   return (
     <>
-      <div ref={wrapperRef} className={wrapperClassName}>
+      <div
+        ref={wrapperRef}
+        className={wrapperClassName}
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
         <button
           type="button"
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={(event) => {
+            event.stopPropagation();
+            setOpen((prev) => !prev);
+          }}
           className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/95 text-zinc-700 shadow-sm backdrop-blur-md transition-all hover:bg-white"
           aria-label={menuLabel}
           aria-expanded={open}
@@ -342,6 +330,8 @@ const submitQuantityAction = async (action: "record-sale" | "restock") => {
         {open ? (
           <div
             className={`absolute ${variant === "detail" ? "right-0 top-full mt-2 w-72 z-[70]" : "right-0 top-12 w-56"} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
           >
             <div className="border-b border-zinc-100 px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
               {isOwner ? "Owner tools" : "Actions"}
@@ -357,9 +347,6 @@ const submitQuantityAction = async (action: "record-sale" | "restock") => {
                 </button>
                 <button type="button" onClick={handleRestock} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                   <span className="inline-flex items-center gap-2"><CirclePlus className="w-4 h-4" />Restock</span>
-                </button>
-                <button type="button" onClick={handleToggleStatus} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                  {listing.status === "sold" ? "Mark as available" : "Mark as sold"}
                 </button>
                 <button type="button" onClick={handleDelete} className="block w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50">
                   Delete listing
