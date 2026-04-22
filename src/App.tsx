@@ -368,41 +368,19 @@ const closeConfirm = () => {
 };
   
 const hideSellerLocal = (uid: string) => {
-  if (!uid || typeof uid !== "string") return;
-
-  setHiddenSellerUids((prev) => {
-    if (prev.includes(uid)) return prev;
-    const next = [...prev, uid];
-    localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
-    return next;
-  });
+  hideSellerUid(uid);
 };
 
 const unhideSellerLocal = (uid: string) => {
-  setHiddenSellerUids((prev) => {
-    const next = prev.filter((x) => x !== uid);
-    localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
-    return next;
-  });
+  unhideSellerUid(uid);
 };
 
 const hideListingLocal = (listingId: number) => {
-  if (!Number.isInteger(listingId)) return;
-
-  setHiddenListingIds((prev) => {
-    if (prev.includes(listingId)) return prev;
-    const next = [...prev, listingId];
-    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
-    return next;
-  });
+  hideListingId(listingId);
 };
 
 const unhideListingLocal = (listingId: number) => {
-  setHiddenListingIds((prev) => {
-    const next = prev.filter((id) => id !== listingId);
-    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
-    return next;
-  });
+  unhideListingId(listingId);
 };
   
   const sellerNameMap = React.useMemo(() => {
