@@ -11,6 +11,7 @@ import {
   Lock,
   ClipboardList,
   Flag,
+  EyeOff,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -20,6 +21,7 @@ import { apiFetch } from "./lib/api";
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
+  HIDDEN_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
 import { getAvatarUrl } from "./lib/avatar";
@@ -223,6 +225,18 @@ export default function ProfilePage() {
                 <p className="font-bold text-zinc-900">Saved Items</p>
               </div>
               <p className="text-sm text-zinc-500 mt-1">Open the saved page.</p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateToPath(HIDDEN_PATH)}
+              className="rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-left hover:bg-zinc-50"
+            >
+              <div className="flex items-center gap-2">
+                <EyeOff className="w-5 h-5 text-zinc-700" />
+                <p className="font-bold text-zinc-900">Hidden Listings & Sellers</p>
+              </div>
+              <p className="text-sm text-zinc-500 mt-1">Open hidden listings and hidden sellers.</p>
             </button>
 
             <button

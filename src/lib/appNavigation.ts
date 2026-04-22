@@ -3,6 +3,7 @@ export type AppRoute =
   | "category"
   | "explore"
   | "saved"
+  | "hidden"
   | "settings"
   | "privacy"
   | "terms"
@@ -27,6 +28,7 @@ export type AppRoute =
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
+export const HIDDEN_PATH = "/hidden";
 export const SETTINGS_PATH = "/settings";
 export const PRIVACY_PATH = "/privacy";
 export const TERMS_PATH = "/terms";
@@ -302,6 +304,10 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === SAVED_PATH) {
     return "saved";
+  }
+
+  if (location.pathname === HIDDEN_PATH) {
+    return "hidden";
   }
 
   if (location.pathname === EXPLORE_PATH) {

@@ -15,6 +15,7 @@ const EditAccountPage = lazy(() => import("./EditAccountPage"));
 const EditListingPage = lazy(() => import("./EditListingPage"));
 const EditProfilePage = lazy(() => import("./EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
+const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
@@ -69,6 +70,7 @@ export default function RootRouter() {
         {route === "category" ? <CategoryPage /> :
         route === "explore" ? <App /> :
         route === "saved" ? <SavedPage /> :
+        route === "hidden" ? <HiddenCollectionsPage /> :
         route === "settings" ? <SettingsPage /> :
         route === "privacy" ? <PrivacyPolicyPage onBack={() => window.history.back()} /> :
         route === "terms" ? <TermsPage onBack={() => window.history.back()} /> :
