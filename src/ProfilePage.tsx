@@ -12,6 +12,7 @@ import {
   ClipboardList,
   Flag,
   EyeOff,
+  ChevronRight, 
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
