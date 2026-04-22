@@ -332,123 +332,337 @@ export default function SettingsPage() {
           </div>
         </section>
 
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-              <button
-                type="button"
-                onClick={() => toggleSection("account")}
-                className="w-full flex items-center justify-between gap-3 text-left"
-                aria-expanded={expandedSections.account}
-              >
-                <span className="inline-flex items-center gap-3">
-                  <User className="w-5 h-5 text-zinc-700" />
-                  <h2 className="text-xl font-extrabold text-zinc-900">Account</h2>
+<section className="space-y-4">
+  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <button
+      type="button"
+      onClick={() => toggleSection("account")}
+      className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+      aria-expanded={expandedSections.account}
+    >
+      <span className="inline-flex items-center gap-3 min-w-0">
+        <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+          <User className="w-5 h-5 text-zinc-700" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+            Account
+          </span>
+        </span>
+      </span>
+
+      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+        {expandedSections.account ? "Hide" : "Show"}
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${expandedSections.account ? "rotate-180" : ""}`}
+        />
+      </span>
+    </button>
+
+    {expandedSections.account ? (
+      <div className="divide-y divide-zinc-100">
+        <div className="px-5 py-4 bg-zinc-50/60">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                Email
+              </p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900">
+                {profile?.email || firebaseUser?.email || "Not available"}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                University
+              </p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900">
+                {profile?.university || "Not set"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigateToPath(EDIT_ACCOUNT_PATH)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+        >
+          <span className="font-bold text-zinc-900">Edit Account</span>
+          <ChevronRight className="w-4 h-4 text-zinc-400" />
+        </button>
+
+        {profile?.is_seller ? (
+          <button
+            type="button"
+            onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+          >
+            <span className="font-bold text-zinc-900">Edit Seller Profile</span>
+            <ChevronRight className="w-4 h-4 text-zinc-400" />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={() => navigateToPath(BECOME_SELLER_PATH)}
+            className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+          >
+            <span className="font-bold text-zinc-900">Become Seller</span>
+            <ChevronRight className="w-4 h-4 text-zinc-400" />
+          </button>
+        )}
+
+        {isAdmin ? (
+          <>
+            <button
+              type="button"
+              onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+            >
+              <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Admin Reports
+              </span>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+            >
+              <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
+                <UserCheck className="w-4 h-4" />
+                Seller Approvals
+              </span>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+          </>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={() => void handleLogout()}
+          disabled={!firebaseUser}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+        >
+          <span className="font-bold text-zinc-900">Logout</span>
+          <ChevronRight className="w-4 h-4 text-zinc-400" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setDeleteConfirmOpen(true)}
+          disabled={!firebaseUser}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+        >
+          <span className="font-bold text-red-700">Delete Account</span>
+          <ChevronRight className="w-4 h-4 text-red-300" />
+        </button>
+      </div>
+    ) : null}
+  </section>
+
+  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <button
+      type="button"
+      onClick={() => toggleSection("security")}
+      className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+      aria-expanded={expandedSections.security}
+    >
+      <span className="inline-flex items-center gap-3 min-w-0">
+        <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+          <ShieldCheck className="w-5 h-5 text-zinc-700" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+            Security
+          </span>
+        </span>
+      </span>
+
+      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+        {expandedSections.security ? "Hide" : "Show"}
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${expandedSections.security ? "rotate-180" : ""}`}
+        />
+      </span>
+    </button>
+
+    {expandedSections.security ? (
+      <div className="divide-y divide-zinc-100">
+        <button
+          type="button"
+          onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
+          className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+        >
+          <span className="font-bold text-zinc-900">Change Password</span>
+          <ChevronRight className="w-4 h-4 text-zinc-400" />
+        </button>
+
+        <div className="px-5 py-4 bg-zinc-50/60">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+            Email verification
+          </p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900">
+            {profileLoading
+              ? "Checking..."
+              : !firebaseUser
+              ? "Login required"
+              : firebaseUser.emailVerified
+              ? "Verified"
+              : "Not verified"}
+          </p>
+        </div>
+      </div>
+    ) : null}
+  </section>
+
+  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <button
+      type="button"
+      onClick={() => toggleSection("privacy")}
+      className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+      aria-expanded={expandedSections.privacy}
+    >
+      <span className="inline-flex items-center gap-3 min-w-0">
+        <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+          <UserCheck className="w-5 h-5 text-zinc-700" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+            Privacy
+          </span>
+        </span>
+      </span>
+
+      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+        {expandedSections.privacy ? "Hide" : "Show"}
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${expandedSections.privacy ? "rotate-180" : ""}`}
+        />
+      </span>
+    </button>
+
+    {expandedSections.privacy ? (
+      <div className="divide-y divide-zinc-100">
+        <div className="px-5 py-4 bg-zinc-50/60">
+          <FormDropdown
+            label="Profile visibility"
+            value={VISIBILITY_LABEL[profile?.profile_visibility || "everyone"]}
+            options={VISIBILITY_OPTIONS}
+            disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
+            onChange={(value) =>
+              void updateVisibility(
+                "profile_visibility",
+                LABEL_TO_VISIBILITY[value] ?? "everyone"
+              )
+            }
+          />
+        </div>
+
+        <div className="px-5 py-4 bg-white">
+          <FormDropdown
+            label="Seller visibility"
+            value={VISIBILITY_LABEL[profile?.seller_visibility || "everyone"]}
+            options={VISIBILITY_OPTIONS}
+            disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
+            onChange={(value) =>
+              void updateVisibility(
+                "seller_visibility",
+                LABEL_TO_VISIBILITY[value] ?? "everyone"
+              )
+            }
+          />
+          {!firebaseUser ? (
+            <p className="mt-2 text-xs text-zinc-500">Sign in to view seller status.</p>
+          ) : profileLoading ? (
+            <p className="mt-2 text-xs text-zinc-500">Loading seller status...</p>
+          ) : !profile?.is_seller ? (
+            <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
+          ) : null}
+        </div>
+
+        <div className="px-5 py-4 bg-zinc-50/60">
+          <FormDropdown
+            label="Saved items visibility"
+            value={VISIBILITY_LABEL[profile?.saved_visibility || "only_me"]}
+            options={VISIBILITY_OPTIONS}
+            disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
+            onChange={(value) =>
+              void updateVisibility(
+                "saved_visibility",
+                LABEL_TO_VISIBILITY[value] ?? "only_me"
+              )
+            }
+          />
+        </div>
+
+        {!firebaseUser ? (
+          <div className="px-5 py-4 text-sm text-zinc-600 bg-white">
+            Sign in to save privacy preferences.
+          </div>
+        ) : null}
+      </div>
+    ) : null}
+  </section>
+
+  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <button
+      type="button"
+      onClick={() => toggleSection("helpLegal")}
+      className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+      aria-expanded={expandedSections.helpLegal}
+    >
+      <span className="inline-flex items-center gap-3 min-w-0">
+        <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+          <Settings className="w-5 h-5 text-zinc-700" />
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+            Help & Legal
+          </span>
+        </span>
+      </span>
+
+      <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+        {expandedSections.helpLegal ? "Hide" : "Show"}
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${expandedSections.helpLegal ? "rotate-180" : ""}`}
+        />
+      </span>
+    </button>
+
+    {expandedSections.helpLegal ? (
+      <div className="divide-y divide-zinc-100">
+        {[
+          { key: "privacy", label: "Privacy Policy", icon: FileText },
+          { key: "terms", label: "Terms of Use", icon: FileText },
+          { key: "safety", label: "Safety Tips", icon: ShieldCheck },
+          { key: "report", label: "Report a Problem", icon: HelpCircle },
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => openView(item.key as SettingsView)}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+            >
+              <span className="inline-flex items-center gap-3 min-w-0">
+                <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-zinc-700" />
                 </span>
-                <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
-                  {expandedSections.account ? "Hide" : "Show"}
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${expandedSections.account ? "rotate-180" : ""}`}
-                  />
-                </span>
-              </button>
-
-              {expandedSections.account && <>
-                <div className="mt-5 space-y-3 text-sm">
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Email</p>
-                    <p className="mt-1 font-semibold text-zinc-900">{profile?.email || firebaseUser?.email || "Not available"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">University</p>
-                    <p className="mt-1 font-semibold text-zinc-900">{profile?.university || "Not set"}</p>
-                  </div>
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                    <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account type</p>
-                    <p className="mt-1 font-semibold text-zinc-900">
-                      {profileLoading
-                        ? "Loading..."
-                        : !firebaseUser
-                        ? "Login required"
-                        : profile
-                        ? profile.is_seller
-                          ? "Seller"
-                          : "General"
-                        : "Not available"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-4 space-y-1 sm:space-y-2">
-                {[
-                  { label: "Edit Account", path: EDIT_ACCOUNT_PATH },
-                  ...(profile?.is_seller
-                    ? [{ label: "Edit Seller Profile", path: EDIT_PROFILE_PATH }]
-                    : []),
-                  ...(!profile?.is_seller
-                    ? [{ label: "Become Seller", path: BECOME_SELLER_PATH }]
-                    : []),
-                ].map((item) => (
-                  <button
-                    key={item.label}
-                    type="button"
-                    onClick={() => navigateToPath(item.path)}
-                    className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left"
-                  >
-                    <span className="font-bold text-zinc-900">{item.label}</span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                ))}
-
-                {isAdmin && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
-                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
-                    >
-                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
-                        <FileText className="w-4 h-4" />
-                        Admin Reports
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-indigo-400" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
-                      className="w-full flex items-center justify-between rounded-2xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 px-4 py-2 sm:py-3 text-left"
-                    >
-                      <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
-                        <UserCheck className="w-4 h-4" />
-                        Seller Approvals
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-indigo-400" />
-                    </button>
-                  </>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => void handleLogout()}
-                  disabled={!firebaseUser}
-                  className="w-full flex items-center justify-between rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:bg-zinc-100"
-                >
-                  <span className="font-bold text-zinc-900">Logout</span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setDeleteConfirmOpen(true)}
-                  disabled={!firebaseUser}
-                  className="w-full flex items-center justify-between rounded-2xl border border-red-200 bg-red-50 hover:bg-red-100 px-4 py-2 sm:py-3 text-left disabled:cursor-not-allowed disabled:border-zinc-200 disabled:bg-zinc-100"
-                >
-                  <span className="font-bold text-red-700">Delete Account</span>
-                  <ChevronRight className="w-4 h-4 text-red-300" />
-                </button>
-                </div>
-              </>}
-            </section>
-
+                <span className="font-bold text-zinc-900">{item.label}</span>
+              </span>
+              <ChevronRight className="w-4 h-4 text-zinc-400" />
+            </button>
+          );
+        })}
+      </div>
+    ) : null}
+  </section>
+</section>
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
               <button
                 type="button"
