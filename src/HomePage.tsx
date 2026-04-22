@@ -27,6 +27,7 @@ import {
   REPORT_PATH,
   SAFETY_PATH,
   SETTINGS_PATH,
+  PROFILE_PATH, 
   SIGNUP_PATH,
   TERMS_PATH,
   navigateToCreateListing,
@@ -444,7 +445,7 @@ export default function HomePage() {
                       type="button"
                       onClick={() => {
                         closeMenu();
-                        onProfileClick();
+                        navigateToPath(PROFILE_PATH);
                       }}
                       className={navButtonClass}
                     >
