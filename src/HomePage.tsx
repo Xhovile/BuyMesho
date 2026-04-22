@@ -279,6 +279,14 @@ export default function HomePage() {
                 <Settings className="w-4 h-4" />
                 Settings
               </button>
+              <button
+                type="button"
+                onClick={() => navigateToPath(PROFILE_PATH)}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                <UserRound className="w-4 h-4" />
+                Profile
+              </button>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -426,6 +434,21 @@ export default function HomePage() {
                   <span className="inline-flex items-center gap-3">
                     <Settings className="w-4 h-4 text-zinc-500" />
                     Settings
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath(PROFILE_PATH);
+                  }}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <UserRound className="w-4 h-4 text-zinc-500" />
+                    Profile
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
