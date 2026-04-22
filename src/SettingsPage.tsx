@@ -564,7 +564,7 @@ export default function SettingsPage() {
 
                 <button
                   type="button"
-                  onClick={() => navigateToPath("/change_email")}
+                  onClick={() => navigateToPath(CHANGE_EMAIL_PATH)
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                 >
                   <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
