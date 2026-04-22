@@ -20,6 +20,7 @@ export type AppRoute =
   | "edit_account"
   | "become_seller"
   | "change_password"
+  | "change_email"
   | "my_listings"
   | "admin_reports"
   | "admin_seller_applications";
@@ -247,8 +248,12 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === CHANGE_PASSWORD_PATH) {
     return "change_password";
-  }
-
+  } 
+  
+  if (location.pathname === CHANGE_EMAIL_PATH) {
+    return "change_email";
+  } 
+  
   if (location.pathname === MY_LISTINGS_PATH) {
     return "my_listings";
   }
