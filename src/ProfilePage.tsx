@@ -27,6 +27,8 @@ import {
 import { getAvatarUrl } from "./lib/avatar";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
+import { EyeOff } from "lucide-react";
+import { HIDDEN_PATH } from "./lib/appNavigation";
 
 type FeedbackState = {
   open: boolean;
