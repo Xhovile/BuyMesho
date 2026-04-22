@@ -563,18 +563,6 @@ export default function SettingsPage() {
 
                 <button
                   type="button"
-                  #we_will_put_onclick_here
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-                >
-                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    Change Email
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
                   onClick={handle2FAEntry}
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                 >
