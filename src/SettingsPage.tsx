@@ -10,6 +10,13 @@ import {
   ShoppingBag,
   User,
   UserCheck,
+  Mail,
+  Lock,
+  LogOut,
+  KeyRound,
+  ShieldAlert,
+  ShieldEllipsis,
+  Loader2,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
@@ -41,13 +48,14 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 import type { VisibilitySetting } from "./types";
 import {
-  EmailAuthProvider,
-  deleteUser,
-  reauthenticateWithCredential,
-  signOut,
-} from "firebase/auth";
+  deleteCurrentAccount,
+  logoutOtherSessions,
+  reauthenticateWithPassword,
+  refreshEmailVerificationState,
+  resendVerificationEmail,
+} from "./lib/security";
 import { auth } from "./firebase";
-import { apiFetch } from "./lib/api";
+import { signOut } from "firebase/auth";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
 
@@ -121,6 +129,9 @@ export default function SettingsPage() {
     }
     return defaultExpandedSections;
   });
+  const [securityActionBusy, setSecurityActionBusy] = useState<
+    "resend" | "logoutAll" | null
+  >(null);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -161,6 +172,14 @@ export default function SettingsPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const showFeedback = (
+    type: "success" | "error" | "info",
+    title: string,
+    message: string
+  ) => {
+    setFeedback({ open: true, type, title, message });
+  };
+
   const updateVisibility = async (
     field: "profile_visibility" | "seller_visibility" | "saved_visibility",
     nextValue: VisibilitySetting
@@ -176,19 +195,10 @@ export default function SettingsPage() {
   };
 
   const handleLogout = async () => {
-    if (!firebaseUser) return;
-
     try {
       await signOut(auth);
+    } finally {
       navigateToPath(LOGIN_PATH);
-    } catch (error) {
-      console.error("Logout failed:", error);
-      setFeedback({
-        open: true,
-        type: "error",
-        title: "Logout failed",
-        message: "Please try again.",
-      });
     }
   };
 
@@ -196,64 +206,106 @@ export default function SettingsPage() {
     if (!firebaseUser) return;
     setDeleteConfirmOpen(false);
 
-    try {
-      await apiFetch("/api/profile", { method: "DELETE" });
-      await deleteUser(firebaseUser);
-      navigateToPath(LOGIN_PATH);
-    } catch (error: any) {
-      console.error("Delete account failed:", error);
-      if (error?.code === "auth/requires-recent-login") {
+    const result = await deleteCurrentAccount();
+    if (!result.ok) {
+      if (result.code === "auth/requires-recent-login") {
         setPasswordPromptOpen(true);
         return;
       }
-      setFeedback({
-        open: true,
-        type: "error",
-        title: "Delete account failed",
-        message: error?.message || "Please try again.",
-      });
+      showFeedback("error", "Delete account failed", result.message);
+      return;
     }
+
+    navigateToPath(LOGIN_PATH);
   };
 
   const handlePasswordPromptSubmit = async () => {
     if (!firebaseUser?.email) {
-      setFeedback({
-        open: true,
-        type: "error",
-        title: "Missing email",
-        message: "No email found for this account.",
-      });
+      showFeedback("error", "Missing email", "No email found for this account.");
       return;
     }
 
     if (!reauthPassword.trim()) {
-      setFeedback({
-        open: true,
-        type: "info",
-        title: "Password required",
-        message: "Please enter your password to continue.",
-      });
+      showFeedback("info", "Password required", "Please enter your password to continue.");
       return;
     }
 
-    try {
-      const credential = EmailAuthProvider.credential(
-        firebaseUser.email,
-        reauthPassword
-      );
+    const result = await reauthenticateWithPassword({
+      email: firebaseUser.email,
+      password: reauthPassword,
+    });
 
-      await reauthenticateWithCredential(firebaseUser, credential);
-      setPasswordPromptOpen(false);
-      setReauthPassword("");
-      await handleDeleteAccount();
-    } catch (error: any) {
-      setFeedback({
-        open: true,
-        type: "error",
-        title: "Verification failed",
-        message: error?.message || "We could not verify your password. Please try again.",
-      });
+    if (!result.ok) {
+      showFeedback("error", "Verification failed", result.message);
+      return;
     }
+
+    setPasswordPromptOpen(false);
+    setReauthPassword("");
+    await handleDeleteAccount();
+  };
+
+  const handleResendVerification = async () => {
+    if (!firebaseUser) return;
+
+    setSecurityActionBusy("resend");
+    try {
+      const result = await resendVerificationEmail();
+      if (result.ok) {
+        showFeedback("success", "Verification sent", result.message || "Verification email sent.");
+      } else {
+        showFeedback("error", "Resend failed", result.message);
+      }
+    } finally {
+      setSecurityActionBusy(null);
+    }
+  };
+
+  const handleRefreshVerification = async () => {
+    if (!firebaseUser) return;
+    const verified = await refreshEmailVerificationState();
+
+    if (verified) {
+      showFeedback("success", "Email verified", "Your email address is now verified.");
+      return;
+    }
+
+    showFeedback(
+      "info",
+      "Still not verified",
+      "Email verification has not been completed yet. Check your inbox and spam folder."
+    );
+  };
+
+  const handleLogoutAllSessions = async () => {
+    if (!firebaseUser) return;
+
+    setSecurityActionBusy("logoutAll");
+    try {
+      const result = await logoutOtherSessions();
+      if (!result.ok) {
+        showFeedback("error", "Logout failed", result.message);
+        return;
+      }
+
+      showFeedback("success", "Signed out", result.message || "All sessions have been signed out.");
+      navigateToPath(LOGIN_PATH);
+    } finally {
+      setSecurityActionBusy(null);
+    }
+  };
+
+  const handle2FAEntry = () => {
+    showFeedback(
+      "info",
+      "2FA setup",
+      "Two-factor authentication needs backend support first. Add it only after SMS or Google provider flow is wired on the auth side."
+    );
+  };
+
+  const handleVerifyIdentity = () => {
+    if (!firebaseUser) return;
+    setPasswordPromptOpen(true);
   };
 
   const toggleSection = (
@@ -446,7 +498,10 @@ export default function SettingsPage() {
                   disabled={!firebaseUser}
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
-                  <span className="font-bold text-zinc-900">Logout</span>
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
@@ -456,7 +511,10 @@ export default function SettingsPage() {
                   disabled={!firebaseUser}
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-red-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
-                  <span className="font-bold text-red-700">Delete Account</span>
+                  <span className="font-bold text-red-700 inline-flex items-center gap-2">
+                    <ShieldAlert className="w-4 h-4" />
+                    Delete Account
+                  </span>
                   <ChevronRight className="w-4 h-4 text-red-300" />
                 </button>
               </div>
@@ -496,24 +554,114 @@ export default function SettingsPage() {
                   onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                 >
-                  <span className="font-bold text-zinc-900">Change Password</span>
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Change Password
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/change_email")}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Change Email
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handle2FAEntry}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <ShieldEllipsis className="w-4 h-4" />
+                    2Factor Auth
+                  </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 <div className="px-5 py-4 bg-zinc-50/60">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Email verification
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-zinc-900">
-                    {profileLoading
-                      ? "Checking..."
-                      : !firebaseUser
-                      ? "Login required"
-                      : firebaseUser.emailVerified
-                      ? "Verified"
-                      : "Not verified"}
-                  </p>
+                  <div className="flex flex-col gap-3">
+                    <div>
+                      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                        Email verification
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-900">
+                        {profileLoading
+                          ? "Checking..."
+                          : !firebaseUser
+                          ? "Login required"
+                          : firebaseUser.emailVerified
+                          ? "Verified"
+                          : "Not verified"}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="button"
+                        onClick={handleRefreshVerification}
+                        disabled={!firebaseUser}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        Refresh status
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => void handleResendVerification()}
+                        disabled={!firebaseUser || securityActionBusy === "resend" || !!firebaseUser?.emailVerified}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {securityActionBusy === "resend" ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Mail className="h-4 w-4" />
+                        )}
+                        Resend verification
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-zinc-500">
+                      Verification must be completed before higher-trust actions should be allowed.
+                    </p>
+                  </div>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => void handleLogoutAllSessions()}
+                  disabled={!firebaseUser || securityActionBusy === "logoutAll"}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Logout all sessions
+                  </span>
+                  {securityActionBusy === "logoutAll" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleVerifyIdentity}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <KeyRound className="w-4 h-4" />
+                    Verify identity
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
               </div>
             ) : null}
           </section>
