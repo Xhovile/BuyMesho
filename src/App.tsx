@@ -90,7 +90,10 @@ import ReportListingModal from "./components/ReportListingModal";
 import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
-import { navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
+import { navigateToListingDetails,
+        navigateToPath, 
+        PROFILE_PATH, 
+        navigateToSellerProfile } from "./lib/appNavigation";
 import {
   hideListingId,
   hideSellerUid,
@@ -2978,7 +2981,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   setNewListing(createInitialListingDraft(userProfile));
   setShowAddModal(true);
 }}
-          onProfileClick={() => setShowProfileModal(true)}
+          onProfileClick={() => navigateToPath(PROFILE_PATH)}
           userProfile={userProfile}
           firebaseUser={firebaseUser}
       />
