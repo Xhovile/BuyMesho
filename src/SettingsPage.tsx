@@ -42,7 +42,6 @@ import {
   SETTINGS_PATH,
   TERMS_PATH,
   CHANGE_PASSWORD_PATH,
-  CHANGE_EMAIL_PATH, 
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
