@@ -91,7 +91,16 @@ import AdminReportsModal from "./components/AdminReportsModal";
 import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
 import { navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
-                
+import {
+  hideListingId,
+  hideSellerUid,
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+  unhideListingId,
+  unhideSellerUid,
+} from "./lib/hiddenCollections";
+
 // --- Main App ---
 
 type SellerRatingSummary = {
@@ -254,29 +263,26 @@ const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const listingsFetchAbortRef = useRef<AbortController | null>(null);
 const listingsRequestIdRef = useRef(0);
-  
-// Local-only hides (no backend needed)
 
-const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
-  try {
-    const raw = localStorage.getItem("hiddenSellerUids");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
-  }
-});
-const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => {
-  try {
-    const raw = localStorage.getItem("hiddenListingIds");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed)
-      ? parsed.filter((x) => Number.isInteger(x))
-      : [];
-  } catch {
-    return [];
-  }
-});
+  
+const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+  readHiddenSellerUids()
+);
+
+const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+  readHiddenListingIds()
+);
+
+useEffect(() => {
+  const syncHiddenCollections = () => {
+    setHiddenSellerUids(readHiddenSellerUids());
+    setHiddenListingIds(readHiddenListingIds());
+  };
+
+  syncHiddenCollections();
+  return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+}, []);
+  
 const [confirmState, setConfirmState] = useState<{
   open: boolean;
   title: string;
