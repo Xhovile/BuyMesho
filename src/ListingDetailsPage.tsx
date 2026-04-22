@@ -801,7 +801,7 @@ Listing: ${buildListingShareUrl(
 
             <section className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] gap-6">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Specifications</p>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-800">Specifications</p>
                 {groupedSpecs.length > 0 ? (
                   <div className="mt-5">
                     <div className="relative mb-3 h-9">
