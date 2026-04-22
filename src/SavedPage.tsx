@@ -1,7 +1,7 @@
 import { Bookmark, ChevronLeft, Loader2, Search, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Listing } from "./types";
-import { EXPLORE_PATH, HOME_PATH, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToListingDetails, navigateToPath } from "./lib/appNavigation";
 import { fetchListingsByIds } from "./lib/listings";
 import { readAllSavedListingIds, subscribeToSavedListingChanges } from "./lib/savedListings";
 
@@ -80,10 +80,10 @@ export default function SavedPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
+              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
               className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
             >
-              Back to Explore
+              Back
             </button>
           </div>
         </div>
@@ -191,7 +191,7 @@ export default function SavedPage() {
               </p>
               <button
                 type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
+                onClick={() => navigateBackOrPath(EXPLORE_PATH)}
                 className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
               >
                 <ChevronLeft className="w-4 h-4 rotate-180" />
