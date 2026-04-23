@@ -227,15 +227,11 @@ export default function HomePage() {
     navigateToCreateListing();
   };
 
-  const handleLogout = async (afterClose?: () => void) => {
-    afterClose?.();
-    try {
-      await signOut(auth);
-      navigateToPath(HOME_PATH);
-    } catch {
-      // Keep the UI usable even if sign-out fails briefly.
-    }
-  };
+  const handleLogout = async () => {
+     await signOut(auth);
+     closeMenu();
+     navigateToPath(HOME_PATH);
+   };
 
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
@@ -337,6 +333,7 @@ export default function HomePage() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
+            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -348,6 +345,7 @@ export default function HomePage() {
               aria-hidden="true"
             />
 
+            {/* Drawer */}
             <motion.div
               key="drawer-panel"
               id="mobile-home-menu"
@@ -360,6 +358,7 @@ export default function HomePage() {
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
+              {/* Drawer header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
@@ -369,7 +368,6 @@ export default function HomePage() {
                     Start here
                   </h2>
                 </div>
-
                 <button
                   type="button"
                   onClick={closeMenu}
@@ -380,6 +378,7 @@ export default function HomePage() {
                 </button>
               </div>
 
+              {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                 <button
                   type="button"
@@ -439,7 +438,7 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                {isLoggedIn ? (
+                  {isLoggedIn ? (
                   <>
                     <button
                       type="button"
@@ -450,13 +449,12 @@ export default function HomePage() {
                       className={navButtonClass}
                     >
                       <span className="inline-flex items-center gap-3">
-                        <UserRound className="w-4 h-4 text-zinc-500" />
+                        <User className="w-4 h-4 text-zinc-500" />
                         Profile
                       </span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </button>
-
-                    <button
+                     <button
                       type="button"
                       onClick={() => handleLogout(closeMenu)}
                       className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
@@ -469,35 +467,36 @@ export default function HomePage() {
                     </button>
                   </>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath(SIGNUP_PATH);
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign Up
-                    </button>
+               <div className="grid grid-cols-2 gap-2">
+                 <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      navigateToPath(SIGNUP_PATH);
+                    }}
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                  >
+                   Sign Up
+                </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath(LOGIN_PATH);
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign In
-                    </button>
-                  </div>
-                )}
+              <button
+                 type="button"
+                 onClick={() => {
+                   closeMenu();
+                   navigateToPath(LOGIN_PATH);
+                 }}
+                 className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+               >
+                 Sign In
+               </button>
+             </div>
+             )}
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
+
       <FeedbackModal
         open={authGuardOpen}
         type="error"
