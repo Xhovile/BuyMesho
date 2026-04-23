@@ -59,8 +59,9 @@ import {
   confirmTotpEnrollment,
   disableTotpEnrollment,
 } from "./lib/security";
-import { buildOtpAuthUri, getTotpDisplayName, type TotpMfaStatus } from "./lib/totp";
+import { getTotpDisplayName, type TotpMfaStatus } from "./lib/totp";
 import { auth } from "./firebase";
+import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { signOut } from "firebase/auth";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
@@ -229,6 +230,7 @@ export default function SettingsPage() {
 
   const handleLogout = async () => {
     try {
+      clearTotpVerifiedSessionToken();
       await signOut(auth);
     } finally {
       navigateToPath(LOGIN_PATH);
@@ -973,16 +975,15 @@ export default function SettingsPage() {
         open={totpSetupOpen}
         title="Set up authenticator app"
         message="Scan the QR code with Google Authenticator, Microsoft Authenticator, Authy, or any TOTP app. Then enter the 6-digit code to confirm setup."
-        accountLabel={totpAccountName}
+        qrCodeUrl={totpQrImageUrl}
         otpauthUri={totpUri}
         secret={totpSecret}
-        qrImageUrl={totpQrImageUrl}
-        verificationCode={totpSetupCode}
+        accountName={totpAccountName}
+        code={totpSetupCode}
         busy={totpLoading}
-        onVerificationCodeChange={setTotpSetupCode}
-        onCopySecret={() => navigator.clipboard.writeText(totpSecret)}
-        onCopyUri={() => navigator.clipboard.writeText(totpUri)}
+        onCodeChange={setTotpSetupCode}
         onConfirm={handleTotpSetupConfirm}
+        onDisable={handleDisableTotp}
         onClose={() => {
           setTotpSetupOpen(false);
           setTotpSetupCode("");
@@ -1021,4 +1022,4 @@ export default function SettingsPage() {
       )}
     </div>
   );
-}
+}                                      </div>                {expandedSections.helpLegal ? "Hide" : "Show"
