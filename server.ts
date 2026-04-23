@@ -1,4 +1,5 @@
 import express, { type NextFunction, type Request, type Response } from "express";
+import { mountTotpRoutes } from "./server/totpServer.js";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import path from "path";
