@@ -2,10 +2,35 @@ import {
   buildTotpRecord,
   getIssuerLabel,
   type TotpEnrollmentRecord,
-} from "./totpService";
-import type { TotpMfaStatus } from "../lib/totp";
+} from "./totpService.js";
+import Database from "better-sqlite3";
+import { createHash, randomBytes } from "crypto";
+import type { TotpMfaStatus } from "../lib/totp.js";
 
-const enrollmentStore = new Map<string, TotpEnrollmentRecord>();
+const TOTP_VERIFIED_SESSION_TTL_MS = 15 * 60 * 1000;
+const verifiedSessionDb = new Database("market.db");
+
+verifiedSessionDb.exec(`
+  CREATE TABLE IF NOT EXISTS totp_enrollments (
+    user_id TEXT PRIMARY KEY,
+    email TEXT,
+    status TEXT NOT NULL,
+    secret TEXT NOT NULL,
+    issuer TEXT NOT NULL,
+    account_name TEXT NOT NULL,
+    enrolled_at TEXT NOT NULL,
+    confirmed_at TEXT
+  )
+`);
+
+verifiedSessionDb.exec(`
+  CREATE TABLE IF NOT EXISTS totp_verified_sessions (
+    token_hash TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 export type TotpEnrollmentInput = {
   userId: string;
@@ -25,16 +50,82 @@ export type TotpEnrollmentSummary = {
   confirmedAt: string | null;
 };
 
+export type TotpVerifiedSession = {
+  token: string;
+  userId: string;
+  expiresAt: string;
+};
+
 export function getTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
-  return enrollmentStore.get(userId) ?? null;
+  const row = verifiedSessionDb
+    .prepare(
+      `
+      SELECT user_id, email, status, secret, issuer, account_name, enrolled_at, confirmed_at
+      FROM totp_enrollments
+      WHERE user_id = ?
+      `
+    )
+    .get(userId) as
+    | {
+        user_id: string;
+        email: string | null;
+        status: TotpMfaStatus;
+        secret: string;
+        issuer: string;
+        account_name: string;
+        enrolled_at: string;
+        confirmed_at: string | null;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  return {
+    userId: row.user_id,
+    email: row.email,
+    status: row.status,
+    secret: row.secret,
+    issuer: row.issuer,
+    accountName: row.account_name,
+    enrolledAt: row.enrolled_at,
+    confirmedAt: row.confirmed_at,
+  };
 }
 
 export function listTotpEnrollments(): TotpEnrollmentRecord[] {
-  return Array.from(enrollmentStore.values());
+  const rows = verifiedSessionDb
+    .prepare(
+      `
+      SELECT user_id, email, status, secret, issuer, account_name, enrolled_at, confirmed_at
+      FROM totp_enrollments
+      ORDER BY enrolled_at DESC
+      `
+    )
+    .all() as Array<{
+    user_id: string;
+    email: string | null;
+    status: TotpMfaStatus;
+    secret: string;
+    issuer: string;
+    account_name: string;
+    enrolled_at: string;
+    confirmed_at: string | null;
+  }>;
+
+  return rows.map((row) => ({
+    userId: row.user_id,
+    email: row.email,
+    status: row.status,
+    secret: row.secret,
+    issuer: row.issuer,
+    accountName: row.account_name,
+    enrolledAt: row.enrolled_at,
+    confirmedAt: row.confirmed_at,
+  }));
 }
 
 export function upsertTotpEnrollment(input: TotpEnrollmentInput): TotpEnrollmentRecord {
-  const existing = enrollmentStore.get(input.userId);
+  const existing = getTotpEnrollment(input.userId);
   const next = existing
     ? {
         ...existing,
@@ -51,12 +142,45 @@ export function upsertTotpEnrollment(input: TotpEnrollmentInput): TotpEnrollment
         accountName: input.accountName,
       });
 
-  enrollmentStore.set(input.userId, next);
+  verifiedSessionDb
+    .prepare(
+      `
+      INSERT INTO totp_enrollments (
+        user_id,
+        email,
+        status,
+        secret,
+        issuer,
+        account_name,
+        enrolled_at,
+        confirmed_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        email = excluded.email,
+        status = excluded.status,
+        secret = excluded.secret,
+        issuer = excluded.issuer,
+        account_name = excluded.account_name,
+        enrolled_at = excluded.enrolled_at,
+        confirmed_at = excluded.confirmed_at
+      `
+    )
+    .run(
+      next.userId,
+      next.email,
+      next.status,
+      next.secret,
+      next.issuer,
+      next.accountName,
+      next.enrolledAt,
+      next.confirmedAt
+    );
+
   return next;
 }
 
 export function confirmTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
-  const existing = enrollmentStore.get(userId);
+  const existing = getTotpEnrollment(userId);
   if (!existing) return null;
 
   const confirmed: TotpEnrollmentRecord = {
@@ -65,16 +189,22 @@ export function confirmTotpEnrollment(userId: string): TotpEnrollmentRecord | nu
     confirmedAt: new Date().toISOString(),
   };
 
-  enrollmentStore.set(userId, confirmed);
+  verifiedSessionDb
+    .prepare("UPDATE totp_enrollments SET status = ?, confirmed_at = ? WHERE user_id = ?")
+    .run(confirmed.status, confirmed.confirmedAt, userId);
+
   return confirmed;
 }
 
 export function disableTotpEnrollment(userId: string): boolean {
-  return enrollmentStore.delete(userId);
+  const result = verifiedSessionDb
+    .prepare("DELETE FROM totp_enrollments WHERE user_id = ?")
+    .run(userId);
+  return result.changes > 0;
 }
 
 export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnrollmentRecord | null {
-  const existing = enrollmentStore.get(userId);
+  const existing = getTotpEnrollment(userId);
   if (!existing) return null;
 
   const next: TotpEnrollmentRecord = {
@@ -83,12 +213,15 @@ export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnroll
     confirmedAt: status === "enabled" ? existing.confirmedAt || new Date().toISOString() : existing.confirmedAt,
   };
 
-  enrollmentStore.set(userId, next);
+  verifiedSessionDb
+    .prepare("UPDATE totp_enrollments SET status = ?, confirmed_at = ? WHERE user_id = ?")
+    .run(next.status, next.confirmedAt, userId);
+
   return next;
 }
 
 export function getTotpEnrollmentSummary(userId: string): TotpEnrollmentSummary | null {
-  const record = enrollmentStore.get(userId);
+  const record = getTotpEnrollment(userId);
   if (!record) return null;
 
   return {
@@ -103,5 +236,48 @@ export function getTotpEnrollmentSummary(userId: string): TotpEnrollmentSummary 
 }
 
 export function clearTotpStore(): void {
-  enrollmentStore.clear();
+  verifiedSessionDb.prepare("DELETE FROM totp_enrollments").run();
+  verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions").run();
+}
+
+export function createTotpVerifiedSession(userId: string): TotpVerifiedSession {
+  const token = randomBytes(32).toString("hex");
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const expiresAt = new Date(Date.now() + TOTP_VERIFIED_SESSION_TTL_MS).toISOString();
+
+  verifiedSessionDb
+    .prepare(
+      `
+      INSERT INTO totp_verified_sessions (token_hash, user_id, expires_at)
+      VALUES (?, ?, ?)
+      ON CONFLICT(token_hash) DO UPDATE SET
+        user_id = excluded.user_id,
+        expires_at = excluded.expires_at
+      `
+    )
+    .run(tokenHash, userId, expiresAt);
+
+  return { token, userId, expiresAt };
+}
+
+export function verifyTotpVerifiedSession(userId: string, token: string): boolean {
+  const normalizedToken = token.trim();
+  if (!normalizedToken) return false;
+  const tokenHash = createHash("sha256").update(normalizedToken).digest("hex");
+
+  const session = verifiedSessionDb
+    .prepare("SELECT user_id, expires_at FROM totp_verified_sessions WHERE token_hash = ?")
+    .get(tokenHash) as { user_id: string; expires_at: string } | undefined;
+
+  if (!session) return false;
+
+  if (session.user_id !== userId) return false;
+
+  const expiresAtMs = Date.parse(session.expires_at);
+  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+    verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE token_hash = ?").run(tokenHash);
+    return false;
+  }
+
+  return true;
 }

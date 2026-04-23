@@ -8,7 +8,7 @@ import {
   normalizeTotpCode,
   isValidTotpCode,
   type TotpMfaStatus,
-} from "../lib/totp";
+} from "../lib/totp.js";
 
 const BASE32_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 
@@ -68,14 +68,14 @@ export function buildTotpRecord(input: {
   };
 }
 
-export function getTotpCounter(time = Date.now(), period = TOTP_PERIOD): number {
+export function getTotpCounter(time = Date.now(), period: number = TOTP_PERIOD): number {
   return Math.floor(time / 1000 / period);
 }
 
 export function generateTotpCode(
   secret: string,
   counter = getTotpCounter(),
-  digits = TOTP_DIGITS,
+  digits: number = TOTP_DIGITS,
   algorithm: "SHA1" | "SHA256" | "SHA512" = TOTP_ALGORITHM
 ): string {
   const key = base32Decode(normalizeBase32Secret(secret));
