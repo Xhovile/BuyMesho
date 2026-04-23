@@ -367,7 +367,6 @@ export default function ProfilePage() {
       </button>
     </div>
   </section>
-  </div>
 
       {feedback && (
         <FeedbackModal
