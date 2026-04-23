@@ -1022,4 +1022,4 @@ export default function SettingsPage() {
       )}
     </div>
   );
-}                                      </div>                {expandedSections.helpLegal ? "Hide" : "Show"
+}
