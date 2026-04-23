@@ -2,9 +2,8 @@ import { Router, type Request, type Response } from "express";
 import {
   buildOtpAuthUri,
   generateTotpSecret,
-  normalizeTotpCode,
   verifyTotpCode,
-} from "./totpService";
+} from "./totpService.js";
 import {
   confirmTotpEnrollment,
   createTotpVerifiedSession,
@@ -13,8 +12,8 @@ import {
   getTotpEnrollmentSummary,
   setTotpStatus,
   upsertTotpEnrollment,
-} from "./totpStore";
-import { getTotpDisplayName, type TotpMfaStatus } from "../lib/totp";
+} from "./totpStore.js";
+import { getTotpDisplayName, normalizeTotpCode, type TotpMfaStatus } from "../lib/totp.js";
 
 export type AuthUserContext = {
   uid: string;
