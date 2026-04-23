@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronDown,
   ChevronRight,
@@ -15,7 +15,6 @@ import {
   LogOut,
   KeyRound,
   ShieldAlert,
-  ShieldEllipsis,
   Loader2,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
@@ -27,10 +26,13 @@ import FormDropdown from "./components/FormDropdown";
 import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
+import TotpSetupModal from "./components/TotpSetupModal";
 import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   BECOME_SELLER_PATH,
+  CHANGE_EMAIL_PATH,
+  CHANGE_PASSWORD_PATH,
   EDIT_ACCOUNT_PATH,
   EDIT_PROFILE_PATH,
   EXPLORE_PATH,
@@ -41,7 +43,6 @@ import {
   SAFETY_PATH,
   SETTINGS_PATH,
   TERMS_PATH,
-  CHANGE_PASSWORD_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -53,7 +54,12 @@ import {
   reauthenticateWithPassword,
   refreshEmailVerificationState,
   resendVerificationEmail,
+  getTotpStatus,
+  startTotpEnrollment,
+  confirmTotpEnrollment,
+  disableTotpEnrollment,
 } from "./lib/security";
+import { buildOtpAuthUri, getTotpDisplayName, type TotpMfaStatus } from "./lib/totp";
 import { auth } from "./firebase";
 import { signOut } from "firebase/auth";
 
@@ -132,6 +138,13 @@ export default function SettingsPage() {
   const [securityActionBusy, setSecurityActionBusy] = useState<
     "resend" | "logoutAll" | null
   >(null);
+  const [totpStatus, setTotpStatus] = useState<TotpMfaStatus>("disabled");
+  const [totpLoading, setTotpLoading] = useState(false);
+  const [totpSetupOpen, setTotpSetupOpen] = useState(false);
+  const [totpSetupCode, setTotpSetupCode] = useState("");
+  const [totpSecret, setTotpSecret] = useState("");
+  const [totpUri, setTotpUri] = useState("");
+  const [totpAccountName, setTotpAccountName] = useState("");
 
   useEffect(() => {
     const handlePopState = () => {
@@ -151,6 +164,21 @@ export default function SettingsPage() {
       // ignore storage errors
     }
   }, [expandedSections]);
+
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const loadTotpStatus = async () => {
+      const result = await getTotpStatus();
+      if (result.ok && result.data) {
+        setTotpStatus(result.data.status);
+      } else {
+        setTotpStatus("disabled");
+      }
+    };
+
+    void loadTotpStatus();
+  }, [firebaseUser]);
 
   const openView = (nextView: SettingsView) => {
     if (nextView === "menu") {
@@ -179,6 +207,11 @@ export default function SettingsPage() {
   ) => {
     setFeedback({ open: true, type, title, message });
   };
+
+  const totpQrImageUrl = useMemo(() => {
+    if (!totpUri) return "";
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(totpUri)}`;
+  }, [totpUri]);
 
   const updateVisibility = async (
     field: "profile_visibility" | "seller_visibility" | "saved_visibility",
@@ -295,12 +328,76 @@ export default function SettingsPage() {
     }
   };
 
-  const handle2FAEntry = () => {
-    showFeedback(
-      "info",
-      "2FA setup",
-      "Two-factor authentication needs backend support first. Add it only after SMS or Google provider flow is wired on the auth side."
-    );
+  const handle2FAEntry = async () => {
+    if (!firebaseUser) {
+      showFeedback("error", "Login required", "Please log in before setting up two-factor authentication.");
+      return;
+    }
+
+    setTotpLoading(true);
+    try {
+      const accountName = getTotpDisplayName(profile?.business_name || null, firebaseUser.email || null);
+      const result = await startTotpEnrollment(accountName);
+
+      if (!result.ok || !result.data) {
+        showFeedback("error", "Setup failed", result.message);
+        return;
+      }
+
+      setTotpSecret(result.data.secret);
+      setTotpUri(result.data.otpauthUri);
+      setTotpAccountName(result.data.accountName);
+      setTotpSetupCode("");
+      setTotpSetupOpen(true);
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleTotpSetupConfirm = async () => {
+    if (!totpSetupCode.trim()) {
+      showFeedback("info", "Code required", "Enter the 6-digit code from your authenticator app.");
+      return;
+    }
+
+    setTotpLoading(true);
+    try {
+      const result = await confirmTotpEnrollment(totpSetupCode);
+
+      if (!result.ok || !result.data) {
+        showFeedback("error", "Confirmation failed", result.message);
+        return;
+      }
+
+      setTotpStatus("enabled");
+      setTotpSetupOpen(false);
+      setTotpSetupCode("");
+      showFeedback("success", "Two-factor enabled", "Authenticator app verification is now active.");
+    } finally {
+      setTotpLoading(false);
+    }
+  };
+
+  const handleDisableTotp = async () => {
+    setTotpLoading(true);
+    try {
+      const result = await disableTotpEnrollment();
+
+      if (!result.ok) {
+        showFeedback("error", "Disable failed", result.message);
+        return;
+      }
+
+      setTotpStatus("disabled");
+      setTotpSetupOpen(false);
+      setTotpSetupCode("");
+      setTotpSecret("");
+      setTotpUri("");
+      setTotpAccountName("");
+      showFeedback("success", "Two-factor disabled", "Authenticator app protection has been removed.");
+    } finally {
+      setTotpLoading(false);
+    }
   };
 
   const handleVerifyIdentity = () => {
@@ -563,7 +660,7 @@ export default function SettingsPage() {
 
                 <button
                   type="button"
-                  onClick={() => navigateToPath(CHANGE_EMAIL_PATH)
+                  onClick={() => navigateToPath(CHANGE_EMAIL_PATH)}
                   className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                 >
                   <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
@@ -573,17 +670,76 @@ export default function SettingsPage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handle2FAEntry}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-                >
-                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
-                    <ShieldEllipsis className="w-4 h-4" />
-                    2Factor Auth
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
+                <div className="px-5 py-4 bg-zinc-50/60">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                          Two-factor authentication
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-zinc-900">
+                          {totpStatus === "enabled"
+                            ? "Enabled"
+                            : totpStatus === "pending"
+                            ? "Pending setup"
+                            : "Not enabled"}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          Use an authenticator app for your second factor.
+                        </p>
+                      </div>
+
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${
+                          totpStatus === "enabled"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : totpStatus === "pending"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-zinc-100 text-zinc-500"
+                        }`}
+                      >
+                        {totpStatus === "enabled"
+                          ? "Active"
+                          : totpStatus === "pending"
+                          ? "Setup"
+                          : "Off"}
+                      </span>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3">
+                      {totpStatus === "enabled" ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleDisableTotp}
+                            disabled={totpLoading}
+                            className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Disable 2FA
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handle2FAEntry}
+                            disabled={totpLoading}
+                            className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Re-enroll
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handle2FAEntry}
+                          disabled={totpLoading}
+                          className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Enable authenticator app
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
                 <div className="px-5 py-4 bg-zinc-50/60">
                   <div className="flex flex-col gap-3">
@@ -812,6 +968,26 @@ export default function SettingsPage() {
           </section>
         </section>
       </main>
+
+      <TotpSetupModal
+        open={totpSetupOpen}
+        title="Set up authenticator app"
+        message="Scan the QR code with Google Authenticator, Microsoft Authenticator, Authy, or any TOTP app. Then enter the 6-digit code to confirm setup."
+        accountLabel={totpAccountName}
+        otpauthUri={totpUri}
+        secret={totpSecret}
+        qrImageUrl={totpQrImageUrl}
+        verificationCode={totpSetupCode}
+        busy={totpLoading}
+        onVerificationCodeChange={setTotpSetupCode}
+        onCopySecret={() => navigator.clipboard.writeText(totpSecret)}
+        onCopyUri={() => navigator.clipboard.writeText(totpUri)}
+        onConfirm={handleTotpSetupConfirm}
+        onClose={() => {
+          setTotpSetupOpen(false);
+          setTotpSetupCode("");
+        }}
+      />
 
       <PasswordPromptModal
         open={passwordPromptOpen}

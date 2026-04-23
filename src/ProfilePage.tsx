@@ -12,7 +12,7 @@ import {
   ClipboardList,
   Flag,
   EyeOff,
-  ChevronRight, 
+  ChevronRight,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
@@ -125,258 +125,268 @@ export default function ProfilePage() {
               <p className="text-sm text-zinc-500">{profile.university || "University not set"}</p>
             </div>
           </div>
-          
-<div className="p-6 sm:p-8 space-y-6">
-  {!emailVerified && (
-    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
-      <div className="flex items-start gap-3">
-        <AlertTriangle className="w-5 h-5 mt-0.5" />
-        <div>
-          <p className="font-bold">Verify your email to unlock full selling access.</p>
-          <div className="mt-3 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={async () => {
-                if (!firebaseUser) return;
-                try {
-                  await apiFetch("/api/auth/resend-verification-email", {
-                    method: "POST",
-                    body: JSON.stringify({
-                      display_name:
-                        profile?.business_name || firebaseUser.email?.split("@")[0] || null,
-                    }),
-                  });
-                  showFeedback(
-                    "success",
-                    "Verification email resent",
-                    "Check your inbox for the new verification email."
-                  );
-                } catch (err: any) {
-                  showFeedback(
-                    "error",
-                    "Resend failed",
-                    err?.message || "We could not resend the verification email."
-                  );
-                }
-              }}
-              className="px-4 py-2 rounded-xl bg-white border border-amber-200 text-sm font-bold hover:bg-amber-100"
-            >
-              Resend verification email
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )}
 
-  {isAdmin && (
-    <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-500">
-        Admin tools
-      </p>
-
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <button
-          type="button"
-          onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
-          className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Flag className="w-5 h-5 text-indigo-700" />
-            <p className="font-bold text-zinc-900">Reports</p>
-          </div>
-          <p className="text-sm text-zinc-500 mt-1">Review and resolve listing/user reports.</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
-          className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 text-indigo-700" />
-            <p className="font-bold text-zinc-900">Seller Approvals</p>
-          </div>
-          <p className="text-sm text-zinc-500 mt-1">Approve or reject seller applications.</p>
-        </button>
-      </div>
-    </div>
-  )}
-
-  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-    <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-        Account
-      </p>
-    </div>
-
-    <div className="divide-y divide-zinc-100">
-      <button
-        type="button"
-        onClick={() => navigateToPath("/saved")}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <Bookmark className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">Saved Items</span>
-            <span className="block text-sm text-zinc-500">Open the saved page.</span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => navigateToPath(HIDDEN_PATH)}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <EyeOff className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">Hidden Listings & Sellers</span>
-            <span className="block text-sm text-zinc-500">
-              Open hidden listings and hidden sellers.
-            </span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => navigateToPath("/settings")}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <Settings className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">Settings</span>
-            <span className="block text-sm text-zinc-500">Open account settings.</span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-
-      <button
-        type="button"
-        onClick={() => navigateToPath("/change-password")}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <Lock className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">Change Password</span>
-            <span className="block text-sm text-zinc-500">Update your account password securely.</span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-    </div>
-  </section>
-
-  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-    <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-        Selling
-      </p>
-    </div>
-
-    <div className="divide-y divide-zinc-100">
-      <button
-        type="button"
-        onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            {profile.is_seller ? (
-              <Package className="w-5 h-5 text-zinc-700" />
-            ) : (
-              <ShieldCheck className="w-5 h-5 text-zinc-700" />
+          <div className="p-6 sm:p-8 space-y-6">
+            {!emailVerified && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 mt-0.5" />
+                  <div>
+                    <p className="font-bold">Verify your email to unlock full selling access.</p>
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!firebaseUser) return;
+                          try {
+                            await apiFetch("/api/auth/resend-verification-email", {
+                              method: "POST",
+                              body: JSON.stringify({
+                                display_name:
+                                  profile?.business_name || firebaseUser.email?.split("@")[0] || null,
+                              }),
+                            });
+                            showFeedback(
+                              "success",
+                              "Verification email resent",
+                              "Check your inbox for the new verification email."
+                            );
+                          } catch (err: any) {
+                            showFeedback(
+                              "error",
+                              "Resend failed",
+                              err?.message || "We could not resend the verification email."
+                            );
+                          }
+                        }}
+                        className="px-4 py-2 rounded-xl bg-white border border-amber-200 text-sm font-bold hover:bg-amber-100"
+                      >
+                        Resend verification email
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             )}
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">
-              {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
-            </span>
-            <span className="block text-sm text-zinc-500">
-              {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
-            </span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
 
-      <button
-        type="button"
-        onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <User className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">
-              {profile.is_seller ? "Edit Profile" : "Edit Account"}
-            </span>
-            <span className="block text-sm text-zinc-500">
-              {profile.is_seller
-                ? "Update your seller profile."
-                : "Update your account details."}
-            </span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-    </div>
-  </section>
+            {isAdmin && (
+              <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-500">
+                  Admin tools
+                </p>
 
-  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-    <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
-      <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-        Security
-      </p>
-    </div>
+                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
+                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Flag className="w-5 h-5 text-indigo-700" />
+                      <p className="font-bold text-zinc-900">Reports</p>
+                    </div>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      Review and resolve listing/user reports.
+                    </p>
+                  </button>
 
-    <div className="divide-y divide-zinc-100">
-      <button
-        type="button"
-        onClick={handleLogout}
-        className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
-      >
-        <span className="flex items-center gap-3 min-w-0">
-          <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-            <LogOut className="w-5 h-5 text-zinc-700" />
-          </span>
-          <span className="min-w-0">
-            <span className="block font-bold text-zinc-900">Log Out</span>
-            <span className="block text-sm text-zinc-500">Sign out of this device.</span>
-          </span>
-        </span>
-        <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-      </button>
-    </div>
-  </section>
-</div>
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
+                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ClipboardList className="w-5 h-5 text-indigo-700" />
+                      <p className="font-bold text-zinc-900">Seller Approvals</p>
+                    </div>
+                    <p className="text-sm text-zinc-500 mt-1">
+                      Approve or reject seller applications.
+                    </p>
+                  </button>
+                </div>
+              </div>
+            )}
 
-      {feedback && (
-        <FeedbackModal
-          open={feedback.open}
-          type={feedback.type}
-          title={feedback.title}
-          message={feedback.message}
-          onClose={() => setFeedback(null)}
-        />
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Account
+                </p>
+              </div>
+
+              <div className="divide-y divide-zinc-100">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/saved")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <Bookmark className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Saved Items</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Open the saved page.</span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(HIDDEN_PATH)}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <EyeOff className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Hidden Listings & Sellers</span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        Open hidden listings and hidden sellers.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/settings")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <Settings className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Settings</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Open account settings.</span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/change-password")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <Lock className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Change Password</span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        Update your account password securely.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Selling
+                </p>
+              </div>
+
+              <div className="divide-y divide-zinc-100">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      {profile.is_seller ? (
+                        <Package className="w-5 h-5 text-zinc-700" />
+                      ) : (
+                        <ShieldCheck className="w-5 h-5 text-zinc-700" />
+                      )}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">
+                        {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
+                      </span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <User className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">
+                        {profile.is_seller ? "Edit Profile" : "Edit Account"}
+                      </span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        {profile.is_seller
+                          ? "Update your seller profile."
+                          : "Update your account details."}
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </section>
+
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="border-b border-zinc-100 px-5 py-3 bg-zinc-50/80">
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
+                  Security
+                </p>
+              </div>
+
+              <div className="divide-y divide-zinc-100">
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="flex items-center gap-3 min-w-0">
+                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                      <LogOut className="w-5 h-5 text-zinc-700" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block font-bold text-zinc-900">Log Out</span>
+                      <span className="hidden md:block text-sm text-zinc-500">
+                        Sign out of this device.
+                      </span>
+                    </span>
+                  </span>
+                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
+                </button>
+              </div>
+            </section>
+          </div>
+
+          {feedback && (
+            <FeedbackModal
+              open={feedback.open}
+              type={feedback.type}
+              title={feedback.title}
+              message={feedback.message}
+              onClose={() => setFeedback(null)}
+            />
+          )}
+        </div>
       )}
     </AccountPageShell>
   );
