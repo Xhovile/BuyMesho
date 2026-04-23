@@ -1,10 +1,18 @@
 import { auth } from "../firebase";
+import { getTotpVerifiedSessionToken } from "./totpSession";
 
 async function authHeader() {
   const user = auth.currentUser;
   if (!user) return {} as Record<string, string>;
   const token = await user.getIdToken(true);
-  return { Authorization: `Bearer ${token}` };
+  const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
+
+  const totpSessionToken = getTotpVerifiedSessionToken();
+  if (totpSessionToken) {
+    headers["x-buymesho-totp-session"] = totpSessionToken;
+  }
+
+  return headers;
 }
 
 export async function apiFetch(url: string, init: RequestInit = {}) {
