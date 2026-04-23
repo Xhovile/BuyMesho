@@ -1,4 +1,5 @@
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Check, Copy, ShieldCheck, X } from "lucide-react";
 
 export type TotpSetupModalProps = {
   open: boolean;
@@ -13,6 +14,7 @@ export type TotpSetupModalProps = {
   onCodeChange: (value: string) => void;
   onConfirm: () => void;
   onDisable?: () => void;
+  onBack?: () => void;
   onClose: () => void;
 };
 
@@ -29,18 +31,44 @@ export default function TotpSetupModal({
   onCodeChange,
   onConfirm,
   onDisable,
+  onBack,
   onClose,
 }: TotpSetupModalProps) {
+  const [secretCopied, setSecretCopied] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setSecretCopied(false);
+    }
+  }, [open]);
+
+  const handleCopySecret = async () => {
+    if (!secret) return;
+    if (!navigator.clipboard?.writeText) return;
+    await navigator.clipboard
+      .writeText(secret)
+      .then(() => {
+        setSecretCopied(true);
+        window.setTimeout(() => setSecretCopied(false), 1600);
+      })
+      .catch(() => undefined);
+  };
+
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 py-4 backdrop-blur-sm">
+      <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-zinc-100 bg-gradient-to-r from-zinc-50 to-white px-6 py-5">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-900 text-white">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Two-factor authentication</p>
             <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600">{message}</p>
+            </div>
           </div>
           <button
             type="button"
@@ -52,7 +80,7 @@ export default function TotpSetupModal({
           </button>
         </div>
 
-        <div className="mt-6 grid gap-6 md:grid-cols-[220px_1fr]">
+        <div className="grid flex-1 gap-6 overflow-y-auto px-6 py-5 md:grid-cols-[220px_1fr]">
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
             {qrCodeUrl ? (
               <img src={qrCodeUrl} alt="Scan this QR code with your authenticator app" className="h-48 w-48 rounded-xl bg-white p-2" />
@@ -71,8 +99,18 @@ export default function TotpSetupModal({
             </div>
 
             <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Secret</p>
-              <p className="mt-1 break-all font-mono text-sm text-zinc-900">{secret}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Secret</p>
+                <button
+                  type="button"
+                  onClick={() => void handleCopySecret()}
+                  className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-bold text-zinc-700 hover:bg-zinc-100"
+                >
+                  {secretCopied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                  {secretCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <p className="mt-2 break-all font-mono text-sm text-zinc-900">{secret}</p>
               <p className="mt-2 text-xs text-zinc-500">Keep this private. Anyone with it can generate codes.</p>
             </div>
 
@@ -89,37 +127,46 @@ export default function TotpSetupModal({
               />
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-900 hover:bg-zinc-50"
-              >
-                Close
-              </button>
-              {onDisable ? (
-                <button
-                  type="button"
-                  onClick={onDisable}
-                  className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100"
-                >
-                  Disable 2FA
-                </button>
-              ) : null}
-              <button
-                type="button"
-                disabled={busy}
-                onClick={onConfirm}
-                className="rounded-2xl bg-zinc-900 px-4 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {busy ? "Verifying..." : "Confirm setup"}
-              </button>
-            </div>
-
             <p className="text-xs text-zinc-500">
               otpauth URI: <span className="break-all font-mono">{otpauthUri}</span>
             </p>
           </div>
+        </div>
+
+        <div className="sticky bottom-0 flex flex-wrap gap-3 border-t border-zinc-100 bg-white/95 px-6 py-4 backdrop-blur">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-bold text-zinc-800 hover:bg-zinc-100"
+            >
+              Back
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Close
+          </button>
+          {onDisable ? (
+            <button
+              type="button"
+              onClick={onDisable}
+              className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100"
+            >
+              Disable 2FA
+            </button>
+          ) : null}
+          <button
+            type="button"
+            disabled={busy}
+            onClick={onConfirm}
+            className="ml-auto rounded-2xl bg-zinc-900 px-4 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {busy ? "Verifying..." : "Confirm setup"}
+          </button>
         </div>
       </div>
     </div>
