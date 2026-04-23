@@ -378,6 +378,7 @@ export default function ProfilePage() {
           onClose={() => setFeedback(null)}
         />
       )}
+     </div>
     </AccountPageShell>
   );
 }
