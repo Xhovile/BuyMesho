@@ -197,9 +197,15 @@ export function confirmTotpEnrollment(userId: string): TotpEnrollmentRecord | nu
 }
 
 export function disableTotpEnrollment(userId: string): boolean {
-  const result = verifiedSessionDb
-    .prepare("DELETE FROM totp_enrollments WHERE user_id = ?")
-    .run(userId);
+  const clearEnrollment = verifiedSessionDb.prepare("DELETE FROM totp_enrollments WHERE user_id = ?");
+  const clearVerifiedSessions = verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE user_id = ?");
+
+  const result = verifiedSessionDb.transaction((uid: string) => {
+    const enrollmentResult = clearEnrollment.run(uid);
+    clearVerifiedSessions.run(uid);
+    return enrollmentResult;
+  })(userId);
+
   return result.changes > 0;
 }
 
