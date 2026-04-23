@@ -14,6 +14,7 @@ export type TotpSetupModalProps = {
   onCodeChange: (value: string) => void;
   onConfirm: () => void;
   onDisable?: () => void;
+  onBack?: () => void;
   onClose: () => void;
 };
 
@@ -30,6 +31,7 @@ export default function TotpSetupModal({
   onCodeChange,
   onConfirm,
   onDisable,
+  onBack,
   onClose,
 }: TotpSetupModalProps) {
   const [secretCopied, setSecretCopied] = useState(false);
@@ -132,6 +134,15 @@ export default function TotpSetupModal({
         </div>
 
         <div className="sticky bottom-0 flex flex-wrap gap-3 border-t border-zinc-100 bg-white/95 px-6 py-4 backdrop-blur">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 font-bold text-zinc-800 hover:bg-zinc-100"
+            >
+              Back
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onClose}

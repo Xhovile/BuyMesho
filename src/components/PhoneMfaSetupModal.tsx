@@ -16,6 +16,7 @@ type PhoneMfaSetupModalProps = {
   onVerificationCodeChange: (value: string) => void;
   onSendCode: () => void;
   onVerifyCode: () => void;
+  onBack?: () => void;
   onClose: () => void;
 };
 
@@ -34,6 +35,7 @@ export default function PhoneMfaSetupModal({
   onVerificationCodeChange,
   onSendCode,
   onVerifyCode,
+  onBack,
   onClose,
 }: PhoneMfaSetupModalProps) {
   return (
@@ -143,6 +145,15 @@ export default function PhoneMfaSetupModal({
             </div>
 
             <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
+              {onBack ? (
+                <button
+                  type="button"
+                  onClick={onBack}
+                  className="flex-1 py-3 rounded-2xl font-bold border border-zinc-200 bg-white hover:bg-zinc-50 transition-colors"
+                >
+                  Back
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={onClose}
