@@ -328,6 +328,7 @@ export default function HomePage() {
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
+            {/* Backdrop */}
             <motion.div
               key="drawer-backdrop"
               initial={{ opacity: 0 }}
@@ -339,6 +340,7 @@ export default function HomePage() {
               aria-hidden="true"
             />
 
+            {/* Drawer */}
             <motion.div
               key="drawer-panel"
               id="mobile-home-menu"
@@ -351,6 +353,7 @@ export default function HomePage() {
               transition={{ type: "spring", stiffness: 320, damping: 32 }}
               className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
             >
+              {/* Drawer header */}
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
@@ -370,6 +373,7 @@ export default function HomePage() {
                 </button>
               </div>
 
+              {/* Drawer body */}
               <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                 <button
                   type="button"
