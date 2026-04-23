@@ -366,8 +366,9 @@ export default function ProfilePage() {
         <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
       </button>
     </div>
+    </div>
   </section>
-</div>
+
 
       {feedback && (
         <FeedbackModal
@@ -377,8 +378,7 @@ export default function ProfilePage() {
           message={feedback.message}
           onClose={() => setFeedback(null)}
         />
-      )}
-     </div>
+      )}        
     </AccountPageShell>
   );
 }
