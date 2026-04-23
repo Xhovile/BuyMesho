@@ -1,22 +1,18 @@
-import { AnimatePresence, motion } from "motion/react";
-import { Check, Copy, Loader2, ShieldCheck, X } from "lucide-react";
-import React from "react";
-import { formatTotpSecret } from "../lib/totp";
+import { X } from "lucide-react";
 
-type TotpSetupModalProps = {
+export type TotpSetupModalProps = {
   open: boolean;
   title: string;
   message: string;
-  accountLabel: string;
+  qrCodeUrl: string;
   otpauthUri: string;
   secret: string;
-  qrImageUrl: string;
-  verificationCode: string;
+  accountName: string;
+  code: string;
   busy?: boolean;
-  onVerificationCodeChange: (value: string) => void;
-  onCopySecret: () => void;
-  onCopyUri: () => void;
+  onCodeChange: (value: string) => void;
   onConfirm: () => void;
+  onDisable?: () => void;
   onClose: () => void;
 };
 
@@ -24,178 +20,108 @@ export default function TotpSetupModal({
   open,
   title,
   message,
-  accountLabel,
+  qrCodeUrl,
   otpauthUri,
   secret,
-  qrImageUrl,
-  verificationCode,
+  accountName,
+  code,
   busy,
-  onVerificationCodeChange,
-  onCopySecret,
-  onCopyUri,
+  onCodeChange,
   onConfirm,
+  onDisable,
   onClose,
 }: TotpSetupModalProps) {
-  const formattedSecret = formatTotpSecret(secret);
+  if (!open) return null;
 
   return (
-    <AnimatePresence>
-      {open && (
-        <div className="fixed inset-0 z-[97] flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Two-factor authentication</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">{title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-zinc-600">{message}</p>
+          </div>
+          <button
+            type="button"
             onClick={onClose}
-            className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
-          />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: 18 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-3xl rounded-3xl bg-white shadow-2xl overflow-hidden"
+            className="rounded-full p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+            aria-label="Close TOTP setup"
           >
-            <div className="p-6 border-b border-zinc-100 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-zinc-100 flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 text-zinc-700" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-extrabold text-zinc-900">{title}</h3>
-                  <p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
-                    Authenticator app setup
-                  </p>
-                </div>
-              </div>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
 
+        <div className="mt-6 grid gap-6 md:grid-cols-[220px_1fr]">
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+            {qrCodeUrl ? (
+              <img src={qrCodeUrl} alt="Scan this QR code with your authenticator app" className="h-48 w-48 rounded-xl bg-white p-2" />
+            ) : (
+              <div className="flex h-48 w-48 items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-white text-sm text-zinc-500">
+                QR code not available
+              </div>
+            )}
+            <p className="mt-3 text-xs font-semibold text-zinc-500">Scan this in Google Authenticator, Microsoft Authenticator, or Authy.</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Account</p>
+              <p className="mt-1 text-sm font-semibold text-zinc-900">{accountName}</p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Secret</p>
+              <p className="mt-1 break-all font-mono text-sm text-zinc-900">{secret}</p>
+              <p className="mt-2 text-xs text-zinc-500">Keep this private. Anyone with it can generate codes.</p>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-zinc-700">6-digit code</label>
+              <input
+                autoFocus
+                inputMode="numeric"
+                maxLength={6}
+                value={code}
+                onChange={(e) => onCodeChange(e.target.value.replace(/\D/g, ""))}
+                placeholder="123456"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-lg font-semibold tracking-[0.3em] outline-none focus:border-zinc-900"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-3">
               <button
                 type="button"
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-zinc-100 transition-colors"
+                className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-900 hover:bg-zinc-50"
               >
-                <X className="w-5 h-5 text-zinc-500" />
+                Close
+              </button>
+              {onDisable ? (
+                <button
+                  type="button"
+                  onClick={onDisable}
+                  className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100"
+                >
+                  Disable 2FA
+                </button>
+              ) : null}
+              <button
+                type="button"
+                disabled={busy}
+                onClick={onConfirm}
+                className="rounded-2xl bg-zinc-900 px-4 py-3 font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {busy ? "Verifying..." : "Confirm setup"}
               </button>
             </div>
 
-            <div className="px-6 py-5 grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-              <div className="space-y-4">
-                <p className="text-sm text-zinc-600 leading-6">{message}</p>
-
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 space-y-2">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Account label
-                  </p>
-                  <p className="text-sm font-semibold text-zinc-900">{accountLabel}</p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 space-y-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                        Secret key
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-zinc-900 break-all">
-                        {formattedSecret}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={onCopySecret}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-100"
-                    >
-                      <Copy className="w-4 h-4" />
-                      Copy
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={onCopyUri}
-                    className="w-full inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
-                  >
-                    <Copy className="w-4 h-4" />
-                    Copy otpauth URI
-                  </button>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Step 1
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700 leading-6">
-                    Scan the QR code with Google Authenticator, Microsoft Authenticator, Authy, or any TOTP app.
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Step 2
-                  </p>
-                  <p className="mt-1 text-sm text-zinc-700 leading-6">
-                    Enter the 6-digit code generated by the app to finish enrollment.
-                  </p>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-zinc-600">
-                    Verification code
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={verificationCode}
-                    onChange={(e) => onVerificationCodeChange(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-base outline-none placeholder:text-zinc-400 focus:ring-2 focus:ring-zinc-900/10"
-                  />
-                </div>
-
-                <p className="text-xs text-zinc-500 leading-6">
-                  Keep the secret private. This code is only for your authenticator app setup.
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3 pt-2">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 hover:bg-zinc-200 transition-colors"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={onConfirm}
-                    disabled={busy}
-                    className="flex-1 py-3 rounded-2xl font-bold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors inline-flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                    Confirm setup
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center justify-start gap-4">
-                <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-                  <img
-                    src={qrImageUrl}
-                    alt="TOTP QR code"
-                    className="h-64 w-64 object-contain"
-                  />
-                </div>
-                <p className="text-xs font-medium text-zinc-500 text-center leading-6">
-                  The QR image is generated from the otpauth URI.
-                </p>
-                <code className="max-w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-[11px] text-zinc-600 break-all">
-                  {otpauthUri}
-                </code>
-              </div>
-            </div>
-          </motion.div>
+            <p className="text-xs text-zinc-500">
+              otpauth URI: <span className="break-all font-mono">{otpauthUri}</span>
+            </p>
+          </div>
         </div>
-      )}
-    </AnimatePresence>
+      </div>
+    </div>
   );
 }

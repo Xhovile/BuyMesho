@@ -7,6 +7,7 @@ import {
 } from "./totpService";
 import {
   confirmTotpEnrollment,
+  createTotpVerifiedSession,
   disableTotpEnrollment,
   getTotpEnrollment,
   getTotpEnrollmentSummary,
@@ -160,9 +161,13 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
       return sendError(res, 401, "Invalid authenticator code.");
     }
 
+    const session = createTotpVerifiedSession(user.uid);
+
     return sendOk(res, {
       verified: true,
       status: record.status,
+      sessionToken: session.token,
+      expiresAt: session.expiresAt,
     });
   });
 

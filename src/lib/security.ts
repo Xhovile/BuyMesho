@@ -13,12 +13,9 @@ import {
 import { auth } from "../firebase";
 import { apiFetch } from "./api";
 import {
-  buildOtpAuthUri,
-  getTotpDisplayName,
-  normalizeTotpCode,
-  type TotpMfaStatus,
-  type TotpEnrollmentState,
-} from "./totp";
+  clearTotpVerifiedSessionToken,
+  setTotpVerifiedSessionToken,
+} from "./totpSession";
 
 export type FeedbackLevel = "success" | "error" | "info";
 
@@ -121,7 +118,7 @@ export async function changePasswordWithReauth(
 }
 
 export type TotpStatusResponse = {
-  status: TotpMfaStatus;
+  status: "disabled" | "pending" | "enabled";
   enrolledAt: string | null;
   confirmedAt: string | null;
   issuer: string | null;
@@ -130,7 +127,7 @@ export type TotpStatusResponse = {
 };
 
 export type TotpStartResponse = {
-  status: TotpMfaStatus;
+  status: "disabled" | "pending" | "enabled";
   secret: string;
   otpauthUri: string;
   issuer: string;
@@ -140,7 +137,7 @@ export type TotpStartResponse = {
 };
 
 export type TotpConfirmResponse = {
-  status: TotpMfaStatus;
+  status: "disabled" | "pending" | "enabled";
   issuer: string;
   accountName: string;
   enrolledAt: string | null;
@@ -149,7 +146,9 @@ export type TotpConfirmResponse = {
 
 export type TotpVerifyResponse = {
   verified: true;
-  status: TotpMfaStatus;
+  status: "disabled" | "pending" | "enabled";
+  sessionToken: string;
+  expiresAt: string;
 };
 
 function extractApiData<T>(response: any): T {
@@ -195,7 +194,7 @@ export async function confirmTotpEnrollment(
   code: string
 ): Promise<SecurityResult & { data?: TotpConfirmResponse }> {
   try {
-    const normalizedCode = normalizeTotpCode(code);
+    const normalizedCode = code.trim();
     const response = await apiFetch("/api/totp/enroll/confirm", {
       method: "POST",
       body: JSON.stringify({ code: normalizedCode }),
@@ -214,6 +213,7 @@ export async function confirmTotpEnrollment(
 export async function disableTotpEnrollment(): Promise<SecurityResult> {
   try {
     await apiFetch("/api/totp/disable", { method: "POST" });
+    clearTotpVerifiedSessionToken();
     return { ok: true, message: "Two-factor authentication disabled." };
   } catch (error: any) {
     return {
@@ -228,13 +228,18 @@ export async function verifyTotpChallenge(
   code: string
 ): Promise<SecurityResult & { data?: TotpVerifyResponse }> {
   try {
-    const normalizedCode = normalizeTotpCode(code);
+    const normalizedCode = code.trim();
     const response = await apiFetch("/api/totp/challenge/verify", {
       method: "POST",
       body: JSON.stringify({ code: normalizedCode }),
     });
 
-    return { ok: true, data: extractApiData<TotpVerifyResponse>(response) };
+    const data = extractApiData<TotpVerifyResponse>(response);
+    if (data?.sessionToken) {
+      setTotpVerifiedSessionToken(data.sessionToken);
+    }
+
+    return { ok: true, data };
   } catch (error: any) {
     return {
       ok: false,
@@ -275,6 +280,7 @@ export async function logoutOtherSessions(): Promise<SecurityResult> {
     await apiFetch("/api/auth/revoke-sessions", { method: "POST" });
 
     // Current device logs out too, because the app should behave like single-device access.
+    clearTotpVerifiedSessionToken();
     await signOut(auth);
 
     return { ok: true, message: "All sessions signed out." };
@@ -295,6 +301,7 @@ export async function deleteCurrentAccount(): Promise<SecurityResult> {
     await apiFetch("/api/profile", { method: "DELETE" });
 
     // Then remove the Firebase auth account.
+    clearTotpVerifiedSessionToken();
     await deleteUser(user);
 
     return { ok: true, message: "Account deleted successfully." };

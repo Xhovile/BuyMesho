@@ -6,6 +6,7 @@ import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { navigateToPath } from "./lib/appNavigation";
+import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 
 type FeedbackState = {
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    clearTotpVerifiedSessionToken();
 
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
@@ -85,6 +87,7 @@ export default function LoginPage() {
   const handleTotpChallengeCancel = async () => {
     setTotpChallengeOpen(false);
     setTotpChallengeCode("");
+    clearTotpVerifiedSessionToken();
     try {
       await signOut(auth);
     } finally {
