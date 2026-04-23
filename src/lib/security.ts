@@ -12,6 +12,10 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { apiFetch } from "./api";
+import {
+  clearTotpVerifiedSessionToken,
+  setTotpVerifiedSessionToken,
+} from "./totpSession";
 
 export type FeedbackLevel = "success" | "error" | "info";
 
@@ -113,6 +117,138 @@ export async function changePasswordWithReauth(
   }
 }
 
+export type TotpStatusResponse = {
+  status: "disabled" | "pending" | "enabled";
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+  issuer: string | null;
+  accountName: string;
+  hasSecret: boolean;
+};
+
+export type TotpStartResponse = {
+  status: "disabled" | "pending" | "enabled";
+  secret: string;
+  otpauthUri: string;
+  issuer: string;
+  accountName: string;
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+};
+
+export type TotpConfirmResponse = {
+  status: "disabled" | "pending" | "enabled";
+  issuer: string;
+  accountName: string;
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+};
+
+export type TotpVerifyResponse = {
+  verified: true;
+  status: "disabled" | "pending" | "enabled";
+  sessionToken: string;
+  expiresAt: string;
+};
+
+function extractApiData<T>(response: any): T {
+  return (response?.data ?? response) as T;
+}
+
+export async function getTotpStatus(): Promise<SecurityResult & { data?: TotpStatusResponse }> {
+  try {
+    const response = await apiFetch("/api/totp/status");
+    return { ok: true, data: extractApiData<TotpStatusResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to load 2FA status."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function startTotpEnrollment(
+  accountName?: string
+): Promise<SecurityResult & { data?: TotpStartResponse }> {
+  try {
+    const response = await apiFetch("/api/totp/enroll/start", {
+      method: "POST",
+      body: JSON.stringify({
+        accountName: accountName?.trim() || undefined,
+        issuer: "BuyMesho",
+      }),
+    });
+
+    return { ok: true, data: extractApiData<TotpStartResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to start 2FA setup."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function confirmTotpEnrollment(
+  code: string
+): Promise<SecurityResult & { data?: TotpConfirmResponse }> {
+  try {
+    const normalizedCode = code.trim();
+    const response = await apiFetch("/api/totp/enroll/confirm", {
+      method: "POST",
+      body: JSON.stringify({ code: normalizedCode }),
+    });
+
+    return { ok: true, data: extractApiData<TotpConfirmResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to confirm 2FA setup."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function disableTotpEnrollment(): Promise<SecurityResult> {
+  try {
+    await apiFetch("/api/totp/disable", { method: "POST" });
+    clearTotpVerifiedSessionToken();
+    return { ok: true, message: "Two-factor authentication disabled." };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to disable 2FA."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function verifyTotpChallenge(
+  code: string
+): Promise<SecurityResult & { data?: TotpVerifyResponse }> {
+  try {
+    const normalizedCode = code.trim();
+    const response = await apiFetch("/api/totp/challenge/verify", {
+      method: "POST",
+      body: JSON.stringify({ code: normalizedCode }),
+    });
+
+    const data = extractApiData<TotpVerifyResponse>(response);
+    if (data?.sessionToken) {
+      setTotpVerifiedSessionToken(data.sessionToken);
+    }
+
+    return { ok: true, data };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Invalid authenticator code."),
+      code: error?.code,
+    };
+  }
+}
+
 export async function changeEmailWithVerification(
   currentPassword: string,
   nextEmail: string
@@ -144,6 +280,7 @@ export async function logoutOtherSessions(): Promise<SecurityResult> {
     await apiFetch("/api/auth/revoke-sessions", { method: "POST" });
 
     // Current device logs out too, because the app should behave like single-device access.
+    clearTotpVerifiedSessionToken();
     await signOut(auth);
 
     return { ok: true, message: "All sessions signed out." };
@@ -164,6 +301,7 @@ export async function deleteCurrentAccount(): Promise<SecurityResult> {
     await apiFetch("/api/profile", { method: "DELETE" });
 
     // Then remove the Firebase auth account.
+    clearTotpVerifiedSessionToken();
     await deleteUser(user);
 
     return { ok: true, message: "Account deleted successfully." };
