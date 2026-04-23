@@ -3,6 +3,7 @@ export type AppRoute =
   | "category"
   | "explore"
   | "saved"
+  | "hidden" 
   | "settings"
   | "privacy"
   | "terms"
