@@ -4,7 +4,7 @@ import {
   BookOpen,
   Check,
   ChevronRight,
-  House,
+  LogOut,
   Menu,
   Plus,
   Settings,
@@ -20,7 +20,6 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   BECOME_SELLER_PATH,
   EXPLORE_PATH,
-  HOME_PATH,
   LOGIN_PATH,
   PRIVACY_PATH,
   PROFILE_PATH,
@@ -227,11 +226,15 @@ export default function HomePage() {
     navigateToCreateListing();
   };
 
-  const handleLogout = async () => {
-     await signOut(auth);
-     closeMenu();
-     navigateToPath(HOME_PATH);
-   };
+  const handleLogout = async (afterClose?: () => void) => {
+    afterClose?.();
+    try {
+      await signOut(auth);
+      navigateToPath(LOGIN_PATH);
+    } catch {
+      // Keep the UI usable even if sign-out fails briefly.
+    }
+  };
 
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
@@ -257,14 +260,6 @@ export default function HomePage() {
             <div className="hidden md:flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => navigateToPath(HOME_PATH)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
-              >
-                <House className="w-4 h-4" />
-                Home
-              </button>
-              <button
-                type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-slate-900 text-white text-sm font-bold hover:bg-slate-800"
               >
@@ -281,7 +276,7 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => navigateToPath(PROFILE_PATH)}
+                onClick={() => handleProfileClick()}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 <UserRound className="w-4 h-4" />
@@ -413,21 +408,6 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(HOME_PATH);
-                  }}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <House className="w-4 h-4 text-zinc-500" />
-                    Home
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => handleSettingsClick(closeMenu)}
                   className={navButtonClass}
                 >
@@ -440,10 +420,7 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(PROFILE_PATH);
-                  }}
+                  onClick={() => handleProfileClick(closeMenu)}
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
@@ -460,9 +437,13 @@ export default function HomePage() {
       closeMenu();
       void handleLogout();
     }}
-    className="w-full rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 hover:bg-red-100"
+    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
   >
-    Logout
+    <span className="inline-flex items-center gap-3 text-red-600">
+      <LogOut className="w-4 h-4" />
+      Log Out
+    </span>
+    <ChevronRight className="w-4 h-4 text-zinc-400" />
   </button>
 ) : (
   <div className="grid grid-cols-2 gap-2">
