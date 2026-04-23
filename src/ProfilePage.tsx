@@ -369,7 +369,6 @@ export default function ProfilePage() {
   </section>
   </div>
 
-
       {feedback && (
         <FeedbackModal
           open={feedback.open}
@@ -378,7 +377,8 @@ export default function ProfilePage() {
           message={feedback.message}
           onClose={() => setFeedback(null)}
         />
-      )}        
+      )}  
+      </div>
     </AccountPageShell>
-  )
-}
+  );
+ }
