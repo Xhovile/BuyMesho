@@ -12,6 +12,13 @@ import {
 } from "firebase/auth";
 import { auth } from "../firebase";
 import { apiFetch } from "./api";
+import {
+  buildOtpAuthUri,
+  getTotpDisplayName,
+  normalizeTotpCode,
+  type TotpMfaStatus,
+  type TotpEnrollmentState,
+} from "./totp";
 
 export type FeedbackLevel = "success" | "error" | "info";
 
@@ -110,6 +117,130 @@ export async function changePasswordWithReauth(
     return { ok: true, message: "Password changed successfully." };
   } catch (error: any) {
     return { ok: false, message: getErrorMessage(error, "Failed to change password."), code: error?.code };
+  }
+}
+
+export type TotpStatusResponse = {
+  status: TotpMfaStatus;
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+  issuer: string | null;
+  accountName: string;
+  hasSecret: boolean;
+};
+
+export type TotpStartResponse = {
+  status: TotpMfaStatus;
+  secret: string;
+  otpauthUri: string;
+  issuer: string;
+  accountName: string;
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+};
+
+export type TotpConfirmResponse = {
+  status: TotpMfaStatus;
+  issuer: string;
+  accountName: string;
+  enrolledAt: string | null;
+  confirmedAt: string | null;
+};
+
+export type TotpVerifyResponse = {
+  verified: true;
+  status: TotpMfaStatus;
+};
+
+function extractApiData<T>(response: any): T {
+  return (response?.data ?? response) as T;
+}
+
+export async function getTotpStatus(): Promise<SecurityResult & { data?: TotpStatusResponse }> {
+  try {
+    const response = await apiFetch("/api/totp/status");
+    return { ok: true, data: extractApiData<TotpStatusResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to load 2FA status."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function startTotpEnrollment(
+  accountName?: string
+): Promise<SecurityResult & { data?: TotpStartResponse }> {
+  try {
+    const response = await apiFetch("/api/totp/enroll/start", {
+      method: "POST",
+      body: JSON.stringify({
+        accountName: accountName?.trim() || undefined,
+        issuer: "BuyMesho",
+      }),
+    });
+
+    return { ok: true, data: extractApiData<TotpStartResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to start 2FA setup."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function confirmTotpEnrollment(
+  code: string
+): Promise<SecurityResult & { data?: TotpConfirmResponse }> {
+  try {
+    const normalizedCode = normalizeTotpCode(code);
+    const response = await apiFetch("/api/totp/enroll/confirm", {
+      method: "POST",
+      body: JSON.stringify({ code: normalizedCode }),
+    });
+
+    return { ok: true, data: extractApiData<TotpConfirmResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to confirm 2FA setup."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function disableTotpEnrollment(): Promise<SecurityResult> {
+  try {
+    await apiFetch("/api/totp/disable", { method: "POST" });
+    return { ok: true, message: "Two-factor authentication disabled." };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Failed to disable 2FA."),
+      code: error?.code,
+    };
+  }
+}
+
+export async function verifyTotpChallenge(
+  code: string
+): Promise<SecurityResult & { data?: TotpVerifyResponse }> {
+  try {
+    const normalizedCode = normalizeTotpCode(code);
+    const response = await apiFetch("/api/totp/challenge/verify", {
+      method: "POST",
+      body: JSON.stringify({ code: normalizedCode }),
+    });
+
+    return { ok: true, data: extractApiData<TotpVerifyResponse>(response) };
+  } catch (error: any) {
+    return {
+      ok: false,
+      message: getErrorMessage(error, "Invalid authenticator code."),
+      code: error?.code,
+    };
   }
 }
 
