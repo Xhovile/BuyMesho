@@ -23,15 +23,15 @@ import {
   HOME_PATH,
   LOGIN_PATH,
   PRIVACY_PATH,
+  PROFILE_PATH,
   REPORT_PATH,
   SAFETY_PATH,
   SETTINGS_PATH,
-  PROFILE_PATH, 
   SIGNUP_PATH,
   TERMS_PATH,
   navigateToCreateListing,
   navigateToListingDetails,
-  navigateToPath
+  navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
@@ -133,7 +133,9 @@ function ListingStrip({
           <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
-          {isFeatured ? <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p> : null}
+          {isFeatured ? (
+            <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p>
+          ) : null}
         </div>
 
         {isFeatured ? (
@@ -200,8 +202,10 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const isSeller = !!(isLoggedIn && profile?.is_seller);
   const isSellerProfileLoading = isLoggedIn && profileLoading;
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+
   const {
     recommendedListings,
     newestListings,
@@ -210,6 +214,8 @@ export default function HomePage() {
     loading,
     error,
   } = useHomePageData(featuredSections);
+
+  const closeMenu = () => setMobileMenuOpen(false);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -227,11 +233,15 @@ export default function HomePage() {
     navigateToCreateListing();
   };
 
-  const handleLogout = async () => {
-     await signOut(auth);
-     closeMenu();
-     navigateToPath(HOME_PATH);
-   };
+  const handleLogout = async (afterClose?: () => void) => {
+    afterClose?.();
+    try {
+      await signOut(auth);
+      navigateToPath(HOME_PATH);
+    } catch {
+      // Keep the UI usable even if sign-out fails briefly.
+    }
+  };
 
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
@@ -243,7 +253,6 @@ export default function HomePage() {
     navigateToPath(SETTINGS_PATH);
   };
 
-  const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
@@ -289,198 +298,211 @@ export default function HomePage() {
               </button>
             </div>
 
-<div className="flex items-center gap-2 flex-shrink-0">
-  <button
-    type="button"
-    onClick={handleStartSelling}
-    disabled={isSellerProfileLoading}
-    className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
-  >
-    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-    <span className="hidden sm:inline">
-      {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
-    </span>
-  </button>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleStartSelling}
+                disabled={isSellerProfileLoading}
+                className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
+              >
+                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                <span className="hidden sm:inline">
+                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                </span>
+              </button>
 
-  <button
-    type="button"
-    onClick={() => navigateToPath(EXPLORE_PATH)}
-    className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
-    aria-label="Go to Market"
-  >
-    <ShoppingBag className="w-4 h-4" />
-    Market
-  </button>
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+                aria-label="Go to Market"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Market
+              </button>
 
-  <button
-    type="button"
-    onClick={() => setMobileMenuOpen((value) => !value)}
-    className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-    aria-expanded={mobileMenuOpen}
-    aria-controls="mobile-home-menu"
-  >
-    {mobileMenuOpen ? (
-      <X className="w-5 h-5 text-white" />
-    ) : (
-      <Menu className="w-5 h-5 text-white" />
-    )}
-  </button>
-</div>
-
-{mobileMenuOpen && (
-  <>
-    <button
-      type="button"
-      className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
-      onClick={closeMenu}
-      aria-label="Close menu backdrop"
-    />
-
-    <aside
-      id="mobile-home-menu"
-      className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="home-drawer-title"
-    >
-      <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
-        <div>
-          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-            Menu
-          </p>
-          <h2 id="home-drawer-title" className="mt-1 text-base font-black text-zinc-900">
-            Start here
-          </h2>
-        </div>
-
-        <button
-          type="button"
-          onClick={closeMenu}
-          aria-label="Close menu"
-          className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
-        >
-          <X className="w-4 h-4 text-zinc-600" />
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-        <button
-          type="button"
-          onClick={() => {
-            closeMenu();
-            handleStartSelling();
-          }}
-          disabled={isSellerProfileLoading}
-          className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-zinc-900"
-        >
-          <span className="inline-flex items-center gap-3">
-            {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-            {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
-          </span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            closeMenu();
-            navigateToPath(EXPLORE_PATH);
-          }}
-          className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
-        >
-          <span className="inline-flex items-center gap-3">
-            <ShoppingBag className="w-4 h-4" />
-            Market
-          </span>
-          <ChevronRight className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            closeMenu();
-            navigateToPath(HOME_PATH);
-          }}
-          className={navButtonClass}
-        >
-          <span className="inline-flex items-center gap-3">
-            <House className="w-4 h-4 text-zinc-500" />
-            Home
-          </span>
-          <ChevronRight className="w-4 h-4 text-zinc-400" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleSettingsClick(closeMenu)}
-          className={navButtonClass}
-        >
-          <span className="inline-flex items-center gap-3">
-            <Settings className="w-4 h-4 text-zinc-500" />
-            Settings
-          </span>
-          <ChevronRight className="w-4 h-4 text-zinc-400" />
-        </button>
-
-        {isLoggedIn ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                closeMenu();
-                navigateToPath(PROFILE_PATH);
-              }}
-              className={navButtonClass}
-            >
-              <span className="inline-flex items-center gap-3">
-                <User className="w-4 h-4 text-zinc-500" />
-                Profile
-              </span>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleLogout(closeMenu)}
-              className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-            >
-              <span className="inline-flex items-center gap-3 text-red-600">
-                <LogOut className="w-4 h-4" />
-                Log Out
-              </span>
-              <ChevronRight className="w-4 h-4 text-zinc-400" />
-            </button>
-          </>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                closeMenu();
-                navigateToPath(SIGNUP_PATH);
-              }}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-            >
-              Sign Up
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                closeMenu();
-                navigateToPath(LOGIN_PATH);
-              }}
-              className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-            >
-              Sign In
-            </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((value) => !value)}
+                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-home-menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-5 h-5 text-white" />
+                ) : (
+                  <Menu className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
           </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            <motion.div
+              key="drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
+              onClick={closeMenu}
+              aria-hidden="true"
+            />
+
+            <motion.div
+              key="drawer-panel"
+              id="mobile-home-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="home-drawer-title"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
+            >
+              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                    Menu
+                  </p>
+                  <h2 id="home-drawer-title" className="mt-1 text-base font-black text-zinc-900">
+                    Start here
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  aria-label="Close menu"
+                  className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-600" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    handleStartSelling();
+                  }}
+                  disabled={isSellerProfileLoading}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-zinc-900"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                    {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath(EXPLORE_PATH);
+                  }}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <ShoppingBag className="w-4 h-4" />
+                    Market
+                  </span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    navigateToPath(HOME_PATH);
+                  }}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <House className="w-4 h-4 text-zinc-500" />
+                    Home
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSettingsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <Settings className="w-4 h-4 text-zinc-500" />
+                    Settings
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                {isLoggedIn ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(PROFILE_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <UserRound className="w-4 h-4 text-zinc-500" />
+                        Profile
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLogout(closeMenu)}
+                      className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-3 text-red-600">
+                        <LogOut className="w-4 h-4" />
+                        Log Out
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(SIGNUP_PATH);
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign Up
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(LOGIN_PATH);
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
-      </div>
-    </aside>
-  </>
-)}
+      </AnimatePresence>
 
       <FeedbackModal
         open={authGuardOpen}
