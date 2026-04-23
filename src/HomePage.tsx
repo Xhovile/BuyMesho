@@ -23,15 +23,15 @@ import {
   HOME_PATH,
   LOGIN_PATH,
   PRIVACY_PATH,
-  PROFILE_PATH,
   REPORT_PATH,
   SAFETY_PATH,
   SETTINGS_PATH,
+  PROFILE_PATH, 
   SIGNUP_PATH,
   TERMS_PATH,
   navigateToCreateListing,
   navigateToListingDetails,
-  navigateToPath,
+  navigateToPath
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
@@ -133,9 +133,7 @@ function ListingStrip({
           <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
             {title}
           </h2>
-          {isFeatured ? (
-            <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p>
-          ) : null}
+          {isFeatured ? <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p> : null}
         </div>
 
         {isFeatured ? (
@@ -202,10 +200,8 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const isSeller = !!(isLoggedIn && profile?.is_seller);
   const isSellerProfileLoading = isLoggedIn && profileLoading;
-
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-
   const {
     recommendedListings,
     newestListings,
@@ -214,8 +210,6 @@ export default function HomePage() {
     loading,
     error,
   } = useHomePageData(featuredSections);
-
-  const closeMenu = () => setMobileMenuOpen(false);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -253,6 +247,7 @@ export default function HomePage() {
     navigateToPath(SETTINGS_PATH);
   };
 
+  const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
 
@@ -300,7 +295,6 @@ export default function HomePage() {
 
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                type="button"
                 onClick={handleStartSelling}
                 disabled={isSellerProfileLoading}
                 className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
@@ -322,7 +316,6 @@ export default function HomePage() {
               </button>
 
               <button
-                type="button"
                 onClick={() => setMobileMenuOpen((value) => !value)}
                 className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
                 aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -337,6 +330,7 @@ export default function HomePage() {
               </button>
             </div>
           </div>
+
         </div>
       </header>
 
@@ -375,6 +369,7 @@ export default function HomePage() {
                     Start here
                   </h2>
                 </div>
+
                 <button
                   type="button"
                   onClick={closeMenu}
@@ -503,7 +498,6 @@ export default function HomePage() {
           </>
         )}
       </AnimatePresence>
-
       <FeedbackModal
         open={authGuardOpen}
         type="error"
