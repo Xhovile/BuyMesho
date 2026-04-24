@@ -13,11 +13,18 @@ import { navigateToPath } from "./lib/appNavigation";
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
 type FeedbackState = {
   open: boolean;
   type: "success" | "error" | "info";
   title: string;
   message: string;
+  actions?: FeedbackAction[];
 } | null;
 
 export default function LoginPage() {
@@ -31,8 +38,11 @@ export default function LoginPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
-  ) => setFeedback({ open: true, type, title, message });
+    message: string,
+    actions?: FeedbackAction[]
+  ) => setFeedback({ open: true, type, title, message, actions });
+
+  const closeFeedback = () => setFeedback(null);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,7 +55,20 @@ export default function LoginPage() {
     try {
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
       if (signInMethods.length === 0) {
-        showFeedback("error", "Login failed", "You do not have an account.");
+        showFeedback("error", "Login failed", "You do not have an account.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Sign Up",
+            onClick: () => {
+              closeFeedback();
+              navigateToPath("/signup");
+            },
+          },
+        ]);
         return;
       }
 
@@ -60,15 +83,59 @@ export default function LoginPage() {
 
       navigateToPath("/profile");
     } catch (err: any) {
-      let message = "Incorrect password. Please try again.";
       if (err?.code === "auth/user-not-found") {
-        message = "You do not have an account.";
-      } else if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
-        message = "Incorrect password. Please try again.";
-      } else if (err?.code === "auth/too-many-requests") {
+        showFeedback("error", "Login failed", "You do not have an account.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Sign Up",
+            onClick: () => {
+              closeFeedback();
+              navigateToPath("/signup");
+            },
+          },
+        ]);
+        return;
+      }
+
+      if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
+        showFeedback("error", "Login failed", "Incorrect password. Please try again.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Retry",
+            onClick: () => {
+              setForm((prev) => ({ ...prev, password: "" }));
+              closeFeedback();
+            },
+          },
+        ]);
+        return;
+      }
+
+      let message = "Incorrect password. Please try again.";
+      if (err?.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
       }
-      showFeedback("error", "Login failed", message);
+      showFeedback("error", "Login failed", message, [
+        {
+          label: "Cancel",
+          variant: "secondary",
+          onClick: closeFeedback,
+        },
+        {
+          label: "Retry",
+          onClick: () => {
+            closeFeedback();
+          },
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -181,7 +248,8 @@ export default function LoginPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
-          onClose={() => setFeedback(null)}
+          actions={feedback.actions}
+          onClose={closeFeedback}
         />
       )}
     </AccountPageShell>
