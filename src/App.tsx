@@ -4826,7 +4826,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     onHideSeller={hideSellerLocal}
     onHideListing={hideListingLocal}
     onToggleStatus={handleToggleListingStatus}
-    onToggleSave={toggleSavedListing}
     requireLoginForContact={requireLoginForContact}
   />
 
@@ -4965,7 +4964,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
               key={group.title}
               type="button"
               onClick={() => setActiveDetailSpecGroup(group.title)}
-              className="relative w-full max-w-3xl mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
                 activeSpecGroup?.title === group.title
                   ? "bg-zinc-900 text-white border-zinc-900"
                   : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"

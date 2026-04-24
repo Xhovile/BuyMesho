@@ -20,6 +20,7 @@ import {
   navigateToLogin,
   navigateToListingDetails,
   navigateToPath,
+  navigateToSellerProfile,
   PRIVACY_PATH,
   REPORT_PATH,
   SAFETY_PATH,
