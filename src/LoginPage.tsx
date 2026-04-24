@@ -1,6 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import {
+  fetchSignInMethodsForEmail,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -35,8 +39,17 @@ export default function LoginPage() {
     setLoading(true);
     clearTotpVerifiedSessionToken();
 
+    const email = form.email.trim();
+    const password = form.password;
+
     try {
-      await signInWithEmailAndPassword(auth, form.email, form.password);
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      if (signInMethods.length === 0) {
+        showFeedback("error", "Login failed", "You do not have an account.");
+        return;
+      }
+
+      await signInWithEmailAndPassword(auth, email, password);
 
       const totpStatusResult = await getTotpStatus();
       if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
@@ -47,10 +60,10 @@ export default function LoginPage() {
 
       navigateToPath("/profile");
     } catch (err: any) {
-      let message = "Invalid email or password. Please try again.";
+      let message = "Incorrect password. Please try again.";
       if (err?.code === "auth/user-not-found") {
-        message = "No account found with this email. Please sign up first.";
-      } else if (err?.code === "auth/wrong-password") {
+        message = "You do not have an account.";
+      } else if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
         message = "Incorrect password. Please try again.";
       } else if (err?.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
