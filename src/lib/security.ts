@@ -29,7 +29,7 @@ export type PasswordCredentialInput = {
 };
 
 const DEFAULT_ACTION_CODE_SETTINGS = {
-  url: `${window.location.origin}/settings?section=security`,
+  url: `${window.location.origin}/email-action`,
   handleCodeInApp: false,
 };
 
