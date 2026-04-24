@@ -7,6 +7,7 @@ type PasswordPromptModalProps = {
   title: string;
   message: string;
   password: string;
+  busy?: boolean;
   onPasswordChange: (value: string) => void;
   onSubmit: () => void;
   onCancel: () => void;
@@ -17,6 +18,7 @@ export default function PasswordPromptModal({
   title,
   message,
   password,
+  busy = false,
   onPasswordChange,
   onSubmit,
   onCancel,
@@ -72,7 +74,8 @@ export default function PasswordPromptModal({
               <button
                 type="button"
                 onClick={onCancel}
-                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                disabled={busy}
+                className="flex-1 py-3 rounded-2xl font-bold bg-zinc-100 hover:bg-zinc-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -80,9 +83,10 @@ export default function PasswordPromptModal({
               <button
                 type="button"
                 onClick={onSubmit}
-                className="flex-1 py-3 rounded-2xl font-bold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors"
+                disabled={busy}
+                className="flex-1 py-3 rounded-2xl font-bold text-white bg-zinc-900 hover:bg-zinc-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Continue
+                {busy ? "Verifying..." : "Continue"}
               </button>
             </div>
           </motion.div>
