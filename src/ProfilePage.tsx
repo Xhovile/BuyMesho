@@ -226,7 +226,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-bold text-zinc-900">Saved Items</span>
-                      <span className="block text-sm text-zinc-500">Open the saved page.</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Open the saved page.</span>
                     </span>
                   </span>
                   <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-bold text-zinc-900">Hidden Listings & Sellers</span>
-                      <span className="block text-sm text-zinc-500">
+                      <span className="hidden md:block text-sm text-zinc-500">
                         Open hidden listings and hidden sellers.
                       </span>
                     </span>
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-bold text-zinc-900">Settings</span>
-                      <span className="block text-sm text-zinc-500">Open account settings.</span>
+                      <span className="hidden md:block text-sm text-zinc-500">Open account settings.</span>
                     </span>
                   </span>
                   <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
@@ -279,7 +279,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-bold text-zinc-900">Change Password</span>
-                      <span className="block text-sm text-zinc-500">
+                      <span className="hidden md:block text-sm text-zinc-500">
                         Update your account password securely.
                       </span>
                     </span>
@@ -314,7 +314,7 @@ export default function ProfilePage() {
                       <span className="block font-bold text-zinc-900">
                         {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
                       </span>
-                      <span className="block text-sm text-zinc-500">
+                      <span className="hidden md:block text-sm text-zinc-500">
                         {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
                       </span>
                     </span>
@@ -335,7 +335,7 @@ export default function ProfilePage() {
                       <span className="block font-bold text-zinc-900">
                         {profile.is_seller ? "Edit Profile" : "Edit Account"}
                       </span>
-                      <span className="block text-sm text-zinc-500">
+                      <span className="hidden md:block text-sm text-zinc-500">
                         {profile.is_seller
                           ? "Update your seller profile."
                           : "Update your account details."}
@@ -366,7 +366,7 @@ export default function ProfilePage() {
                     </span>
                     <span className="min-w-0">
                       <span className="block font-bold text-zinc-900">Log Out</span>
-                      <span className="block text-sm text-zinc-500">
+                      <span className="hidden md:block text-sm text-zinc-500">
                         Sign out of this device.
                       </span>
                     </span>

@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
+import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { navigateToPath } from "./lib/appNavigation";
+import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
+import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 
 type FeedbackState = {
   open: boolean;
@@ -17,6 +20,9 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [totpChallengeOpen, setTotpChallengeOpen] = useState(false);
+  const [totpChallengeCode, setTotpChallengeCode] = useState("");
+  const [totpChallengeBusy, setTotpChallengeBusy] = useState(false);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -27,8 +33,18 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    clearTotpVerifiedSessionToken();
+
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
+
+      const totpStatusResult = await getTotpStatus();
+      if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
+        setTotpChallengeCode("");
+        setTotpChallengeOpen(true);
+        return;
+      }
+
       navigateToPath("/profile");
     } catch (err: any) {
       let message = "Invalid email or password. Please try again.";
@@ -42,6 +58,40 @@ export default function LoginPage() {
       showFeedback("error", "Login failed", message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTotpChallengeSubmit = async () => {
+    if (!totpChallengeCode.trim()) {
+      showFeedback("info", "Code required", "Enter the 6-digit authenticator code.");
+      return;
+    }
+
+    setTotpChallengeBusy(true);
+    try {
+      const result = await verifyTotpChallenge(totpChallengeCode);
+
+      if (!result.ok) {
+        showFeedback("error", "Verification failed", result.message);
+        return;
+      }
+
+      setTotpChallengeOpen(false);
+      setTotpChallengeCode("");
+      navigateToPath("/profile");
+    } finally {
+      setTotpChallengeBusy(false);
+    }
+  };
+
+  const handleTotpChallengeCancel = async () => {
+    setTotpChallengeOpen(false);
+    setTotpChallengeCode("");
+    clearTotpVerifiedSessionToken();
+    try {
+      await signOut(auth);
+    } finally {
+      navigateToPath("/login");
     }
   };
 
@@ -76,10 +126,18 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-wrap gap-4 text-sm font-bold">
-          <button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">
+          <button
+            type="button"
+            onClick={() => navigateToPath("/forgot-password")}
+            className="text-primary hover:underline"
+          >
             Forgot Password?
           </button>
-          <button type="button" onClick={() => navigateToPath("/signup")} className="text-zinc-500 hover:text-zinc-900 hover:underline">
+          <button
+            type="button"
+            onClick={() => navigateToPath("/signup")}
+            className="text-zinc-500 hover:text-zinc-900 hover:underline"
+          >
             Create account
           </button>
         </div>
@@ -92,6 +150,17 @@ export default function LoginPage() {
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
         </button>
       </form>
+
+      <TotpChallengeModal
+        open={totpChallengeOpen}
+        title="Two-factor verification"
+        message="Your account uses an authenticator app. Enter the current 6-digit code to continue."
+        code={totpChallengeCode}
+        busy={totpChallengeBusy}
+        onCodeChange={setTotpChallengeCode}
+        onSubmit={handleTotpChallengeSubmit}
+        onCancel={handleTotpChallengeCancel}
+      />
 
       {feedback && (
         <FeedbackModal
