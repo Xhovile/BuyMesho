@@ -209,6 +209,10 @@ export function disableTotpEnrollment(userId: string): boolean {
   return result.changes > 0;
 }
 
+export function revokeTotpVerifiedSessions(userId: string): void {
+  verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE user_id = ?").run(userId);
+}
+
 export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnrollmentRecord | null {
   const existing = getTotpEnrollment(userId);
   if (!existing) return null;

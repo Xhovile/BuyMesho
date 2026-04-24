@@ -43,6 +43,7 @@ import {
   SAFETY_PATH,
   SETTINGS_PATH,
   TERMS_PATH,
+  navigateBackOrPath,
   navigateToPath,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -400,6 +401,12 @@ export default function SettingsPage() {
     } finally {
       setTotpLoading(false);
     }
+  };
+
+  const handleTotpSetupBack = () => {
+    setTotpSetupOpen(false);
+    setTotpSetupCode("");
+    navigateBackOrPath(SETTINGS_PATH);
   };
 
   const handleVerifyIdentity = () => {
@@ -984,6 +991,7 @@ export default function SettingsPage() {
         onCodeChange={setTotpSetupCode}
         onConfirm={handleTotpSetupConfirm}
         onDisable={handleDisableTotp}
+        onBack={handleTotpSetupBack}
         onClose={() => {
           setTotpSetupOpen(false);
           setTotpSetupCode("");
