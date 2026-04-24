@@ -1,18 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Bookmark,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  Loader2,
-  Lock,
-  Maximize2,
-  MessageCircle,
-  Minimize2,
-  ShieldCheck,
-  Star,
-  Store,
-} from "lucide-react";
+import { ChevronLeft, Eye, Loader2, Lock, MessageCircle, ShieldCheck, Star, Store } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import {
@@ -42,6 +29,7 @@ import {
 } from "./lib/savedListings";
 import ListingActionsMenu from "./components/ListingActionsMenu";
 import FeedbackModal from "./components/FeedbackModal";
+import ListingGallery from "./components/listingDetails/ListingGallery";
 import {
   formatDate,
   InfoPill,
@@ -71,21 +59,11 @@ type ListingActionResponse = {
 
 type SectionKey = "details" | "explore" | "reviews";
 
-function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
-  return (
-    <span className="relative h-5 w-5">
-      <Maximize2
-        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
-          isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
-        }`}
-      />
-      <Minimize2
-        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
-          isFullscreen ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"
-        }`}
-      />
-    </span>
-  );
+function formatSpecValue(value: unknown): string {
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
 }
 
 export default function ListingDetailsPage() {
@@ -553,114 +531,42 @@ export default function ListingDetailsPage() {
         ) : (
           <>
             <section className="grid gap-8 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
-              <div className="space-y-4">
-                <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
-                  <div className="flex items-center justify-between gap-3 px-4 py-4 sm:px-5">
-                    <div className="flex items-center gap-2">
-                      <InfoPill>{listing.category}</InfoPill>
-                      {listing.condition ? <InfoPill>{listing.condition}</InfoPill> : null}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={handleToggleSaved}
-                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
-                          saved
-                            ? "border-zinc-900 bg-zinc-900 text-white"
-                            : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                        }`}
-                        aria-label={saved ? "Remove from saved" : "Save item"}
-                      >
-                        <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
-                      </button>
-                      <ListingActionsMenu
-                        listing={listing}
-                        currentUid={firebaseUser?.uid}
-                        isLoggedIn={!!firebaseUser}
-                        isSaved={saved}
-                        variant="detail"
-                        onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
-                        onEdit={handleDetailEdit}
-                        onDelete={handleDetailDelete}
-                        onHideSeller={handleDetailHideSeller}
-                        onHideListing={handleDetailHideListing}
-                        onToggleStatus={handleDetailToggleStatus}
-                        onRecordSale={handleDetailRecordSale}
-                        onRestock={handleDetailRestock}
-                        requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="relative bg-zinc-100">
-                    <div className="relative aspect-square sm:aspect-[4/3] xl:aspect-[5/4]">
-                      <img src={currentImage} alt={listing.name} className="h-full w-full object-contain" />
-
-                      <button
-                        type="button"
-                        onClick={() => setIsFullscreen(true)}
-                        className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
-                        aria-label="Open fullscreen"
-                      >
-                        <FullscreenToggleIcon isFullscreen={false} />
-                      </button>
-
-                      {galleryImages.length > 1 ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={handlePrevImage}
-                            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
-                            aria-label="Previous image"
-                          >
-                            <ChevronLeft className="h-5 w-5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={handleNextImage}
-                            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
-                            aria-label="Next image"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </button>
-                          <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
-                            {currentGalleryIndex + 1} / {galleryImages.length}
-                          </div>
-                        </>
-                      ) : null}
-                    </div>
-                  </div>
-
-                  {galleryImages.length > 1 ? (
-                    <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5">
-                      {galleryImages.map((url, idx) => (
-                        <button
-                          key={`${url}-${idx}`}
-                          type="button"
-                          onClick={() => {
-                            syncListingParamsInUrl(listing.id, idx);
-                            setRouteState((prev) => ({ ...prev, imageIndex: idx }));
-                          }}
-                          className={`h-16 w-16 shrink-0 overflow-hidden rounded-2xl border ${
-                            idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200"
-                          }`}
-                        >
-                          <img src={url} alt="" className="h-full w-full object-cover" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-
-                  {listing.video_url ? (
-                    <div className="border-t border-zinc-100 px-4 py-4 sm:px-5">
-                      <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-black">
-                        <video src={listing.video_url} controls className="w-full" />
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
+              <ListingGallery
+                listingName={listing.name}
+                galleryImages={galleryImages}
+                currentGalleryIndex={currentGalleryIndex}
+                currentImage={currentImage}
+                videoUrl={listing.video_url}
+                isFullscreen={isFullscreen}
+                saved={saved}
+                onToggleSaved={handleToggleSaved}
+                onOpenFullscreen={() => setIsFullscreen(true)}
+                onCloseFullscreen={() => setIsFullscreen(false)}
+                onPrevImage={handlePrevImage}
+                onNextImage={handleNextImage}
+                onSelectImage={(idx) => {
+                  syncListingParamsInUrl(listing.id, idx);
+                  setRouteState((prev) => ({ ...prev, imageIndex: idx }));
+                }}
+                actionsMenu={
+                  <ListingActionsMenu
+                    listing={listing}
+                    currentUid={firebaseUser?.uid}
+                    isLoggedIn={!!firebaseUser}
+                    isSaved={saved}
+                    variant="detail"
+                    onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
+                    onEdit={handleDetailEdit}
+                    onDelete={handleDetailDelete}
+                    onHideSeller={handleDetailHideSeller}
+                    onHideListing={handleDetailHideListing}
+                    onToggleStatus={handleDetailToggleStatus}
+                    onRecordSale={handleDetailRecordSale}
+                    onRestock={handleDetailRestock}
+                    requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
+                  />
+                }
+              />
 
               <div className="space-y-6">
                 <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-7">
@@ -825,7 +731,7 @@ export default function ListingDetailsPage() {
                   <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <StatTile label="Seller business" value={seller?.business_name || listing.business_name} icon={<Store className="h-4 w-4" />} />
                     <StatTile label="Verification" value={seller?.is_verified || listing.is_verified ? "Verified" : "Not verified"} icon={<ShieldCheck className="h-4 w-4" />} />
-                    <StatTile label="Joined" value={formatDate(seller?.join_date)} icon={<MapPin className="h-4 w-4" />} />
+                    <StatTile label="Joined" value={formatDate(seller?.join_date)} icon={<Store className="h-4 w-4" />} />
                     <StatTile label="Profile views" value={seller?.profile_views ?? 0} icon={<Eye className="h-4 w-4" />} />
                   </div>
 
@@ -872,7 +778,7 @@ export default function ListingDetailsPage() {
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
                       <StatTile label="Rating average" value={ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"} icon={<Star className="h-4 w-4" />} />
                       <StatTile label="Rating count" value={ratingSummary?.ratingCount ?? 0} icon={<ShieldCheck className="h-4 w-4" />} />
-                      <StatTile label="Campus" value={listing.university} icon={<MapPin className="h-4 w-4" />} />
+                      <StatTile label="Campus" value={listing.university} icon={<Store className="h-4 w-4" />} />
                     </div>
                   </div>
                 </div>
@@ -925,54 +831,6 @@ export default function ListingDetailsPage() {
           </>
         )}
       </main>
-
-      {isFullscreen && listing ? (
-        <div className="fixed inset-0 z-[90] bg-black/90 p-4 sm:p-6">
-          <div className="mx-auto flex h-full max-w-7xl flex-col gap-4">
-            <div className="flex items-center justify-between gap-3 text-white">
-              <div>
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-white/60">Gallery</p>
-                <p className="mt-1 text-lg font-black">{listing.name}</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsFullscreen(false)}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/20"
-                aria-label="Close fullscreen"
-              >
-                <FullscreenToggleIcon isFullscreen />
-              </button>
-            </div>
-
-            <div className="relative flex-1 overflow-hidden rounded-[2rem] bg-black">
-              <img src={currentImage} alt={listing.name} className="h-full w-full object-contain" />
-              {galleryImages.length > 1 ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handlePrevImage}
-                    className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextImage}
-                    className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
-                    {currentGalleryIndex + 1} / {galleryImages.length}
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={() => setShareNoticeOpen(false)} />
     </div>
