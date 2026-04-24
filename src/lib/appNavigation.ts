@@ -22,6 +22,7 @@ export type AppRoute =
   | "become_seller"
   | "change_password"
   | "change_email"
+  | "email_action"
   | "my_listings"
   | "admin_reports"
   | "admin_seller_applications";
@@ -48,6 +49,7 @@ export const EDIT_ACCOUNT_PATH = "/edit-account";
 export const BECOME_SELLER_PATH = "/become-seller";
 export const CHANGE_PASSWORD_PATH = "/change-password";
 export const CHANGE_EMAIL_PATH = "/change_email";
+export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
@@ -255,6 +257,10 @@ export const getAppRouteFromLocation = (
   if (location.pathname === CHANGE_EMAIL_PATH) {
     return "change_email";
   } 
+
+  if (location.pathname === EMAIL_ACTION_PATH) {
+    return "email_action";
+  }
   
   if (location.pathname === MY_LISTINGS_PATH) {
     return "my_listings";
