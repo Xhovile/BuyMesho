@@ -126,6 +126,7 @@ export default function SettingsPage() {
   >(null);
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
+  const [passwordPromptBusy, setPasswordPromptBusy] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
@@ -293,19 +294,29 @@ export default function SettingsPage() {
       return;
     }
 
-    const result = await reauthenticateWithPassword({
-      email: firebaseUser.email,
-      password: reauthPassword,
-    });
+    setPasswordPromptBusy(true);
+    try {
+      const result = await reauthenticateWithPassword({
+        email: firebaseUser.email,
+        password: reauthPassword,
+      });
 
-    if (!result.ok) {
-      showFeedback("error", "Verification failed", result.message);
-      return;
+      if (!result.ok) {
+        showFeedback("error", "Verification failed", result.message);
+        return;
+      }
+
+      setPasswordPromptOpen(false);
+      setReauthPassword("");
+      await handleDeleteAccount();
+    } finally {
+      setPasswordPromptBusy(false);
     }
+  };
 
+  const handlePasswordPromptCancel = () => {
     setPasswordPromptOpen(false);
     setReauthPassword("");
-    await handleDeleteAccount();
   };
 
   const handleResendVerification = async () => {
@@ -1085,15 +1096,13 @@ export default function SettingsPage() {
 
       <PasswordPromptModal
         open={passwordPromptOpen}
-        title="Verify your identity"
-        message="For security, please re-enter your password before deleting your account."
+        title="Verify identity"
+        message="Enter your password to continue with this security action."
         password={reauthPassword}
+        busy={passwordPromptBusy}
         onPasswordChange={setReauthPassword}
-        onSubmit={() => void handlePasswordPromptSubmit()}
-        onCancel={() => {
-          setPasswordPromptOpen(false);
-          setReauthPassword("");
-        }}
+        onSubmit={handlePasswordPromptSubmit}
+        onCancel={handlePasswordPromptCancel}
       />
       <ConfirmModal
         open={deleteConfirmOpen}
