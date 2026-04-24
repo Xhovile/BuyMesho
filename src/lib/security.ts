@@ -297,10 +297,10 @@ export async function deleteCurrentAccount(): Promise<SecurityResult> {
   try {
     const user = requireUser();
 
-    // Delete app-owned profile data first.
-    await apiFetch("/api/profile", { method: "DELETE" });
+    // Server-side cleanup removes listings, reports, seller applications, ratings,
+    // and uploaded assets before the Firebase account is removed.
+    await apiFetch("/api/account/delete", { method: "DELETE" });
 
-    // Then remove the Firebase auth account.
     clearTotpVerifiedSessionToken();
     await deleteUser(user);
 
