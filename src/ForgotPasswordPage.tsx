@@ -5,11 +5,18 @@ import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { navigateToPath } from "./lib/appNavigation";
 
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
 type FeedbackState = {
   open: boolean;
   type: "success" | "error" | "info";
   title: string;
   message: string;
+  actions?: FeedbackAction[];
 } | null;
 
 export default function ForgotPasswordPage() {
@@ -19,8 +26,9 @@ export default function ForgotPasswordPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
-  ) => setFeedback({ open: true, type, title, message });
+    message: string,
+    actions?: FeedbackAction[]
+  ) => setFeedback({ open: true, type, title, message, actions });
 
   const handleReset = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,13 +39,39 @@ export default function ForgotPasswordPage() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim());
       showFeedback(
         "success",
         "Reset email sent",
         "Check your email inbox for the password reset link."
       );
     } catch (err: any) {
+      if (err?.code === "auth/user-not-found") {
+        showFeedback(
+          "error",
+          "No account found",
+          "You do not have an account.",
+          [
+            {
+              label: "Cancel",
+              variant: "secondary",
+              onClick: () => {
+                setFeedback(null);
+                navigateToPath("/login");
+              },
+            },
+            {
+              label: "Sign Up",
+              onClick: () => {
+                setFeedback(null);
+                navigateToPath("/signup");
+              },
+            },
+          ]
+        );
+        return;
+      }
+
       showFeedback(
         "error",
         "Reset failed",
@@ -80,6 +114,7 @@ export default function ForgotPasswordPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
+          actions={feedback.actions}
           onClose={() => setFeedback(null)}
         />
       )}
