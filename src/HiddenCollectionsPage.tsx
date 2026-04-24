@@ -356,17 +356,13 @@ export default function HiddenCollectionsPage() {
               ))}
             </div>
           ) : (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
-              <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-4">
-                {activeTab === "listings" ? (
-                  <Package className="w-7 h-7 text-zinc-400" />
-                ) : (
+              <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+                <div className="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-4">
                   <UserRound className="w-7 h-7 text-zinc-400" />
-                )}
-              </div>
-              <h2 className="text-xl font-extrabold text-zinc-900">
-                No matching hidden {activeTab}
-              </h2>
+                </div>
+                <h2 className="text-xl font-extrabold text-zinc-900">
+                  No matching hidden {activeTab}
+                </h2>
               <p className="mt-2 text-sm text-zinc-500 max-w-md mx-auto">
                 Try a different search or clear hidden items from the marketplace.
               </p>

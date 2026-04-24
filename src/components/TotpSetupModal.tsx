@@ -167,11 +167,19 @@ export default function TotpSetupModal({
               <button
                 type="button"
                 onClick={onDisable}
-                className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100"
+                className="hidden rounded-2xl border border-red-200 bg-red-50 px-4 py-3 font-bold text-red-700 hover:bg-red-100 sm:inline-flex"
               >
                 Disable 2FA
               </button>
             ) : null}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 font-bold text-zinc-700 hover:bg-zinc-50"
+            >
+              Close
+            </button>
 
             <button
               type="button"

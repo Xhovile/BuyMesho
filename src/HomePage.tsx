@@ -246,6 +246,16 @@ export default function HomePage() {
     navigateToPath(SETTINGS_PATH);
   };
 
+  const handleProfileClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(PROFILE_PATH);
+  };
+
   const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";

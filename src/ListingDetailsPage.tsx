@@ -39,7 +39,7 @@ import {
   toggleSavedListingId,
 } from "./lib/savedListings";
 import ListingActionsMenu from "./components/ListingActionsMenu";
-import ActionModal from "./components/ActionModal";
+import FeedbackModal from "./components/FeedbackModal";
 
 type SellerProfile = {
   uid?: string;
@@ -586,7 +586,6 @@ Listing: ${buildListingShareUrl(
                     onToggleStatus={handleDetailToggleStatus}
                     onRecordSale={handleDetailRecordSale}
                     onRestock={handleDetailRestock}
-                    onToggleSave={handleToggleSaved}
                     requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
                   />
                 </div>
@@ -938,7 +937,7 @@ Listing: ${buildListingShareUrl(
         </div>
       )}
 
-      <ActionModal
+      <FeedbackModal
         open={shareNoticeOpen}
         type="info"
         title="Share listing"

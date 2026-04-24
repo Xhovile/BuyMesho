@@ -17,11 +17,15 @@ export function setTotpVerifiedSessionToken(token: string, expiresAt?: string | 
   const trimmedToken = token.trim();
   if (!trimmedToken) return;
 
-  storage.setItem(TOTP_SESSION_TOKEN_KEY, trimmedToken);
-  if (expiresAt) {
-    storage.setItem(TOTP_SESSION_EXPIRES_AT_KEY, expiresAt);
-  } else {
-    storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  try {
+    storage.setItem(TOTP_SESSION_TOKEN_KEY, trimmedToken);
+    if (expiresAt) {
+      storage.setItem(TOTP_SESSION_EXPIRES_AT_KEY, expiresAt);
+    } else {
+      storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
+    }
+  } catch {
+    // Ignore storage write errors (e.g. blocked/private mode storage)
   }
 }
 
@@ -29,13 +33,20 @@ export function getTotpVerifiedSessionToken(): string | null {
   const storage = safeStorage();
   if (!storage) return null;
 
-  const token = storage.getItem(TOTP_SESSION_TOKEN_KEY);
+  let token: string | null = null;
+  let expiresAt: string | null = null;
+  try {
+    token = storage.getItem(TOTP_SESSION_TOKEN_KEY);
+    expiresAt = storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  } catch {
+    return null;
+  }
+
   if (!token) return null;
 
-  const expiresAt = storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
   if (expiresAt) {
     const expiresAtMs = Date.parse(expiresAt);
-    if (Number.isFinite(expiresAtMs) && expiresAtMs <= Date.now()) {
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
       clearTotpVerifiedSessionToken();
       return null;
     }
@@ -47,13 +58,21 @@ export function getTotpVerifiedSessionToken(): string | null {
 export function getTotpVerifiedSessionExpiry(): string | null {
   const storage = safeStorage();
   if (!storage) return null;
-  return storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  try {
+    return storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export function clearTotpVerifiedSessionToken(): void {
   const storage = safeStorage();
   if (!storage) return;
 
-  storage.removeItem(TOTP_SESSION_TOKEN_KEY);
-  storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  try {
+    storage.removeItem(TOTP_SESSION_TOKEN_KEY);
+    storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  } catch {
+    // Ignore storage write errors (e.g. blocked/private mode storage)
+  }
 }

@@ -206,7 +206,6 @@ export default function ListingCard({
               onToggleStatus={onToggleStatus}
               onRecordSale={onRecordSale}
               onRestock={onRestock}
-              onToggleSave={onToggleSave}
               requireLoginForContact={requireLoginForContact}
             />
           ) : null}

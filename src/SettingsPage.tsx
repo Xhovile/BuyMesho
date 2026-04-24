@@ -244,7 +244,7 @@ export default function SettingsPage() {
 
     const result = await deleteCurrentAccount();
     if (!result.ok) {
-      if (result.code === "auth/requires-recent-login") {
+      if ("code" in result && result.code === "auth/requires-recent-login") {
         setPasswordPromptOpen(true);
         return;
       }
