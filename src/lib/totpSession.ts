@@ -1,39 +1,78 @@
-const TOTP_SESSION_STORAGE_KEY = "buymesho.totp.session";
+const TOTP_SESSION_TOKEN_KEY = "buymesho.totp.sessionToken";
+const TOTP_SESSION_EXPIRES_AT_KEY = "buymesho.totp.sessionExpiresAt";
 
-export function getTotpVerifiedSessionToken(): string | null {
+function safeStorage() {
   if (typeof window === "undefined") return null;
-
   try {
-    const token = window.localStorage.getItem(TOTP_SESSION_STORAGE_KEY);
-    return token && token.trim() ? token.trim() : null;
+    return window.localStorage;
   } catch {
     return null;
   }
 }
 
-export function setTotpVerifiedSessionToken(token: string): void {
-  if (typeof window === "undefined") return;
+export function setTotpVerifiedSessionToken(token: string, expiresAt?: string | null): void {
+  const storage = safeStorage();
+  if (!storage) return;
 
-  const normalized = token.trim();
-  if (!normalized) return;
+  const trimmedToken = token.trim();
+  if (!trimmedToken) return;
 
   try {
-    window.localStorage.setItem(TOTP_SESSION_STORAGE_KEY, normalized);
+    storage.setItem(TOTP_SESSION_TOKEN_KEY, trimmedToken);
+    if (expiresAt) {
+      storage.setItem(TOTP_SESSION_EXPIRES_AT_KEY, expiresAt);
+    } else {
+      storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
+    }
   } catch {
-    // Ignore storage failures so auth can still proceed.
+    // Ignore storage write errors (e.g. blocked/private mode storage)
+  }
+}
+
+export function getTotpVerifiedSessionToken(): string | null {
+  const storage = safeStorage();
+  if (!storage) return null;
+
+  let token: string | null = null;
+  let expiresAt: string | null = null;
+  try {
+    token = storage.getItem(TOTP_SESSION_TOKEN_KEY);
+    expiresAt = storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  } catch {
+    return null;
+  }
+
+  if (!token) return null;
+
+  if (expiresAt) {
+    const expiresAtMs = Date.parse(expiresAt);
+    if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+      clearTotpVerifiedSessionToken();
+      return null;
+    }
+  }
+
+  return token;
+}
+
+export function getTotpVerifiedSessionExpiry(): string | null {
+  const storage = safeStorage();
+  if (!storage) return null;
+  try {
+    return storage.getItem(TOTP_SESSION_EXPIRES_AT_KEY);
+  } catch {
+    return null;
   }
 }
 
 export function clearTotpVerifiedSessionToken(): void {
-  if (typeof window === "undefined") return;
+  const storage = safeStorage();
+  if (!storage) return;
 
   try {
-    window.localStorage.removeItem(TOTP_SESSION_STORAGE_KEY);
+    storage.removeItem(TOTP_SESSION_TOKEN_KEY);
+    storage.removeItem(TOTP_SESSION_EXPIRES_AT_KEY);
   } catch {
-    // Ignore storage failures.
+    // Ignore storage write errors (e.g. blocked/private mode storage)
   }
-}
-
-export function hasTotpVerifiedSessionToken(): boolean {
-  return !!getTotpVerifiedSessionToken();
 }

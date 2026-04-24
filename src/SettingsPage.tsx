@@ -82,11 +82,16 @@ const LABEL_TO_VISIBILITY = Object.entries(VISIBILITY_LABEL).reduce<
 }, {});
 
 const ACCORDION_STORAGE_KEY = "settings-accordion-state";
+const SECURITY_ITEMS_STORAGE_KEY = "settings-security-items-state";
 const defaultExpandedSections = {
   account: true,
   security: true,
   privacy: false,
   helpLegal: false,
+};
+const defaultExpandedSecurityItems = {
+  twoFactor: false,
+  emailVerification: false,
 };
 
 const getSettingsViewFromLocation = (
@@ -147,6 +152,15 @@ export default function SettingsPage() {
   const [totpSecret, setTotpSecret] = useState("");
   const [totpUri, setTotpUri] = useState("");
   const [totpAccountName, setTotpAccountName] = useState("");
+  const [expandedSecurityItems, setExpandedSecurityItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem(SECURITY_ITEMS_STORAGE_KEY);
+      if (saved) return JSON.parse(saved) as typeof defaultExpandedSecurityItems;
+    } catch {
+      // ignore parse errors
+    }
+    return defaultExpandedSecurityItems;
+  });
 
   useEffect(() => {
     const handlePopState = () => {
@@ -166,6 +180,17 @@ export default function SettingsPage() {
       // ignore storage errors
     }
   }, [expandedSections]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        SECURITY_ITEMS_STORAGE_KEY,
+        JSON.stringify(expandedSecurityItems)
+      );
+    } catch {
+      // ignore storage errors
+    }
+  }, [expandedSecurityItems]);
 
   useEffect(() => {
     if (!firebaseUser) return;
@@ -244,7 +269,7 @@ export default function SettingsPage() {
 
     const result = await deleteCurrentAccount();
     if (!result.ok) {
-      if (result.code === "auth/requires-recent-login") {
+      if ("code" in result && result.code === "auth/requires-recent-login") {
         setPasswordPromptOpen(true);
         return;
       }
@@ -679,124 +704,172 @@ export default function SettingsPage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                <div className="px-5 py-4 bg-zinc-50/60">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                          Two-factor authentication
-                        </p>
-                        <p className="mt-1 text-sm font-semibold text-zinc-900">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedSecurityItems((current) => ({
+                      ...current,
+                      twoFactor: !current.twoFactor,
+                    }))
+                  }
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  aria-expanded={expandedSecurityItems.twoFactor}
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-xl bg-fuchsia-50 text-fuchsia-700 inline-flex items-center justify-center">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </span>
+                    2-Factor Authentication
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-fuchsia-500 transition-transform ${expandedSecurityItems.twoFactor ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {expandedSecurityItems.twoFactor ? (
+                  <div className="px-5 py-4 bg-zinc-50/60 border-t border-zinc-100">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                            Two-factor authentication
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-zinc-900">
+                            {totpStatus === "enabled"
+                              ? "Enabled"
+                              : totpStatus === "pending"
+                              ? "Pending setup"
+                              : "Not enabled"}
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Use an authenticator app for your second factor.
+                          </p>
+                        </div>
+
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${
+                            totpStatus === "enabled"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : totpStatus === "pending"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-zinc-100 text-zinc-500"
+                          }`}
+                        >
                           {totpStatus === "enabled"
-                            ? "Enabled"
+                            ? "Active"
                             : totpStatus === "pending"
-                            ? "Pending setup"
-                            : "Not enabled"}
-                        </p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          Use an authenticator app for your second factor.
-                        </p>
+                            ? "Setup"
+                            : "Off"}
+                        </span>
                       </div>
 
-                      <span
-                        className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${
-                          totpStatus === "enabled"
-                            ? "bg-emerald-50 text-emerald-700"
-                            : totpStatus === "pending"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-zinc-100 text-zinc-500"
-                        }`}
-                      >
-                        {totpStatus === "enabled"
-                          ? "Active"
-                          : totpStatus === "pending"
-                          ? "Setup"
-                          : "Off"}
-                      </span>
-                    </div>
+                      <div className="flex flex-wrap gap-3">
+                        {totpStatus === "enabled" ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleDisableTotp}
+                              disabled={totpLoading}
+                              className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Disable 2FA
+                            </button>
 
-                    <div className="flex flex-wrap gap-3">
-                      {totpStatus === "enabled" ? (
-                        <>
-                          <button
-                            type="button"
-                            onClick={handleDisableTotp}
-                            disabled={totpLoading}
-                            className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            Disable 2FA
-                          </button>
-
+                            <button
+                              type="button"
+                              onClick={handle2FAEntry}
+                              disabled={totpLoading}
+                              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Re-enroll
+                            </button>
+                          </>
+                        ) : (
                           <button
                             type="button"
                             onClick={handle2FAEntry}
                             disabled={totpLoading}
                             className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                           >
-                            Re-enroll
+                            Enable authenticator app
                           </button>
-                        </>
-                      ) : (
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedSecurityItems((current) => ({
+                      ...current,
+                      emailVerification: !current.emailVerification,
+                    }))
+                  }
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  aria-expanded={expandedSecurityItems.emailVerification}
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-xl bg-purple-50 text-purple-700 inline-flex items-center justify-center">
+                      <Mail className="w-3.5 h-3.5" />
+                    </span>
+                    Email Verification
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-purple-500 transition-transform ${expandedSecurityItems.emailVerification ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {expandedSecurityItems.emailVerification ? (
+                  <div className="px-5 py-4 bg-zinc-50/60 border-t border-zinc-100">
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                          Email verification
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-zinc-900">
+                          {profileLoading
+                            ? "Checking..."
+                            : !firebaseUser
+                            ? "Login required"
+                            : firebaseUser.emailVerified
+                            ? "Verified"
+                            : "Not verified"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
                         <button
                           type="button"
-                          onClick={handle2FAEntry}
-                          disabled={totpLoading}
-                          className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={handleRefreshVerification}
+                          disabled={!firebaseUser}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          Enable authenticator app
+                          Refresh status
                         </button>
-                      )}
+
+                        <button
+                          type="button"
+                          onClick={() => void handleResendVerification()}
+                          disabled={!firebaseUser || securityActionBusy === "resend" || !!firebaseUser?.emailVerified}
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {securityActionBusy === "resend" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Mail className="h-4 w-4" />
+                          )}
+                          Resend verification
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-zinc-500">
+                        Verification must be completed before higher-trust actions should be allowed.
+                      </p>
                     </div>
                   </div>
-                </div>
-
-                <div className="px-5 py-4 bg-zinc-50/60">
-                  <div className="flex flex-col gap-3">
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                        Email verification
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-zinc-900">
-                        {profileLoading
-                          ? "Checking..."
-                          : !firebaseUser
-                          ? "Login required"
-                          : firebaseUser.emailVerified
-                          ? "Verified"
-                          : "Not verified"}
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-3">
-                      <button
-                        type="button"
-                        onClick={handleRefreshVerification}
-                        disabled={!firebaseUser}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        Refresh status
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => void handleResendVerification()}
-                        disabled={!firebaseUser || securityActionBusy === "resend" || !!firebaseUser?.emailVerified}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {securityActionBusy === "resend" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Mail className="h-4 w-4" />
-                        )}
-                        Resend verification
-                      </button>
-                    </div>
-
-                    <p className="text-xs text-zinc-500">
-                      Verification must be completed before higher-trust actions should be allowed.
-                    </p>
-                  </div>
-                </div>
+                ) : null}
 
                 <button
                   type="button"
