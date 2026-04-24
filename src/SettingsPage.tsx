@@ -126,6 +126,7 @@ export default function SettingsPage() {
   >(null);
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
+  const [passwordPromptBusy, setPasswordPromptBusy] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
@@ -239,6 +240,8 @@ export default function SettingsPage() {
     if (!totpUri) return "";
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(totpUri)}`;
   }, [totpUri]);
+  const emailVerified = firebaseUser?.emailVerified ?? false;
+  const emailVerificationButtonsDisabled = !firebaseUser || emailVerified;
 
   const updateVisibility = async (
     field: "profile_visibility" | "seller_visibility" | "saved_visibility",
@@ -291,19 +294,29 @@ export default function SettingsPage() {
       return;
     }
 
-    const result = await reauthenticateWithPassword({
-      email: firebaseUser.email,
-      password: reauthPassword,
-    });
+    setPasswordPromptBusy(true);
+    try {
+      const result = await reauthenticateWithPassword({
+        email: firebaseUser.email,
+        password: reauthPassword,
+      });
 
-    if (!result.ok) {
-      showFeedback("error", "Verification failed", result.message);
-      return;
+      if (!result.ok) {
+        showFeedback("error", "Verification failed", result.message);
+        return;
+      }
+
+      setPasswordPromptOpen(false);
+      setReauthPassword("");
+      await handleDeleteAccount();
+    } finally {
+      setPasswordPromptBusy(false);
     }
+  };
 
+  const handlePasswordPromptCancel = () => {
     setPasswordPromptOpen(false);
     setReauthPassword("");
-    await handleDeleteAccount();
   };
 
   const handleResendVerification = async () => {
@@ -833,7 +846,7 @@ export default function SettingsPage() {
                             ? "Checking..."
                             : !firebaseUser
                             ? "Login required"
-                            : firebaseUser.emailVerified
+                            : emailVerified
                             ? "Verified"
                             : "Not verified"}
                         </p>
@@ -843,24 +856,34 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={handleRefreshVerification}
-                          disabled={!firebaseUser}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          disabled={emailVerificationButtonsDisabled}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${
+                            emailVerificationButtonsDisabled
+                              ? "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                              : "bg-white text-zinc-900 hover:bg-zinc-50"
+                          }`}
                         >
                           Refresh status
                         </button>
 
                         <button
                           type="button"
-                          onClick={() => void handleResendVerification()}
-                          disabled={!firebaseUser || securityActionBusy === "resend" || !!firebaseUser?.emailVerified}
-                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          onClick={handleResendVerification}
+                          disabled={emailVerificationButtonsDisabled}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${
+                            emailVerificationButtonsDisabled
+                              ? "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                              : "bg-zinc-900 text-white hover:bg-zinc-800"
+                          }`}
                         >
                           {securityActionBusy === "resend" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Resending...
+                            </>
                           ) : (
-                            <Mail className="h-4 w-4" />
+                            "Resend verification"
                           )}
-                          Resend verification
                         </button>
                       </div>
 
@@ -1073,15 +1096,13 @@ export default function SettingsPage() {
 
       <PasswordPromptModal
         open={passwordPromptOpen}
-        title="Verify your identity"
-        message="For security, please re-enter your password before deleting your account."
+        title="Verify identity"
+        message="Enter your password to continue with this security action."
         password={reauthPassword}
+        busy={passwordPromptBusy}
         onPasswordChange={setReauthPassword}
-        onSubmit={() => void handlePasswordPromptSubmit()}
-        onCancel={() => {
-          setPasswordPromptOpen(false);
-          setReauthPassword("");
-        }}
+        onSubmit={handlePasswordPromptSubmit}
+        onCancel={handlePasswordPromptCancel}
       />
       <ConfirmModal
         open={deleteConfirmOpen}
