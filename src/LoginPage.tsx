@@ -1,10 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import {
-  fetchSignInMethodsForEmail,
-  signInWithEmailAndPassword,
-  signOut,
-} from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -53,25 +49,6 @@ export default function LoginPage() {
     const password = form.password;
 
     try {
-      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
-      if (signInMethods.length === 0) {
-        showFeedback("error", "Login failed", "You do not have an account.", [
-          {
-            label: "Cancel",
-            variant: "secondary",
-            onClick: closeFeedback,
-          },
-          {
-            label: "Sign Up",
-            onClick: () => {
-              closeFeedback();
-              navigateToPath("/signup");
-            },
-          },
-        ]);
-        return;
-      }
-
       await signInWithEmailAndPassword(auth, email, password);
 
       const totpStatusResult = await getTotpStatus();
@@ -101,7 +78,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (err?.code === "auth/wrong-password" || err?.code === "auth/invalid-credential") {
+      if (err?.code === "auth/wrong-password") {
         showFeedback("error", "Login failed", "Incorrect password. Please try again.", [
           {
             label: "Cancel",
@@ -119,7 +96,25 @@ export default function LoginPage() {
         return;
       }
 
-      let message = "Incorrect password. Please try again.";
+      if (err?.code === "auth/invalid-credential") {
+        showFeedback("error", "Login failed", "Incorrect email or password. Please try again.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Retry",
+            onClick: () => {
+              setForm((prev) => ({ ...prev, password: "" }));
+              closeFeedback();
+            },
+          },
+        ]);
+        return;
+      }
+
+      let message = "Login failed. Please try again.";
       if (err?.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
       }
