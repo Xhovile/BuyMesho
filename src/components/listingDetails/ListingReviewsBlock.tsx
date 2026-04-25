@@ -1,12 +1,10 @@
-import { ShieldCheck, Star, Eye } from "lucide-react";
-import type { Listing, RatingSummary } from "../../types";
+import { ShieldCheck, Star } from "lucide-react";
+import type { RatingSummary } from "../../types";
 import { SectionHeading, StatTile } from "./ListingDetailsShared";
 
 export default function ListingReviewsBlock({
-  listing,
   ratingSummary,
 }: {
-  listing: Listing;
   ratingSummary: RatingSummary | null;
 }) {
   return (
@@ -14,7 +12,7 @@ export default function ListingReviewsBlock({
       <SectionHeading
         eyebrow="Reviews"
         title="Trust and feedback"
-        description="This is the final trust layer. It confirms credibility without competing with the listing summary or the WhatsApp CTA."
+        description="This section stays light until written buyer reviews are available. It should not repeat listing metrics already shown elsewhere on the page."
       />
 
       <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-4">
@@ -24,8 +22,6 @@ export default function ListingReviewsBlock({
           icon={<Star className="h-4 w-4" />}
         />
         <StatTile label="Rating count" value={ratingSummary?.ratingCount ?? 0} icon={<ShieldCheck className="h-4 w-4" />} />
-        <StatTile label="Listing views" value={listing.views_count ?? 0} icon={<Eye className="h-4 w-4" />} />
-        <StatTile label="WhatsApp clicks" value={listing.whatsapp_clicks ?? 0} icon={<Eye className="h-4 w-4" />} />
       </div>
 
       <div className="space-y-3 border-t border-zinc-200 pt-6">
@@ -36,7 +32,7 @@ export default function ListingReviewsBlock({
           <div>
             <h3 className="text-lg font-black tracking-tight text-zinc-900">Written reviews are not live yet</h3>
             <p className="mt-2 max-w-3xl text-sm leading-7 text-zinc-600">
-              The rating summary is already available. Buyer comments and review media can be added later without changing the section order or the page hierarchy.
+              Buyer comments and review media can be added later without changing the section order or the page hierarchy.
             </p>
           </div>
         </div>
