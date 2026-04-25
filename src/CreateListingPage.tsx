@@ -38,36 +38,37 @@ type FeedbackState = {
 } | null;
 
 export default function CreateListingPage() {
-  const { firebaseUser, authLoading, profile, profileLoading, refreshProfile } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading, refreshProfile, emailVerified } = useAccountProfile();
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
-  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [pageReady, setPageReady] = useState(false);
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
 
   useEffect(() => {
     let cancelled = false;
 
-    const syncEmailVerification = async () => {
+    const ensureReady = async () => {
       if (!firebaseUser) {
-        setEmailVerified(null);
+        setPageReady(true);
         return;
       }
 
       try {
         await reload(firebaseUser);
       } catch {
-        // Ignore reload failures and fall back to the current auth snapshot.
+        // Ignore reload failures and rely on the current auth snapshot.
       }
 
       if (!cancelled) {
-        setEmailVerified(!!firebaseUser.emailVerified);
+        setPageReady(true);
       }
     };
 
-    void syncEmailVerification();
+    setPageReady(false);
     void refreshProfile();
+    void ensureReady();
 
     return () => {
       cancelled = true;
@@ -150,7 +151,8 @@ export default function CreateListingPage() {
     }
   };
 
-  const canCreate = !!firebaseUser && (!!profile?.is_seller || !!profile?.is_verified) && emailVerified === true;
+  const canCreate = !!firebaseUser && !!profile?.is_seller && !!emailVerified;
+  const isBusy = authLoading || profileLoading || !pageReady;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -168,7 +170,7 @@ export default function CreateListingPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
-        {authLoading || profileLoading || emailVerified === null ? (
+        {isBusy ? (
           <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 font-medium text-zinc-500 shadow-sm">
             <Loader2 className="h-5 w-5 animate-spin" /> Preparing listing studio...
           </div>
@@ -184,21 +186,30 @@ export default function CreateListingPage() {
             <p className="mt-3 text-sm text-zinc-500">Apply to become a seller before posting listings.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
           </div>
-        ) : !canCreate ? (
+        ) : !emailVerified ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Email verification required</h1>
             <p className="mt-3 text-sm text-zinc-500">Verify your email before posting listings.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
           </div>
-        ) : (
+        ) : canCreate ? (
           <div className="pb-20">
             <div className="px-2 sm:px-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
-            <ListingStudioForm mode="create" initialData={listingDraft} onCancel={() => navigateToPath(EXPLORE_PATH)} onSubmit={handleCreate} showFeedback={showFeedback} isSubmitting={submitting} submitLabel="Post Listing" submitBusyLabel="Posting..." />
+            <ListingStudioForm
+              mode="create"
+              initialData={listingDraft}
+              onCancel={() => navigateToPath(EXPLORE_PATH)}
+              onSubmit={handleCreate}
+              showFeedback={showFeedback}
+              isSubmitting={submitting}
+              submitLabel="Post Listing"
+              submitBusyLabel="Posting..."
+            />
           </div>
-        )}
+        ) : null}
       </main>
 
       {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={closeFeedback} />}
