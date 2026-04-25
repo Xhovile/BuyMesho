@@ -1,7 +1,7 @@
-import { Eye, ShieldCheck, Star, Store } from "lucide-react";
-import type { Listing, RatingSummary } from "../../types";
+import { ShieldCheck, Store } from "lucide-react";
+import type { Listing } from "../../types";
 import { navigateToSellerProfile } from "../../lib/appNavigation";
-import { formatDate, StatTile } from "./ListingDetailsShared";
+import { formatDate } from "./ListingDetailsShared";
 
 type SellerProfile = {
   uid?: string;
@@ -18,19 +18,11 @@ type SellerProfile = {
 type ListingTrustBlockProps = {
   listing: Listing;
   seller: SellerProfile | null;
-  ratingSummary: RatingSummary | null;
 };
 
-export default function ListingTrustBlock({ listing, seller, ratingSummary }: ListingTrustBlockProps) {
+export default function ListingTrustBlock({ listing, seller }: ListingTrustBlockProps) {
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
-      <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-4">
-        <StatTile label="Seller business" value={seller?.business_name || listing.business_name} icon={<Store className="h-4 w-4" />} />
-        <StatTile label="Verification" value={seller?.is_verified || listing.is_verified ? "Verified" : "Not verified"} icon={<ShieldCheck className="h-4 w-4" />} />
-        <StatTile label="Joined" value={formatDate(seller?.join_date)} icon={<Eye className="h-4 w-4" />} />
-        <StatTile label="Profile views" value={seller?.profile_views ?? 0} icon={<Eye className="h-4 w-4" />} />
-      </div>
-
       <div className="space-y-4 border-t border-zinc-200 pt-6">
         <button type="button" onClick={() => seller?.uid && navigateToSellerProfile(seller.uid)} className="flex items-center gap-3 text-left">
           <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
@@ -48,24 +40,35 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
               {seller?.is_verified || listing.is_verified ? <ShieldCheck className="h-4 w-4 text-blue-500" /> : null}
             </div>
             <p className="mt-1 text-sm text-zinc-500">
-              {listing.university} · {listing.category}
+              {listing.university}
             </p>
           </div>
         </button>
 
         <div className="grid gap-0 sm:grid-cols-3">
-          <StatTile label="Rating average" value={ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"} icon={<Star className="h-4 w-4" />} />
-          <StatTile label="Rating count" value={ratingSummary?.ratingCount ?? 0} icon={<ShieldCheck className="h-4 w-4" />} />
-          <StatTile label="Campus" value={listing.university} icon={<Eye className="h-4 w-4" />} />
-        </div>
-
-        <div className="border-t border-zinc-200 pt-4 text-sm text-zinc-500">
-          <p>
-            WhatsApp clicks: <span className="font-semibold text-zinc-900">{listing.whatsapp_clicks ?? 0}</span>
-          </p>
-          <p className="mt-1">
-            Listing views: <span className="font-semibold text-zinc-900">{listing.views_count ?? 0}</span>
-          </p>
+          <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Seller status</p>
+              <p className="mt-1 text-base font-extrabold text-zinc-900">
+                {seller?.is_verified || listing.is_verified ? "Verified" : "Not verified"}
+              </p>
+            </div>
+            <Store className="h-4 w-4 shrink-0 text-zinc-400" />
+          </div>
+          <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Joined</p>
+              <p className="mt-1 text-base font-extrabold text-zinc-900">{formatDate(seller?.join_date)}</p>
+            </div>
+            <Store className="h-4 w-4 shrink-0 text-zinc-400" />
+          </div>
+          <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Profile views</p>
+              <p className="mt-1 text-base font-extrabold text-zinc-900">{seller?.profile_views ?? 0}</p>
+            </div>
+            <Store className="h-4 w-4 shrink-0 text-zinc-400" />
+          </div>
         </div>
       </div>
     </div>
