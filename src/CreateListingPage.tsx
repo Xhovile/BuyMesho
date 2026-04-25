@@ -1,11 +1,12 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
+import { reload } from "firebase/auth";
 import ListingStudioForm from "./components/ListingStudioForm";
 import FeedbackModal from "./components/FeedbackModal";
 import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
 import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
-import { CATEGORIES, UNIVERSITIES } from "./constants";
+import { CATEGORIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { resolveUniversity } from "./lib/university";
@@ -42,8 +43,36 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncEmailVerification = async () => {
+      if (!firebaseUser) {
+        setEmailVerified(null);
+        return;
+      }
+
+      try {
+        await reload(firebaseUser);
+      } catch {
+        // Ignore reload failures and fall back to the current auth snapshot.
+      }
+
+      if (!cancelled) {
+        setEmailVerified(!!firebaseUser.emailVerified);
+      }
+    };
+
+    void syncEmailVerification();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [firebaseUser]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -77,7 +106,7 @@ export default function CreateListingPage() {
     }
   };
 
-  const canCreate = !!firebaseUser && !!profile?.is_seller && !!auth.currentUser?.emailVerified;
+  const canCreate = !!firebaseUser && !!profile?.is_seller && emailVerified === true;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -95,7 +124,7 @@ export default function CreateListingPage() {
       </header>
 
       <main className="max-w-6xl mx-auto px-2 sm:px-4 py-8">
-        {authLoading || profileLoading ? (
+        {authLoading || profileLoading || emailVerified === null ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex items-center justify-center gap-3 text-zinc-500 font-medium"><Loader2 className="w-5 h-5 animate-spin" /> Preparing listing studio...</div>
         ) : !firebaseUser ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
@@ -109,13 +138,13 @@ export default function CreateListingPage() {
             <p className="mt-3 text-sm text-zinc-500">Apply to become a seller before posting listings.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-        ) : !auth.currentUser?.emailVerified ? (
+        ) : !canCreate ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Email verification required</h1>
             <p className="mt-3 text-sm text-zinc-500">Verify your email before posting listings.</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="w-4 h-4" /> Return to Explore</button>
           </div>
-        ) : canCreate ? (
+        ) : (
           <div className="pb-20">
             <div className="px-2 sm:px-0">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
@@ -123,7 +152,7 @@ export default function CreateListingPage() {
             </div>
             <ListingStudioForm mode="create" initialData={listingDraft} onCancel={() => navigateToPath(EXPLORE_PATH)} onSubmit={handleCreate} showFeedback={showFeedback} isSubmitting={submitting} submitLabel="Post Listing" submitBusyLabel="Posting..." />
           </div>
-        ) : null}
+        )}
       </main>
 
       {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} onClose={closeFeedback} />}
