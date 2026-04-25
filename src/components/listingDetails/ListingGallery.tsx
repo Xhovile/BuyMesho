@@ -1,4 +1,5 @@
-import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
+import { type ReactNode } from "react";
+import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucide-react";
 
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
   return (
@@ -16,6 +17,9 @@ type ListingGalleryProps = {
   currentImage: string;
   videoUrl?: string | null;
   isFullscreen: boolean;
+  saved: boolean;
+  actionsMenu: ReactNode;
+  onToggleSaved: () => void;
   onOpenFullscreen: () => void;
   onCloseFullscreen: () => void;
   onPrevImage: () => void;
@@ -30,6 +34,9 @@ export default function ListingGallery({
   currentImage,
   videoUrl,
   isFullscreen,
+  saved,
+  actionsMenu,
+  onToggleSaved,
   onOpenFullscreen,
   onCloseFullscreen,
   onPrevImage,
@@ -40,10 +47,21 @@ export default function ListingGallery({
     <>
       <div className="space-y-4">
         <div className="overflow-hidden border border-zinc-200 bg-white shadow-sm">
+          <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
+            <button
+              type="button"
+              onClick={onToggleSaved}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}`}
+              aria-label={saved ? "Remove from saved" : "Save item"}
+            >
+              <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
+            </button>
+            <div className="shrink-0">{actionsMenu}</div>
+          </div>
+
           <div className="relative bg-zinc-100">
             <div className="relative aspect-square sm:aspect-[4/3] xl:aspect-[5/4]">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
-
               <button type="button" onClick={onOpenFullscreen} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95" aria-label="Open fullscreen">
                 <FullscreenToggleIcon isFullscreen={false} />
               </button>
@@ -96,7 +114,6 @@ export default function ListingGallery({
                 <FullscreenToggleIcon isFullscreen />
               </button>
             </div>
-
             <div className="relative flex-1 overflow-hidden rounded-[2rem] bg-black">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
               {galleryImages.length > 1 ? (
