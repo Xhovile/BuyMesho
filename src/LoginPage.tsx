@@ -9,11 +9,18 @@ import { navigateToPath } from "./lib/appNavigation";
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
 type FeedbackState = {
   open: boolean;
   type: "success" | "error" | "info";
   title: string;
   message: string;
+  actions?: FeedbackAction[];
 } | null;
 
 export default function LoginPage() {
@@ -27,16 +34,22 @@ export default function LoginPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
-  ) => setFeedback({ open: true, type, title, message });
+    message: string,
+    actions?: FeedbackAction[]
+  ) => setFeedback({ open: true, type, title, message, actions });
+
+  const closeFeedback = () => setFeedback(null);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     clearTotpVerifiedSessionToken();
 
+    const email = form.email.trim();
+    const password = form.password;
+
     try {
-      await signInWithEmailAndPassword(auth, form.email, form.password);
+      await signInWithEmailAndPassword(auth, email, password);
 
       const totpStatusResult = await getTotpStatus();
       if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
@@ -47,15 +60,77 @@ export default function LoginPage() {
 
       navigateToPath("/profile");
     } catch (err: any) {
-      let message = "Invalid email or password. Please try again.";
       if (err?.code === "auth/user-not-found") {
-        message = "No account found with this email. Please sign up first.";
-      } else if (err?.code === "auth/wrong-password") {
-        message = "Incorrect password. Please try again.";
-      } else if (err?.code === "auth/too-many-requests") {
+        showFeedback("error", "Login failed", "You do not have an account.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Sign Up",
+            onClick: () => {
+              closeFeedback();
+              navigateToPath("/signup");
+            },
+          },
+        ]);
+        return;
+      }
+
+      if (err?.code === "auth/wrong-password") {
+        showFeedback("error", "Login failed", "Incorrect password. Please try again.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Retry",
+            onClick: () => {
+              setForm((prev) => ({ ...prev, password: "" }));
+              closeFeedback();
+            },
+          },
+        ]);
+        return;
+      }
+
+      if (err?.code === "auth/invalid-credential") {
+        showFeedback("error", "Login failed", "Incorrect email or password. Please try again.", [
+          {
+            label: "Cancel",
+            variant: "secondary",
+            onClick: closeFeedback,
+          },
+          {
+            label: "Retry",
+            onClick: () => {
+              setForm((prev) => ({ ...prev, password: "" }));
+              closeFeedback();
+            },
+          },
+        ]);
+        return;
+      }
+
+      let message = "Login failed. Please try again.";
+      if (err?.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
       }
-      showFeedback("error", "Login failed", message);
+      showFeedback("error", "Login failed", message, [
+        {
+          label: "Cancel",
+          variant: "secondary",
+          onClick: closeFeedback,
+        },
+        {
+          label: "Retry",
+          onClick: () => {
+            closeFeedback();
+          },
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -168,7 +243,8 @@ export default function LoginPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
-          onClose={() => setFeedback(null)}
+          actions={feedback.actions}
+          onClose={closeFeedback}
         />
       )}
     </AccountPageShell>

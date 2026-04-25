@@ -1,6 +1,7 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import { registerAccountDeletionRoutes } from "./accountDeletionRoutes.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -30,7 +31,7 @@ function escapeHtml(input: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -222,6 +223,7 @@ function registerVerificationEmailRoutes(app: Express) {
 
   app.post("/api/auth/send-verification-email", verifyBearerIdentity, verificationEmailHandler);
   app.post("/api/auth/resend-verification-email", verifyBearerIdentity, verificationEmailHandler);
+  registerAccountDeletionRoutes(app);
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }

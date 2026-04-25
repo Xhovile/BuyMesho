@@ -15,6 +15,7 @@ const CreateListingPage = lazy(() => import("./CreateListingPage"));
 const EditAccountPage = lazy(() => import("./EditAccountPage"));
 const EditListingPage = lazy(() => import("./EditListingPage"));
 const EditProfilePage = lazy(() => import("./EditProfilePage"));
+const EmailActionPage = lazy(() => import("./EmailActionPage"));
 const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
 const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
@@ -90,6 +91,7 @@ export default function RootRouter() {
         route === "become_seller" ? <BecomeSellerPage /> :
         route === "change_password" ? <ChangePasswordPage /> :
         route === "change_email" ? <ChangeEmailPage /> :
+        route === "email_action" ? <EmailActionPage /> :
         route === "my_listings" ? <MyListingsPage /> :
         route === "admin_reports" ? (
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>

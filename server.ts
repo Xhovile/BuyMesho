@@ -558,7 +558,6 @@ function logAdminAction({
 async function startServer() {
   const app = express();
   const PORT = 3000;
-  registerVerificationEmailRoutes(app);
 
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
