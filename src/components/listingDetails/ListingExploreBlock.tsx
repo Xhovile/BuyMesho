@@ -12,13 +12,13 @@ export default function ListingExploreBlock({
   sellerOtherListings: Listing[];
 }) {
   const renderRelated = (title: string, items: Listing[], empty: string) => (
-    <div className="space-y-4">
+    <div className="space-y-3 border-t border-zinc-200 pt-5 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between gap-4">
         <h3 className="text-lg font-black tracking-tight text-zinc-900">{title}</h3>
         <p className="text-sm text-zinc-500">{items.length} listings</p>
       </div>
       {items.length ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-0">
           {items.slice(0, 6).map((item) => (
             <RelatedRailCard
               key={item.id}
@@ -29,13 +29,15 @@ export default function ListingExploreBlock({
           ))}
         </div>
       ) : (
-        <div className="rounded-3xl border border-dashed border-zinc-200 bg-zinc-50/70 p-6 text-sm text-zinc-500">{empty}</div>
+        <div className="border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-500">
+          {empty}
+        </div>
       )}
     </div>
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <SectionHeading
         eyebrow="Explore"
         title="Discover more options"
