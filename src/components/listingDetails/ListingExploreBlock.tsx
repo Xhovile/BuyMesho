@@ -23,7 +23,7 @@ export default function ListingExploreBlock({
             <RelatedRailCard
               key={item.id}
               item={item}
-              onOpenDetails={navigateToListingDetails}
+              onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
               onOpenSeller={navigateToSellerProfile}
             />
           ))}
