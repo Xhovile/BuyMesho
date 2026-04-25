@@ -66,6 +66,7 @@ import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { signOut } from "firebase/auth";
 
 type SettingsView = "menu" | "privacy" | "terms" | "safety" | "report";
+type PasswordPromptAction = "verifyIdentity" | "deleteAccount" | null;
 
 const SETTINGS_VIEW_QUERY_KEY = "section";
 const VISIBILITY_LABEL: Record<VisibilitySetting, string> = {
@@ -127,6 +128,8 @@ export default function SettingsPage() {
   const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
   const [reauthPassword, setReauthPassword] = useState("");
   const [passwordPromptBusy, setPasswordPromptBusy] = useState(false);
+  const [passwordPromptAction, setPasswordPromptAction] =
+    useState<PasswordPromptAction>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [feedback, setFeedback] = useState<{
     open: boolean;
@@ -242,6 +245,7 @@ export default function SettingsPage() {
   }, [totpUri]);
   const emailVerified = firebaseUser?.emailVerified ?? false;
   const emailVerificationButtonsDisabled = !firebaseUser || emailVerified;
+  const verifiedAccountRequiredDisabled = !firebaseUser || !emailVerified;
 
   const updateVisibility = async (
     field: "profile_visibility" | "seller_visibility" | "saved_visibility",
@@ -273,6 +277,7 @@ export default function SettingsPage() {
     const result = await deleteCurrentAccount();
     if (!result.ok) {
       if ("code" in result && result.code === "auth/requires-recent-login") {
+        setPasswordPromptAction("deleteAccount");
         setPasswordPromptOpen(true);
         return;
       }
@@ -308,7 +313,18 @@ export default function SettingsPage() {
 
       setPasswordPromptOpen(false);
       setReauthPassword("");
-      await handleDeleteAccount();
+      const promptAction = passwordPromptAction;
+      setPasswordPromptAction(null);
+      if (promptAction === "deleteAccount") {
+        await handleDeleteAccount();
+        return;
+      }
+
+      showFeedback(
+        "success",
+        "Identity verified",
+        "Your password has been verified for this session."
+      );
     } finally {
       setPasswordPromptBusy(false);
     }
@@ -317,6 +333,7 @@ export default function SettingsPage() {
   const handlePasswordPromptCancel = () => {
     setPasswordPromptOpen(false);
     setReauthPassword("");
+    setPasswordPromptAction(null);
   };
 
   const handleResendVerification = async () => {
@@ -449,6 +466,7 @@ export default function SettingsPage() {
 
   const handleVerifyIdentity = () => {
     if (!firebaseUser) return;
+    setPasswordPromptAction("verifyIdentity");
     setPasswordPromptOpen(true);
   };
 
@@ -582,7 +600,8 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(EDIT_ACCOUNT_PATH)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
                   <span className="font-bold text-zinc-900">Edit Account</span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -592,7 +611,8 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                    disabled={verifiedAccountRequiredDisabled}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                   >
                     <span className="font-bold text-zinc-900">Edit Seller Profile</span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -601,7 +621,8 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(BECOME_SELLER_PATH)}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                    disabled={verifiedAccountRequiredDisabled}
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                   >
                     <span className="font-bold text-zinc-900">Become Seller</span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -696,7 +717,8 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
                   <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
                     <Lock className="w-4 h-4" />
@@ -708,7 +730,8 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(CHANGE_EMAIL_PATH)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                 >
                   <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
                     <Mail className="w-4 h-4" />
@@ -725,7 +748,8 @@ export default function SettingsPage() {
                       twoFactor: !current.twoFactor,
                     }))
                   }
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
                   aria-expanded={expandedSecurityItems.twoFactor}
                 >
                   <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
@@ -782,7 +806,7 @@ export default function SettingsPage() {
                             <button
                               type="button"
                               onClick={handleDisableTotp}
-                              disabled={totpLoading}
+                              disabled={verifiedAccountRequiredDisabled || totpLoading}
                               className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               Disable 2FA
@@ -791,7 +815,7 @@ export default function SettingsPage() {
                             <button
                               type="button"
                               onClick={handle2FAEntry}
-                              disabled={totpLoading}
+                              disabled={verifiedAccountRequiredDisabled || totpLoading}
                               className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                             >
                               Re-enroll
@@ -801,7 +825,7 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={handle2FAEntry}
-                            disabled={totpLoading}
+                            disabled={verifiedAccountRequiredDisabled || totpLoading}
                             className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             Enable authenticator app
