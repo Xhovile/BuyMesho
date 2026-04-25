@@ -10,14 +10,14 @@ export default function ListingReviewsBlock({
   ratingSummary: RatingSummary | null;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 border-t border-zinc-200 pt-6">
       <SectionHeading
         eyebrow="Reviews"
         title="Trust and feedback"
         description="This is the final trust layer. It confirms credibility without competing with the listing summary or the WhatsApp CTA."
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           label="Average rating"
           value={ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
@@ -28,18 +28,26 @@ export default function ListingReviewsBlock({
         <StatTile label="WhatsApp clicks" value={listing.whatsapp_clicks ?? 0} icon={<Eye className="h-4 w-4" />} />
       </div>
 
-      <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-7">
+      <div className="space-y-3 border-t border-zinc-200 pt-6">
         <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-zinc-100 p-3 text-zinc-500">
+          <div className="text-zinc-500 pt-0.5">
             <ShieldCheck className="h-5 w-5" />
           </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-black tracking-tight text-zinc-900">Review feed coming soon</h3>
-            <p className="max-w-3xl text-sm leading-7 text-zinc-600">
-              The rating summary is already live. A full buyer review list can be layered in later without changing the page hierarchy.
+          <div>
+            <h3 className="text-lg font-black tracking-tight text-zinc-900">Written reviews are not live yet</h3>
+            <p className="mt-2 max-w-3xl text-sm leading-7 text-zinc-600">
+              The rating summary is already available. Buyer comments and review media can be added later without changing the section order or the page hierarchy.
             </p>
           </div>
         </div>
+
+        {ratingSummary?.ratingCount ? (
+          <p className="text-sm text-zinc-500">
+            {ratingSummary.ratingCount} rating{ratingSummary.ratingCount === 1 ? "" : "s"} are already recorded for this seller.
+          </p>
+        ) : (
+          <p className="text-sm text-zinc-500">No ratings have been recorded yet.</p>
+        )}
       </div>
     </div>
   );
