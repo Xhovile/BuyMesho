@@ -18,8 +18,8 @@ export default function ListingDetailsBlock({
         description="The description, seller note, and delivery guidance stay in one continuous block so the page reads like a premium product page, not a dashboard."
       />
 
-      <div className="space-y-5 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-7">
-        <div className="space-y-3">
+      <div className="space-y-0">
+        <div className="space-y-3 pb-5">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Listing description</p>
           <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-600">{description}</p>
         </div>

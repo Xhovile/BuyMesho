@@ -18,7 +18,7 @@ export function SectionHeading({
   description?: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 border-b border-zinc-200 pb-4">
       {eyebrow ? (
         <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{eyebrow}</p>
       ) : null}
@@ -30,21 +30,19 @@ export function SectionHeading({
 
 export function StatTile({ label, value, icon }: { label: string; value: string | number; icon?: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-          <p className="mt-1 text-base font-extrabold text-zinc-900">{value}</p>
-        </div>
-        {icon ? <div className="shrink-0 text-zinc-400">{icon}</div> : null}
+    <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3">
+      <div>
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+        <p className="mt-1 text-base font-extrabold text-zinc-900">{value}</p>
       </div>
+      {icon ? <div className="shrink-0 text-zinc-400">{icon}</div> : null}
     </div>
   );
 }
 
 export function InfoPill({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600">
+    <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600">
       {children}
     </span>
   );
@@ -87,21 +85,19 @@ export function RelatedRailCard({
       : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
-        <div className="aspect-[4/3] bg-zinc-100">
+    <article className="flex gap-4 border-t border-zinc-200 py-4 first:border-t-0 first:pt-0">
+      <button type="button" onClick={() => onOpenDetails(item)} className="block shrink-0 text-left">
+        <div className="h-20 w-20 overflow-hidden rounded-2xl bg-zinc-100 ring-1 ring-zinc-200 sm:h-24 sm:w-24">
           <img src={firstPhoto} alt={item.name} className="h-full w-full object-cover" />
         </div>
       </button>
-      <div className="space-y-3 p-4">
-        <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
-          <h3 className="line-clamp-1 text-[15px] font-extrabold tracking-tight text-zinc-900">{item.name}</h3>
+      <div className="min-w-0 flex-1 space-y-2">
+        <button type="button" onClick={() => onOpenDetails(item)} className="block text-left">
+          <h3 className="line-clamp-2 text-[15px] font-extrabold tracking-tight text-zinc-900">{item.name}</h3>
         </button>
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-black text-zinc-900">MK {Number(item.price).toLocaleString()}</p>
-          <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-zinc-600">
-            {item.university}
-          </span>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <p className="font-black text-zinc-900">MK {Number(item.price).toLocaleString()}</p>
+          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">{item.university}</span>
         </div>
         <button
           type="button"
