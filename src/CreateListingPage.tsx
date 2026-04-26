@@ -67,13 +67,12 @@ export default function CreateListingPage() {
     };
 
     setPageReady(false);
-    void refreshProfile();
     void ensureReady();
 
     return () => {
       cancelled = true;
     };
-  }, [firebaseUser, refreshProfile]);
+  }, [firebaseUser]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
