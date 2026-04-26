@@ -364,71 +364,73 @@ export default function ListingDetailsPage() {
           <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
         ) : (
           <>
-<section className="grid gap-8 xl:grid-cols-[140px_minmax(0,1fr)] xl:items-start">
-  <div className="xl:sticky xl:top-24 xl:self-start xl:max-w-[160px]">
-    <ListingGallery
-      listingName={listing.name}
-      galleryImages={galleryImages}
-      currentGalleryIndex={currentGalleryIndex}
-      currentImage={currentImage}
-      videoUrl={listing.video_url}
-      isFullscreen={isFullscreen}
-      saved={saved}
-      onToggleSaved={handleToggleSaved}
-      onOpenFullscreen={() => setIsFullscreen(true)}
-      onCloseFullscreen={() => setIsFullscreen(false)}
-      onPrevImage={handlePrevImage}
-      onNextImage={handleNextImage}
-      onSelectImage={(idx) => {
-        syncListingParamsInUrl(listing.id, idx);
-        setRouteState((prev) => ({ ...prev, imageIndex: idx }));
-      }}
-      actionsMenu={
-        <ListingActionsMenu
-          listing={listing}
-          currentUid={firebaseUser?.uid}
-          isLoggedIn={!!firebaseUser}
-          isSaved={saved}
-          variant="detail"
-          onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
-          onEdit={handleDetailEdit}
-          onDelete={handleDetailDelete}
-          onHideSeller={handleDetailHideSeller}
-          onHideListing={handleDetailHideListing}
-          onToggleStatus={handleDetailToggleStatus}
-          onRecordSale={handleDetailRecordSale}
-          onRestock={handleDetailRestock}
-          requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
-        />
-      }
-    />
-  </div>
+            <section className="grid gap-8 lg:grid-cols-12 lg:items-start">
+              <div className="lg:col-span-4">
+                <div className="lg:sticky lg:top-24 lg:self-start">
+                  <ListingGallery
+                    listingName={listing.name}
+                    galleryImages={galleryImages}
+                    currentGalleryIndex={currentGalleryIndex}
+                    currentImage={currentImage}
+                    videoUrl={listing.video_url}
+                    isFullscreen={isFullscreen}
+                    saved={saved}
+                    onToggleSaved={handleToggleSaved}
+                    onOpenFullscreen={() => setIsFullscreen(true)}
+                    onCloseFullscreen={() => setIsFullscreen(false)}
+                    onPrevImage={handlePrevImage}
+                    onNextImage={handleNextImage}
+                    onSelectImage={(idx) => {
+                      syncListingParamsInUrl(listing.id, idx);
+                      setRouteState((prev) => ({ ...prev, imageIndex: idx }));
+                    }}
+                    actionsMenu={
+                      <ListingActionsMenu
+                        listing={listing}
+                        currentUid={firebaseUser?.uid}
+                        isLoggedIn={!!firebaseUser}
+                        isSaved={saved}
+                        variant="detail"
+                        onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
+                        onEdit={handleDetailEdit}
+                        onDelete={handleDetailDelete}
+                        onHideSeller={handleDetailHideSeller}
+                        onHideListing={handleDetailHideListing}
+                        onToggleStatus={handleDetailToggleStatus}
+                        onRecordSale={handleDetailRecordSale}
+                        onRestock={handleDetailRestock}
+                        requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
+                      />
+                    }
+                  />
+                </div>
+              </div>
 
-  <div className="space-y-6">
-    <ListingSummary
-      listing={listing}
-      seller={seller}
-      availableQuantity={availableQuantity}
-      isLoggedIn={!!firebaseUser}
-      onContactSeller={handleContactSeller}
-      onShare={handleShare}
-    />
-    <ListingDetailsBlock
-      description={listing.description}
-      sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
-      deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
-    />
-  </div>
-</section>
+              <div className="lg:col-span-8 space-y-6">
+                <ListingSummary
+                  listing={listing}
+                  seller={seller}
+                  availableQuantity={availableQuantity}
+                  isLoggedIn={!!firebaseUser}
+                  onContactSeller={handleContactSeller}
+                  onShare={handleShare}
+                />
+                <ListingDetailsBlock
+                  description={listing.description}
+                  sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
+                  deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
+                />
+              </div>
+            </section>
 
-<ListingSectionTabs activeSection={activeSection} onNavigate={scrollToSection} />
+            <ListingSectionTabs activeSection={activeSection} onNavigate={scrollToSection} />
 
- <section ref={detailsRef} id="details" className="scroll-mt-32 pt-10">
-  <div className="space-y-6">
-    <ListingSpecsBlock groups={groupedSpecs} />
-    <ListingTrustBlock listing={listing} seller={seller} />
-  </div>
- </section>
+            <section ref={detailsRef} id="details" className="scroll-mt-32 pt-10">
+              <div className="space-y-6">
+                <ListingSpecsBlock groups={groupedSpecs} />
+                <ListingTrustBlock listing={listing} seller={seller} />
+              </div>
+            </section>
 
             <section ref={exploreRef} id="explore" className="scroll-mt-32 pt-12">
               <ListingExploreBlock sameCampusListings={sameCampusListings} sameCategoryListings={sameCategoryListings} sellerOtherListings={sellerOtherListings} />
