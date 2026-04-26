@@ -83,14 +83,14 @@ export default function ListingGallery({
         </div>
 
         <div className="min-w-0">
-          <div className="grid min-w-0 gap-3 lg:grid-cols-[46px_minmax(0,1fr)] lg:items-start lg:gap-2.5">
+          <div className="grid min-w-0 gap-2.5 md:grid-cols-[40px_minmax(0,1fr)] md:items-start md:gap-2">
             {galleryImages.length > 1 ? (
-              <div className="hidden lg:flex lg:max-h-[380px] lg:flex-col lg:gap-1.5 lg:overflow-y-auto lg:pr-0.5">
-                {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[42px] w-[42px] shrink-0 rounded-lg"))}
+              <div className="hidden md:flex md:max-h-[330px] md:flex-col md:gap-1 md:overflow-y-auto md:pr-0.5">
+                {galleryImages.map((url, idx) => renderThumb(url, idx, "h-9 w-9 shrink-0 rounded-md"))}
               </div>
             ) : null}
 
-            <div className="relative min-w-0 w-full max-w-full overflow-hidden rounded-2xl bg-zinc-50 aspect-[4/5] max-h-[380px]">
+            <div className="relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-zinc-50 aspect-[4/5] max-h-[330px] lg:max-h-[350px]">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
 
               <button
@@ -130,7 +130,7 @@ export default function ListingGallery({
         </div>
 
         {galleryImages.length > 1 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto lg:hidden">
+          <div className="mt-3 flex gap-2 overflow-x-auto md:hidden">
             {galleryImages.map((url, idx) => renderThumb(url, idx, "h-14 w-14 shrink-0 rounded-xl"))}
           </div>
         ) : null}

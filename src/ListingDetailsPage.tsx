@@ -364,9 +364,9 @@ export default function ListingDetailsPage() {
           <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
         ) : (
           <>
-            <section className="grid gap-8 lg:grid-cols-[minmax(200px,248px)_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:grid-cols-[minmax(216px,264px)_minmax(0,1fr)]">
-              <div className="min-w-0 lg:min-h-[clamp(30rem,70vh,42rem)]">
-                <div className="lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-hidden lg:self-start">
+            <section className="grid gap-8 md:grid-cols-[minmax(150px,210px)_minmax(0,1fr)] md:items-stretch md:gap-7 lg:grid-cols-[minmax(170px,228px)_minmax(0,1fr)] lg:gap-9 xl:grid-cols-[minmax(184px,238px)_minmax(0,1fr)]">
+              <div className="min-w-0 md:min-h-[clamp(28rem,68vh,40rem)]">
+                <div className="md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:overflow-hidden md:self-start">
                   <ListingGallery
                     listingName={listing.name}
                     galleryImages={galleryImages}
@@ -406,7 +406,7 @@ export default function ListingDetailsPage() {
                 </div>
               </div>
 
-              <div className="min-w-0 space-y-8">
+              <div className="min-w-0 space-y-7 lg:space-y-8">
                 <ListingSummary
                   listing={listing}
                   seller={seller}

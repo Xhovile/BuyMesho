@@ -25,11 +25,11 @@ export default function ListingSummary({
 }) {
   return (
     <aside>
-      <div className="space-y-5">
+      <div className="space-y-4 lg:space-y-5">
         <div className="space-y-3 pb-5">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Listing summary</p>
-          <h1 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">{listing.name}</h1>
-          <p className="text-3xl font-black tracking-tight text-zinc-900">MK {Number(listing.price).toLocaleString()}</p>
+          <h1 className="text-[1.7rem] font-black leading-tight tracking-tight text-zinc-900 sm:text-[2rem]">{listing.name}</h1>
+          <p className="text-[2rem] font-black tracking-tight text-zinc-900 sm:text-[2.25rem]">MK {Number(listing.price).toLocaleString()}</p>
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
