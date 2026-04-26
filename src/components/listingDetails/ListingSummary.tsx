@@ -1,6 +1,6 @@
 import { MessageCircle, Share2, ShieldCheck } from "lucide-react";
 import type { Listing } from "../../types";
-import { InfoPill } from "./ListingDetailsShared";
+import { InfoPill } from "../../../listingDetails/ListingDetailsShared";
 
 type SellerProfile = {
   business_name?: string;
