@@ -67,7 +67,7 @@ export default function SignupPage() {
     setFeedback(null);
     if (redirectAfterFeedback) {
       setRedirectAfterFeedback(false);
-      navigateToPath("/profile");
+      navigateToPath("/verify-email");
     }
   };
 
@@ -105,15 +105,11 @@ export default function SignupPage() {
       } catch (emailErr: any) {
         console.error("Custom verification email failed", emailErr);
         emailNotice =
-          "The account was created, but the verification email could not be sent yet. Open your profile and resend it after SMTP is configured.";
+          "The account was created, but the verification email could not be sent yet. Open the verification page and resend it after SMTP is configured.";
       }
 
       setRedirectAfterFeedback(true);
-      showFeedback(
-        "info",
-        "Account created",
-        emailNotice
-      );
+      showFeedback("info", "Account created", emailNotice);
     } catch (err: any) {
       let message = err?.message || "We could not create your account.";
       if (err?.code === "auth/email-already-in-use") {
