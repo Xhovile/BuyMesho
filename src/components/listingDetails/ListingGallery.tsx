@@ -67,8 +67,8 @@ export default function ListingGallery({
 
   return (
     <>
-      <div className="w-full min-w-0 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
-        <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
+      <div className="w-full min-w-0 max-w-full">
+        <div className="mb-3 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={onToggleSaved}
@@ -82,15 +82,15 @@ export default function ListingGallery({
           <div className="shrink-0">{actionsMenu}</div>
         </div>
 
-        <div className="px-3 py-3 sm:px-4 sm:py-4">
-          <div className="grid gap-3 lg:grid-cols-[72px_minmax(0,1fr)] lg:items-start lg:gap-3">
+        <div className="min-w-0">
+          <div className="grid min-w-0 gap-2.5 md:grid-cols-[40px_minmax(0,1fr)] md:items-start md:gap-2">
             {galleryImages.length > 1 ? (
-              <div className="hidden lg:flex lg:max-h-[520px] lg:flex-col lg:gap-2 lg:overflow-y-auto lg:pr-1">
-                {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[60px] w-[60px] shrink-0 rounded-2xl"))}
+              <div className="hidden md:flex md:max-h-[330px] md:flex-col md:gap-1 md:overflow-y-auto md:pr-0.5">
+                {galleryImages.map((url, idx) => renderThumb(url, idx, "h-9 w-9 shrink-0 rounded-md"))}
               </div>
             ) : null}
 
-            <div className="relative min-w-0 overflow-hidden rounded-[1.5rem] bg-zinc-50 aspect-[4/5] max-h-[560px]">
+            <div className="relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-zinc-50 aspect-[4/5] max-h-[330px] lg:max-h-[350px]">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
 
               <button
@@ -130,14 +130,14 @@ export default function ListingGallery({
         </div>
 
         {galleryImages.length > 1 ? (
-          <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5 lg:hidden">
-            {galleryImages.map((url, idx) => renderThumb(url, idx, "h-16 w-16 shrink-0 rounded-2xl"))}
+          <div className="mt-3 flex gap-2 overflow-x-auto md:hidden">
+            {galleryImages.map((url, idx) => renderThumb(url, idx, "h-14 w-14 shrink-0 rounded-xl"))}
           </div>
         ) : null}
 
         {videoUrl ? (
-          <div className="border-t border-zinc-100 px-4 py-4 sm:px-5">
-            <div className="overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-black">
+          <div className="mt-3">
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-black">
               <video src={videoUrl} controls className="w-full" />
             </div>
           </div>
