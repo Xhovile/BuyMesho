@@ -8,15 +8,24 @@ import { navigateToPath } from "./lib/appNavigation";
 import { refreshEmailVerificationState, resendVerificationEmail } from "./lib/security";
 import { useAuthUser } from "./hooks/useAuthUser";
 
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
+
+type FeedbackState = {
+  open: boolean;
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+  actions?: FeedbackAction[];
+} | null;
+
 export default function VerifyEmailPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<{
-    open: boolean;
-    type: "success" | "error" | "info";
-    title: string;
-    message: string;
-  } | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   const emailVerified = firebaseUser?.emailVerified ?? false;
 
@@ -34,8 +43,9 @@ export default function VerifyEmailPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
-  ) => setFeedback({ open: true, type, title, message });
+    message: string,
+    actions?: FeedbackAction[]
+  ) => setFeedback({ open: true, type, title, message, actions });
 
   const handleRefresh = async () => {
     if (!firebaseUser) return;
@@ -43,7 +53,17 @@ export default function VerifyEmailPage() {
     try {
       const verified = await refreshEmailVerificationState();
       if (verified) {
-        navigateToPath("/profile");
+        showFeedback(
+          "success",
+          "Email verified",
+          "Your email is verified now. Go to Profile to continue.",
+          [
+            {
+              label: "Go to Profile",
+              onClick: () => navigateToPath("/profile"),
+            },
+          ]
+        );
         return;
       }
       showFeedback(
@@ -153,6 +173,7 @@ export default function VerifyEmailPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
+          actions={feedback.actions}
           onClose={() => setFeedback(null)}
         />
       )}
