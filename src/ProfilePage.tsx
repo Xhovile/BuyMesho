@@ -42,6 +42,7 @@ export default function ProfilePage() {
   const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const avatarUrl = getAvatarUrl(profile, firebaseUser);
+  const profileActionsDisabled = !emailVerified;
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -179,7 +180,8 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
-                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
+                    disabled={profileActionsDisabled}
+                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                   >
                     <div className="flex items-center gap-2">
                       <Flag className="w-5 h-5 text-indigo-700" />
@@ -193,7 +195,8 @@ export default function ProfilePage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
-                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors"
+                    disabled={profileActionsDisabled}
+                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
                   >
                     <div className="flex items-center gap-2">
                       <ClipboardList className="w-5 h-5 text-indigo-700" />
@@ -218,7 +221,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath("/saved")}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
@@ -235,7 +239,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(HIDDEN_PATH)}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
@@ -271,7 +276,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath("/change-password")}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
@@ -300,7 +306,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
@@ -325,7 +332,8 @@ export default function ProfilePage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  disabled={profileActionsDisabled}
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
                 >
                   <span className="flex items-center gap-3 min-w-0">
                     <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
