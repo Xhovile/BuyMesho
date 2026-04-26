@@ -46,7 +46,7 @@ export default function ListingGallery({
   return (
     <>
       <div className="space-y-4">
-        <div className="overflow-hidden border border-zinc-200 bg-white shadow-sm">
+        <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
           <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
             <button
               type="button"
