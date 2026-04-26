@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { SectionHeading } from "./listingDetails/ListingDetailsShared";
+import { SectionHeading } from "./ListingDetailsShared";
 
 export default function ListingDetailsBlock({
   description,
