@@ -1,7 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { getAppRouteFromLocation, type AppRoute } from "./lib/appNavigation";
+import { getAppRouteFromLocation, navigateToPath, type AppRoute, LOGIN_PATH, PROFILE_PATH, SETTINGS_PATH, VERIFY_EMAIL_PATH } from "./lib/appNavigation";
+import { useAuthUser } from "./hooks/useAuthUser";
 
 const App = lazy(() => import("./App.new"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
@@ -31,11 +32,13 @@ const SettingsPage = lazy(() => import("./SettingsPage"));
 const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
+const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 
 export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
     getAppRouteFromLocation(window.location)
   );
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
 
@@ -66,6 +69,41 @@ export default function RootRouter() {
     ]);
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    const protectedRoutes: AppRoute[] = [
+      "profile",
+      "settings",
+      "edit_profile",
+      "edit_account",
+      "become_seller",
+      "change_password",
+      "change_email",
+      "my_listings",
+    ];
+
+    const isVerified = !!firebaseUser?.emailVerified;
+
+    if (!firebaseUser) {
+      if (route === "verify_email") {
+        navigateToPath(LOGIN_PATH);
+      }
+      return;
+    }
+
+    if (!isVerified) {
+      if (protectedRoutes.includes(route)) {
+        navigateToPath(VERIFY_EMAIL_PATH);
+      }
+      return;
+    }
+
+    if (route === "verify_email") {
+      navigateToPath(PROFILE_PATH);
+    }
+  }, [authLoading, firebaseUser, route]);
+
   return (
     <>
       <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
@@ -86,6 +124,7 @@ export default function RootRouter() {
         route === "signup" ? <SignupPage /> :
         route === "forgot_password" ? <ForgotPasswordPage /> :
         route === "profile" ? <ProfilePage /> :
+        route === "verify_email" ? <VerifyEmailPage /> :
         route === "edit_profile" ? <EditProfilePage /> :
         route === "edit_account" ? <EditAccountPage /> :
         route === "become_seller" ? <BecomeSellerPage /> :
