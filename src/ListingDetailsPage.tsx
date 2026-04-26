@@ -45,13 +45,13 @@ const specValue = (value: unknown) =>
   Array.isArray(value)
     ? value.length
       ? value.join(", ")
-      : "—"
+      : "â€”"
     : typeof value === "boolean"
       ? value
         ? "Yes"
         : "No"
       : value === null || value === undefined || value === ""
-        ? "—"
+        ? "â€”"
         : String(value);
 
 export default function ListingDetailsPage() {
@@ -364,70 +364,67 @@ export default function ListingDetailsPage() {
           <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
         ) : (
           <>
-<section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
-  <div className="grid gap-0 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-start">
-    <div className="border-b border-zinc-100 p-4 lg:min-h-[calc(100vh-11rem)] lg:border-b-0 lg:border-r lg:p-4">
-      <div className="lg:sticky lg:top-24 lg:self-start">
-        <ListingGallery
-          listingName={listing.name}
-          galleryImages={galleryImages}
-          currentGalleryIndex={currentGalleryIndex}
-          currentImage={currentImage}
-          videoUrl={listing.video_url}
-          isFullscreen={isFullscreen}
-          saved={saved}
-          onToggleSaved={handleToggleSaved}
-          onOpenFullscreen={() => setIsFullscreen(true)}
-          onCloseFullscreen={() => setIsFullscreen(false)}
-          onPrevImage={handlePrevImage}
-          onNextImage={handleNextImage}
-          onSelectImage={(idx) => {
-            syncListingParamsInUrl(listing.id, idx);
-            setRouteState((prev) => ({ ...prev, imageIndex: idx }));
-          }}
-          actionsMenu={
-            <ListingActionsMenu
-              listing={listing}
-              currentUid={firebaseUser?.uid}
-              isLoggedIn={!!firebaseUser}
-              isSaved={saved}
-              variant="detail"
-              onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
-              onEdit={handleDetailEdit}
-              onDelete={handleDetailDelete}
-              onHideSeller={handleDetailHideSeller}
-              onHideListing={handleDetailHideListing}
-              onToggleStatus={handleDetailToggleStatus}
-              onRecordSale={handleDetailRecordSale}
-              onRestock={handleDetailRestock}
-              requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
-            />
-          }
-        />
-      </div>
-    </div>
+            <section className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-10">
+              <div className="lg:min-h-[calc(100vh-9rem)]">
+                <div className="lg:sticky lg:top-24 lg:self-start">
+                  <ListingGallery
+                    listingName={listing.name}
+                    galleryImages={galleryImages}
+                    currentGalleryIndex={currentGalleryIndex}
+                    currentImage={currentImage}
+                    videoUrl={listing.video_url}
+                    isFullscreen={isFullscreen}
+                    saved={saved}
+                    onToggleSaved={handleToggleSaved}
+                    onOpenFullscreen={() => setIsFullscreen(true)}
+                    onCloseFullscreen={() => setIsFullscreen(false)}
+                    onPrevImage={handlePrevImage}
+                    onNextImage={handleNextImage}
+                    onSelectImage={(idx) => {
+                      syncListingParamsInUrl(listing.id, idx);
+                      setRouteState((prev) => ({ ...prev, imageIndex: idx }));
+                    }}
+                    actionsMenu={
+                      <ListingActionsMenu
+                        listing={listing}
+                        currentUid={firebaseUser?.uid}
+                        isLoggedIn={!!firebaseUser}
+                        isSaved={saved}
+                        variant="detail"
+                        onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
+                        onEdit={handleDetailEdit}
+                        onDelete={handleDetailDelete}
+                        onHideSeller={handleDetailHideSeller}
+                        onHideListing={handleDetailHideListing}
+                        onToggleStatus={handleDetailToggleStatus}
+                        onRecordSale={handleDetailRecordSale}
+                        onRestock={handleDetailRestock}
+                        requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
+                      />
+                    }
+                  />
+                </div>
+              </div>
 
-    <div className="min-w-0 space-y-6 p-4 sm:p-5 lg:p-6">
-      <ListingSummary
-        listing={listing}
-        seller={seller}
-        availableQuantity={availableQuantity}
-        isLoggedIn={!!firebaseUser}
-        onContactSeller={handleContactSeller}
-        onShare={handleShare}
-      />
+              <div className="min-w-0 space-y-6">
+                <ListingSummary
+                  listing={listing}
+                  seller={seller}
+                  availableQuantity={availableQuantity}
+                  isLoggedIn={!!firebaseUser}
+                  onContactSeller={handleContactSeller}
+                  onShare={handleShare}
+                />
+                <ListingDetailsBlock
+                  description={listing.description}
+                  sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
+                  deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
+                />
+              </div>
+            </section>
 
-      <ListingDetailsBlock
-        description={listing.description}
-        sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
-        deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
-      />
-    </div>
-  </div>
-</section>
+            <ListingSectionTabs activeSection={activeSection} onNavigate={scrollToSection} />
 
-<ListingSectionTabs activeSection={activeSection} onNavigate={scrollToSection} />
-            
             <section ref={detailsRef} id="details" className="scroll-mt-32 pt-10">
               <div className="space-y-6">
                 <ListingSpecsBlock groups={groupedSpecs} />
