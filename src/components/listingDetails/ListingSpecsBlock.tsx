@@ -1,5 +1,4 @@
 import type { Listing } from "../../types";
-import { SectionHeading } from "./ListingDetailsShared";
 
 export type ListingSpecsGroup = {
   title: string;
@@ -49,11 +48,7 @@ function SpecAccordion({
 export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGroup[] }) {
   return (
     <div className="space-y-6">
-      <SectionHeading
-        eyebrow="Specs"
-        title="Product details"
-        description="Tap each section to expand only the information you need."
-      />
+      <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">Product details</h2>
 
       {groups.length ? (
         <div className="space-y-4">
