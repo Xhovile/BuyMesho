@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { SectionHeading } from "./ListingDetailsShared";
 
 export default function ListingDetailsBlock({
   description,
@@ -12,11 +11,7 @@ export default function ListingDetailsBlock({
 }) {
   return (
     <div className="space-y-6">
-      <SectionHeading
-        eyebrow="Details"
-        title="About this listing"
-        description="The description, seller note, and delivery guidance stay in one continuous block so the page reads like a premium product page, not a dashboard."
-      />
+      <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">About</h2>
 
       <div className="space-y-0">
         <div className="space-y-3 pb-5">
