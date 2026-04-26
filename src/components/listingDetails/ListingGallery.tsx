@@ -67,15 +67,33 @@ export default function ListingGallery({
 
   return (
     <>
-      <div className="w-fit mx-auto space-y-4 xl:sticky xl:top-24 xl:self-start xl:w-full xl:max-w-[160px]">
-        <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
-          <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
-            <button
-              type="button"
-              onClick={onToggleSaved}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
-                saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-              }`}
+      {/* Main Container: Stack on mobile, side-by-side on large screens */}
+<div className="mx-auto max-w-7xl px-4 py-8 lg:grid lg:grid-cols-12 lg:gap-8">
+  
+  {/* LEFT COLUMN: Gallery (Takes up 8/12 of the grid on large screens) */}
+  <div className="lg:col-span-8 space-y-6">
+    {/* Your Gallery Component goes here */}
+    <div className="bg-zinc-100 aspect-video rounded-3xl" /> 
+    
+    {/* "About this listing" also stays in the left column */}
+    <section className="mt-8">
+       <h2 className="text-2xl font-bold">About this listing</h2>
+       <p className="text-zinc-600">...</p>
+    </section>
+  </div>
+
+  {/* RIGHT COLUMN: Summary (Takes up 4/12 of the grid on large screens) */}
+  <div className="mt-8 lg:mt-0 lg:col-span-4">
+    <div className="sticky top-24 space-y-4">
+      {/* This is your code snippet below */}
+      <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
+        {/* Your Price, Title, and Buttons go here */}
+      </div>
+    </div>
+  </div>
+
+</div>
+      } '} 
               aria-label={saved ? "Remove from saved" : "Save item"}
             >
               <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
