@@ -36,7 +36,7 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const [mobileNavHidden, setMobileNavHidden] = useState(false);
+  const [headerHidden, setHeaderHidden] = useState(false);
 
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
@@ -93,22 +93,17 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
-      const isMobile = window.innerWidth < 768;
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
       const delta = currentY - lastY;
-      const scrollThreshold = 8;
+      const scrollThreshold = 10;
 
-      if (!isMobile) {
-        setMobileNavHidden(false);
-      } else if (mobileMenuOpen) {
-        setMobileNavHidden(false);
-      } else if (currentY < 24) {
-        setMobileNavHidden(false);
+      if (mobileMenuOpen || currentY < 24) {
+        setHeaderHidden(false);
       } else if (delta > scrollThreshold) {
-        setMobileNavHidden(true);
+        setHeaderHidden(true);
       } else if (delta < -scrollThreshold) {
-        setMobileNavHidden(false);
+        setHeaderHidden(false);
       }
 
       lastScrollYRef.current = currentY;
@@ -140,8 +135,8 @@ export default function Header({
     <>
       <nav
         className={`sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5 transform transition-transform duration-300 ${
-          mobileNavHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
-        } md:translate-y-0`}
+          headerHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
+        }`}
       >
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div className="flex items-center justify-between gap-4">

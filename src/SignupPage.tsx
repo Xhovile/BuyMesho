@@ -42,6 +42,16 @@ const getPasswordTip = (strength: number) => {
   return "This password is in good shape.";
 };
 
+const isPermissionError = (err: any) => {
+  const code = String(err?.code || "").toLowerCase();
+  const message = String(err?.message || "").toLowerCase();
+  return (
+    code.includes("permission") ||
+    message.includes("insufficient permissions") ||
+    message.includes("permission denied")
+  );
+};
+
 export default function SignupPage() {
   const [form, setForm] = useState({
     university: resolveUniversity(),
@@ -67,7 +77,7 @@ export default function SignupPage() {
     setFeedback(null);
     if (redirectAfterFeedback) {
       setRedirectAfterFeedback(false);
-      navigateToPath("/profile");
+      navigateToPath("/verify-email");
     }
   };
 
@@ -93,7 +103,14 @@ export default function SignupPage() {
         join_date: new Date().toISOString(),
       };
 
-      await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
+      try {
+        await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
+      } catch (profileErr: any) {
+        if (!isPermissionError(profileErr)) {
+          throw profileErr;
+        }
+        console.warn("Profile bootstrap skipped because Firestore blocked the write.", profileErr);
+      }
 
       let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";
       try {
@@ -105,24 +122,25 @@ export default function SignupPage() {
       } catch (emailErr: any) {
         console.error("Custom verification email failed", emailErr);
         emailNotice =
-          "The account was created, but the verification email could not be sent yet. Open your profile and resend it after SMTP is configured.";
+          "The account was created, but the verification email could not be sent yet. Open the verification page and resend it after SMTP is configured.";
       }
 
       setRedirectAfterFeedback(true);
-      showFeedback(
-        "info",
-        "Account created",
-        emailNotice
-      );
+      showFeedback("info", "Account created", emailNotice);
     } catch (err: any) {
-      let message = err?.message || "We could not create your account.";
+      let message = "We could not create your account. Please try again.";
+
       if (err?.code === "auth/email-already-in-use") {
         message = "This email is already registered. Please log in instead.";
       } else if (err?.code === "auth/invalid-email") {
         message = "Please enter a valid email address.";
       } else if (err?.code === "auth/weak-password") {
         message = "Password should be at least 6 characters.";
+      } else if (isPermissionError(err)) {
+        message =
+          "Your account was created, but verification setup is still completing. Open the verification page and try again after a moment.";
       }
+
       showFeedback("error", "Signup failed", message);
     } finally {
       setLoading(false);

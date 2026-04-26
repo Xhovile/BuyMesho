@@ -558,7 +558,6 @@ function logAdminAction({
 async function startServer() {
   const app = express();
   const PORT = 3000;
-  registerVerificationEmailRoutes(app);
 
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
@@ -1397,22 +1396,49 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
   app.post("/api/listings", requireAuth, (req, res) => {
   // ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
-  const v = db
-  .prepare("SELECT is_verified, is_seller, is_suspended FROM sellers WHERE uid = ?")
-  .get(seller_uid) as { is_verified?: number; is_seller?: number; is_suspended?: number } | undefined;
 
-if (!v) {
+const seller = db
+  .prepare(`
+    SELECT is_verified, is_seller, is_suspended
+    FROM sellers
+    WHERE uid = ?
+  `)
+  .get(seller_uid) as
+    | { is_verified?: number; is_seller?: number; is_suspended?: number }
+    | undefined;
+
+if (!seller) {
   return res.status(404).json({ error: "Seller profile not found" });
 }
-if (v.is_seller !== 1) {
-  return res.status(403).json({ error: "Seller account required" });
-}
-if (v.is_verified !== 1) {
-  return res.status(403).json({ error: "Account not verified" });
-}
-if (v.is_suspended === 1) {
+
+if (seller.is_suspended === 1) {
   return res.status(403).json({ error: "Seller account is suspended" });
 }
+
+const approvedApplication = db
+  .prepare(`
+    SELECT status
+    FROM seller_applications
+    WHERE applicant_uid = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `)
+  .get(seller_uid) as { status?: string } | undefined;
+
+const canPostListing =
+  seller.is_seller === 1 ||
+  seller.is_verified === 1 ||
+  approvedApplication?.status === "approved";
+
+if (!canPostListing) {
+  return res.status(403).json({ error: "Account not verified" });
+}
+
+// Optional safety sync for approved sellers
+if (approvedApplication?.status === "approved" && seller.is_seller !== 1) {
+  db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(seller_uid);
+}
+    
   const {
     name,
     price,
@@ -1817,7 +1843,6 @@ for (const pid of publicIds) {
     return res.status(500).json({ error: "Failed to delete listing" });
   }
 });
-
 
   app.put("/api/listings/:id", requireAuth, (req, res) => {
   const uid = req.user!.uid;

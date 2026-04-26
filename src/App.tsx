@@ -303,6 +303,12 @@ const [feedback, setFeedback] = useState<{
   message: string;
 } | null>(null);
 const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
+const [verificationResendAttemptCount, setVerificationResendAttemptCount] = useState(0);
+const [verificationCooldownSeconds, setVerificationCooldownSeconds] = useState(0);
+const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
+const [passwordResetAttemptCount, setPasswordResetAttemptCount] = useState(0);
+const [passwordResetCooldownSeconds, setPasswordResetCooldownSeconds] = useState(0);
+const [passwordResetLoading, setPasswordResetLoading] = useState(false);
 
   const [editAccountForm, setEditAccountForm] = useState({
   university: UNIVERSITIES[0] as University,
@@ -323,6 +329,35 @@ const showFeedback = (
 const closeFeedback = () => {
   setFeedback(null);
 };
+
+const getCooldownSecondsForAttempt = (attemptCount: number) => {
+  if (attemptCount <= 0) return 2 * 60;
+  return 3 * 60;
+};
+
+const formatCooldownLabel = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+useEffect(() => {
+  if (verificationCooldownSeconds <= 0) return;
+  const timer = window.setInterval(() => {
+    setVerificationCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+  }, 1000);
+
+  return () => window.clearInterval(timer);
+}, [verificationCooldownSeconds]);
+
+useEffect(() => {
+  if (passwordResetCooldownSeconds <= 0) return;
+  const timer = window.setInterval(() => {
+    setPasswordResetCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+  }, 1000);
+
+  return () => window.clearInterval(timer);
+}, [passwordResetCooldownSeconds]);
 
 const setCreateFieldError = (key: string, message: string) => {
   setCreateFieldErrors((prev) => ({
@@ -1605,33 +1640,95 @@ Open this listing: ${shareUrl}`;
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!authForm.email) {
-    showFeedback(
-      "info",
-      "Email required",
-      "Please enter your email address first."
-    );
-    return;
-  }
+    if (!authForm.email) {
+      showFeedback(
+        "info",
+        "Email required",
+        "Please enter your email address first."
+      );
+      return;
+    }
 
-  try {
-    await sendPasswordResetEmail(auth, authForm.email);
-    showFeedback(
-      "success",
-      "Reset email sent",
-      "Check your email inbox for the password reset link."
-    );
-    setAuthView("login");
-  } catch (err: any) {
-    showFeedback(
-      "error",
-      "Reset failed",
-      err?.message || "We could not send the reset email."
-    );
-  }
-};
+    if (passwordResetCooldownSeconds > 0) {
+      showFeedback(
+        "info",
+        "Please wait",
+        `You can request another reset link in ${formatCooldownLabel(passwordResetCooldownSeconds)}.`
+      );
+      return;
+    }
+
+    setPasswordResetLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, authForm.email);
+      const nextCooldownSeconds = getCooldownSecondsForAttempt(passwordResetAttemptCount);
+      setPasswordResetAttemptCount((prev) => prev + 1);
+      setPasswordResetCooldownSeconds(nextCooldownSeconds);
+
+      showFeedback(
+        "success",
+        "Reset email sent",
+        `Check your email inbox for the password reset link. You can request another link in ${formatCooldownLabel(nextCooldownSeconds)}.`
+      );
+    } catch (err: any) {
+      showFeedback(
+        "error",
+        "Reset failed",
+        err?.message || "We could not send the reset email."
+      );
+    } finally {
+      setPasswordResetLoading(false);
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    if (!firebaseUser) return;
+
+    setResendVerificationLoading(true);
+    try {
+      await firebaseUser.reload();
+      const refreshedUser = auth.currentUser;
+
+      if (refreshedUser?.emailVerified) {
+        showFeedback(
+          "success",
+          "Already verified",
+          "Your email is already verified. Click “I've Verified” or refresh the page to update the prompt."
+        );
+        return;
+      }
+
+      if (verificationCooldownSeconds > 0) {
+        showFeedback(
+          "info",
+          "Please wait",
+          `You can resend the verification email in ${formatCooldownLabel(verificationCooldownSeconds)}.`
+        );
+        return;
+      }
+
+      await sendEmailVerification(firebaseUser);
+      const nextCooldownSeconds = getCooldownSecondsForAttempt(verificationResendAttemptCount);
+      setVerificationResendAttemptCount((prev) => prev + 1);
+      setVerificationCooldownSeconds(nextCooldownSeconds);
+
+      showFeedback(
+        "success",
+        "Verification email resent",
+        `Check your inbox for the new verification email. You can resend again in ${formatCooldownLabel(nextCooldownSeconds)}.`
+      );
+    } catch (e: any) {
+      showFeedback(
+        "error",
+        "Resend failed",
+        e?.message || "We could not resend the verification email."
+      );
+    } finally {
+      setResendVerificationLoading(false);
+    }
+  };
   
   const handleLogout = async () => {
     try {
@@ -3148,21 +3245,23 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                     >
                       <RefreshCw className="w-4 h-4" /> I've Verified
                     </button>
-                    <button 
-                      onClick={async () => {
-                        if (firebaseUser) {
-                          await sendEmailVerification(firebaseUser);
-                         showFeedback(
-                           "success",
-                           "Verification email resent",
-                           "Check your inbox for the new verification email."
-                         );
-                        }
-                      }}
-                      className="text-primary text-sm font-bold hover:underline"
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleResendVerificationEmail}
+                      disabled={resendVerificationLoading || verificationCooldownSeconds > 0}
+                      className={`text-primary text-sm font-bold hover:underline disabled:no-underline ${
+                        resendVerificationLoading || verificationCooldownSeconds > 0
+                          ? "opacity-60 cursor-not-allowed"
+                          : ""
+                      }`}
                     >
-                      Resend Verification Email
-                    </button>
+                      {resendVerificationLoading
+                        ? "Sending..."
+                        : verificationCooldownSeconds > 0
+                        ? `Resend in ${formatCooldownLabel(verificationCooldownSeconds)}`
+                        : "Resend Verification Email"}
+                    </motion.button>
                   </div>
                 </div>
               ) : (
@@ -3779,12 +3878,22 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                         onChange={e => setAuthForm({...authForm, email: e.target.value})}
                       />
                     </div>
-                    <button 
+                    <motion.button
                       type="submit"
-                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                      whileTap={{ scale: 0.99 }}
+                      disabled={passwordResetLoading || passwordResetCooldownSeconds > 0}
+                      className={`w-full bg-primary text-white py-4 rounded-xl font-bold transition-colors ${
+                        passwordResetLoading || passwordResetCooldownSeconds > 0
+                          ? "opacity-60 cursor-not-allowed"
+                          : "hover:bg-primary-dark"
+                      }`}
                     >
-                      Send Reset Link
-                    </button>
+                      {passwordResetLoading
+                        ? "Sending..."
+                        : passwordResetCooldownSeconds > 0
+                        ? `Wait ${formatCooldownLabel(passwordResetCooldownSeconds)}`
+                        : "Send Reset Link"}
+                    </motion.button>
                     <button 
                       type="button" 
                       onClick={() => setAuthView('login')}
@@ -4086,29 +4195,23 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                           >
                             <RefreshCw className="w-3 h-3" /> I've Verified
                           </button>
-                          <button
-                            onClick={async () => {
-                              if (firebaseUser) {
-                                try {
-                                  await sendEmailVerification(firebaseUser);
-                                  showFeedback(
-                                   "success",
-                                   "Verification email resent",
-                                   "Check your inbox for the new verification email."
-                                 );
-                                } catch (e: any) {
-                                  showFeedback(
-                                    "error",
-                                    "Resend failed",
-                                    e?.message || "We could not resend the verification email."
-                                  );
-                                }
-                              }
-                            }}
-                            className="text-amber-600 hover:underline font-bold"
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleResendVerificationEmail}
+                            disabled={resendVerificationLoading || verificationCooldownSeconds > 0}
+                            className={`text-amber-600 hover:underline font-bold disabled:no-underline ${
+                              resendVerificationLoading || verificationCooldownSeconds > 0
+                                ? "opacity-60 cursor-not-allowed"
+                                : ""
+                            }`}
                           >
-                            Resend Email
-                          </button>
+                            {resendVerificationLoading
+                              ? "Sending..."
+                              : verificationCooldownSeconds > 0
+                              ? `Resend in ${formatCooldownLabel(verificationCooldownSeconds)}`
+                              : "Resend Email"}
+                          </motion.button>
                         </div>
                       </div>
                     )}
