@@ -1,6 +1,6 @@
 import { ShieldCheck, Star } from "lucide-react";
 import type { RatingSummary } from "../../types";
-import { SectionHeading, StatTile } from "../../../listingDetails/ListingDetailsShared";
+import { SectionHeading, StatTile } from "./ListingDetailsShared";
 
 export default function ListingReviewsBlock({
   ratingSummary,
