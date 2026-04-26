@@ -43,15 +43,29 @@ export default function ListingGallery({
   onNextImage,
   onSelectImage,
 }: ListingGalleryProps) {
+  const renderThumb = (url: string, idx: number, className = "") => (
+    <button
+      key={`${url}-${idx}`}
+      type="button"
+      onClick={() => onSelectImage(idx)}
+      className={`overflow-hidden border transition-all ${idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200 hover:border-zinc-400"} ${className}`}
+      aria-label={`View image ${idx + 1}`}
+    >
+      <img src={url} alt="" className="h-full w-full object-cover" />
+    </button>
+  );
+
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-4 xl:max-w-[600px] xl:justify-self-start">
         <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
           <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
             <button
               type="button"
               onClick={onToggleSaved}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
+                saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+              }`}
               aria-label={saved ? "Remove from saved" : "Save item"}
             >
               <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
@@ -59,36 +73,57 @@ export default function ListingGallery({
             <div className="shrink-0">{actionsMenu}</div>
           </div>
 
-          <div className="relative bg-zinc-100">
-            <div className="relative aspect-square sm:aspect-[4/3] xl:aspect-[5/4]">
-              <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
-              <button type="button" onClick={onOpenFullscreen} className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95" aria-label="Open fullscreen">
-                <FullscreenToggleIcon isFullscreen={false} />
-              </button>
-
+          <div className="bg-zinc-100 xl:bg-white xl:p-5">
+            <div className="grid gap-0 xl:grid-cols-[88px_minmax(0,1fr)] xl:gap-4">
               {galleryImages.length > 1 ? (
-                <>
-                  <button type="button" onClick={onPrevImage} className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white" aria-label="Previous image">
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button type="button" onClick={onNextImage} className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white" aria-label="Next image">
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
-                    {currentGalleryIndex + 1} / {galleryImages.length}
-                  </div>
-                </>
+                <div className="hidden xl:flex xl:flex-col xl:gap-3 xl:overflow-y-auto xl:pr-1">
+                  {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[68px] w-[68px] rounded-2xl"))}
+                </div>
               ) : null}
+
+              <div className="relative">
+                <div className="relative aspect-square sm:aspect-[4/3] xl:aspect-[5/4]">
+                  <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
+                  <button
+                    type="button"
+                    onClick={onOpenFullscreen}
+                    className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
+                    aria-label="Open fullscreen"
+                  >
+                    <FullscreenToggleIcon isFullscreen={false} />
+                  </button>
+
+                  {galleryImages.length > 1 ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={onPrevImage}
+                        className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={onNextImage}
+                        className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                      <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
+                        {currentGalleryIndex + 1} / {galleryImages.length}
+                      </div>
+                    </>
+                  ) : null}
+                </div>
+              </div>
             </div>
           </div>
 
           {galleryImages.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5">
-              {galleryImages.map((url, idx) => (
-                <button key={`${url}-${idx}`} type="button" onClick={() => onSelectImage(idx)} className={`h-16 w-16 shrink-0 overflow-hidden rounded-2xl border ${idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200"}`}>
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                </button>
-              ))}
+            <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5 xl:hidden">
+              {galleryImages.map((url, idx) => renderThumb(url, idx, "h-16 w-16 shrink-0 rounded-2xl"))}
             </div>
           ) : null}
 
@@ -110,7 +145,12 @@ export default function ListingGallery({
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-white/60">Gallery</p>
                 <p className="mt-1 text-lg font-black">{listingName}</p>
               </div>
-              <button type="button" onClick={onCloseFullscreen} className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/20" aria-label="Close fullscreen">
+              <button
+                type="button"
+                onClick={onCloseFullscreen}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white hover:bg-white/20"
+                aria-label="Close fullscreen"
+              >
                 <FullscreenToggleIcon isFullscreen />
               </button>
             </div>
@@ -118,10 +158,20 @@ export default function ListingGallery({
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
               {galleryImages.length > 1 ? (
                 <>
-                  <button type="button" onClick={onPrevImage} className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white" aria-label="Previous image">
+                  <button
+                    type="button"
+                    onClick={onPrevImage}
+                    className="absolute left-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+                    aria-label="Previous image"
+                  >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
-                  <button type="button" onClick={onNextImage} className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white" aria-label="Next image">
+                  <button
+                    type="button"
+                    onClick={onNextImage}
+                    className="absolute right-4 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-zinc-900 hover:bg-white"
+                    aria-label="Next image"
+                  >
                     <ChevronRight className="h-5 w-5" />
                   </button>
                   <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
