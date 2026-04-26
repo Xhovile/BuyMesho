@@ -17,6 +17,7 @@ export type AppRoute =
   | "signup"
   | "forgot_password"
   | "profile"
+  | "verify_email"
   | "edit_profile"
   | "edit_account"
   | "become_seller"
@@ -44,6 +45,7 @@ export const LOGIN_PATH = "/login";
 export const SIGNUP_PATH = "/signup";
 export const FORGOT_PASSWORD_PATH = "/forgot-password";
 export const PROFILE_PATH = "/profile";
+export const VERIFY_EMAIL_PATH = "/verify-email";
 export const EDIT_PROFILE_PATH = "/edit-profile";
 export const EDIT_ACCOUNT_PATH = "/edit-account";
 export const BECOME_SELLER_PATH = "/become-seller";
@@ -236,6 +238,10 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === PROFILE_PATH) {
     return "profile";
+  }
+
+  if (location.pathname === VERIFY_EMAIL_PATH) {
+    return "verify_email";
   }
 
   if (location.pathname === EDIT_PROFILE_PATH) {
