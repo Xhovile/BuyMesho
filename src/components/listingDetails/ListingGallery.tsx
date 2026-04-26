@@ -91,7 +91,6 @@ export default function ListingGallery({
       </div>
     </div>
   </div>
-
 </div>
       } '} 
               aria-label={saved ? "Remove from saved" : "Save item"}
