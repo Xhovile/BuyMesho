@@ -357,15 +357,15 @@ export default function ListingDetailsPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <ListingHeaderBar />
 
-      <main className="mx-auto max-w-7xl px-4 pb-12 pt-6 sm:pt-8">
+      <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-6 sm:pt-8">
         {loading ? (
           <ListingStatusPanel loading hasListing={!!listing} />
         ) : !listing ? (
           <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
         ) : (
           <>
-            <section className="grid gap-8 lg:grid-cols-12 lg:items-start">
-              <div className="lg:col-span-4">
+            <section className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start lg:gap-10">
+              <div className="lg:min-h-[calc(100vh-9rem)]">
                 <div className="lg:sticky lg:top-24 lg:self-start">
                   <ListingGallery
                     listingName={listing.name}
@@ -406,7 +406,7 @@ export default function ListingDetailsPage() {
                 </div>
               </div>
 
-              <div className="lg:col-span-8 space-y-6">
+              <div className="min-w-0 space-y-6">
                 <ListingSummary
                   listing={listing}
                   seller={seller}
