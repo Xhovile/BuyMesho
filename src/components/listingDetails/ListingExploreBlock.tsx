@@ -1,6 +1,6 @@
 import type { Listing } from "../../types";
 import { navigateToListingDetails, navigateToSellerProfile } from "../../lib/appNavigation";
-import { RelatedRailCard, SectionHeading } from "./listingDetails/ListingDetailsShared";
+import { RelatedRailCard, SectionHeading } from "../../../listingDetails/ListingDetailsShared";
 
 export default function ListingExploreBlock({
   sameCampusListings,
