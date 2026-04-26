@@ -1,7 +1,7 @@
 import { ShieldCheck, Store } from "lucide-react";
 import type { Listing } from "../../types";
 import { navigateToSellerProfile } from "../../lib/appNavigation";
-import { formatDate } from "./ListingDetailsShared";
+import { formatDate } from "../../../listingDetails/ListingDetailsShared";
 
 type SellerProfile = {
   uid?: string;
