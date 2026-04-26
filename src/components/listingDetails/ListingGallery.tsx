@@ -67,32 +67,15 @@ export default function ListingGallery({
 
   return (
     <>
-      {/* Main Container: Stack on mobile, side-by-side on large screens */}
-<div className="mx-auto max-w-7xl px-4 py-8 lg:grid lg:grid-cols-12 lg:gap-8">
-  
-  {/* LEFT COLUMN: Gallery (Takes up 8/12 of the grid on large screens) */}
-  <div className="lg:col-span-8 space-y-6">
-    {/* Your Gallery Component goes here */}
-    <div className="bg-zinc-100 aspect-video rounded-3xl" /> 
-    
-    {/* "About this listing" also stays in the left column */}
-    <section className="mt-8">
-       <h2 className="text-2xl font-bold">About this listing</h2>
-       <p className="text-zinc-600">...</p>
-    </section>
-  </div>
-
-  {/* RIGHT COLUMN: Summary (Takes up 4/12 of the grid on large screens) */}
-  <div className="mt-8 lg:mt-0 lg:col-span-4">
-    <div className="sticky top-24 space-y-4">
-      {/* This is your code snippet below */}
-      <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
-        {/* Your Price, Title, and Buttons go here */}
-      </div>
-    </div>
-  </div>
-</div>
-      } 
+      <div className="w-full space-y-4">
+        <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
+          <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
+            <button
+              type="button"
+              onClick={onToggleSaved}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-all shadow-sm ${
+                saved ? "border-zinc-900 bg-zinc-900 text-white" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+              }`}
               aria-label={saved ? "Remove from saved" : "Save item"}
             >
               <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
@@ -100,16 +83,16 @@ export default function ListingGallery({
             <div className="shrink-0">{actionsMenu}</div>
           </div>
 
-          <div className="px-3 py-3 sm:px-4 sm:py-4 xl:px-4 xl:py-4">
-            <div className="grid gap-3 xl:grid-cols-[56px_minmax(0,1fr)] xl:items-start xl:gap-3">
+          <div className="px-3 py-3 sm:px-4 sm:py-4">
+            <div className="grid gap-3 lg:grid-cols-[56px_minmax(0,1fr)] lg:items-start lg:gap-3">
               {galleryImages.length > 1 ? (
-                <div className="hidden xl:flex xl:max-h-[560px] xl:flex-col xl:gap-2 xl:overflow-y-auto xl:pr-1">
+                <div className="hidden lg:flex lg:max-h-[560px] lg:flex-col lg:gap-2 lg:overflow-y-auto lg:pr-1">
                   {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[56px] w-[56px] shrink-0 rounded-2xl"))}
                 </div>
               ) : null}
 
               <div className="relative">
-                <div className="relative aspect-square overflow-hidden rounded-[1.5rem] bg-zinc-50 sm:aspect-[4/3] xl:aspect-[4/5]">
+                <div className="relative aspect-square overflow-hidden rounded-[1.5rem] bg-zinc-50 sm:aspect-[4/3] lg:aspect-[4/5]">
                   <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
 
                   <button
@@ -150,7 +133,7 @@ export default function ListingGallery({
           </div>
 
           {galleryImages.length > 1 ? (
-            <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5 xl:hidden">
+            <div className="flex gap-2 overflow-x-auto border-t border-zinc-100 px-4 py-4 sm:px-5 lg:hidden">
               {galleryImages.map((url, idx) => renderThumb(url, idx, "h-16 w-16 shrink-0 rounded-2xl"))}
             </div>
           ) : null}
