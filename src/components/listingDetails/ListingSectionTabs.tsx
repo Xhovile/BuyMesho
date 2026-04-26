@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { TabButton } from "../../../listingDetails/ListingDetailsShared";
+import { TabButton } from "./ListingDetailsShared";
 
 type SectionKey = "details" | "explore" | "reviews";
 
