@@ -92,7 +92,7 @@ export default function ListingGallery({
     </div>
   </div>
 </div>
-      } '} 
+      } 
               aria-label={saved ? "Remove from saved" : "Save item"}
             >
               <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
