@@ -1,5 +1,5 @@
 import type { Listing } from "../../types";
-import { SectionHeading } from "./ListingDetailsShared";
+import { SectionHeading } from "../../../listingDetails/ListingDetailsShared";
 
 export type ListingSpecsGroup = {
   title: string;
