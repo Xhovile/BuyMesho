@@ -56,7 +56,7 @@ export default function VerifyEmailPage() {
         showFeedback(
           "success",
           "Email verified",
-          "Your email is verified now. Go to Profile to continue.",
+          "Verification complete. Open Profile to continue.",
           [
             {
               label: "Go to Profile",
