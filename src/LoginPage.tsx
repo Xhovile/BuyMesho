@@ -49,12 +49,19 @@ export default function LoginPage() {
     const password = form.password;
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      await user.reload();
 
       const totpStatusResult = await getTotpStatus();
       if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
         setTotpChallengeCode("");
         setTotpChallengeOpen(true);
+        return;
+      }
+
+      if (!user.emailVerified) {
+        navigateToPath("/verify-email");
         return;
       }
 
