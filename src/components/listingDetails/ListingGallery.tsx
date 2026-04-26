@@ -4,8 +4,16 @@ import { Bookmark, ChevronLeft, ChevronRight, Maximize2, Minimize2 } from "lucid
 function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
   return (
     <span className="relative h-5 w-5">
-      <Maximize2 className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"}`} />
-      <Minimize2 className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${isFullscreen ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"}`} />
+      <Maximize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-0 rotate-90 opacity-0" : "scale-100 rotate-0 opacity-100"
+        }`}
+      />
+      <Minimize2
+        className={`absolute inset-0 h-5 w-5 transition-all duration-300 ease-out ${
+          isFullscreen ? "scale-100 rotate-0 opacity-100" : "scale-0 -rotate-90 opacity-0"
+        }`}
+      />
     </span>
   );
 }
@@ -48,7 +56,9 @@ export default function ListingGallery({
       key={`${url}-${idx}`}
       type="button"
       onClick={() => onSelectImage(idx)}
-      className={`overflow-hidden border transition-all ${idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200 hover:border-zinc-400"} ${className}`}
+      className={`overflow-hidden border transition-all ${
+        idx === currentGalleryIndex ? "border-zinc-900" : "border-zinc-200 hover:border-zinc-400"
+      } ${className}`}
       aria-label={`View image ${idx + 1}`}
     >
       <img src={url} alt="" className="h-full w-full object-cover" />
@@ -57,8 +67,8 @@ export default function ListingGallery({
 
   return (
     <>
-      <div className="space-y-4 xl:sticky xl:top-[92px] xl:self-start xl:max-w-[600px]">
-        <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+      <div className="space-y-4 xl:sticky xl:top-24 xl:self-start xl:w-full xl:max-w-[320px]">
+        <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
           <div className="flex items-center justify-end gap-2 border-b border-zinc-100 px-4 py-4 sm:px-5">
             <button
               type="button"
@@ -73,21 +83,22 @@ export default function ListingGallery({
             <div className="shrink-0">{actionsMenu}</div>
           </div>
 
-          <div className="bg-zinc-100 xl:bg-white xl:p-5">
-            <div className="grid gap-0 xl:grid-cols-[88px_minmax(0,1fr)] xl:gap-4">
+          <div className="px-3 py-3 sm:px-4 sm:py-4 xl:px-4 xl:py-4">
+            <div className="grid gap-3 xl:grid-cols-[56px_minmax(0,1fr)] xl:items-start xl:gap-3">
               {galleryImages.length > 1 ? (
-                <div className="hidden xl:flex xl:flex-col xl:gap-3 xl:overflow-y-auto xl:pr-1">
-                  {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[68px] w-[68px] rounded-2xl"))}
+                <div className="hidden xl:flex xl:max-h-[560px] xl:flex-col xl:gap-2 xl:overflow-y-auto xl:pr-1">
+                  {galleryImages.map((url, idx) => renderThumb(url, idx, "h-[56px] w-[56px] shrink-0 rounded-2xl"))}
                 </div>
               ) : null}
 
               <div className="relative">
-                <div className="relative aspect-square sm:aspect-[4/3] xl:aspect-[5/4]">
+                <div className="relative aspect-square overflow-hidden rounded-[1.5rem] bg-zinc-50 sm:aspect-[4/3] xl:aspect-[4/5]">
                   <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
+
                   <button
                     type="button"
                     onClick={onOpenFullscreen}
-                    className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
+                    className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
                     aria-label="Open fullscreen"
                   >
                     <FullscreenToggleIcon isFullscreen={false} />
@@ -98,7 +109,7 @@ export default function ListingGallery({
                       <button
                         type="button"
                         onClick={onPrevImage}
-                        className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
+                        className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
                         aria-label="Previous image"
                       >
                         <ChevronLeft className="h-5 w-5" />
@@ -106,12 +117,12 @@ export default function ListingGallery({
                       <button
                         type="button"
                         onClick={onNextImage}
-                        className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
+                        className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white/90 shadow hover:bg-white"
                         aria-label="Next image"
                       >
                         <ChevronRight className="h-5 w-5" />
                       </button>
-                      <div className="absolute bottom-4 right-4 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
+                      <div className="absolute bottom-3 right-3 rounded-full bg-black/75 px-3 py-1.5 text-xs font-bold text-white">
                         {currentGalleryIndex + 1} / {galleryImages.length}
                       </div>
                     </>
@@ -129,7 +140,7 @@ export default function ListingGallery({
 
           {videoUrl ? (
             <div className="border-t border-zinc-100 px-4 py-4 sm:px-5">
-              <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-black">
+              <div className="overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-black">
                 <video src={videoUrl} controls className="w-full" />
               </div>
             </div>
@@ -154,6 +165,7 @@ export default function ListingGallery({
                 <FullscreenToggleIcon isFullscreen />
               </button>
             </div>
+
             <div className="relative flex-1 overflow-hidden rounded-[2rem] bg-black">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
               {galleryImages.length > 1 ? (
