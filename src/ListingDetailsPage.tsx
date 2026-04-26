@@ -364,8 +364,8 @@ export default function ListingDetailsPage() {
           <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
         ) : (
           <>
-<section className="grid gap-8 xl:grid-cols-[320px_minmax(0,1fr)] xl:items-start">
-  <div className="xl:sticky xl:top-24 xl:self-start xl:max-w-[340px]">
+<section className="grid gap-8 xl:grid-cols-[140px_minmax(0,1fr)] xl:items-start">
+  <div className="xl:sticky xl:top-24 xl:self-start xl:max-w-[160px]">
     <ListingGallery
       listingName={listing.name}
       galleryImages={galleryImages}
