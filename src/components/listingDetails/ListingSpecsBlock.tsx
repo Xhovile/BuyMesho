@@ -54,18 +54,26 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
       <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">Product details</h2>
 
       {groups.length ? (
-        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
-          <div className="space-y-4">
-            {leftColumnGroups.map((group, index) => (
+        <>
+          <div className="space-y-4 md:hidden">
+            {groups.map((group, index) => (
               <SpecAccordion key={group.title} group={group} defaultOpen={index === 0} />
             ))}
           </div>
-          <div className="space-y-4">
-            {rightColumnGroups.map((group) => (
-              <SpecAccordion key={group.title} group={group} />
-            ))}
+
+          <div className="hidden md:grid md:grid-cols-2 md:gap-4">
+            <div className="space-y-4">
+              {leftColumnGroups.map((group, index) => (
+                <SpecAccordion key={group.title} group={group} defaultOpen={index === 0} />
+              ))}
+            </div>
+            <div className="space-y-4">
+              {rightColumnGroups.map((group) => (
+                <SpecAccordion key={group.title} group={group} />
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       ) : (
         <div className="rounded-[1.75rem] border border-dashed border-zinc-200 bg-white px-4 py-5 text-sm text-zinc-500 shadow-sm">
           No grouped specs are available for this listing.
