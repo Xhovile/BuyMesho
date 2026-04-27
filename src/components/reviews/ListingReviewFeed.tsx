@@ -10,7 +10,10 @@ type ListingReviewFeedProps = {
   initialSummary?: ListingReviewSummary | null;
   refreshKey?: number;
   canReply?: boolean;
+  viewerUid?: string;
+  ownReviewId?: number | null;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
+  onEditOwnReview?: () => void;
 };
 
 const INITIAL_LIMIT = 3;
@@ -22,7 +25,10 @@ export default function ListingReviewFeed({
   initialSummary = null,
   refreshKey = 0,
   canReply = false,
+  viewerUid,
+  ownReviewId = null,
   onReviewChanged,
+  onEditOwnReview,
 }: ListingReviewFeedProps) {
   const [items, setItems] = useState<ListingReview[]>([]);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
@@ -34,6 +40,8 @@ export default function ListingReviewFeed({
   const [error, setError] = useState<string | null>(null);
 
   const canShowMore = useMemo(() => hasMore && items.length < total, [hasMore, items.length, total]);
+  const ownReview = useMemo(() => items.find((review) => review.id === ownReviewId) ?? null, [items, ownReviewId]);
+  const visibleItems = useMemo(() => items.filter((review) => review.id !== ownReviewId), [items, ownReviewId]);
 
   const loadReviews = useCallback(
     async (nextOffset = 0, replace = true) => {
@@ -87,23 +95,34 @@ export default function ListingReviewFeed({
     <section className="space-y-4">
       {error ? <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{error}</div> : null}
 
-      {items.length > 0 ? (
+      {ownReview ? (
         <div className="space-y-4">
-          {items.map((review) => (
+          <ListingReviewCard
+            review={ownReview}
+            listingId={listingId}
+            canReply={false}
+            isOwnReview
+            onEdit={onEditOwnReview}
+            onReviewChanged={handleReviewChanged}
+          />
+        </div>
+      ) : null}
+
+      {visibleItems.length > 0 ? (
+        <div className="space-y-4">
+          {visibleItems.map((review) => (
             <ListingReviewCard
               key={review.id}
               review={review}
               listingId={listingId}
-              canReply={canReply}
+              canReply={canReply && review.reviewer_uid !== viewerUid}
               onReviewChanged={handleReviewChanged}
             />
           ))}
         </div>
-      ) : (
-        <div className="rounded-[2rem] border border-dashed border-zinc-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">
-          No written reviews yet.
-        </div>
-      )}
+      ) : !ownReview ? (
+        <div className="rounded-[2rem] border border-dashed border-zinc-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">No written reviews yet.</div>
+      ) : null}
 
       {canShowMore ? (
         <div className="flex items-center justify-center pt-2">
@@ -126,9 +145,7 @@ export default function ListingReviewFeed({
       ) : null}
 
       {compact && summary ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
-          Showing {Math.min(items.length, total)} of {total} reviews
-        </p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Showing {Math.min(items.length, total)} of {total} reviews</p>
       ) : null}
     </section>
   );
