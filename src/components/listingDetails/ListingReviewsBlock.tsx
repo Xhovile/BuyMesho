@@ -9,11 +9,7 @@ export default function ListingReviewsBlock({
 }) {
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
-      <SectionHeading
-        eyebrow="Reviews"
-        title="Trust and feedback"
-        description="This section stays light until written buyer reviews are available. It should not repeat listing metrics already shown elsewhere on the page."
-      />
+      <SectionHeading title="Reviews" />
 
       <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
