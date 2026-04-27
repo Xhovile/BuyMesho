@@ -47,7 +47,7 @@ function RouteLoader({ route }: { route: AppRoute }) {
             alt="BuyMesho loading"
             className="h-auto w-full max-w-[280px] object-contain"
           />
-          <div className="progress-outer w-3/4">
+          <div className="progress-outer w-3/4 md:w-2/3">
             <div className="progress-inner" />
           </div>
         </div>
