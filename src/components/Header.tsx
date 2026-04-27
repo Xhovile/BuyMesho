@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight, LogOut } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -10,6 +10,7 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
+  MESSAGES_PATH,
   SETTINGS_PATH,
   navigateToPath,
 } from "../lib/appNavigation";
@@ -57,6 +58,16 @@ export default function Header({
     }
     afterClose?.();
     navigateToPath(SETTINGS_PATH);
+  };
+
+  const handleMessagesClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(MESSAGES_PATH);
   };
 
   const handleSellClick = (afterClose?: () => void) => {
@@ -159,6 +170,15 @@ export default function Header({
               >
                 <ShoppingBag className="w-4 h-4" />
                 Market
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleMessagesClick()}
+                className={desktopNavButtonClass}
+              >
+                <MessageSquareText className="w-4 h-4" />
+                Messages
               </button>
 
               <button
@@ -321,6 +341,21 @@ export default function Header({
                     Market
                   </span>
                   <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMenu();
+                    handleMessagesClick();
+                  }}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                    Messages
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 <button
