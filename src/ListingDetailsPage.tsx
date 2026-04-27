@@ -477,6 +477,7 @@ export default function ListingDetailsPage() {
                   seller={seller}
                   availableQuantity={availableQuantity}
                   isLoggedIn={!!firebaseUser}
+                  currentUserUid={firebaseUser?.uid}
                   onMessageSeller={handleMessageSeller}
                   onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
