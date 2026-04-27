@@ -17,6 +17,7 @@ import ListingExploreBlock from "./components/listingDetails/ListingExploreBlock
 import ListingReviewsBlock from "./components/listingDetails/ListingReviewsBlock";
 import ListingSectionTabs from "./components/listingDetails/ListingSectionTabs";
 import ListingDetailsBlock from "./components/listingDetails/ListingDetailsBlock";
+import ListingTrustBlock from "./components/listingDetails/ListingTrustBlock";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingStatusPanel from "./components/listingDetails/ListingStatusPanel";
 
@@ -484,6 +485,17 @@ export default function ListingDetailsPage() {
 
             <section ref={exploreRef} id="explore" className="scroll-mt-32 pt-12">
               <ListingExploreBlock sameCampusListings={sameCampusListings} sameCategoryListings={sameCategoryListings} sellerOtherListings={sellerOtherListings} />
+            </section>
+
+            <section className="scroll-mt-32 pt-12">
+              <div className="space-y-4">
+                <div className="space-y-2 border-b border-zinc-200 pb-4">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">Seller Info</p>
+                  <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">Seller profile</h2>
+                  <p className="max-w-3xl text-sm leading-6 text-zinc-500">View the seller's profile and trust signals before reading reviews.</p>
+                </div>
+                <ListingTrustBlock listing={listing} seller={seller} ratingSummary={ratingSummary} />
+              </div>
             </section>
 
             <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
