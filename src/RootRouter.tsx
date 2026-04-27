@@ -23,6 +23,7 @@ const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
+const MessagesPage = lazy(() => import("./MessagesPage"));
 const MyListingsPage = lazy(() => import("./MyListingsPage"));
 const PrivacyPolicyPage = lazy(() => import("./components/PrivacyPolicyPage"));
 const ProfilePage = lazy(() => import("./ProfilePage"));
@@ -109,12 +110,16 @@ export default function RootRouter() {
       "change_password",
       "change_email",
       "my_listings",
+      "messages",
     ];
 
     const isVerified = !!firebaseUser?.emailVerified;
 
     if (!firebaseUser) {
       if (route === "verify_email") {
+        navigateToPath(LOGIN_PATH);
+      }
+      if (protectedRoutes.includes(route)) {
         navigateToPath(LOGIN_PATH);
       }
       return;
@@ -146,6 +151,7 @@ export default function RootRouter() {
         route === "report" ? <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} /> :
         route === "seller" ? <SellerProfilePage /> :
         route === "listing_details" ? <ListingDetailsPage /> :
+        route === "messages" ? <MessagesPage /> :
         route === "create" ? <CreateListingPage /> :
         route === "edit" ? <EditListingPage /> :
         route === "login" ? <LoginPage /> :
