@@ -417,7 +417,7 @@ export default function MyListingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {listings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -425,8 +425,6 @@ export default function MyListingsPage() {
                 currentUid={firebaseUser?.uid}
                 isLoggedIn={!!firebaseUser}
                 showActionsMenu
-                compact
-                ultraCompact
                 clickable
                 onReport={() => undefined}
                 onEdit={(item) => navigateToEditListing(item.id)}
