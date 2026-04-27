@@ -6,6 +6,7 @@ import { useAuthUser } from "../../hooks/useAuthUser";
 import { SectionHeading } from "./ListingDetailsShared";
 import ListingReviewSummaryView from "../reviews/ListingReviewSummary";
 import ListingReviewComposer from "../reviews/ListingReviewComposer";
+import ListingReviewFeed from "../reviews/ListingReviewFeed";
 
 export default function ListingReviewsBlock({
   sellerUid,
@@ -26,6 +27,7 @@ export default function ListingReviewsBlock({
   const [canReview, setCanReview] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const loadReviews = useCallback(async () => {
     if (!listing?.id) return;
@@ -57,6 +59,12 @@ export default function ListingReviewsBlock({
     void loadReviews();
   }, [loadReviews]);
 
+  const handleSaved = async (savedReview: ListingReview | null) => {
+    setViewerReview(savedReview);
+    setRefreshKey((current) => current + 1);
+    await loadReviews();
+  };
+
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
       <SectionHeading
@@ -80,11 +88,9 @@ export default function ListingReviewsBlock({
             isAuthenticated={!!firebaseUser}
             canReview={canReview}
             existingReview={viewerReview}
-            onSaved={async (savedReview) => {
-              setViewerReview(savedReview);
-              await loadReviews();
-            }}
+            onSaved={handleSaved}
           />
+          <ListingReviewFeed listingId={listing.id} initialSummary={summary} refreshKey={refreshKey} />
         </div>
       )}
     </div>
