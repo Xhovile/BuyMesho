@@ -6,11 +6,17 @@ import { navigateBackOrPath, navigateToLogin, navigateToPath } from "./lib/appNa
 import { getConversationIdFromUrl, getListingIdFromMessagesUrl, navigateToConversation, navigateToMessages } from "./lib/messagesNavigation";
 import { fetchConversation, fetchInbox, markConversationRead, sendMessage, startConversationFromListing } from "./lib/messages";
 
+type InboxFilter = "all" | "unread" | "read";
+
 function timeLabel(value?: string | null) {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleString();
+}
+
+function sortByLatest(a: Conversation, b: Conversation) {
+  return (b.last_message_at || "").localeCompare(a.last_message_at || "");
 }
 
 function ConversationRow({
@@ -52,6 +58,35 @@ function ConversationRow({
   );
 }
 
+function InboxTab({
+  label,
+  count,
+  active,
+  onClick,
+}: {
+  label: string;
+  count: number;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 rounded-2xl px-4 py-3 text-sm font-extrabold transition-colors ${
+        active ? "bg-zinc-900 text-white" : "bg-zinc-50 text-zinc-700 hover:bg-zinc-100"
+      }`}
+    >
+      <span className="inline-flex items-center justify-center gap-2">
+        {label}
+        <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${active ? "bg-white/15 text-white" : "bg-zinc-200 text-zinc-700"}`}>
+          {count}
+        </span>
+      </span>
+    </button>
+  );
+}
+
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuthUser();
   const [loading, setLoading] = useState(true);
@@ -63,8 +98,22 @@ export default function MessagesPage() {
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [pendingListingId, setPendingListingId] = useState<number | null>(() => getListingIdFromMessagesUrl());
+  const [filter, setFilter] = useState<InboxFilter>("all");
 
   const listingIdFromUrl = useMemo(() => pendingListingId, [pendingListingId]);
+
+  const inboxCounts = useMemo(() => {
+    const unread = inbox.filter((item) => Number(item.unread_count || 0) > 0).length;
+    const read = inbox.length - unread;
+    return { all: inbox.length, unread, read };
+  }, [inbox]);
+
+  const filteredInbox = useMemo(() => {
+    const sorted = [...inbox].sort(sortByLatest);
+    if (filter === "unread") return sorted.filter((item) => Number(item.unread_count || 0) > 0);
+    if (filter === "read") return sorted.filter((item) => Number(item.unread_count || 0) === 0);
+    return sorted;
+  }, [filter, inbox]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -95,20 +144,15 @@ export default function MessagesPage() {
         }
 
         const nextId = activeConversationId ?? items[0]?.id ?? null;
-        if (nextId) {
-          setActiveConversationId(nextId);
-        } else {
+        setActiveConversationId(nextId);
+        if (!nextId) {
           setActiveConversation(null);
           setMessages([]);
         }
       } catch (error: any) {
-        if (!cancelled) {
-          setStatus(error?.message || "Failed to load messages.");
-        }
+        if (!cancelled) setStatus(error?.message || "Failed to load messages.");
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     };
 
@@ -133,18 +177,11 @@ export default function MessagesPage() {
         setActiveConversation(full.conversation);
         setMessages(full.messages);
         await markConversationRead(activeConversationId);
-        setInbox((prev) => {
-          const next = prev.map((item) => (item.id === activeConversationId ? full.conversation ?? item : item));
-          return next.sort((a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || ""));
-        });
+        setInbox((prev) => prev.map((item) => (item.id === activeConversationId ? full.conversation ?? item : item)).sort(sortByLatest));
       } catch (error: any) {
-        if (!cancelled) {
-          setStatus(error?.message || "Failed to open conversation.");
-        }
+        if (!cancelled) setStatus(error?.message || "Failed to open conversation.");
       } finally {
-        if (!cancelled) {
-          setBusy(false);
-        }
+        if (!cancelled) setBusy(false);
       }
     };
 
@@ -155,7 +192,7 @@ export default function MessagesPage() {
     };
   }, [activeConversationId, authLoading, user]);
 
-  const openConversation = async (conversationId: number) => {
+  const openConversation = (conversationId: number) => {
     setStatus(null);
     setActiveConversationId(conversationId);
     navigateToConversation(conversationId);
@@ -169,10 +206,7 @@ export default function MessagesPage() {
       setActiveConversation(result.conversation);
       setMessages((prev) => [...prev, result.message]);
       setDraft("");
-      setInbox((prev) => {
-        const next = prev.map((item) => (item.id === result.conversation.id ? result.conversation : item));
-        return next.sort((a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || ""));
-      });
+      setInbox((prev) => prev.map((item) => (item.id === result.conversation.id ? result.conversation : item)).sort(sortByLatest));
     } catch (error: any) {
       setStatus(error?.message || "Failed to send message.");
     } finally {
@@ -190,28 +224,38 @@ export default function MessagesPage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between rounded-3xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
-          <button
-            type="button"
-            onClick={() => navigateBackOrPath("/")}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-100"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-400">Messages</p>
-          <button
-            type="button"
-            onClick={navigateToMessages}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-          >
-            Inbox
-          </button>
-        </div>
+      <div className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between rounded-3xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+            <button
+              type="button"
+              onClick={() => navigateBackOrPath("/")}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </button>
+            <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-400">Messages</p>
+            <button
+              type="button"
+              onClick={navigateToMessages}
+              className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+            >
+              Inbox
+            </button>
+          </div>
 
+          <div className="mt-3 flex items-center gap-2 rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm">
+            <InboxTab label="All" count={inboxCounts.all} active={filter === "all"} onClick={() => setFilter("all")} />
+            <InboxTab label="Unread" count={inboxCounts.unread} active={filter === "unread"} onClick={() => setFilter("unread")} />
+            <InboxTab label="Read" count={inboxCounts.read} active={filter === "read"} onClick={() => setFilter("read")} />
+          </div>
+        </div>
+      </div>
+
+      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {status ? (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{status}</div>
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{status}</div>
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
@@ -221,18 +265,22 @@ export default function MessagesPage() {
               <p className="mt-1 text-sm text-zinc-600">Text only for now. Attachments are coming soon.</p>
             </div>
             <div className="space-y-3">
-              {inbox.length ? (
-                inbox.map((convo) => (
+              {filteredInbox.length ? (
+                filteredInbox.map((convo) => (
                   <ConversationRow
                     key={convo.id}
                     convo={convo}
                     active={convo.id === activeConversationId}
-                    onClick={() => void openConversation(convo.id)}
+                    onClick={() => openConversation(convo.id)}
                   />
                 ))
               ) : (
                 <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500">
-                  No messages yet. Open a listing and tap Message in app to start.
+                  {filter === "unread"
+                    ? "No unread messages right now."
+                    : filter === "read"
+                      ? "No read conversations yet."
+                      : "No messages yet. Open a listing and tap Message in app to start."}
                 </div>
               )}
             </div>
@@ -241,7 +289,7 @@ export default function MessagesPage() {
           <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
             {activeConversation ? (
               <div className="flex min-h-[70vh] flex-col">
-                <div className="border-b border-zinc-200 p-4 sm:p-5">
+                <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{activeConversation.listing.university}</p>
@@ -251,7 +299,7 @@ export default function MessagesPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 space-y-3 overflow-y-auto p-4 sm:p-5">
+                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
                   {messages.length ? (
                     messages.map((msg) => (
                       <div key={msg.id} className={`flex ${msg.sender_uid === user?.uid ? "justify-end" : "justify-start"}`}>
@@ -262,11 +310,11 @@ export default function MessagesPage() {
                       </div>
                     ))
                   ) : (
-                    <div className="flex h-full items-center justify-center text-sm text-zinc-500">No messages in this thread yet.</div>
+                    <div className="flex min-h-[280px] items-center justify-center text-sm text-zinc-500">No messages in this thread yet.</div>
                   )}
                 </div>
 
-                <div className="border-t border-zinc-200 p-4 sm:p-5">
+                <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
                   <div className="flex items-end gap-3">
                     <button
                       type="button"
@@ -304,7 +352,7 @@ export default function MessagesPage() {
             )}
           </section>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
