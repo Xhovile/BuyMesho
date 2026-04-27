@@ -143,12 +143,14 @@ export default function MessagesPage() {
           return;
         }
 
-        const nextId = activeConversationId ?? items[0]?.id ?? null;
+        const nextId = activeConversationId ?? null;
+
         setActiveConversationId(nextId);
+
         if (!nextId) {
           setActiveConversation(null);
           setMessages([]);
-        }
+        } 
       } catch (error: any) {
         if (!cancelled) setStatus(error?.message || "Failed to load messages.");
       } finally {
