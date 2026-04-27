@@ -11,6 +11,7 @@ export type AppRoute =
   | "report"
   | "seller"
   | "listing_details"
+  | "messages"
   | "create"
   | "edit"
   | "login"
@@ -39,6 +40,7 @@ export const SAFETY_PATH = "/safety";
 export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
 export const LISTING_PATH = "/listing";
+export const MESSAGES_PATH = "/messages";
 export const CREATE_PATH = "/create";
 export const EDIT_PATH = "/edit";
 export const LOGIN_PATH = "/login";
@@ -207,6 +209,10 @@ export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): AppRoute => {
   const params = new URLSearchParams(location.search);
+
+  if (location.pathname === MESSAGES_PATH) {
+    return "messages";
+  }
 
   if (location.pathname === LISTING_PATH && params.has("listing")) {
     return "listing_details";
