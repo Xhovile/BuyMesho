@@ -287,72 +287,101 @@ export default function MessagesPage() {
               )}
             </div>
           </aside>
+{activeConversation ? (
+  
+  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+    <div className="flex min-h-[70vh] flex-col">
 
-          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-            {activeConversation ? (
-              <div className="flex min-h-[70vh] flex-col">
-                <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">{activeConversation.listing.university}</p>
-                      <h1 className="mt-1 text-xl font-black text-zinc-900">{activeConversation.listing.name}</h1>
-                      <p className="text-sm text-zinc-600">MK {Number(activeConversation.listing.price).toLocaleString()} · {activeConversation.seller.business_name}</p>
-                    </div>
-                  </div>
-                </div>
+      <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+            {activeConversation.listing.university}
+          </p>
 
-                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
-                  {messages.length ? (
-                    messages.map((msg) => (
-                      <div key={msg.id} className={`flex ${msg.sender_uid === user?.uid ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm shadow-sm ${msg.sender_uid === user?.uid ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-900"}`}>
-                          <p>{msg.body}</p>
-                          <p className={`mt-2 text-[11px] ${msg.sender_uid === user?.uid ? "text-zinc-300" : "text-zinc-500"}`}>{timeLabel(msg.created_at)}</p>
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="flex min-h-[280px] items-center justify-center text-sm text-zinc-500">No messages in this thread yet.</div>
-                  )}
-                </div>
+          <h1 className="mt-1 text-xl font-black text-zinc-900">
+            {activeConversation.listing.name}
+          </h1>
 
-                <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
-                  <div className="flex items-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => window.alert("Attachments are coming soon. Text only for now.")}
-                      className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
-                      aria-label="Attachments coming soon"
-                    >
-                      +
-                    </button>
-                    <textarea
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      placeholder="Type your message..."
-                      className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400"
-                    />
-                    <button
-                      type="button"
-                      disabled={busy || !draft.trim()}
-                      onClick={() => void handleSend()}
-                      className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex min-h-[70vh] items-center justify-center p-8 text-center">
-                <div>
-                  <MessageCircle className="mx-auto h-12 w-12 text-zinc-300" />
-                  <h2 className="mt-4 text-xl font-black text-zinc-900">Pick a conversation</h2>
-                  <p className="mt-2 text-sm text-zinc-500">Open a thread from the inbox or start one from a listing.</p>
-                </div>
-              </div>
-            )}
-          </section>
+          <p className="text-sm text-zinc-600">
+            MK {Number(activeConversation.listing.price).toLocaleString()}
+            {" · "}
+            {activeConversation.seller.business_name}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${
+              msg.sender_uid === user?.uid
+                ? "justify-end"
+                : "justify-start"
+            }`}
+          >
+            <div
+              className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm shadow-sm ${
+                msg.sender_uid === user?.uid
+                  ? "bg-zinc-900 text-white"
+                  : "bg-zinc-100 text-zinc-900"
+              }`}
+            >
+              <p>{msg.body}</p>
+
+              <p
+                className={`mt-2 text-[11px] ${
+                  msg.sender_uid === user?.uid
+                    ? "text-zinc-300"
+                    : "text-zinc-500"
+                }`}
+              >
+                {timeLabel(msg.created_at)}
+              </p>
+            </div>
+          </div>
+        ))}
+
+      </div>
+
+      <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
+
+        <div className="flex items-end gap-3">
+
+          <button
+            type="button"
+            onClick={() =>
+              window.alert(
+                "Attachments are coming soon. Text only for now."
+              )
+            }
+            className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+          >
+            +
+          </button>
+
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Type your message..."
+            className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400"
+          />
+
+          <button
+            type="button"
+            disabled={busy || !draft.trim()}
+            onClick={() => void handleSend()}
+            className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+          >
+            Send
+          </button>
+
+         </div>
+        </div>
+      </div>
+    </section>
+      ) : null}
         </div>
       </main>
     </div>
