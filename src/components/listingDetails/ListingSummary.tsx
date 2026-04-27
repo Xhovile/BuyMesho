@@ -13,6 +13,7 @@ export default function ListingSummary({
   seller,
   availableQuantity,
   isLoggedIn,
+  currentUserUid,
   onMessageSeller,
   onWhatsAppSeller,
   onShare,
@@ -21,10 +22,13 @@ export default function ListingSummary({
   seller: SellerProfile | null;
   availableQuantity: number;
   isLoggedIn: boolean;
+  currentUserUid?: string | null;
   onMessageSeller: () => void;
   onWhatsAppSeller: () => void;
   onShare: () => void;
 }) {
+  const isOwner = !!currentUserUid && currentUserUid === listing.seller_uid;
+
   return (
     <aside>
       <div className="space-y-4 lg:space-y-5">
@@ -48,14 +52,20 @@ export default function ListingSummary({
         </div>
 
         <div className="grid gap-3 border-t border-zinc-200 pt-4">
-          <button
-            type="button"
-            onClick={onMessageSeller}
-            className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
-          >
-            <MessageCircle className="h-4 w-4 shrink-0" />
-            <span className="truncate">{isLoggedIn ? "Message in app" : "Log in to message"}</span>
-          </button>
+          {!isOwner ? (
+            <button
+              type="button"
+              onClick={onMessageSeller}
+              className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              <span className="truncate">{isLoggedIn ? "Message in app" : "Log in to message"}</span>
+            </button>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500">
+              This is your listing.
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <button
               type="button"
