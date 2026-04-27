@@ -8,12 +8,18 @@ type ListingReviewFeedProps = {
   listingId: number;
   compact?: boolean;
   initialSummary?: ListingReviewSummary | null;
+  refreshKey?: number;
 };
 
 const INITIAL_LIMIT = 3;
 const PAGE_SIZE = 5;
 
-export default function ListingReviewFeed({ listingId, compact = false, initialSummary = null }: ListingReviewFeedProps) {
+export default function ListingReviewFeed({
+  listingId,
+  compact = false,
+  initialSummary = null,
+  refreshKey = 0,
+}: ListingReviewFeedProps) {
   const [items, setItems] = useState<ListingReview[]>([]);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
   const [offset, setOffset] = useState(INITIAL_LIMIT);
@@ -53,7 +59,7 @@ export default function ListingReviewFeed({ listingId, compact = false, initialS
 
   useEffect(() => {
     void loadReviews(0, true);
-  }, [loadReviews]);
+  }, [loadReviews, refreshKey]);
 
   const handleLoadMore = () => {
     void loadReviews(offset, false);
