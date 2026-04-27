@@ -32,11 +32,11 @@ function SpecAccordion({
       </summary>
 
       <div className="border-t border-zinc-200 px-5 py-5 sm:px-6">
-        <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {group.rows.map((row) => (
-            <div key={row.key} className="space-y-1 border-b border-zinc-100 pb-3 last:border-b-0 sm:last:border-b sm:pb-0">
+            <div key={row.key} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 sm:px-4">
               <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">{row.label}</dt>
-              <dd className="text-sm font-semibold text-zinc-900">{row.value}</dd>
+              <dd className="mt-1 text-sm font-semibold text-zinc-900">{row.value}</dd>
             </div>
           ))}
         </dl>
