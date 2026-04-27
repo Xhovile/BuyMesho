@@ -52,10 +52,10 @@
 }
 
 .progress-outer {
-  height: 50px;
+  height: 36px;
   background: #ffffff;
   border-radius: 25px;
-  padding: 8px;
+  padding: 5px;
   display: flex;
   align-items: center;
   overflow: hidden;
