@@ -133,4 +133,9 @@ export interface RatingSummary {
   averageRating: number;
   ratingCount: number;
   myRating: number | null;
+  distribution?: Array<{
+    stars: number;
+    count: number;
+    percentage: number;
+  }>;
 }

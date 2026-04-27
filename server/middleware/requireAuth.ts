@@ -49,3 +49,29 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
+
+export async function attachOptionalAuth(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const token = getBearerToken(req);
+    if (!token) return next();
+
+    const decoded = await verifyIdToken(token, true);
+    const enrollment = getTotpEnrollment(decoded.uid);
+    const totpEnabled = enrollment?.status === "enabled";
+    const totpSessionToken = getTotpSessionToken(req);
+    const totpVerified = !totpEnabled || (!!totpSessionToken && verifyTotpVerifiedSession(decoded.uid, totpSessionToken));
+
+    if (!totpVerified) return next();
+
+    req.user = {
+      uid: decoded.uid,
+      email: decoded.email ?? null,
+      email_verified: (decoded as any).email_verified === true,
+      is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
+    };
+  } catch {
+    // Ignore optional auth failures and continue unauthenticated.
+  }
+
+  return next();
+}

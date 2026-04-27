@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, Loader2, ShieldCheck, Star } from "lucide-react";
-import type { Listing } from "./types";
+import { ChevronLeft, Loader2, ShieldCheck } from "lucide-react";
+import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
+import SellerRatingCard from "./components/ratings/SellerRatingCard";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -12,17 +13,6 @@ import {
   navigateToPath,
   navigateBackOrPath,
 } from "./lib/appNavigation";
-
-type SellerRatingSummary = {
-  averageRating: number;
-  ratingCount: number;
-  myRating: number | null;
-  distribution?: Array<{
-    stars: number;
-    count: number;
-    percentage: number;
-  }>;
-};
 
 type SellerProfile = {
   uid?: string;
@@ -48,18 +38,10 @@ export default function SellerProfilePage() {
   const [sellerUid, setSellerUid] = useState(() => getSellerUidFromUrl() || "");
   const [profile, setProfile] = useState<SellerProfile | null>(null);
   const [listings, setListings] = useState<Listing[]>([]);
-  const [ratingSummary, setRatingSummary] = useState<SellerRatingSummary | null>(null);
+  const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
-
-  const ratingTierLabel = (averageRating: number) => {
-    if (averageRating >= 4.5) return "Excellent";
-    if (averageRating >= 4) return "Very good";
-    if (averageRating >= 3) return "Good";
-    if (averageRating >= 2) return "Fair";
-    return "Needs improvement";
-  };
 
   useEffect(() => {
     const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
@@ -121,33 +103,33 @@ export default function SellerProfilePage() {
     void loadSeller();
   }, [sellerUid, firebaseUser?.uid]);
 
-  useEffect(() => {
-    const loadRatingSummary = async () => {
-      if (!sellerUid || !firebaseUser) return;
-      setRatingLoading(true);
-      try {
-        const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
-        setRatingSummary(summary);
-      } catch (error) {
-        console.error("Failed to load rating summary", error);
-      } finally {
-        setRatingLoading(false);
-      }
-    };
+  const refreshRatingSummary = async () => {
+    if (!sellerUid) return;
+    setRatingLoading(true);
+    try {
+      const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+      setRatingSummary(summary);
+    } catch (error) {
+      console.error("Failed to load rating summary", error);
+    } finally {
+      setRatingLoading(false);
+    }
+  };
 
-    void loadRatingSummary();
-  }, [sellerUid, firebaseUser]);
+  useEffect(() => {
+    void refreshRatingSummary();
+  }, [sellerUid, firebaseUser?.uid]);
 
   const handleRateSeller = async (stars: number) => {
     if (!sellerUid || !firebaseUser) return;
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
     setRatingSubmitting(true);
     try {
-      const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
+      await apiFetch(`/api/users/${sellerUid}/rating`, {
         method: "POST",
         body: JSON.stringify({ stars }),
       });
-      setRatingSummary(summary);
+      await refreshRatingSummary();
     } catch (error) {
       console.error("Failed to save seller rating", error);
     } finally {
@@ -159,10 +141,10 @@ export default function SellerProfilePage() {
     if (!sellerUid || !firebaseUser) return;
     setRatingSubmitting(true);
     try {
-      const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
+      await apiFetch(`/api/users/${sellerUid}/rating`, {
         method: "DELETE",
       });
-      setRatingSummary(summary);
+      await refreshRatingSummary();
     } catch (error) {
       console.error("Failed to remove seller rating", error);
     } finally {
@@ -298,92 +280,15 @@ export default function SellerProfilePage() {
             </section>
 
             <section className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-6">
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Rating</p>
-                <div className="mt-3 flex items-center gap-3 flex-wrap">
-                  <div className="text-4xl font-black tracking-tight text-zinc-900">
-                    {ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
-                    <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-                    {ratingSummary
-                      ? `${ratingSummary.ratingCount} rating${ratingSummary.ratingCount === 1 ? "" : "s"}`
-                      : "No ratings yet"}
-                  </div>
-                  {ratingSummary && ratingSummary.ratingCount > 0 ? (
-                    <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-[0.1em]">
-                      {ratingTierLabel(ratingSummary.averageRating)}
-                    </span>
-                  ) : null}
-                </div>
-
-                {ratingLoading ? (
-                  <p className="mt-4 text-sm text-zinc-500">Loading rating...</p>
-                ) : ratingSummary?.distribution?.length ? (
-                  <div className="mt-5 space-y-2">
-                    {ratingSummary.distribution.map((row) => (
-                      <div
-                        key={row.stars}
-                        className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2"
-                      >
-                        <span className="text-xs font-bold text-zinc-600">{row.stars} ★</span>
-                        <div className="h-2 rounded-full bg-zinc-200 overflow-hidden">
-                          <div className="h-full bg-amber-400" style={{ width: `${row.percentage}%` }} />
-                        </div>
-                        <span className="text-xs text-zinc-500 text-right">{row.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="mt-4 text-sm text-zinc-500">No ratings yet.</p>
-                )}
-
-                <div className="mt-5 border-t border-zinc-200 pt-4">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Your rating</p>
-                  {!firebaseUser ? (
-                    <p className="mt-2 text-sm text-zinc-500">Log in to leave a seller rating.</p>
-                  ) : firebaseUser.uid === profile.uid ? (
-                    <p className="mt-2 text-sm text-zinc-500">You cannot rate your own seller account.</p>
-                  ) : (
-                    <>
-                      <div className="mt-3 flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => {
-                          const active = (ratingSummary?.myRating ?? 0) >= star;
-                          return (
-                            <button
-                              key={star}
-                              type="button"
-                              onClick={() => void handleRateSeller(star)}
-                              disabled={ratingSubmitting}
-                              className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${
-                                ratingSubmitting ? "opacity-60" : "hover:text-amber-500"
-                              }`}
-                              aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
-                            >
-                              <Star className={`w-5 h-5 ${active ? "fill-amber-400" : ""}`} />
-                            </button>
-                          );
-                        })}
-                      </div>
-                      {ratingSummary?.myRating ? (
-                        <div className="mt-3 flex items-center justify-between gap-3">
-                          <p className="text-sm text-zinc-600">Your rating: {ratingSummary.myRating}/5</p>
-                          <button
-                            type="button"
-                            onClick={() => void handleRemoveRating()}
-                            disabled={ratingSubmitting}
-                            className="text-xs font-bold text-zinc-600 hover:text-zinc-900 underline underline-offset-2 disabled:opacity-50"
-                          >
-                            Remove rating
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="mt-3 text-sm text-zinc-500">Select a star to rate this seller.</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+              <SellerRatingCard
+                ratingSummary={ratingSummary}
+                ratingLoading={ratingLoading}
+                ratingSubmitting={ratingSubmitting}
+                isAuthenticated={!!firebaseUser}
+                canRate={!!firebaseUser && firebaseUser.uid !== profile.uid}
+                onRate={handleRateSeller}
+                onRemoveRating={handleRemoveRating}
+              />
 
               <div className="p-0 sm:p-0">
                 <div className="flex items-center justify-between gap-4 mb-5">
