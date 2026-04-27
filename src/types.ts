@@ -139,3 +139,46 @@ export interface RatingSummary {
     percentage: number;
   }>;
 }
+
+export interface ListingReview {
+  id: number;
+  listing_id: number;
+  seller_uid: string;
+  reviewer_uid: string;
+  reviewer_name: string;
+  reviewer_email: string | null;
+  reviewer_avatar_url: string | null;
+  reviewer_badge: string | null;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  seller_reply: string | null;
+  seller_reply_at: string | null;
+  is_verified_purchase: boolean;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ListingReviewSummary {
+  averageRating: number;
+  ratingCount: number;
+  latestReviewAt: string | null;
+  distribution: Array<{
+    stars: number;
+    count: number;
+    percentage: number;
+  }>;
+}
+
+export interface ListingReviewFeedResponse {
+  summary: ListingReviewSummary;
+  items: ListingReview[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+  };
+  viewerReview: ListingReview | null;
+  canReview: boolean;
+}
