@@ -38,11 +38,7 @@ export default function ListingExploreBlock({
 
   return (
     <div className="space-y-6">
-      <SectionHeading
-        eyebrow="Explore"
-        title="Discover more options"
-        description="Related listings stay compact and secondary so they support comparison without turning the page into a cluttered marketplace grid."
-      />
+      <SectionHeading title="Related" />
       {renderRelated("Same campus", sameCampusListings, "No same-campus listings are available right now.")}
       {renderRelated("Same category", sameCategoryListings, "No same-category listings are available right now.")}
       {renderRelated("Seller’s other listings", sellerOtherListings, "This seller does not have any other visible listings yet.")}

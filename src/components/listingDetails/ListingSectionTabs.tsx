@@ -5,7 +5,7 @@ type SectionKey = "details" | "explore" | "reviews";
 
 const SECTION_LABELS: Record<SectionKey, string> = {
   details: "Details",
-  explore: "Explore",
+  explore: "Related",
   reviews: "Reviews",
 };
 
@@ -61,7 +61,7 @@ export default function ListingSectionTabs({
       <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 overflow-x-auto">
         <div className="flex gap-6">
           <TabButton active={displaySection === "details"} onClick={() => onNavigate("details")}>Details</TabButton>
-          <TabButton active={displaySection === "explore"} onClick={() => onNavigate("explore")}>Explore</TabButton>
+          <TabButton active={displaySection === "explore"} onClick={() => onNavigate("explore")}>Related</TabButton>
           <TabButton active={displaySection === "reviews"} onClick={() => onNavigate("reviews")}>Reviews</TabButton>
         </div>
 

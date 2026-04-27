@@ -488,15 +488,10 @@ export default function ListingDetailsPage() {
             </section>
 
             <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
-              <ListingReviewsBlock
-                sellerUid={listing.seller_uid}
-                viewerUid={firebaseUser?.uid}
-                ratingSummary={ratingSummary}
-                ratingLoading={ratingLoading}
-                ratingSubmitting={ratingSubmitting}
-                onRateSeller={handleRateSeller}
-                onRemoveRating={handleRemoveRating}
-              />
+              <div className="space-y-6">
+                <ListingTrustBlock listing={listing} seller={seller} />
+                <ListingReviewsBlock ratingSummary={ratingSummary} />
+              </div>
             </section>
           </>
         )}
