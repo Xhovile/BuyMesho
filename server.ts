@@ -8,7 +8,7 @@ import { fileURLToPath } from "url";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
-import { requireAuth } from "./server/middleware/requireAuth.js";
+import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { CATEGORIES } from "./src/constants.js";
@@ -1603,9 +1603,9 @@ app.get("/api/users/:uid/listings", (req, res) => {
   }
 });
 
-app.get("/api/users/:uid/rating-summary", requireAuth, (req, res) => {
+app.get("/api/users/:uid/rating-summary", attachOptionalAuth, (req, res) => {
   const { uid } = req.params;
-  const rater_uid = req.user!.uid;
+  const rater_uid = req.user?.uid ?? null;
 
   try {
     const seller = db
@@ -1626,13 +1626,15 @@ app.get("/api/users/:uid/rating-summary", requireAuth, (req, res) => {
       `)
       .get(uid) as { ratingCount: number; averageRating: number | null };
 
-    const mine = db
-      .prepare(`
-        SELECT stars
-        FROM seller_ratings
-        WHERE seller_uid = ? AND rater_uid = ?
-      `)
-      .get(uid, rater_uid) as { stars: number } | undefined;
+    const mine = rater_uid
+      ? (db
+          .prepare(`
+            SELECT stars
+            FROM seller_ratings
+            WHERE seller_uid = ? AND rater_uid = ?
+          `)
+          .get(uid, rater_uid) as { stars: number } | undefined)
+      : undefined;
 
     const rows = db
       .prepare(

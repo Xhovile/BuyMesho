@@ -60,6 +60,8 @@ export default function ListingDetailsPage() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
   const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -142,6 +144,11 @@ export default function ListingDetailsPage() {
 
     void loadListing();
   }, [listingId]);
+
+  useEffect(() => {
+    if (!listing?.seller_uid) return;
+    void refreshRatingSummary(listing.seller_uid);
+  }, [listing?.seller_uid, firebaseUser?.uid]);
 
   const galleryImages = useMemo(() => {
     if (!listing) return [];
@@ -353,6 +360,51 @@ export default function ListingDetailsPage() {
     window.open(`https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(`Hi, I'm interested in your \"${listing.name}\" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, currentGalleryIndex)}`)}`, "_blank", "noopener,noreferrer");
   };
 
+  const refreshRatingSummary = async (sellerUid: string) => {
+    setRatingLoading(true);
+    try {
+      const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+      setRatingSummary(summary);
+    } catch (error) {
+      console.error("Failed to load rating summary", error);
+      setRatingSummary(null);
+    } finally {
+      setRatingLoading(false);
+    }
+  };
+
+  const handleRateSeller = async (stars: number) => {
+    if (!listing?.seller_uid || !firebaseUser) return;
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
+    setRatingSubmitting(true);
+    try {
+      await apiFetch(`/api/users/${listing.seller_uid}/rating`, {
+        method: "POST",
+        body: JSON.stringify({ stars }),
+      });
+      await refreshRatingSummary(listing.seller_uid);
+    } catch (error) {
+      console.error("Failed to save seller rating", error);
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  const handleRemoveRating = async () => {
+    if (!listing?.seller_uid || !firebaseUser) return;
+    setRatingSubmitting(true);
+    try {
+      await apiFetch(`/api/users/${listing.seller_uid}/rating`, {
+        method: "DELETE",
+      });
+      await refreshRatingSummary(listing.seller_uid);
+    } catch (error) {
+      console.error("Failed to remove seller rating", error);
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <ListingHeaderBar />
@@ -437,7 +489,15 @@ export default function ListingDetailsPage() {
             </section>
 
             <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
-              <ListingReviewsBlock ratingSummary={ratingSummary} />
+              <ListingReviewsBlock
+                sellerUid={listing.seller_uid}
+                viewerUid={firebaseUser?.uid}
+                ratingSummary={ratingSummary}
+                ratingLoading={ratingLoading}
+                ratingSubmitting={ratingSubmitting}
+                onRateSeller={handleRateSeller}
+                onRemoveRating={handleRemoveRating}
+              />
             </section>
           </>
         )}
