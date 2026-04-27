@@ -2,6 +2,7 @@ import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { revokeTotpVerifiedSessions } from "../../src/server/totpStore.js";
 import { registerReviewsRoutes } from "../routes/reviewsRoutes.js";
+import { registerMessagesRoutes } from "../routes/messagesRoutes.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -67,6 +68,7 @@ export function registerSessionRoutes(app: Express) {
 
   app.post("/api/auth/revoke-sessions", verifyBearerIdentity, revokeSessionsHandler);
   registerReviewsRoutes(app);
+  registerMessagesRoutes(app);
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
