@@ -62,8 +62,9 @@ export default function MessagesPage() {
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
+  const [pendingListingId, setPendingListingId] = useState<number | null>(() => getListingIdFromMessagesUrl());
 
-  const listingIdFromUrl = useMemo(() => getListingIdFromMessagesUrl(), []);
+  const listingIdFromUrl = useMemo(() => pendingListingId, [pendingListingId]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -81,6 +82,7 @@ export default function MessagesPage() {
 
         if (listingIdFromUrl) {
           const started = await startConversationFromListing(listingIdFromUrl);
+          setPendingListingId(null);
           navigateToConversation(started.id);
           const full = await fetchConversation(started.id);
           setActiveConversationId(started.id);
@@ -169,7 +171,7 @@ export default function MessagesPage() {
           <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-400">Messages</p>
           <button
             type="button"
-            onClick={() => navigateToPath("/messages")}
+            onClick={navigateToMessages}
             className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
           >
             Inbox
