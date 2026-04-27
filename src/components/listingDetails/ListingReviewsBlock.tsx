@@ -1,11 +1,16 @@
 import { ShieldCheck, Star } from "lucide-react";
-import type { RatingSummary } from "../../types";
+import type { Listing, RatingSummary } from "../../types";
 import { SectionHeading, StatTile } from "./ListingDetailsShared";
+import ListingTrustBlock, { type SellerProfile } from "./ListingTrustBlock";
 
 export default function ListingReviewsBlock({
   ratingSummary,
+  listing,
+  seller,
 }: {
   ratingSummary: RatingSummary | null;
+  listing: Listing;
+  seller: SellerProfile | null;
 }) {
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
@@ -14,6 +19,8 @@ export default function ListingReviewsBlock({
         title="Trust and feedback"
         description="This section stays light until written buyer reviews are available. It should not repeat listing metrics already shown elsewhere on the page."
       />
+
+      <ListingTrustBlock listing={listing} seller={seller} />
 
       <div className="grid gap-0 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile

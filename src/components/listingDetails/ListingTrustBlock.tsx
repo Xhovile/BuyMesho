@@ -3,7 +3,7 @@ import type { Listing } from "../../types";
 import { navigateToSellerProfile } from "../../lib/appNavigation";
 import { formatDate } from "./ListingDetailsShared";
 
-type SellerProfile = {
+export type SellerProfile = {
   uid?: string;
   business_name?: string;
   business_logo?: string;

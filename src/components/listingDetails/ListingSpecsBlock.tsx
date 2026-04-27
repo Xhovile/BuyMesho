@@ -35,7 +35,7 @@ function SpecAccordion({
         <dl className="grid gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-3">
           {group.rows.map((row) => (
             <div key={row.key} className="space-y-1 border-b border-zinc-100 pb-3 last:border-b-0 sm:last:border-b sm:pb-0">
-              <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">{row.label}</dt>
+              <dt className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">{row.label}</dt>
               <dd className="text-sm font-semibold text-zinc-900">{row.value}</dd>
             </div>
           ))}
@@ -51,9 +51,11 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
       <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">Product details</h2>
 
       {groups.length ? (
-        <div className="space-y-4">
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {groups.map((group, index) => (
-            <SpecAccordion key={group.title} group={group} defaultOpen={index === 0} />
+            <div key={group.title} className="lg:self-start">
+              <SpecAccordion group={group} defaultOpen={index === 0} />
+            </div>
           ))}
         </div>
       ) : (
