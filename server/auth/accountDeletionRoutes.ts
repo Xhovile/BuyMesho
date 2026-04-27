@@ -145,6 +145,7 @@ function cleanupUserRecords(userId: string) {
     ).run(uid, uid);
 
     db.prepare(`DELETE FROM seller_ratings WHERE seller_uid = ? OR rater_uid = ?`).run(uid, uid);
+    db.prepare(`DELETE FROM listing_reviews WHERE seller_uid = ? OR reviewer_uid = ?`).run(uid, uid);
     db.prepare(`DELETE FROM seller_applications WHERE applicant_uid = ?`).run(uid);
     db.prepare(`DELETE FROM listings WHERE seller_uid = ?`).run(uid);
     db.prepare(`DELETE FROM sellers WHERE uid = ?`).run(uid);
