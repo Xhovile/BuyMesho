@@ -1,4 +1,4 @@
-import { MessageCircle, Share2, ShieldCheck } from "lucide-react";
+import { ExternalLink, MessageCircle, Share2, ShieldCheck } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
 
@@ -13,14 +13,16 @@ export default function ListingSummary({
   seller,
   availableQuantity,
   isLoggedIn,
-  onContactSeller,
+  onMessageSeller,
+  onWhatsAppSeller,
   onShare,
 }: {
   listing: Listing;
   seller: SellerProfile | null;
   availableQuantity: number;
   isLoggedIn: boolean;
-  onContactSeller: () => void;
+  onMessageSeller: () => void;
+  onWhatsAppSeller: () => void;
   onShare: () => void;
 }) {
   return (
@@ -45,14 +47,22 @@ export default function ListingSummary({
           ) : null}
         </div>
 
-        <div className="grid gap-3 border-t border-zinc-200 pt-4 sm:grid-cols-2">
+        <div className="grid gap-3 border-t border-zinc-200 pt-4">
           <button
             type="button"
-            onClick={onContactSeller}
+            onClick={onMessageSeller}
             className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
           >
             <MessageCircle className="h-4 w-4 shrink-0" />
-            <span className="truncate">{isLoggedIn ? "Contact seller" : "Log in to contact"}</span>
+            <span className="truncate">{isLoggedIn ? "Message in app" : "Log in to message"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onWhatsAppSeller}
+            className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50"
+          >
+            <ExternalLink className="h-4 w-4 shrink-0" />
+            <span className="truncate">WhatsApp</span>
           </button>
           <button
             type="button"
