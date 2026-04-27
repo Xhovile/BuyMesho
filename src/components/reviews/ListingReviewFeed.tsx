@@ -9,6 +9,8 @@ type ListingReviewFeedProps = {
   compact?: boolean;
   initialSummary?: ListingReviewSummary | null;
   refreshKey?: number;
+  canReply?: boolean;
+  onReviewChanged?: (review: ListingReview) => void | Promise<void>;
 };
 
 const INITIAL_LIMIT = 3;
@@ -19,6 +21,8 @@ export default function ListingReviewFeed({
   compact = false,
   initialSummary = null,
   refreshKey = 0,
+  canReply = false,
+  onReviewChanged,
 }: ListingReviewFeedProps) {
   const [items, setItems] = useState<ListingReview[]>([]);
   const [summary, setSummary] = useState<ListingReviewSummary | null>(initialSummary);
@@ -65,6 +69,11 @@ export default function ListingReviewFeed({
     void loadReviews(offset, false);
   };
 
+  const handleReviewChanged = async (review: ListingReview) => {
+    await onReviewChanged?.(review);
+    void loadReviews(0, true);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
@@ -81,7 +90,13 @@ export default function ListingReviewFeed({
       {items.length > 0 ? (
         <div className="space-y-4">
           {items.map((review) => (
-            <ListingReviewCard key={review.id} review={review} />
+            <ListingReviewCard
+              key={review.id}
+              review={review}
+              listingId={listingId}
+              canReply={canReply}
+              onReviewChanged={handleReviewChanged}
+            />
           ))}
         </div>
       ) : (
