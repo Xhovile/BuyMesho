@@ -65,6 +65,12 @@ export default function ListingReviewsBlock({
     await loadReviews();
   };
 
+  const handleReviewChanged = async (review: ListingReview) => {
+    setViewerReview(review.reviewer_uid === firebaseUser?.uid ? review : viewerReview);
+    setRefreshKey((current) => current + 1);
+    await loadReviews();
+  };
+
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
       <SectionHeading
@@ -90,7 +96,13 @@ export default function ListingReviewsBlock({
             existingReview={viewerReview}
             onSaved={handleSaved}
           />
-          <ListingReviewFeed listingId={listing.id} initialSummary={summary} refreshKey={refreshKey} />
+          <ListingReviewFeed
+            listingId={listing.id}
+            initialSummary={summary}
+            refreshKey={refreshKey}
+            canReply={firebaseUser?.uid === sellerUid || firebaseUser?.uid === listing.seller_uid}
+            onReviewChanged={handleReviewChanged}
+          />
         </div>
       )}
     </div>
