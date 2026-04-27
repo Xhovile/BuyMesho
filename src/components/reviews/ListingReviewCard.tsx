@@ -1,4 +1,4 @@
-import { MessageSquareReply, ShieldAlert, Star } from "lucide-react";
+import { Edit3, MessageSquareReply, ShieldAlert, Star } from "lucide-react";
 import type { ListingReview } from "../../types";
 import { formatDate } from "../listingDetails/ListingDetailsShared";
 import ReviewActionsMenu from "./ReviewActionsMenu";
@@ -9,10 +9,19 @@ type ListingReviewCardProps = {
   review: ListingReview;
   listingId: number;
   canReply?: boolean;
+  isOwnReview?: boolean;
+  onEdit?: () => void;
   onReviewChanged?: (review: ListingReview) => void | Promise<void>;
 };
 
-export default function ListingReviewCard({ review, listingId, canReply = false, onReviewChanged }: ListingReviewCardProps) {
+export default function ListingReviewCard({
+  review,
+  listingId,
+  canReply = false,
+  isOwnReview = false,
+  onEdit,
+  onReviewChanged,
+}: ListingReviewCardProps) {
   const badge = review.reviewer_badge ?? (review.is_verified_purchase ? "Verified buyer" : null);
 
   return (
@@ -26,6 +35,11 @@ export default function ListingReviewCard({ review, listingId, canReply = false,
                 {badge}
               </span>
             ) : null}
+            {isOwnReview ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-950 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
+                Your review
+              </span>
+            ) : null}
           </div>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">{formatDate(review.created_at)}</p>
         </div>
@@ -35,7 +49,18 @@ export default function ListingReviewCard({ review, listingId, canReply = false,
             <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
             {review.rating.toFixed(1)}
           </div>
-          <ReviewActionsMenu canReport={false} />
+          {isOwnReview && onEdit ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+            >
+              <Edit3 className="h-4 w-4" />
+              Edit
+            </button>
+          ) : (
+            <ReviewActionsMenu canReport={false} />
+          )}
         </div>
       </div>
 
@@ -56,7 +81,7 @@ export default function ListingReviewCard({ review, listingId, canReply = false,
         </div>
       ) : null}
 
-      {canReply ? <ReviewReplyComposer listingId={listingId} review={review} canReply={canReply} onSaved={onReviewChanged} /> : null}
+      {canReply && !isOwnReview ? <ReviewReplyComposer listingId={listingId} review={review} canReply={canReply} onSaved={onReviewChanged} /> : null}
 
       {!review.body ? (
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500">
