@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ChevronLeft,
-  House,
   Loader2,
   RefreshCw,
-  Search,
   ShieldCheck,
   X,
 } from "lucide-react";
@@ -12,6 +10,7 @@ import { apiFetch } from "./lib/api";
 import {
   EXPLORE_PATH,
   HOME_PATH,
+  navigateBackOrPath,
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
@@ -184,24 +183,14 @@ export default function AdminSellerApplicationsPage() {
             </div>
           </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigateToPath(HOME_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"
-            >
-              <House className="w-4 h-4" />
-              Home
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"
-            >
-              <Search className="w-4 h-4" />
-              Explore
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            className="px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2 inline-flex"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            Back
+          </button>
         </div>
       </header>
 
