@@ -3,6 +3,7 @@ import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { getAppRouteFromLocation, navigateToPath, type AppRoute, LOGIN_PATH, PROFILE_PATH, SETTINGS_PATH, VERIFY_EMAIL_PATH } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import loaderImage from "../photos/LoaderPic.png";
 
 const App = lazy(() => import("./App.new"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
@@ -33,6 +34,33 @@ const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
+
+function RouteLoader({ route }: { route: AppRoute }) {
+  const useBarLoader = route === "home" || route === "explore";
+
+  if (useBarLoader) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white px-4">
+        <div className="flex w-full max-w-xl flex-col items-center gap-6">
+          <img
+            src={loaderImage}
+            alt="BuyMesho loading"
+            className="h-auto w-full max-w-[280px] object-contain"
+          />
+          <div className="progress-outer w-3/4">
+            <div className="progress-inner" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-screen items-center justify-center bg-zinc-100/70">
+      <Loader2 className="h-10 w-10 animate-spin text-zinc-700" />
+    </div>
+  );
+}
 
 export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
@@ -106,7 +134,7 @@ export default function RootRouter() {
 
   return (
     <>
-      <Suspense fallback={<div className="flex h-screen items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>}>
+      <Suspense fallback={<RouteLoader route={route} />}>
         {route === "category" ? <CategoryPage /> :
         route === "explore" ? <App /> :
         route === "saved" ? <SavedPage /> :
