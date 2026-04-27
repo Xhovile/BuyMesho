@@ -3,8 +3,19 @@ import { ArrowLeft, Loader2, MessageCircle } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { navigateBackOrPath, navigateToLogin, navigateToPath } from "./lib/appNavigation";
-import { getConversationIdFromUrl, getListingIdFromMessagesUrl, navigateToConversation, navigateToMessages } from "./lib/messagesNavigation";
-import { fetchConversation, fetchInbox, markConversationRead, sendMessage, startConversationFromListing } from "./lib/messages";
+import {
+  getConversationIdFromUrl,
+  getListingIdFromMessagesUrl,
+  navigateToConversation,
+  navigateToMessages,
+} from "./lib/messagesNavigation";
+import {
+  fetchConversation,
+  fetchInbox,
+  markConversationRead,
+  sendMessage,
+  startConversationFromListing,
+} from "./lib/messages";
 
 type InboxFilter = "all" | "unread" | "read";
 
@@ -29,27 +40,41 @@ function ConversationRow({
   onClick: () => void;
 }) {
   const preview = convo.last_message_preview || "Start the conversation.";
-  const unread = convo.unread_count || 0;
+  const unread = Number(convo.unread_count || 0);
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full rounded-3xl border p-4 text-left transition-colors ${active ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 bg-white hover:bg-zinc-50"}`}
+      className={`w-full rounded-3xl border p-4 text-left transition-colors ${
+        active ? "border-zinc-900 bg-zinc-50" : "border-zinc-200 bg-white hover:bg-zinc-50"
+      }`}
     >
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white">
           <MessageCircle className="h-5 w-5" />
         </div>
+
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-zinc-900">{convo.listing.name}</p>
-              <p className="truncate text-xs font-semibold text-zinc-500">{convo.seller.business_name}</p>
+              <p className="truncate text-sm font-extrabold text-zinc-900">
+                {convo.listing.name}
+              </p>
+              <p className="truncate text-xs font-semibold text-zinc-500">
+                {convo.seller.business_name}
+              </p>
             </div>
-            <span className="shrink-0 text-[11px] font-semibold text-zinc-400">{timeLabel(convo.last_message_at)}</span>
+
+            <span className="shrink-0 text-[11px] font-semibold text-zinc-400">
+              {timeLabel(convo.last_message_at)}
+            </span>
           </div>
+
           <p className="mt-2 line-clamp-2 text-sm text-zinc-600">{preview}</p>
-          {unread > 0 ? (
+
+          <div className="mt-3 flex items-center justify-between gap-2">
+            {unread > 0 ? (
               <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
                 {unread} unread
               </span>
@@ -58,6 +83,7 @@ function ConversationRow({
                 Read
               </span>
             )}
+            <span className="text-[11px] font-semibold text-zinc-400">Open</span>
           </div>
         </div>
       </div>
@@ -86,7 +112,11 @@ function InboxTab({
     >
       <span className="inline-flex items-center justify-center gap-2">
         {label}
-        <span className={`rounded-full px-2 py-0.5 text-[11px] font-black ${active ? "bg-white/15 text-white" : "bg-zinc-200 text-zinc-700"}`}>
+        <span
+          className={`rounded-full px-2 py-0.5 text-[11px] font-black ${
+            active ? "bg-white/15 text-white" : "bg-zinc-200 text-zinc-700"
+          }`}
+        >
           {count}
         </span>
       </span>
@@ -96,18 +126,21 @@ function InboxTab({
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuthUser();
+
   const [loading, setLoading] = useState(true);
   const [inbox, setInbox] = useState<Conversation[]>([]);
-  const [activeConversationId, setActiveConversationId] = useState<number | null>(() => getConversationIdFromUrl());
+  const [activeConversationId, setActiveConversationId] = useState<number | null>(() =>
+    getConversationIdFromUrl()
+  );
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageThreadItem[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
-  const [pendingListingId, setPendingListingId] = useState<number | null>(() => getListingIdFromMessagesUrl());
+  const [pendingListingId, setPendingListingId] = useState<number | null>(() =>
+    getListingIdFromMessagesUrl()
+  );
   const [filter, setFilter] = useState<InboxFilter>("all");
-
-  const listingIdFromUrl = useMemo(() => pendingListingId, [pendingListingId]);
 
   const inboxCounts = useMemo(() => {
     const unread = inbox.filter((item) => Number(item.unread_count || 0) > 0).length;
@@ -134,14 +167,15 @@ export default function MessagesPage() {
     const loadInbox = async () => {
       setLoading(true);
       setStatus(null);
+
       try {
         const items = await fetchInbox();
         if (cancelled) return;
 
         setInbox(items);
 
-        if (listingIdFromUrl) {
-          const started = await startConversationFromListing(listingIdFromUrl);
+        if (pendingListingId) {
+          const started = await startConversationFromListing(pendingListingId);
           if (cancelled) return;
 
           setPendingListingId(null);
@@ -150,14 +184,10 @@ export default function MessagesPage() {
           return;
         }
 
-        const nextId = activeConversationId ?? null;
-
-        setActiveConversationId(nextId);
-
-        if (!nextId) {
-          setActiveConversation(null);
-          setMessages([]);
-        } 
+        // Inbox only: do not auto-open a thread.
+        setActiveConversationId(getConversationIdFromUrl());
+        setActiveConversation(null);
+        setMessages([]);
       } catch (error: any) {
         if (!cancelled) setStatus(error?.message || "Failed to load messages.");
       } finally {
@@ -170,7 +200,7 @@ export default function MessagesPage() {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user, listingIdFromUrl]);
+  }, [authLoading, user, pendingListingId]);
 
   useEffect(() => {
     if (authLoading || !user || !activeConversationId) return;
@@ -186,7 +216,12 @@ export default function MessagesPage() {
         setActiveConversation(full.conversation);
         setMessages(full.messages);
         await markConversationRead(activeConversationId);
-        setInbox((prev) => prev.map((item) => (item.id === activeConversationId ? full.conversation ?? item : item)).sort(sortByLatest));
+
+        setInbox((prev) =>
+          prev
+            .map((item) => (item.id === activeConversationId ? full.conversation ?? item : item))
+            .sort(sortByLatest)
+        );
       } catch (error: any) {
         if (!cancelled) setStatus(error?.message || "Failed to open conversation.");
       } finally {
@@ -207,15 +242,28 @@ export default function MessagesPage() {
     navigateToConversation(conversationId);
   };
 
+  const openInboxOnly = () => {
+    setActiveConversationId(null);
+    setActiveConversation(null);
+    setMessages([]);
+    navigateToMessages();
+  };
+
   const handleSend = async () => {
     if (!activeConversationId || !draft.trim()) return;
+
     setBusy(true);
     try {
       const result = await sendMessage(activeConversationId, draft.trim());
       setActiveConversation(result.conversation);
       setMessages((prev) => [...prev, result.message]);
       setDraft("");
-      setInbox((prev) => prev.map((item) => (item.id === result.conversation.id ? result.conversation : item)).sort(sortByLatest));
+
+      setInbox((prev) =>
+        prev
+          .map((item) => (item.id === result.conversation.id ? result.conversation : item))
+          .sort(sortByLatest)
+      );
     } catch (error: any) {
       setStatus(error?.message || "Failed to send message.");
     } finally {
@@ -244,7 +292,11 @@ export default function MessagesPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </button>
-            <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-400">Messages</p>
+
+            <p className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              Messages
+            </p>
+
             <button
               type="button"
               onClick={navigateToMessages}
@@ -264,15 +316,22 @@ export default function MessagesPage() {
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {status ? (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{status}</div>
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {status}
+          </div>
         ) : null}
 
         <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
           <aside className="space-y-3">
             <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Conversations</p>
-              <p className="mt-1 text-sm text-zinc-600">Text only for now. Attachments are coming soon.</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                Conversations
+              </p>
+              <p className="mt-1 text-sm text-zinc-600">
+                Text only for now. Attachments are coming soon.
+              </p>
             </div>
+
             <div className="space-y-3">
               {filteredInbox.length ? (
                 filteredInbox.map((convo) => (
@@ -294,101 +353,98 @@ export default function MessagesPage() {
               )}
             </div>
           </aside>
-{activeConversation ? (
-  
-  <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-    <div className="flex min-h-[70vh] flex-col">
 
-      <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-            {activeConversation.listing.university}
-          </p>
+          {activeConversation ? (
+            <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+              <div className="flex min-h-[70vh] flex-col">
+                <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                        {activeConversation.listing.university}
+                      </p>
+                      <h1 className="mt-1 text-xl font-black text-zinc-900">
+                        {activeConversation.listing.name}
+                      </h1>
+                      <p className="text-sm text-zinc-600">
+                        MK {Number(activeConversation.listing.price).toLocaleString()} ·{" "}
+                        {activeConversation.seller.business_name}
+                      </p>
+                    </div>
 
-          <h1 className="mt-1 text-xl font-black text-zinc-900">
-            {activeConversation.listing.name}
-          </h1>
+                    <button
+                      type="button"
+                      onClick={openInboxOnly}
+                      className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold text-zinc-800 hover:bg-zinc-100"
+                    >
+                      Back to inbox
+                    </button>
+                  </div>
+                </div>
 
-          <p className="text-sm text-zinc-600">
-            MK {Number(activeConversation.listing.price).toLocaleString()}
-            {" · "}
-            {activeConversation.seller.business_name}
-          </p>
-        </div>
-      </div>
+                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+                  {messages.length ? (
+                    messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.sender_uid === user?.uid ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm shadow-sm ${
+                            msg.sender_uid === user?.uid
+                              ? "bg-zinc-900 text-white"
+                              : "bg-zinc-100 text-zinc-900"
+                          }`}
+                        >
+                          <p>{msg.body}</p>
+                          <p
+                            className={`mt-2 text-[11px] ${
+                              msg.sender_uid === user?.uid ? "text-zinc-300" : "text-zinc-500"
+                            }`}
+                          >
+                            {timeLabel(msg.created_at)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex min-h-[280px] items-center justify-center text-sm text-zinc-500">
+                      No messages in this thread yet.
+                    </div>
+                  )}
+                </div>
 
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+                <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
+                  <div className="flex items-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => window.alert("Attachments are coming soon. Text only for now.")}
+                      className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                      aria-label="Attachments coming soon"
+                    >
+                      +
+                    </button>
 
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${
-              msg.sender_uid === user?.uid
-                ? "justify-end"
-                : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-[80%] rounded-3xl px-4 py-3 text-sm shadow-sm ${
-                msg.sender_uid === user?.uid
-                  ? "bg-zinc-900 text-white"
-                  : "bg-zinc-100 text-zinc-900"
-              }`}
-            >
-              <p>{msg.body}</p>
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder="Type your message..."
+                      className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400"
+                    />
 
-              <p
-                className={`mt-2 text-[11px] ${
-                  msg.sender_uid === user?.uid
-                    ? "text-zinc-300"
-                    : "text-zinc-500"
-                }`}
-              >
-                {timeLabel(msg.created_at)}
-              </p>
-            </div>
-          </div>
-        ))}
-
-      </div>
-
-      <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
-
-        <div className="flex items-end gap-3">
-
-          <button
-            type="button"
-            onClick={() =>
-              window.alert(
-                "Attachments are coming soon. Text only for now."
-              )
-            }
-            className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
-          >
-            +
-          </button>
-
-          <textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            placeholder="Type your message..."
-            className="min-h-12 flex-1 resize-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-400"
-          />
-
-          <button
-            type="button"
-            disabled={busy || !draft.trim()}
-            onClick={() => void handleSend()}
-            className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50"
-          >
-            Send
-          </button>
-
-         </div>
-        </div>
-      </div>
-    </section>
-      ) : null}
+                    <button
+                      type="button"
+                      disabled={busy || !draft.trim()}
+                      onClick={() => void handleSend()}
+                      className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : null}
         </div>
       </main>
     </div>
