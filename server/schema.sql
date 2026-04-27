@@ -64,6 +64,44 @@ CREATE TABLE IF NOT EXISTS listings (
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  listing_id INTEGER NOT NULL,
+  buyer_uid TEXT NOT NULL,
+  seller_uid TEXT NOT NULL,
+  last_message_preview TEXT,
+  last_message_at DATETIME,
+  buyer_unread_count INTEGER NOT NULL DEFAULT 0,
+  seller_unread_count INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (listing_id, buyer_uid, seller_uid),
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id INTEGER NOT NULL,
+  sender_uid TEXT NOT NULL,
+  body TEXT NOT NULL,
+  is_read INTEGER NOT NULL DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  read_at DATETIME,
+  FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_listing
+ON conversations (listing_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_buyer
+ON conversations (buyer_uid, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_conversations_seller
+ON conversations (seller_uid, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_messages_conversation
+ON messages (conversation_id, created_at ASC, id ASC);
+
 CREATE TABLE IF NOT EXISTS reports (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   type TEXT NOT NULL DEFAULT 'listing',
