@@ -1,20 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import type { Listing, ListingReview, ListingReviewSummary } from "../../types";
+import type { Listing, ListingReview, ListingReviewSummary, RatingSummary } from "../../types";
 import { apiFetch } from "../../lib/api";
+import { useAuthUser } from "../../hooks/useAuthUser";
 import { SectionHeading } from "./ListingDetailsShared";
 import ListingReviewSummaryView from "../reviews/ListingReviewSummary";
 import ListingReviewComposer from "../reviews/ListingReviewComposer";
 
 export default function ListingReviewsBlock({
+  sellerUid,
+  viewerUid,
+  ratingSummary,
   listing,
+  seller,
 }: {
   sellerUid?: string;
   viewerUid?: string;
-  ratingSummary: any;
+  ratingSummary?: RatingSummary | null;
   listing: Listing;
-  seller: any;
+  seller?: unknown;
 }) {
+  const { user: firebaseUser } = useAuthUser();
   const [summary, setSummary] = useState<ListingReviewSummary | null>(null);
   const [viewerReview, setViewerReview] = useState<ListingReview | null>(null);
   const [canReview, setCanReview] = useState(false);
@@ -65,15 +71,13 @@ export default function ListingReviewsBlock({
           Loading reviews...
         </div>
       ) : error ? (
-        <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">
-          {error}
-        </div>
+        <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{error}</div>
       ) : (
         <div className="space-y-6">
           <ListingReviewSummaryView summary={summary} />
           <ListingReviewComposer
             listingId={listing.id}
-            isAuthenticated={true}
+            isAuthenticated={!!firebaseUser}
             canReview={canReview}
             existingReview={viewerReview}
             onSaved={async (savedReview) => {
