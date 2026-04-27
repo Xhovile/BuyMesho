@@ -50,8 +50,15 @@ function ConversationRow({
           </div>
           <p className="mt-2 line-clamp-2 text-sm text-zinc-600">{preview}</p>
           {unread > 0 ? (
-            <span className="mt-3 inline-flex rounded-full bg-zinc-900 px-2.5 py-1 text-[11px] font-bold text-white">{unread} unread</span>
-          ) : null}
+              <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
+                {unread} unread
+              </span>
+            ) : (
+              <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500">
+                Read
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </button>
