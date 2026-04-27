@@ -13,7 +13,6 @@ import FeedbackModal from "./components/FeedbackModal";
 import ListingGallery from "./components/listingDetails/ListingGallery";
 import ListingSummary from "./components/listingDetails/ListingSummary";
 import ListingSpecsBlock, { type ListingSpecsGroup } from "./components/listingDetails/ListingSpecsBlock";
-import ListingTrustBlock from "./components/listingDetails/ListingTrustBlock";
 import ListingExploreBlock from "./components/listingDetails/ListingExploreBlock";
 import ListingReviewsBlock from "./components/listingDetails/ListingReviewsBlock";
 import ListingSectionTabs from "./components/listingDetails/ListingSectionTabs";
@@ -488,10 +487,7 @@ export default function ListingDetailsPage() {
             </section>
 
             <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
-              <div className="space-y-6">
-                <ListingTrustBlock listing={listing} seller={seller} />
-                <ListingReviewsBlock ratingSummary={ratingSummary} />
-              </div>
+              <ListingReviewsBlock ratingSummary={ratingSummary} listing={listing} seller={seller} />
             </section>
           </>
         )}
