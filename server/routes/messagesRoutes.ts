@@ -20,9 +20,7 @@ db.exec(`
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (listing_id, buyer_uid, seller_uid),
-    FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE,
-    FOREIGN KEY (buyer_uid) REFERENCES sellers(uid) ON DELETE CASCADE,
-    FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+    FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
   );
 
   CREATE TABLE IF NOT EXISTS messages (
@@ -33,8 +31,7 @@ db.exec(`
     is_read INTEGER NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     read_at DATETIME,
-    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-    FOREIGN KEY (sender_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
   );
 
   CREATE INDEX IF NOT EXISTS idx_conversations_listing
