@@ -480,7 +480,6 @@ export default function ListingDetailsPage() {
             <section ref={detailsRef} id="details" className="scroll-mt-32 pt-10">
               <div className="space-y-6">
                 <ListingSpecsBlock groups={groupedSpecs} />
-                <ListingTrustBlock listing={listing} seller={seller} />
               </div>
             </section>
 
