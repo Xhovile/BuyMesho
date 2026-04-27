@@ -73,60 +73,92 @@ export default function MessagesPage() {
       return;
     }
 
-    const load = async () => {
+    let cancelled = false;
+
+    const loadInbox = async () => {
       setLoading(true);
       setStatus(null);
       try {
         const items = await fetchInbox();
+        if (cancelled) return;
+
         setInbox(items);
 
         if (listingIdFromUrl) {
           const started = await startConversationFromListing(listingIdFromUrl);
+          if (cancelled) return;
+
           setPendingListingId(null);
           navigateToConversation(started.id);
-          const full = await fetchConversation(started.id);
           setActiveConversationId(started.id);
-          setActiveConversation(full.conversation);
-          setMessages(full.messages);
-          await markConversationRead(started.id);
           return;
         }
 
         const nextId = activeConversationId ?? items[0]?.id ?? null;
         if (nextId) {
-          const full = await fetchConversation(nextId);
           setActiveConversationId(nextId);
-          setActiveConversation(full.conversation);
-          setMessages(full.messages);
-          await markConversationRead(nextId);
         } else {
           setActiveConversation(null);
           setMessages([]);
         }
       } catch (error: any) {
-        setStatus(error?.message || "Failed to load messages.");
+        if (!cancelled) {
+          setStatus(error?.message || "Failed to load messages.");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    void load();
-  }, [authLoading, user, listingIdFromUrl, activeConversationId]);
+    void loadInbox();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, user, listingIdFromUrl]);
+
+  useEffect(() => {
+    if (authLoading || !user || !activeConversationId) return;
+
+    let cancelled = false;
+
+    const loadThread = async () => {
+      setBusy(true);
+      try {
+        const full = await fetchConversation(activeConversationId);
+        if (cancelled) return;
+
+        setActiveConversation(full.conversation);
+        setMessages(full.messages);
+        await markConversationRead(activeConversationId);
+        setInbox((prev) => {
+          const next = prev.map((item) => (item.id === activeConversationId ? full.conversation ?? item : item));
+          return next.sort((a, b) => (b.last_message_at || "").localeCompare(a.last_message_at || ""));
+        });
+      } catch (error: any) {
+        if (!cancelled) {
+          setStatus(error?.message || "Failed to open conversation.");
+        }
+      } finally {
+        if (!cancelled) {
+          setBusy(false);
+        }
+      }
+    };
+
+    void loadThread();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeConversationId, authLoading, user]);
 
   const openConversation = async (conversationId: number) => {
+    setStatus(null);
     setActiveConversationId(conversationId);
     navigateToConversation(conversationId);
-    setBusy(true);
-    try {
-      const full = await fetchConversation(conversationId);
-      setActiveConversation(full.conversation);
-      setMessages(full.messages);
-      await markConversationRead(conversationId);
-    } catch (error: any) {
-      setStatus(error?.message || "Failed to open conversation.");
-    } finally {
-      setBusy(false);
-    }
   };
 
   const handleSend = async () => {
