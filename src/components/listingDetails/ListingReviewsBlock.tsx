@@ -28,6 +28,7 @@ export default function ListingReviewsBlock({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isEditingOwnReview, setIsEditingOwnReview] = useState(false);
 
   const loadReviews = useCallback(async () => {
     if (!listing?.id) return;
@@ -61,6 +62,7 @@ export default function ListingReviewsBlock({
 
   const handleSaved = async (savedReview: ListingReview | null) => {
     setViewerReview(savedReview);
+    setIsEditingOwnReview(false);
     setRefreshKey((current) => current + 1);
     await loadReviews();
   };
@@ -70,6 +72,12 @@ export default function ListingReviewsBlock({
     setRefreshKey((current) => current + 1);
     await loadReviews();
   };
+
+  const handleEditOwnReview = () => {
+    setIsEditingOwnReview(true);
+  };
+
+  const showComposer = !viewerReview || isEditingOwnReview;
 
   return (
     <div className="space-y-6 border-t border-zinc-200 pt-6">
@@ -89,18 +97,31 @@ export default function ListingReviewsBlock({
       ) : (
         <div className="space-y-6">
           <ListingReviewSummaryView summary={summary} />
-          <ListingReviewComposer
-            listingId={listing.id}
-            isAuthenticated={!!firebaseUser}
-            canReview={canReview}
-            existingReview={viewerReview}
-            onSaved={handleSaved}
-          />
+
+          {showComposer ? (
+            <ListingReviewComposer
+              listingId={listing.id}
+              isAuthenticated={!!firebaseUser}
+              canReview={canReview}
+              existingReview={viewerReview}
+              onSaved={handleSaved}
+              onCancel={viewerReview ? () => setIsEditingOwnReview(false) : undefined}
+            />
+          ) : (
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
+              <p className="mt-2 text-sm text-zinc-500">Your review is pinned at the top. Tap <span className="font-bold text-zinc-900">Edit</span> on the review card to update it.</p>
+            </div>
+          )}
+
           <ListingReviewFeed
             listingId={listing.id}
             initialSummary={summary}
             refreshKey={refreshKey}
             canReply={firebaseUser?.uid === sellerUid || firebaseUser?.uid === listing.seller_uid}
+            viewerUid={firebaseUser?.uid}
+            ownReviewId={viewerReview?.id ?? null}
+            onEditOwnReview={handleEditOwnReview}
             onReviewChanged={handleReviewChanged}
           />
         </div>
