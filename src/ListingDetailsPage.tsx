@@ -8,6 +8,7 @@ import { getListingItemConfig } from "./listingSchemas";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { fetchListingById } from "./lib/listings";
 import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } from "./lib/savedListings";
+import { navigateToMessagesForListing } from "./lib/messagesNavigation";
 import ListingActionsMenu from "./components/ListingActionsMenu";
 import FeedbackModal from "./components/FeedbackModal";
 import ListingGallery from "./components/listingDetails/ListingGallery";
@@ -346,9 +347,21 @@ export default function ListingDetailsPage() {
     element?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleContactSeller = async () => {
+  const handleMessageSeller = () => {
     if (!listing) return;
-    if (!firebaseUser) return navigateToPath(LOGIN_PATH);
+    if (!firebaseUser) {
+      navigateToPath(LOGIN_PATH);
+      return;
+    }
+    navigateToMessagesForListing(listing.id);
+  };
+
+  const handleWhatsAppSeller = async () => {
+    if (!listing) return;
+    if (!firebaseUser) {
+      navigateToPath(LOGIN_PATH);
+      return;
+    }
 
     try {
       await fetch(`/api/listings/${listing.id}/whatsapp-click`, { method: "POST", headers: { "Content-Type": "application/json" } });
@@ -463,7 +476,8 @@ export default function ListingDetailsPage() {
                   seller={seller}
                   availableQuantity={availableQuantity}
                   isLoggedIn={!!firebaseUser}
-                  onContactSeller={handleContactSeller}
+                  onMessageSeller={handleMessageSeller}
+                  onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
                 />
                 <ListingDetailsBlock
