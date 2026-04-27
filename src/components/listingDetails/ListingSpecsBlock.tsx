@@ -51,9 +51,9 @@ export default function ListingSpecsBlock({ groups }: { groups: ListingSpecsGrou
       <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">Product details</h2>
 
       {groups.length ? (
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+        <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
           {groups.map((group, index) => (
-            <div key={group.title} className="lg:self-start">
+            <div key={group.title} className="md:self-start">
               <SpecAccordion group={group} defaultOpen={index === 0} />
             </div>
           ))}
