@@ -4,10 +4,14 @@ import { SectionHeading, StatTile } from "./ListingDetailsShared";
 import ListingTrustBlock, { type SellerProfile } from "./ListingTrustBlock";
 
 export default function ListingReviewsBlock({
+  sellerUid,
+  viewerUid,
   ratingSummary,
   listing,
   seller,
 }: {
+  sellerUid?: string;
+  viewerUid?: string;
   ratingSummary: RatingSummary | null;
   listing: Listing;
   seller: SellerProfile | null;
@@ -31,27 +35,15 @@ export default function ListingReviewsBlock({
         <StatTile label="Rating count" value={ratingSummary?.ratingCount ?? 0} icon={<ShieldCheck className="h-4 w-4" />} />
       </div>
 
-      <div className="space-y-3 border-t border-zinc-200 pt-6">
-        <div className="flex items-start gap-3">
-          <div className="text-zinc-500 pt-0.5">
-            <ShieldCheck className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-lg font-black tracking-tight text-zinc-900">Written reviews are not live yet</h3>
-            <p className="mt-2 max-w-3xl text-sm leading-7 text-zinc-600">
-              Buyer comments and review media can be added later without changing the section order or the page hierarchy.
-            </p>
-          </div>
-        </div>
-
-        {ratingSummary?.ratingCount ? (
-          <p className="text-sm text-zinc-500">
-            {ratingSummary.ratingCount} rating{ratingSummary.ratingCount === 1 ? "" : "s"} are already recorded for this seller.
-          </p>
-        ) : (
-          <p className="text-sm text-zinc-500">No ratings have been recorded yet.</p>
-        )}
-      </div>
+      <SellerRatingCard
+        ratingSummary={ratingSummary}
+        ratingLoading={ratingLoading}
+        ratingSubmitting={ratingSubmitting}
+        isAuthenticated={!!viewerUid}
+        canRate={!!viewerUid && !!sellerUid && viewerUid !== sellerUid}
+        onRate={onRateSeller}
+        onRemoveRating={onRemoveRating}
+      />
     </div>
   );
 }

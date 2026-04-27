@@ -20,9 +20,9 @@ export function SectionHeading({
   return (
     <div className="space-y-2 border-b border-zinc-200 pb-4">
       {eyebrow ? (
-        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">{eyebrow}</p>
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">{eyebrow}</p>
       ) : null}
-      <h2 className="text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">{title}</h2>
+      <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{title}</h2>
       {description ? <p className="max-w-3xl text-sm leading-6 text-zinc-500">{description}</p> : null}
     </div>
   );
