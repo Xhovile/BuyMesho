@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import ListingDescriptionExcerpt from "./ListingDescriptionExcerpt";
 
 export default function ListingDetailsBlock({
   description,
@@ -16,7 +17,7 @@ export default function ListingDetailsBlock({
       <div className="space-y-0">
         <div className="space-y-3 pb-5">
           <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500">Listing description</p>
-          <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-600">{description}</p>
+          <ListingDescriptionExcerpt description={typeof description === "string" ? description : String(description ?? "")} />
         </div>
 
         <div className="border-t border-zinc-200 pt-5">
