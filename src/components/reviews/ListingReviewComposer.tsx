@@ -9,6 +9,7 @@ type ListingReviewComposerProps = {
   canReview: boolean;
   existingReview?: ListingReview | null;
   onSaved?: (review: ListingReview | null) => void | Promise<void>;
+  onCancel?: () => void;
 };
 
 const MAX_BODY_LENGTH = 500;
@@ -19,6 +20,7 @@ export default function ListingReviewComposer({
   canReview,
   existingReview,
   onSaved,
+  onCancel,
 }: ListingReviewComposerProps) {
   const [rating, setRating] = useState<number>(existingReview?.rating ?? 0);
   const [body, setBody] = useState(existingReview?.body ?? "");
@@ -92,9 +94,7 @@ export default function ListingReviewComposer({
               type="button"
               onClick={() => setRating(star)}
               disabled={!isAuthenticated || !canReview || submitting}
-              className={`rounded-md p-1 transition-colors ${
-                active ? "text-amber-500" : "text-zinc-300"
-              } ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
+              className={`rounded-md p-1 transition-colors ${active ? "text-amber-500" : "text-zinc-300"} ${!isAuthenticated || !canReview || submitting ? "opacity-60" : "hover:text-amber-500"}`}
               aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
             >
               <Star className={`h-7 w-7 ${active ? "fill-amber-400" : ""}`} />
@@ -108,9 +108,7 @@ export default function ListingReviewComposer({
       {rating > 0 ? (
         <div className="mt-5 space-y-3">
           <div>
-            <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-              Add a review (optional)
-            </label>
+            <label className="mb-2 block text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Add a review (optional)</label>
             <textarea
               value={body}
               onChange={(event) => setBody(event.target.value.slice(0, MAX_BODY_LENGTH))}
@@ -140,9 +138,17 @@ export default function ListingReviewComposer({
         >
           {submitting ? "Saving..." : submitLabel}
         </button>
-        {existingReview ? (
-          <span className="text-sm text-zinc-500">Your latest review will replace the previous one.</span>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={submitting}
+            className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel edit
+          </button>
         ) : null}
+        {existingReview ? <span className="text-sm text-zinc-500">Your latest review will replace the previous one.</span> : null}
       </div>
     </section>
   );
