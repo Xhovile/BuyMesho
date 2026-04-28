@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Paperclip, SendHorizontal } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateBackOrPath, navigateToLogin } from "./lib/appNavigation";
+import {
+  navigateBackOrPath,
+  navigateToListingDetails,
+  navigateToLogin,
+  navigateToSellerProfile,
+} from "./lib/appNavigation";
 import { getConversationIdFromUrl, navigateToMessages } from "./lib/messagesNavigation";
 import { fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 
@@ -107,39 +112,50 @@ export default function MessageThreadPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-100 text-zinc-900">
-      {/* HEADER */}
-      <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
-        <div className="px-4 py-4">
+  <div className="fixed inset-0 flex flex-col bg-zinc-100 text-zinc-900 overflow-hidden">
+    
+    {/* HEADER */}
+    <header className="sticky top-0 shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          onClick={() => navigateBackOrPath("/messages")}
+          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-3 py-2 text-sm font-bold text-white"
+          aria-label="Back to inbox"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+
           <button
             type="button"
-            onClick={() => navigateBackOrPath("/messages")}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
+            onClick={() => navigateToListingDetails(conversation.listing.id, 0)}
+            className="min-w-0 text-left"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-
-          <div className="mt-4 border-t border-zinc-200 pt-4">
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-              {conversation.listing.university}
-            </p>
-
-            <h1 className="mt-1 text-lg font-black text-zinc-900">
+            <p className="truncate text-sm font-black text-zinc-900">
               {conversation.listing.name}
-            </h1>
-
+            </p>
             <p className="text-sm text-zinc-600">
               MK {Number(conversation.listing.price).toLocaleString()}
             </p>
-          </div>
+          </button>
         </div>
-      </header>
 
-      {/* THREAD CONTAINER */}
-      <div className="flex-1 min-h-0 flex flex-col">
-        {/* MESSAGES */}
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-4 py-4">
+        <button
+          type="button"
+          onClick={() => navigateToSellerProfile(conversation.seller.uid)}
+          className="shrink-0 text-right text-sm font-semibold text-zinc-700 hover:text-zinc-900"
+        >
+          {conversation.seller.business_name}
+        </button>
+      </div>
+    </header>
+
+    {/* THREAD CONTAINER */}
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+      {/* MESSAGES */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
 
         {messages.length ? (
           messages.map((msg) => (
