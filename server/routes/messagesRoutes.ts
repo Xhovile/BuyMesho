@@ -68,7 +68,7 @@ type ConversationRow = {
   listing_name?: string | null;
   listing_price?: number | null;
   listing_status?: string | null;
-  listing_photo?: string | null;
+  listing_photos?: string | null;
   listing_university?: string | null;
   seller_business_name?: string | null;
   seller_logo?: string | null;
