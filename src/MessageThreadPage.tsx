@@ -122,15 +122,38 @@ export default function MessageThreadPage() {
   <div className="fixed inset-0 flex flex-col bg-zinc-100 text-zinc-900 overflow-hidden">
     
     {/* HEADER */}
-    <header className="shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
-      <div className="px-4 py-4">
+    <header className="sticky top-0 shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
+      <div className="flex items-center justify-between gap-3 px-4 py-3">
+        <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={() => navigateBackOrPath("/messages")}
-          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
+          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-3 py-2 text-sm font-bold text-white"
+          aria-label="Back to inbox"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back
+        </button>
+
+          <button
+            type="button"
+            onClick={() => navigateToListingDetails(conversation.listing.id, 0)}
+            className="min-w-0 text-left"
+          >
+            <p className="truncate text-sm font-black text-zinc-900">
+              {conversation.listing.name}
+            </p>
+            <p className="text-sm text-zinc-600">
+              MK {Number(conversation.listing.price).toLocaleString()}
+            </p>
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => navigateToSellerProfile(conversation.seller.uid)}
+          className="shrink-0 text-right text-sm font-semibold text-zinc-700 hover:text-zinc-900"
+        >
+          {conversation.seller.business_name}
         </button>
       </div>
     </header>
