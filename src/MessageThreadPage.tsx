@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Paperclip, SendHorizontal } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -22,6 +22,7 @@ export default function MessageThreadPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageThreadItem[]>([]);
   const [conversationId] = useState<number | null>(() => getConversationIdFromUrl());
+  const threadEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -61,6 +62,14 @@ export default function MessageThreadPage() {
     };
   }, [authLoading, user, conversationId]);
 
+  useEffect(() => {
+    if (loading || authLoading || !conversation) return;
+    const raf = window.requestAnimationFrame(() => {
+      threadEndRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+    });
+    return () => window.cancelAnimationFrame(raf);
+  }, [messages, loading, authLoading, conversation]);
+
   const handleSend = async () => {
     if (!conversationId || !draft.trim()) return;
 
@@ -70,6 +79,9 @@ export default function MessageThreadPage() {
       setConversation(result.conversation);
       setMessages((prev) => [...prev, result.message]);
       setDraft("");
+      window.requestAnimationFrame(() => {
+        threadEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+      });
     } catch (error: any) {
       setStatus(error?.message || "Failed to send message.");
     } finally {
@@ -163,6 +175,7 @@ export default function MessageThreadPage() {
               No messages yet.
             </div>
           )}
+          <div ref={threadEndRef} />
         </div>
 
         <div className="shrink-0 border-t border-zinc-200 bg-white px-4 py-4">
