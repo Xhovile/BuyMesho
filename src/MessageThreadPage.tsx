@@ -107,42 +107,39 @@ export default function MessageThreadPage() {
   }
 
   return (
-  <div className="fixed inset-0 flex flex-col bg-zinc-100 text-zinc-900 overflow-hidden">
-    
-    {/* HEADER */}
-    <header className="shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
-      <div className="px-4 py-4">
-        <button
-          type="button"
-          onClick={() => navigateBackOrPath("/messages")}
-          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-      </div>
-    </header>
+    <div className="min-h-screen flex flex-col bg-zinc-100 text-zinc-900">
+      {/* HEADER */}
+      <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
+        <div className="px-4 py-4">
+          <button
+            type="button"
+            onClick={() => navigateBackOrPath("/messages")}
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
 
-    {/* THREAD CONTAINER */}
-    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="mt-4 border-t border-zinc-200 pt-4">
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+              {conversation.listing.university}
+            </p>
 
-      {/* LISTING HEADER */}
-      <div className="shrink-0 border-b border-zinc-200 bg-white px-4 py-4">
-        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-          {conversation.listing.university}
-        </p>
+            <h1 className="mt-1 text-lg font-black text-zinc-900">
+              {conversation.listing.name}
+            </h1>
 
-        <h1 className="mt-1 text-lg font-black text-zinc-900">
-          {conversation.listing.name}
-        </h1>
+            <p className="text-sm text-zinc-600">
+              MK {Number(conversation.listing.price).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </header>
 
-        <p className="text-sm text-zinc-600">
-          MK {Number(conversation.listing.price).toLocaleString()}
-        </p>
-      </div>
-
-      {/* MESSAGES */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      {/* THREAD CONTAINER */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        {/* MESSAGES */}
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-3 px-4 py-4">
 
         {messages.length ? (
           messages.map((msg) => (
