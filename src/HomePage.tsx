@@ -1,4 +1,4 @@
-import { type ElementType, useState } from "react";
+import { type ElementType, useEffect, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -35,6 +35,7 @@ import {
   navigateToPath
 } from "./lib/appNavigation";
 import { navigateToMessages } from "./lib/messagesNavigation";
+import { fetchInbox } from "./lib/messages";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
@@ -204,6 +205,7 @@ export default function HomePage() {
   const isSellerProfileLoading = isLoggedIn && profileLoading;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const {
     recommendedListings,
     newestListings,
@@ -269,6 +271,39 @@ export default function HomePage() {
     navigateToMessages();
   };
 
+  useEffect(() => {
+    if (!firebaseUser) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadUnread = async () => {
+      try {
+        const inbox = await fetchInbox();
+
+        if (!mounted) return;
+
+        const unread = inbox.filter(
+          (c: any) => Number(c.unread_count || 0) > 0
+        ).length;
+
+        setUnreadCount(unread);
+      } catch {
+        if (mounted) {
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    void loadUnread();
+
+    return () => {
+      mounted = false;
+    };
+  }, [firebaseUser]);
+
   const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
@@ -303,7 +338,15 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 <MessageSquareText className="w-4 h-4" />
-                Messages
+                <div className="flex items-center gap-2">
+                  <span>Messages</span>
+
+                  {unreadCount > 0 ? (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                      {unreadCount}
+                    </span>
+                  ) : null}
+                </div>
               </button>
               <button
                 type="button"
@@ -444,7 +487,15 @@ export default function HomePage() {
                 >
                   <span className="inline-flex items-center gap-3">
                     <MessageSquareText className="w-4 h-4 text-zinc-500" />
-                    Messages
+                    <div className="flex items-center gap-2">
+                      <span>Messages</span>
+
+                      {unreadCount > 0 ? (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                          {unreadCount}
+                        </span>
+                      ) : null}
+                    </div>
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>

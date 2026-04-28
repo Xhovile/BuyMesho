@@ -17,6 +17,7 @@ import {
 import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
+import { fetchInbox } from "../lib/messages";
 
 type HeaderProps = {
   searchValue: string;
@@ -38,6 +39,7 @@ export default function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [headerHidden, setHeaderHidden] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
@@ -142,6 +144,39 @@ export default function Header({
     };
   }, [mobileMenuOpen]);
 
+  useEffect(() => {
+    if (!firebaseUser) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadUnread = async () => {
+      try {
+        const inbox = await fetchInbox();
+
+        if (!mounted) return;
+
+        const unread = inbox.filter(
+          (c: any) => Number(c.unread_count || 0) > 0
+        ).length;
+
+        setUnreadCount(unread);
+      } catch {
+        if (mounted) {
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    void loadUnread();
+
+    return () => {
+      mounted = false;
+    };
+  }, [firebaseUser]);
+
   return (
     <>
       <nav
@@ -178,7 +213,15 @@ export default function Header({
                 className={desktopNavButtonClass}
               >
                 <MessageSquareText className="w-4 h-4" />
-                Messages
+                <div className="flex items-center gap-2">
+                  <span>Messages</span>
+
+                  {unreadCount > 0 ? (
+                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                      {unreadCount}
+                    </span>
+                  ) : null}
+                </div>
               </button>
 
               <button
@@ -353,7 +396,15 @@ export default function Header({
                 >
                   <span className="inline-flex items-center gap-3">
                     <MessageSquareText className="w-4 h-4 text-zinc-500" />
-                    Messages
+                    <div className="flex items-center gap-2">
+                      <span>Messages</span>
+
+                      {unreadCount > 0 ? (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                          {unreadCount}
+                        </span>
+                      ) : null}
+                    </div>
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>

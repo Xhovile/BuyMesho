@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Paperclip, SendHorizontal } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { navigateBackOrPath, navigateToLogin } from "./lib/appNavigation";
@@ -193,9 +193,10 @@ export default function MessageThreadPage() {
                 "Attachments are coming soon. Text only for now."
               )
             }
-            className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200"
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200"
+            aria-label="Add attachment"
           >
-            📎
+            <Paperclip className="h-5 w-5 text-zinc-700" />
           </button>
 
           <textarea
@@ -209,9 +210,10 @@ export default function MessageThreadPage() {
             type="button"
             disabled={busy || !draft.trim()}
             onClick={() => void handleSend()}
-            className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-white disabled:opacity-50"
+            aria-label="Send message"
           >
-            Send
+            <SendHorizontal className="h-5 w-5" />
           </button>
 
         </div>
