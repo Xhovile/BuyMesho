@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin } from "./lib/appNavigation";
+import { navigateBackOrPath, navigateToLogin } from "./lib/appNavigation";
 import { getConversationIdFromUrl, navigateToMessages } from "./lib/messagesNavigation";
 import { fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 
@@ -90,7 +90,7 @@ export default function MessageThreadPage() {
       <div className="min-h-screen bg-zinc-100 px-4 py-6 text-zinc-900 sm:px-6 lg:px-8">
         <button
           type="button"
-          onClick={() => navigateToMessages()}
+          onClick={() => navigateBackOrPath("/messages")}
           className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -112,7 +112,7 @@ export default function MessageThreadPage() {
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <button
             type="button"
-            onClick={() => navigateToMessages()}
+            onClick={() => navigateBackOrPath("/messages")}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-zinc-300 transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl active:translate-y-0"
           >
             <ArrowLeft className="h-4 w-4" />
