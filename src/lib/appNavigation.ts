@@ -58,6 +58,15 @@ export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 
+const APP_HISTORY_STATE_KEY = "__buymesho";
+
+const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
+
+export const isAppHistoryState = () => {
+  const state = window.history.state;
+  return !!(state && typeof state === "object" && (state as Record<string, unknown>)[APP_HISTORY_STATE_KEY]);
+};
+
 export type ExploreQueryState = {
   search: string;
   university: string;
@@ -191,9 +200,9 @@ const syncExploreStateInUrl = (
   writeExploreStateToUrl(url, state);
 
   if (mode === "push") {
-    window.history.pushState({}, "", url.toString());
+    window.history.pushState(markAppHistoryState(), "", url.toString());
   } else {
-    window.history.replaceState({}, "", url.toString());
+    window.history.replaceState(markAppHistoryState(), "", url.toString());
   }
 };
 
@@ -358,7 +367,7 @@ export const navigateToPath = (path: string) => {
     url.searchParams.delete("id");
   }
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -374,13 +383,13 @@ export const navigateToSettingsSection = (section: SettingsSection) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
 export const navigateBackOrPath = (fallbackPath: string) => {
-  if (window.history.length > 1) {
+  if (isAppHistoryState()) {
     window.history.back();
     return;
   }
@@ -397,7 +406,7 @@ export const navigateToExplore = (state?: Partial<ExploreQueryState>) => {
   url.searchParams.delete("id");
   writeExploreStateToUrl(url, state || {});
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -411,7 +420,7 @@ export const navigateToExploreWithCategory = (category: string) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -427,7 +436,7 @@ export const navigateToListingDetails = (
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -440,7 +449,7 @@ export const navigateToSellerProfile = (uid: string) => {
   url.searchParams.delete("image");
   url.searchParams.delete("id");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -453,7 +462,7 @@ export const navigateToCreateListing = () => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -466,7 +475,7 @@ export const navigateToEditListing = (listingId: string | number) => {
   url.searchParams.delete("image");
   url.searchParams.delete("uid");
 
-  window.history.pushState({}, "", url.toString());
+  window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
