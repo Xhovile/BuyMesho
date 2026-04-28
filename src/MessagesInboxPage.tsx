@@ -177,8 +177,8 @@ export default function MessagesInboxPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
-          <div className="rounded-3xl border border-zinc-200 bg-white px-4 py-3 shadow-sm">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="rounded-3xl border border-zinc-200 bg-white px-4 py-2.5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <button
                 type="button"
@@ -195,13 +195,17 @@ export default function MessagesInboxPage() {
 
               <div className="w-[72px]" />
             </div>
-
-            <div className="mt-3 flex justify-start">
-              <FilterMenu value={filter} onChange={setFilter} />
-            </div>
           </div>
         </div>
       </header>
+
+      <div className="pointer-events-none sticky top-[78px] z-30">
+        <div className="mx-auto flex max-w-7xl justify-end px-4 pt-2 sm:px-6 lg:px-8">
+          <div className="pointer-events-auto">
+            <FilterMenu value={filter} onChange={setFilter} />
+          </div>
+        </div>
+      </div>
 
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {status ? (

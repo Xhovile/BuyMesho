@@ -34,6 +34,7 @@ import {
   navigateToListingDetails,
   navigateToPath
 } from "./lib/appNavigation";
+import { navigateToMessages } from "./lib/messagesNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
 import CategorySection from "./components/home/CategorySection";
@@ -265,7 +266,7 @@ export default function HomePage() {
       return;
     }
     afterClose?.();
-    navigateToPath(MESSAGES_PATH);
+    navigateToMessages();
   };
 
   const closeMenu = () => setMobileMenuOpen(false);
