@@ -111,6 +111,13 @@ export default function MessageThreadPage() {
     );
   }
 
+  const listingId = conversation.listing.id;
+  const sellerUid = conversation.seller.uid;
+  const hasListingId = typeof listingId === "number" && Number.isFinite(listingId);
+  const hasSellerUid = typeof sellerUid === "string" && sellerUid.trim().length > 0;
+  const listingUrl = hasListingId ? `/listing?listing=${listingId}&image=0` : null;
+  const sellerUrl = hasSellerUid ? `/seller?uid=${encodeURIComponent(sellerUid)}` : null;
+
   return (
   <div className="fixed inset-0 flex flex-col bg-zinc-100 text-zinc-900 overflow-hidden">
     
@@ -153,6 +160,55 @@ export default function MessageThreadPage() {
 
     {/* THREAD CONTAINER */}
     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+
+      {/* LISTING HEADER */}
+      <div className="shrink-0 border-b border-zinc-200 bg-white px-4 py-4">
+        <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+          {conversation.listing.university}
+        </p>
+
+        <h1 className="mt-1 text-lg font-black text-zinc-900">
+          {conversation.listing.name}
+        </h1>
+
+        <p className="text-sm text-zinc-600">
+          MK {Number(conversation.listing.price).toLocaleString()}
+        </p>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm font-semibold">
+          {listingUrl ? (
+            <a
+              href={listingUrl}
+              onClick={(event) => {
+                event.preventDefault();
+                navigateToListingDetails(listingId, 0);
+              }}
+              aria-label="Open listing"
+              className="text-zinc-900 underline decoration-zinc-300 underline-offset-4 transition hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
+            >
+              Open listing
+            </a>
+          ) : (
+            <span className="text-zinc-500">Listing unavailable</span>
+          )}
+
+          {sellerUrl ? (
+            <a
+              href={sellerUrl}
+              onClick={(event) => {
+                event.preventDefault();
+                navigateToSellerProfile(sellerUid);
+              }}
+              aria-label="Open seller profile"
+              className="text-zinc-900 underline decoration-zinc-300 underline-offset-4 transition hover:text-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900 focus-visible:ring-offset-2"
+            >
+              Open seller profile
+            </a>
+          ) : (
+            <span className="text-zinc-500">Seller unavailable</span>
+          )}
+        </div>
+      </div>
 
       {/* MESSAGES */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
