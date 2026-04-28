@@ -106,6 +106,13 @@ export default function MessageThreadPage() {
     );
   }
 
+  const listingId = conversation.listing.id;
+  const sellerUid = conversation.seller.uid;
+  const hasListingId = typeof listingId === "number" && Number.isFinite(listingId);
+  const hasSellerUid = typeof sellerUid === "string" && sellerUid.trim().length > 0;
+  const listingUrl = hasListingId ? `/listing?listing=${listingId}&image=0` : null;
+  const sellerUrl = hasSellerUid ? `/seller?uid=${encodeURIComponent(sellerUid)}` : null;
+
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 text-zinc-900">
       <header className="shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
