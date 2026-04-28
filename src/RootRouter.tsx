@@ -68,10 +68,11 @@ export default function RootRouter() {
   const [route, setRoute] = useState<AppRoute>(() =>
     getAppRouteFromLocation(window.location)
   );
+  const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const threadConversationId = new URLSearchParams(window.location.search).get("conversation");
+  const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
   const isMessageThread = route === "messages" && !!threadConversationId;
 
   useEffect(() => {
@@ -84,6 +85,7 @@ export default function RootRouter() {
   useEffect(() => {
     const handleRouteChange = () => {
       setRoute(getAppRouteFromLocation(window.location));
+      setLocationSearch(window.location.search);
     };
 
     window.addEventListener("popstate", handleRouteChange);

@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin, navigateToMessages } from "./lib/appNavigation";
-import { getConversationIdFromUrl } from "./lib/messagesNavigation";
+import { navigateToLogin } from "./lib/appNavigation";
+import { getConversationIdFromUrl, navigateToMessages } from "./lib/messagesNavigation";
 import { fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 
 function timeLabel(value?: string | null) {
@@ -107,13 +107,13 @@ export default function MessageThreadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <button
             type="button"
             onClick={() => navigateToMessages()}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-zinc-300 transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl active:translate-y-0"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -121,14 +121,14 @@ export default function MessageThreadPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
         {status ? (
           <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {status}
           </div>
         ) : null}
 
-        <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+        <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
           <div className="border-b border-zinc-200 px-4 py-4 sm:px-5">
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
               {conversation.listing.university}
@@ -141,7 +141,7 @@ export default function MessageThreadPage() {
             </p>
           </div>
 
-          <div className="space-y-3 px-4 py-4 sm:px-5">
+          <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
             {messages.length ? (
               messages.map((msg) => (
                 <div
@@ -173,12 +173,12 @@ export default function MessageThreadPage() {
             )}
           </div>
 
-          <div className="sticky bottom-0 z-10 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur sm:p-5">
+          <div className="sticky bottom-0 z-20 border-t border-zinc-200 bg-white/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-white/80 sm:p-5">
             <div className="flex items-end gap-3">
               <button
                 type="button"
                 onClick={() => window.alert("Attachments are coming soon. Text only for now.")}
-                className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                className="h-12 w-12 shrink-0 rounded-2xl border border-zinc-200 bg-white text-zinc-500 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-zinc-50 hover:shadow-md active:translate-y-0"
                 aria-label="Attachments coming soon"
               >
                 📎
@@ -195,7 +195,7 @@ export default function MessageThreadPage() {
                 type="button"
                 disabled={busy || !draft.trim()}
                 onClick={() => void handleSend()}
-                className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-50"
+                className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-300 transition-all hover:-translate-y-0.5 hover:bg-zinc-800 hover:shadow-xl active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:bg-zinc-900 disabled:hover:shadow-lg"
               >
                 Send
               </button>
