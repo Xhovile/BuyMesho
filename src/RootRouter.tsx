@@ -94,12 +94,14 @@ export default function RootRouter() {
   }, []);
 
   useEffect(() => {
-    void Promise.allSettled([
-      import("./App.new"),
-      import("./HomePage"),
-      import("./CategoryPage"),
-    ]);
-  }, []);
+  void Promise.allSettled([
+    import("./App.new"),
+    import("./HomePage"),
+    import("./CategoryPage"),
+    import("./MessagesInboxPage"),
+    import("./MessageThreadPage"),
+  ]);
+}, []);
 
   useEffect(() => {
     if (authLoading) return;
