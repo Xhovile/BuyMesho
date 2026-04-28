@@ -154,7 +154,9 @@ export default function RootRouter() {
         route === "report" ? <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} /> :
         route === "seller" ? <SellerProfilePage /> :
         route === "listing_details" ? <ListingDetailsPage /> :
-        route === "messages" ? <MessagesPage /> :
+        route === "messages" ? (
+          isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
+        ) :
         route === "create" ? <CreateListingPage /> :
         route === "edit" ? <EditListingPage /> :
         route === "login" ? <LoginPage /> :
