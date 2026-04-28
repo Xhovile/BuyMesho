@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import type { Conversation, MessageThreadItem } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin, navigateToMessages } from "./lib/appNavigation";
-import { getConversationIdFromUrl } from "./lib/messagesNavigation";
+import { navigateToLogin } from "./lib/appNavigation";
+import { getConversationIdFromUrl, navigateToMessages } from "./lib/messagesNavigation";
 import { fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 
 function timeLabel(value?: string | null) {

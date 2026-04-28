@@ -6,6 +6,7 @@ import {
   ChevronRight,
   LogOut,
   Menu,
+  MessageSquareText,
   Plus,
   Settings,
   ShoppingBag,
@@ -21,6 +22,7 @@ import {
   BECOME_SELLER_PATH,
   EXPLORE_PATH,
   LOGIN_PATH,
+  MESSAGES_PATH,
   PRIVACY_PATH,
   PROFILE_PATH,
   REPORT_PATH,
@@ -255,6 +257,16 @@ export default function HomePage() {
     afterClose?.();
     navigateToPath(PROFILE_PATH);
   };
+  
+  const handleMessagesClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(MESSAGES_PATH);
+  };
 
   const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
@@ -283,6 +295,14 @@ export default function HomePage() {
               >
                 <Settings className="w-4 h-4" />
                 Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMessagesClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                <MessageSquareText className="w-4 h-4" />
+                Messages
               </button>
               <button
                 type="button"
@@ -414,6 +434,18 @@ export default function HomePage() {
                     Market
                   </span>
                   <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleMessagesClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                    Messages
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 <button
