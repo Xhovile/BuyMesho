@@ -182,3 +182,48 @@ export interface ListingReviewFeedResponse {
   viewerReview: ListingReview | null;
   canReview: boolean;
 }
+
+
+export interface Conversation {
+  id: number;
+  listing_id: number;
+  buyer_uid: string;
+  seller_uid: string;
+  last_message_preview: string | null;
+  last_message_at: string | null;
+  buyer_unread_count: number;
+  seller_unread_count: number;
+  created_at: string;
+  updated_at: string;
+  listing: {
+    id: number;
+    name: string;
+    price: number;
+    status: string;
+    photos: string[];
+    university: string;
+  };
+  seller: {
+    uid: string;
+    business_name: string;
+    business_logo: string | null;
+    is_verified: boolean;
+  };
+  buyer: {
+    uid: string;
+    business_name: string;
+    business_logo: string | null;
+    is_verified: boolean;
+  };
+  unread_count: number;
+}
+
+export interface MessageThreadItem {
+  id: number;
+  conversation_id: number;
+  sender_uid: string;
+  body: string;
+  is_read: boolean;
+  created_at: string;
+  read_at: string | null;
+}
