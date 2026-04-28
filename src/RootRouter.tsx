@@ -71,6 +71,8 @@ export default function RootRouter() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const threadConversationId = new URLSearchParams(window.location.search).get("conversation");
+  const isMessageThread = route === "messages" && !!threadConversationId;
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
