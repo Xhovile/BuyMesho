@@ -1,10 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ChevronDown, Loader2, MessageCircle } from "lucide-react";
+import { ArrowLeft, ChevronDown, Loader2, MessageCircle, ShieldAlert } from "lucide-react";
 import type { Conversation } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { navigateBackOrPath, navigateToLogin } from "./lib/appNavigation";
-import { fetchInbox } from "./lib/messages";
+import { deleteConversation, fetchInbox } from "./lib/messages";
+import {
+  blockConversationUser,
+  markConversationSpam,
+  reportConversation,
+  unblockConversationUser,
+} from "./lib/messageModeration";
 import { navigateToConversation } from "./lib/messagesNavigation";
+import ConversationActionsMenu from "./components/messages/ConversationActionsMenu";
+import ActionConfirmDialog from "./components/messages/ActionConfirmDialog";
 
 type InboxFilter = "all" | "read" | "unread";
 
@@ -66,63 +74,102 @@ function FilterMenu({
 
 function ConversationRow({
   convo,
-  onClick,
+  onOpen,
+  onDelete,
+  onBlock,
+  onUnblock,
+  onReport,
+  onSpam,
 }: {
   convo: Conversation;
-  onClick: () => void;
+  onOpen: () => void;
+  onDelete: () => void;
+  onBlock: () => void;
+  onUnblock: () => void;
+  onReport: () => void;
+  onSpam: () => void;
 }) {
   const unread = Number(convo.unread_count || 0);
+  const blocked = Boolean(convo.blocked_by_you || convo.blocked_by_other);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="w-full rounded-3xl border border-zinc-200 bg-white p-4 text-left shadow-sm transition-colors hover:bg-zinc-50"
-    >
+    <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50">
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white">
-          <MessageCircle className="h-5 w-5" />
-        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="flex min-w-0 flex-1 items-start gap-3 text-left"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white">
+            <MessageCircle className="h-5 w-5" />
+          </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-extrabold text-zinc-900">{convo.listing.name}</p>
-              <p className="truncate text-xs font-semibold text-zinc-500">{convo.seller.business_name}</p>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold text-zinc-900">{convo.listing.name}</p>
+                <p className="truncate text-xs font-semibold text-zinc-500">{convo.seller.business_name}</p>
+              </div>
+              <span className="shrink-0 text-[11px] font-semibold text-zinc-400">
+                {timeLabel(convo.last_message_at)}
+              </span>
             </div>
-            <span className="shrink-0 text-[11px] font-semibold text-zinc-400">
-              {timeLabel(convo.last_message_at)}
-            </span>
-          </div>
 
-          <p className="mt-2 line-clamp-2 text-sm text-zinc-600">
-            {convo.last_message_preview || "Start the conversation."}
-          </p>
+            <p className="mt-2 line-clamp-2 text-sm text-zinc-600">
+              {convo.last_message_preview || "Start the conversation."}
+            </p>
 
-          <div className="mt-3 flex items-center justify-between gap-2">
-            {unread > 0 ? (
-              <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
-                {unread} unread
-              </span>
-            ) : (
-              <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500">
-                Read
-              </span>
-            )}
-            <span className="text-[11px] font-semibold text-zinc-400">Open</span>
+            {blocked ? (
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-800">
+                <ShieldAlert className="h-3.5 w-3.5" />
+                Messaging restricted
+              </div>
+            ) : null}
+
+            <div className="mt-3 flex items-center justify-between gap-2">
+              {unread > 0 ? (
+                <span className="inline-flex rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
+                  {unread} unread
+                </span>
+              ) : (
+                <span className="inline-flex rounded-full bg-zinc-100 px-2.5 py-1 text-[11px] font-bold text-zinc-500">
+                  Read
+                </span>
+              )}
+              <span className="text-[11px] font-semibold text-zinc-400">Open</span>
+            </div>
           </div>
-        </div>
+        </button>
+
+        <ConversationActionsMenu
+          className="shrink-0"
+          onDelete={onDelete}
+          onBlock={onBlock}
+          onUnblock={onUnblock}
+          onReport={onReport}
+          onSpam={onSpam}
+          blockedByYou={Boolean(convo.blocked_by_you)}
+          blockedByOther={Boolean(convo.blocked_by_other)}
+        />
       </div>
-    </button>
+    </div>
   );
 }
 
 export default function MessagesInboxPage() {
   const { user, loading: authLoading } = useAuthUser();
   const [loading, setLoading] = useState(true);
+  const [busyId, setBusyId] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [inbox, setInbox] = useState<Conversation[]>([]);
   const [filter, setFilter] = useState<InboxFilter>("all");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
+
+  const loadInbox = async () => {
+    const items = await fetchInbox();
+    setInbox(items);
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -165,6 +212,35 @@ export default function MessagesInboxPage() {
     if (filter === "read") return sorted.filter((item) => Number(item.unread_count || 0) === 0);
     return sorted;
   }, [filter, inbox]);
+
+  const withBusy = async (conversationId: number, callback: () => Promise<void>) => {
+    setBusyId(conversationId);
+    try {
+      await callback();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openDeleteDialog = (conversation: Conversation) => {
+    setDeleteTarget(conversation);
+    setDeleteOpen(true);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!deleteTarget) return;
+    setBusyId(deleteTarget.id);
+    try {
+      await deleteConversation(deleteTarget.id);
+      await loadInbox();
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } catch (error: any) {
+      setStatus(error?.message || "Failed to delete chat.");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   if (loading || authLoading) {
     return (
@@ -219,17 +295,51 @@ export default function MessagesInboxPage() {
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
               Conversations
             </p>
-            <p className="mt-1 text-sm text-zinc-600">All chats, with unread counters.</p>
+            <p className="mt-1 text-sm text-zinc-600">
+              Chat management, moderation tools, and unread counters.
+            </p>
           </div>
 
           <div className="space-y-3">
             {filteredInbox.length ? (
               filteredInbox.map((convo) => (
-                <ConversationRow
+                <div
                   key={convo.id}
-                  convo={convo}
-                  onClick={() => navigateToConversation(convo.id)}
-                />
+                  className={busyId === convo.id ? "opacity-60 pointer-events-none" : ""}
+                >
+                  <ConversationRow
+                    convo={convo}
+                    onOpen={() => navigateToConversation(convo.id)}
+                    onDelete={() => openDeleteDialog(convo)}
+                    onBlock={() => {
+                      void withBusy(convo.id, async () => {
+                        await blockConversationUser(convo.id, { scope: "messages" });
+                        await loadInbox();
+                      });
+                    }}
+                    onUnblock={() => {
+                      void withBusy(convo.id, async () => {
+                        await unblockConversationUser(convo.id);
+                        await loadInbox();
+                      });
+                    }}
+                    onReport={() => {
+                      void withBusy(convo.id, async () => {
+                        await reportConversation(convo.id, {
+                          reason: "spam",
+                          details: "Reported from inbox actions",
+                        });
+                        setStatus("Conversation reported for moderation review.");
+                      });
+                    }}
+                    onSpam={() => {
+                      void withBusy(convo.id, async () => {
+                        await markConversationSpam(convo.id);
+                        setStatus("Conversation flagged as spam.");
+                      });
+                    }}
+                  />
+                </div>
               ))
             ) : (
               <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500">
@@ -249,6 +359,19 @@ export default function MessagesInboxPage() {
           </div>
         </div>
       </main>
+
+      <ActionConfirmDialog
+        open={deleteOpen}
+        title="Delete chat"
+        description="This removes the conversation from your inbox view. The server keeps it for moderation and dispute handling."
+        confirmLabel="Delete chat"
+        busy={busyId !== null}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={confirmDeleteConversation}
+      />
     </div>
   );
- }
+}
