@@ -1,8 +1,7 @@
 import type { Express, Request, Response } from "express";
 import Database from "better-sqlite3";
 import { requireAuth } from "../middleware/requireAuth.js";
-import { MESSAGE_BLOCK_SCOPES, MESSAGE_REPORT_REASONS, isMessageReportReason, type MessageBlockScope } from "../../src/server/messageSchema.js";
-
+import { ensureMessageSchema, MESSAGE_BLOCK_SCOPES, MESSAGE_REPORT_REASONS, isMessageReportReason, type MessageBlockScope } from "../../src/server/messageSchema.js";
 const db = new Database("market.db");
 db.pragma("foreign_keys = ON");
 
@@ -111,7 +110,7 @@ function initSchema() {
   `);
 }
 
-initSchema();
+ensureMessageSchema(db);
 
 type VerifiedRequestUser = {
   uid: string;
