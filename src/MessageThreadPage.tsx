@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Paperclip, SendHorizontal, ShieldAlert } from "lucide-react";
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin } from "./lib/appNavigation";
+import { navigateToLogin, navigateToListingDetails, navigateToSellerProfile } from "./lib/appNavigation";
 import { navigateToMessages } from "./lib/messagesNavigation";
 import { getConversationIdFromUrl } from "./lib/messagesNavigation";
 import { deleteConversation, fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
@@ -212,21 +212,47 @@ export default function MessageThreadPage() {
 
   const blocked = hasBlockedState(conversation);
   const canReply = conversation.can_reply !== false && !blocked;
+  const listingName = conversation.listing?.name || "Listing";
+  const sellerName = conversation.seller?.business_name || "Seller";
+  const listingPrice = Number(conversation.listing?.price || 0);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 text-zinc-900">
       <header className="shrink-0 border-b border-zinc-200 bg-zinc-100/95 backdrop-blur z-20">
-        <div className="flex items-center justify-between gap-3 px-4 py-4">
+        <div className="flex items-center gap-3 px-4 py-4">
           <button
             type="button"
             onClick={() => navigateToMessages()}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white"
+            className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white"
+            aria-label="Back"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateToListingDetails(conversation.listing.id, 0)}
+            className="min-w-0 flex-1 text-left"
+          >
+            <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">
+              {listingName}
+            </p>
+            <p className="text-sm font-semibold text-zinc-500">
+              {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigateToSellerProfile(conversation.seller.uid)}
+            className="ml-auto text-right"
+          >
+            <p className="text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
+            <p className="text-[11px] font-semibold text-zinc-500">Seller profile</p>
           </button>
 
           <ConversationActionsMenu
+            className="shrink-0 ml-1"
             onDelete={() => setDeleteOpen(true)}
             onBlock={() => setBlockOpen(true)}
             onUnblock={handleUnblock}
@@ -300,11 +326,11 @@ export default function MessageThreadPage() {
           <div className="flex items-end gap-3">
             <button
               type="button"
-              onClick={() => window.alert("Attachments are coming soon. Text only for now.")}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200"
-              aria-label="Add attachment"
+              aria-label="Attachments coming soon"
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 text-zinc-400"
+              disabled
             >
-              <Paperclip className="h-5 w-5 text-zinc-700" />
+              <Paperclip className="h-5 w-5" />
             </button>
 
             <textarea
