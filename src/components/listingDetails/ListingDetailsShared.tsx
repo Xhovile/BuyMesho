@@ -85,26 +85,37 @@ export function RelatedRailCard({
       : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
 
   return (
-    <article className="flex gap-4 border-t border-zinc-200 py-4 first:border-t-0 first:pt-0">
-      <button type="button" onClick={() => onOpenDetails(item)} className="block shrink-0 text-left">
-        <div className="h-20 w-20 overflow-hidden rounded-2xl bg-zinc-100 ring-1 ring-zinc-200 sm:h-24 sm:w-24">
-          <img src={firstPhoto} alt={item.name} className="h-full w-full object-cover" />
+    <article className="group snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+      <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+          <img
+            src={firstPhoto}
+            alt={item.name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
         </div>
       </button>
-      <div className="min-w-0 flex-1 space-y-2">
-        <button type="button" onClick={() => onOpenDetails(item)} className="block text-left">
-          <h3 className="line-clamp-2 text-[15px] font-extrabold tracking-tight text-zinc-900">{item.name}</h3>
+
+      <div className="space-y-2 p-3 sm:p-4">
+        <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+          <h3 className="line-clamp-2 text-sm font-extrabold tracking-tight text-zinc-900 sm:text-[15px]">
+            {item.name}
+          </h3>
         </button>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p className="font-black text-zinc-900">MK {Number(item.price).toLocaleString()}</p>
-          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">{item.university}</span>
+
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-sm font-black text-zinc-900">MK {Number(item.price).toLocaleString()}</p>
+          <span className="shrink-0 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 sm:text-[11px]">
+            {item.university}
+          </span>
         </div>
+
         <button
           type="button"
           onClick={() => item.seller_uid && onOpenSeller(item.seller_uid)}
-          className="text-left text-xs font-semibold text-zinc-500 hover:text-zinc-900"
+          className="block w-full text-left text-xs font-semibold text-zinc-500 transition-colors hover:text-zinc-900"
         >
-          {item.business_name}
+          <span className="line-clamp-1">{item.business_name}</span>
         </button>
       </div>
     </article>
