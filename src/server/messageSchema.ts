@@ -1,3 +1,5 @@
+import type Database from "better-sqlite3";
+
 export const MESSAGE_REPORT_REASONS = [
   "spam",
   "scam",
@@ -17,8 +19,7 @@ export const MESSAGE_SCHEMA_SQL = `
     listing_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (listing_id) REFERENCES listings(id)
+    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
@@ -43,6 +44,8 @@ export const MESSAGE_SCHEMA_SQL = `
     sender_uid TEXT NOT NULL,
     body TEXT NOT NULL,
     message_type TEXT NOT NULL DEFAULT 'text',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    read_at DATETIME,
     is_spam INTEGER NOT NULL DEFAULT 0,
     spam_flag_count INTEGER NOT NULL DEFAULT 0,
     deleted_at DATETIME,
@@ -105,8 +108,7 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
     listing_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (listing_id) REFERENCES listings(id)
+    last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
    ON conversations (buyer_uid, seller_uid, COALESCE(listing_id, 0))`,
@@ -128,6 +130,8 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
     sender_uid TEXT NOT NULL,
     body TEXT NOT NULL,
     message_type TEXT NOT NULL DEFAULT 'text',
+    is_read INTEGER NOT NULL DEFAULT 0,
+    read_at DATETIME,
     is_spam INTEGER NOT NULL DEFAULT 0,
     spam_flag_count INTEGER NOT NULL DEFAULT 0,
     deleted_at DATETIME,
@@ -178,6 +182,80 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
 
 export const MESSAGE_BLOCK_SCOPES = ["messages", "listing", "all"] as const;
 export type MessageBlockScope = (typeof MESSAGE_BLOCK_SCOPES)[number];
+
+function ensureColumn(db: Database.Database, table: string, column: string, definition: string) {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+  if (rows.some((row) => row.name === column)) return;
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+}
+
+export function ensureMessageSchema(db: Database.Database) {
+  db.pragma("foreign_keys = ON");
+  db.exec(MESSAGE_SCHEMA_SQL);
+
+  ensureColumn(db, "conversations", "listing_id", "INTEGER");
+  ensureColumn(db, "conversations", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "conversations", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "conversations", "last_message_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "conversations", "last_message_preview", "TEXT");
+  ensureColumn(db, "conversations", "buyer_unread_count", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "conversations", "seller_unread_count", "INTEGER NOT NULL DEFAULT 0");
+
+  ensureColumn(db, "conversation_participants", "deleted_at", "DATETIME");
+  ensureColumn(db, "conversation_participants", "deleted_by_user", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "conversation_participants", "archived_at", "DATETIME");
+  ensureColumn(db, "conversation_participants", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "conversation_participants", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  ensureColumn(db, "messages", "message_type", "TEXT NOT NULL DEFAULT 'text'");
+  ensureColumn(db, "messages", "is_read", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "messages", "read_at", "DATETIME");
+  ensureColumn(db, "messages", "is_spam", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "messages", "spam_flag_count", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "messages", "deleted_at", "DATETIME");
+  ensureColumn(db, "messages", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "messages", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  ensureColumn(db, "message_blocks", "block_scope", "TEXT NOT NULL DEFAULT 'messages'");
+  ensureColumn(db, "message_blocks", "reason", "TEXT");
+  ensureColumn(db, "message_blocks", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "message_blocks", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  ensureColumn(db, "message_reports", "conversation_id", "INTEGER");
+  ensureColumn(db, "message_reports", "message_id", "INTEGER");
+  ensureColumn(db, "message_reports", "reported_uid", "TEXT");
+  ensureColumn(db, "message_reports", "details", "TEXT");
+  ensureColumn(db, "message_reports", "status", "TEXT NOT NULL DEFAULT 'open'");
+  ensureColumn(db, "message_reports", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "message_reports", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  ensureColumn(db, "sender_spam_profiles", "spam_score", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "sender_spam_profiles", "spam_flags", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "sender_spam_profiles", "auto_limited_until", "DATETIME");
+  ensureColumn(db, "sender_spam_profiles", "last_flagged_at", "DATETIME");
+  ensureColumn(db, "sender_spam_profiles", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+  ensureColumn(db, "sender_spam_profiles", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_conversations_pair_listing
+    ON conversations (listing_id, buyer_uid, seller_uid);
+
+    CREATE INDEX IF NOT EXISTS idx_conversations_buyer_updated_at
+    ON conversations (buyer_uid, updated_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_conversations_seller_updated_at
+    ON conversations (seller_uid, updated_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_messages_conversation_created_at
+    ON messages (conversation_id, created_at ASC, id ASC);
+
+    CREATE INDEX IF NOT EXISTS idx_message_reports_status_created_at
+    ON message_reports (status, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_message_blocks_blocked_uid
+    ON message_blocks (blocked_uid, block_scope);
+  `);
+}
 
 export function isMessageReportReason(value: string): value is MessageReportReason {
   return (MESSAGE_REPORT_REASONS as readonly string[]).includes(value);
