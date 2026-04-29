@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
 import { reload } from "firebase/auth";
-import ListingStudioForm from "./components/ListingStudioForm";
+import ListingStudioFormWide from "./components/ListingStudioFormWide";
 import FeedbackModal from "./components/FeedbackModal";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { CATEGORIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
@@ -156,7 +156,7 @@ export default function CreateListingPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
@@ -164,43 +164,43 @@ export default function CreateListingPage() {
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Create listing</p>
             </div>
           </button>
-          <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">Back to Explore</button>
+          <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">Back</button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
+      <main className="w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         {isBusy ? (
-          <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 font-medium text-zinc-500 shadow-sm">
+          <div className="flex items-center justify-center gap-3 border-b border-zinc-200 bg-transparent px-0 py-20 font-medium text-zinc-500">
             <Loader2 className="h-5 w-5 animate-spin" /> Preparing listing studio...
           </div>
         ) : !firebaseUser ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
+          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h1>
             <p className="mt-3 text-sm text-zinc-500">You need to log in before posting a listing.</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : !profile?.is_seller ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
+          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller account required</h1>
             <p className="mt-3 text-sm text-zinc-500">Apply to become a seller before posting listings.</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : !emailVerified ? (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
+          <div className="border-b border-zinc-200 pb-12 pt-6 text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Email verification required</h1>
             <p className="mt-3 text-sm text-zinc-500">Verify your email before posting listings.</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return to Explore</button>
+            <button type="button" onClick={() => navigateBackOrPath(EXPLORE_PATH)} className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"><ChevronLeft className="h-4 w-4" /> Return</button>
           </div>
         ) : canCreate ? (
           <div className="pb-20">
-            <div className="px-2 sm:px-0">
+            <div className="mb-6 border-b border-zinc-200 pb-4">
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
-            <ListingStudioForm
+            <ListingStudioFormWide
               mode="create"
               initialData={listingDraft}
-              onCancel={() => navigateToPath(EXPLORE_PATH)}
+              onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
               onSubmit={handleCreate}
               showFeedback={showFeedback}
               isSubmitting={submitting}
