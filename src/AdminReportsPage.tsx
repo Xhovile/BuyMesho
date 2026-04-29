@@ -14,6 +14,8 @@ import {
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
+import { fetchMessageReports, resolveMessageReport } from "./lib/messageModeration";
+import type { MessageReport } from "./types";
 
 type ReportRow = {
   id: number;
@@ -35,10 +37,92 @@ type ReportRow = {
   seller_business_name?: string | null;
 };
 
+function MessageReportCard({
+  report,
+  onResolve,
+  resolving,
+}: {
+  report: MessageReport;
+  onResolve: () => void;
+  resolving: boolean;
+}) {
+  return (
+    <div className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div className="space-y-3 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-50 text-red-700 border border-red-200">
+              message report
+            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+              {report.status}
+            </span>
+            <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-extrabold text-zinc-900">{report.reason}</h3>
+            <p className="text-sm text-zinc-500 mt-1">
+              {new Date(report.created_at).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reporter UID</p>
+              <p className="text-zinc-800 break-all">{report.reporter_uid}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reported UID</p>
+              <p className="text-zinc-800 break-all">{report.reported_uid || "Unknown"}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Conversation</p>
+              <p className="text-zinc-800">{report.conversation_id ?? "Unknown conversation"}</p>
+            </div>
+            {report.message_id ? (
+              <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+                <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Message</p>
+                <p className="text-zinc-800">Message #{report.message_id}</p>
+              </div>
+            ) : null}
+          </div>
+
+          {report.details ? (
+            <div className="bg-zinc-50 rounded-2xl p-4">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Details</p>
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap">{report.details}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2 min-w-[180px]">
+          {report.status !== "resolved" ? (
+            <button
+              onClick={onResolve}
+              disabled={resolving}
+              className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+            >
+              {resolving ? "Resolving..." : "Resolve"}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminReportsPage() {
   const [reports, setReports] = useState<ReportRow[]>([]);
+  const [messageReports, setMessageReports] = useState<MessageReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [messageLoading, setMessageLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  const [messageUpdatingId, setMessageUpdatingId] = useState<number | null>(null);
   const [enforcingKey, setEnforcingKey] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
@@ -67,8 +151,21 @@ export default function AdminReportsPage() {
     }
   };
 
+  const fetchMsgReports = async () => {
+    setMessageLoading(true);
+    try {
+      const items = await fetchMessageReports("open");
+      setMessageReports(items);
+    } catch (err: any) {
+      alert(err?.message || "Failed to load message reports.");
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchReports();
+    fetchMsgReports();
   }, [statusFilter, typeFilter, reportView]);
 
   useEffect(() => {
@@ -97,6 +194,18 @@ export default function AdminReportsPage() {
       alert(err?.message || "Failed to update report status.");
     } finally {
       setUpdatingId(null);
+    }
+  };
+
+  const resolveMsgReport = async (id: number) => {
+    setMessageUpdatingId(id);
+    try {
+      await resolveMessageReport(id);
+      setMessageReports((prev) => prev.filter((report) => report.id !== id));
+    } catch (err: any) {
+      alert(err?.message || "Failed to resolve message report.");
+    } finally {
+      setMessageUpdatingId(null);
     }
   };
 
@@ -628,6 +737,53 @@ export default function AdminReportsPage() {
                   </div>
                 </div>
               </div>
+            ))
+          )}
+        </section>
+
+        <section className="mt-10 space-y-4">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                  Message moderation
+                </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
+                  Chat reports queue
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={fetchMsgReports}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh queue
+              </button>
+            </div>
+          </div>
+
+          {messageLoading ? (
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
+              <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
+              <p className="text-zinc-500 font-medium">Loading message reports...</p>
+            </div>
+          ) : messageReports.length === 0 ? (
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+              <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-8 h-8 text-zinc-300" />
+              </div>
+              <h3 className="text-lg font-bold text-zinc-900">No open message reports</h3>
+              <p className="text-zinc-500">Anything reported from chat will appear here for review.</p>
+            </div>
+          ) : (
+            messageReports.map((report) => (
+              <MessageReportCard
+                key={report.id}
+                report={report}
+                resolving={messageUpdatingId === report.id}
+                onResolve={() => void resolveMsgReport(report.id)}
+              />
             ))
           )}
         </section>
