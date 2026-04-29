@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
 export interface ActionConfirmDialogProps {
@@ -9,7 +10,7 @@ export interface ActionConfirmDialogProps {
   onClose: () => void;
   tone?: "danger" | "neutral";
   busy?: boolean;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }
 
 export default function ActionConfirmDialog({
