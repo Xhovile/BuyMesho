@@ -39,7 +39,7 @@ function FilterMenu({
   const label = value === "all" ? "All" : value === "read" ? "Read" : "Unread";
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block max-w-full">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -50,7 +50,7 @@ function FilterMenu({
       </button>
 
       {open ? (
-        <div className="absolute left-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl">
+        <div className="absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-xl sm:right-0">
           {(["all", "read", "unread"] as InboxFilter[]).map((item) => (
             <button
               key={item}
@@ -276,8 +276,8 @@ export default function MessagesInboxPage() {
       </header>
 
       <div className="pointer-events-none sticky top-[78px] z-30">
-        <div className="mx-auto flex max-w-7xl justify-end px-4 pt-2 sm:px-6 lg:px-8">
-          <div className="pointer-events-auto">
+        <div className="mx-auto flex max-w-7xl justify-end px-4 pt-2 sm:px-6 lg:px-8 overflow-x-visible">
+          <div className="pointer-events-auto relative">
             <FilterMenu value={filter} onChange={setFilter} />
           </div>
         </div>
