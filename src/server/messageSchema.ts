@@ -183,10 +183,25 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
 export const MESSAGE_BLOCK_SCOPES = ["messages", "listing", "all"] as const;
 export type MessageBlockScope = (typeof MESSAGE_BLOCK_SCOPES)[number];
 
+function hasNonConstantDefault(definition: string) {
+  return /DEFAULT\s+CURRENT_TIMESTAMP/i.test(definition) || /DEFAULT\s*\(/i.test(definition);
+}
+
+function stripNonConstantDefault(definition: string) {
+  return definition
+    .replace(/\s+DEFAULT\s+CURRENT_TIMESTAMP/ig, "")
+    .replace(/\s+DEFAULT\s*\([^)]*\)/ig, "");
+}
+
 function ensureColumn(db: Database.Database, table: string, column: string, definition: string) {
   const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
   if (rows.some((row) => row.name === column)) return;
-  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+
+  const alterDefinition = hasNonConstantDefault(definition)
+    ? stripNonConstantDefault(definition)
+    : definition;
+
+  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${alterDefinition}`);
 }
 
 export function ensureMessageSchema(db: Database.Database) {
