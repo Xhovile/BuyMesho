@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Paperclip, SendHorizontal, ShieldAlert } from "lucide-react";
-import type { Conversation, MessageThreadItem } from "./types";
+import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin, navigateToMessages } from "./lib/messagesNavigation";
+import { navigateToLogin } from "./lib/appNavigation";
+import { navigateToMessages } from "./lib/messagesNavigation";
 import { getConversationIdFromUrl } from "./lib/messagesNavigation";
 import { deleteConversation, fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 import {
@@ -12,6 +13,8 @@ import {
   unblockConversationUser,
 } from "./lib/messageModeration";
 import ConversationActionsMenu from "./components/messages/ConversationActionsMenu";
+import ActionConfirmDialog from "./components/messages/ActionConfirmDialog";
+import MessageReportDialog from "./components/messages/MessageReportDialog";
 
 function timeLabel(value?: string | null) {
   if (!value) return "";
@@ -33,6 +36,9 @@ export default function MessageThreadPage() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageThreadItem[]>([]);
   const [conversationId] = useState<number | null>(() => getConversationIdFromUrl());
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
   const reloadConversation = async (id: number) => {
@@ -107,14 +113,12 @@ export default function MessageThreadPage() {
     }
   };
 
-  const handleDeleteChat = async () => {
+  const confirmDeleteChat = async () => {
     if (!conversationId) return;
-    const confirmed = window.confirm("Delete this chat from your inbox? It will stay available for moderation and abuse review.");
-    if (!confirmed) return;
-
     setBusy(true);
     try {
       await deleteConversation(conversationId);
+      setDeleteOpen(false);
       navigateToMessages();
     } catch (error: any) {
       setStatus(error?.message || "Failed to delete chat.");
@@ -123,13 +127,13 @@ export default function MessageThreadPage() {
     }
   };
 
-  const handleBlock = async () => {
+  const confirmBlock = async () => {
     if (!conversationId) return;
-    const reason = window.prompt("Why are you blocking this user? (optional)", "harassment") || "";
     setBusy(true);
     try {
-      await blockConversationUser(conversationId, { scope: "messages", reason });
+      await blockConversationUser(conversationId, { scope: "messages" });
       await reloadConversation(conversationId);
+      setBlockOpen(false);
     } catch (error: any) {
       setStatus(error?.message || "Failed to block user.");
     } finally {
@@ -137,32 +141,13 @@ export default function MessageThreadPage() {
     }
   };
 
-  const handleUnblock = async () => {
+  const confirmReport = async (payload: { reason: MessageReportReason; details: string }) => {
     if (!conversationId) return;
     setBusy(true);
     try {
-      await unblockConversationUser(conversationId);
-      await reloadConversation(conversationId);
-    } catch (error: any) {
-      setStatus(error?.message || "Failed to unblock user.");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const handleReport = async () => {
-    if (!conversationId) return;
-    const reason = window.prompt(
-      'Report reason: spam, scam, harassment, fake_listing, abusive_language, off_platform_fraud',
-      'spam'
-    ) as any;
-    if (!reason) return;
-    const details = window.prompt("Add details for moderation review (optional)", "") || "";
-
-    setBusy(true);
-    try {
-      await reportConversation(conversationId, { reason, details });
+      await reportConversation(conversationId, payload);
       setStatus("Conversation reported.");
+      setReportOpen(false);
     } catch (error: any) {
       setStatus(error?.message || "Failed to report conversation.");
     } finally {
@@ -178,6 +163,19 @@ export default function MessageThreadPage() {
       setStatus("Marked as spam and sent to moderation.");
     } catch (error: any) {
       setStatus(error?.message || "Failed to mark as spam.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleUnblock = async () => {
+    if (!conversationId) return;
+    setBusy(true);
+    try {
+      await unblockConversationUser(conversationId);
+      await reloadConversation(conversationId);
+    } catch (error: any) {
+      setStatus(error?.message || "Failed to unblock user.");
     } finally {
       setBusy(false);
     }
@@ -229,10 +227,10 @@ export default function MessageThreadPage() {
           </button>
 
           <ConversationActionsMenu
-            onDelete={handleDeleteChat}
-            onBlock={handleBlock}
+            onDelete={() => setDeleteOpen(true)}
+            onBlock={() => setBlockOpen(true)}
             onUnblock={handleUnblock}
-            onReport={handleReport}
+            onReport={() => setReportOpen(true)}
             onSpam={handleSpam}
             blockedByYou={Boolean(conversation.blocked_by_you)}
             blockedByOther={Boolean(conversation.blocked_by_other)}
@@ -329,6 +327,33 @@ export default function MessageThreadPage() {
           </div>
         </div>
       </div>
+
+      <ActionConfirmDialog
+        open={deleteOpen}
+        title="Delete chat"
+        description="This removes the conversation from your inbox view. The server keeps it for moderation and dispute handling."
+        confirmLabel="Delete chat"
+        busy={busy}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={confirmDeleteChat}
+      />
+
+      <ActionConfirmDialog
+        open={blockOpen}
+        title="Block user"
+        description="Blocking stops new messages and hides future chat access from this user."
+        confirmLabel="Block user"
+        busy={busy}
+        onClose={() => setBlockOpen(false)}
+        onConfirm={confirmBlock}
+      />
+
+      <MessageReportDialog
+        open={reportOpen}
+        busy={busy}
+        onClose={() => setReportOpen(false)}
+        onSubmit={confirmReport}
+      />
     </div>
   );
 }
