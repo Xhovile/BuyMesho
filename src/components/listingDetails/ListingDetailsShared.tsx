@@ -19,9 +19,7 @@ export function SectionHeading({
 }) {
   return (
     <div className="space-y-2 border-b border-zinc-200 pb-4">
-      {eyebrow ? (
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">{eyebrow}</p>
-      ) : null}
+      {eyebrow ? <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">{eyebrow}</p> : null}
       <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">{title}</h2>
       {description ? <p className="max-w-3xl text-sm leading-6 text-zinc-500">{description}</p> : null}
     </div>
@@ -48,22 +46,12 @@ export function InfoPill({ children }: { children: ReactNode }) {
   );
 }
 
-export function TabButton({
-  active,
-  children,
-  onClick,
-}: {
-  active: boolean;
-  children: ReactNode;
-  onClick: () => void;
-}) {
+export function TabButton({ active, children, onClick }: { active: boolean; children: ReactNode; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-extrabold transition-colors ${
-        active ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-900"
-      }`}
+      className={`whitespace-nowrap border-b-2 px-1 py-4 text-sm font-extrabold transition-colors ${active ? "border-zinc-900 text-zinc-900" : "border-transparent text-zinc-500 hover:text-zinc-900"}`}
     >
       {children}
     </button>
@@ -79,33 +67,38 @@ export function RelatedRailCard({
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
 }) {
-  const firstPhoto =
-    Array.isArray(item.photos) && typeof item.photos[0] === "string" && item.photos[0].trim()
-      ? item.photos[0]
-      : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
+  const firstPhoto = Array.isArray(item.photos) && typeof item.photos[0] === "string" && item.photos[0].trim()
+    ? item.photos[0]
+    : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
 
   return (
-    <article className="flex gap-4 border-t border-zinc-200 py-4 first:border-t-0 first:pt-0">
-      <button type="button" onClick={() => onOpenDetails(item)} className="block shrink-0 text-left">
-        <div className="h-20 w-20 overflow-hidden rounded-2xl bg-zinc-100 ring-1 ring-zinc-200 sm:h-24 sm:w-24">
-          <img src={firstPhoto} alt={item.name} className="h-full w-full object-cover" />
+    <article className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+      <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+        <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+          <img
+            src={firstPhoto}
+            alt={item.name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          />
         </div>
       </button>
-      <div className="min-w-0 flex-1 space-y-2">
-        <button type="button" onClick={() => onOpenDetails(item)} className="block text-left">
-          <h3 className="line-clamp-2 text-[15px] font-extrabold tracking-tight text-zinc-900">{item.name}</h3>
+
+      <div className="space-y-1.5 p-2.5 sm:p-3">
+        <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
+          <h3 className="line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 sm:text-[13px]">
+            {item.name}
+          </h3>
         </button>
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p className="font-black text-zinc-900">MK {Number(item.price).toLocaleString()}</p>
-          <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500">{item.university}</span>
+
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-xs font-black text-zinc-900 sm:text-sm">
+            MK {Number(item.price).toLocaleString()}
+          </p>
+
+          <span className="max-w-[72px] truncate text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500 sm:max-w-[90px] sm:text-[10px]">
+            {item.university}
+          </span>
         </div>
-        <button
-          type="button"
-          onClick={() => item.seller_uid && onOpenSeller(item.seller_uid)}
-          className="text-left text-xs font-semibold text-zinc-500 hover:text-zinc-900"
-        >
-          {item.business_name}
-        </button>
       </div>
     </article>
   );
