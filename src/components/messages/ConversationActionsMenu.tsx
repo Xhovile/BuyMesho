@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Ban, Flag, MessageSquareMore, OctagonAlert, Trash2 } from "lucide-react";
+import { Ban, Flag, MoreVertical, OctagonAlert, Trash2 } from "lucide-react";
 import type { MessageBlockScope } from "../../types";
 
 export interface ConversationActionsMenuProps {
@@ -43,12 +43,12 @@ export default function ConversationActionsMenu({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-sm font-bold text-zinc-700 shadow-sm hover:bg-zinc-50"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-700 shadow-sm hover:bg-zinc-50"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Conversation actions"
       >
-        <MessageSquareMore className="h-4 w-4" />
+        <MoreVertical className="h-5 w-5" />
       </button>
 
       {open ? (
