@@ -71,6 +71,11 @@ export function RelatedRailCard({
     ? item.photos[0]
     : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
 
+  const sellerName =
+    typeof item.business_name === "string" && item.business_name.trim()
+      ? item.business_name.trim()
+      : "View seller profile";
+
   return (
     <article className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
       <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
@@ -99,6 +104,17 @@ export function RelatedRailCard({
             {item.university}
           </span>
         </div>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            if (item.seller_uid) onOpenSeller(item.seller_uid);
+          }}
+          className="block w-full text-left text-[10px] font-semibold text-zinc-500 transition-colors hover:text-zinc-900 sm:text-[11px]"
+        >
+          <span className="line-clamp-1">{sellerName}</span>
+        </button>
       </div>
     </article>
   );
