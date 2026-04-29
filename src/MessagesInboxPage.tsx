@@ -12,6 +12,7 @@ import {
 } from "./lib/messageModeration";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import ConversationActionsMenu from "./components/messages/ConversationActionsMenu";
+import ActionConfirmDialog from "./components/messages/ActionConfirmDialog";
 
 type InboxFilter = "all" | "read" | "unread";
 
@@ -162,6 +163,8 @@ export default function MessagesInboxPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [inbox, setInbox] = useState<Conversation[]>([]);
   const [filter, setFilter] = useState<InboxFilter>("all");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Conversation | null>(null);
 
   const loadInbox = async () => {
     const items = await fetchInbox();
@@ -214,6 +217,26 @@ export default function MessagesInboxPage() {
     setBusyId(conversationId);
     try {
       await callback();
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openDeleteDialog = (conversation: Conversation) => {
+    setDeleteTarget(conversation);
+    setDeleteOpen(true);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!deleteTarget) return;
+    setBusyId(deleteTarget.id);
+    try {
+      await deleteConversation(deleteTarget.id);
+      await loadInbox();
+      setDeleteOpen(false);
+      setDeleteTarget(null);
+    } catch (error: any) {
+      setStatus(error?.message || "Failed to delete chat.");
     } finally {
       setBusyId(null);
     }
@@ -287,14 +310,7 @@ export default function MessagesInboxPage() {
                   <ConversationRow
                     convo={convo}
                     onOpen={() => navigateToConversation(convo.id)}
-                    onDelete={() => {
-                      void withBusy(convo.id, async () => {
-                        const confirmed = window.confirm("Delete this conversation from your inbox?");
-                        if (!confirmed) return;
-                        await deleteConversation(convo.id);
-                        await loadInbox();
-                      });
-                    }}
+                    onDelete={() => openDeleteDialog(convo)}
                     onBlock={() => {
                       void withBusy(convo.id, async () => {
                         await blockConversationUser(convo.id, { scope: "messages" });
@@ -343,6 +359,19 @@ export default function MessagesInboxPage() {
           </div>
         </div>
       </main>
+
+      <ActionConfirmDialog
+        open={deleteOpen}
+        title="Delete chat"
+        description="This removes the conversation from your inbox view. The server keeps it for moderation and dispute handling."
+        confirmLabel="Delete chat"
+        busy={busyId !== null}
+        onClose={() => {
+          setDeleteOpen(false);
+          setDeleteTarget(null);
+        }}
+        onConfirm={confirmDeleteConversation}
+      />
     </div>
   );
 }
