@@ -187,17 +187,16 @@ export default function Header({
 
   return (
     <>
-      <nav
-        className="sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5"
-      >
-        <div className="max-w-7xl mx-auto flex flex-col gap-3">
-          <div
-            className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
-              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
-            }`}
-          >
-          <div className="flex items-center justify-between gap-4">
-            <BrandMark />
+      <nav className="sticky top-0 z-50 bg-zinc-50/95 px-4 py-2.5 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 shadow-sm">
+            <div
+              className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+                topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-4">
+                <BrandMark />
 
             <div className="hidden md:flex items-center gap-2">
               <button
@@ -236,7 +235,7 @@ export default function Header({
               </button>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => handleSellClick()}
                 className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
@@ -285,9 +284,9 @@ export default function Header({
                   <Menu className="w-5 h-5 text-white" />
                 )}
               </button>
+                </div>
+              </div>
             </div>
-          </div>
-          </div>
 
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -339,6 +338,26 @@ export default function Header({
             </div>
           </form>
 
+          </div>
+
+          <div className="mt-2 -mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="inline-flex min-w-max items-center gap-2 rounded-2xl border border-zinc-200/80 bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+              {quickChips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  onClick={() => {
+                    setSelectedChip(chip);
+                    setComingSoonOpen(true);
+                  }}
+                  className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
+                  aria-label={`${chip} coming soon`}
+                >
+                  <span>{chip}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </nav>
       <div className="px-4">
