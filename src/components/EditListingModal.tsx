@@ -958,6 +958,84 @@ export default function EditListingModal({
               </div>
             </div>
 
+<div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+    Deal pricing & wholesale
+  </p>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Original Price (optional)
+      </label>
+      <input
+        type="number"
+        min="0"
+        value={form.original_price}
+        onChange={(e) => {
+          clearEditFieldError("original_price");
+          setForm({ ...form, original_price: e.target.value });
+        }}
+        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+          editFieldErrors.original_price
+            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        }`}
+      />
+      {editFieldErrors.original_price ? (
+        <p className="mt-1 text-xs text-red-600">{editFieldErrors.original_price}</p>
+      ) : null}
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Discount Percent (optional)
+      </label>
+      <input
+        type="number"
+        min="0"
+        max="100"
+        value={form.discount_percent}
+        onChange={(e) => {
+          clearEditFieldError("discount_percent");
+          setForm({ ...form, discount_percent: e.target.value });
+        }}
+        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+          editFieldErrors.discount_percent
+            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        }`}
+      />
+      {editFieldErrors.discount_percent ? (
+        <p className="mt-1 text-xs text-red-600">{editFieldErrors.discount_percent}</p>
+      ) : null}
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Deal Label (optional)
+      </label>
+      <input
+        type="text"
+        value={form.deal_label}
+        onChange={(e) => setForm({ ...form, deal_label: e.target.value })}
+        placeholder="e.g. Special deal"
+        className="w-full px-4 py-3 bg-white border rounded-xl outline-none border-zinc-200 focus:ring-2 focus:ring-primary/20"
+      />
+    </div>
+
+    <label className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+      <span className="text-sm font-bold text-zinc-700">Wholesale listing</span>
+      <input
+        type="checkbox"
+        checked={form.is_wholesale}
+        onChange={(e) => setForm({ ...form, is_wholesale: e.target.checked })}
+        className="h-4 w-4"
+      />
+    </label>
+  </div>
+</div>
+
             {isSchemaDrivenCategory && (
               <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                 <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
