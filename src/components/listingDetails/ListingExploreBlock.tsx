@@ -26,7 +26,11 @@ export default function ListingExploreBlock({
 
         {visibleItems.length ? (
           <div className="overflow-x-auto pb-2">
-            <div className="grid grid-flow-col grid-rows-2 gap-3 auto-cols-[11.5rem] sm:auto-cols-[13rem]">
+            <div
+              className={`grid grid-flow-col gap-3 auto-cols-[11.5rem] sm:auto-cols-[13rem] ${
+                visibleItems.length >= 2 ? "grid-rows-2" : "grid-rows-1"
+              }`}
+            >
               {visibleItems.map((item) => (
                 <div key={item.id} className="h-full">
                   <div className="sm:hidden">
