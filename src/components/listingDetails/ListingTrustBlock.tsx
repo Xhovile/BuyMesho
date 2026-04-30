@@ -90,8 +90,8 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
       <div className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-0">
         <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3 sm:border-t-0 sm:border-r sm:pr-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Seller status</p>
-            <p className="mt-1 text-base font-extrabold text-zinc-900">{seller?.is_verified || listing.is_verified ? "Verified" : "Not verified"}</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Email status</p>
+            <p className="mt-1 text-base font-extrabold text-zinc-900">{seller?.is_verified || listing.is_verified ? "Email verified" : "Email not verified"}</p>
           </div>
           <Store className="h-4 w-4 shrink-0 text-zinc-400" />
         </div>

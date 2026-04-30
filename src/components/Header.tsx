@@ -40,11 +40,14 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const [headerHidden, setHeaderHidden] = useState(false);
+  const [topRowHidden, setTopRowHidden] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
+  const topRowHiddenRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -111,14 +114,20 @@ export default function Header({
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
       const delta = currentY - lastY;
-      const scrollThreshold = 10;
+      const collapseThreshold = 72;
+      const directionThreshold = 12;
 
       if (mobileMenuOpen || currentY < 24) {
-        setHeaderHidden(false);
-      } else if (delta > scrollThreshold) {
-        setHeaderHidden(true);
-      } else if (delta < -scrollThreshold) {
-        setHeaderHidden(false);
+        if (topRowHiddenRef.current) {
+          topRowHiddenRef.current = false;
+          setTopRowHidden(false);
+        }
+      } else if (!topRowHiddenRef.current && currentY > collapseThreshold && delta > directionThreshold) {
+        topRowHiddenRef.current = true;
+        setTopRowHidden(true);
+      } else if (topRowHiddenRef.current && delta < -directionThreshold) {
+        topRowHiddenRef.current = false;
+        setTopRowHidden(false);
       }
 
       lastScrollYRef.current = currentY;
@@ -182,11 +191,14 @@ export default function Header({
   return (
     <>
       <nav
-        className={`sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5 transform transition-transform duration-300 ${
-          headerHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
-        }`}
+        className="sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5"
       >
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          <div
+            className={`overflow-hidden transition-all duration-300 ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
+            }`}
+          >
           <div className="flex items-center justify-between gap-4">
             <BrandMark />
 
@@ -271,7 +283,7 @@ export default function Header({
                   <User className="w-5 h-5 text-zinc-600" />
                 )}
               </button>
-              
+
               <button
                 onClick={() => setMobileMenuOpen((value) => !value)}
                 className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
@@ -287,6 +299,7 @@ export default function Header({
               </button>
             </div>
           </div>
+          </div>
 
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -295,21 +308,46 @@ export default function Header({
             }}
             className="w-full"
           >
-            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm md:max-w-4xl md:border-zinc-200 md:shadow-md">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => onSearch(e.target.value)}
-                placeholder="Search listings, products, or services..."
-                className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
-              />
-              <button
-                type="submit"
-                aria-label="Search listings"
-                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-red-800"
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
+              <div
+                className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-300 bg-white shadow-sm transition-all md:border-zinc-200 md:shadow-md ${
+                  topRowHidden ? "p-1.5" : "p-2"
+                }`}
               >
-                Search
-              </button>
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => onSearch(e.target.value)}
+                  placeholder="Search listings, products, or services..."
+                  className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search listings"
+                  className={`inline-flex items-center justify-center rounded-xl bg-red-900 px-3 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4 ${
+                    topRowHidden ? "py-2" : "py-2.5"
+                  }`}
+                >
+                  Search
+                </button>
+              </div>
+
+              {topRowHidden && (
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen((value) => !value)}
+                  className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-header-menu"
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-4 h-4" />
+                  ) : (
+                    <Menu className="w-4 h-4" />
+                  )}
+                </button>
+              )}
             </div>
           </form>
 
@@ -319,14 +357,14 @@ export default function Header({
                 <button
                   key={chip}
                   type="button"
-                  disabled
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm whitespace-nowrap disabled:cursor-default disabled:opacity-100"
+                  onClick={() => {
+                    setSelectedChip(chip);
+                    setComingSoonOpen(true);
+                  }}
+                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold text-zinc-600 hover:text-zinc-900 transition-colors"
                   aria-label={`${chip} coming soon`}
                 >
                   <span>{chip}</span>
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Coming soon
-                  </span>
                 </button>
               ))}
             </div>
@@ -534,6 +572,20 @@ export default function Header({
             label: "Cancel",
             onClick: () => setAuthGuardOpen(false),
             variant: "secondary",
+          },
+        ]}
+      />
+
+      <FeedbackModal
+        open={comingSoonOpen}
+        type="info"
+        title={selectedChip ? `${selectedChip} is coming soon` : "Coming soon"}
+        message="This filter chip will be available in a future update."
+        onClose={() => setComingSoonOpen(false)}
+        actions={[
+          {
+            label: "Okay",
+            onClick: () => setComingSoonOpen(false),
           },
         ]}
       />
