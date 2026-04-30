@@ -15,6 +15,8 @@ async function authHeader() {
   return headers;
 }
 
+const API_FETCH_TIMEOUT_MS = 15000;
+
 export async function apiFetch(url: string, init: RequestInit = {}) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
@@ -26,7 +28,20 @@ export async function apiFetch(url: string, init: RequestInit = {}) {
     headers["Content-Type"] = "application/json";
   }
 
-  const res = await fetch(url, { ...init, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
+
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers, signal: init.signal ?? controller.signal });
+  } catch (error: any) {
+    if (error?.name === "AbortError") {
+      throw new Error("Network timeout. Please check your connection and try again.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!res.ok) {
     let body: any = null;
