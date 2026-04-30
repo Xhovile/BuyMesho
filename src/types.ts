@@ -49,6 +49,10 @@ export interface CreateListingPayload {
   condition: ListingCondition;
   quantity: number;
   sold_quantity: number;
+  original_price?: number | null;
+  discount_percent?: number | null;
+  deal_label?: string | null;
+  is_wholesale?: boolean | null;
 }
 
 export interface UserProfile {
@@ -100,6 +104,10 @@ export interface Listing {
   business_name: string;
   business_logo?: string | null;
   is_verified: boolean;
+  original_price?: number | null;
+  discount_percent?: number | null;
+  deal_label?: string | null;
+  is_wholesale?: boolean | null;
 }
 
 export interface SellerDashboardData {

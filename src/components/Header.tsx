@@ -28,6 +28,8 @@ type HeaderProps = {
   firebaseUser: FirebaseUser | null;
 };
 
+const quickChips = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"];
+
 export default function Header({
   searchValue,
   onSearch,
@@ -310,6 +312,25 @@ export default function Header({
               </button>
             </div>
           </form>
+
+          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max items-center gap-2">
+              {quickChips.map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  disabled
+                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm whitespace-nowrap disabled:cursor-default disabled:opacity-100"
+                  aria-label={`${chip} coming soon`}
+                >
+                  <span>{chip}</span>
+                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
+                    Coming soon
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </nav>
 
