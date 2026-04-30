@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import ListingStudioForm from "./components/ListingStudioForm";
+import ListingStudioFormWide from "./components/ListingStudioFormWide";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
@@ -242,7 +242,7 @@ export default function EditListingPage() {
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Edit your listing.</h1>
             </div>
 
-            <ListingStudioForm
+            <ListingStudioFormWide
               mode="edit"
               initialData={toDraft(listing, profile?.university, profile?.whatsapp_number)}
               onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
