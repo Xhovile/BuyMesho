@@ -717,6 +717,30 @@ export default function EditListingModal({
       }
     }
 
+const originalPriceRaw = String(form.original_price ?? "").trim();
+const discountPercentRaw = String(form.discount_percent ?? "").trim();
+
+const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
+const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
+
+if (originalPriceRaw) {
+  if (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= priceNum) {
+    setEditFieldError("original_price", "Original price must be higher than the current price.");
+    return;
+  }
+}
+
+if (discountPercentRaw) {
+  if (
+    !Number.isFinite(discountPercentNum as number) ||
+    (discountPercentNum as number) < 1 ||
+    (discountPercentNum as number) > 100
+  ) {
+    setEditFieldError("discount_percent", "Discount percent must be between 1 and 100.");
+    return;
+  }
+}
+    
 onSave({
   name: form.name,
   price: priceNum,
