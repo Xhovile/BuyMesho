@@ -717,23 +717,27 @@ export default function EditListingModal({
       }
     }
 
-    onSave({
-      name: form.name,
-      price: priceNum,
-      description: form.description,
-      category: form.category as Category,
-      subcategory: form.subcategory || null,
-      item_type: form.item_type || null,
-      spec_values: isSchemaDrivenCategory ? form.spec_values : {},
-      university: form.university as University,
-      whatsapp_number: form.whatsapp_number,
-      condition: form.condition as "new" | "used" | "refurbished",
-      quantity: quantityNum,
-      sold_quantity: soldQuantityNum,
-      photos: form.photos,
-      video_url: form.video_url || null,
-    });
-  };
+onSave({
+  name: form.name,
+  price: priceNum,
+  description: form.description,
+  category: form.category as Category,
+  subcategory: form.subcategory || null,
+  item_type: form.item_type || null,
+  spec_values: isSchemaDrivenCategory ? form.spec_values : {},
+  university: form.university as University,
+  whatsapp_number: form.whatsapp_number,
+  condition: form.condition as "new" | "used" | "refurbished",
+  quantity: quantityNum,
+  sold_quantity: soldQuantityNum,
+  photos: form.photos,
+  video_url: form.video_url || null,
+  original_price: originalPriceNum,
+  discount_percent: discountPercentNum,
+  deal_label: form.deal_label?.trim() || null,
+  is_wholesale: form.is_wholesale,
+ });
+};
 
   return (
     <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
