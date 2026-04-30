@@ -340,8 +340,8 @@ export default function Header({
 
           </div>
 
-          <div className="mt-2 -mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex min-w-max items-center gap-2 rounded-2xl border border-zinc-200/80 bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+          <div className="mt-2 -mx-1 overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-1.5 shadow-sm backdrop-blur-sm [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="inline-flex min-w-max items-center gap-2">
               {quickChips.map((chip) => (
                 <button
                   key={chip}
