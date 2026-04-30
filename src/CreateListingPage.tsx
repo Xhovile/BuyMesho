@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import { reload } from "firebase/auth";
 import ListingStudioForm from "./components/ListingStudioForm";
 import ListingStudioFormWide from "./components/ListingStudioFormWide";
 import FeedbackModal from "./components/FeedbackModal";
@@ -43,7 +42,6 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
-  const [pageReady, setPageReady] = useState(false);
   const [isDesktopLayout, setIsDesktopLayout] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(min-width: 768px)").matches;
@@ -69,33 +67,6 @@ export default function CreateListingPage() {
     };
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const ensureReady = async () => {
-      if (!firebaseUser) {
-        setPageReady(true);
-        return;
-      }
-
-      try {
-        await reload(firebaseUser);
-      } catch {
-        // Ignore reload failures and rely on the current auth snapshot.
-      }
-
-      if (!cancelled) {
-        setPageReady(true);
-      }
-    };
-
-    setPageReady(false);
-    void ensureReady();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [firebaseUser]);
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
     setFeedback({ open: true, type, title, message });
@@ -112,7 +83,6 @@ export default function CreateListingPage() {
   const syncSellerRecord = async () => {
     if (!firebaseUser) return;
 
-    await reload(firebaseUser);
     await refreshProfile();
 
     await apiFetch("/api/sellers", {
@@ -174,7 +144,7 @@ export default function CreateListingPage() {
   };
 
   const canCreate = !!firebaseUser && !!profile?.is_seller && !!emailVerified;
-  const isBusy = authLoading || profileLoading || !pageReady;
+  const isBusy = authLoading || profileLoading;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
