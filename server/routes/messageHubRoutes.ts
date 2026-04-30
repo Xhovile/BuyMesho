@@ -195,7 +195,7 @@ function hasAdminAccess(user: VerifiedRequestUser | undefined): boolean {
   if (!user) return false;
   if (user.is_admin === true) return true;
 
-  const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || "")
+ const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || "")
     .split(",")
     .map((email) => email.trim().toLowerCase())
     .filter(Boolean);

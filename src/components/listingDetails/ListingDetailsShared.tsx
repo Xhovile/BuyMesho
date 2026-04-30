@@ -62,10 +62,12 @@ export function RelatedRailCard({
   item,
   onOpenDetails,
   onOpenSeller,
+  variant = "mobile",
 }: {
   item: Listing;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
+  variant?: "mobile" | "desktop";
 }) {
   const firstPhoto = Array.isArray(item.photos) && typeof item.photos[0] === "string" && item.photos[0].trim()
     ? item.photos[0]
@@ -76,8 +78,14 @@ export function RelatedRailCard({
       ? item.business_name.trim()
       : "View seller profile";
 
+  const isDesktop = variant === "desktop";
+
   return (
-    <article className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md">
+    <article
+      className={`group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+        isDesktop ? "h-full" : ""
+      }`}
+    >
       <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
         <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
           <img
@@ -88,19 +96,33 @@ export function RelatedRailCard({
         </div>
       </button>
 
-      <div className="space-y-1.5 p-2.5 sm:p-3">
+      <div className={isDesktop ? "space-y-2 p-4" : "space-y-1.5 p-2.5"}>
         <button type="button" onClick={() => onOpenDetails(item)} className="block w-full text-left">
-          <h3 className="line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900 sm:text-[13px]">
+          <h3
+            className={`line-clamp-1 tracking-tight text-zinc-900 ${
+              isDesktop ? "text-sm font-extrabold" : "text-[12px] font-extrabold"
+            }`}
+          >
             {item.name}
           </h3>
         </button>
 
+        {isDesktop ? (
+          <p className="text-sm leading-relaxed text-zinc-500 line-clamp-2">
+            {item.description || "Tap to open the full listing details."}
+          </p>
+        ) : null}
+
         <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-black text-zinc-900 sm:text-sm">
+          <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-zinc-900"}>
             MK {Number(item.price).toLocaleString()}
           </p>
 
-          <span className="max-w-[72px] truncate text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-500 sm:max-w-[90px] sm:text-[10px]">
+          <span
+            className={`truncate font-bold uppercase tracking-[0.12em] text-zinc-500 ${
+              isDesktop ? "max-w-[100px] text-[10px]" : "max-w-[72px] text-[9px]"
+            }`}
+          >
             {item.university}
           </span>
         </div>
@@ -111,10 +133,22 @@ export function RelatedRailCard({
             event.stopPropagation();
             if (item.seller_uid) onOpenSeller(item.seller_uid);
           }}
-          className="block w-full text-left text-[10px] font-semibold text-zinc-500 transition-colors hover:text-zinc-900 sm:text-[11px]"
+          className={`block w-full text-left font-semibold text-zinc-500 transition-colors hover:text-zinc-900 ${
+            isDesktop ? "text-[11px]" : "text-[10px]"
+          }`}
         >
           <span className="line-clamp-1">{sellerName}</span>
         </button>
+
+        {isDesktop ? (
+          <button
+            type="button"
+            onClick={() => onOpenDetails(item)}
+            className="inline-flex items-center gap-1 text-xs font-bold text-red-900"
+          >
+            Open listing
+          </button>
+        ) : null}
       </div>
     </article>
   );
