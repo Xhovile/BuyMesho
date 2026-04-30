@@ -47,6 +47,7 @@ export default function Header({
 
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
+  const topRowHiddenRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -113,13 +114,19 @@ export default function Header({
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
       const delta = currentY - lastY;
-      const scrollThreshold = 10;
+      const collapseThreshold = 72;
+      const directionThreshold = 12;
 
       if (mobileMenuOpen || currentY < 24) {
-        setTopRowHidden(false);
-      } else if (delta > scrollThreshold) {
+        if (topRowHiddenRef.current) {
+          topRowHiddenRef.current = false;
+          setTopRowHidden(false);
+        }
+      } else if (!topRowHiddenRef.current && currentY > collapseThreshold && delta > directionThreshold) {
+        topRowHiddenRef.current = true;
         setTopRowHidden(true);
-      } else if (delta < -scrollThreshold) {
+      } else if (topRowHiddenRef.current && delta < -directionThreshold) {
+        topRowHiddenRef.current = false;
         setTopRowHidden(false);
       }
 
@@ -276,6 +283,20 @@ export default function Header({
                   <User className="w-5 h-5 text-zinc-600" />
                 )}
               </button>
+
+              <button
+                onClick={() => setMobileMenuOpen((value) => !value)}
+                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-header-menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-5 h-5 text-white" />
+                ) : (
+                  <Menu className="w-5 h-5 text-white" />
+                )}
+              </button>
             </div>
           </div>
           </div>
@@ -287,35 +308,46 @@ export default function Header({
             }}
             className="w-full"
           >
-            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 rounded-2xl border border-zinc-300 bg-white p-2 shadow-sm md:max-w-4xl md:border-zinc-200 md:shadow-md">
-              <input
-                type="text"
-                value={searchValue}
-                onChange={(e) => onSearch(e.target.value)}
-                placeholder="Search listings, products, or services..."
-                className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
-              />
-              <button
-                type="submit"
-                aria-label="Search listings"
-                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-3 py-2.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
+              <div
+                className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-300 bg-white shadow-sm transition-all md:border-zinc-200 md:shadow-md ${
+                  topRowHidden ? "p-1.5" : "p-2"
+                }`}
               >
-                Search
-              </button>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen((value) => !value)}
-                className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-header-menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-4 h-4" />
-                ) : (
-                  <Menu className="w-4 h-4" />
-                )}
-              </button>
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => onSearch(e.target.value)}
+                  placeholder="Search listings, products, or services..."
+                  className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search listings"
+                  className={`inline-flex items-center justify-center rounded-xl bg-red-900 px-3 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4 ${
+                    topRowHidden ? "py-2" : "py-2.5"
+                  }`}
+                >
+                  Search
+                </button>
+              </div>
+
+              {topRowHidden && (
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen((value) => !value)}
+                  className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-header-menu"
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-4 h-4" />
+                  ) : (
+                    <Menu className="w-4 h-4" />
+                  )}
+                </button>
+              )}
             </div>
           </form>
 
