@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import type { Listing } from "../../types";
 import { navigateToListingDetails, navigateToSellerProfile } from "../../lib/appNavigation";
 import { RelatedRailCard, SectionHeading } from "./ListingDetailsShared";
@@ -14,6 +15,29 @@ export default function ListingExploreBlock({
   sameCategoryListings: Listing[];
   sellerOtherListings: Listing[];
 }) {
+  const [isDesktopRailCard, setIsDesktopRailCard] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 640px)").matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
+    const syncVariant = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsDesktopRailCard(event.matches);
+    };
+
+    syncVariant(mediaQuery);
+
+    const handleChange = (event: MediaQueryListEvent) => syncVariant(event);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
+
   const renderTwoRowRail = (title: string, items: Listing[], empty: string) => {
     const visibleItems = items.slice(0, RELATED_LIMIT);
 
@@ -33,22 +57,12 @@ export default function ListingExploreBlock({
             >
               {visibleItems.map((item) => (
                 <div key={item.id} className="h-full">
-                  <div className="sm:hidden">
-                    <RelatedRailCard
-                      item={item}
-                      variant="mobile"
-                      onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-                      onOpenSeller={navigateToSellerProfile}
-                    />
-                  </div>
-                  <div className="hidden h-full sm:block">
-                    <RelatedRailCard
-                      item={item}
-                      variant="desktop"
-                      onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-                      onOpenSeller={navigateToSellerProfile}
-                    />
-                  </div>
+                  <RelatedRailCard
+                    item={item}
+                    variant={isDesktopRailCard ? "desktop" : "mobile"}
+                    onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
+                    onOpenSeller={navigateToSellerProfile}
+                  />
                 </div>
               ))}
             </div>
@@ -76,22 +90,12 @@ export default function ListingExploreBlock({
           <div className="flex gap-3 overflow-x-auto pb-2">
             {visibleItems.map((item) => (
               <div key={item.id} className="w-[11.5rem] shrink-0 sm:w-[13rem]">
-                <div className="sm:hidden">
-                  <RelatedRailCard
-                    item={item}
-                    variant="mobile"
-                    onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-                    onOpenSeller={navigateToSellerProfile}
-                  />
-                </div>
-                <div className="hidden sm:block h-full">
-                  <RelatedRailCard
-                    item={item}
-                    variant="desktop"
-                    onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
-                    onOpenSeller={navigateToSellerProfile}
-                  />
-                </div>
+                <RelatedRailCard
+                  item={item}
+                  variant={isDesktopRailCard ? "desktop" : "mobile"}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id)}
+                  onOpenSeller={navigateToSellerProfile}
+                />
               </div>
             ))}
           </div>

@@ -245,6 +245,8 @@ export default function SettingsPage() {
   }, [totpUri]);
   const emailVerified = firebaseUser?.emailVerified ?? false;
   const emailVerificationButtonsDisabled = !firebaseUser || emailVerified;
+  const resendVerificationDisabled =
+    emailVerificationButtonsDisabled || securityActionBusy === "resend";
   const verifiedAccountRequiredDisabled = !firebaseUser || !emailVerified;
 
   const updateVisibility = async (
@@ -893,9 +895,9 @@ export default function SettingsPage() {
                         <button
                           type="button"
                           onClick={handleResendVerification}
-                          disabled={emailVerificationButtonsDisabled}
+                          disabled={resendVerificationDisabled}
                           className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${
-                            emailVerificationButtonsDisabled
+                            resendVerificationDisabled
                               ? "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
                               : "bg-zinc-900 text-white hover:bg-zinc-800"
                           }`}
