@@ -1861,14 +1861,31 @@ for (const pid of publicIds) {
 if (!v) {
   return res.status(404).json({ error: "Seller profile not found" });
 }
-if (v.is_seller !== 1) {
-  return res.status(403).json({ error: "Seller account required" });
-}
-if (v.is_verified !== 1) {
-  return res.status(403).json({ error: "Account not verified" });
-}
 if (v.is_suspended === 1) {
   return res.status(403).json({ error: "Seller account is suspended" });
+}
+
+const approvedApplication = db
+  .prepare(`
+    SELECT status
+    FROM seller_applications
+    WHERE applicant_uid = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `)
+  .get(uid) as { status?: string } | undefined;
+
+const canEditListing =
+  v.is_seller === 1 ||
+  v.is_verified === 1 ||
+  approvedApplication?.status === "approved";
+
+if (!canEditListing) {
+  return res.status(403).json({ error: "Seller approval required to edit listings" });
+}
+
+if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
+  db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(uid);
 }
 
     const {

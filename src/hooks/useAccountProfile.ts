@@ -55,6 +55,29 @@ export function useAccountProfile() {
   const [sellerApplicationPending, setSellerApplicationPending] = useState(false);
   const syncInFlight = useRef(false);
 
+  const syncApprovedSellerRecord = useCallback(
+    async (baseProfile?: Partial<UserProfile> | null) => {
+      if (!firebaseUser) return;
+
+      const profileForSync = baseProfile ?? profile;
+
+      await apiFetch("/api/sellers", {
+        method: "POST",
+        body: JSON.stringify({
+          email: firebaseUser.email || "",
+          business_name: profileForSync?.business_name || "",
+          business_logo: profileForSync?.business_logo || "",
+          university: profileForSync?.university || UNIVERSITIES[0],
+          bio: profileForSync?.bio || "",
+          whatsapp_number: profileForSync?.whatsapp_number || "",
+          is_verified: !!firebaseUser.emailVerified,
+          is_seller: true,
+        }),
+      });
+    },
+    [firebaseUser, profile]
+  );
+
   const loadProfile = useCallback(async () => {
     if (syncInFlight.current) return;
     syncInFlight.current = true;
@@ -107,6 +130,7 @@ export function useAccountProfile() {
                 try {
                   const userRef = doc(firestore, "users", firebaseUser.uid);
                   await setDoc(userRef, { is_seller: true }, { merge: true });
+                  await syncApprovedSellerRecord(loadedProfile);
                 } catch (firestoreWriteErr) {
                   console.error("Failed to persist seller status to Firestore", firestoreWriteErr);
                 }
@@ -195,7 +219,7 @@ export function useAccountProfile() {
     } finally {
       syncInFlight.current = false;
     }
-  }, [firebaseUser]);
+  }, [firebaseUser, syncApprovedSellerRecord]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -212,6 +236,7 @@ export function useAccountProfile() {
         if (sellerApplication?.status === "approved") {
           const userRef = doc(firestore, "users", firebaseUser.uid);
           await setDoc(userRef, { is_seller: true }, { merge: true });
+          await syncApprovedSellerRecord(profile);
           setProfile((prev) => (prev ? { ...prev, is_seller: true } : prev));
           setCachedSellerStatus(firebaseUser.uid, true);
           setSellerApplicationPending(false);
@@ -252,7 +277,7 @@ export function useAccountProfile() {
         window.clearInterval(syncInterval);
       }
     };
-  }, [authLoading, firebaseUser, profile?.is_seller, sellerApplicationPending]);
+  }, [authLoading, firebaseUser, profile, profile?.is_seller, sellerApplicationPending, syncApprovedSellerRecord]);
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!firebaseUser) return;

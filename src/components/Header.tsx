@@ -40,7 +40,9 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
-  const [headerHidden, setHeaderHidden] = useState(false);
+  const [topRowHidden, setTopRowHidden] = useState(false);
+  const [comingSoonOpen, setComingSoonOpen] = useState(false);
+  const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const lastScrollYRef = useRef(0);
@@ -114,11 +116,11 @@ export default function Header({
       const scrollThreshold = 10;
 
       if (mobileMenuOpen || currentY < 24) {
-        setHeaderHidden(false);
+        setTopRowHidden(false);
       } else if (delta > scrollThreshold) {
-        setHeaderHidden(true);
+        setTopRowHidden(true);
       } else if (delta < -scrollThreshold) {
-        setHeaderHidden(false);
+        setTopRowHidden(false);
       }
 
       lastScrollYRef.current = currentY;
@@ -182,11 +184,14 @@ export default function Header({
   return (
     <>
       <nav
-        className={`sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5 transform transition-transform duration-300 ${
-          headerHidden && !mobileMenuOpen ? "-translate-y-full" : "translate-y-0"
-        }`}
+        className="sticky top-0 z-50 border-b border-zinc-200 bg-white shadow-sm px-4 py-2.5"
       >
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          <div
+            className={`overflow-hidden transition-all duration-300 ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
+            }`}
+          >
           <div className="flex items-center justify-between gap-4">
             <BrandMark />
 
@@ -271,21 +276,8 @@ export default function Header({
                   <User className="w-5 h-5 text-zinc-600" />
                 )}
               </button>
-              
-              <button
-                onClick={() => setMobileMenuOpen((value) => !value)}
-                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-header-menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-white" />
-                ) : (
-                  <Menu className="w-5 h-5 text-white" />
-                )}
-              </button>
             </div>
+          </div>
           </div>
 
           <form
@@ -306,9 +298,23 @@ export default function Header({
               <button
                 type="submit"
                 aria-label="Search listings"
-                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-red-800"
+                className="inline-flex items-center justify-center rounded-xl bg-red-900 px-3 py-2.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
               >
                 Search
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((value) => !value)}
+                className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-header-menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-4 h-4" />
+                ) : (
+                  <Menu className="w-4 h-4" />
+                )}
               </button>
             </div>
           </form>
@@ -319,14 +325,14 @@ export default function Header({
                 <button
                   key={chip}
                   type="button"
-                  disabled
-                  className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 shadow-sm whitespace-nowrap disabled:cursor-default disabled:opacity-100"
+                  onClick={() => {
+                    setSelectedChip(chip);
+                    setComingSoonOpen(true);
+                  }}
+                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold text-zinc-600 hover:text-zinc-900 transition-colors"
                   aria-label={`${chip} coming soon`}
                 >
                   <span>{chip}</span>
-                  <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-[0.18em] text-zinc-500">
-                    Coming soon
-                  </span>
                 </button>
               ))}
             </div>
@@ -534,6 +540,20 @@ export default function Header({
             label: "Cancel",
             onClick: () => setAuthGuardOpen(false),
             variant: "secondary",
+          },
+        ]}
+      />
+
+      <FeedbackModal
+        open={comingSoonOpen}
+        type="info"
+        title={selectedChip ? `${selectedChip} is coming soon` : "Coming soon"}
+        message="This filter chip will be available in a future update."
+        onClose={() => setComingSoonOpen(false)}
+        actions={[
+          {
+            label: "Okay",
+            onClick: () => setComingSoonOpen(false),
           },
         ]}
       />
