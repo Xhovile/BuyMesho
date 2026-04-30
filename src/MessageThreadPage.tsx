@@ -181,6 +181,13 @@ export default function MessageThreadPage() {
     }
   };
 
+  const isPlainLeftClick = (event: React.MouseEvent<HTMLAnchorElement>) =>
+    event.button === 0 &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.shiftKey &&
+    !event.altKey;
+
   if (loading || authLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100">
@@ -229,9 +236,13 @@ export default function MessageThreadPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
 
-          <button
-            type="button"
-            onClick={() => navigateToListingDetails(conversation.listing.id, 0)}
+          <a
+            href={`/listing?listing=${conversation.listing.id}`}
+            onClick={(event) => {
+              if (!isPlainLeftClick(event)) return;
+              event.preventDefault();
+              navigateToListingDetails(conversation.listing.id, 0);
+            }}
             className="min-w-0 flex-1 text-left"
           >
             <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">
@@ -240,16 +251,20 @@ export default function MessageThreadPage() {
             <p className="text-sm font-semibold text-zinc-500">
               {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}
             </p>
-          </button>
+          </a>
 
-          <button
-            type="button"
-            onClick={() => navigateToSellerProfile(conversation.seller.uid)}
-            className="ml-auto text-right"
+          <a
+            href={`/seller?uid=${encodeURIComponent(conversation.seller.uid)}`}
+            onClick={(event) => {
+              if (!isPlainLeftClick(event)) return;
+              event.preventDefault();
+              navigateToSellerProfile(conversation.seller.uid);
+            }}
+            className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]"
           >
-            <p className="text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
+            <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
             <p className="text-[11px] font-semibold text-zinc-500">Seller profile</p>
-          </button>
+          </a>
 
           <ConversationActionsMenu
             className="shrink-0 ml-1"
