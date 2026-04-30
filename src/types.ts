@@ -108,6 +108,10 @@ export interface Listing {
   discount_percent?: number | null;
   deal_label?: string | null;
   is_wholesale?: boolean | null;
+  original_price?: number | null;
+  discount_percent?: number | null;
+  deal_label?: string | null;
+  is_wholesale?: boolean | null;
 }
 
 export interface SellerDashboardData {
