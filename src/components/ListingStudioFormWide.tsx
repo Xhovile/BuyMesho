@@ -499,22 +499,52 @@ export default function ListingStudioFormWide({
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price (optional)</label>
-                <input type="number" min="0" value={(form as any).original_price ?? ""} onChange={(e) => { clearError("original_price"); setForm((prev) => ({ ...prev, original_price: e.target.value } as ListingDraft)); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`} />
+                <input
+                  type="number"
+                  min="0"
+                  value={(form as any).original_price ?? ""}
+                  onChange={(e) => {
+                    clearError("original_price");
+                    setForm((prev) => ({ ...prev, original_price: e.target.value } as ListingDraft));
+                  }}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`}
+                />
                 {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Discount percent (optional)</label>
-                <input type="number" min="0" max="100" value={(form as any).discount_percent ?? ""} onChange={(e) => { clearError("discount_percent"); setForm((prev) => ({ ...prev, discount_percent: e.target.value } as ListingDraft)); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`} />
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={(form as any).discount_percent ?? ""}
+                  onChange={(e) => {
+                    clearError("discount_percent");
+                    setForm((prev) => ({ ...prev, discount_percent: e.target.value } as ListingDraft));
+                  }}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`}
+                />
                 {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
-                <input type="text" value={String((form as any).deal_label ?? "")} onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value } as ListingDraft))} placeholder="e.g. Back to school deal" className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20" />
+                <input
+                  type="text"
+                  value={String((form as any).deal_label ?? "")}
+                  onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value } as ListingDraft))}
+                  placeholder="e.g. Back to school deal"
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                />
               </div>
               <div className="flex items-end">
                 <label className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700">
                   <span>Wholesale listing</span>
-                  <input type="checkbox" checked={Boolean((form as any).is_wholesale)} onChange={(e) => setForm((prev) => ({ ...prev, is_wholesale: e.target.checked } as ListingDraft))} className="h-4 w-4 rounded border-zinc-300" />
+                  <input
+                    type="checkbox"
+                    checked={Boolean((form as any).is_wholesale)}
+                    onChange={(e) => setForm((prev) => ({ ...prev, is_wholesale: e.target.checked } as ListingDraft))}
+                    className="h-4 w-4 rounded border-zinc-300"
+                  />
                 </label>
               </div>
             </div>
