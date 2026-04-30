@@ -292,6 +292,12 @@ export default function ListingStudioFormWide({
     const priceNum = Number(form.price);
     const quantityNum = Number(form.quantity);
     const soldQuantityNum = Number(form.sold_quantity);
+    const originalPriceRaw = String((form as any).original_price ?? "").trim();
+    const dealLabelRaw = String((form as any).deal_label ?? "").trim();
+    const discountPercentRaw = String((form as any).discount_percent ?? "").trim();
+    const isWholesale = Boolean((form as any).is_wholesale);
+    const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
+    const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
 
     if (!hasMeaningfulTitle(form.name)) {
       setError("name", "Please enter a clear listing title.");
@@ -310,6 +316,16 @@ export default function ListingStudioFormWide({
 
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       setError("price", "Please enter a valid price.");
+      return;
+    }
+
+    if (originalPriceRaw && (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= 0)) {
+      setError("original_price", "Original price must be greater than 0.");
+      return;
+    }
+
+    if (discountPercentRaw && (!Number.isFinite(discountPercentNum as number) || (discountPercentNum as number) <= 0 || (discountPercentNum as number) > 100)) {
+      setError("discount_percent", "Discount must be between 1 and 100.");
       return;
     }
 
@@ -375,6 +391,10 @@ export default function ListingStudioFormWide({
       sold_quantity: soldQuantityNum,
       photos: form.photos,
       video_url: form.video_url || null,
+      original_price: originalPriceNum,
+      discount_percent: discountPercentNum,
+      deal_label: dealLabelRaw || null,
+      is_wholesale: isWholesale,
     });
   };
 
@@ -470,6 +490,62 @@ export default function ListingStudioFormWide({
               </div>
               <div className="sm:col-span-2">
                 <FormDropdown label={conditionConfig.label} value={form.condition} options={conditionConfig.options} onChange={(value) => setForm((prev) => ({ ...prev, condition: value as ListingCondition }))} />
+              </div>
+            </div>
+          </section>
+
+          <section className="border-b border-zinc-200 pb-6">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Deal pricing & wholesale</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price (optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={(form as any).original_price ?? ""}
+                  onChange={(e) => {
+                    clearError("original_price");
+                    setForm((prev) => ({ ...prev, original_price: e.target.value } as ListingDraft));
+                  }}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`}
+                />
+                {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Discount percent (optional)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={(form as any).discount_percent ?? ""}
+                  onChange={(e) => {
+                    clearError("discount_percent");
+                    setForm((prev) => ({ ...prev, discount_percent: e.target.value } as ListingDraft));
+                  }}
+                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`}
+                />
+                {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
+                <input
+                  type="text"
+                  value={String((form as any).deal_label ?? "")}
+                  onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value } as ListingDraft))}
+                  placeholder="e.g. Back to school deal"
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+              <div className="flex items-end">
+                <label className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700">
+                  <span>Wholesale listing</span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean((form as any).is_wholesale)}
+                    onChange={(e) => setForm((prev) => ({ ...prev, is_wholesale: e.target.checked } as ListingDraft))}
+                    className="h-4 w-4 rounded border-zinc-300"
+                  />
+                </label>
               </div>
             </div>
           </section>
