@@ -216,6 +216,9 @@ export interface Conversation {
     is_verified: boolean;
   };
   unread_count: number;
+  blocked_by_you?: boolean;
+  blocked_by_other?: boolean;
+  can_reply?: boolean;
 }
 
 export interface MessageThreadItem {
@@ -226,4 +229,27 @@ export interface MessageThreadItem {
   is_read: boolean;
   created_at: string;
   read_at: string | null;
+}
+
+export type MessageBlockScope = "messages" | "listing" | "all";
+
+export type MessageReportReason =
+  | "spam"
+  | "scam"
+  | "harassment"
+  | "fake_listing"
+  | "abusive_language"
+  | "off_platform_fraud";
+
+export interface MessageReport {
+  id: number;
+  conversation_id: number | null;
+  message_id: number | null;
+  reporter_uid: string;
+  reported_uid: string | null;
+  reason: MessageReportReason;
+  details: string | null;
+  status: "open" | "reviewed" | "resolved";
+  created_at: string;
+  updated_at?: string;
 }

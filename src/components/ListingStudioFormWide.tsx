@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X } from "lucide-react";
-import type { Category, CreateListingPayload, ListingDraft, ListingSpecValue, University } from "../types";
+import type { Category, CreateListingPayload, ListingCondition, ListingDraft, ListingSpecValue, University } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
 import FormDropdown from "./FormDropdown";
 import {
@@ -461,7 +461,7 @@ export default function ListingStudioFormWide({
                     delete next.item_type;
                     return next;
                   });
-                  setForm((prev) => ({ ...prev, category, subcategory: "", item_type: "", spec_values: {}, condition: getConditionConfig(category).options[0] || prev.condition }));
+                  setForm((prev) => ({ ...prev, category, subcategory: "", item_type: "", spec_values: {}, condition: (getConditionConfig(category).options[0] as ListingCondition) || prev.condition }));
                   setShowAdvancedSpecs(false);
                 }} />
               </div>
@@ -469,7 +469,7 @@ export default function ListingStudioFormWide({
                 <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
               </div>
               <div className="sm:col-span-2">
-                <FormDropdown label={conditionConfig.label} value={form.condition} options={conditionConfig.options} onChange={(value) => setForm((prev) => ({ ...prev, condition: value }))} />
+                <FormDropdown label={conditionConfig.label} value={form.condition} options={conditionConfig.options} onChange={(value) => setForm((prev) => ({ ...prev, condition: value as ListingCondition }))} />
               </div>
             </div>
           </section>
