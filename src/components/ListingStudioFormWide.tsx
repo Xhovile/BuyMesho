@@ -274,7 +274,7 @@ export default function ListingStudioFormWide({
         <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">{label}</label>
         <input
           type="text"
-          value={String(value)}
+          value={value as string}
           onChange={(e) => {
             clearError(field.key);
             setForm((prev) => ({ ...prev, spec_values: { ...prev.spec_values, [field.key]: e.target.value } }));

@@ -7,15 +7,11 @@ type HeroSectionProps = {
 
 export default function HeroSection({ onListItem }: HeroSectionProps) {
   return (
-    <section className="relative pt-6 pb-5 sm:pt-8 sm:pb-6">
-      <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[18rem] sm:w-[24rem] h-[18rem] sm:h-[24rem] bg-red-900/8 blur-3xl rounded-full" />
-      </div>
+    <section className="relative px-4 pt-6 pb-4 sm:pt-8 sm:pb-5">
+      <div className="absolute inset-x-4 top-0 -z-10 h-24 rounded-[2rem] bg-gradient-to-r from-red-900/5 via-white to-amber-300/10 blur-2xl" />
 
-      <div className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white px-5 py-5 sm:px-7 sm:py-6 shadow-sm">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <motion.p
               initial={{ opacity: 0, y: 10 }}
@@ -33,6 +29,10 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
             >
               Browse products and services on BuyMesho.
             </motion.h1>
+
+            <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-500">
+              Discover listings, compare options, and connect directly with sellers in your campus community.
+            </p>
           </div>
 
           <motion.div

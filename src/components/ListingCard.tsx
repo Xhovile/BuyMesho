@@ -70,6 +70,22 @@ export default function ListingCard({
 
   const safePriceValue = Number(listing.price);
   const safePrice = Number.isFinite(safePriceValue) ? safePriceValue : 0;
+  const originalPriceValue = Number(listing.original_price);
+  const hasDealPrice =
+    Number.isFinite(originalPriceValue) && originalPriceValue > safePrice && safePrice > 0;
+  const computedDiscountPercent = hasDealPrice
+    ? Math.round(((originalPriceValue - safePrice) / originalPriceValue) * 100)
+    : null;
+  const discountPercent =
+    Number.isFinite(Number(listing.discount_percent)) && Number(listing.discount_percent) > 0
+      ? Math.round(Number(listing.discount_percent))
+      : computedDiscountPercent;
+  const dealLabel =
+    typeof listing.deal_label === "string" && listing.deal_label.trim()
+      ? listing.deal_label.trim()
+      : discountPercent && discountPercent > 0
+        ? `${discountPercent}% off`
+        : "Special deal";
 
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
@@ -151,17 +167,24 @@ export default function ListingCard({
             {!ultraCompact ? <p className="text-[10px] font-medium text-zinc-400">Open seller page</p> : null}
           </button>
 
-          <span
-            className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
-              ultraCompact
-                ? "max-w-[76px] px-2 py-0.5 text-[9px]"
-                : compact
-                  ? "max-w-[104px] px-2.5 py-1 text-[10px]"
-                  : "max-w-[120px] px-3 py-1 text-[11px]"
-            }`}
-          >
-            {universityLabel}
-          </span>
+          <div className="flex flex-col items-end gap-1">
+            {listing.is_wholesale ? (
+              <span className="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
+                Wholesale
+              </span>
+            ) : null}
+            <span
+              className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
+                ultraCompact
+                  ? "max-w-[76px] px-2 py-0.5 text-[9px]"
+                  : compact
+                    ? "max-w-[104px] px-2.5 py-1 text-[10px]"
+                    : "max-w-[120px] px-3 py-1 text-[11px]"
+              }`}
+            >
+              {universityLabel}
+            </span>
+          </div>
         </div>
 
         <div className={`relative mt-3 overflow-hidden bg-zinc-100 ${imageAspect}`}>
@@ -192,6 +215,14 @@ export default function ListingCard({
             </>
           ) : null}
 
+          {hasDealPrice ? (
+            <div className="absolute left-3 top-3 flex flex-col gap-1">
+              <span className="inline-flex items-center rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-sm">
+                {dealLabel}
+              </span>
+            </div>
+          ) : null}
+
           {showActionsMenu ? (
             <ListingActionsMenu
               listing={listing}
@@ -211,13 +242,29 @@ export default function ListingCard({
           ) : null}
 
           <div className="absolute bottom-3 left-3">
-            <div
-              className={`rounded-xl border border-white/20 bg-white/92 font-extrabold text-zinc-900 shadow-sm backdrop-blur-md ${
-                ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
-              }`}
-            >
-              MK {safePrice.toLocaleString()}
-            </div>
+            {hasDealPrice ? (
+              <div className="rounded-xl border border-white/20 bg-white/92 px-3 py-2 font-extrabold shadow-sm backdrop-blur-md">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[10px] font-bold text-zinc-400 line-through">
+                    MK {originalPriceValue.toLocaleString()}
+                  </span>
+                  <span className="text-sm text-red-900">
+                    MK {safePrice.toLocaleString()}
+                  </span>
+                </div>
+                <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-700">
+                  {discountPercent}% off
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold text-zinc-900 shadow-sm backdrop-blur-md ${
+                  ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
+                }`}
+              >
+                MK {safePrice.toLocaleString()}
+              </div>
+            )}
           </div>
         </div>
 

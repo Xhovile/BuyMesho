@@ -44,8 +44,30 @@ export default function CreateListingPage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(min-width: 768px)");
+    const syncLayout = (event: MediaQueryListEvent | MediaQueryList) => {
+      setIsDesktopLayout(event.matches);
+    };
+
+    syncLayout(mediaQuery);
+
+    const handleChange = (event: MediaQueryListEvent) => syncLayout(event);
+    mediaQuery.addEventListener("change", handleChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange);
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -198,19 +220,7 @@ export default function CreateListingPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
-            <div className="md:hidden">
-              <ListingStudioForm
-                mode="create"
-                initialData={listingDraft}
-                onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
-                onSubmit={handleCreate}
-                showFeedback={showFeedback}
-                isSubmitting={submitting}
-                submitLabel="Post Listing"
-                submitBusyLabel="Posting..."
-              />
-            </div>
-            <div className="hidden md:block">
+            {isDesktopLayout ? (
               <ListingStudioFormWide
                 mode="create"
                 initialData={listingDraft}
@@ -221,7 +231,18 @@ export default function CreateListingPage() {
                 submitLabel="Post Listing"
                 submitBusyLabel="Posting..."
               />
-            </div>
+            ) : (
+              <ListingStudioForm
+                mode="create"
+                initialData={listingDraft}
+                onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
+                onSubmit={handleCreate}
+                showFeedback={showFeedback}
+                isSubmitting={submitting}
+                submitLabel="Post Listing"
+                submitBusyLabel="Posting..."
+              />
+            )}
           </div>
         ) : null}
       </main>

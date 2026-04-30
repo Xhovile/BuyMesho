@@ -309,6 +309,16 @@ const [resendVerificationLoading, setResendVerificationLoading] = useState(false
 const [passwordResetAttemptCount, setPasswordResetAttemptCount] = useState(0);
 const [passwordResetCooldownSeconds, setPasswordResetCooldownSeconds] = useState(0);
 const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+const verificationCooldownEndsAtRef = useRef<number>(0);
+const passwordResetCooldownEndsAtRef = useRef<number>(0);
+
+const VERIFICATION_RESEND_ATTEMPT_KEY = "verification_resend_attempt_count";
+const VERIFICATION_RESEND_COOLDOWN_END_KEY = "verification_resend_cooldown_end_at";
+const VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY = "verification_resend_last_attempt_at";
+const PASSWORD_RESET_ATTEMPT_KEY = "password_reset_attempt_count";
+const PASSWORD_RESET_COOLDOWN_END_KEY = "password_reset_cooldown_end_at";
+const PASSWORD_RESET_LAST_ATTEMPT_AT_KEY = "password_reset_last_attempt_at";
+const ATTEMPT_ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
 
   const [editAccountForm, setEditAccountForm] = useState({
   university: UNIVERSITIES[0] as University,
@@ -341,10 +351,63 @@ const formatCooldownLabel = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
+const getRemainingCooldownSecondsFromExpiry = (cooldownEndAt: number) => {
+  const remaining = Math.ceil((cooldownEndAt - Date.now()) / 1000);
+  return remaining > 0 ? remaining : 0;
+};
+
+useEffect(() => {
+  const now = Date.now();
+  const savedVerificationAttempts = Number(localStorage.getItem(VERIFICATION_RESEND_ATTEMPT_KEY) || 0);
+  const savedVerificationCooldownEnd = Number(localStorage.getItem(VERIFICATION_RESEND_COOLDOWN_END_KEY) || 0);
+  const savedVerificationLastAttemptAt = Number(localStorage.getItem(VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY) || 0);
+  const savedPasswordResetAttempts = Number(localStorage.getItem(PASSWORD_RESET_ATTEMPT_KEY) || 0);
+  const savedPasswordResetCooldownEnd = Number(localStorage.getItem(PASSWORD_RESET_COOLDOWN_END_KEY) || 0);
+  const savedPasswordResetLastAttemptAt = Number(localStorage.getItem(PASSWORD_RESET_LAST_ATTEMPT_AT_KEY) || 0);
+
+  if (Number.isFinite(savedVerificationAttempts) && savedVerificationAttempts >= 0) {
+    const isVerificationAttemptInWindow =
+      Number.isFinite(savedVerificationLastAttemptAt) &&
+      savedVerificationLastAttemptAt > 0 &&
+      now - savedVerificationLastAttemptAt <= ATTEMPT_ROLLING_WINDOW_MS;
+    const verificationAttemptCount = isVerificationAttemptInWindow ? savedVerificationAttempts : 0;
+    setVerificationResendAttemptCount(verificationAttemptCount);
+    localStorage.setItem(VERIFICATION_RESEND_ATTEMPT_KEY, String(verificationAttemptCount));
+  }
+  if (Number.isFinite(savedVerificationCooldownEnd) && savedVerificationCooldownEnd > 0) {
+    const verificationRemaining = getRemainingCooldownSecondsFromExpiry(savedVerificationCooldownEnd);
+    if (verificationRemaining > 0) {
+      verificationCooldownEndsAtRef.current = savedVerificationCooldownEnd;
+      setVerificationCooldownSeconds(verificationRemaining);
+    } else {
+      localStorage.removeItem(VERIFICATION_RESEND_COOLDOWN_END_KEY);
+    }
+  }
+
+  if (Number.isFinite(savedPasswordResetAttempts) && savedPasswordResetAttempts >= 0) {
+    const isPasswordResetAttemptInWindow =
+      Number.isFinite(savedPasswordResetLastAttemptAt) &&
+      savedPasswordResetLastAttemptAt > 0 &&
+      now - savedPasswordResetLastAttemptAt <= ATTEMPT_ROLLING_WINDOW_MS;
+    const passwordResetCount = isPasswordResetAttemptInWindow ? savedPasswordResetAttempts : 0;
+    setPasswordResetAttemptCount(passwordResetCount);
+    localStorage.setItem(PASSWORD_RESET_ATTEMPT_KEY, String(passwordResetCount));
+  }
+  if (Number.isFinite(savedPasswordResetCooldownEnd) && savedPasswordResetCooldownEnd > 0) {
+    const passwordResetRemaining = getRemainingCooldownSecondsFromExpiry(savedPasswordResetCooldownEnd);
+    if (passwordResetRemaining > 0) {
+      passwordResetCooldownEndsAtRef.current = savedPasswordResetCooldownEnd;
+      setPasswordResetCooldownSeconds(passwordResetRemaining);
+    } else {
+      localStorage.removeItem(PASSWORD_RESET_COOLDOWN_END_KEY);
+    }
+  }
+}, []);
+
 useEffect(() => {
   if (verificationCooldownSeconds <= 0) return;
   const timer = window.setInterval(() => {
-    setVerificationCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    setVerificationCooldownSeconds(getRemainingCooldownSecondsFromExpiry(verificationCooldownEndsAtRef.current));
   }, 1000);
 
   return () => window.clearInterval(timer);
@@ -353,7 +416,7 @@ useEffect(() => {
 useEffect(() => {
   if (passwordResetCooldownSeconds <= 0) return;
   const timer = window.setInterval(() => {
-    setPasswordResetCooldownSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    setPasswordResetCooldownSeconds(getRemainingCooldownSecondsFromExpiry(passwordResetCooldownEndsAtRef.current));
   }, 1000);
 
   return () => window.clearInterval(timer);
@@ -1664,8 +1727,14 @@ Open this listing: ${shareUrl}`;
     try {
       await sendPasswordResetEmail(auth, authForm.email);
       const nextCooldownSeconds = getCooldownSecondsForAttempt(passwordResetAttemptCount);
-      setPasswordResetAttemptCount((prev) => prev + 1);
+      const nextAttemptCount = passwordResetAttemptCount + 1;
+      const nextCooldownEndAt = Date.now() + nextCooldownSeconds * 1000;
+      setPasswordResetAttemptCount(nextAttemptCount);
       setPasswordResetCooldownSeconds(nextCooldownSeconds);
+      passwordResetCooldownEndsAtRef.current = nextCooldownEndAt;
+      localStorage.setItem(PASSWORD_RESET_ATTEMPT_KEY, String(nextAttemptCount));
+      localStorage.setItem(PASSWORD_RESET_COOLDOWN_END_KEY, String(nextCooldownEndAt));
+      localStorage.setItem(PASSWORD_RESET_LAST_ATTEMPT_AT_KEY, String(Date.now()));
 
       showFeedback(
         "success",
@@ -1711,8 +1780,14 @@ Open this listing: ${shareUrl}`;
 
       await sendEmailVerification(firebaseUser);
       const nextCooldownSeconds = getCooldownSecondsForAttempt(verificationResendAttemptCount);
-      setVerificationResendAttemptCount((prev) => prev + 1);
+      const nextAttemptCount = verificationResendAttemptCount + 1;
+      const nextCooldownEndAt = Date.now() + nextCooldownSeconds * 1000;
+      setVerificationResendAttemptCount(nextAttemptCount);
       setVerificationCooldownSeconds(nextCooldownSeconds);
+      verificationCooldownEndsAtRef.current = nextCooldownEndAt;
+      localStorage.setItem(VERIFICATION_RESEND_ATTEMPT_KEY, String(nextAttemptCount));
+      localStorage.setItem(VERIFICATION_RESEND_COOLDOWN_END_KEY, String(nextCooldownEndAt));
+      localStorage.setItem(VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY, String(Date.now()));
 
       showFeedback(
         "success",

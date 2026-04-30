@@ -42,6 +42,10 @@ export default function EditListingModal({
     whatsapp_number: listing.whatsapp_number || "",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
+    original_price: listing.original_price ? String(listing.original_price) : "",
+    discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
+    deal_label: listing.deal_label || "",
+    is_wholesale: !!listing.is_wholesale,
     photos: listing.photos || [],
     video_url: listing.video_url || "",
   });
@@ -64,6 +68,10 @@ export default function EditListingModal({
       whatsapp_number: listing.whatsapp_number || "",
       quantity: String(listing.quantity ?? 1),
       sold_quantity: String(listing.sold_quantity ?? 0),
+      original_price: listing.original_price ? String(listing.original_price) : "",
+      discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
+      deal_label: listing.deal_label || "",
+      is_wholesale: !!listing.is_wholesale,
       photos: listing.photos || [],
       video_url: listing.video_url || "",
     });
@@ -717,23 +725,51 @@ export default function EditListingModal({
       }
     }
 
-    onSave({
-      name: form.name,
-      price: priceNum,
-      description: form.description,
-      category: form.category as Category,
-      subcategory: form.subcategory || null,
-      item_type: form.item_type || null,
-      spec_values: isSchemaDrivenCategory ? form.spec_values : {},
-      university: form.university as University,
-      whatsapp_number: form.whatsapp_number,
-      condition: form.condition as "new" | "used" | "refurbished",
-      quantity: quantityNum,
-      sold_quantity: soldQuantityNum,
-      photos: form.photos,
-      video_url: form.video_url || null,
-    });
-  };
+const originalPriceRaw = String(form.original_price ?? "").trim();
+const discountPercentRaw = String(form.discount_percent ?? "").trim();
+
+const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
+const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
+
+if (originalPriceRaw) {
+  if (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= priceNum) {
+    setEditFieldError("original_price", "Original price must be higher than the current price.");
+    return;
+  }
+}
+
+if (discountPercentRaw) {
+  if (
+    !Number.isFinite(discountPercentNum as number) ||
+    (discountPercentNum as number) < 1 ||
+    (discountPercentNum as number) > 100
+  ) {
+    setEditFieldError("discount_percent", "Discount percent must be between 1 and 100.");
+    return;
+  }
+}
+    
+onSave({
+  name: form.name,
+  price: priceNum,
+  description: form.description,
+  category: form.category as Category,
+  subcategory: form.subcategory || null,
+  item_type: form.item_type || null,
+  spec_values: isSchemaDrivenCategory ? form.spec_values : {},
+  university: form.university as University,
+  whatsapp_number: form.whatsapp_number,
+  condition: form.condition as "new" | "used" | "refurbished",
+  quantity: quantityNum,
+  sold_quantity: soldQuantityNum,
+  photos: form.photos,
+  video_url: form.video_url || null,
+  original_price: originalPriceNum,
+  discount_percent: discountPercentNum,
+  deal_label: form.deal_label?.trim() || null,
+  is_wholesale: form.is_wholesale,
+ });
+};
 
   return (
     <div className="fixed inset-0 z-[90] flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
@@ -957,6 +993,84 @@ export default function EditListingModal({
                 ) : null}
               </div>
             </div>
+
+<div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+    Deal pricing & wholesale
+  </p>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Original Price (optional)
+      </label>
+      <input
+        type="number"
+        min="0"
+        value={form.original_price}
+        onChange={(e) => {
+          clearEditFieldError("original_price");
+          setForm({ ...form, original_price: e.target.value });
+        }}
+        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+          editFieldErrors.original_price
+            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        }`}
+      />
+      {editFieldErrors.original_price ? (
+        <p className="mt-1 text-xs text-red-600">{editFieldErrors.original_price}</p>
+      ) : null}
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Discount Percent (optional)
+      </label>
+      <input
+        type="number"
+        min="0"
+        max="100"
+        value={form.discount_percent}
+        onChange={(e) => {
+          clearEditFieldError("discount_percent");
+          setForm({ ...form, discount_percent: e.target.value });
+        }}
+        className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+          editFieldErrors.discount_percent
+            ? "border-red-500 focus:ring-2 focus:ring-red-200"
+            : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+        }`}
+      />
+      {editFieldErrors.discount_percent ? (
+        <p className="mt-1 text-xs text-red-600">{editFieldErrors.discount_percent}</p>
+      ) : null}
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+        Deal Label (optional)
+      </label>
+      <input
+        type="text"
+        value={form.deal_label}
+        onChange={(e) => setForm({ ...form, deal_label: e.target.value })}
+        placeholder="e.g. Special deal"
+        className="w-full px-4 py-3 bg-white border rounded-xl outline-none border-zinc-200 focus:ring-2 focus:ring-primary/20"
+      />
+    </div>
+
+    <label className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3">
+      <span className="text-sm font-bold text-zinc-700">Wholesale listing</span>
+      <input
+        type="checkbox"
+        checked={form.is_wholesale}
+        onChange={(e) => setForm({ ...form, is_wholesale: e.target.checked })}
+        className="h-4 w-4"
+      />
+    </label>
+  </div>
+</div>
 
             {isSchemaDrivenCategory && (
               <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
