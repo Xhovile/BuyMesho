@@ -1443,23 +1443,27 @@ if (approvedApplication?.status === "approved" && seller.is_seller !== 1) {
   db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(seller_uid);
 }
     
-  const {
-    name,
-    price,
-    description,
-    category,
-    subcategory,
-    item_type,
-    spec_values,
-    university,
-    photos,
-    video_url,
-    whatsapp_number,
-    status,
-    condition,
-    quantity,
-    sold_quantity,
-  } = req.body;
+const {
+  name,
+  price,
+  description,
+  category,
+  subcategory,
+  item_type,
+  spec_values,
+  university,
+  photos,
+  video_url,
+  whatsapp_number,
+  status,
+  condition,
+  quantity,
+  sold_quantity,
+  original_price,
+  discount_percent,
+  deal_label,
+  is_wholesale,
+} = req.body;
   const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
 const safeName = typeof name === "string" ? name.trim() : "";
@@ -1892,23 +1896,27 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
   db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(uid);
 }
 
-    const {
-      name,
-      price,
-      description,
-      category,
-      subcategory,
-      item_type,
-      spec_values,
-      university,
-      photos,
-      video_url,
-      whatsapp_number,
-      status,
-      condition,
-      quantity,
-      sold_quantity,
-    } = req.body;
+const {
+  name,
+  price,
+  description,
+  category,
+  subcategory,
+  item_type,
+  spec_values,
+  university,
+  photos,
+  video_url,
+  whatsapp_number,
+  status,
+  condition,
+  quantity,
+  sold_quantity,
+  original_price,
+  discount_percent,
+  deal_label,
+  is_wholesale,
+} = req.body;
     const allowedConditions = ["new", "used", "refurbished"];
     const safeCondition = allowedConditions.includes(condition) ? condition : "used";
     const safeName = typeof name === "string" ? name.trim() : "";
