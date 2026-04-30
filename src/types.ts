@@ -2,11 +2,11 @@ import { UNIVERSITIES } from "./constants";
 
 export type University = (typeof UNIVERSITIES)[number];
 
-export type Category = 
-  | "Food & Snacks" 
-  | "Fashion & Clothing" 
-  | "Academic Services" 
-  | "Electronics & Gadgets" 
+export type Category =
+  | "Food & Snacks"
+  | "Fashion & Clothing"
+  | "Academic Services"
+  | "Electronics & Gadgets"
   | "Beauty & Personal Care";
 
 export type ListingStatus = "available" | "sold";
@@ -31,6 +31,10 @@ export interface ListingDraft {
   condition: ListingCondition;
   quantity: string;
   sold_quantity: string;
+  original_price?: string;
+  discount_percent?: string;
+  deal_label?: string;
+  is_wholesale?: boolean;
 }
 
 export interface CreateListingPayload {
@@ -62,19 +66,16 @@ export interface UserProfile {
   is_verified: boolean;
   join_date: string;
 
-  // general user fields
   university?: University;
   profile_visibility?: VisibilitySetting;
   seller_visibility?: VisibilitySetting;
   saved_visibility?: VisibilitySetting;
 
-  // seller-only fields
   business_name?: string;
   business_logo?: string;
   bio?: string;
   whatsapp_number?: string;
 
-  // general user fields (non-seller)
   profile_picture?: string;
 }
 
@@ -104,10 +105,6 @@ export interface Listing {
   business_name: string;
   business_logo?: string | null;
   is_verified: boolean;
-  original_price?: number | null;
-  discount_percent?: number | null;
-  deal_label?: string | null;
-  is_wholesale?: boolean | null;
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
@@ -194,7 +191,6 @@ export interface ListingReviewFeedResponse {
   viewerReview: ListingReview | null;
   canReview: boolean;
 }
-
 
 export interface Conversation {
   id: number;

@@ -176,6 +176,10 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   name TEXT NOT NULL,
   price REAL NOT NULL,
   description TEXT,
+  original_price REAL,
+  discount_percent INTEGER,
+  deal_label TEXT,
+  is_wholesale INTEGER NOT NULL DEFAULT 0,
   category TEXT NOT NULL,
   subcategory TEXT,
   item_type TEXT,
@@ -1439,23 +1443,27 @@ if (approvedApplication?.status === "approved" && seller.is_seller !== 1) {
   db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(seller_uid);
 }
     
-  const {
-    name,
-    price,
-    description,
-    category,
-    subcategory,
-    item_type,
-    spec_values,
-    university,
-    photos,
-    video_url,
-    whatsapp_number,
-    status,
-    condition,
-    quantity,
-    sold_quantity,
-  } = req.body;
+const {
+  name,
+  price,
+  description,
+  category,
+  subcategory,
+  item_type,
+  spec_values,
+  university,
+  photos,
+  video_url,
+  whatsapp_number,
+  status,
+  condition,
+  quantity,
+  sold_quantity,
+  original_price,
+  discount_percent,
+  deal_label,
+  is_wholesale,
+} = req.body;
   const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
 const safeName = typeof name === "string" ? name.trim() : "";
@@ -1521,32 +1529,49 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
 }
 
+  const safeOriginalPrice =
+    original_price === undefined || original_price === null || String(original_price).trim() === ""
+      ? null
+      : Number(original_price);
+  const safeDiscountPercent =
+    discount_percent === undefined || discount_percent === null || String(discount_percent).trim() === ""
+      ? null
+      : Number(discount_percent);
+  const safeDealLabel =
+    typeof deal_label === "string" && deal_label.trim().length > 0 ? deal_label.trim() : null;
+  const safeIsWholesale =
+    is_wholesale === true || is_wholesale === 1 || is_wholesale === "1" || is_wholesale === "true";
+
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, is_wholesale, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-`).run(
-  seller_uid,
-  safeName,
-  numericPrice,
-  description,
-  safeCategory,
-  safeSubcategory,
-  safeItemType,
-  safeSpecValues,
-  safeUniversity,
-  JSON.stringify(safePhotos),
-  safeVideoUrl,
-  safeWhatsappNumber,
-  safeStatus,
-  safeCondition,
-  safeQuantity,
-  safeSoldQuantity
-);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      seller_uid,
+      safeName,
+      numericPrice,
+      safeOriginalPrice,
+      safeDiscountPercent,
+      safeDealLabel,
+      safeIsWholesale ? 1 : 0,
+      description ?? null,
+      safeCategory,
+      safeSubcategory,
+      safeItemType,
+      safeSpecValues,
+      safeUniversity,
+      JSON.stringify(safePhotos),
+      safeVideoUrl,
+      safeWhatsappNumber,
+      safeStatus,
+      safeCondition,
+      safeQuantity,
+      safeSoldQuantity
+    );
 
     res.json({ id: info.lastInsertRowid });
   } catch (error) {
@@ -1943,6 +1968,19 @@ const safeSpecValues =
   spec_values && typeof spec_values === "object" && !Array.isArray(spec_values)
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
+
+const safeOriginalPrice =
+  original_price === undefined || original_price === null || String(original_price).trim() === ""
+    ? null
+    : Number(original_price);
+const safeDiscountPercent =
+  discount_percent === undefined || discount_percent === null || String(discount_percent).trim() === ""
+    ? null
+    : Number(discount_percent);
+const safeDealLabel =
+  typeof deal_label === "string" && deal_label.trim().length > 0 ? deal_label.trim() : null;
+const safeIsWholesale =
+  is_wholesale === true || is_wholesale === 1 || is_wholesale === "1" || is_wholesale === "true";
     
   // Minimal validation
   if (!isMeaningfulTitle(safeName)) {
@@ -1988,6 +2026,10 @@ const safeSpecValues =
       SET
         name = ?,
         price = ?,
+        original_price = ?,
+        discount_percent = ?,
+        deal_label = ?,
+        is_wholesale = ?,
         description = ?,
         category = ?,
         subcategory = ?,
@@ -2006,6 +2048,10 @@ const safeSpecValues =
     `).run(
       safeName,
       numericPrice,
+      safeOriginalPrice,
+      safeDiscountPercent,
+      safeDealLabel,
+      safeIsWholesale ? 1 : 0,
       description ?? null,
       safeCategory,
       safeSubcategory,
