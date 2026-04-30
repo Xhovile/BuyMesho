@@ -114,18 +114,19 @@ export default function Header({
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
       const delta = currentY - lastY;
-      const collapseThreshold = 72;
-      const directionThreshold = 12;
+      const hideScrollThreshold = 96;
+      const showScrollThreshold = 40;
+      const directionThreshold = 10;
 
-      if (mobileMenuOpen || currentY < 24) {
+      if (mobileMenuOpen || currentY < showScrollThreshold) {
         if (topRowHiddenRef.current) {
           topRowHiddenRef.current = false;
           setTopRowHidden(false);
         }
-      } else if (!topRowHiddenRef.current && currentY > collapseThreshold && delta > directionThreshold) {
+      } else if (!topRowHiddenRef.current && currentY > hideScrollThreshold && delta > directionThreshold) {
         topRowHiddenRef.current = true;
         setTopRowHidden(true);
-      } else if (topRowHiddenRef.current && delta < -directionThreshold) {
+      } else if (topRowHiddenRef.current && (delta < -directionThreshold || currentY <= showScrollThreshold)) {
         topRowHiddenRef.current = false;
         setTopRowHidden(false);
       }
@@ -147,11 +148,8 @@ export default function Header({
     updateHeaderVisibility();
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
     };
   }, [mobileMenuOpen]);
 
@@ -195,7 +193,7 @@ export default function Header({
       >
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div
-            className={`overflow-hidden transition-all duration-300 ${
+            className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
               topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
             }`}
           >

@@ -59,7 +59,7 @@ export function useAccountProfile() {
     async (baseProfile?: Partial<UserProfile> | null) => {
       if (!firebaseUser) return;
 
-      const profileForSync = baseProfile ?? profile;
+      const profileForSync = baseProfile ?? null;
 
       await apiFetch("/api/sellers", {
         method: "POST",
@@ -75,7 +75,7 @@ export function useAccountProfile() {
         }),
       });
     },
-    [firebaseUser, profile]
+    [firebaseUser]
   );
 
   const loadProfile = useCallback(async () => {
