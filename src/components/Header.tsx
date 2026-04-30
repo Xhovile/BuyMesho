@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ShoppingBag, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -7,7 +7,6 @@ import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
   BECOME_SELLER_PATH,
-  EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
@@ -212,15 +211,6 @@ export default function Header({
 
               <button
                 type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className={desktopNavButtonClass}
-              >
-                <ShoppingBag className="w-4 h-4" />
-                Market
-              </button>
-
-              <button
-                type="button"
                 onClick={() => handleMessagesClick()}
                 className={desktopNavButtonClass}
               >
@@ -349,26 +339,28 @@ export default function Header({
             </div>
           </form>
 
-          <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-center gap-2">
-              {quickChips.map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => {
-                    setSelectedChip(chip);
-                    setComingSoonOpen(true);
-                  }}
-                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold text-zinc-600 hover:text-zinc-900 transition-colors"
-                  aria-label={`${chip} coming soon`}
-                >
-                  <span>{chip}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </nav>
+      <div className="px-4">
+        <div className="max-w-7xl mx-auto -mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max items-center gap-2">
+            {quickChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setSelectedChip(chip);
+                  setComingSoonOpen(true);
+                }}
+                className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
+                aria-label={`${chip} coming soon`}
+              >
+                <span>{chip}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -424,21 +416,6 @@ export default function Header({
                   <span className="inline-flex items-center gap-3">
                     {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
                     {isSeller ? "List Item" : "Sell"}
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(EXPLORE_PATH);
-                  }}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <ShoppingBag className="w-4 h-4" />
-                    Market
                   </span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
