@@ -191,6 +191,29 @@ function sendError(res: Response, status: number, error: string) {
   return res.status(status).json({ ok: false, error });
 }
 
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || "")
+  .split(",")
+  .map((email) => email.trim().toLowerCase())
+  .filter(Boolean);
+
+const ADMIN_UIDS = (process.env.ADMIN_UIDS || process.env.VITE_ADMIN_UIDS || "")
+  .split(",")
+  .map((uid) => uid.trim())
+  .filter(Boolean);
+
+function hasAdminAccess(user: VerifiedRequestUser | undefined): boolean {
+  if (!user) return false;
+  if (user.is_admin === true) return true;
+
+  const email = typeof user.email === "string" ? user.email.toLowerCase() : "";
+  if (email && ADMIN_EMAILS.includes(email)) return true;
+
+  const uid = typeof user.uid === "string" ? user.uid : "";
+  if (uid && ADMIN_UIDS.includes(uid)) return true;
+
+  return false;
+}
+
 function sanitizeText(value: unknown, maxLength = 1000) {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
@@ -993,7 +1016,7 @@ async function flagSpam(req: Request, res: Response) {
 
 async function adminMessageReports(req: Request, res: Response) {
   const user = currentUser(req);
-  if (!user?.is_admin) return sendError(res, 403, "Admin access required");
+  if (!hasAdminAccess(user)) return sendError(res, 403, "Admin access required");
 
   const status = sanitizeText(req.query.status, 24) || "open";
   const rows = db
@@ -1024,7 +1047,7 @@ async function adminMessageReports(req: Request, res: Response) {
 
 async function resolveReport(req: Request, res: Response) {
   const user = currentUser(req);
-  if (!user?.is_admin) return sendError(res, 403, "Admin access required");
+  if (!hasAdminAccess(user)) return sendError(res, 403, "Admin access required");
 
   const reportId = Number(req.params.reportId);
   if (!Number.isInteger(reportId)) {
