@@ -360,6 +360,26 @@ export default function Header({
           </div>
         </div>
       </nav>
+      <div className="px-4">
+        <div className="max-w-7xl mx-auto -mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-max items-center gap-2">
+            {quickChips.map((chip) => (
+              <button
+                key={chip}
+                type="button"
+                onClick={() => {
+                  setSelectedChip(chip);
+                  setComingSoonOpen(true);
+                }}
+                className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
+                aria-label={`${chip} coming soon`}
+              >
+                <span>{chip}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
 
       <AnimatePresence>
         {mobileMenuOpen && (
