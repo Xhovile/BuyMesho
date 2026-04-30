@@ -1532,7 +1532,7 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, is_wholesale, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
@@ -1899,6 +1899,10 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
 const {
   name,
   price,
+  original_price,
+  discount_percent,
+  deal_label,
+  is_wholesale
   description,
   category,
   subcategory,
@@ -2000,6 +2004,10 @@ const safeSpecValues =
       SET
         name = ?,
         price = ?,
+        original_price = ?,
+        discount_percent = ?,
+        deal_label = ?,
+        is_wholesale = ?,
         description = ?,
         category = ?,
         subcategory = ?,
@@ -2018,6 +2026,10 @@ const safeSpecValues =
     `).run(
       safeName,
       numericPrice,
+      original_price,
+      discount_percent,
+      deal_label,
+      is_wholesale
       description ?? null,
       safeCategory,
       safeSubcategory,
