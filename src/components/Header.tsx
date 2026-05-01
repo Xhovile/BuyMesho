@@ -170,8 +170,8 @@ export default function Header({
 
   return (
     <>
-      <nav className="sticky top-0 z-50 px-4 pt-2 pb-2">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-[#2f6257]/20 bg-[#438c7c] shadow-md shadow-[#264f45]/10">
+      <nav className="sticky top-0 z-50 bg-white border-b border-zinc-200 shadow-sm">
+        <div className="mx-auto max-w-7xl overflow-hidden">
           <div
             className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
               topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
@@ -273,7 +273,7 @@ export default function Header({
             >
               <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
                 <div
-                  className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-white/25 bg-white shadow-sm transition-all ${
+                  className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
                     topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
                   }`}
                 >
@@ -309,7 +309,7 @@ export default function Header({
             </form>
           </div>
 
-          <div className="border-t border-white/15 px-3 py-2.5">
+          <div className="border-t border-zinc-100 px-3 py-2.5">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
                 {quickChips.map((chip) => (
