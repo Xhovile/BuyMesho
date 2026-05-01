@@ -1594,7 +1594,6 @@ if (approvedApplication?.status === "approved" && seller.is_seller !== 1) {
     
 const {
   name,
-  price,
   description,
   category,
   subcategory,
@@ -1608,11 +1607,13 @@ const {
   condition,
   quantity,
   sold_quantity,
-  original_price,
-  discount_percent,
-  deal_label,
-  is_wholesale,
 } = req.body;
+
+const pricing = normalizeListingPricing(req.body);
+const isWholesale = pricing.is_wholesale === 1;
+const packSize = toFiniteNumber(req.body.pack_size);
+const bulkUnits = toTrimmedString(req.body.bulk_units);
+
   const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
 const safeName = typeof name === "string" ? name.trim() : "";
@@ -1620,7 +1621,6 @@ const safeCategory = typeof category === "string" ? category.trim() : "";
 const safeUniversity = typeof university === "string" ? university.trim() : "";
 const safeWhatsappNumber =
   typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
-const numericPrice = Number(price);
   
     // ✅ Validate photos + video
 const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
@@ -1658,8 +1658,25 @@ if (!isMeaningfulTitle(safeName)) {
   return res.status(400).json({ error: "Title is missing or not meaningful" });
 }
 
-if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-  return res.status(400).json({ error: "price must be greater than 0" });
+if (pricing.price <= 0) {
+  return res.status(400).json({ error: "Price must be greater than 0" });
+}
+
+if (
+  pricing.discount_percent !== null &&
+  (pricing.discount_percent <= 0 || pricing.discount_percent > 100)
+) {
+  return res.status(400).json({ error: "Discount percent must be between 1 and 100" });
+}
+
+if (isWholesale) {
+  if (!packSize || packSize < 1 || !Number.isInteger(packSize)) {
+    return res.status(400).json({ error: "Wholesale pack size must be a whole number of at least 1" });
+  }
+
+  if (!bulkUnits) {
+    return res.status(400).json({ error: "Wholesale bulk units are required" });
+  }
 }
 
 if (!safeCategory) {
@@ -1678,35 +1695,26 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
 }
 
-  const safeOriginalPrice =
-    original_price === undefined || original_price === null || String(original_price).trim() === ""
-      ? null
-      : Number(original_price);
-  const safeDiscountPercent =
-    discount_percent === undefined || discount_percent === null || String(discount_percent).trim() === ""
-      ? null
-      : Number(discount_percent);
-  const safeDealLabel =
-    typeof deal_label === "string" && deal_label.trim().length > 0 ? deal_label.trim() : null;
-  const safeIsWholesale =
-    is_wholesale === true || is_wholesale === 1 || is_wholesale === "1" || is_wholesale === "true";
-
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, original_price, discount_percent, deal_label, is_wholesale, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, is_wholesale,
+        pack_size, bulk_units,
+        description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       seller_uid,
       safeName,
-      numericPrice,
-      safeOriginalPrice,
-      safeDiscountPercent,
-      safeDealLabel,
-      safeIsWholesale ? 1 : 0,
+      pricing.price,
+      pricing.original_price,
+      pricing.discount_percent,
+      pricing.deal_label,
+      isWholesale ? 1 : 0,
+      packSize ?? null,
+      bulkUnits ?? null,
       description ?? null,
       safeCategory,
       safeSubcategory,
@@ -2064,7 +2072,6 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
 
     const {
       name,
-      price,
       description,
       category,
       subcategory,
@@ -2078,11 +2085,13 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
       condition,
       quantity,
       sold_quantity,
-      original_price,
-      discount_percent,
-      deal_label,
-      is_wholesale,
     } = req.body;
+
+    const pricing = normalizeListingPricing(req.body);
+    const isWholesale = pricing.is_wholesale === 1;
+    const packSize = toFiniteNumber(req.body.pack_size);
+    const bulkUnits = toTrimmedString(req.body.bulk_units);
+
     const allowedConditions = ["new", "used", "refurbished"];
     const safeCondition = allowedConditions.includes(condition) ? condition : "used";
     const safeName = typeof name === "string" ? name.trim() : "";
@@ -2090,7 +2099,6 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
     const safeUniversity = typeof university === "string" ? university.trim() : "";
     const safeWhatsappNumber =
       typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
-    const numericPrice = Number(price);
     const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
 if (safePhotos.length < 1) {
   return res.status(400).json({ error: "At least 1 photo is required" });
