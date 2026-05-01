@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
 import './index.css';
@@ -30,8 +30,57 @@ window.fetch = ((input: RequestInfo | URL, init?: RequestInit) => {
   return nativeFetch(input as RequestInfo, init);
 }) as typeof window.fetch;
 
+class AppErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: unknown) {
+    console.error('App crash captured by error boundary:', error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-zinc-50 px-4 py-10 flex items-center justify-center">
+          <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-lg">
+            <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#438c7c]">
+              BuyMesho
+            </p>
+            <h1 className="mt-3 text-2xl font-black text-zinc-900">
+              Something went wrong
+            </h1>
+            <p className="mt-2 text-sm text-zinc-600">
+              The app hit an unexpected error. Reload the page to try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 inline-flex items-center justify-center rounded-2xl bg-[#438c7c] px-4 py-2.5 text-sm font-bold text-white hover:opacity-90"
+            >
+              Reload page
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RootRouter />
+    <AppErrorBoundary>
+      <RootRouter />
+    </AppErrorBoundary>
   </StrictMode>,
 );
