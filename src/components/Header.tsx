@@ -106,7 +106,7 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
-      setTopRowHidden(window.scrollY > 16);
+      setTopRowHidden(window.scrollY > 26);
     };
 
     const onScroll = () => {
