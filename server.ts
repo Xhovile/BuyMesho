@@ -437,6 +437,24 @@ try {
 }
 
 try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+
+  const hasPackSize = cols.some((c) => c.name === "pack_size");
+  if (!hasPackSize) {
+    db.exec("ALTER TABLE listings ADD COLUMN pack_size INTEGER");
+    console.log("Migration: Added listings.pack_size");
+  }
+
+  const hasBulkUnits = cols.some((c) => c.name === "bulk_units");
+  if (!hasBulkUnits) {
+    db.exec("ALTER TABLE listings ADD COLUMN bulk_units TEXT");
+    console.log("Migration: Added listings.bulk_units");
+  }
+} catch (e) {
+  console.warn("Listings wholesale bundle migration check failed:", e);
+}
+
+try {
   const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
 
   const hasProfileViews = cols.some((c) => c.name === "profile_views");
