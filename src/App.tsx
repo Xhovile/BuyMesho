@@ -3113,8 +3113,11 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         return listings.filter((listing) => Boolean(listing.is_wholesale));
 
       case "Events":
+      // TODO: filter by event listings when the field is available
       case "Lay-by":
+      // TODO: filter by lay-by listings when the field is available
       case "Accommodation":
+      // TODO: filter by accommodation listings when the field is available
       case "All":
       default:
         return listings;
