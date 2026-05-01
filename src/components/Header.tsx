@@ -308,7 +308,7 @@ export default function Header({
                       setSelectedChip(chip);
                       setComingSoonOpen(true);
                     }}
-                    className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50/70 px-3 py-1.5 text-sm font-bold font-sans text-zinc-900 shadow-sm transition-colors hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
+                    className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50/90 px-3 py-1.5 text-sm font-bold font-sans text-zinc-900 shadow-sm transition-colors hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
                     aria-label={`${chip} coming soon`}
                   >
                     <span>{chip}</span>
