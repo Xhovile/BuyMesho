@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -43,10 +43,6 @@ export default function Header({
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  const lastScrollYRef = useRef(0);
-  const tickingRef = useRef(false);
-  const topRowHiddenRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -109,48 +105,25 @@ export default function Header({
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
   useEffect(() => {
-    const updateHeaderCollapse = () => {
-      const currentY = window.scrollY;
-      const lastY = lastScrollYRef.current;
-      const delta = currentY - lastY;
-      const hideScrollThreshold = 96;
-      const showScrollThreshold = 40;
-      const directionThreshold = 10;
-
-      if (mobileMenuOpen || currentY < showScrollThreshold) {
-        if (topRowHiddenRef.current) {
-          topRowHiddenRef.current = false;
-          setTopRowHidden(false);
-        }
-      } else if (!topRowHiddenRef.current && currentY > hideScrollThreshold && delta > directionThreshold) {
-        topRowHiddenRef.current = true;
-        setTopRowHidden(true);
-      } else if (topRowHiddenRef.current && (delta < -directionThreshold || currentY <= showScrollThreshold)) {
-        topRowHiddenRef.current = false;
-        setTopRowHidden(false);
-      }
-
-      lastScrollYRef.current = currentY;
-    };
-
-    const onScroll = () => {
-      if (tickingRef.current) return;
-      tickingRef.current = true;
-
-      window.requestAnimationFrame(() => {
-        updateHeaderCollapse();
-        tickingRef.current = false;
+    const updateHeaderVisibility = () => {
+      setTopRowHidden((prev) => {
+        // Use hysteresis: hide at >40px, only show again below 10px.
+        // The dead zone between 10–40px prevents jitter near the threshold.
+        if (prev) return window.scrollY >= 14;
+        return window.scrollY > 30;
       });
     };
 
-    lastScrollYRef.current = window.scrollY;
-    updateHeaderCollapse();
+    const onScroll = () => {
+      window.requestAnimationFrame(updateHeaderVisibility);
+    };
 
+    updateHeaderVisibility();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
     };
-  }, [mobileMenuOpen]);
+  }, []);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -181,99 +154,101 @@ export default function Header({
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-zinc-50/95 px-4 py-2.5 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 shadow-sm">
-            <div
-              className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
-                topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <BrandMark />
+      <nav className="sticky top-0 z-50">
+        <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
+        <div className="mx-auto max-w-7xl overflow-hidden">
+          <div
+            className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <BrandMark />
 
-                <div className="hidden md:flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(HOME_PATH)}
-                    className={desktopNavButtonClass}
-                  >
-                    <House className="w-4 h-4" />
-                    Home
-                  </button>
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(HOME_PATH)}
+                  className={desktopNavButtonClass}
+                >
+                  <House className="w-4 h-4" />
+                  Home
+                </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleMessagesClick()}
-                    className={desktopNavButtonClass}
-                  >
-                    <MessageSquareText className="w-4 h-4" />
-                    <div className="flex items-center gap-2">
-                      <span>Messages</span>
+                <button
+                  type="button"
+                  onClick={() => handleMessagesClick()}
+                  className={desktopNavButtonClass}
+                >
+                  <MessageSquareText className="w-4 h-4" />
+                  <div className="flex items-center gap-2">
+                    <span>Messages</span>
+                    {unreadCount > 0 ? (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                        {unreadCount}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
 
-                      {unreadCount > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                          {unreadCount}
-                        </span>
-                      ) : null}
-                    </div>
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => handleSettingsClick()}
+                  className={desktopNavButtonClass}
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleSettingsClick()}
-                    className={desktopNavButtonClass}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleSellClick()}
+                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                >
+                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+                </button>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <button
-                    onClick={() => handleSellClick()}
-                    className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                  >
-                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                    <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      if (!firebaseUser) {
-                        setAuthGuardOpen(true);
-                        return;
-                      }
-                      onProfileClick();
-                    }}
-                    className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-                  >
-                    {firebaseUser ? (
-                      avatarUrl ? (
-                        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                          {fallbackLetter}
-                        </div>
-                      )
+                <button
+                  onClick={() => {
+                    if (!firebaseUser) {
+                      setAuthGuardOpen(true);
+                      return;
+                    }
+                    onProfileClick();
+                  }}
+                  className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                >
+                  {firebaseUser ? (
+                    avatarUrl ? (
+                      <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <User className="w-5 h-5 text-zinc-600" />
-                    )}
-                  </button>
+                      <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                        {fallbackLetter}
+                      </div>
+                    )
+                  ) : (
+                    <User className="w-5 h-5 text-zinc-600" />
+                  )}
+                </button>
 
-                  <button
-                    onClick={() => setMobileMenuOpen((value) => !value)}
-                    className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-                    aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                    aria-expanded={mobileMenuOpen}
-                    aria-controls="mobile-header-menu"
-                  >
-                    {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
-                  </button>
-                </div>
+                <button
+                  onClick={() => setMobileMenuOpen((value) => !value)}
+                  className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-header-menu"
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+                </button>
               </div>
             </div>
+          </div>
 
+          <div
+            className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
+          >
             <form
               onSubmit={(e: FormEvent<HTMLFormElement>) => {
                 e.preventDefault();
@@ -283,8 +258,8 @@ export default function Header({
             >
               <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
                 <div
-                  className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-300 bg-white shadow-sm transition-all md:border-zinc-200 md:shadow-md ${
-                    topRowHidden ? "p-1.5" : "p-2"
+                  className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
+                    topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
                   }`}
                 >
                   <input
@@ -292,20 +267,18 @@ export default function Header({
                     value={searchValue}
                     onChange={(e) => onSearch(e.target.value)}
                     placeholder="Search listings, products, or services..."
-                    className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+                    className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
                   />
                   <button
                     type="submit"
                     aria-label="Search listings"
-                    className={`inline-flex items-center justify-center rounded-xl bg-red-900 px-3 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4 ${
-                      topRowHidden ? "py-2" : "py-2.5"
-                    }`}
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
                   >
                     Search
                   </button>
                 </div>
 
-                {topRowHidden && (
+                {topRowHidden ? (
                   <button
                     type="button"
                     onClick={() => setMobileMenuOpen((value) => !value)}
@@ -316,27 +289,32 @@ export default function Header({
                   >
                     {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                   </button>
-                )}
+                ) : null}
               </div>
             </form>
           </div>
+        </div>
+        </div>
 
-          <div className="mt-2 overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-1.5 shadow-sm backdrop-blur-sm [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex min-w-max items-center gap-2">
-              {quickChips.map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => {
-                    setSelectedChip(chip);
-                    setComingSoonOpen(true);
-                  }}
-                  className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
-                  aria-label={`${chip} coming soon`}
-                >
-                  <span>{chip}</span>
-                </button>
-              ))}
+        <div className="px-3 py-2.5">
+          <div className="mx-auto max-w-7xl">
+            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max items-center gap-2 pb-1">
+                {quickChips.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setSelectedChip(chip);
+                      setComingSoonOpen(true);
+                    }}
+                    className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-bold font-sans text-zinc-900 shadow-sm transition-colors hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
+                    aria-label={`${chip} coming soon`}
+                  >
+                    <span>{chip}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -344,38 +322,34 @@ export default function Header({
 
       <AnimatePresence>
         {mobileMenuOpen && (
-          <>
-            <motion.div
-              key="drawer-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
-              onClick={closeMenu}
-              aria-hidden="true"
-            />
-
-            <motion.div
-              key="drawer-panel"
-              id="mobile-header-menu"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="drawer-title"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
-            >
+          <motion.div
+            key="drawer-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
+            onClick={closeMenu}
+            aria-hidden="true"
+          />
+        )}
+        {mobileMenuOpen && (
+          <motion.div
+            key="drawer-panel"
+            id="mobile-header-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drawer-title"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
+          >
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                    Menu
-                  </p>
-                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">
-                    Start here
-                  </h2>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
                 </div>
                 <button
                   type="button"
@@ -503,8 +477,7 @@ export default function Header({
                   </div>
                 )}
               </div>
-            </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 
