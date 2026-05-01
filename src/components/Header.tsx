@@ -46,7 +46,6 @@ export default function Header({
 
   const lastScrollYRef = useRef(0);
   const tickingRef = useRef(false);
-  const topRowHiddenRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -98,7 +97,7 @@ export default function Header({
       await signOut(auth);
       navigateToPath(LOGIN_PATH);
     } catch {
-      // No-op: the UI remains usable even if sign-out fails briefly.
+      // Keep UI usable even if sign-out fails briefly.
     }
   };
 
@@ -112,23 +111,14 @@ export default function Header({
     const updateHeaderVisibility = () => {
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
-      const delta = currentY - lastY;
-      const hideScrollThreshold = 96;
-      const showScrollThreshold = 40;
-      const directionThreshold = 10;
+      const scrollingDown = currentY > lastY;
+      const shouldHideTopRow = !mobileMenuOpen && currentY > 0 && scrollingDown;
+      const shouldShowTopRow = mobileMenuOpen || currentY <= 0 || currentY < lastY;
 
-      if (mobileMenuOpen || currentY < showScrollThreshold) {
-        if (topRowHiddenRef.current) {
-          topRowHiddenRef.current = false;
-          setTopRowHidden(false);
-        }
-      } else if (!topRowHiddenRef.current && currentY > hideScrollThreshold && delta > directionThreshold) {
-        topRowHiddenRef.current = true;
-        setTopRowHidden(true);
-      } else if (topRowHiddenRef.current && (delta < -directionThreshold || currentY <= showScrollThreshold)) {
-        topRowHiddenRef.current = false;
-        setTopRowHidden(false);
-      }
+      setTopRowHidden((prev) => {
+        const next = shouldShowTopRow ? false : shouldHideTopRow ? true : prev;
+        return prev === next ? prev : next;
+      });
 
       lastScrollYRef.current = currentY;
     };
@@ -163,18 +153,12 @@ export default function Header({
     const loadUnread = async () => {
       try {
         const inbox = await fetchInbox();
-
         if (!mounted) return;
 
-        const unread = inbox.filter(
-          (c: any) => Number(c.unread_count || 0) > 0
-        ).length;
-
+        const unread = inbox.filter((c: any) => Number(c.unread_count || 0) > 0).length;
         setUnreadCount(unread);
       } catch {
-        if (mounted) {
-          setUnreadCount(0);
-        }
+        if (mounted) setUnreadCount(0);
       }
     };
 
@@ -188,105 +172,95 @@ export default function Header({
   return (
     <>
       <nav className="sticky top-0 z-50 bg-zinc-50/95 px-4 py-2.5 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 shadow-sm">
-            <div
-              className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
-                topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-4">
-                <BrandMark />
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+          <div
+            className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <BrandMark />
 
-            <div className="hidden md:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => navigateToPath(HOME_PATH)}
-                className={desktopNavButtonClass}
-              >
-                <House className="w-4 h-4" />
-                Home
-              </button>
+              <div className="hidden md:flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(HOME_PATH)}
+                  className={desktopNavButtonClass}
+                >
+                  <House className="w-4 h-4" />
+                  Home
+                </button>
 
-              <button
-                type="button"
-                onClick={() => handleMessagesClick()}
-                className={desktopNavButtonClass}
-              >
-                <MessageSquareText className="w-4 h-4" />
-                <div className="flex items-center gap-2">
-                  <span>Messages</span>
+                <button
+                  type="button"
+                  onClick={() => handleMessagesClick()}
+                  className={desktopNavButtonClass}
+                >
+                  <MessageSquareText className="w-4 h-4" />
+                  <div className="flex items-center gap-2">
+                    <span>Messages</span>
+                    {unreadCount > 0 ? (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                        {unreadCount}
+                      </span>
+                    ) : null}
+                  </div>
+                </button>
 
-                  {unreadCount > 0 ? (
-                    <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                      {unreadCount}
-                    </span>
-                  ) : null}
-                </div>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => handleSettingsClick()}
+                  className={desktopNavButtonClass}
+                >
+                  <Settings className="w-4 h-4" />
+                  Settings
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => handleSettingsClick()}
-                className={desktopNavButtonClass}
-              >
-                <Settings className="w-4 h-4" />
-                Settings
-              </button>
-            </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleSellClick()}
+                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                >
+                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                  <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+                </button>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => handleSellClick()}
-                className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-              >
-                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  if (!firebaseUser) {
-                    setAuthGuardOpen(true);
-                    return;
-                  }
-                  onProfileClick();
-                }}
-                className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-              >
-                {firebaseUser ? (
-                  avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
+                <button
+                  onClick={() => {
+                    if (!firebaseUser) {
+                      setAuthGuardOpen(true);
+                      return;
+                    }
+                    onProfileClick();
+                  }}
+                  className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                >
+                  {firebaseUser ? (
+                    avatarUrl ? (
+                      <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                        {fallbackLetter}
+                      </div>
+                    )
                   ) : (
-                    <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                      {fallbackLetter}
-                    </div>
-                  )
-                ) : (
-                  <User className="w-5 h-5 text-zinc-600" />
-                )}
-              </button>
+                    <User className="w-5 h-5 text-zinc-600" />
+                  )}
+                </button>
 
-              <button
-                onClick={() => setMobileMenuOpen((value) => !value)}
-                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-header-menu"
-              >
-                {mobileMenuOpen ? (
-                  <X className="w-5 h-5 text-white" />
-                ) : (
-                  <Menu className="w-5 h-5 text-white" />
-                )}
-              </button>
-                </div>
+                <button
+                  onClick={() => setMobileMenuOpen((value) => !value)}
+                  className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobile-header-menu"
+                >
+                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
+                </button>
               </div>
             </div>
+          </div>
 
           <form
             onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -319,7 +293,7 @@ export default function Header({
                 </button>
               </div>
 
-              {topRowHidden && (
+              {topRowHidden ? (
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((value) => !value)}
@@ -328,20 +302,14 @@ export default function Header({
                   aria-expanded={mobileMenuOpen}
                   aria-controls="mobile-header-menu"
                 >
-                  {mobileMenuOpen ? (
-                    <X className="w-4 h-4" />
-                  ) : (
-                    <Menu className="w-4 h-4" />
-                  )}
+                  {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                 </button>
-              )}
+              ) : null}
             </div>
           </form>
 
-          </div>
-
-          <div className="mt-2 -mx-1 overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white/90 px-4 py-1.5 shadow-sm backdrop-blur-sm [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="inline-flex min-w-max items-center gap-2">
+          <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-max items-center gap-2">
               {quickChips.map((chip) => (
                 <button
                   key={chip}
@@ -350,7 +318,7 @@ export default function Header({
                     setSelectedChip(chip);
                     setComingSoonOpen(true);
                   }}
-                  className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
+                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold text-zinc-500 transition-colors hover:text-zinc-800"
                   aria-label={`${chip} coming soon`}
                 >
                   <span>{chip}</span>
@@ -360,26 +328,6 @@ export default function Header({
           </div>
         </div>
       </nav>
-      <div className="px-4">
-        <div className="max-w-7xl mx-auto -mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <div className="flex min-w-max items-center gap-2">
-            {quickChips.map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => {
-                  setSelectedChip(chip);
-                  setComingSoonOpen(true);
-                }}
-                className="inline-flex items-center whitespace-nowrap px-0.5 py-1 text-sm font-bold text-zinc-500 hover:text-zinc-800 transition-colors"
-                aria-label={`${chip} coming soon`}
-              >
-                <span>{chip}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -409,12 +357,8 @@ export default function Header({
             >
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                    Menu
-                  </p>
-                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">
-                    Start here
-                  </h2>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
                 </div>
                 <button
                   type="button"
@@ -451,7 +395,6 @@ export default function Header({
                     <MessageSquareText className="w-4 h-4 text-zinc-500" />
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
-
                       {unreadCount > 0 ? (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
                           {unreadCount}
