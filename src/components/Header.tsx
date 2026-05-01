@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -43,9 +43,6 @@ export default function Header({
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
-
-  const lastScrollYRef = useRef(0);
-  const tickingRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -109,32 +106,14 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
-      const currentY = window.scrollY;
-      const hideThreshold = currentY > 64;
-      const showThreshold = currentY < 28;
-
-      setTopRowHidden((prev) => {
-        if (hideThreshold) return true;
-        if (showThreshold) return false;
-        return prev;
-      });
-
-      lastScrollYRef.current = currentY;
+      setTopRowHidden(window.scrollY > 12);
     };
 
     const onScroll = () => {
-      if (tickingRef.current) return;
-      tickingRef.current = true;
-
-      window.requestAnimationFrame(() => {
-        updateHeaderVisibility();
-        tickingRef.current = false;
-      });
+      window.requestAnimationFrame(updateHeaderVisibility);
     };
 
-    lastScrollYRef.current = window.scrollY;
     updateHeaderVisibility();
-
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -313,7 +292,7 @@ export default function Header({
         </div>
 
         <div className="px-3 py-2.5">
-          <div className="mx-auto max-w-7xl rounded-2xl border border-zinc-200 bg-white/95 shadow-sm backdrop-blur">
+          <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
                 {quickChips.map((chip) => (
