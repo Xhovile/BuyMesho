@@ -371,8 +371,11 @@ export default function App() {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setListings(Array.isArray(data.items) ? data.items : []);
-      setTotalResults(Number(data.total || 0));
-      setTotalPages(Number(data.totalPages || 1));
+
+      const parsedTotal = Number(data.total || 0);
+      const parsedTotalPages = Number(data.totalPages || 1);
+      setTotalResults(Number.isFinite(parsedTotal) && parsedTotal >= 0 ? parsedTotal : 0);
+      setTotalPages(Number.isFinite(parsedTotalPages) && parsedTotalPages >= 1 ? parsedTotalPages : 1);
     } catch (err) {
       console.error("Fetch listings error:", err);
       setListings([]);
