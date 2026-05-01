@@ -1,6 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
+import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -55,6 +56,15 @@ export default function ListingCard({
       ? listing.business_name.trim()
       : "Seller";
 
+  const pricing = getListingPricing(listing);
+  const safePrice = pricing.price;
+  const originalPrice = pricing.originalPrice;
+  const discountPercent = pricing.discountPercent;
+  const dealLabel = pricing.dealLabel;
+  const isWholesale = pricing.isWholesale;
+  const wholesalePackLabel = pricing.wholesalePackLabel;
+  const wholesaleQuantityLabel = pricing.wholesaleQuantityLabel;
+
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
     ? Number(listing.sold_quantity)
@@ -67,25 +77,6 @@ export default function ListingCard({
     typeof listing.description === "string" && listing.description.trim().length > 0
       ? listing.description.trim()
       : "";
-
-  const safePriceValue = Number(listing.price);
-  const safePrice = Number.isFinite(safePriceValue) ? safePriceValue : 0;
-  const originalPriceValue = Number(listing.original_price);
-  const hasDealPrice =
-    Number.isFinite(originalPriceValue) && originalPriceValue > safePrice && safePrice > 0;
-  const computedDiscountPercent = hasDealPrice
-    ? Math.round(((originalPriceValue - safePrice) / originalPriceValue) * 100)
-    : null;
-  const discountPercent =
-    Number.isFinite(Number(listing.discount_percent)) && Number(listing.discount_percent) > 0
-      ? Math.round(Number(listing.discount_percent))
-      : computedDiscountPercent;
-  const dealLabel =
-    typeof listing.deal_label === "string" && listing.deal_label.trim()
-      ? listing.deal_label.trim()
-      : discountPercent && discountPercent > 0
-        ? `${discountPercent}% off`
-        : "Special deal";
 
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
@@ -119,6 +110,8 @@ export default function ListingCard({
   const handleOpenDetails = () => {
     onOpenDetails(listing);
   };
+
+  const priceBadgeBase = "rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md";
 
   return (
     <motion.article
@@ -168,7 +161,7 @@ export default function ListingCard({
           </button>
 
           <div className="flex flex-col items-end gap-1">
-            {listing.is_wholesale ? (
+            {isWholesale ? (
               <span className="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
                 Wholesale
               </span>
@@ -215,10 +208,10 @@ export default function ListingCard({
             </>
           ) : null}
 
-          {hasDealPrice ? (
+          {discountPercent && discountPercent > 0 ? (
             <div className="absolute left-3 top-3 flex flex-col gap-1">
               <span className="inline-flex items-center rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-sm">
-                {dealLabel}
+                {dealLabel || `${discountPercent}% off`}
               </span>
             </div>
           ) : null}
@@ -241,28 +234,41 @@ export default function ListingCard({
             />
           ) : null}
 
-          <div className="absolute bottom-3 left-3">
-            {hasDealPrice ? (
-              <div className="rounded-xl border border-white/20 bg-white/92 px-3 py-2 font-extrabold shadow-sm backdrop-blur-md">
-                <div className="flex items-baseline gap-2">
+          <div className="absolute bottom-3 left-3 max-w-[80%]">
+            {discountPercent && discountPercent > 0 && originalPrice ? (
+              <div className={priceBadgeBase + " px-3 py-2"}>
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                   <span className="text-[10px] font-bold text-zinc-400 line-through">
-                    MK {originalPriceValue.toLocaleString()}
+                    {formatMoney(originalPrice)}
                   </span>
                   <span className="text-sm text-red-900">
-                    MK {safePrice.toLocaleString()}
+                    {formatMoney(safePrice)}
                   </span>
                 </div>
-                <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-700">
-                  {discountPercent}% off
+                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-red-700">
+                  <span>{discountPercent}% off</span>
+                  {isWholesale && wholesalePackLabel ? <span className="text-zinc-500">• {wholesalePackLabel}</span> : null}
                 </div>
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold text-zinc-900 shadow-sm backdrop-blur-md ${
+                className={`${priceBadgeBase} ${
                   ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
-                }`}
+                } text-zinc-900`}
               >
-                MK {safePrice.toLocaleString()}
+                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                  <span>{formatMoney(safePrice)}</span>
+                  {isWholesale && wholesalePackLabel ? (
+                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
+                      {wholesalePackLabel}
+                    </span>
+                  ) : null}
+                </div>
+                {isWholesale && wholesaleQuantityLabel ? (
+                  <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
+                    {wholesaleQuantityLabel}
+                  </div>
+                ) : null}
               </div>
             )}
           </div>
