@@ -171,7 +171,7 @@ export default function Header({
   return (
     <>
       <nav className="sticky top-0 z-50">
-        <div className="bg-white border-b border-zinc-200 shadow-sm">
+        <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
         <div className="mx-auto max-w-7xl overflow-hidden">
           <div
             className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
@@ -312,7 +312,7 @@ export default function Header({
         </div>
         </div>
 
-        <div className="bg-[#FAFAFA] px-3 py-2.5">
+        <div className="bg-transparent px-3 py-2.5">
           <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
