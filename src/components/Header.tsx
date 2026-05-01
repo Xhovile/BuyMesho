@@ -109,7 +109,7 @@ export default function Header({
       setTopRowHidden((prev) => {
         // Use hysteresis: hide at >40px, only show again below 10px.
         // The dead zone between 10–40px prevents jitter near the threshold.
-        if (prev) return window.scrollY >= 14;
+        if (prev) return window.scrollY >= 4;
         return window.scrollY > 30;
       });
     };
