@@ -405,6 +405,36 @@ try {
 }
 
 try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+
+  const hasOriginalPrice = cols.some((c) => c.name === "original_price");
+  if (!hasOriginalPrice) {
+    db.exec("ALTER TABLE listings ADD COLUMN original_price REAL");
+    console.log("Migration: Added listings.original_price");
+  }
+
+  const hasDiscountPercent = cols.some((c) => c.name === "discount_percent");
+  if (!hasDiscountPercent) {
+    db.exec("ALTER TABLE listings ADD COLUMN discount_percent INTEGER");
+    console.log("Migration: Added listings.discount_percent");
+  }
+
+  const hasDealLabel = cols.some((c) => c.name === "deal_label");
+  if (!hasDealLabel) {
+    db.exec("ALTER TABLE listings ADD COLUMN deal_label TEXT");
+    console.log("Migration: Added listings.deal_label");
+  }
+
+  const hasIsWholesale = cols.some((c) => c.name === "is_wholesale");
+  if (!hasIsWholesale) {
+    db.exec("ALTER TABLE listings ADD COLUMN is_wholesale INTEGER NOT NULL DEFAULT 0");
+    console.log("Migration: Added listings.is_wholesale");
+  }
+} catch (e) {
+  console.warn("Listings pricing migration check failed:", e);
+}
+
+try {
   const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
 
   const hasProfileViews = cols.some((c) => c.name === "profile_views");
