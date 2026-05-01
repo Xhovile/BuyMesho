@@ -384,7 +384,7 @@ export default function ListingStudioFormWide({
   return (
     <div className="w-full">
       <div className="grid gap-8 xl:grid-cols-2">
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section className="border-b border-zinc-200 pb-6">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Basic info</p>
             <div className="mt-4 space-y-4">
@@ -407,7 +407,7 @@ export default function ListingStudioFormWide({
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Photos (max 5)</label>
                 {form.photos.length > 0 && (
-                  <div className="mb-3 grid grid-cols-3 gap-3">
+                  <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
                     {form.photos.map((url, idx) => (
                       <div key={`${url}-${idx}`} className="relative aspect-square overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100">
                         <img src={url} alt={`Photo ${idx + 1}`} className="h-full w-full object-cover" />
@@ -428,10 +428,10 @@ export default function ListingStudioFormWide({
           </section>
         </div>
 
-        <div className="space-y-8">
+        <div className="min-w-0 space-y-8">
           <section className="border-b border-zinc-200 pb-6">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Listing setup</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Price (MK)</label>
                 <input type="number" value={form.price} onChange={(e) => { clearError("price"); setForm((prev) => ({ ...prev, price: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.price ? "border-red-500" : "border-zinc-200"}`} />
@@ -477,7 +477,7 @@ export default function ListingStudioFormWide({
           {isSchemaDrivenCategory ? (
             <section className="border-b border-zinc-200 pb-6">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Item details</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div>
                   <FormDropdown label="Subcategory" value={form.subcategory} options={availableSubcategories} onChange={(value) => {
                     clearError("subcategory");
@@ -498,7 +498,7 @@ export default function ListingStudioFormWide({
               </div>
               {form.subcategory && form.item_type && selectedItemConfig ? (
                 <div className="mt-5 space-y-4">
-                  <div className="rounded-2xl border border-zinc-200 bg-white p-4">
+                  <div className="min-w-0 rounded-2xl border border-zinc-200 bg-white p-4">
                     <p className="text-sm font-bold text-zinc-900">Required details</p>
                     <div className="mt-4 grid gap-4">
                       {basicSpecFields.map(renderSpecField)}
@@ -521,12 +521,12 @@ export default function ListingStudioFormWide({
         </div>
       </div>
 
-      <section className="mt-8 border-t border-zinc-200 pt-6">
+      <section className="sticky bottom-0 z-30 mt-8 border-t border-zinc-200 bg-zinc-100/95 pt-4 pb-3 backdrop-blur">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
             Cancel
           </button>
-          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50">
+          <button type="button" onClick={() => void handleSave()} disabled={isSubmitting || uploadingMedia} className="w-full rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 disabled:opacity-50 sm:w-auto">
             {isSubmitting || uploadingMedia ? resolvedSubmitBusyLabel : resolvedSubmitLabel}
           </button>
         </div>

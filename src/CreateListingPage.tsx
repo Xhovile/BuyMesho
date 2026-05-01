@@ -156,7 +156,7 @@ export default function CreateListingPage() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="flex w-full items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
@@ -168,7 +168,7 @@ export default function CreateListingPage() {
         </div>
       </header>
 
-      <main className="w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <main className="mx-auto max-w-6xl px-2 py-8 sm:px-4">
         {isBusy ? (
           <div className="flex items-center justify-center gap-3 border-b border-zinc-200 bg-transparent px-0 py-20 font-medium text-zinc-500">
             <Loader2 className="h-5 w-5 animate-spin" /> Preparing listing studio...
