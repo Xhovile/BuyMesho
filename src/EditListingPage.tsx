@@ -41,6 +41,12 @@ function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp
     condition: listing.condition || "used",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
+    original_price: listing.original_price ? String(listing.original_price) : "",
+    discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
+    deal_label: listing.deal_label || "",
+    is_wholesale: !!listing.is_wholesale,
+    pack_size: listing.pack_size ? String(listing.pack_size) : "",
+    bulk_units: listing.bulk_units || "",
   };
 }
 
