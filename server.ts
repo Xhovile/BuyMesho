@@ -1929,6 +1929,10 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
       condition,
       quantity,
       sold_quantity,
+      original_price,
+      discount_percent,
+      deal_label,
+      is_wholesale,
     } = req.body;
     const allowedConditions = ["new", "used", "refurbished"];
     const safeCondition = allowedConditions.includes(condition) ? condition : "used";
