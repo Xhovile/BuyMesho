@@ -28,6 +28,12 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   condition: "used",
   quantity: "1",
   sold_quantity: "0",
+  original_price: "",
+  discount_percent: "",
+  deal_label: "",
+  is_wholesale: false,
+  pack_size: "",
+  bulk_units: "",
 });
 
 type FeedbackState = {
