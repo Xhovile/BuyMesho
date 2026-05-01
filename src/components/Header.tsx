@@ -44,7 +44,8 @@ export default function Header({
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const compactTriggerRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollYRef = useRef(0);
+  const tickingRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -107,22 +108,37 @@ export default function Header({
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
   useEffect(() => {
-    const trigger = compactTriggerRef.current;
-    if (!trigger) return;
+    const updateHeaderVisibility = () => {
+      const currentY = window.scrollY;
+      const hideThreshold = currentY > 64;
+      const showThreshold = currentY < 28;
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setTopRowHidden(!entry.isIntersecting);
-      },
-      {
-        root: null,
-        threshold: 0,
-        rootMargin: "-1px 0px 0px 0px",
-      }
-    );
+      setTopRowHidden((prev) => {
+        if (hideThreshold) return true;
+        if (showThreshold) return false;
+        return prev;
+      });
 
-    observer.observe(trigger);
-    return () => observer.disconnect();
+      lastScrollYRef.current = currentY;
+    };
+
+    const onScroll = () => {
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+
+      window.requestAnimationFrame(() => {
+        updateHeaderVisibility();
+        tickingRef.current = false;
+      });
+    };
+
+    lastScrollYRef.current = window.scrollY;
+    updateHeaderVisibility();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -154,9 +170,13 @@ export default function Header({
 
   return (
     <>
-      <nav className="relative z-50 px-4 pt-2 pb-3">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3">
-          <div className="rounded-2xl border border-[#2f6257]/20 bg-[#438c7c] px-3 py-3 shadow-md shadow-[#264f45]/10">
+      <nav className="sticky top-0 z-50 px-4 pt-2 pb-2">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl border border-[#2f6257]/20 bg-[#438c7c] shadow-md shadow-[#264f45]/10">
+          <div
+            className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
+            }`}
+          >
             <div className="flex items-center justify-between gap-4">
               <BrandMark />
 
@@ -241,12 +261,8 @@ export default function Header({
             </div>
           </div>
 
-          <div ref={compactTriggerRef} aria-hidden="true" className="h-px w-full" />
-
           <div
-            className={`z-40 rounded-2xl border border-[#2f6257]/20 bg-[#438c7c] px-3 shadow-md shadow-[#264f45]/12 transition-[padding,top] duration-200 ${
-              topRowHidden ? "sticky top-0 py-2" : "py-2.5"
-            }`}
+            className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
           >
             <form
               onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -293,22 +309,24 @@ export default function Header({
             </form>
           </div>
 
-          <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-max items-center gap-2">
-              {quickChips.map((chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  onClick={() => {
-                    setSelectedChip(chip);
-                    setComingSoonOpen(true);
-                  }}
-                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold font-sans text-zinc-900 transition-colors hover:text-[#438c7c]"
-                  aria-label={`${chip} coming soon`}
-                >
-                  <span>{chip}</span>
-                </button>
-              ))}
+          <div className="border-t border-white/15 px-3 py-2.5">
+            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+              <div className="flex min-w-max items-center gap-2 pb-1">
+                {quickChips.map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => {
+                      setSelectedChip(chip);
+                      setComingSoonOpen(true);
+                    }}
+                    className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold font-sans text-zinc-900 transition-colors hover:text-[#438c7c]"
+                    aria-label={`${chip} coming soon`}
+                  >
+                    <span>{chip}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
