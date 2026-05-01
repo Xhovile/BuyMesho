@@ -34,7 +34,9 @@ export interface ListingDraft {
   original_price?: string;
   discount_percent?: string;
   deal_label?: string;
+  deal_expires_at?: string;
   is_wholesale?: boolean;
+  can_sell_individually?: boolean;
   pack_size?: string;
   bulk_units?: string;
 }
@@ -58,7 +60,9 @@ export interface CreateListingPayload {
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
+  deal_expires_at?: string | null;
   is_wholesale?: boolean | null;
+  can_sell_individually?: boolean | null;
   pack_size?: number | null;
   bulk_units?: string | null;
 }
@@ -112,7 +116,9 @@ export interface Listing {
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
+  deal_expires_at?: string | null;
   is_wholesale?: boolean | null;
+  can_sell_individually?: boolean | null;
   pack_size?: number | null;
   bulk_units?: string | null;
 }
