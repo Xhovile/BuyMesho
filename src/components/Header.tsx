@@ -18,6 +18,10 @@ import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 
+const quickChips = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"] as const;
+
+export type HeaderChip = (typeof quickChips)[number];
+
 type HeaderProps = {
   searchValue: string;
   onSearch: (val: string) => void;
@@ -25,9 +29,9 @@ type HeaderProps = {
   onProfileClick: () => void;
   userProfile?: UserProfile | null;
   firebaseUser: FirebaseUser | null;
+  activeChip?: HeaderChip;
+  onChipChange?: (chip: HeaderChip) => void;
 };
-
-const quickChips = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"];
 
 export default function Header({
   searchValue,
@@ -36,12 +40,12 @@ export default function Header({
   onProfileClick,
   userProfile,
   firebaseUser,
+  activeChip = "All",
+  onChipChange,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [topRowHidden, setTopRowHidden] = useState(false);
-  const [comingSoonOpen, setComingSoonOpen] = useState(false);
-  const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
@@ -300,20 +304,25 @@ export default function Header({
           <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
-                {quickChips.map((chip) => (
-                  <button
-                    key={chip}
-                    type="button"
-                    onClick={() => {
-                      setSelectedChip(chip);
-                      setComingSoonOpen(true);
-                    }}
-                    className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50/90 px-3 py-1.5 text-sm font-bold font-sans text-zinc-900 shadow-sm transition-colors hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
-                    aria-label={`${chip} coming soon`}
-                  >
-                    <span>{chip}</span>
-                  </button>
-                ))}
+                {quickChips.map((chip) => {
+                  const isActive = chip === activeChip;
+                  return (
+                    <button
+                      key={chip}
+                      type="button"
+                      onClick={() => onChipChange?.(chip)}
+                      className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-bold font-sans shadow-sm transition-colors ${
+                        isActive
+                          ? "border-[#438c7c] bg-[#438c7c]/15 text-[#438c7c]"
+                          : "border-zinc-200 bg-zinc-50/90 text-zinc-900 hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
+                      }`}
+                      aria-pressed={isActive}
+                      aria-label={chip}
+                    >
+                      <span>{chip}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -499,20 +508,6 @@ export default function Header({
             label: "Cancel",
             onClick: () => setAuthGuardOpen(false),
             variant: "secondary",
-          },
-        ]}
-      />
-
-      <FeedbackModal
-        open={comingSoonOpen}
-        type="info"
-        title={selectedChip ? `${selectedChip} is coming soon` : "Coming soon"}
-        message="This filter chip will be available in a future update."
-        onClose={() => setComingSoonOpen(false)}
-        actions={[
-          {
-            label: "Okay",
-            onClick: () => setComingSoonOpen(false),
           },
         ]}
       />
