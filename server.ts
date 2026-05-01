@@ -180,6 +180,8 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   discount_percent INTEGER,
   deal_label TEXT,
   is_wholesale INTEGER NOT NULL DEFAULT 0,
+  pack_size INTEGER,
+  bulk_units TEXT,
   category TEXT NOT NULL,
   subcategory TEXT,
   item_type TEXT,
@@ -711,6 +713,105 @@ function parseSpecFilters(raw: unknown): Record<string, string | string[] | bool
     return {};
   }
 }
+
+  type NormalizedListingPricing = {
+  price: number;
+  original_price: number | null;
+  discount_percent: number | null;
+  deal_label: string | null;
+  is_wholesale: number;
+  pack_size: number | null;
+  bulk_units: string | null;
+};
+
+function toFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function toTrimmedString(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function toBooleanFlag(value: unknown): number {
+  if (typeof value === "boolean") return value ? 1 : 0;
+  if (typeof value === "number") return value !== 0 ? 1 : 0;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return ["true", "1", "yes", "y", "on"].includes(normalized) ? 1 : 0;
+  }
+  return 0;
+}
+
+function computeOriginalPrice(price: number, discountPercent: number | null) {
+  if (discountPercent === null || discountPercent <= 0 || discountPercent >= 100) {
+    return null;
+  }
+
+  const computed = price / (1 - discountPercent / 100);
+  return Number.isFinite(computed) && computed > price ? Number(computed.toFixed(2)) : null;
+}
+
+function normalizeListingPricing(body: any): NormalizedListingPricing {
+  const price = toFiniteNumber(body.price) ?? 0;
+  const originalPriceInput = toFiniteNumber(body.original_price);
+  const discountPercentInput = toFiniteNumber(body.discount_percent);
+  const isWholesale = toBooleanFlag(body.is_wholesale);
+  const packSize = toFiniteNumber(body.pack_size);
+  const bulkUnits = toTrimmedString(body.bulk_units);
+  const dealLabel = toTrimmedString(body.deal_label);
+
+  const discount_percent =
+    discountPercentInput !== null &&
+    discountPercentInput > 0 &&
+    discountPercentInput <= 100
+      ? Math.round(discountPercentInput)
+      : null;
+
+  const original_price =
+    originalPriceInput !== null && originalPriceInput > price
+      ? originalPriceInput
+      : computeOriginalPrice(price, discount_percent);
+
+  return {
+    price,
+    original_price,
+    discount_percent,
+    deal_label: dealLabel,
+    is_wholesale: isWholesale,
+    pack_size: packSize,
+    bulk_units: bulkUnits,
+  };
+}
+
+function serializeListingRow(row: any) {
+  return {
+    ...row,
+    price: Number(row.price ?? 0),
+    original_price:
+      row.original_price === null || row.original_price === undefined
+        ? null
+        : Number(row.original_price),
+    discount_percent:
+      row.discount_percent === null || row.discount_percent === undefined
+        ? null
+        : Number(row.discount_percent),
+    is_wholesale: Boolean(row.is_wholesale),
+    pack_size:
+      row.pack_size === null || row.pack_size === undefined
+        ? null
+        : Number(row.pack_size),
+    bulk_units:
+      typeof row.bulk_units === "string" && row.bulk_units.trim()
+        ? row.bulk_units.trim()
+        : null,
+    photos: JSON.parse(row.photos || "[]"),
+    spec_values: JSON.parse(row.spec_values || "{}"),
+  };
+    }
 
   app.get("/api/listings", (req, res) => {
   const {
