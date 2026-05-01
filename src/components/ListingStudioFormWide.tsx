@@ -451,7 +451,7 @@ export default function ListingStudioFormWide({
         <div className="min-w-0 space-y-8">
           <section className="border-b border-zinc-200 pb-6">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Listing setup</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Price (MK)</label>
                 <input type="number" value={form.price} onChange={(e) => { clearError("price"); setForm((prev) => ({ ...prev, price: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.price ? "border-red-500" : "border-zinc-200"}`} />
@@ -553,7 +553,7 @@ export default function ListingStudioFormWide({
           {isSchemaDrivenCategory ? (
             <section className="border-b border-zinc-200 pb-6">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Item details</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="mt-4 grid gap-4 sm:grid-cols-2 [&>*]:min-w-0">
                 <div>
                   <FormDropdown label="Subcategory" value={form.subcategory} options={availableSubcategories} onChange={(value) => {
                     clearError("subcategory");
@@ -597,7 +597,7 @@ export default function ListingStudioFormWide({
         </div>
       </div>
 
-      <section className="mt-8 border-t border-zinc-200 pt-6">
+      <section className="sticky bottom-0 z-30 mt-8 border-t border-zinc-200 bg-zinc-100/95 pt-4 pb-3 backdrop-blur">
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <button type="button" onClick={onCancel} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-700 hover:bg-zinc-50">
             Cancel
