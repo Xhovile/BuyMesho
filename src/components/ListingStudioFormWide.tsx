@@ -550,7 +550,16 @@ export default function ListingStudioFormWide({
                   <input
                     type="checkbox"
                     checked={Boolean(form.is_wholesale)}
-                    onChange={(e) => setForm((prev) => ({ ...prev, is_wholesale: e.target.checked }))}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      clearError("pack_size");
+                      clearError("bulk_units");
+                      setForm((prev) => ({
+                        ...prev,
+                        is_wholesale: checked,
+                        ...(checked ? {} : { pack_size: "", bulk_units: "" }),
+                      }));
+                    }}
                     className="h-4 w-4 rounded border-zinc-300"
                   />
                 </label>
