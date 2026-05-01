@@ -18,7 +18,9 @@ import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 
-export type HeaderChip = "All" | "Events" | "Lay-by" | "Deals" | "Wholesale" | "Accommodation";
+const quickChips = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"] as const;
+
+export type HeaderChip = (typeof quickChips)[number];
 
 type HeaderProps = {
   searchValue: string;
@@ -28,10 +30,8 @@ type HeaderProps = {
   userProfile?: UserProfile | null;
   firebaseUser: FirebaseUser | null;
   activeChip?: HeaderChip;
-  onChipSelect?: (chip: HeaderChip) => void;
+  onChipChange?: (chip: HeaderChip) => void;
 };
-
-const quickChips: HeaderChip[] = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"];
 
 export default function Header({
   searchValue,
@@ -41,7 +41,7 @@ export default function Header({
   userProfile,
   firebaseUser,
   activeChip = "All",
-  onChipSelect,
+  onChipChange,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
@@ -308,13 +308,14 @@ export default function Header({
                     <button
                       key={chip}
                       type="button"
-                      onClick={() => onChipSelect?.(chip)}
+                      onClick={() => onChipChange?.(chip)}
                       className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-bold font-sans shadow-sm transition-colors ${
                         isActive
-                          ? "border-[#438c7c]/40 bg-[#438c7c]/15 text-[#25685b]"
+                          ? "border-[#438c7c] bg-[#438c7c]/15 text-[#438c7c]"
                           : "border-zinc-200 bg-zinc-50/90 text-zinc-900 hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
                       }`}
                       aria-pressed={isActive}
+                      aria-label={chip}
                     >
                       <span>{chip}</span>
                     </button>

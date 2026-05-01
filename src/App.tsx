@@ -59,7 +59,7 @@ import MarketSection, {
 } from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
 import ListingCard from "./components/ListingCard";
-import Header from "./components/Header";
+import Header, { type HeaderChip } from "./components/Header";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -262,6 +262,7 @@ const [minPrice, setMinPrice] = useState("");
 const [maxPrice, setMaxPrice] = useState("");
 const [currentPage, setCurrentPage] = useState(1);
 const [pageSize] = useState(12);
+const [activeChip, setActiveChip] = useState<HeaderChip>("All");
 const [totalResults, setTotalResults] = useState(0);
 const [totalPages, setTotalPages] = useState(1);
 const listingsFetchAbortRef = useRef<AbortController | null>(null);
@@ -825,6 +826,10 @@ useEffect(() => {
   sortBy,
   selectedSpecFilters,
 ]);
+
+useEffect(() => {
+  setCurrentPage(1);
+}, [activeChip]);
 
 
 useEffect(() => {
@@ -3090,6 +3095,35 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     };
   }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
 
+  const chipFilteredListings = useMemo(() => {
+    switch (activeChip) {
+      case "Deals":
+        return listings.filter((listing) => {
+          const price = Number(listing.price ?? 0);
+          const originalPrice = Number(listing.original_price ?? 0);
+          const discountPercent = Number(listing.discount_percent ?? 0);
+
+          return (
+            discountPercent > 0 ||
+            (Number.isFinite(originalPrice) && originalPrice > price && price > 0)
+          );
+        });
+
+      case "Wholesale":
+        return listings.filter((listing) => Boolean(listing.is_wholesale));
+
+      case "Events":
+      // TODO: filter by event listings when the field is available
+      case "Lay-by":
+      // TODO: filter by lay-by listings when the field is available
+      case "Accommodation":
+      // TODO: filter by accommodation listings when the field is available
+      case "All":
+      default:
+        return listings;
+    }
+  }, [listings, activeChip]);
+
   const marketFilters: MarketSectionFilters = {
     selectedUniv,
     selectedCat,
@@ -3156,6 +3190,8 @@ const scrollToCreateSpecField = (fieldKey: string) => {
           onProfileClick={() => navigateToPath(PROFILE_PATH)}
           userProfile={userProfile}
           firebaseUser={firebaseUser}
+          activeChip={activeChip}
+          onChipChange={setActiveChip}
       />
 
       <main className="max-w-7xl mx-auto px-4">
@@ -3172,7 +3208,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   />     
         <MarketSection
   loading={loading}
-  listings={listings}
+  listings={chipFilteredListings}
   hiddenSellerUids={hiddenSellerUids}
   hiddenListingIds={hiddenListingIds}
   filters={marketFilters}
