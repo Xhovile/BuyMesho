@@ -271,8 +271,8 @@ export default function Header({
           >
             <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
               <div
-                className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-300 bg-white shadow-sm transition-all md:border-zinc-200 md:shadow-md ${
-                  topRowHidden ? "p-1.5" : "p-2"
+                className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white transition-all ${
+                  topRowHidden ? "px-3 py-1.5" : "px-3 py-1.5"
                 }`}
               >
                 <input
@@ -280,14 +280,12 @@ export default function Header({
                   value={searchValue}
                   onChange={(e) => onSearch(e.target.value)}
                   placeholder="Search listings, products, or services..."
-                  className="w-full bg-transparent pl-2 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+                  className="w-full bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
                 />
                 <button
                   type="submit"
                   aria-label="Search listings"
-                  className={`inline-flex items-center justify-center rounded-xl bg-red-900 px-3 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4 ${
-                    topRowHidden ? "py-2" : "py-2.5"
-                  }`}
+                  className="inline-flex items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
                 >
                   Search
                 </button>
