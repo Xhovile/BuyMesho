@@ -317,30 +317,30 @@ export default function Header({
 
       <AnimatePresence>
         {mobileMenuOpen && (
-          <>
-            <motion.div
-              key="drawer-backdrop"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
-              onClick={closeMenu}
-              aria-hidden="true"
-            />
-
-            <motion.div
-              key="drawer-panel"
-              id="mobile-header-menu"
-              role="dialog"
-              aria-modal="true"
-              aria-labelledby="drawer-title"
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", stiffness: 320, damping: 32 }}
-              className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
-            >
+          <motion.div
+            key="drawer-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
+            onClick={closeMenu}
+            aria-hidden="true"
+          />
+        )}
+        {mobileMenuOpen && (
+          <motion.div
+            key="drawer-panel"
+            id="mobile-header-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="drawer-title"
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 320, damping: 32 }}
+            className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
+          >
               <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
                 <div>
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
@@ -472,8 +472,7 @@ export default function Header({
                   </div>
                 )}
               </div>
-            </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
 
