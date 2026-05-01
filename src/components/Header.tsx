@@ -106,7 +106,12 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
-      setTopRowHidden(window.scrollY > 26);
+      setTopRowHidden((prev) => {
+        // Use hysteresis: hide at >40px, only show again below 10px.
+        // The dead zone between 10–40px prevents jitter near the threshold.
+        if (prev) return window.scrollY > 10;
+        return window.scrollY > 40;
+      });
     };
 
     const onScroll = () => {
