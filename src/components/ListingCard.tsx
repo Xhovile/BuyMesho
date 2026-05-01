@@ -27,6 +27,11 @@ type ListingCardProps = {
   onOpenSeller: (sellerUid: string) => void;
 };
 
+const toFiniteNumber = (value: unknown, fallback = 0) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+};
+
 export default function ListingCard({
   listing,
   onReport,
@@ -70,22 +75,42 @@ export default function ListingCard({
 
   const safePriceValue = Number(listing.price);
   const safePrice = Number.isFinite(safePriceValue) ? safePriceValue : 0;
-  const originalPriceValue = Number(listing.original_price);
+  const explicitOriginalPrice = Number(listing.original_price);
+  const discountPercentFromData = toFiniteNumber(listing.discount_percent, 0);
+  const computedOriginalPrice =
+    discountPercentFromData > 0
+      ? Math.round(safePrice / (1 - discountPercentFromData / 100))
+      : null;
+
   const hasDealPrice =
-    Number.isFinite(originalPriceValue) && originalPriceValue > safePrice && safePrice > 0;
-  const computedDiscountPercent = hasDealPrice
-    ? Math.round(((originalPriceValue - safePrice) / originalPriceValue) * 100)
-    : null;
+    (Number.isFinite(explicitOriginalPrice) && explicitOriginalPrice > safePrice) ||
+    discountPercentFromData > 0;
+
+  const displayOriginalPrice =
+    Number.isFinite(explicitOriginalPrice) && explicitOriginalPrice > safePrice
+      ? explicitOriginalPrice
+      : computedOriginalPrice;
+
   const discountPercent =
-    Number.isFinite(Number(listing.discount_percent)) && Number(listing.discount_percent) > 0
-      ? Math.round(Number(listing.discount_percent))
-      : computedDiscountPercent;
+    discountPercentFromData > 0
+      ? Math.round(discountPercentFromData)
+      : displayOriginalPrice && displayOriginalPrice > safePrice
+        ? Math.round(((displayOriginalPrice - safePrice) / displayOriginalPrice) * 100)
+        : 0;
+
   const dealLabel =
     typeof listing.deal_label === "string" && listing.deal_label.trim()
       ? listing.deal_label.trim()
-      : discountPercent && discountPercent > 0
+      : discountPercent > 0
         ? `${discountPercent}% off`
         : "Special deal";
+
+  const wholesaleUnits =
+    typeof listing.spec_values?.wholesale_units === "number"
+      ? listing.spec_values.wholesale_units
+      : typeof listing.spec_values?.wholesale_units === "string"
+        ? Number(listing.spec_values.wholesale_units)
+        : null;
 
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
@@ -173,6 +198,11 @@ export default function ListingCard({
                 Wholesale
               </span>
             ) : null}
+            {listing.is_wholesale && availableQuantity > 0 ? (
+              <span className="shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-emerald-700">
+                {availableQuantity} units
+              </span>
+            ) : null}
             <span
               className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
                 ultraCompact
@@ -246,14 +276,14 @@ export default function ListingCard({
               <div className="rounded-xl border border-white/20 bg-white/92 px-3 py-2 font-extrabold shadow-sm backdrop-blur-md">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[10px] font-bold text-zinc-400 line-through">
-                    MK {originalPriceValue.toLocaleString()}
+                    MK {Math.round((displayOriginalPrice || safePrice).toLocaleString ? 0 : 0)}
                   </span>
                   <span className="text-sm text-red-900">
                     MK {safePrice.toLocaleString()}
                   </span>
                 </div>
                 <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-red-700">
-                  {discountPercent}% off
+                  {discountPercent > 0 ? `${discountPercent}% off` : dealLabel}
                 </div>
               </div>
             ) : (
