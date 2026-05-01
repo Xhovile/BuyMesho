@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -39,9 +39,13 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [topRowHidden, setTopRowHidden] = useState(false);
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const [selectedChip, setSelectedChip] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const lastScrollYRef = useRef(0);
+  const tickingRef = useRef(false);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -104,6 +108,44 @@ export default function Header({
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
   useEffect(() => {
+    const updateHeaderVisibility = () => {
+      const currentY = window.scrollY;
+      const lastY = lastScrollYRef.current;
+      const scrollDelta = currentY - lastY;
+      const scrollingDown = currentY > lastY;
+      const shouldHideTopRow =
+        !mobileMenuOpen && currentY > 12 && scrollingDown && scrollDelta > 14;
+      const shouldShowTopRow =
+        mobileMenuOpen || currentY <= 0 || (!scrollingDown && scrollDelta < -8);
+
+      setTopRowHidden((prev) => {
+        const next = shouldShowTopRow ? false : shouldHideTopRow ? true : prev;
+        return prev === next ? prev : next;
+      });
+
+      lastScrollYRef.current = currentY;
+    };
+
+    const onScroll = () => {
+      if (tickingRef.current) return;
+      tickingRef.current = true;
+
+      window.requestAnimationFrame(() => {
+        updateHeaderVisibility();
+        tickingRef.current = false;
+      });
+    };
+
+    lastScrollYRef.current = window.scrollY;
+    updateHeaderVisibility();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     if (!firebaseUser) {
       setUnreadCount(0);
       return;
@@ -132,9 +174,13 @@ export default function Header({
 
   return (
     <>
-      <nav className="relative z-50 px-4 pt-2 pb-3">
-        <div className="mx-auto max-w-7xl flex flex-col gap-3">
-          <div className="rounded-2xl border border-[#2f6257]/20 bg-[#438c7c] px-3 py-3 shadow-md shadow-[#264f45]/10">
+      <nav className="sticky top-0 z-50 border-b border-[#438c7c]/15 bg-[#438c7c]/10 px-4 py-2.5 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-[#438c7c]/12">
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+          <div
+            className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 will-change-transform ${
+              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
+            }`}
+          >
             <div className="flex items-center justify-between gap-4">
               <BrandMark />
 
@@ -200,7 +246,7 @@ export default function Header({
                       <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
                         {fallbackLetter}
                       </div>
-                    )}
+                    )
                   ) : (
                     <User className="w-5 h-5 text-zinc-600" />
                   )}
@@ -219,32 +265,36 @@ export default function Header({
             </div>
           </div>
 
-          <div className="sticky top-0 z-40 rounded-2xl border border-[#2f6257]/20 bg-[#438c7c] px-3 py-2 shadow-md shadow-[#264f45]/12 md:static md:rounded-none md:border-0 md:bg-transparent md:px-0 md:py-0 md:shadow-none">
-            <form
-              onSubmit={(e: FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                onSearch(searchValue.trim());
-              }}
-              className="w-full"
-            >
-              <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                <div className="flex min-w-0 w-full items-center gap-2 rounded-2xl border border-white/25 bg-white px-3 py-2 shadow-sm">
-                  <input
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => onSearch(e.target.value)}
-                    placeholder="Search listings, products, or services..."
-                    className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
-                  />
-                  <button
-                    type="submit"
-                    aria-label="Search listings"
-                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
-                  >
-                    Search
-                  </button>
-                </div>
+          <form
+            onSubmit={(e: FormEvent<HTMLFormElement>) => {
+              e.preventDefault();
+              onSearch(searchValue.trim());
+            }}
+            className="w-full"
+          >
+            <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
+              <div
+                className={`flex w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white transition-all ${
+                  topRowHidden ? "px-3 py-1.5" : "px-3 py-1.5"
+                }`}
+              >
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(e) => onSearch(e.target.value)}
+                  placeholder="Search listings, products, or services..."
+                  className="w-full bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-400 outline-none"
+                />
+                <button
+                  type="submit"
+                  aria-label="Search listings"
+                  className="inline-flex items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
+                >
+                  Search
+                </button>
+              </div>
 
+              {topRowHidden ? (
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen((value) => !value)}
@@ -255,11 +305,11 @@ export default function Header({
                 >
                   {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
                 </button>
-              </div>
-            </form>
-          </div>
+              ) : null}
+            </div>
+          </form>
 
-          <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden md:pb-0">
+          <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <div className="flex min-w-max items-center gap-2">
               {quickChips.map((chip) => (
                 <button
