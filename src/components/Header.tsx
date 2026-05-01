@@ -312,8 +312,8 @@ export default function Header({
         </div>
         </div>
 
-        <div className="bg-transparent px-3 py-2.5">
-          <div className="mx-auto max-w-7xl">
+        <div className="px-3 py-2.5">
+          <div className="mx-auto max-w-7xl rounded-2xl border border-zinc-200 bg-white/95 shadow-sm backdrop-blur">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
                 {quickChips.map((chip) => (
@@ -324,7 +324,7 @@ export default function Header({
                       setSelectedChip(chip);
                       setComingSoonOpen(true);
                     }}
-                    className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold font-sans text-zinc-900 transition-colors hover:text-[#438c7c]"
+                    className="inline-flex items-center whitespace-nowrap rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-bold font-sans text-zinc-900 shadow-sm transition-colors hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
                     aria-label={`${chip} coming soon`}
                   >
                     <span>{chip}</span>
