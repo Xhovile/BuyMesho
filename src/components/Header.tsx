@@ -111,9 +111,12 @@ export default function Header({
     const updateHeaderVisibility = () => {
       const currentY = window.scrollY;
       const lastY = lastScrollYRef.current;
+      const scrollDelta = currentY - lastY;
       const scrollingDown = currentY > lastY;
-      const shouldHideTopRow = !mobileMenuOpen && currentY > 0 && scrollingDown;
-      const shouldShowTopRow = mobileMenuOpen || currentY <= 0 || currentY < lastY;
+      const shouldHideTopRow =
+        !mobileMenuOpen && currentY > 12 && scrollingDown && scrollDelta > 14;
+      const shouldShowTopRow =
+        mobileMenuOpen || currentY <= 0 || (!scrollingDown && scrollDelta < -8);
 
       setTopRowHidden((prev) => {
         const next = shouldShowTopRow ? false : shouldHideTopRow ? true : prev;
@@ -171,10 +174,10 @@ export default function Header({
 
   return (
     <>
-      <nav className="sticky top-0 z-50 bg-zinc-50/95 px-4 py-2.5 backdrop-blur-sm">
+      <nav className="sticky top-0 z-50 border-b border-[#438c7c]/15 bg-[#438c7c]/10 px-4 py-2.5 shadow-sm backdrop-blur-md supports-[backdrop-filter]:bg-[#438c7c]/12">
         <div className="max-w-7xl mx-auto flex flex-col gap-2">
           <div
-            className={`overflow-hidden transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+            className={`overflow-hidden transition-[max-height,opacity,transform] duration-300 will-change-transform ${
               topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0"
             }`}
           >
@@ -316,7 +319,7 @@ export default function Header({
                     setSelectedChip(chip);
                     setComingSoonOpen(true);
                   }}
-                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold text-zinc-500 transition-colors hover:text-zinc-800"
+                  className="inline-flex items-center whitespace-nowrap px-1 py-1 text-sm font-bold font-sans text-zinc-900 transition-colors hover:text-[#438c7c]"
                   aria-label={`${chip} coming soon`}
                 >
                   <span>{chip}</span>
