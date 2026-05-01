@@ -35,6 +35,8 @@ export interface ListingDraft {
   discount_percent?: string;
   deal_label?: string;
   is_wholesale?: boolean;
+  pack_size?: string;
+  bulk_units?: string;
 }
 
 export interface CreateListingPayload {
@@ -57,6 +59,8 @@ export interface CreateListingPayload {
   discount_percent?: number | null;
   deal_label?: string | null;
   is_wholesale?: boolean | null;
+  pack_size?: number | null;
+  bulk_units?: string | null;
 }
 
 export interface UserProfile {
@@ -109,6 +113,8 @@ export interface Listing {
   discount_percent?: number | null;
   deal_label?: string | null;
   is_wholesale?: boolean | null;
+  pack_size?: number | null;
+  bulk_units?: string | null;
 }
 
 export interface SellerDashboardData {

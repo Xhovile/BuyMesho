@@ -111,8 +111,6 @@ export default function Header({
   useEffect(() => {
     const updateHeaderVisibility = () => {
       setTopRowHidden((prev) => {
-        // Use hysteresis: hide at >40px, only show again below 10px.
-        // The dead zone between 10–40px prevents jitter near the threshold.
         if (prev) return window.scrollY >= 4;
         return window.scrollY > 30;
       });
@@ -160,144 +158,144 @@ export default function Header({
     <>
       <nav className="sticky top-0 z-50">
         <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
-        <div className="mx-auto max-w-7xl overflow-hidden">
-          <div
-            className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
-              topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
-            }`}
-          >
-            <div className="flex items-center justify-between gap-4">
-              <BrandMark />
-
-              <div className="hidden md:flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(HOME_PATH)}
-                  className={desktopNavButtonClass}
-                >
-                  <House className="w-4 h-4" />
-                  Home
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleMessagesClick()}
-                  className={desktopNavButtonClass}
-                >
-                  <MessageSquareText className="w-4 h-4" />
-                  <div className="flex items-center gap-2">
-                    <span>Messages</span>
-                    {unreadCount > 0 ? (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                        {unreadCount}
-                      </span>
-                    ) : null}
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSettingsClick()}
-                  className={desktopNavButtonClass}
-                >
-                  <Settings className="w-4 h-4" />
-                  Settings
-                </button>
-              </div>
-
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={() => handleSellClick()}
-                  className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-                >
-                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                  <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    if (!firebaseUser) {
-                      setAuthGuardOpen(true);
-                      return;
-                    }
-                    onProfileClick();
-                  }}
-                  className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-                >
-                  {firebaseUser ? (
-                    avatarUrl ? (
-                      <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                        {fallbackLetter}
-                      </div>
-                    )
-                  ) : (
-                    <User className="w-5 h-5 text-zinc-600" />
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setMobileMenuOpen((value) => !value)}
-                  className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
-                  aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-                  aria-expanded={mobileMenuOpen}
-                  aria-controls="mobile-header-menu"
-                >
-                  {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div
-            className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
-          >
-            <form
-              onSubmit={(e: FormEvent<HTMLFormElement>) => {
-                e.preventDefault();
-                onSearch(searchValue.trim());
-              }}
-              className="w-full"
+          <div className="mx-auto max-w-7xl overflow-hidden">
+            <div
+              className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+                topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
+              }`}
             >
-              <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                <div
-                  className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
-                    topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
-                  }`}
-                >
-                  <input
-                    type="text"
-                    value={searchValue}
-                    onChange={(e) => onSearch(e.target.value)}
-                    placeholder="Search listings, products, or services..."
-                    className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
-                  />
+              <div className="flex items-center justify-between gap-4">
+                <BrandMark />
+
+                <div className="hidden md:flex items-center gap-2">
                   <button
-                    type="submit"
-                    aria-label="Search listings"
-                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
+                    type="button"
+                    onClick={() => navigateToPath(HOME_PATH)}
+                    className={desktopNavButtonClass}
                   >
-                    Search
+                    <House className="w-4 h-4" />
+                    Home
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleMessagesClick()}
+                    className={desktopNavButtonClass}
+                  >
+                    <MessageSquareText className="w-4 h-4" />
+                    <div className="flex items-center gap-2">
+                      <span>Messages</span>
+                      {unreadCount > 0 ? (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                          {unreadCount}
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSettingsClick()}
+                    className={desktopNavButtonClass}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Settings
                   </button>
                 </div>
 
-                {topRowHidden ? (
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <button
-                    type="button"
+                    onClick={() => handleSellClick()}
+                    className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
+                  >
+                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                    <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (!firebaseUser) {
+                        setAuthGuardOpen(true);
+                        return;
+                      }
+                      onProfileClick();
+                    }}
+                    className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                  >
+                    {firebaseUser ? (
+                      avatarUrl ? (
+                        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                          {fallbackLetter}
+                        </div>
+                      )
+                    ) : (
+                      <User className="w-5 h-5 text-zinc-600" />
+                    )}
+                  </button>
+
+                  <button
                     onClick={() => setMobileMenuOpen((value) => !value)}
-                    className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                    className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
                     aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
                     aria-expanded={mobileMenuOpen}
                     aria-controls="mobile-header-menu"
                   >
-                    {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                    {mobileMenuOpen ? <X className="w-5 h-5 text-white" /> : <Menu className="w-5 h-5 text-white" />}
                   </button>
-                ) : null}
+                </div>
               </div>
-            </form>
+            </div>
+
+            <div
+              className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
+            >
+              <form
+                onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                  e.preventDefault();
+                  onSearch(searchValue.trim());
+                }}
+                className="w-full"
+              >
+                <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
+                  <div
+                    className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
+                      topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
+                    }`}
+                  >
+                    <input
+                      type="text"
+                      value={searchValue}
+                      onChange={(e) => onSearch(e.target.value)}
+                      placeholder="Search listings, products, or services..."
+                      className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
+                    />
+                    <button
+                      type="submit"
+                      aria-label="Search listings"
+                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
+                    >
+                      Search
+                    </button>
+                  </div>
+
+                  {topRowHidden ? (
+                    <button
+                      type="button"
+                      onClick={() => setMobileMenuOpen((value) => !value)}
+                      className="md:hidden inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-900 bg-slate-900 text-white hover:bg-slate-800 hover:border-slate-800 transition-all"
+                      aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={mobileMenuOpen}
+                      aria-controls="mobile-header-menu"
+                    >
+                      {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+                    </button>
+                  ) : null}
+                </div>
+              </form>
+            </div>
           </div>
-        </div>
         </div>
 
         <div className="px-3 py-2.5">
@@ -355,137 +353,137 @@ export default function Header({
             transition={{ type: "spring", stiffness: 320, damping: 32 }}
             className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
           >
-              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
-                <div>
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
-                  <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
-                </div>
-                <button
-                  type="button"
-                  onClick={closeMenu}
-                  aria-label="Close menu"
-                  className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
-                >
-                  <X className="w-4 h-4 text-zinc-600" />
-                </button>
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
               </div>
+              <button
+                type="button"
+                onClick={closeMenu}
+                aria-label="Close menu"
+                className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+              >
+                <X className="w-4 h-4 text-zinc-600" />
+              </button>
+            </div>
 
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                <button
-                  type="button"
-                  onClick={() => handleSellClick(closeMenu)}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-                >
-                  <span className="inline-flex items-center gap-3">
-                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                    {isSeller ? "List Item" : "Sell"}
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              <button
+                type="button"
+                onClick={() => handleSellClick(closeMenu)}
+                className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
+              >
+                <span className="inline-flex items-center gap-3">
+                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                  {isSeller ? "List Item" : "Sell"}
+                </span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    handleMessagesClick();
-                  }}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <MessageSquareText className="w-4 h-4 text-zinc-500" />
-                    <div className="flex items-center gap-2">
-                      <span>Messages</span>
-                      {unreadCount > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                          {unreadCount}
-                        </span>
-                      ) : null}
-                    </div>
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
-                    navigateToPath(HOME_PATH);
-                  }}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <House className="w-4 h-4 text-zinc-500" />
-                    Home
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSettingsClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <Settings className="w-4 h-4 text-zinc-500" />
-                    Settings
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                {firebaseUser ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        onProfileClick();
-                      }}
-                      className={navButtonClass}
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <User className="w-4 h-4 text-zinc-500" />
-                        Profile
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  handleMessagesClick();
+                }}
+                className={navButtonClass}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                  <div className="flex items-center gap-2">
+                    <span>Messages</span>
+                    {unreadCount > 0 ? (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                        {unreadCount}
                       </span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleLogout(closeMenu)}
-                      className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                    >
-                      <span className="inline-flex items-center gap-3 text-red-600">
-                        <LogOut className="w-4 h-4" />
-                        Log Out
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
-                    </button>
-                  </>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath("/signup");
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign Up
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath("/login");
-                      }}
-                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                    >
-                      Sign In
-                    </button>
+                    ) : null}
                   </div>
-                )}
-              </div>
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  navigateToPath(HOME_PATH);
+                }}
+                className={navButtonClass}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <House className="w-4 h-4 text-zinc-500" />
+                  Home
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleSettingsClick(closeMenu)}
+                className={navButtonClass}
+              >
+                <span className="inline-flex items-center gap-3">
+                  <Settings className="w-4 h-4 text-zinc-500" />
+                  Settings
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              {firebaseUser ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      onProfileClick();
+                    }}
+                    className={navButtonClass}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <User className="w-4 h-4 text-zinc-500" />
+                      Profile
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleLogout(closeMenu)}
+                    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-3 text-red-600">
+                      <LogOut className="w-4 h-4" />
+                      Log Out
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                </>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      navigateToPath("/signup");
+                    }}
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      navigateToPath("/login");
+                    }}
+                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
