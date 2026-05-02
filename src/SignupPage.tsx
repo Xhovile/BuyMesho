@@ -20,8 +20,9 @@ type FeedbackState = {
 } | null;
 
 const getPasswordStrength = (password: string) => {
-  let score = 0;
-  if (password.length >= 8) score++;
+  // Length is a hard prerequisite: anything under 8 chars is always Weak.
+  if (password.length < 8) return 0;
+  let score = 1; // one point awarded for meeting the minimum length
   if (/[A-Z]/.test(password)) score++;
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
@@ -36,15 +37,10 @@ const getPasswordStrengthLabel = (strength: number) => {
 };
 
 const getPasswordTip = (strength: number) => {
-  if (strength <= 1) {
-    return "Use at least 8 characters and add a mix of uppercase letters, numbers, or symbols.";
-  }
-  if (strength === 2) {
-    return "To improve it, add more variety with uppercase letters, numbers, or symbols.";
-  }
-  if (strength === 3) {
-    return "For an even stronger password, add any missing character type such as uppercase letters, numbers, or symbols.";
-  }
+  if (strength === 0) return "Use at least 8 characters.";
+  if (strength === 1) return "Add at least one number, symbol, or uppercase letter to improve it.";
+  if (strength === 2) return "Add more variety with uppercase letters, numbers, or symbols.";
+  if (strength === 3) return "Add the missing character type (uppercase, number, or symbol) to maximize strength.";
   return "This password is in good shape.";
 };
 
@@ -95,8 +91,13 @@ export default function SignupPage() {
       return;
     }
 
-    if (strength <= 1) {
-      showFeedback("error", "Password too weak", "Use at least 8 characters with a number or symbol.");
+    if (form.password.length < 8) {
+      showFeedback("error", "Password too short", "Password must be at least 8 characters.");
+      return;
+    }
+
+    if (!/[0-9]/.test(form.password) && !/[^A-Za-z0-9]/.test(form.password)) {
+      showFeedback("error", "Password too weak", "Add at least one number or symbol.");
       return;
     }
 
