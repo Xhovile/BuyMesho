@@ -13,14 +13,12 @@ import {
   SETTINGS_PATH,
   navigateToPath,
 } from "../lib/appNavigation";
+import { QUICK_CHIPS } from "../constants";
+import type { HeaderChip } from "../constants";
 import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
-
-const quickChips = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"] as const;
-
-export type HeaderChip = (typeof quickChips)[number];
 
 type HeaderProps = {
   searchValue: string;
@@ -302,7 +300,7 @@ export default function Header({
           <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
               <div className="flex min-w-max items-center gap-2 pb-1">
-                {quickChips.map((chip) => {
+                {QUICK_CHIPS.map((chip) => {
                   const isActive = chip === activeChip;
                   return (
                     <button

@@ -34,3 +34,7 @@ export const CATEGORIES = [
   "Electronics & Gadgets",
   "Beauty & Personal Care"
 ] as const;
+
+export const QUICK_CHIPS = ["All", "Events", "Lay-by", "Deals", "Wholesale", "Accommodation"] as const;
+
+export type HeaderChip = (typeof QUICK_CHIPS)[number];
