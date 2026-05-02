@@ -3224,6 +3224,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   isLoggedIn={!!firebaseUser}
   savedListingIds={savedListingIds}
   actions={marketActions}
+  activeChip={activeChip}
 />
       </main>
 

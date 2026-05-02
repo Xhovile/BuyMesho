@@ -4,6 +4,7 @@ import { Funnel, Loader2, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
+import type { HeaderChip } from "../components/Header";
 
 export type MarketSectionFilters = {
   selectedUniv: string;
@@ -66,6 +67,7 @@ type MarketSectionProps = {
   isLoggedIn: boolean;
   savedListingIds: number[];
   actions: MarketSectionActions;
+  activeChip?: HeaderChip;
 };
 
 export default function MarketSection({
@@ -80,6 +82,7 @@ export default function MarketSection({
   isLoggedIn,
   savedListingIds,
   actions,
+  activeChip = "All",
 }: MarketSectionProps) {
   const {
     selectedUniv,
@@ -123,11 +126,31 @@ export default function MarketSection({
 
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
-  const visibleListings = listings.filter(
-    (listing) =>
+  const visibleListings = listings.filter((listing) => {
+    const notHidden =
       !hiddenSellerUids.includes(listing.seller_uid) &&
-      !hiddenListingIds.includes(listing.id)
-  );
+      !hiddenListingIds.includes(listing.id);
+
+    if (!notHidden) return false;
+
+    if (activeChip === "Deals") {
+      const price = Number(listing.price ?? 0);
+      const originalPrice = Number(listing.original_price ?? 0);
+      const discountPercent = Number(listing.discount_percent ?? 0);
+      const hasActiveDeal =
+        discountPercent > 0 &&
+        originalPrice > price &&
+        (!listing.deal_expires_at || new Date(listing.deal_expires_at).getTime() > Date.now());
+
+      return hasActiveDeal;
+    }
+
+    if (activeChip === "Wholesale") {
+      return Boolean(listing.is_wholesale);
+    }
+
+    return true;
+  });
 
   const startItem = visibleListings.length > 0 ? (currentPage - 1) * pageSize + 1 : 0;
   const endItem = visibleListings.length > 0 ? startItem + visibleListings.length - 1 : 0;
