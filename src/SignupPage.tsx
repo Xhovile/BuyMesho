@@ -36,9 +36,15 @@ const getPasswordStrengthLabel = (strength: number) => {
 };
 
 const getPasswordTip = (strength: number) => {
-  if (strength <= 1) return "Use at least 8 characters, with a number or symbol.";
-  if (strength === 2) return "Add an uppercase letter to improve it.";
-  if (strength === 3) return "Add a symbol to make it stronger.";
+  if (strength <= 1) {
+    return "Use at least 8 characters and add a mix of uppercase letters, numbers, or symbols.";
+  }
+  if (strength === 2) {
+    return "To improve it, add more variety with uppercase letters, numbers, or symbols.";
+  }
+  if (strength === 3) {
+    return "For an even stronger password, add any missing character type such as uppercase letters, numbers, or symbols.";
+  }
   return "This password is in good shape.";
 };
 
