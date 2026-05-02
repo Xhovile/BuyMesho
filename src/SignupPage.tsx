@@ -21,7 +21,7 @@ type FeedbackState = {
 
 const getPasswordStrength = (password: string) => {
   let score = 0;
-  if (password.length >= 6) score++;
+  if (password.length >= 8) score++;
   if (/[A-Z]/.test(password)) score++;
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
@@ -36,7 +36,7 @@ const getPasswordStrengthLabel = (strength: number) => {
 };
 
 const getPasswordTip = (strength: number) => {
-  if (strength <= 1) return "Use at least 6 characters, with a number or symbol.";
+  if (strength <= 1) return "Use at least 8 characters, with a number or symbol.";
   if (strength === 2) return "Add an uppercase letter to improve it.";
   if (strength === 3) return "Add a symbol to make it stronger.";
   return "This password is in good shape.";
@@ -89,14 +89,21 @@ export default function SignupPage() {
       return;
     }
 
+    if (strength <= 1) {
+      showFeedback("error", "Password too weak", "Use at least 8 characters with a number or symbol.");
+      return;
+    }
+
+    const email = form.email.trim();
+
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, form.password);
       const user = userCredential.user;
 
       const profile: UserProfile = {
         uid: user.uid,
-        email: form.email,
+        email,
         university: form.university,
         is_verified: false,
         is_seller: false,
@@ -114,7 +121,7 @@ export default function SignupPage() {
 
       let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";
       try {
-        const displayName = form.email.split("@")[0] || null;
+        const displayName = email.split("@")[0] || null;
         await apiFetch("/api/auth/send-verification-email", {
           method: "POST",
           body: JSON.stringify({ display_name: displayName }),
@@ -135,10 +142,10 @@ export default function SignupPage() {
       } else if (err?.code === "auth/invalid-email") {
         message = "Please enter a valid email address.";
       } else if (err?.code === "auth/weak-password") {
-        message = "Password should be at least 6 characters.";
+        message = "Password should be at least 8 characters.";
       } else if (isPermissionError(err)) {
         message =
-          "Your account was created, but verification setup is still completing. Open the verification page and try again after a moment.";
+          "Account creation is temporarily unavailable due to a permissions issue. Please try again in a moment.";
       }
 
       showFeedback("error", "Signup failed", message);
@@ -170,6 +177,7 @@ export default function SignupPage() {
           <input
             required
             type="email"
+            autoComplete="email"
             value={form.email}
             onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
             className={fieldClass}
@@ -181,6 +189,7 @@ export default function SignupPage() {
           <input
             required
             type="password"
+            autoComplete="new-password"
             value={form.password}
             onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
             className={fieldClass}
@@ -225,6 +234,7 @@ export default function SignupPage() {
           <input
             required
             type="password"
+            autoComplete="new-password"
             value={form.confirmPassword}
             onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
             className={fieldClass}
