@@ -14,6 +14,7 @@ import ListingActionsMenu from "./components/ListingActionsMenu";
 import FeedbackModal from "./components/FeedbackModal";
 import ListingGallery from "./components/listingDetails/ListingGallery";
 import ListingSummary from "./components/listingDetails/ListingSummary";
+import ListingOffersBlock from "./components/listingDetails/ListingOffersBlock";
 import ListingSpecsBlock, { type ListingSpecsGroup } from "./components/listingDetails/ListingSpecsBlock";
 import ListingExploreBlock from "./components/listingDetails/ListingExploreBlock";
 import ListingReviewsBlock from "./components/listingDetails/ListingReviewsBlock";
@@ -489,6 +490,7 @@ export default function ListingDetailsPage() {
                   onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
                 />
+                <ListingOffersBlock listing={listing} />
                 <ListingDetailsBlock
                   description={listing.description}
                   sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
