@@ -11,6 +11,7 @@ export type Category =
 
 export type ListingStatus = "available" | "sold";
 export type ListingCondition = "new" | "used" | "refurbished";
+export type ListingMode = "normal" | "deal" | "wholesale";
 export type VisibilitySetting = "everyone" | "students_only" | "only_me";
 export type ListingSpecValue = string | number | boolean | string[] | null;
 export type ListingSpecValues = Record<string, ListingSpecValue>;
@@ -31,6 +32,7 @@ export interface ListingDraft {
   condition: ListingCondition;
   quantity: string;
   sold_quantity: string;
+  listing_mode?: ListingMode;
   original_price?: string;
   discount_percent?: string;
   deal_label?: string;
@@ -57,6 +59,7 @@ export interface CreateListingPayload {
   condition: ListingCondition;
   quantity: number;
   sold_quantity: number;
+  listing_mode?: ListingMode;
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
