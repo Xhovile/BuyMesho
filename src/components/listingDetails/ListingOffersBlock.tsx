@@ -15,7 +15,7 @@ export default function ListingOffersBlock({ listing }: { listing: Listing }) {
 
   return (
     <div className="rounded-[2rem] border border-amber-200 bg-amber-50 p-4 shadow-sm sm:p-5">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-amber-700">Special offer</p>
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-amber-700">Special Offer</p>
       <div className="mt-3 space-y-2">
         {hasDealLabel ? (
           <p className="text-base font-black tracking-tight text-amber-900">{listing.deal_label}</p>
@@ -30,7 +30,7 @@ export default function ListingOffersBlock({ listing }: { listing: Listing }) {
         {hasDealExpiry ? (
           <p className="text-sm text-amber-700">
             Offer ends:{" "}
-            {new Date(listing.deal_expires_at!).toLocaleDateString()}
+            {new Date(listing.deal_expires_at ?? "").toLocaleDateString()}
           </p>
         ) : null}
         {isWholesale ? (
