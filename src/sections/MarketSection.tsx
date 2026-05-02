@@ -4,7 +4,7 @@ import { Funnel, Loader2, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
-import type { HeaderChip } from "../components/Header";
+import type { HeaderChip } from "../constants";
 
 export type MarketSectionFilters = {
   selectedUniv: string;

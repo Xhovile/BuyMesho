@@ -59,7 +59,8 @@ import MarketSection, {
 } from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
 import ListingCard from "./components/ListingCard";
-import Header, { type HeaderChip } from "./components/Header";
+import Header from "./components/Header";
+import type { HeaderChip } from "./constants";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
