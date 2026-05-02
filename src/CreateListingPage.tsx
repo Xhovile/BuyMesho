@@ -28,6 +28,7 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   condition: "used",
   quantity: "1",
   sold_quantity: "0",
+  listing_mode: "normal",
   original_price: "",
   discount_percent: "",
   deal_label: "",
