@@ -3,7 +3,9 @@ export type ListingPricingInput = {
   original_price?: number | string | null;
   discount_percent?: number | string | null;
   deal_label?: string | null;
+  deal_expires_at?: string | null;
   is_wholesale?: boolean | number | string | null;
+  can_sell_individually?: boolean | number | string | null;
   pack_size?: number | string | null;
   bulk_units?: string | null;
   quantity?: number | string | null;
@@ -15,8 +17,12 @@ export type ListingPricingSummary = {
   originalPrice: number | null;
   discountPercent: number | null;
   hasDeal: boolean;
+  dealStatus: "none" | "active" | "expired";
   dealLabel: string | null;
+  dealExpiresAt: string | null;
+  dealExpiryLabel: string | null;
   isWholesale: boolean;
+  canSellIndividually: boolean | null;
   packSize: number | null;
   bulkUnits: string | null;
   wholesalePackLabel: string | null;
@@ -51,6 +57,17 @@ function roundPercent(value: number): number {
   return Math.max(1, Math.min(100, Math.round(value)));
 }
 
+function formatDateLabel(value: string | null): string | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(parsed);
+}
+
 export function formatMoney(value: number): string {
   const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
   return `MK ${safeValue.toLocaleString()}`;
@@ -61,11 +78,19 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
   const explicitOriginalPrice = toFiniteNumber(input.original_price);
   const explicitDiscountPercent = toFiniteNumber(input.discount_percent);
   const isWholesale = toBoolean(input.is_wholesale);
+  const canSellIndividually =
+    input.can_sell_individually === null || input.can_sell_individually === undefined
+      ? null
+      : toBoolean(input.can_sell_individually);
   const packSize = toFiniteNumber(input.pack_size);
   const bulkUnits = normalizeText(input.bulk_units);
   const quantity = toFiniteNumber(input.quantity);
   const soldQuantity = Math.max(0, toFiniteNumber(input.sold_quantity) ?? 0);
   const availableQuantity = quantity === null ? null : Math.max(0, quantity - soldQuantity);
+  const dealExpiresAt = normalizeText(input.deal_expires_at);
+  const parsedDealExpiresAt = dealExpiresAt ? new Date(dealExpiresAt) : null;
+  const hasValidExpiry = !!parsedDealExpiresAt && !Number.isNaN(parsedDealExpiresAt.getTime());
+  const isDealExpired = hasValidExpiry ? parsedDealExpiresAt!.getTime() < Date.now() : false;
 
   const computedOriginalPrice =
     explicitDiscountPercent !== null &&
@@ -89,11 +114,17 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
         ? roundPercent(((originalPrice - price) / originalPrice) * 100)
         : null;
 
-  const hasDeal =
-    discountPercent !== null && discountPercent > 0 && originalPrice !== null && originalPrice > price;
+  const dealStatus =
+    discountPercent !== null && discountPercent > 0 && originalPrice !== null && originalPrice > price
+      ? isDealExpired
+        ? "expired"
+        : "active"
+      : "none";
+
+  const hasDeal = dealStatus === "active";
 
   const dealLabel =
-    normalizeText(input.deal_label) || (hasDeal && discountPercent !== null ? `${discountPercent}% off` : null);
+    normalizeText(input.deal_label) || (discountPercent !== null && discountPercent > 0 ? `${discountPercent}% off` : null);
 
   const wholesalePackLabel =
     isWholesale && (packSize !== null || bulkUnits !== null)
@@ -116,8 +147,12 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
     originalPrice,
     discountPercent,
     hasDeal,
+    dealStatus,
     dealLabel,
+    dealExpiresAt,
+    dealExpiryLabel: formatDateLabel(dealExpiresAt),
     isWholesale,
+    canSellIndividually,
     packSize,
     bulkUnits,
     wholesalePackLabel,

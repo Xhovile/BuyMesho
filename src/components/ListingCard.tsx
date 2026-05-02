@@ -62,8 +62,6 @@ export default function ListingCard({
   const discountPercent = pricing.discountPercent;
   const dealLabel = pricing.dealLabel;
   const isWholesale = pricing.isWholesale;
-  const wholesalePackLabel = pricing.wholesalePackLabel;
-  const wholesaleQuantityLabel = pricing.wholesaleQuantityLabel;
 
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
@@ -112,6 +110,10 @@ export default function ListingCard({
   };
 
   const priceBadgeBase = "rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md";
+  const dealBadgeText =
+    discountPercent && discountPercent > 0
+      ? dealLabel || `${discountPercent}% off`
+      : null;
 
   return (
     <motion.article
@@ -161,7 +163,11 @@ export default function ListingCard({
           </button>
 
           <div className="flex flex-col items-end gap-1">
-            {isWholesale ? (
+            {dealBadgeText ? (
+              <span className="shrink-0 rounded-full bg-red-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
+                {dealBadgeText}
+              </span>
+            ) : isWholesale ? (
               <span className="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
                 Wholesale
               </span>
@@ -208,10 +214,10 @@ export default function ListingCard({
             </>
           ) : null}
 
-          {discountPercent && discountPercent > 0 ? (
+          {dealBadgeText ? (
             <div className="absolute left-3 top-3 flex flex-col gap-1">
               <span className="inline-flex items-center rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-sm">
-                {dealLabel || `${discountPercent}% off`}
+                {dealBadgeText}
               </span>
             </div>
           ) : null}
@@ -241,13 +247,7 @@ export default function ListingCard({
                   <span className="text-[10px] font-bold text-zinc-400 line-through">
                     {formatMoney(originalPrice)}
                   </span>
-                  <span className="text-sm text-red-900">
-                    {formatMoney(safePrice)}
-                  </span>
-                </div>
-                <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] font-black uppercase tracking-[0.14em] text-red-700">
-                  <span>{discountPercent}% off</span>
-                  {isWholesale && wholesalePackLabel ? <span className="text-zinc-500">• {wholesalePackLabel}</span> : null}
+                  <span className="text-sm text-red-900">{formatMoney(safePrice)}</span>
                 </div>
               </div>
             ) : (
@@ -256,19 +256,7 @@ export default function ListingCard({
                   ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
                 } text-zinc-900`}
               >
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span>{formatMoney(safePrice)}</span>
-                  {isWholesale && wholesalePackLabel ? (
-                    <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
-                      {wholesalePackLabel}
-                    </span>
-                  ) : null}
-                </div>
-                {isWholesale && wholesaleQuantityLabel ? (
-                  <div className="mt-0.5 text-[10px] font-black uppercase tracking-[0.14em] text-zinc-500">
-                    {wholesaleQuantityLabel}
-                  </div>
-                ) : null}
+                <span>{formatMoney(safePrice)}</span>
               </div>
             )}
           </div>
