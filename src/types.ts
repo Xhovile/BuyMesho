@@ -9,6 +9,8 @@ export type Category =
   | "Electronics & Gadgets"
   | "Beauty & Personal Care";
 
+export type ListingMode = "normal" | "deal" | "wholesale";
+
 export type ListingStatus = "available" | "sold";
 export type ListingCondition = "new" | "used" | "refurbished";
 export type VisibilitySetting = "everyone" | "students_only" | "only_me";
@@ -31,6 +33,7 @@ export interface ListingDraft {
   condition: ListingCondition;
   quantity: string;
   sold_quantity: string;
+  listing_mode?: ListingMode;
   original_price?: string;
   discount_percent?: string;
   deal_label?: string;
@@ -57,6 +60,7 @@ export interface CreateListingPayload {
   condition: ListingCondition;
   quantity: number;
   sold_quantity: number;
+  listing_mode?: ListingMode;
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
@@ -113,6 +117,7 @@ export interface Listing {
   business_name: string;
   business_logo?: string | null;
   is_verified: boolean;
+  listing_mode?: ListingMode;
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;
