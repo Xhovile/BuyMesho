@@ -179,6 +179,8 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   original_price REAL,
   discount_percent INTEGER,
   deal_label TEXT,
+  deal_expires_at TEXT,
+  can_sell_individually INTEGER,
   is_wholesale INTEGER NOT NULL DEFAULT 0,
   pack_size INTEGER,
   bulk_units TEXT,
@@ -426,6 +428,18 @@ try {
   if (!hasDealLabel) {
     db.exec("ALTER TABLE listings ADD COLUMN deal_label TEXT");
     console.log("Migration: Added listings.deal_label");
+  }
+
+  const hasDealExpiresAt = cols.some((c) => c.name === "deal_expires_at");
+  if (!hasDealExpiresAt) {
+    db.exec("ALTER TABLE listings ADD COLUMN deal_expires_at TEXT");
+    console.log("Migration: Added listings.deal_expires_at");
+  }
+
+  const hasCanSellIndividually = cols.some((c) => c.name === "can_sell_individually");
+  if (!hasCanSellIndividually) {
+    db.exec("ALTER TABLE listings ADD COLUMN can_sell_individually INTEGER");
+    console.log("Migration: Added listings.can_sell_individually");
   }
 
   const hasIsWholesale = cols.some((c) => c.name === "is_wholesale");
@@ -750,6 +764,8 @@ type NormalizedListingPricing = {
   original_price: number | null;
   discount_percent: number | null;
   deal_label: string | null;
+  deal_expires_at: string | null;
+  can_sell_individually: number | null;
   is_wholesale: number;
   pack_size: number | null;
   bulk_units: string | null;
@@ -795,6 +811,11 @@ function normalizeListingPricing(body: any): NormalizedListingPricing {
   const packSize = toFiniteNumber(body.pack_size);
   const bulkUnits = toTrimmedString(body.bulk_units);
   const dealLabel = toTrimmedString(body.deal_label);
+  const dealExpiresAt = toTrimmedString(body.deal_expires_at);
+  const canSellIndividually =
+    body.can_sell_individually === null || body.can_sell_individually === undefined
+      ? null
+      : toBooleanFlag(body.can_sell_individually);
   const rawMode = toTrimmedString(body.listing_mode)?.toLowerCase();
   const listing_mode =
     rawMode === "deal" || rawMode === "wholesale" ? rawMode : "normal";
@@ -816,9 +837,11 @@ function normalizeListingPricing(body: any): NormalizedListingPricing {
     original_price,
     discount_percent,
     deal_label: dealLabel,
+    deal_expires_at: dealExpiresAt,
+    can_sell_individually: canSellIndividually,
     is_wholesale: isWholesale,
-    pack_size: packSize,
-    bulk_units: bulkUnits,
+    pack_size,
+    bulk_units,
     listing_mode,
   };
 }
@@ -844,6 +867,14 @@ function serializeListingRow(row: any) {
       typeof row.bulk_units === "string" && row.bulk_units.trim()
         ? row.bulk_units.trim()
         : null,
+    deal_expires_at:
+      typeof row.deal_expires_at === "string" && row.deal_expires_at.trim()
+        ? row.deal_expires_at.trim()
+        : null,
+    can_sell_individually:
+      row.can_sell_individually === null || row.can_sell_individually === undefined
+        ? null
+        : Number(row.can_sell_individually) === 1,
     listing_mode:
       typeof row.listing_mode === "string" && row.listing_mode.trim()
         ? row.listing_mode.trim()
@@ -1625,6 +1656,8 @@ const {
   original_price,
   discount_percent,
   deal_label,
+  deal_expires_at,
+  can_sell_individually,
   listing_mode,
   is_wholesale,
   pack_size,
@@ -1700,6 +1733,8 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
   const safePackSize = toFiniteNumber(pack_size);
   const safeBulkUnits = toTrimmedString(bulk_units);
+  const safeDealExpiresAt = pricing.deal_expires_at;
+  const safeCanSellIndividually = pricing.can_sell_individually;
 
   if (pricing.price <= 0) {
     return res.status(400).json({ error: "Price must be greater than 0" });
@@ -1725,11 +1760,11 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, original_price, discount_percent, deal_label, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, deal_expires_at, can_sell_individually, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       seller_uid,
       safeName,
@@ -1737,6 +1772,8 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
       pricing.original_price,
       pricing.discount_percent,
       pricing.deal_label,
+      safeDealExpiresAt,
+      safeCanSellIndividually,
       safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
@@ -2110,6 +2147,8 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
       original_price,
       discount_percent,
       deal_label,
+      deal_expires_at,
+      can_sell_individually,
       listing_mode,
       is_wholesale,
       pack_size,
@@ -2159,6 +2198,8 @@ const safeListingMode = pricing.listing_mode;
 const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
 const safePackSize = toFiniteNumber(pack_size);
 const safeBulkUnits = toTrimmedString(bulk_units);
+const safeDealExpiresAt = pricing.deal_expires_at;
+const safeCanSellIndividually = pricing.can_sell_individually;
 
   // Minimal validation
   if (!isMeaningfulTitle(safeName)) {
@@ -2228,6 +2269,8 @@ const safeBulkUnits = toTrimmedString(bulk_units);
         original_price = ?,
         discount_percent = ?,
         deal_label = ?,
+        deal_expires_at = ?,
+        can_sell_individually = ?,
         listing_mode = ?,
         is_wholesale = ?,
         pack_size = ?,
@@ -2253,6 +2296,8 @@ const safeBulkUnits = toTrimmedString(bulk_units);
       pricing.original_price,
       pricing.discount_percent,
       pricing.deal_label,
+      safeDealExpiresAt,
+      safeCanSellIndividually,
       safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
