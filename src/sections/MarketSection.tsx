@@ -97,6 +97,7 @@ export default function MarketSection({
     maxPrice,
     sortBy,
   } = filters;
+
   const {
     setSelectedUniv,
     setSelectedCat,
@@ -110,7 +111,9 @@ export default function MarketSection({
     setMaxPrice,
     setSortBy,
   } = setFilters;
+
   const { currentPage, setCurrentPage, totalPages, totalListingsCount, pageSize } = pagination;
+
   const {
     onReport,
     onDelete,
@@ -126,28 +129,21 @@ export default function MarketSection({
 
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
+  const matchesChip = (listing: Listing) => {
+    const mode = listing.listing_mode || "normal";
+
+    if (activeChip === "Deals") return mode === "deal";
+    if (activeChip === "Wholesale") return mode === "wholesale";
+    return true;
+  };
+
   const visibleListings = listings.filter((listing) => {
     const notHidden =
       !hiddenSellerUids.includes(listing.seller_uid) &&
       !hiddenListingIds.includes(listing.id);
 
     if (!notHidden) return false;
-
-    if (activeChip === "Deals") {
-      const price = Number(listing.price ?? 0);
-      const originalPrice = Number(listing.original_price ?? 0);
-      const discountPercent = Number(listing.discount_percent ?? 0);
-      const hasActiveDeal =
-        discountPercent > 0 &&
-        originalPrice > price &&
-        (!listing.deal_expires_at || new Date(listing.deal_expires_at).getTime() > Date.now());
-
-      return hasActiveDeal;
-    }
-
-    if (activeChip === "Wholesale") {
-      return Boolean(listing.is_wholesale);
-    }
+    if (!matchesChip(listing)) return false;
 
     return true;
   });
@@ -222,18 +218,18 @@ export default function MarketSection({
           <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">
             Listings
           </p>
-          <h3 className="mt-1 text-lg sm:text-xl font-bold text-zinc-900 flex items-center gap-2">
+          <h3 className="mt-1 flex items-center gap-2 text-lg font-bold text-zinc-900 sm:text-xl">
             Recent listings
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
           </h3>
         </div>
 
         <button
           type="button"
           onClick={() => setShowMoreFilters((prev) => !prev)}
-          className="inline-flex md:hidden items-center gap-2 h-[48px] px-4 rounded-2xl border border-amber-200 bg-amber-50 text-sm font-extrabold text-zinc-900 shadow-sm"
+          className="inline-flex h-[48px] items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 text-sm font-extrabold text-zinc-900 shadow-sm md:hidden"
         >
-          <Funnel className="w-4 h-4" />
+          <Funnel className="h-4 w-4" />
           Filters
         </button>
 
@@ -245,44 +241,44 @@ export default function MarketSection({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-          <p className="text-zinc-500 font-medium">Loading marketplace...</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="font-medium text-zinc-500">Loading marketplace...</p>
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-<div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-  {visibleListings.map((listing) => (
-    <ListingCard
-      key={listing.id}
-      listing={listing}
-      onReport={onReport}
-      currentUid={firebaseUserUid}
-      onDelete={onDelete}
-      onEdit={onEdit}
-      onHideSeller={onHideSeller}
-      onHideListing={onHideListing}
-      onToggleStatus={onToggleStatus}
-      isSaved={savedListingIds.includes(listing.id)}
-      onToggleSave={onToggleSave}
-      isLoggedIn={isLoggedIn}
-      requireLoginForContact={requireLoginForContact}
-      onOpenDetails={onOpenDetails}
-      onOpenSeller={onOpenSeller}
-      compact
-      ultraCompact
-      showActionsMenu={false}
-    />
-  ))}
-</div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {visibleListings.map((listing) => (
+              <ListingCard
+                key={listing.id}
+                listing={listing}
+                onReport={onReport}
+                currentUid={firebaseUserUid}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onHideSeller={onHideSeller}
+                onHideListing={onHideListing}
+                onToggleStatus={onToggleStatus}
+                isSaved={savedListingIds.includes(listing.id)}
+                onToggleSave={onToggleSave}
+                isLoggedIn={isLoggedIn}
+                requireLoginForContact={requireLoginForContact}
+                onOpenDetails={onOpenDetails}
+                onOpenSeller={onOpenSeller}
+                compact
+                ultraCompact
+                showActionsMenu={false}
+              />
+            ))}
+          </div>
 
           {totalPages > 1 && (
-            <div className="mt-10 flex items-center justify-center gap-2 flex-wrap">
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 disabled:opacity-50"
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 disabled:opacity-50"
               >
                 Prev
               </button>
@@ -292,10 +288,10 @@ export default function MarketSection({
                   key={pageNum}
                   type="button"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold border ${
+                  className={`rounded-xl border px-4 py-2 text-sm font-bold ${
                     currentPage === pageNum
-                      ? "bg-zinc-900 text-white border-zinc-900"
-                      : "bg-white text-zinc-700 border-zinc-200"
+                      ? "border-zinc-900 bg-zinc-900 text-white"
+                      : "border-zinc-200 bg-white text-zinc-700"
                   }`}
                 >
                   {pageNum}
@@ -306,7 +302,7 @@ export default function MarketSection({
                 type="button"
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 disabled:opacity-50"
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 disabled:opacity-50"
               >
                 Next
               </button>
@@ -314,9 +310,9 @@ export default function MarketSection({
           )}
         </>
       ) : (
-        <div className="text-center py-20">
-          <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Search className="w-8 h-8 text-zinc-300" />
+        <div className="py-20 text-center">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-zinc-100">
+            <Search className="h-8 w-8 text-zinc-300" />
           </div>
           <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
           <p className="text-zinc-500">
@@ -325,18 +321,18 @@ export default function MarketSection({
               : "Try adjusting your search terms or check again later for new listings."}
           </p>
           {hasActiveFilters && (
-            <div className="mt-5 flex items-center justify-center gap-3 flex-wrap">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={clearAllFilters}
-                className="px-4 py-2 rounded-xl bg-zinc-900 text-white text-sm font-bold hover:bg-zinc-800"
+                className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
               >
                 Clear all filters
               </button>
               <button
                 type="button"
                 onClick={() => setCurrentPage(1)}
-                className="px-4 py-2 rounded-xl bg-white border border-zinc-200 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
               >
                 Start from first page
               </button>
