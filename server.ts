@@ -2204,7 +2204,7 @@ const safeSpecValues =
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
 
-const pricing = normalizeListingPricing(req.body);
+const pricing = normalizeListingPricing(req.body, existingListing.listing_mode);
 const safeListingMode = pricing.listing_mode;
 const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
 const safePackSize = toFiniteNumber(pack_size);
