@@ -9,8 +9,6 @@ import type {
   University,
 } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
-
-const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 import FormDropdown from "./FormDropdown";
 import {
   createEmptyListingSpecValues,
@@ -22,6 +20,8 @@ import {
   validateListingSpecValues,
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
+
+const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 
 type ListingStudioFormProps = {
   mode: "create" | "edit";
