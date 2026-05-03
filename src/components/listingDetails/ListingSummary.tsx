@@ -28,18 +28,33 @@ export default function ListingSummary({
   onShare: () => void;
 }) {
   const isOwner = !!currentUserUid && currentUserUid === listing.seller_uid;
+  const listingMode = listing.listing_mode || "normal";
+
+  const modeLabel =
+    listingMode === "deal"
+      ? "Deal"
+      : listingMode === "wholesale"
+        ? "Wholesale"
+        : "Normal";
 
   return (
     <aside>
       <div className="space-y-4 lg:space-y-5">
         <div className="space-y-3 pb-5">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Listing summary</p>
-          <h1 className="text-[1.7rem] font-black leading-tight tracking-tight text-zinc-900 sm:text-[2rem]">{listing.name}</h1>
-          <p className="text-[2rem] font-black tracking-tight text-zinc-900 sm:text-[2.25rem]">MK {Number(listing.price).toLocaleString()}</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+            Listing summary
+          </p>
+          <h1 className="text-[1.7rem] font-black leading-tight tracking-tight text-zinc-900 sm:text-[2rem]">
+            {listing.name}
+          </h1>
+          <p className="text-[2rem] font-black tracking-tight text-zinc-900 sm:text-[2.25rem]">
+            MK {Number(listing.price).toLocaleString()}
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
           <InfoPill>{listing.university}</InfoPill>
+          <InfoPill>{modeLabel}</InfoPill>
           <InfoPill>{listing.status === "sold" ? "Sold" : "Available"}</InfoPill>
           <InfoPill>{listing.condition || "Used"}</InfoPill>
           <InfoPill>{Math.max(0, availableQuantity)} left</InfoPill>
@@ -59,13 +74,16 @@ export default function ListingSummary({
               className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
             >
               <MessageCircle className="h-4 w-4 shrink-0" />
-              <span className="truncate">{isLoggedIn ? "Message in app" : "Log in to message"}</span>
+              <span className="truncate">
+                {isLoggedIn ? "Message in app" : "Log in to message"}
+              </span>
             </button>
           ) : (
             <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500">
               This is your listing.
             </div>
           )}
+
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -75,6 +93,7 @@ export default function ListingSummary({
               <ExternalLink className="h-4 w-4 shrink-0" />
               <span className="truncate">WhatsApp</span>
             </button>
+
             <button
               type="button"
               onClick={onShare}
