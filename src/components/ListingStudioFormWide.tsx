@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X } from "lucide-react";
 import type { Category, CreateListingPayload, ListingCondition, ListingDraft, ListingMode, ListingSpecValue, University } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
-
-const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 import FormDropdown from "./FormDropdown";
 import {
   createEmptyListingSpecValues,
@@ -15,6 +13,8 @@ import {
   validateListingSpecValues,
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
+
+const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 
 const CONDITION_OPTIONS_BY_CATEGORY: Record<string, { label: string; options: string[] }> = {
   "Food & Snacks": { label: "Freshness", options: ["fresh", "packed", "prepared", "frozen"] },
@@ -47,14 +47,35 @@ export default function ListingStudioFormWide({
   submitLabel,
   submitBusyLabel,
 }: Props) {
-  const [form, setForm] = useState<ListingDraft>(initialData);
+  const [form, setForm] = useState<ListingDraft>(() => {
+    if (initialData.listing_mode === undefined) {
+      const inferredMode: ListingMode =
+        initialData.is_wholesale
+          ? "wholesale"
+          : String(initialData.original_price ?? "").trim()
+            ? "deal"
+            : "normal";
+      return { ...initialData, listing_mode: inferredMode };
+    }
+    return initialData;
+  });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const specFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    setForm(initialData);
+    if (initialData.listing_mode === undefined) {
+      const inferredMode: ListingMode =
+        initialData.is_wholesale
+          ? "wholesale"
+          : String(initialData.original_price ?? "").trim()
+            ? "deal"
+            : "normal";
+      setForm({ ...initialData, listing_mode: inferredMode });
+    } else {
+      setForm(initialData);
+    }
     setFieldErrors({});
     setShowAdvancedSpecs(false);
   }, [initialData]);
@@ -359,11 +380,6 @@ export default function ListingStudioFormWide({
 
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       setError("price", "Please enter a valid price.");
-      return;
-    }
-
-    if (discountPercentRaw && (!Number.isFinite(discountPercentNum as number) || (discountPercentNum as number) <= 0 || (discountPercentNum as number) > 100)) {
-      setError("discount_percent", "Discount must be between 1 and 100.");
       return;
     }
 
