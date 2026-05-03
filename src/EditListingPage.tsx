@@ -47,7 +47,7 @@ function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp
     condition: listing.condition || "used",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
-    listing_mode: deriveListingMode(listing),
+    listing_mode: listing.listing_mode || "normal",
     original_price: listing.original_price ? String(listing.original_price) : "",
     discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
     deal_label: listing.deal_label || "",

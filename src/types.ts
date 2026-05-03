@@ -9,6 +9,8 @@ export type Category =
   | "Electronics & Gadgets"
   | "Beauty & Personal Care";
 
+export type ListingMode = "normal" | "deal" | "wholesale";
+
 export type ListingStatus = "available" | "sold";
 export type ListingCondition = "new" | "used" | "refurbished";
 export type ListingMode = "normal" | "deal" | "wholesale";
@@ -116,6 +118,7 @@ export interface Listing {
   business_name: string;
   business_logo?: string | null;
   is_verified: boolean;
+  listing_mode?: ListingMode;
   original_price?: number | null;
   discount_percent?: number | null;
   deal_label?: string | null;

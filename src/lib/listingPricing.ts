@@ -1,4 +1,7 @@
+import type { ListingMode } from "../types";
+
 export type ListingPricingInput = {
+  listing_mode?: ListingMode | null;
   price?: number | string | null;
   original_price?: number | string | null;
   discount_percent?: number | string | null;
@@ -28,6 +31,7 @@ export type ListingPricingSummary = {
   wholesalePackLabel: string | null;
   wholesaleQuantityLabel: string | null;
   availableQuantity: number | null;
+  listingMode: ListingMode;
 };
 
 const booleanLikeStrings = new Set(["true", "1", "yes", "y", "on"]);
@@ -61,6 +65,7 @@ function formatDateLabel(value: string | null): string | null {
   if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
+
   return new Intl.DateTimeFormat(undefined, {
     day: "numeric",
     month: "short",
@@ -74,25 +79,38 @@ export function formatMoney(value: number): string {
 }
 
 export function getListingPricing(input: ListingPricingInput): ListingPricingSummary {
+  const listingMode: ListingMode =
+    input.listing_mode === "deal" || input.listing_mode === "wholesale"
+      ? input.listing_mode
+      : "normal";
+
   const price = Math.max(0, toFiniteNumber(input.price) ?? 0);
   const explicitOriginalPrice = toFiniteNumber(input.original_price);
   const explicitDiscountPercent = toFiniteNumber(input.discount_percent);
-  const isWholesale = toBoolean(input.is_wholesale);
+
+  const inferredWholesale = toBoolean(input.is_wholesale);
+  const isWholesale =
+    listingMode === "wholesale" ? true : listingMode === "deal" ? false : inferredWholesale;
+
   const canSellIndividually =
     input.can_sell_individually === null || input.can_sell_individually === undefined
       ? null
       : toBoolean(input.can_sell_individually);
+
   const packSize = toFiniteNumber(input.pack_size);
   const bulkUnits = normalizeText(input.bulk_units);
+
   const quantity = toFiniteNumber(input.quantity);
   const soldQuantity = Math.max(0, toFiniteNumber(input.sold_quantity) ?? 0);
   const availableQuantity = quantity === null ? null : Math.max(0, quantity - soldQuantity);
+
   const dealExpiresAt = normalizeText(input.deal_expires_at);
   const parsedDealExpiresAt = dealExpiresAt ? new Date(dealExpiresAt) : null;
   const hasValidExpiry = !!parsedDealExpiresAt && !Number.isNaN(parsedDealExpiresAt.getTime());
   const isDealExpired = hasValidExpiry ? parsedDealExpiresAt!.getTime() < Date.now() : false;
 
   const computedOriginalPrice =
+    listingMode === "deal" &&
     explicitDiscountPercent !== null &&
     explicitDiscountPercent > 0 &&
     explicitDiscountPercent < 100 &&
@@ -101,21 +119,27 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
       : null;
 
   const originalPrice =
-    explicitOriginalPrice !== null && explicitOriginalPrice > price
-      ? explicitOriginalPrice
-      : computedOriginalPrice !== null && computedOriginalPrice > price
-        ? computedOriginalPrice
+    listingMode === "deal"
+      ? explicitOriginalPrice !== null && explicitOriginalPrice > price
+        ? explicitOriginalPrice
+        : computedOriginalPrice !== null && computedOriginalPrice > price
+          ? computedOriginalPrice
+          : null
+      : explicitOriginalPrice !== null && explicitOriginalPrice > price
+        ? explicitOriginalPrice
         : null;
 
   const discountPercent =
-    explicitDiscountPercent !== null && explicitDiscountPercent > 0
-      ? roundPercent(explicitDiscountPercent)
-      : originalPrice !== null
-        ? roundPercent(((originalPrice - price) / originalPrice) * 100)
-        : null;
+    listingMode === "deal"
+      ? explicitDiscountPercent !== null && explicitDiscountPercent > 0
+        ? roundPercent(explicitDiscountPercent)
+        : originalPrice !== null
+          ? roundPercent(((originalPrice - price) / originalPrice) * 100)
+          : null
+      : null;
 
   const dealStatus =
-    discountPercent !== null && discountPercent > 0 && originalPrice !== null && originalPrice > price
+    listingMode === "deal" && discountPercent !== null && originalPrice !== null && originalPrice > price
       ? isDealExpired
         ? "expired"
         : "active"
@@ -124,7 +148,10 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
   const hasDeal = dealStatus === "active";
 
   const dealLabel =
-    normalizeText(input.deal_label) || (discountPercent !== null && discountPercent > 0 ? `${discountPercent}% off` : null);
+    listingMode === "deal"
+      ? normalizeText(input.deal_label) ||
+        (discountPercent !== null && discountPercent > 0 ? `${discountPercent}% off` : null)
+      : null;
 
   const wholesalePackLabel =
     isWholesale && (packSize !== null || bulkUnits !== null)
@@ -158,5 +185,6 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
     wholesalePackLabel,
     wholesaleQuantityLabel,
     availableQuantity,
+    listingMode,
   };
 }

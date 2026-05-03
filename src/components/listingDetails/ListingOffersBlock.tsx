@@ -9,6 +9,7 @@ function formatExpiryLabel(value: string | null): string | null {
   if (!value) return null;
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return null;
+
   return new Intl.DateTimeFormat(undefined, {
     day: "numeric",
     month: "long",
@@ -18,8 +19,10 @@ function formatExpiryLabel(value: string | null): string | null {
 
 function OfferStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-400">{label}</p>
+    <div className="rounded-2xl border border-zinc-200 bg-white/70 p-4">
+      <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-400">
+        {label}
+      </p>
       <p className="mt-2 text-sm font-bold text-zinc-900">{value}</p>
     </div>
   );
@@ -27,14 +30,20 @@ function OfferStat({ label, value }: { label: string; value: string }) {
 
 export default function ListingOffersBlock({ listing }: ListingOffersBlockProps) {
   const pricing = getListingPricing(listing);
+
+  const mode = listing.listing_mode || (pricing.isWholesale ? "wholesale" : pricing.dealStatus === "active" ? "deal" : "normal");
   const dealExpiry = formatExpiryLabel(pricing.dealExpiresAt);
-  const originalPrice = pricing.originalPrice;
-  const hasActiveDeal = pricing.dealStatus === "active";
-  const canSellIndividually = pricing.canSellIndividually;
+  const stockLeft =
+    pricing.availableQuantity === null
+      ? "Not tracked"
+      : `${pricing.availableQuantity.toLocaleString()} ${pricing.availableQuantity === 1 ? "unit" : "units"}`;
+
+  const showDealSection = mode === "deal";
+  const showWholesaleSection = mode === "wholesale";
 
   return (
-    <section className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-2 border-b border-zinc-100 pb-4">
+    <section className="space-y-5">
+      <div className="border-b border-zinc-200 pb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">
           Offers & Pricing
         </p>
@@ -46,69 +55,88 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
         </p>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <OfferStat label="Current price" value={formatMoney(pricing.price)} />
+        <OfferStat label="Stock left" value={stockLeft} />
         <OfferStat
-          label="Original price"
-          value={originalPrice ? formatMoney(originalPrice) : "Not listed"}
-        />
-        <OfferStat
-          label="Deal status"
+          label="Listing mode"
           value={
-            hasActiveDeal
-              ? pricing.dealLabel || "Active deal"
-              : pricing.dealStatus === "expired"
-                ? "Expired"
-                : "No active deal"
+            mode === "deal"
+              ? "Deal"
+              : mode === "wholesale"
+                ? "Wholesale"
+                : "Normal"
           }
         />
         <OfferStat
-          label="Deal expiry"
-          value={dealExpiry || "No expiry set"}
+          label="Visibility"
+          value={listing.status === "sold" ? "Sold" : "Available"}
         />
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <OfferStat
-          label="Wholesale"
-          value={pricing.isWholesale ? "Available" : "Not enabled"}
-        />
-        <OfferStat
-          label="Pack size"
-          value={
-            pricing.isWholesale
-              ? pricing.wholesalePackLabel || "Pack details not set"
-              : "—"
-          }
-        />
-        <OfferStat
-          label="Single items"
-          value={
-            pricing.isWholesale
-              ? canSellIndividually === null
+      {showDealSection ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <OfferStat
+            label="Original price"
+            value={pricing.originalPrice ? formatMoney(pricing.originalPrice) : "Not listed"}
+          />
+          <OfferStat
+            label="Discount"
+            value={
+              pricing.discountPercent && pricing.discountPercent > 0
+                ? `${pricing.discountPercent}% off`
+                : "Not specified"
+            }
+          />
+          <OfferStat
+            label="Deal status"
+            value={
+              pricing.dealStatus === "active"
+                ? pricing.dealLabel || "Active deal"
+                : pricing.dealStatus === "expired"
+                  ? "Expired"
+                  : "No active deal"
+            }
+          />
+          <OfferStat
+            label="Deal expiry"
+            value={dealExpiry || "No expiry set"}
+          />
+        </div>
+      ) : null}
+
+      {showWholesaleSection ? (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <OfferStat
+            label="Wholesale"
+            value={pricing.isWholesale ? "Enabled" : "Not enabled"}
+          />
+          <OfferStat
+            label="Pack size"
+            value={pricing.wholesalePackLabel || "Pack details not set"}
+          />
+          <OfferStat
+            label="Single items"
+            value={
+              pricing.canSellIndividually === null
                 ? "Not specified"
-                : canSellIndividually
+                : pricing.canSellIndividually
                   ? "Allowed"
                   : "Not allowed"
-              : "—"
-          }
-        />
-        <OfferStat
-          label="Stock left"
-          value={
-            pricing.availableQuantity === null
-              ? "Not tracked"
-              : `${pricing.availableQuantity.toLocaleString()} ${pricing.availableQuantity === 1 ? "unit" : "units"}`
-          }
-        />
-      </div>
+            }
+          />
+          <OfferStat
+            label="Wholesale stock"
+            value={pricing.wholesaleQuantityLabel || stockLeft}
+          />
+        </div>
+      ) : null}
 
-      {pricing.isWholesale && (pricing.wholesaleQuantityLabel || pricing.wholesalePackLabel) ? (
-        <div className="mt-4 rounded-3xl bg-zinc-50 p-4 text-sm text-zinc-600">
-          <p className="font-bold text-zinc-900">Wholesale summary</p>
+      {mode === "normal" ? (
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
+          <p className="font-bold text-zinc-900">Normal listing</p>
           <p className="mt-1 leading-6">
-            {pricing.wholesalePackLabel ? `${pricing.wholesalePackLabel}` : "Wholesale pricing is active."}
-            {pricing.wholesaleQuantityLabel ? ` ${pricing.wholesaleQuantityLabel} remain.` : ""}
+            One price only. No deal terms. No wholesale terms.
           </p>
         </div>
       ) : null}

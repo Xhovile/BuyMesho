@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
-import { formatMoney, getListingPricing } from "../lib/listingPricing";
+import { formatMoney } from "../lib/listingPricing";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -56,13 +56,6 @@ export default function ListingCard({
       ? listing.business_name.trim()
       : "Seller";
 
-  const pricing = getListingPricing(listing);
-  const safePrice = pricing.price;
-  const originalPrice = pricing.originalPrice;
-  const discountPercent = pricing.discountPercent;
-  const dealLabel = pricing.dealLabel;
-  const isWholesale = pricing.isWholesale;
-
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
     ? Number(listing.sold_quantity)
@@ -71,34 +64,28 @@ export default function ListingCard({
   const availableQuantity = Math.max(0, quantity - soldQuantity);
   const statusLabel = availableQuantity > 0 ? `${availableQuantity} left` : "Sold out";
 
-  const description =
-    typeof listing.description === "string" && listing.description.trim().length > 0
-      ? listing.description.trim()
-      : "";
-
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
       ? listing.photos[0]
       : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
-  const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
-  const outerPadding = ultraCompact ? "px-2 pt-2" : "px-4 pt-4";
-  const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
+  const titleLabel =
+    typeof listing.name === "string" && listing.name.trim()
+      ? listing.name
+      : "Untitled listing";
 
   const universityLabel =
     typeof listing.university === "string" && listing.university.trim()
       ? listing.university
       : "Unknown campus";
 
-  const categoryLabel =
-    typeof listing.category === "string" && listing.category.trim()
-      ? listing.category
-      : "Uncategorized";
-
-  const titleLabel =
-    typeof listing.name === "string" && listing.name.trim()
-      ? listing.name
-      : "Untitled listing";
+  const listingMode = listing.listing_mode || "normal";
+  const modeBadge =
+    listingMode === "deal"
+      ? "Deal"
+      : listingMode === "wholesale"
+        ? "Wholesale"
+        : null;
 
   const handleOpenProfile = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -109,11 +96,9 @@ export default function ListingCard({
     onOpenDetails(listing);
   };
 
-  const priceBadgeBase = "rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md";
-  const dealBadgeText =
-    discountPercent && discountPercent > 0
-      ? dealLabel || `${discountPercent}% off`
-      : null;
+  const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
+  const outerPadding = ultraCompact ? "px-2 pt-2" : "px-4 pt-4";
+  const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
 
   return (
     <motion.article
@@ -163,13 +148,9 @@ export default function ListingCard({
           </button>
 
           <div className="flex flex-col items-end gap-1">
-            {dealBadgeText ? (
-              <span className="shrink-0 rounded-full bg-red-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
-                {dealBadgeText}
-              </span>
-            ) : isWholesale ? (
+            {modeBadge ? (
               <span className="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
-                Wholesale
+                {modeBadge}
               </span>
             ) : null}
             <span
@@ -214,14 +195,6 @@ export default function ListingCard({
             </>
           ) : null}
 
-          {dealBadgeText ? (
-            <div className="absolute left-3 top-3 flex flex-col gap-1">
-              <span className="inline-flex items-center rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-white shadow-sm">
-                {dealBadgeText}
-              </span>
-            </div>
-          ) : null}
-
           {showActionsMenu ? (
             <ListingActionsMenu
               listing={listing}
@@ -241,24 +214,13 @@ export default function ListingCard({
           ) : null}
 
           <div className="absolute bottom-3 left-3 max-w-[80%]">
-            {discountPercent && discountPercent > 0 && originalPrice ? (
-              <div className={priceBadgeBase + " px-3 py-2"}>
-                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                  <span className="text-[10px] font-bold text-zinc-400 line-through">
-                    {formatMoney(originalPrice)}
-                  </span>
-                  <span className="text-sm text-red-900">{formatMoney(safePrice)}</span>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`${priceBadgeBase} ${
-                  ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
-                } text-zinc-900`}
-              >
-                <span>{formatMoney(safePrice)}</span>
-              </div>
-            )}
+            <div
+              className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md ${
+                ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
+              } text-zinc-900`}
+            >
+              <span>{formatMoney(Number(listing.price) || 0)}</span>
+            </div>
           </div>
         </div>
 
@@ -275,25 +237,13 @@ export default function ListingCard({
             {titleLabel}
           </h3>
 
-          {!compact && !ultraCompact && description ? (
-            <p className="line-clamp-2 min-h-[2.75rem] text-sm leading-relaxed text-zinc-500">
-              {description}
-            </p>
-          ) : null}
-
           {!ultraCompact ? (
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                {categoryLabel}
-              </span>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider ${
-                  listing.status === "sold"
-                    ? "cursor-not-allowed bg-zinc-200 text-zinc-500"
-                    : "bg-zinc-100 text-zinc-600"
-                }`}
-              >
                 {statusLabel}
+              </span>
+              <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+                {listing.category || "Uncategorized"}
               </span>
             </div>
           ) : null}
