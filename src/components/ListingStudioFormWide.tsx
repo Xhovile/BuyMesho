@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { X } from "lucide-react";
-import type { Category, CreateListingPayload, ListingCondition, ListingDraft, ListingSpecValue, University } from "../types";
-import { getListingPricing } from "../lib/listingPricing";
+import type { Category, CreateListingPayload, ListingCondition, ListingDraft, ListingMode, ListingSpecValue, University } from "../types";
 import { CATEGORIES, UNIVERSITIES } from "../constants";
 import FormDropdown from "./FormDropdown";
 import {
@@ -14,6 +13,8 @@ import {
   validateListingSpecValues,
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
+
+const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 
 const CONDITION_OPTIONS_BY_CATEGORY: Record<string, { label: string; options: string[] }> = {
   "Food & Snacks": { label: "Freshness", options: ["fresh", "packed", "prepared", "frozen"] },
@@ -46,14 +47,35 @@ export default function ListingStudioFormWide({
   submitLabel,
   submitBusyLabel,
 }: Props) {
-  const [form, setForm] = useState<ListingDraft>(initialData);
+  const [form, setForm] = useState<ListingDraft>(() => {
+    if (initialData.listing_mode === undefined) {
+      const inferredMode: ListingMode =
+        initialData.is_wholesale
+          ? "wholesale"
+          : String(initialData.original_price ?? "").trim()
+            ? "deal"
+            : "normal";
+      return { ...initialData, listing_mode: inferredMode };
+    }
+    return initialData;
+  });
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const specFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    setForm(initialData);
+    if (initialData.listing_mode === undefined) {
+      const inferredMode: ListingMode =
+        initialData.is_wholesale
+          ? "wholesale"
+          : String(initialData.original_price ?? "").trim()
+            ? "deal"
+            : "normal";
+      setForm({ ...initialData, listing_mode: inferredMode });
+    } else {
+      setForm(initialData);
+    }
     setFieldErrors({});
     setShowAdvancedSpecs(false);
   }, [initialData]);
@@ -94,6 +116,42 @@ export default function ListingStudioFormWide({
     delete next[key];
     return next;
   });
+
+  const listingMode = form.listing_mode || "normal";
+  const isDealMode = listingMode === "deal";
+  const isWholesaleMode = listingMode === "wholesale";
+
+  const handleModeChange = (nextMode: ListingMode) => {
+    setForm((prev) => ({
+      ...prev,
+      listing_mode: nextMode,
+      ...(nextMode === "normal"
+        ? {
+            original_price: "",
+            discount_percent: "",
+            deal_label: "",
+            deal_expires_at: "",
+            is_wholesale: false,
+            can_sell_individually: undefined,
+            pack_size: "",
+            bulk_units: "",
+          }
+        : nextMode === "deal"
+          ? {
+              is_wholesale: false,
+              can_sell_individually: undefined,
+              pack_size: "",
+              bulk_units: "",
+            }
+          : {
+              original_price: "",
+              discount_percent: "",
+              deal_label: "",
+              deal_expires_at: "",
+              is_wholesale: true,
+            }),
+    }));
+  };
 
   const hasMeaningfulTitle = (raw: string) => raw.trim().replace(/\s+/g, " ").length >= 3;
 
@@ -293,14 +351,17 @@ export default function ListingStudioFormWide({
     const priceNum = Number(form.price);
     const quantityNum = Number(form.quantity);
     const soldQuantityNum = Number(form.sold_quantity);
+    const originalPriceRaw = String(form.original_price ?? "").trim();
     const discountPercentRaw = String(form.discount_percent ?? "").trim();
     const dealLabelRaw = String(form.deal_label ?? "").trim();
+    const dealExpiresAtRaw = String(form.deal_expires_at ?? "").trim();
     const packSizeRaw = String(form.pack_size ?? "").trim();
     const bulkUnitsRaw = String(form.bulk_units ?? "").trim();
-    const isWholesale = Boolean(form.is_wholesale);
 
+    const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
     const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
     const packSizeNum = packSizeRaw ? Number(packSizeRaw) : null;
+    const isWholesale = listingMode === "wholesale" || Boolean(form.is_wholesale);
 
     if (!hasMeaningfulTitle(form.name)) {
       setError("name", "Please enter a clear listing title.");
@@ -322,9 +383,24 @@ export default function ListingStudioFormWide({
       return;
     }
 
-    if (discountPercentRaw && (!Number.isFinite(discountPercentNum as number) || (discountPercentNum as number) <= 0 || (discountPercentNum as number) > 100)) {
-      setError("discount_percent", "Discount must be between 1 and 100.");
-      return;
+    if (isDealMode) {
+      if (
+        !Number.isFinite(originalPriceNum as number) ||
+        (originalPriceNum as number) <= priceNum
+      ) {
+        showFeedback("error", "Invalid deal price", "Original price must be higher than current price.");
+        return;
+      }
+
+      if (
+        discountPercentRaw &&
+        (!Number.isFinite(discountPercentNum as number) ||
+          (discountPercentNum as number) <= 0 ||
+          (discountPercentNum as number) > 100)
+      ) {
+        showFeedback("error", "Invalid discount", "Discount must be between 1 and 100.");
+        return;
+      }
     }
 
     if (isWholesale) {
@@ -384,17 +460,6 @@ export default function ListingStudioFormWide({
       }
     }
 
-    const pricing = getListingPricing({
-      price: priceNum,
-      discount_percent: discountPercentNum,
-      deal_label: dealLabelRaw,
-      is_wholesale: isWholesale,
-      pack_size: packSizeNum,
-      bulk_units: bulkUnitsRaw,
-      quantity: quantityNum,
-      sold_quantity: soldQuantityNum,
-    });
-
     await onSubmit({
       name: form.name,
       price: priceNum,
@@ -411,12 +476,15 @@ export default function ListingStudioFormWide({
       sold_quantity: soldQuantityNum,
       photos: form.photos,
       video_url: form.video_url || null,
-      original_price: pricing.originalPrice,
-      discount_percent: discountPercentNum,
-      deal_label: dealLabelRaw || null,
+      listing_mode: listingMode,
+      original_price: isDealMode ? originalPriceNum : null,
+      discount_percent: isDealMode ? discountPercentNum : null,
+      deal_label: isDealMode ? dealLabelRaw || null : null,
+      deal_expires_at: isDealMode ? dealExpiresAtRaw || null : null,
       is_wholesale: isWholesale,
-      pack_size: packSizeNum,
-      bulk_units: bulkUnitsRaw || null,
+      can_sell_individually: isWholesale ? form.can_sell_individually === true : null,
+      pack_size: isWholesale ? packSizeNum : null,
+      bulk_units: isWholesale ? bulkUnitsRaw || null : null,
     });
   };
 
@@ -513,92 +581,120 @@ export default function ListingStudioFormWide({
               <div className="sm:col-span-2">
                 <FormDropdown label={conditionConfig.label} value={form.condition} options={conditionConfig.options} onChange={(value) => setForm((prev) => ({ ...prev, condition: value as ListingCondition }))} />
               </div>
+              <div className="sm:col-span-2">
+                <FormDropdown
+                  label="Listing mode"
+                  value={listingMode}
+                  options={LISTING_MODE_OPTIONS}
+                  onChange={(value) => handleModeChange(value as ListingMode)}
+                />
+              </div>
             </div>
           </section>
 
-          <section className="border-b border-zinc-200 pb-6">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Deal pricing & wholesale</p>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Discount percent (optional)</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={form.discount_percent ?? ""}
-                  onChange={(e) => {
-                    clearError("discount_percent");
-                    setForm((prev) => ({ ...prev, discount_percent: e.target.value }));
-                  }}
-                  className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`}
-                />
-                {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
-                <input
-                  type="text"
-                  value={String(form.deal_label ?? "")}
-                  onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value }))}
-                  placeholder="e.g. Back to school deal"
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <div className="flex items-end sm:col-span-2">
-                <label className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700">
-                  <span>Wholesale listing</span>
+          {isDealMode ? (
+            <section className="border-b border-zinc-200 pb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Deal pricing</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price (MK)</label>
                   <input
-                    type="checkbox"
-                    checked={Boolean(form.is_wholesale)}
+                    type="number"
+                    min="0"
+                    value={form.original_price ?? ""}
                     onChange={(e) => {
-                      const checked = e.target.checked;
-                      clearError("pack_size");
-                      clearError("bulk_units");
-                      setForm((prev) => ({
-                        ...prev,
-                        is_wholesale: checked,
-                        ...(checked ? {} : { pack_size: "", bulk_units: "" }),
-                      }));
+                      clearError("original_price");
+                      setForm((prev) => ({ ...prev, original_price: e.target.value }));
                     }}
-                    className="h-4 w-4 rounded border-zinc-300"
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`}
                   />
-                </label>
+                  {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Discount percent (optional)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={form.discount_percent ?? ""}
+                    onChange={(e) => {
+                      clearError("discount_percent");
+                      setForm((prev) => ({ ...prev, discount_percent: e.target.value }));
+                    }}
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`}
+                  />
+                  {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
+                  <input
+                    type="text"
+                    value={String(form.deal_label ?? "")}
+                    onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value }))}
+                    placeholder="e.g. Back to school deal"
+                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires at (optional)</label>
+                  <input
+                    type="date"
+                    value={String(form.deal_expires_at ?? "")}
+                    onChange={(e) => setForm((prev) => ({ ...prev, deal_expires_at: e.target.value }))}
+                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
               </div>
-              {form.is_wholesale && (
-                <>
-                  <div>
-                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Pack size</label>
+            </section>
+          ) : null}
+
+          {isWholesaleMode ? (
+            <section className="border-b border-zinc-200 pb-6">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Wholesale</p>
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Pack size</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={form.pack_size ?? ""}
+                    onChange={(e) => {
+                      clearError("pack_size");
+                      setForm((prev) => ({ ...prev, pack_size: e.target.value }));
+                    }}
+                    placeholder="e.g. 12"
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.pack_size ? "border-red-500" : "border-zinc-200"}`}
+                  />
+                  {fieldErrors.pack_size ? <p className="mt-1 text-xs text-red-600">{fieldErrors.pack_size}</p> : null}
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Bulk units</label>
+                  <input
+                    type="text"
+                    value={form.bulk_units ?? ""}
+                    onChange={(e) => {
+                      clearError("bulk_units");
+                      setForm((prev) => ({ ...prev, bulk_units: e.target.value }));
+                    }}
+                    placeholder="e.g. bottles, boxes"
+                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.bulk_units ? "border-red-500" : "border-zinc-200"}`}
+                  />
+                  {fieldErrors.bulk_units ? <p className="mt-1 text-xs text-red-600">{fieldErrors.bulk_units}</p> : null}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-700">
+                    <span>Can sell individually</span>
                     <input
-                      type="number"
-                      min="1"
-                      value={form.pack_size ?? ""}
-                      onChange={(e) => {
-                        clearError("pack_size");
-                        setForm((prev) => ({ ...prev, pack_size: e.target.value }));
-                      }}
-                      placeholder="e.g. 12"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.pack_size ? "border-red-500" : "border-zinc-200"}`}
+                      type="checkbox"
+                      checked={Boolean(form.can_sell_individually)}
+                      onChange={(e) => setForm((prev) => ({ ...prev, can_sell_individually: e.target.checked }))}
+                      className="h-4 w-4 rounded border-zinc-300"
                     />
-                    {fieldErrors.pack_size ? <p className="mt-1 text-xs text-red-600">{fieldErrors.pack_size}</p> : null}
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Bulk units</label>
-                    <input
-                      type="text"
-                      value={form.bulk_units ?? ""}
-                      onChange={(e) => {
-                        clearError("bulk_units");
-                        setForm((prev) => ({ ...prev, bulk_units: e.target.value }));
-                      }}
-                      placeholder="e.g. bottles, boxes"
-                      className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.bulk_units ? "border-red-500" : "border-zinc-200"}`}
-                    />
-                    {fieldErrors.bulk_units ? <p className="mt-1 text-xs text-red-600">{fieldErrors.bulk_units}</p> : null}
-                  </div>
-                </>
-              )}
-            </div>
-          </section>
+                  </label>
+                </div>
+              </div>
+            </section>
+          ) : null}
 
           {isSchemaDrivenCategory ? (
             <section className="border-b border-zinc-200 pb-6">

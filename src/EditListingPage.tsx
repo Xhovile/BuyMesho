@@ -24,6 +24,12 @@ type FeedbackState = {
   message: string;
 } | null;
 
+function deriveListingMode(listing: Listing): import("./types").ListingMode {
+  if (listing.is_wholesale) return "wholesale";
+  if (listing.original_price || listing.discount_percent) return "deal";
+  return "normal";
+}
+
 function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp?: string): ListingDraft {
   return {
     name: listing.name || "",
@@ -45,6 +51,7 @@ function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp
     original_price: listing.original_price ? String(listing.original_price) : "",
     discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
     deal_label: listing.deal_label || "",
+    deal_expires_at: listing.deal_expires_at || "",
     is_wholesale: !!listing.is_wholesale,
     pack_size: listing.pack_size ? String(listing.pack_size) : "",
     bulk_units: listing.bulk_units || "",
