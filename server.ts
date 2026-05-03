@@ -471,6 +471,30 @@ try {
 
 try {
   const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+
+  const hasListingMode = cols.some((c) => c.name === "listing_mode");
+  if (!hasListingMode) {
+    db.exec("ALTER TABLE listings ADD COLUMN listing_mode TEXT NOT NULL DEFAULT 'normal'");
+    console.log("Migration: Added listings.listing_mode");
+  }
+
+  const hasDealExpiresAt = cols.some((c) => c.name === "deal_expires_at");
+  if (!hasDealExpiresAt) {
+    db.exec("ALTER TABLE listings ADD COLUMN deal_expires_at TEXT");
+    console.log("Migration: Added listings.deal_expires_at");
+  }
+
+  const hasCanSellIndividually = cols.some((c) => c.name === "can_sell_individually");
+  if (!hasCanSellIndividually) {
+    db.exec("ALTER TABLE listings ADD COLUMN can_sell_individually INTEGER");
+    console.log("Migration: Added listings.can_sell_individually");
+  }
+} catch (e) {
+  console.warn("Listings mode migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
   const hasListingMode = cols.some((c) => c.name === "listing_mode");
 
   if (!hasListingMode) {
