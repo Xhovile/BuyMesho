@@ -1162,11 +1162,7 @@ function serializeListingRow(row: any) {
         );
 
       res.json(
-        rows.map((l: any) => ({
-          ...l,
-          photos: JSON.parse(l.photos || "[]"),
-          spec_values: JSON.parse(l.spec_values || "{}"),
-        }))
+        rows.map((l: any) => serializeListingRow(l))
       );
     } catch (error) {
       console.error("Fetch related listings error:", error);
@@ -2228,6 +2224,18 @@ const safeSpecValues =
     ? JSON.stringify(spec_values)
     : JSON.stringify({});
 
+const existingListing = db
+  .prepare("SELECT id, seller_uid, listing_mode FROM listings WHERE id = ?")
+  .get(id) as { id: number; seller_uid: string; listing_mode: "normal" | "deal" | "wholesale" } | undefined;
+
+if (!existingListing) {
+  return res.status(404).json({ error: "Listing not found" });
+}
+
+if (existingListing.seller_uid !== uid) {
+  return res.status(403).json({ error: "Forbidden: not your listing" });
+}
+
 const pricing = normalizeListingPricing(req.body, existingListing.listing_mode);
 const safeListingMode = pricing.listing_mode;
 const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
@@ -2283,19 +2291,6 @@ const safeCanSellIndividually = pricing.can_sell_individually;
   }
 
   try {
-    const listing = db.prepare(
-      "SELECT id, seller_uid FROM listings WHERE id = ?"
-    ).get(id) as { id: number; seller_uid: string } | undefined;
-
-    if (!listing) {
-      return res.status(404).json({ error: "Listing not found" });
-    }
-
-    // 🔐 Ownership enforcement
-    if (listing.seller_uid !== uid) {
-      return res.status(403).json({ error: "Forbidden: not your listing" });
-    }
-
     db.prepare(`
       UPDATE listings
       SET
