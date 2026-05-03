@@ -500,25 +500,29 @@ export default function ListingStudioForm({
       return;
     }
 
-    if (isDealMode) {
-      if (
-        !Number.isFinite(originalPriceNum as number) ||
-        (originalPriceNum as number) <= priceNum
-      ) {
-        showFeedback("error", "Invalid deal price", "Original price must be higher than current price.");
-        return;
-      }
+ if (isDealMode) {
+  if (
+    !Number.isFinite(originalPriceNum as number) ||
+    (originalPriceNum as number) <= priceNum
+  ) {
+    showFeedback(
+      "error",
+      "Invalid deal price",
+      "Original price must be higher than current price."
+    );
+    return;
+  }
 
-      if (
-        discountPercentRaw &&
-        (!Number.isFinite(discountPercentNum as number) ||
-          (discountPercentNum as number) <= 0 ||
-          (discountPercentNum as number) > 100)
-      ) {
-        showFeedback("error", "Invalid discount", "Discount must be between 1 and 100.");
-        return;
-      }
-    }
+  if (
+    discountPercentRaw &&
+    (!Number.isFinite(discountPercentNum as number) ||
+      (discountPercentNum as number) <= 0 ||
+      (discountPercentNum as number) > 100)
+  ) {
+    showFeedback("error", "Invalid discount", "Discount must be between 1 and 100.");
+    return;
+  }
+}
 
     if (isWholesale) {
       if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
