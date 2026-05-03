@@ -130,12 +130,26 @@ export default function MarketSection({
   const [showMoreFilters, setShowMoreFilters] = useState(false);
 
   const matchesChip = (listing: Listing) => {
-    const mode = listing.listing_mode || "normal";
+  if (activeChip === "Deals") {
+    return (
+      listing.listing_mode === "deal" ||
+      Boolean(
+        (listing.original_price && listing.original_price > listing.price) ||
+          (listing.discount_percent && listing.discount_percent > 0)
+      )
+    );
+  }
 
-    if (activeChip === "Deals") return mode === "deal";
-    if (activeChip === "Wholesale") return mode === "wholesale";
-    return true;
-  };
+  if (activeChip === "Wholesale") {
+    return (
+      listing.listing_mode === "wholesale" ||
+      Boolean(listing.is_wholesale) ||
+      Boolean(listing.pack_size && listing.pack_size > 1)
+    );
+  }
+
+  return true;
+};
 
   const visibleListings = listings.filter((listing) => {
     const notHidden =
