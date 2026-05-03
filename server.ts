@@ -182,6 +182,7 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   is_wholesale INTEGER NOT NULL DEFAULT 0,
   pack_size INTEGER,
   bulk_units TEXT,
+  listing_mode TEXT NOT NULL DEFAULT 'normal',
   category TEXT NOT NULL,
   subcategory TEXT,
   item_type TEXT,
@@ -452,6 +453,18 @@ try {
   }
 } catch (e) {
   console.warn("Listings wholesale bundle migration check failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
+  const hasListingMode = cols.some((c) => c.name === "listing_mode");
+
+  if (!hasListingMode) {
+    db.exec("ALTER TABLE listings ADD COLUMN listing_mode TEXT NOT NULL DEFAULT 'normal'");
+    console.log("Migration: Added listings.listing_mode");
+  }
+} catch (e) {
+  console.warn("Listings listing_mode migration check failed:", e);
 }
 
 try {
@@ -740,6 +753,7 @@ type NormalizedListingPricing = {
   is_wholesale: number;
   pack_size: number | null;
   bulk_units: string | null;
+  listing_mode: "normal" | "deal" | "wholesale";
 };
 
 function toFiniteNumber(value: unknown): number | null {
@@ -781,6 +795,9 @@ function normalizeListingPricing(body: any): NormalizedListingPricing {
   const packSize = toFiniteNumber(body.pack_size);
   const bulkUnits = toTrimmedString(body.bulk_units);
   const dealLabel = toTrimmedString(body.deal_label);
+  const rawMode = toTrimmedString(body.listing_mode)?.toLowerCase();
+  const listing_mode =
+    rawMode === "deal" || rawMode === "wholesale" ? rawMode : "normal";
 
   const discount_percent =
     discountPercentInput !== null &&
@@ -802,6 +819,7 @@ function normalizeListingPricing(body: any): NormalizedListingPricing {
     is_wholesale: isWholesale,
     pack_size: packSize,
     bulk_units: bulkUnits,
+    listing_mode,
   };
 }
 
@@ -826,6 +844,10 @@ function serializeListingRow(row: any) {
       typeof row.bulk_units === "string" && row.bulk_units.trim()
         ? row.bulk_units.trim()
         : null,
+    listing_mode:
+      typeof row.listing_mode === "string" && row.listing_mode.trim()
+        ? row.listing_mode.trim()
+        : "normal",
     photos: JSON.parse(row.photos || "[]"),
     spec_values: JSON.parse(row.spec_values || "{}"),
   };
@@ -1603,6 +1625,7 @@ const {
   original_price,
   discount_percent,
   deal_label,
+  listing_mode,
   is_wholesale,
   pack_size,
   bulk_units,
@@ -1673,7 +1696,8 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
 }
 
   const pricing = normalizeListingPricing(req.body);
-  const isWholesale = pricing.is_wholesale === 1;
+  const safeListingMode = pricing.listing_mode;
+  const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
   const safePackSize = toFiniteNumber(pack_size);
   const safeBulkUnits = toTrimmedString(bulk_units);
 
@@ -1701,11 +1725,11 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, original_price, discount_percent, deal_label, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       seller_uid,
       safeName,
@@ -1713,6 +1737,7 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
       pricing.original_price,
       pricing.discount_percent,
       pricing.deal_label,
+      safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
       safeBulkUnits ?? null,
@@ -2085,6 +2110,7 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
       original_price,
       discount_percent,
       deal_label,
+      listing_mode,
       is_wholesale,
       pack_size,
       bulk_units,
@@ -2129,7 +2155,8 @@ const safeSpecValues =
     : JSON.stringify({});
 
 const pricing = normalizeListingPricing(req.body);
-const isWholesale = pricing.is_wholesale === 1;
+const safeListingMode = pricing.listing_mode;
+const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
 const safePackSize = toFiniteNumber(pack_size);
 const safeBulkUnits = toTrimmedString(bulk_units);
 
@@ -2201,6 +2228,7 @@ const safeBulkUnits = toTrimmedString(bulk_units);
         original_price = ?,
         discount_percent = ?,
         deal_label = ?,
+        listing_mode = ?,
         is_wholesale = ?,
         pack_size = ?,
         bulk_units = ?,
@@ -2225,6 +2253,7 @@ const safeBulkUnits = toTrimmedString(bulk_units);
       pricing.original_price,
       pricing.discount_percent,
       pricing.deal_label,
+      safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
       safeBulkUnits ?? null,
