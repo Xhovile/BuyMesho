@@ -803,7 +803,7 @@ function computeOriginalPrice(price: number, discountPercent: number | null) {
   return Number.isFinite(computed) && computed > price ? Number(computed.toFixed(2)) : null;
 }
 
-function normalizeListingPricing(body: any): NormalizedListingPricing {
+function normalizeListingPricing(body: any, existingListingMode?: "normal" | "deal" | "wholesale"): NormalizedListingPricing {
   const price = toFiniteNumber(body.price) ?? 0;
   const originalPriceInput = toFiniteNumber(body.original_price);
   const discountPercentInput = toFiniteNumber(body.discount_percent);
@@ -816,9 +816,20 @@ function normalizeListingPricing(body: any): NormalizedListingPricing {
     body.can_sell_individually === null || body.can_sell_individually === undefined
       ? null
       : toBooleanFlag(body.can_sell_individually);
+
   const rawMode = toTrimmedString(body.listing_mode)?.toLowerCase();
-  const listing_mode =
-    rawMode === "deal" || rawMode === "wholesale" ? rawMode : "normal";
+
+  const legacyDerivedMode =
+    isWholesale
+      ? "wholesale"
+      : (discountPercentInput !== null || originalPriceInput !== null)
+        ? "deal"
+        : undefined;
+
+  const listing_mode: "normal" | "deal" | "wholesale" =
+    rawMode === "deal" || rawMode === "wholesale"
+      ? rawMode
+      : legacyDerivedMode ?? existingListingMode ?? "normal";
 
   const discount_percent =
     discountPercentInput !== null &&
