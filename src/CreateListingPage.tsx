@@ -1,6 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, Loader2 } from "lucide-react";
-import ListingStudioForm from "./components/ListingStudioForm";
 import ListingStudioFormWide from "./components/ListingStudioFormWide";
 import FeedbackModal from "./components/FeedbackModal";
 import { apiFetch } from "./lib/api";
@@ -49,30 +48,8 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
-  const [isDesktopLayout, setIsDesktopLayout] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return window.matchMedia("(min-width: 768px)").matches;
-  });
 
   const listingDraft = useMemo(() => createInitialListingDraft(profile), [profile]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const mediaQuery = window.matchMedia("(min-width: 768px)");
-    const syncLayout = (event: MediaQueryListEvent | MediaQueryList) => {
-      setIsDesktopLayout(event.matches);
-    };
-
-    syncLayout(mediaQuery);
-
-    const handleChange = (event: MediaQueryListEvent) => syncLayout(event);
-    mediaQuery.addEventListener("change", handleChange);
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange);
-    };
-  }, []);
 
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string) => {
@@ -197,29 +174,16 @@ export default function CreateListingPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listing studio</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Create a listing in a dedicated page.</h1>
             </div>
-            {isDesktopLayout ? (
-              <ListingStudioFormWide
-                mode="create"
-                initialData={listingDraft}
-                onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
-                onSubmit={handleCreate}
-                showFeedback={showFeedback}
-                isSubmitting={submitting}
-                submitLabel="Post Listing"
-                submitBusyLabel="Posting..."
-              />
-            ) : (
-              <ListingStudioForm
-                mode="create"
-                initialData={listingDraft}
-                onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
-                onSubmit={handleCreate}
-                showFeedback={showFeedback}
-                isSubmitting={submitting}
-                submitLabel="Post Listing"
-                submitBusyLabel="Posting..."
-              />
-            )}
+            <ListingStudioFormWide
+              mode="create"
+              initialData={listingDraft}
+              onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
+              onSubmit={handleCreate}
+              showFeedback={showFeedback}
+              isSubmitting={submitting}
+              submitLabel="Post Listing"
+              submitBusyLabel="Posting..."
+            />
           </div>
         ) : null}
       </main>
