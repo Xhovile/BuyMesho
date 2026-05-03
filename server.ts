@@ -880,7 +880,7 @@ function normalizeListingPricing(body: any, existingListingMode?: "normal" | "de
     listing_mode,
   };
 }
-
+  
 function serializeListingRow(row: any) {
   return {
     ...row,
@@ -902,6 +902,10 @@ function serializeListingRow(row: any) {
       typeof row.bulk_units === "string" && row.bulk_units.trim()
         ? row.bulk_units.trim()
         : null,
+    listing_mode:
+      typeof row.listing_mode === "string" && row.listing_mode.trim()
+        ? row.listing_mode.trim()
+        : "normal",
     deal_expires_at:
       typeof row.deal_expires_at === "string" && row.deal_expires_at.trim()
         ? row.deal_expires_at.trim()
@@ -909,11 +913,7 @@ function serializeListingRow(row: any) {
     can_sell_individually:
       row.can_sell_individually === null || row.can_sell_individually === undefined
         ? null
-        : Number(row.can_sell_individually) === 1,
-    listing_mode:
-      typeof row.listing_mode === "string" && row.listing_mode.trim()
-        ? row.listing_mode.trim()
-        : "normal",
+        : Boolean(row.can_sell_individually),
     photos: JSON.parse(row.photos || "[]"),
     spec_values: JSON.parse(row.spec_values || "{}"),
   };
