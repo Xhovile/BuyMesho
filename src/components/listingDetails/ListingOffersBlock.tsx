@@ -19,7 +19,7 @@ function formatExpiryLabel(value: string | null): string | null {
 
 function OfferStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm">
+    <div className="rounded-2xl border border-zinc-200 bg-white/70 p-4">
       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-400">
         {label}
       </p>
@@ -42,8 +42,8 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
   const showWholesaleSection = mode === "wholesale";
 
   return (
-    <section className="rounded-[28px] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="flex flex-col gap-2 border-b border-zinc-100 pb-4">
+    <section className="space-y-5">
+      <div className="border-b border-zinc-200 pb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">
           Offers & Pricing
         </p>
@@ -55,12 +55,9 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
         </p>
       </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <OfferStat label="Current price" value={formatMoney(pricing.price)} />
-        <OfferStat
-          label="Stock left"
-          value={stockLeft}
-        />
+        <OfferStat label="Stock left" value={stockLeft} />
         <OfferStat
           label="Listing mode"
           value={
@@ -78,7 +75,7 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
       </div>
 
       {showDealSection ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <OfferStat
             label="Original price"
             value={pricing.originalPrice ? formatMoney(pricing.originalPrice) : "Not listed"}
@@ -109,7 +106,7 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
       ) : null}
 
       {showWholesaleSection ? (
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <OfferStat
             label="Wholesale"
             value={pricing.isWholesale ? "Enabled" : "Not enabled"}
@@ -136,7 +133,7 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
       ) : null}
 
       {mode === "normal" ? (
-        <div className="mt-4 rounded-3xl bg-zinc-50 p-4 text-sm text-zinc-600">
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
           <p className="font-bold text-zinc-900">Normal listing</p>
           <p className="mt-1 leading-6">
             One price only. No deal terms. No wholesale terms.
