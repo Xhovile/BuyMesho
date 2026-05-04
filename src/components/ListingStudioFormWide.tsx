@@ -594,61 +594,61 @@ export default function ListingStudioFormWide({
             </div>
           </section>
 
-          {isDealMode ? (
-            <section className="border-b border-zinc-200 pb-6">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Deal pricing</p>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Original price (MK)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={form.original_price ?? ""}
-                    onChange={(e) => {
-                      clearError("original_price");
-                      setForm((prev) => ({ ...prev, original_price: e.target.value }));
-                    }}
-                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.original_price ? "border-red-500" : "border-zinc-200"}`}
-                  />
-                  {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Discount percent (optional)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={form.discount_percent ?? ""}
-                    onChange={(e) => {
-                      clearError("discount_percent");
-                      setForm((prev) => ({ ...prev, discount_percent: e.target.value }));
-                    }}
-                    className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.discount_percent ? "border-red-500" : "border-zinc-200"}`}
-                  />
-                  {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal label (optional)</label>
-                  <input
-                    type="text"
-                    value={String(form.deal_label ?? "")}
-                    onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value }))}
-                    placeholder="e.g. Back to school deal"
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Deal expires at (optional)</label>
-                  <input
-                    type="date"
-                    value={String(form.deal_expires_at ?? "")}
-                    onChange={(e) => setForm((prev) => ({ ...prev, deal_expires_at: e.target.value }))}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
-                  />
-                </div>
-              </div>
-            </section>
-          ) : null}
+{isDealMode ? (
+  <section className="border-b border-zinc-200 pb-6">
+    <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">
+      Deal pricing
+    </p>
+
+    <div className="mt-4 grid gap-4 sm:grid-cols-2">
+      <div>
+        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">
+          Original price (MK)
+        </label>
+        <input
+          type="number"
+          min="0"
+          value={form.original_price ?? ""}
+          onChange={(e) => {
+            clearError("original_price");
+            setForm((prev) => ({ ...prev, original_price: e.target.value }));
+          }}
+          className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${
+            fieldErrors.original_price ? "border-red-500" : "border-zinc-200"
+          }`}
+        />
+        {fieldErrors.original_price ? (
+          <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p>
+        ) : null}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">
+          Deal label (optional)
+        </label>
+        <input
+          type="text"
+          value={String(form.deal_label ?? "")}
+          onChange={(e) => setForm((prev) => ({ ...prev, deal_label: e.target.value }))}
+          placeholder="e.g. Back to school deal"
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">
+          Deal expires at (optional)
+        </label>
+        <input
+          type="date"
+          value={String(form.deal_expires_at ?? "")}
+          onChange={(e) => setForm((prev) => ({ ...prev, deal_expires_at: e.target.value }))}
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+    </div>
+  </section>
+) : null}
 
           {isWholesaleMode ? (
             <section className="border-b border-zinc-200 pb-6">
