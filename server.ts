@@ -875,8 +875,8 @@ function normalizeListingPricing(body: any, existingListingMode?: "normal" | "de
     deal_expires_at: dealExpiresAt,
     can_sell_individually: canSellIndividually,
     is_wholesale: isWholesale,
-    pack_size,
-    bulk_units,
+    pack_size: packSize,
+    bulk_units: bulkUnits,
     listing_mode,
   };
 }

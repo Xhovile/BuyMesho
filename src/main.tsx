@@ -43,11 +43,11 @@ class AppErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  componentDidCatch(error: unknown) {
+  override componentDidCatch(error: unknown) {
     console.error('App crash captured by error boundary:', error);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-zinc-50 px-4 py-10 flex items-center justify-center">
