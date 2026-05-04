@@ -122,36 +122,38 @@ export default function ListingStudioFormWide({
   const isWholesaleMode = listingMode === "wholesale";
 
   const handleModeChange = (nextMode: ListingMode) => {
-    setForm((prev) => ({
-      ...prev,
-      listing_mode: nextMode,
-      ...(nextMode === "normal"
+  setForm((prev) => ({
+    ...prev,
+    listing_mode: nextMode,
+    ...(nextMode === "normal"
+      ? {
+          original_price: "",
+          discount_percent: "",
+          deal_label: "",
+          deal_expires_at: "",
+          is_wholesale: false,
+          can_sell_individually: undefined,
+          pack_size: "",
+          bulk_units: "",
+          single_item_price: "",
+        }
+      : nextMode === "deal"
         ? {
-            original_price: "",
-            discount_percent: "",
-            deal_label: "",
-            deal_expires_at: "",
             is_wholesale: false,
             can_sell_individually: undefined,
             pack_size: "",
             bulk_units: "",
+            single_item_price: "",
           }
-        : nextMode === "deal"
-          ? {
-              is_wholesale: false,
-              can_sell_individually: undefined,
-              pack_size: "",
-              bulk_units: "",
-            }
-          : {
-              original_price: "",
-              discount_percent: "",
-              deal_label: "",
-              deal_expires_at: "",
-              is_wholesale: true,
-            }),
-    }));
-  };
+        : {
+            original_price: "",
+            discount_percent: "",
+            deal_label: "",
+            deal_expires_at: "",
+            is_wholesale: true,
+          }),
+  }));
+};
 
   const hasMeaningfulTitle = (raw: string) => raw.trim().replace(/\s+/g, " ").length >= 3;
 
