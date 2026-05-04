@@ -128,7 +128,6 @@ export default function ListingStudioFormWide({
     ...(nextMode === "normal"
       ? {
           original_price: "",
-          discount_percent: "",
           deal_label: "",
           deal_expires_at: "",
           is_wholesale: false,
@@ -147,7 +146,6 @@ export default function ListingStudioFormWide({
           }
         : {
             original_price: "",
-            discount_percent: "",
             deal_label: "",
             deal_expires_at: "",
             is_wholesale: true,
