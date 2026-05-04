@@ -19,84 +19,74 @@ function formatExpiryLabel(value: string | null): string | null {
 
 function OfferStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white/70 p-4">
+    <div className="rounded-2xl border border-zinc-200 bg-white/80 p-4 shadow-sm">
       <p className="text-[10px] font-black uppercase tracking-[0.22em] text-zinc-400">
         {label}
       </p>
-      <p className="mt-2 text-sm font-bold text-zinc-900">{value}</p>
+      <p className="mt-2 text-sm font-semibold text-zinc-900">{value}</p>
     </div>
   );
 }
 
 export default function ListingOffersBlock({ listing }: ListingOffersBlockProps) {
   const pricing = getListingPricing(listing);
+  const mode = listing.listing_mode || pricing.listingMode;
 
-  const mode = listing.listing_mode || (pricing.isWholesale ? "wholesale" : pricing.dealStatus === "active" ? "deal" : "normal");
+  if (mode === "normal") return null;
+
   const dealExpiry = formatExpiryLabel(pricing.dealExpiresAt);
   const stockLeft =
     pricing.availableQuantity === null
       ? "Not tracked"
       : `${pricing.availableQuantity.toLocaleString()} ${pricing.availableQuantity === 1 ? "unit" : "units"}`;
 
-  const showDealSection = mode === "deal";
-  const showWholesaleSection = mode === "wholesale";
-
   return (
-    <section className="space-y-5">
+    <section className="space-y-5 rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="border-b border-zinc-200 pb-4">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-zinc-500">
-          Offers & Pricing
+          Offers & pricing
         </p>
         <h3 className="text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">
-          Full offer logic
+          Pricing details
         </h3>
         <p className="max-w-3xl text-sm leading-6 text-zinc-500">
-          The card stays clean. This section carries the real pricing, deal, and wholesale rules.
+          Deal and wholesale pricing is shown here only when the listing mode requires it.
         </p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <OfferStat label="Current price" value={formatMoney(pricing.price)} />
-        <OfferStat label="Stock left" value={stockLeft} />
         <OfferStat
           label="Listing mode"
-          value={
-            mode === "deal"
-              ? "Deal"
-              : mode === "wholesale"
-                ? "Wholesale"
-                : "Normal"
-          }
+          value={mode === "deal" ? "Deal" : "Wholesale"}
+        />
+        <OfferStat
+          label="Availability"
+          value={listing.status === "sold" ? "Sold" : stockLeft}
         />
         <OfferStat
           label="Visibility"
-          value={listing.status === "sold" ? "Sold" : "Available"}
+          value={listing.status === "sold" ? "Completed" : "Active"}
         />
       </div>
 
-      {showDealSection ? (
+      {mode === "deal" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <OfferStat
             label="Original price"
-            value={pricing.originalPrice ? formatMoney(pricing.originalPrice) : "Not listed"}
+            value={pricing.originalPrice ? formatMoney(pricing.originalPrice) : "Not set"}
           />
           <OfferStat
             label="Discount"
             value={
               pricing.discountPercent && pricing.discountPercent > 0
                 ? `${pricing.discountPercent}% off`
-                : "Not specified"
+                : "Calculated automatically"
             }
           />
           <OfferStat
-            label="Deal status"
-            value={
-              pricing.dealStatus === "active"
-                ? pricing.dealLabel || "Active deal"
-                : pricing.dealStatus === "expired"
-                  ? "Expired"
-                  : "No active deal"
-            }
+            label="Deal label"
+            value={pricing.dealLabel || "No label"}
           />
           <OfferStat
             label="Deal expiry"
@@ -105,18 +95,18 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
         </div>
       ) : null}
 
-      {showWholesaleSection ? (
+      {mode === "wholesale" ? (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <OfferStat
-            label="Wholesale"
-            value={pricing.isWholesale ? "Enabled" : "Not enabled"}
-          />
           <OfferStat
             label="Pack size"
             value={pricing.wholesalePackLabel || "Pack details not set"}
           />
           <OfferStat
-            label="Single items"
+            label="Bulk units"
+            value={pricing.bulkUnits || "Not set"}
+          />
+          <OfferStat
+            label="Single item sale"
             value={
               pricing.canSellIndividually === null
                 ? "Not specified"
@@ -126,18 +116,9 @@ export default function ListingOffersBlock({ listing }: ListingOffersBlockProps)
             }
           />
           <OfferStat
-            label="Wholesale stock"
-            value={pricing.wholesaleQuantityLabel || stockLeft}
+            label="Single item price"
+            value={pricing.singleItemPrice === null ? "Not set" : formatMoney(pricing.singleItemPrice)}
           />
-        </div>
-      ) : null}
-
-      {mode === "normal" ? (
-        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-600">
-          <p className="font-bold text-zinc-900">Normal listing</p>
-          <p className="mt-1 leading-6">
-            One price only. No deal terms. No wholesale terms.
-          </p>
         </div>
       ) : null}
     </section>
