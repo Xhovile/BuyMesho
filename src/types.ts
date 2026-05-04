@@ -35,7 +35,6 @@ export interface ListingDraft {
   sold_quantity: string;
   listing_mode?: ListingMode;
   original_price?: string;
-  discount_percent?: string;
   deal_label?: string;
   deal_expires_at?: string;
   is_wholesale?: boolean;
