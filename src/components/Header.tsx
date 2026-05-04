@@ -45,6 +45,7 @@ export default function Header({
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -124,6 +125,10 @@ export default function Header({
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
+
+  useEffect(() => {
+    setSelectedChip(activeChip);
+  }, [activeChip]);
 
   useEffect(() => {
     if (!firebaseUser) {
@@ -294,23 +299,25 @@ export default function Header({
               </form>
             </div>
           </div>
-        </div>
 
-        <div className="px-3 py-2.5">
+          <div className="px-3 py-2.5 bg-zinc-100 border-t border-zinc-200">
           <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-center gap-2 pb-1">
+              <div className="flex min-w-max items-center gap-6 pb-1">
                 {QUICK_CHIPS.map((chip) => {
-                  const isActive = chip === activeChip;
+                  const isActive = chip === selectedChip;
                   return (
                     <button
                       key={chip}
                       type="button"
-                      onClick={() => onChipChange?.(chip)}
-                      className={`inline-flex items-center whitespace-nowrap rounded-full border px-3 py-1.5 text-sm font-bold font-sans shadow-sm transition-colors ${
+                      onClick={() => {
+                        setSelectedChip(chip);
+                        onChipChange?.(chip);
+                      }}
+                      className={`inline-flex items-center whitespace-nowrap px-0 py-1 text-[18px] font-bold font-sans leading-none transition-colors ${
                         isActive
-                          ? "border-[#438c7c] bg-[#438c7c]/15 text-[#438c7c]"
-                          : "border-zinc-200 bg-zinc-50/90 text-zinc-900 hover:border-[#438c7c]/30 hover:bg-[#438c7c]/10 hover:text-[#438c7c]"
+                          ? "text-zinc-800"
+                          : "text-zinc-700 hover:text-zinc-800"
                       }`}
                       aria-pressed={isActive}
                       aria-label={chip}
