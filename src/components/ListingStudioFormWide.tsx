@@ -389,36 +389,25 @@ export default function ListingStudioFormWide({
         return;
       }
     }
-
-      if (
-        discountPercentRaw &&
-        (!Number.isFinite(discountPercentNum as number) ||
-          (discountPercentNum as number) <= 0 ||
-          (discountPercentNum as number) > 100)
-      ) {
-        showFeedback("error", "Invalid discount", "Discount must be between 1 and 100.");
+    
+    if (isWholesale) {
+      if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
+        setError("pack_size", "Pack size must be a whole number of at least 1.");
         return;
       }
+
+      if (!bulkUnitsRaw) {
+        setError("bulk_units", "Bulk units are required for wholesale listings.");
+        return;
+      }
+
+      if (form.can_sell_individually) {
+        if (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0) {
+          setError("single_item_price", "Enter a valid single item price.");
+          return;
+        }
+      }
     }
-
-if (isWholesale) {
-  if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
-    setError("pack_size", "Pack size must be a whole number of at least 1.");
-    return;
-  }
-
-  if (!bulkUnitsRaw) {
-    setError("bulk_units", "Bulk units are required for wholesale listings.");
-    return;
-  }
-
-  if (form.can_sell_individually) {
-    if (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0) {
-      setError("single_item_price", "Enter a valid single item price.");
-      return;
-    }
-  }
-}
 
     if (form.photos.length < 1) {
       setError("photos", "Add at least 1 photo.");
@@ -466,33 +455,33 @@ if (isWholesale) {
       }
     }
 
-await onSubmit({
-  name: form.name,
-  price: priceNum,
-  description: form.description,
-  category: form.category as Category,
-  subcategory: form.subcategory || null,
-  item_type: form.item_type || null,
-  spec_values: isSchemaDrivenCategory ? form.spec_values : {},
-  university: form.university as University,
-  whatsapp_number: form.whatsapp_number,
-  status: form.status,
-  condition: form.condition,
-  quantity: quantityNum,
-  sold_quantity: soldQuantityNum,
-  photos: form.photos,
-  video_url: form.video_url || null,
-  listing_mode: listingMode,
-  original_price: isDealMode ? originalPriceNum : null,
-  discount_percent: null,
-  deal_label: isDealMode ? dealLabelRaw || null : null,
-  deal_expires_at: isDealMode ? dealExpiresAtRaw || null : null,
-  is_wholesale: isWholesale,
-  can_sell_individually: isWholesale ? form.can_sell_individually === true : null,
-  pack_size: isWholesale ? packSizeNum : null,
-  bulk_units: isWholesale ? bulkUnitsRaw || null : null,
-  single_item_price: isWholesale && form.can_sell_individually ? singleItemPriceNum : null,
-});
+    await onSubmit({
+      name: form.name,
+      price: priceNum,
+      description: form.description,
+      category: form.category as Category,
+      subcategory: form.subcategory || null,
+      item_type: form.item_type || null,
+      spec_values: isSchemaDrivenCategory ? form.spec_values : {},
+      university: form.university as University,
+      whatsapp_number: form.whatsapp_number,
+      status: form.status,
+      condition: form.condition,
+      quantity: quantityNum,
+      sold_quantity: soldQuantityNum,
+      photos: form.photos,
+      video_url: form.video_url || null,
+      listing_mode: listingMode,
+      original_price: isDealMode ? originalPriceNum : null,
+      discount_percent: null,
+      deal_label: isDealMode ? dealLabelRaw || null : null,
+      deal_expires_at: isDealMode ? dealExpiresAtRaw || null : null,
+      is_wholesale: isWholesale,
+      can_sell_individually: isWholesale ? form.can_sell_individually === true : null,
+      pack_size: isWholesale ? packSizeNum : null,
+      bulk_units: isWholesale ? bulkUnitsRaw || null : null,
+      single_item_price: isWholesale && form.can_sell_individually ? singleItemPriceNum : null,
+    });
   };
 
   const resolvedSubmitLabel = submitLabel || (mode === "create" ? "Post Listing" : "Save Changes");
@@ -699,6 +688,23 @@ await onSubmit({
                     />
                   </label>
                 </div>
+                {form.can_sell_individually ? (
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Single item price</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={form.single_item_price ?? ""}
+                      onChange={(e) => {
+                        clearError("single_item_price");
+                        setForm((prev) => ({ ...prev, single_item_price: e.target.value }));
+                      }}
+                      placeholder="e.g. 1500"
+                      className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.single_item_price ? "border-red-500" : "border-zinc-200"}`}
+                    />
+                    {fieldErrors.single_item_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.single_item_price}</p> : null}
+                  </div>
+                ) : null}
               </div>
             </section>
           ) : null}
