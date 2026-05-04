@@ -403,16 +403,24 @@ export default function ListingStudioFormWide({
       }
     }
 
-    if (isWholesale) {
-      if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
-        setError("pack_size", "Pack size must be a whole number of at least 1.");
-        return;
-      }
-      if (!bulkUnitsRaw) {
-        setError("bulk_units", "Bulk units are required for wholesale listings.");
-        return;
-      }
+if (isWholesale) {
+  if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
+    setError("pack_size", "Pack size must be a whole number of at least 1.");
+    return;
+  }
+
+  if (!bulkUnitsRaw) {
+    setError("bulk_units", "Bulk units are required for wholesale listings.");
+    return;
+  }
+
+  if (form.can_sell_individually) {
+    if (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0) {
+      setError("single_item_price", "Enter a valid single item price.");
+      return;
     }
+  }
+}
 
     if (form.photos.length < 1) {
       setError("photos", "Add at least 1 photo.");
