@@ -1,5 +1,6 @@
 import { ArrowRight, MapPin } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
+import { formatMoney, getListingPricing } from "../../lib/listingPricing";
 
 type ListingPreview = {
   id: number | string;
@@ -9,6 +10,10 @@ type ListingPreview = {
   photos?: string[];
   category?: string;
   university?: string;
+  listing_mode?: "normal" | "deal" | "wholesale";
+  original_price?: number | string | null;
+  discount_percent?: number | string | null;
+  is_wholesale?: boolean | number | string | null;
 };
 
 type Props = {
@@ -17,6 +22,16 @@ type Props = {
 };
 
 export default function CategoryListingCard({ item, categoryLabel }: Props) {
+  const pricing = getListingPricing(item);
+  const offerLabel =
+    pricing.listingMode === "deal" ? "Discount" : pricing.listingMode === "wholesale" ? "Wholesale" : null;
+  const offerValue =
+    pricing.listingMode === "deal"
+      ? `${formatMoney(pricing.price)}${pricing.discountPercent !== null ? ` -${pricing.discountPercent}%` : ""}`
+      : pricing.listingMode === "wholesale"
+        ? formatMoney(pricing.price)
+        : null;
+
   return (
     <button
       type="button"
@@ -39,9 +54,16 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
 
         <div className="mt-1 flex items-center justify-between gap-3">
-          <p className="text-sm font-bold text-red-900">
-            MWK {Number(item.price).toLocaleString()}
-          </p>
+          <div className="min-w-0">
+            {offerLabel ? (
+              <div className="mb-0.5 inline-flex flex-col gap-0.5">
+                <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
+                <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
+              </div>
+            ) : (
+              <p className="text-sm font-bold text-red-900">{formatMoney(Number(item.price) || 0)}</p>
+            )}
+          </div>
 
           {item.university ? (
             <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
