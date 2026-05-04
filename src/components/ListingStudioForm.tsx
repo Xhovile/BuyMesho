@@ -84,13 +84,13 @@ export default function ListingStudioForm({
       ...(nextMode === "normal"
         ? {
             original_price: "",
-            discount_percent: "",
             deal_label: "",
             deal_expires_at: "",
             is_wholesale: false,
             can_sell_individually: undefined,
             pack_size: "",
             bulk_units: "",
+            single_item_price: "",
           }
         : nextMode === "deal"
           ? {
@@ -98,10 +98,10 @@ export default function ListingStudioForm({
               can_sell_individually: undefined,
               pack_size: "",
               bulk_units: "",
+              single_item_price: "",
             }
           : {
               original_price: "",
-              discount_percent: "",
               deal_label: "",
               deal_expires_at: "",
               is_wholesale: true,
@@ -460,15 +460,15 @@ export default function ListingStudioForm({
     const quantityNum = Number(form.quantity);
     const soldQuantityNum = Number(form.sold_quantity);
     const originalPriceRaw = String(form.original_price ?? "").trim();
-    const discountPercentRaw = String(form.discount_percent ?? "").trim();
     const dealLabelRaw = String(form.deal_label ?? "").trim();
     const dealExpiresAtRaw = String(form.deal_expires_at ?? "").trim();
     const packSizeRaw = String(form.pack_size ?? "").trim();
     const bulkUnitsRaw = String(form.bulk_units ?? "").trim();
+    const singleItemPriceRaw = String(form.single_item_price ?? "").trim();
 
     const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
-    const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
     const packSizeNum = packSizeRaw ? Number(packSizeRaw) : null;
+    const singleItemPriceNum = singleItemPriceRaw ? Number(singleItemPriceRaw) : null;
     const isWholesale = listingMode === "wholesale" || Boolean(form.is_wholesale);
 
     if (!hasMeaningfulTitle(form.name)) {
@@ -513,16 +513,7 @@ export default function ListingStudioForm({
     return;
   }
 
-  if (
-    discountPercentRaw &&
-    (!Number.isFinite(discountPercentNum as number) ||
-      (discountPercentNum as number) <= 0 ||
-      (discountPercentNum as number) > 100)
-  ) {
-    showFeedback("error", "Invalid discount", "Discount must be between 1 and 100.");
-    return;
-  }
-}
+    }
 
     if (isWholesale) {
       if (!packSizeRaw || !Number.isInteger(packSizeNum as number) || (packSizeNum as number) < 1) {
@@ -536,6 +527,15 @@ export default function ListingStudioForm({
         setFieldError("bulk_units", message);
         showFeedback("error", "Bulk units required", message);
         return;
+      }
+
+      if (form.can_sell_individually) {
+        if (!singleItemPriceRaw || !Number.isFinite(singleItemPriceNum as number) || (singleItemPriceNum as number) <= 0) {
+          const message = "Single item price must be greater than 0.";
+          setFieldError("single_item_price", message);
+          showFeedback("error", "Invalid single item price", message);
+          return;
+        }
       }
     }
 
@@ -625,13 +625,14 @@ export default function ListingStudioForm({
         video_url: form.video_url || null,
         listing_mode: listingMode,
         original_price: isDealMode ? originalPriceNum : null,
-        discount_percent: isDealMode ? discountPercentNum : null,
+        discount_percent: null,
         deal_label: isDealMode ? dealLabelRaw || null : null,
         deal_expires_at: isDealMode ? dealExpiresAtRaw || null : null,
         is_wholesale: isWholesale,
         can_sell_individually: isWholesale ? form.can_sell_individually === true : null,
         pack_size: isWholesale ? packSizeNum : null,
         bulk_units: isWholesale ? bulkUnitsRaw || null : null,
+        single_item_price: isWholesale && form.can_sell_individually ? singleItemPriceNum : null,
       });
     } catch {
       // parent handles submit feedback
@@ -709,18 +710,6 @@ export default function ListingStudioForm({
                   {fieldErrors.original_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.original_price}</p> : null}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Discount percent (optional)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.discount_percent ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`}
-                    value={form.discount_percent ?? ""}
-                    onChange={(e) => { clearFieldError("discount_percent"); setForm((prev) => ({ ...prev, discount_percent: e.target.value })); }}
-                  />
-                  {fieldErrors.discount_percent ? <p className="mt-1 text-xs text-red-600">{fieldErrors.discount_percent}</p> : null}
-                </div>
-                <div>
                   <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Deal label (optional)</label>
                   <input
                     type="text"
@@ -780,6 +769,20 @@ export default function ListingStudioForm({
                   className="h-4 w-4 rounded border-zinc-300"
                 />
               </label>
+              {form.can_sell_individually ? (
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Single item price (MK)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 1500"
+                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.single_item_price ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`}
+                    value={form.single_item_price ?? ""}
+                    onChange={(e) => { clearFieldError("single_item_price"); setForm((prev) => ({ ...prev, single_item_price: e.target.value })); }}
+                  />
+                  {fieldErrors.single_item_price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.single_item_price}</p> : null}
+                </div>
+              ) : null}
             </div>
           ) : null}
 

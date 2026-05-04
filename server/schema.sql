@@ -45,7 +45,10 @@ CREATE TABLE IF NOT EXISTS listings (
   original_price DOUBLE PRECISION,
   discount_percent INTEGER,
   deal_label TEXT,
+  listing_mode TEXT NOT NULL DEFAULT 'normal',
+  deal_expires_at TEXT,
   is_wholesale INTEGER NOT NULL DEFAULT 0,
+  can_sell_individually INTEGER,
   description TEXT,
   category TEXT NOT NULL,
   subcategory TEXT,
@@ -63,6 +66,7 @@ CREATE TABLE IF NOT EXISTS listings (
   is_hidden INTEGER NOT NULL DEFAULT 0,
   quantity INTEGER NOT NULL DEFAULT 1,
   sold_quantity INTEGER NOT NULL DEFAULT 0,
+  single_item_price DOUBLE PRECISION,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
