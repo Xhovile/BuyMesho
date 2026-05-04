@@ -100,26 +100,65 @@ The goal is to build a trusted campus marketplace that feels local, relevant, an
 
 ---
 
-## Project Structure
+## Current Development Status
+
+BuyMesho is still a full campus marketplace platform. The architecture below is specifically the part we are currently building for the **Payment Gateway + Escrow flow** (not a replacement for the entire app structure).
+
+## Payment Gateway & Escrow Module Structure (In Progress)
 
 ```bash
-.
-├── src/                      # Frontend source files
-│   ├── App.tsx
-│   ├── firebase.ts
-│   ├── constants.ts
-│   ├── types.ts
-│   └── ...
-├── server/
-│   ├── auth/
-│   │   └── firebaseAdmin.ts
-│   ├── middleware/
-│   │   └── requireAuth.ts
-│   └── types/
-│       └── express.d.ts
-├── server.ts                 # Main Express backend
-├── public/
-├── index.html
-├── package.json
-├── tsconfig.json
-└── README.md
+src/
+  shared/
+    api/
+      client.ts
+      endpoints.ts
+      errors.ts
+    types/
+      common.ts
+      payment.ts
+      user.ts
+    constants/
+      payment.ts
+
+  modules/
+    payments/
+      components/
+      hooks/
+      services/
+      types.ts
+      paymentGateway.ts
+      providers/
+        paystack.ts
+        flutterwave.ts
+        paychangu.ts
+
+    escrow/
+      ledger.ts
+      states.ts
+      releaseRules.ts
+      disputes.ts
+
+    orders/
+      checkout.ts
+      orderState.ts
+      orderService.ts
+
+server/
+  modules/
+    payments/
+      payment.service.ts
+      payment.controller.ts
+      payment.providers.ts
+      payment.webhooks.ts
+    escrow/
+      escrow.service.ts
+      escrow.ledger.ts
+      escrow.rules.ts
+    orders/
+      order.service.ts
+      order.routes.ts
+    payouts/
+      payout.service.ts
+    disputes/
+      dispute.service.ts
+```
