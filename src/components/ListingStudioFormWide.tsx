@@ -354,17 +354,17 @@ export default function ListingStudioFormWide({
     const quantityNum = Number(form.quantity);
     const soldQuantityNum = Number(form.sold_quantity);
     const originalPriceRaw = String(form.original_price ?? "").trim();
-    const discountPercentRaw = String(form.discount_percent ?? "").trim();
     const dealLabelRaw = String(form.deal_label ?? "").trim();
     const dealExpiresAtRaw = String(form.deal_expires_at ?? "").trim();
     const packSizeRaw = String(form.pack_size ?? "").trim();
     const bulkUnitsRaw = String(form.bulk_units ?? "").trim();
+    const singleItemPriceRaw = String(form.single_item_price ?? "").trim();
 
     const originalPriceNum = originalPriceRaw ? Number(originalPriceRaw) : null;
-    const discountPercentNum = discountPercentRaw ? Number(discountPercentRaw) : null;
     const packSizeNum = packSizeRaw ? Number(packSizeRaw) : null;
+    const singleItemPriceNum = singleItemPriceRaw ? Number(singleItemPriceRaw) : null;
     const isWholesale = listingMode === "wholesale" || Boolean(form.is_wholesale);
-
+    
     if (!hasMeaningfulTitle(form.name)) {
       setError("name", "Please enter a clear listing title.");
       return;
