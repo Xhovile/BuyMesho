@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { type Listing } from "../../types";
+import { formatMoney, getListingPricing } from "../../lib/listingPricing";
 
 export function formatDate(value?: string) {
   if (!value) return "—";
@@ -69,6 +70,16 @@ export function RelatedRailCard({
   onOpenSeller: (sellerUid: string) => void;
   variant?: "mobile" | "desktop";
 }) {
+  const pricing = getListingPricing(item);
+  const offerLabel =
+    pricing.listingMode === "deal" ? "Discount" : pricing.listingMode === "wholesale" ? "Wholesale" : null;
+  const offerValue =
+    pricing.listingMode === "deal"
+      ? `${formatMoney(pricing.price)}${pricing.discountPercent !== null ? ` -${pricing.discountPercent}%` : ""}`
+      : pricing.listingMode === "wholesale"
+        ? formatMoney(pricing.price)
+        : null;
+
   const firstPhoto = Array.isArray(item.photos) && typeof item.photos[0] === "string" && item.photos[0].trim()
     ? item.photos[0]
     : `https://picsum.photos/seed/${encodeURIComponent(String(item.id))}/600/600`;
@@ -114,9 +125,18 @@ export function RelatedRailCard({
         ) : null}
 
         <div className="flex items-center justify-between gap-2">
-          <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-zinc-900"}>
-            MK {Number(item.price).toLocaleString()}
-          </p>
+          <div className="min-w-0">
+            {offerLabel ? (
+              <div className="inline-flex flex-col gap-0.5">
+                <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
+                <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
+              </div>
+            ) : (
+              <p className={isDesktop ? "text-base font-bold text-red-900" : "text-xs font-black text-zinc-900"}>
+                MK {Number(item.price).toLocaleString()}
+              </p>
+            )}
+          </div>
 
           <span
             className={`truncate font-bold uppercase tracking-[0.12em] text-zinc-500 ${
