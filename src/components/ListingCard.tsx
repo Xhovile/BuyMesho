@@ -55,6 +55,8 @@ export default function ListingCard({
     typeof listing.business_name === "string" && listing.business_name.trim()
       ? listing.business_name.trim()
       : "Seller";
+  const truncatedSellerName =
+    sellerName.length > 7 ? `${sellerName.slice(0, 7)}..` : sellerName;
 
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
@@ -138,7 +140,7 @@ export default function ListingCard({
                   ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"
                 } font-bold text-red-900`}
               >
-                {sellerName}
+                {truncatedSellerName}
               </p>
               {listing.is_verified ? (
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0 fill-blue-50 text-blue-500" />
