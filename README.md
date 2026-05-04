@@ -113,14 +113,49 @@ src/
       client.ts
       endpoints.ts
       errors.ts
+    auth/
+      authContext.tsx
+      useAuth.ts
+      guards.ts
+    ui/
+      Button.tsx
+      Input.tsx
+      Modal.tsx
+      Loader.tsx
+      EmptyState.tsx
+    utils/
+      formatMoney.ts
+      formatDate.ts
+      slugify.ts
+      ids.ts
     types/
       common.ts
       payment.ts
+      listing.ts
       user.ts
     constants/
+      app.ts
       payment.ts
+      chips.ts
+    hooks/
+      useDebounce.ts
+      useLocalStorage.ts
+      usePagination.ts
 
   modules/
+    listings/
+      components/
+      hooks/
+      services/
+      types.ts
+      listingMapper.ts
+
+    users/
+      components/
+      hooks/
+      services/
+      types.ts
+
     payments/
       components/
       hooks/
@@ -143,6 +178,13 @@ src/
       orderState.ts
       orderService.ts
 
+    bookings/
+      bookingService.ts
+      bookingState.ts
+
+    notifications/
+      notifications.ts
+      templates.ts
 server/
   modules/
     payments/
