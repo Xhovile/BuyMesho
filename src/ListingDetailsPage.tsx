@@ -491,7 +491,7 @@ export default function ListingDetailsPage() {
                   onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
                 />
-                <ListingOffersBlock listing={listing} />
+                {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
                 <ListingDetailsBlock
                   description={listing.description}
                   sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
