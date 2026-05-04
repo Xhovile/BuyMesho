@@ -386,13 +386,11 @@ export default function ListingStudioFormWide({
     }
 
     if (isDealMode) {
-      if (
-        !Number.isFinite(originalPriceNum as number) ||
-        (originalPriceNum as number) <= priceNum
-      ) {
+      if (!Number.isFinite(originalPriceNum as number) || (originalPriceNum as number) <= priceNum) {
         showFeedback("error", "Invalid deal price", "Original price must be higher than current price.");
         return;
       }
+    }
 
       if (
         discountPercentRaw &&
