@@ -1,6 +1,6 @@
 import type { WebhookVerificationResult } from '../../../src/modules/payments/types';
 import { serverPaymentService } from './payment.service';
-import { serverOrderService } from '../orders/order.service';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow';
 
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
@@ -10,10 +10,10 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    const reference = result.reference;
-    if (reference) {
-      serverOrderService.confirmByPaymentReference(reference);
-    }
+    applyVerifiedPayChanguPayment({
+      ...result,
+      verified: result.valid,
+    });
 
     return result;
   }
