@@ -4,18 +4,64 @@ import { flutterwaveProvider } from '../../../src/modules/payments/providers/flu
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
 import { paychanguProvider } from './paychangu.provider';
 import { paymentRepository } from './payment.repository';
+import { ApiError } from '../../../src/shared/api/errors';
 
 export interface ServerPaymentConfig {
+  paychanguEnabled?: boolean;
   paychanguSecretKey?: string;
   paychanguWebhookSecret?: string;
   paychanguBaseUrl?: string;
+}
+
+function readEnv(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+function isTruthyFlag(value: string | undefined): boolean {
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
+}
+
+function validatePayChanguConfig(config: ServerPaymentConfig): void {
+  if (!config.paychanguEnabled || process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const missing: string[] = [];
+  if (!config.paychanguSecretKey) missing.push('PAYCHANGU_SECRET_KEY');
+  if (!config.paychanguWebhookSecret) missing.push('PAYCHANGU_WEBHOOK_SECRET');
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required PayChangu environment variables in production: ${missing.join(', ')}`,
+    );
+  }
+}
+
+export function createServerPaymentConfigFromEnv(): ServerPaymentConfig {
+  const paychanguSecretKey = readEnv('PAYCHANGU_SECRET_KEY');
+  const paychanguWebhookSecret = readEnv('PAYCHANGU_WEBHOOK_SECRET');
+  const paychanguBaseUrl = readEnv('PAYCHANGU_BASE_URL');
+  const paychanguEnabled = isTruthyFlag(readEnv('PAYCHANGU_ENABLED'))
+    || Boolean(paychanguSecretKey)
+    || Boolean(paychanguWebhookSecret)
+    || Boolean(paychanguBaseUrl);
+
+  return {
+    paychanguEnabled,
+    paychanguSecretKey,
+    paychanguWebhookSecret,
+    paychanguBaseUrl,
+  };
 }
 
 export class ServerPaymentService {
   constructor(
     private readonly config: ServerPaymentConfig = {},
     private readonly registry = ServerPaymentService.createDefaultRegistry(),
-  ) {}
+  ) {
+    validatePayChanguConfig(config);
+  }
 
 
   private resolveConfig(): ServerPaymentConfig {
@@ -39,14 +85,14 @@ export class ServerPaymentService {
       ? await paychanguProvider.createPayment(request, this.resolveConfig())
       : await this.registry.get(request.provider).createPayment(request);
 
-    paymentRepository.save({ ...result, verified: false });
+    await paymentRepository.save({ ...result, verified: false });
     return result;
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
     const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
 
-    paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
+    await paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
       ...current,
       verified: verification.verified,
       verification,
@@ -56,7 +102,16 @@ export class ServerPaymentService {
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
-    return this.registry.get('paystack').refund(request);
+    const provider = this.registry.get(request.provider);
+
+    if (!provider.capabilities.supportsRefunds) {
+      throw new ApiError(`Refunds are not supported for provider: ${request.provider}`, {
+        code: 'REFUNDS_UNSUPPORTED',
+        status: 501,
+      });
+    }
+
+    return provider.refund(request);
   }
 
   async verifyWebhook(providerKey: Parameters<PaymentGatewayRegistry['get']>[0], signature: string | undefined, payload: string | Record<string, unknown>): Promise<WebhookVerificationResult> {
