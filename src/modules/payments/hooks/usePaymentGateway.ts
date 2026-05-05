@@ -10,6 +10,7 @@ export interface UsePaymentGatewayResult {
   verifyWebhook: (providerKey: PaymentProviderKey, signature: string | undefined, payload: unknown) => Promise<WebhookVerificationResult>;
   parseWebhook: (providerKey: PaymentProviderKey, payload: unknown) => Promise<WebhookVerificationResult>;
   getCapabilities: (providerKey: PaymentProviderKey) => ReturnType<PaymentService['getCapabilities']>;
+  canRefund: (providerKey: PaymentProviderKey) => boolean;
 }
 
 export function usePaymentGateway(): UsePaymentGatewayResult {
@@ -20,5 +21,6 @@ export function usePaymentGateway(): UsePaymentGatewayResult {
     verifyWebhook: (providerKey, signature, payload) => paymentService.verifyWebhook(providerKey, signature, payload),
     parseWebhook: (providerKey, payload) => paymentService.parseWebhook(providerKey, payload),
     getCapabilities: (providerKey) => paymentService.getCapabilities(providerKey),
+    canRefund: (providerKey) => paymentService.getCapabilities(providerKey).supportsRefunds,
   }), []);
 }

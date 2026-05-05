@@ -63,6 +63,7 @@ export interface WebhookVerificationResult {
 
 export interface RefundRequest {
   paymentId: EntityId;
+  provider: PaymentProviderKey;
   amount?: MoneyValue;
   reason?: string;
   metadata?: Record<string, unknown>;
