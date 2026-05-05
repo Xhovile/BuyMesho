@@ -87,6 +87,10 @@ export class PaymentRepository {
     const next = updater(current);
     return this.save(next, client);
   }
+
+  clear(): void {
+    this.payments.clear();
+  }
 }
 
 export const paymentRepository = new PaymentRepository();

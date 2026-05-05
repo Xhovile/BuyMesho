@@ -106,6 +106,10 @@ export class OrderRepository {
     if (!current) return undefined;
     return this.save(updater(current), client);
   }
+
+  clear(): void {
+    this.orders.clear();
+  }
 }
 
 export const orderRepository = new OrderRepository();

@@ -199,15 +199,14 @@ export const paychanguProvider = {
 
   async verifyWebhook(signature: string | undefined, payload: string | Record<string, unknown>, config: PayChanguConfig = {}): Promise<WebhookVerificationResult> {
     const rawPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    const parsedPayload = getPayloadRecord(payload);
-    const eventType = String(parsedPayload.event_type ?? parsedPayload.event ?? '').trim();
-    const reference = String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '').trim();
-
+    const parsedPayload = typeof payload === 'string'
+      ? (JSON.parse(payload) as Record<string, unknown>)
+      : payload;
     return {
       valid: signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
       provider: 'paychangu',
-      eventType,
-      reference,
+      eventType: String(parsedPayload.event_type ?? parsedPayload.event ?? ''),
+      reference: String(parsedPayload.tx_ref ?? parsedPayload.reference ?? ''),
       signature,
       payload,
     };
