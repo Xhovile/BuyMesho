@@ -8,7 +8,7 @@ import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
 
 const requireAuth: express.RequestHandler = (req, _res, next) => {
-  (req as Express.Request & { user?: unknown }).user = { uid: 'buyer_1', email: 'buyer@example.com' };
+  (req as express.Request & { user?: unknown }).user = { uid: 'buyer_1', email: 'buyer@example.com' };
   next();
 };
 
@@ -23,7 +23,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   const originalFetch = global.fetch;
   global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    if (target.includes('/payment') && target.includes('paychangu.com')) {
+    if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
       return new Response(JSON.stringify({
         data: {
           checkout_url: 'https://checkout.paychangu.test/session',
@@ -32,7 +32,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
-    if (target.includes('/verify-payment/') && target.includes('paychangu.com')) {
+    if (/^https:\/\/[^/]*paychangu\.com\/verify-payment\//.test(target)) {
       return new Response(JSON.stringify({
         data: {
           tx_ref: 'txref-integration-1',

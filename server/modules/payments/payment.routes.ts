@@ -40,7 +40,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           ? req.body
           : JSON.stringify(req.body ?? {});
       const payload = rawBody ? JSON.parse(rawBody) : {};
-      const signature = req.header('x-paychangu-signature') ?? req.header('Signature') ?? undefined;
+      const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
       const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
       res.status(200).json(result);
     } catch (error) {
