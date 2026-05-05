@@ -1,6 +1,5 @@
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
+import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
-import { paymentController } from './payment.controller.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
@@ -65,35 +64,16 @@ async function seedDemoPayment(order: OrderState): Promise<PaymentResult> {
 export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
   const orderBefore = buildSeedOrder(txRef);
   await serverOrderService.create(orderBefore);
+  const created = await seedDemoPayment(orderBefore);
 
-  const request: CreatePaymentRequest = {
-    orderId: orderBefore.id,
-    provider: 'paychangu',
-    method: 'mobile_money',
-    amount: orderBefore.total,
-    customer: {
-      id: orderBefore.buyerId,
-      name: 'Demo Buyer',
-      email: 'buyer@example.com',
-      phoneNumber: '+265999000111',
-    },
-    returnUrl: 'https://example.com/return',
-    cancelUrl: 'https://example.com/cancel',
-    metadata: {
-      orderSource: orderBefore.source,
-    },
-  };
-
-  const created = await paymentController.createPaychanguPayment(request);
-  const seededPayment = await seedDemoPayment(orderBefore);
   const verification: PaymentVerificationResult = {
     verified: true,
     provider: 'paychangu',
     txRef,
-    reference: seededPayment.reference,
+    reference: created.reference,
     status: 'captured',
-    currency: seededPayment.amount.currency,
-    amount: seededPayment.amount,
+    currency: created.amount.currency,
+    amount: created.amount,
     checkoutUrl: created.checkoutUrl ?? null,
     rawResponse: created.rawResponse,
   };
