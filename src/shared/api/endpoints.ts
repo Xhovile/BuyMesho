@@ -10,6 +10,10 @@ export const ENDPOINTS = {
   payments: {
     intents: `${API_BASE_PATH}/payments/intent`,
     confirm: (id: string) => `${API_BASE_PATH}/payments/${id}/confirm`,
+    paychangu: {
+      create: `${API_BASE_PATH}/payments/paychangu`,
+      verify: (txRef: string) => `${API_BASE_PATH}/payments/paychangu/verify/${encodeURIComponent(txRef)}`,
+    },
     webhooks: (provider: string) => `${API_BASE_PATH}/webhooks/${provider}`,
   },
   escrow: {
