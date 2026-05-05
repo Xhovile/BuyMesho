@@ -1,8 +1,10 @@
+import { apiRequest } from '../../../shared/api/client';
+import { ENDPOINTS } from '../../../shared/api/endpoints';
 import { PaymentGatewayRegistry } from '../paymentGateway';
 import { flutterwaveProvider } from '../providers/flutterwave';
 import { paychanguProvider } from '../providers/paychangu';
 import { paystackProvider } from '../providers/paystack';
-import type { CreatePaymentRequest, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
 import type { PaymentProviderKey } from '../../../shared/types/payment';
 
 export class PaymentService {
@@ -31,6 +33,19 @@ export class PaymentService {
   async refund(request: RefundRequest): Promise<RefundResult> {
     const provider = this.registry.get('paystack');
     return provider.refund(request);
+  }
+
+
+  async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
+    const result = await apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
+
+    return {
+      ...result,
+      txRef: result.txRef || txRef,
+      provider: 'paychangu',
+      reference: result.reference ?? txRef,
+      verified: Boolean(result.verified),
+    };
   }
 
   async verifyWebhook(providerKey: PaymentProviderKey, signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {

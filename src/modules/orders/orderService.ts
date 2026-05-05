@@ -52,12 +52,23 @@ export class OrderService {
 
   async confirmPaychanguPayment(order: OrderState, txRef: string): Promise<ConfirmPaymentResult> {
     const verification = await paymentService.verifyPaychanguPayment(txRef);
-    const nextStatus: OrderStatus = verification.verified ? 'paid' : 'pending_payment';
+
+    if (!verification.verified) {
+      return {
+        order: {
+          ...order,
+          status: 'pending_payment',
+          paymentReference: verification.reference ?? txRef,
+          paymentProvider: 'paychangu',
+        },
+        verification,
+      };
+    }
 
     return {
       order: {
         ...order,
-        status: nextStatus,
+        status: 'paid',
         paymentReference: verification.reference ?? txRef,
         paymentProvider: 'paychangu',
       },
