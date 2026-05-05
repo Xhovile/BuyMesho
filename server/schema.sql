@@ -190,3 +190,54 @@ ON listing_reviews (seller_uid, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
 ON listing_reviews (reviewer_uid, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  method TEXT NOT NULL,
+  status TEXT NOT NULL,
+  reference TEXT NOT NULL UNIQUE,
+  provider_reference TEXT,
+  currency TEXT NOT NULL,
+  amount DOUBLE PRECISION NOT NULL,
+  checkout_url TEXT,
+  paid_at TIMESTAMPTZ,
+  verified INTEGER NOT NULL DEFAULT 0,
+  verification TEXT,
+  raw_metadata TEXT,
+  raw_response TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_order_id
+ON payments (order_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  buyer_id TEXT NOT NULL,
+  seller_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  status TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  subtotal_amount DOUBLE PRECISION NOT NULL,
+  subtotal_currency TEXT NOT NULL,
+  fees_amount DOUBLE PRECISION,
+  fees_currency TEXT,
+  total_amount DOUBLE PRECISION NOT NULL,
+  total_currency TEXT NOT NULL,
+  payment_provider TEXT,
+  payment_reference TEXT,
+  escrow_id TEXT,
+  items TEXT NOT NULL,
+  placed_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  fulfilled_at TIMESTAMPTZ,
+  raw_metadata TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_payment_reference
+ON orders (payment_reference);

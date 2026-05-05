@@ -11,6 +11,7 @@ import dotenv from "dotenv";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
+import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -678,6 +679,7 @@ async function startServer() {
   registerVerificationEmailRoutes(app);
   registerSessionRoutes(app);
   mountTotpRoutes(app);
+  app.use('/api/payments', createPaymentRouter());
   
   // Logging middleware
   app.use((req, res, next) => {
