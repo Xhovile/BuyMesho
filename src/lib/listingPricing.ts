@@ -11,6 +11,7 @@ export type ListingPricingInput = {
   can_sell_individually?: boolean | number | string | null;
   pack_size?: number | string | null;
   bulk_units?: string | null;
+  single_item_price?: number | string | null;
   quantity?: number | string | null;
   sold_quantity?: number | string | null;
 };
@@ -28,6 +29,7 @@ export type ListingPricingSummary = {
   canSellIndividually: boolean | null;
   packSize: number | null;
   bulkUnits: string | null;
+  singleItemPrice: number | null;
   wholesalePackLabel: string | null;
   wholesaleQuantityLabel: string | null;
   availableQuantity: number | null;
@@ -99,6 +101,7 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
 
   const packSize = toFiniteNumber(input.pack_size);
   const bulkUnits = normalizeText(input.bulk_units);
+  const singleItemPrice = toFiniteNumber(input.single_item_price);
 
   const quantity = toFiniteNumber(input.quantity);
   const soldQuantity = Math.max(0, toFiniteNumber(input.sold_quantity) ?? 0);
@@ -109,32 +112,21 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
   const hasValidExpiry = !!parsedDealExpiresAt && !Number.isNaN(parsedDealExpiresAt.getTime());
   const isDealExpired = hasValidExpiry ? parsedDealExpiresAt!.getTime() < Date.now() : false;
 
-  const computedOriginalPrice =
-    listingMode === "deal" &&
-    explicitDiscountPercent !== null &&
-    explicitDiscountPercent > 0 &&
-    explicitDiscountPercent < 100 &&
-    price > 0
-      ? price / (1 - explicitDiscountPercent / 100)
-      : null;
-
   const originalPrice =
     listingMode === "deal"
       ? explicitOriginalPrice !== null && explicitOriginalPrice > price
         ? explicitOriginalPrice
-        : computedOriginalPrice !== null && computedOriginalPrice > price
-          ? computedOriginalPrice
-          : null
+        : null
       : explicitOriginalPrice !== null && explicitOriginalPrice > price
         ? explicitOriginalPrice
         : null;
 
   const discountPercent =
     listingMode === "deal"
-      ? explicitDiscountPercent !== null && explicitDiscountPercent > 0
-        ? roundPercent(explicitDiscountPercent)
-        : originalPrice !== null
-          ? roundPercent(((originalPrice - price) / originalPrice) * 100)
+      ? originalPrice !== null
+        ? roundPercent(((originalPrice - price) / originalPrice) * 100)
+        : explicitDiscountPercent !== null && explicitDiscountPercent > 0
+          ? roundPercent(explicitDiscountPercent)
           : null
       : null;
 
@@ -182,6 +174,7 @@ export function getListingPricing(input: ListingPricingInput): ListingPricingSum
     canSellIndividually,
     packSize,
     bulkUnits,
+    singleItemPrice,
     wholesalePackLabel,
     wholesaleQuantityLabel,
     availableQuantity,

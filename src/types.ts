@@ -35,13 +35,13 @@ export interface ListingDraft {
   sold_quantity: string;
   listing_mode?: ListingMode;
   original_price?: string;
-  discount_percent?: string;
   deal_label?: string;
   deal_expires_at?: string;
   is_wholesale?: boolean;
   can_sell_individually?: boolean;
   pack_size?: string;
   bulk_units?: string;
+  single_item_price?: string;
 }
 
 export interface CreateListingPayload {
@@ -69,6 +69,7 @@ export interface CreateListingPayload {
   can_sell_individually?: boolean | null;
   pack_size?: number | null;
   bulk_units?: string | null;
+  single_item_price?: number | null;
 }
 
 export interface UserProfile {
@@ -126,6 +127,7 @@ export interface Listing {
   can_sell_individually?: boolean | null;
   pack_size?: number | null;
   bulk_units?: string | null;
+  single_item_price?: number | null;
 }
 
 export interface SellerDashboardData {
