@@ -1,6 +1,5 @@
-import { createHmac, randomUUID } from 'crypto';
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
-import type { PaymentMethod } from '../../../src/shared/types/payment.js';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
 const PAYCHANGU_SUCCESS_STATUSES = new Set(['success', 'successful', 'completed', 'paid', 'captured']);
@@ -71,7 +70,11 @@ function normalizeProviderStatus(rawStatus: unknown): { normalized: Verification
 function signatureMatches(secret: string | undefined, payload: string, signature: string | undefined): boolean {
   if (!secret || !signature) return false;
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
-  return expected === signature;
+  try {
+    return timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
 function getPayloadRecord(payload: string | Record<string, unknown>): Record<string, unknown> {
@@ -185,13 +188,15 @@ export const paychanguProvider = {
       ?? '',
     ).trim() || undefined;
 
+    const paymentStatus = String(payload.status ?? '').toLowerCase();
+    const isSuccessful = ['successful', 'success', 'completed'].includes(paymentStatus);
+
     return {
-      verified,
+      verified: isSuccessful,
       provider: 'paychangu',
       txRef,
       reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
-      status: normalized,
-      failureReason: !verified ? (failureReason ?? `Payment is ${normalized}${providerStatus ? ` (${providerStatus})` : ''}`) : undefined,
+      status: paymentStatus || 'unknown',
       currency: String(payload.currency ?? 'MWK'),
       amount,
       checkoutUrl: null,
