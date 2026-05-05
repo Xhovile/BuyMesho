@@ -1,8 +1,6 @@
-import { randomUUID } from 'crypto';
-
 export function createId(prefix?: string): string {
-  const id = randomUUID();
-  return prefix ? `${prefix}_${id}` : id;
+  const base = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return prefix ? `${prefix}_${base}` : base;
 }
 
 export function createReference(prefix: string): string {
