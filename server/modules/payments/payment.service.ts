@@ -4,6 +4,7 @@ import { flutterwaveProvider } from '../../../src/modules/payments/providers/flu
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
 import { paychanguProvider } from './paychangu.provider';
 import { paymentRepository } from './payment.repository';
+import { ApiError } from '../../../src/shared/api/errors';
 
 export interface ServerPaymentConfig {
   paychanguEnabled?: boolean;
@@ -92,7 +93,16 @@ export class ServerPaymentService {
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
-    return this.registry.get('paystack').refund(request);
+    const provider = this.registry.get(request.provider);
+
+    if (!provider.capabilities.supportsRefunds) {
+      throw new ApiError(`Refunds are not supported for provider: ${request.provider}`, {
+        code: 'REFUNDS_UNSUPPORTED',
+        status: 501,
+      });
+    }
+
+    return provider.refund(request);
   }
 
   async verifyWebhook(providerKey: Parameters<PaymentGatewayRegistry['get']>[0], signature: string | undefined, payload: string | Record<string, unknown>): Promise<WebhookVerificationResult> {
