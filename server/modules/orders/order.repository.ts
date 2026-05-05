@@ -1,104 +1,68 @@
-import type { PoolClient } from 'pg';
-import { query } from '../../db';
-import type { OrderState } from '../../../src/modules/orders/orderState';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import { getPaymentDb } from '../../sqlite.js';
 
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
 }
 
-type Queryable = Pick<PoolClient, 'query'>;
-
-function toStoredOrder(row: Record<string, any>): StoredOrder {
-  return {
-    id: row.id,
-    buyerId: row.buyer_id,
-    sellerId: row.seller_id,
-    source: row.source,
-    status: row.status,
-    currency: row.currency,
-    subtotal: { amount: row.subtotal_amount, currency: row.subtotal_currency },
-    fees: row.fees_amount == null ? undefined : { amount: row.fees_amount, currency: row.fees_currency },
-    total: { amount: row.total_amount, currency: row.total_currency },
-    paymentProvider: row.payment_provider,
-    paymentReference: row.payment_reference,
-    escrowId: row.escrow_id,
-    items: JSON.parse(row.items),
-    placedAt: row.placed_at,
-    paidAt: row.paid_at,
-    fulfilledAt: row.fulfilled_at,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-export class OrderRepository {
-  async save(order: StoredOrder, client?: Queryable): Promise<StoredOrder> {
-    const runner = client ?? { query };
-    const result = await runner.query(
-      `INSERT INTO orders (
-        id,buyer_id,seller_id,source,status,currency,
-        subtotal_amount,subtotal_currency,fees_amount,fees_currency,
-        total_amount,total_currency,payment_provider,payment_reference,
-        escrow_id,items,placed_at,paid_at,fulfilled_at,raw_metadata,created_at,updated_at
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,
-        $7,$8,$9,$10,
-        $11,$12,$13,$14,
-        $15,$16,$17,$18,$19,$20,$21,$22
-      )
-      ON CONFLICT (id) DO UPDATE SET
-        status = EXCLUDED.status,
-        payment_provider = EXCLUDED.payment_provider,
-        payment_reference = EXCLUDED.payment_reference,
-        escrow_id = EXCLUDED.escrow_id,
-        paid_at = EXCLUDED.paid_at,
-        fulfilled_at = EXCLUDED.fulfilled_at,
-        updated_at = EXCLUDED.updated_at
-      RETURNING *`,
-      [
-        order.id,
-        order.buyerId,
-        order.sellerId,
-        order.source,
-        order.status,
-        order.currency,
-        order.subtotal.amount,
-        order.subtotal.currency,
-        order.fees?.amount ?? null,
-        order.fees?.currency ?? null,
-        order.total.amount,
-        order.total.currency,
-        order.paymentProvider ?? null,
-        order.paymentReference ?? null,
-        order.escrowId ?? null,
-        JSON.stringify(order.items),
-        order.placedAt ?? null,
-        order.paidAt ?? null,
-        order.fulfilledAt ?? null,
-        null,
-        order.createdAt,
-        order.updatedAt,
-      ],
-    );
-    return toStoredOrder(result.rows[0]);
+export class SqliteOrderRepository {
+  private get db() {
+    return getPaymentDb();
   }
 
-  async findById(id: string, client?: Queryable): Promise<StoredOrder | undefined> {
-    const runner = client ?? { query };
-    const result = await runner.query('SELECT * FROM orders WHERE id = $1 LIMIT 1', [id]);
-    return result.rows[0] ? toStoredOrder(result.rows[0]) : undefined;
+  save(order: StoredOrder): StoredOrder {
+    this.db.prepare(`
+      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, payment_reference, escrow_id, items, placed_at, paid_at, fulfilled_at, created_at, updated_at)
+      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @payment_reference, @escrow_id, @items, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        payment_provider = excluded.payment_provider,
+        payment_reference = excluded.payment_reference,
+        escrow_id = excluded.escrow_id,
+        paid_at = excluded.paid_at,
+        fulfilled_at = excluded.fulfilled_at,
+        updated_at = excluded.updated_at
+    `).run({
+      id: order.id,
+      buyer_id: order.buyerId,
+      seller_id: order.sellerId,
+      source: order.source,
+      status: order.status,
+      currency: order.currency,
+      subtotal_amount: order.subtotal.amount,
+      subtotal_currency: order.subtotal.currency,
+      total_amount: order.total.amount,
+      total_currency: order.total.currency,
+      payment_provider: order.paymentProvider ?? null,
+      payment_reference: order.paymentReference ?? null,
+      escrow_id: order.escrowId ?? null,
+      items: JSON.stringify(order.items),
+      placed_at: order.placedAt ?? null,
+      paid_at: order.paidAt ?? null,
+      fulfilled_at: order.fulfilledAt ?? null,
+      created_at: order.createdAt,
+      updated_at: order.updatedAt,
+    });
+    return order;
   }
 
-  async findByPaymentReference(reference: string, client?: Queryable): Promise<StoredOrder | undefined> {
-    const runner = client ?? { query };
-    const result = await runner.query('SELECT * FROM orders WHERE payment_reference = $1 ORDER BY updated_at DESC LIMIT 1', [reference]);
-    return result.rows[0] ? toStoredOrder(result.rows[0]) : undefined;
+  findById(id: string): StoredOrder | undefined {
+    const row = this.db.prepare('SELECT * FROM orders WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    return this.rowToOrder(row);
   }
 
-  async update(id: string, updater: (order: StoredOrder) => StoredOrder, client?: Queryable): Promise<StoredOrder | undefined> {
-    const current = await this.findById(id, client);
+  findByPaymentReference(reference: string): StoredOrder | undefined {
+    const row = this.db.prepare('SELECT * FROM orders WHERE payment_reference = ?').get(reference) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    return this.rowToOrder(row);
+  }
+
+  update(id: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined {
+    const current = this.findById(id);
     if (!current) return undefined;
-    return this.save(updater(current), client);
+    const next = updater(current);
+    return this.save(next);
   }
 
   async updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder, client?: Queryable): Promise<StoredOrder | undefined> {
@@ -110,6 +74,35 @@ export class OrderRepository {
   clear(): void {
     this.orders.clear();
   }
+
+  private rowToOrder(row: Record<string, unknown>): StoredOrder {
+    let items: StoredOrder['items'];
+    try {
+      items = JSON.parse((row.items as string | null) ?? '[]') as StoredOrder['items'];
+    } catch {
+      items = [];
+    }
+
+    return {
+      id: row.id as string,
+      buyerId: row.buyer_id as string,
+      sellerId: row.seller_id as string,
+      source: row.source as StoredOrder['source'],
+      status: row.status as StoredOrder['status'],
+      currency: row.currency as string,
+      subtotal: { amount: row.subtotal_amount as number, currency: row.subtotal_currency as string },
+      total: { amount: row.total_amount as number, currency: row.total_currency as string },
+      paymentProvider: (row.payment_provider as StoredOrder['paymentProvider']) ?? undefined,
+      paymentReference: (row.payment_reference as string | null) ?? null,
+      escrowId: (row.escrow_id as string | null) ?? null,
+      items,
+      placedAt: (row.placed_at as string | null) ?? null,
+      paidAt: (row.paid_at as string | null) ?? null,
+      fulfilledAt: (row.fulfilled_at as string | null) ?? null,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
+    };
+  }
 }
 
-export const orderRepository = new OrderRepository();
+export const orderRepository = new SqliteOrderRepository();

@@ -10,23 +10,25 @@ export interface ApplyPayChanguResult {
   verification: PaymentVerificationResult;
 }
 
-export async function applyVerifiedPayChanguPayment(verification: PaymentVerificationResult): Promise<ApplyPayChanguResult> {
-  const reference = verification.reference ?? verification.txRef;
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const payment = await paymentRepository.updateByReference(reference, (current) => ({
-      ...current,
-      verified: verification.verified,
-      verification,
-      status: verification.verified ? 'captured' : current.status,
-      paidAt: verification.verified ? new Date().toISOString() : current.paidAt,
-      updatedAt: new Date().toISOString(),
-    }), client);
+const CAPTURED_STATUSES = new Set(['successful', 'success', 'completed', 'captured']);
 
-    const order = verification.verified && reference
-      ? await serverOrderService.confirmByPaymentReference(reference, client)
-      : await orderRepository.findByPaymentReference(reference, client);
+export function applyVerifiedPayChanguPayment(verification: PaymentVerificationResult): ApplyPayChanguResult {
+  const reference = verification.reference ?? verification.txRef;
+  const shouldCapture = verification.verified &&
+    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase());
+
+  const payment = paymentRepository.updateByReference(reference, (current) => ({
+    ...current,
+    verified: verification.verified,
+    verification,
+    status: shouldCapture ? 'captured' : current.status,
+    paidAt: shouldCapture ? new Date().toISOString() : current.paidAt,
+    updatedAt: new Date().toISOString(),
+  }));
+
+  const order = shouldCapture && reference
+    ? serverOrderService.confirmByPaymentReference(reference)
+    : orderRepository.findByPaymentReference(reference);
 
     await client.query('COMMIT');
 

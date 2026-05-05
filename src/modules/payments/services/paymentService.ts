@@ -31,6 +31,10 @@ export class PaymentService {
     return this.registry.get(request.provider).createPayment(request);
   }
 
+  async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
+    return apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
+  }
+
   async refund(request: RefundRequest): Promise<RefundResult> {
     const provider = this.registry.get(request.provider);
 

@@ -4,7 +4,8 @@ import { flutterwaveProvider } from '../../../src/modules/payments/providers/flu
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
 import { paychanguProvider } from './paychangu.provider';
 import { paymentRepository } from './payment.repository';
-import { ApiError } from '../../../src/shared/api/errors';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export interface ServerPaymentConfig {
   paychanguEnabled?: boolean;
