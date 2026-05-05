@@ -1,5 +1,5 @@
-import type { EscrowLedgerEntry } from '../../../src/shared/types/payment';
-import type { MoneyValue } from '../../../src/shared/types/common';
+import type { EscrowLedgerEntry } from '../../../src/shared/types/payment.js';
+import type { MoneyValue } from '../../../src/shared/types/common.js';
 
 export interface ServerEscrowLedger {
   escrowId: string;

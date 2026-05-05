@@ -1,4 +1,4 @@
-import type { MoneyValue } from '../../../src/shared/types/common';
+import type { MoneyValue } from '../../../src/shared/types/common.js';
 
 export interface PayoutRequest {
   sellerId: string;

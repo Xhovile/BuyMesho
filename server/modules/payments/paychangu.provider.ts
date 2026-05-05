@@ -93,7 +93,7 @@ export const paychanguProvider = {
     supportsWebhookVerification: true,
     supportsRefunds: false,
     supportsPartialCapture: false,
-    supportedMethods: ['card', 'bank_transfer', 'mobile_money'],
+    supportedMethods: ['card', 'bank_transfer', 'mobile_money'] as PaymentMethod[],
     currencies: ['MWK', 'USD', 'ZAR'],
   },
 
@@ -143,6 +143,7 @@ export const paychanguProvider = {
       provider: 'paychangu',
       method: request.method,
       status: 'pending',
+      amount: request.amount,
       reference: data.data?.tx_ref ?? data.data?.txRef ?? txRef,
       providerReference,
       checkoutUrl,

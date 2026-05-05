@@ -1,8 +1,7 @@
 import express, { type RequestHandler } from 'express';
-import { paymentController } from './payment.controller';
-import { paymentWebhookHandler } from './payment.webhooks';
-import { PAYMENT_ENDPOINTS } from './payment.endpoints';
-import { paymentRepository } from './payment.repository';
+import { paymentController } from './payment.controller.js';
+import { paymentWebhookHandler } from './payment.webhooks.js';
+import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
 
 export function createPaymentRouter(): express.Router {
   const router = express.Router();
@@ -10,10 +9,9 @@ export function createPaymentRouter(): express.Router {
   router.post(PAYMENT_ENDPOINTS.paychangu.initialize, async (req, res) => {
     try {
       const result = await paymentController.createPaychanguPayment(req.body);
-      paymentRepository.save({ ...result, verified: false });
       res.status(201).json(result);
     } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to create payment' });
+      res.status(400).json(jsonError(error, 'Failed to create payment'));
     }
   });
 
@@ -38,9 +36,19 @@ export function createPaymentRouter(): express.Router {
       const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
       res.status(200).json(result);
     } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to process webhook' });
+      res.status(400).json(jsonError(error, 'Failed to process webhook'));
     }
   });
 
   return router;
 }
+
+export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
+  app.use('/api/payments', createPaymentRouter(requireAuth));
+}
+
+export const paychanguRoutes = {
+  initialize: PAYMENT_ENDPOINTS.paychangu.initialize,
+  verify: PAYMENT_ENDPOINTS.paychangu.verify,
+  webhook: PAYMENT_ENDPOINTS.paychangu.webhook,
+} as const;

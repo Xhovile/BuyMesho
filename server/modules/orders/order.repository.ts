@@ -71,8 +71,9 @@ export class SqliteOrderRepository {
     return this.save(updater(current), client);
   }
 
-  clear(): void {
-    this.orders.clear();
+  async clear(client?: Queryable): Promise<void> {
+    const runner = client ?? { query };
+    await runner.query('DELETE FROM orders');
   }
 
   private rowToOrder(row: Record<string, unknown>): StoredOrder {

@@ -1,10 +1,8 @@
-import type { WebhookVerificationResult } from '../../../src/modules/payments/types';
-import { serverPaymentService } from './payment.service';
-import { applyVerifiedPayChanguPayment } from './paychangu.flow';
-import { paymentRepository } from './payment.repository';
-import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus, paychanguWebhookSpec } from './paychangu.provider';
-
-const processedWebhookKeys = new Set<string>();
+import type { PaymentVerificationResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import { serverPaymentService } from './payment.service.js';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
+import { paymentRepository } from './payment.repository.js';
+import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus } from './paychangu.provider.js';
 
 function asRecord(payload: unknown): Record<string, unknown> {
   if (typeof payload === 'string') {
@@ -43,10 +41,13 @@ function isPayChanguSuccessEvent(payload: unknown): boolean {
 
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
-    const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload);
+    const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload as string);
+    if (!result.valid) throw new Error('Invalid PayChangu webhook signature');
 
-    if (!result.valid) {
-      throw new Error('Invalid PayChangu webhook signature');
+    const body = asRecord(payload);
+    const eventType = String(body.event_type ?? body.event ?? '').trim().toLowerCase();
+    if (!isAcceptedPaychanguEventType(eventType)) {
+      throw new Error(`Unsupported PayChangu event type: ${eventType || 'unknown'}`);
     }
 
     let parsedPayload: unknown;
@@ -82,11 +83,12 @@ export class PaymentWebhookHandler {
       });
     }
 
+    await applyVerifiedPayChanguPayment(verification);
     return result;
   }
 
   verify(providerKey: Parameters<typeof serverPaymentService.verifyWebhook>[0], signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
-    return serverPaymentService.verifyWebhook(providerKey, signature, payload);
+    return serverPaymentService.verifyWebhook(providerKey, signature, payload as string);
   }
 
   parse(providerKey: Parameters<typeof serverPaymentService.parseWebhook>[0], payload: unknown): Promise<WebhookVerificationResult> {

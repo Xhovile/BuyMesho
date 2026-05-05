@@ -107,6 +107,7 @@ export class ServerPaymentService {
 
     if (!provider.capabilities.supportsRefunds) {
       throw new ApiError(`Refunds are not supported for provider: ${request.provider}`, {
+        message: `Refunds are not supported for provider: ${request.provider}`,
         code: 'REFUNDS_UNSUPPORTED',
         status: 501,
       });

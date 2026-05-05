@@ -1,4 +1,4 @@
-import type { ApiErrorShape } from '../types/common';
+import type { ApiErrorShape } from '../types/common.js';
 
 export class ApiError extends Error implements ApiErrorShape {
   code?: string;
@@ -6,7 +6,7 @@ export class ApiError extends Error implements ApiErrorShape {
   details?: unknown;
   requestId?: string;
 
-  constructor(message: string, options: ApiErrorShape = {}) {
+  constructor(message: string, options: Partial<ApiErrorShape> = {}) {
     super(message);
     this.name = 'ApiError';
     this.code = options.code;

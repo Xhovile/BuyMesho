@@ -1,8 +1,8 @@
-import { buildCheckoutPlan, type CheckoutRequest, type CheckoutPlan } from './checkout';
-import type { OrderState, OrderStatus, OrderStateTransition } from './orderState';
-import { escrowService, type EscrowRecord } from '../escrow/escrowService';
-import { paymentService } from '../payments/services/paymentService';
-import type { PaymentResult, PaymentVerificationResult } from '../payments/types';
+import { buildCheckoutPlan, type CheckoutRequest, type CheckoutPlan } from './checkout.js';
+import type { OrderState, OrderStatus, OrderStateTransition } from './orderState.js';
+import { escrowService, type EscrowRecord } from '../escrow/escrowService.js';
+import { paymentService } from '../payments/services/paymentService.js';
+import type { PaymentResult, PaymentVerificationResult } from '../payments/types.js';
 
 export interface CreateOrderResult {
   order: OrderState;

@@ -1,17 +1,16 @@
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types';
-import type { OrderState } from '../../../src/modules/orders/orderState';
-import { paymentController } from './payment.controller';
-import { paymentRepository } from './payment.repository';
-import { orderRepository } from '../orders/order.repository';
-import { serverOrderService } from '../orders/order.service';
-import { applyVerifiedPayChanguPayment } from './paychangu.flow';
+import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import { paymentRepository } from './payment.repository.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { serverOrderService } from '../orders/order.service.js';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 
 export interface PayChanguFlowHarnessResult {
   orderBefore: OrderState;
   payment: PaymentResult;
   verification: PaymentVerificationResult;
-  applied: ReturnType<typeof applyVerifiedPayChanguPayment>;
-  orderAfter: ReturnType<typeof orderRepository.findById>;
+  applied: Awaited<ReturnType<typeof applyVerifiedPayChanguPayment>>;
+  orderAfter: Awaited<ReturnType<typeof orderRepository.findById>>;
 }
 
 function buildSeedOrder(reference: string): OrderState {
@@ -43,7 +42,8 @@ function buildSeedOrder(reference: string): OrderState {
 
 export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
   const orderBefore = buildSeedOrder(txRef);
-  serverOrderService.create(orderBefore);
+  await serverOrderService.create(orderBefore);
+  const created = await seedDemoPayment(orderBefore);
 
   const request: CreatePaymentRequest = {
     orderId: orderBefore.id,
@@ -77,14 +77,14 @@ export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguF
     rawResponse: created.rawResponse,
   };
 
-  const applied = applyVerifiedPayChanguPayment(verification);
+  const applied = await applyVerifiedPayChanguPayment(verification);
 
   return {
     orderBefore,
     payment: created,
     verification,
     applied,
-    orderAfter: orderRepository.findById(orderBefore.id),
+    orderAfter: await orderRepository.findById(orderBefore.id),
   };
 }
 

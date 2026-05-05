@@ -1,5 +1,5 @@
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
-import { serverPaymentService } from './payment.service';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import { serverPaymentService } from './payment.service.js';
 
 export class PaymentController {
   createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
@@ -19,7 +19,7 @@ export class PaymentController {
   }
 
   verifyWebhook(providerKey: Parameters<typeof serverPaymentService.verifyWebhook>[0], signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
-    return serverPaymentService.verifyWebhook(providerKey, signature, payload);
+    return serverPaymentService.verifyWebhook(providerKey, signature, payload as string | Record<string, unknown>);
   }
 
   parseWebhook(providerKey: Parameters<typeof serverPaymentService.parseWebhook>[0], payload: unknown): Promise<WebhookVerificationResult> {
