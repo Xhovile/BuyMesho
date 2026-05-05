@@ -32,7 +32,15 @@ export class PaymentService {
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    return apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
+    const result = await apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
+
+    return {
+      ...result,
+      txRef: result.txRef || txRef,
+      provider: 'paychangu',
+      reference: result.reference ?? txRef,
+      verified: Boolean(result.verified),
+    };
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
@@ -46,19 +54,6 @@ export class PaymentService {
     }
 
     return provider.refund(request);
-  }
-
-
-  async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    const result = await apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
-
-    return {
-      ...result,
-      txRef: result.txRef || txRef,
-      provider: 'paychangu',
-      reference: result.reference ?? txRef,
-      verified: Boolean(result.verified),
-    };
   }
 
   async verifyWebhook(providerKey: PaymentProviderKey, signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {

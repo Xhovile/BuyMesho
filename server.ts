@@ -18,9 +18,6 @@ import {
   getListingSubcategories,
   getListingItemTypes,
 } from "./src/listingSchemas/index.js";
-import { paymentController } from "./server/modules/payments/payment.controller.js";
-import { paymentWebhookHandler } from "./server/modules/payments/payment.webhooks.js";
-import type { CreatePaymentRequest } from "./src/modules/payments/types.js";
 dotenv.config();
 
 console.log("SERVER STARTING: Environment loaded");
@@ -3458,56 +3455,6 @@ app.post("/api/listings/:id/view", (req, res) => {
     res.redirect(302, "/");
   });
   
-  // Payment routes
-  const paymentCreateLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 10,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many payment requests, please try again later." },
-  });
-
-  const paymentVerifyLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 30,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many verification requests, please try again later." },
-  });
-
-  const webhookLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 200,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many webhook requests." },
-  });
-
-  app.post("/api/payments/paychangu", paymentCreateLimiter, requireAuth, withAsyncRoute(async (req, res) => {
-    const request = req.body as CreatePaymentRequest;
-    const result = await paymentController.createPaychanguPayment(request);
-    res.json(result);
-  }));
-
-  app.get("/api/payments/paychangu/verify/:txRef", paymentVerifyLimiter, requireAuth, withAsyncRoute(async (req, res) => {
-    const txRef = decodeURIComponent(req.params.txRef);
-    const result = await paymentController.verifyPaychangu(txRef);
-    res.json(result);
-  }));
-
-  app.post("/api/webhooks/:provider", webhookLimiter, withAsyncRoute(async (req, res) => {
-    const { provider } = req.params;
-
-    if (provider === "paychangu") {
-      const signature = req.headers["x-paychangu-signature"] as string | undefined;
-      const payload = req.rawBody ? req.rawBody.toString("utf8") : JSON.stringify(req.body);
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, payload);
-      return res.json(result);
-    }
-
-    return res.status(404).json({ error: "Unknown payment provider" });
-  }));
-
   // API 404 Handler
   app.all("/api/*", (req, res) => {
     res.status(404).json({ error: "API route not found", path: req.path });

@@ -65,15 +65,14 @@ export class SqliteOrderRepository {
     return this.save(next);
   }
 
-  async updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder, client?: Queryable): Promise<StoredOrder | undefined> {
-    const current = await this.findByPaymentReference(reference, client);
+  updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined {
+    const current = this.findByPaymentReference(reference);
     if (!current) return undefined;
-    return this.save(updater(current), client);
+    return this.save(updater(current));
   }
 
-  async clear(client?: Queryable): Promise<void> {
-    const runner = client ?? { query };
-    await runner.query('DELETE FROM orders');
+  clear(): void {
+    this.db.prepare('DELETE FROM orders').run();
   }
 
   private rowToOrder(row: Record<string, unknown>): StoredOrder {
