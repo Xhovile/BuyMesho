@@ -1,0 +1,83 @@
+import type { CreatePaymentRequest } from '../../../src/modules/payments/types';
+import type { OrderState } from '../../../src/modules/orders/orderState';
+import { paymentController } from './payment.controller';
+import { paymentWebhookHandler } from './payment.webhooks';
+import { paymentRepository } from './payment.repository';
+import { orderRepository } from '../orders/order.repository';
+import { serverOrderService } from '../orders/order.service';
+
+export interface PayChanguFlowHarnessResult {
+  orderBefore: OrderState;
+  payment: Awaited<ReturnType<typeof paymentController.createPaychanguPayment>>;
+  verification: Awaited<ReturnType<typeof paymentController.verifyPaychangu>>;
+  webhook: Awaited<ReturnType<typeof paymentWebhookHandler.handlePaychanguWebhook>>;
+  orderAfter: ReturnType<typeof orderRepository.findById>;
+}
+
+function buildSeedOrder(reference: string): OrderState {
+  return {
+    id: 'order_demo_001',
+    buyerId: 'buyer_demo_001',
+    sellerId: 'seller_demo_001',
+    source: 'listing',
+    status: 'draft',
+    currency: 'MWK',
+    subtotal: { amount: 50000, currency: 'MWK' },
+    total: { amount: 50000, currency: 'MWK' },
+    items: [
+      {
+        listingId: 'listing_demo_001',
+        title: 'Demo item',
+        quantity: 1,
+        unitPrice: { amount: 50000, currency: 'MWK' },
+      },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    paymentReference: reference,
+    escrowId: 'escrow_demo_001',
+  };
+}
+
+export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
+  const orderBefore = buildSeedOrder(txRef);
+  serverOrderService.create(orderBefore);
+
+  const request: CreatePaymentRequest = {
+    orderId: orderBefore.id,
+    provider: 'paychangu',
+    method: 'mobile_money',
+    amount: orderBefore.total,
+    customer: {
+      id: orderBefore.buyerId,
+      name: 'Demo Buyer',
+      email: 'buyer@example.com',
+      phoneNumber: '+265999000111',
+    },
+    returnUrl: 'https://example.com/return',
+    cancelUrl: 'https://example.com/cancel',
+    metadata: {
+      orderSource: orderBefore.source,
+    },
+  };
+
+  const payment = await paymentController.createPaychanguPayment(request);
+  const verification = await paymentController.verifyPaychangu(txRef);
+  const webhook = await paymentWebhookHandler.handlePaychanguWebhook('demo-signature', {
+    tx_ref: txRef,
+    reference: txRef,
+    event_type: 'payment.completed',
+  });
+
+  return {
+    orderBefore,
+    payment,
+    verification,
+    webhook,
+    orderAfter: orderRepository.findById(orderBefore.id),
+  };
+}
+
+export function getStoredDemoPayment(reference: string) {
+  return paymentRepository.findByReference(reference);
+}
