@@ -2,13 +2,18 @@ import { buildCheckoutPlan, type CheckoutRequest, type CheckoutPlan } from './ch
 import type { OrderState, OrderStatus, OrderStateTransition } from './orderState';
 import { escrowService, type EscrowRecord } from '../escrow/escrowService';
 import { paymentService } from '../payments/services/paymentService';
-import type { PaymentResult } from '../payments/types';
+import type { PaymentResult, PaymentVerificationResult } from '../payments/types';
 
 export interface CreateOrderResult {
   order: OrderState;
   checkout?: CheckoutPlan;
   payment?: PaymentResult;
   escrow?: EscrowRecord;
+}
+
+export interface ConfirmPaymentResult {
+  order: OrderState;
+  verification: PaymentVerificationResult;
 }
 
 export interface TransitionOrderRequest {
@@ -42,6 +47,21 @@ export class OrderService {
       checkout,
       payment,
       escrow,
+    };
+  }
+
+  async confirmPaychanguPayment(order: OrderState, txRef: string): Promise<ConfirmPaymentResult> {
+    const verification = await paymentService.verifyPaychanguPayment(txRef);
+    const nextStatus: OrderStatus = verification.verified ? 'paid' : 'pending_payment';
+
+    return {
+      order: {
+        ...order,
+        status: nextStatus,
+        paymentReference: verification.reference ?? txRef,
+        paymentProvider: 'paychangu',
+      },
+      verification,
     };
   }
 
