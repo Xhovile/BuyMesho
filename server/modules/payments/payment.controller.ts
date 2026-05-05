@@ -1,9 +1,17 @@
-import type { CreatePaymentRequest, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
 import { serverPaymentService } from './payment.service';
 
 export class PaymentController {
   createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
     return serverPaymentService.createPayment(request);
+  }
+
+  createPaychanguPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
+    return serverPaymentService.createPayment({ ...request, provider: 'paychangu' });
+  }
+
+  verifyPaychangu(txRef: string): Promise<PaymentVerificationResult> {
+    return serverPaymentService.verifyPaychanguPayment(txRef);
   }
 
   refund(request: RefundRequest): Promise<RefundResult> {
