@@ -6,16 +6,61 @@ import { paychanguProvider } from './paychangu.provider';
 import { paymentRepository } from './payment.repository';
 
 export interface ServerPaymentConfig {
+  paychanguEnabled?: boolean;
   paychanguSecretKey?: string;
   paychanguWebhookSecret?: string;
   paychanguBaseUrl?: string;
+}
+
+function readEnv(name: string): string | undefined {
+  const value = process.env[name]?.trim();
+  return value ? value : undefined;
+}
+
+function isTruthyFlag(value: string | undefined): boolean {
+  return value === '1' || value === 'true' || value === 'yes' || value === 'on';
+}
+
+function validatePayChanguConfig(config: ServerPaymentConfig): void {
+  if (!config.paychanguEnabled || process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const missing: string[] = [];
+  if (!config.paychanguSecretKey) missing.push('PAYCHANGU_SECRET_KEY');
+  if (!config.paychanguWebhookSecret) missing.push('PAYCHANGU_WEBHOOK_SECRET');
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required PayChangu environment variables in production: ${missing.join(', ')}`,
+    );
+  }
+}
+
+export function createServerPaymentConfigFromEnv(): ServerPaymentConfig {
+  const paychanguSecretKey = readEnv('PAYCHANGU_SECRET_KEY');
+  const paychanguWebhookSecret = readEnv('PAYCHANGU_WEBHOOK_SECRET');
+  const paychanguBaseUrl = readEnv('PAYCHANGU_BASE_URL');
+  const paychanguEnabled = isTruthyFlag(readEnv('PAYCHANGU_ENABLED'))
+    || Boolean(paychanguSecretKey)
+    || Boolean(paychanguWebhookSecret)
+    || Boolean(paychanguBaseUrl);
+
+  return {
+    paychanguEnabled,
+    paychanguSecretKey,
+    paychanguWebhookSecret,
+    paychanguBaseUrl,
+  };
 }
 
 export class ServerPaymentService {
   constructor(
     private readonly config: ServerPaymentConfig = {},
     private readonly registry = ServerPaymentService.createDefaultRegistry(),
-  ) {}
+  ) {
+    validatePayChanguConfig(config);
+  }
 
   static createDefaultRegistry(): PaymentGatewayRegistry {
     const registry = new PaymentGatewayRegistry();
@@ -67,4 +112,4 @@ export class ServerPaymentService {
   }
 }
 
-export const serverPaymentService = new ServerPaymentService();
+export const serverPaymentService = new ServerPaymentService(createServerPaymentConfigFromEnv());
