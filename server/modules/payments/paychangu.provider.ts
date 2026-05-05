@@ -1,6 +1,10 @@
 import { createHmac, randomUUID } from 'crypto';
 import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
 
+const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
+const PAYCHANGU_SUCCESS_STATUSES = new Set(['success', 'successful', 'completed', 'paid', 'captured']);
+const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set(['payment.success', 'charge.success', 'api.charge.payment']);
+
 export interface PayChanguConfig {
   paychanguSecretKey?: string;
   paychanguWebhookSecret?: string;
@@ -37,6 +41,16 @@ function signatureMatches(secret: string | undefined, payload: string, signature
   if (!secret || !signature) return false;
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
   return expected === signature;
+}
+
+function getPayloadRecord(payload: string | Record<string, unknown>): Record<string, unknown> {
+  if (typeof payload !== 'string') return payload;
+  try {
+    const parsed = JSON.parse(payload) as unknown;
+    return typeof parsed === 'object' && parsed !== null ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
 }
 
 export const paychanguProvider = {
@@ -139,11 +153,15 @@ export const paychanguProvider = {
 
   async verifyWebhook(signature: string | undefined, payload: string | Record<string, unknown>, config: PayChanguConfig = {}): Promise<WebhookVerificationResult> {
     const rawPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const parsedPayload = getPayloadRecord(payload);
+    const eventType = String(parsedPayload.event_type ?? parsedPayload.event ?? '').trim();
+    const reference = String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '').trim();
+
     return {
       valid: signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
       provider: 'paychangu',
-      eventType: typeof payload === 'object' && payload !== null ? String((payload as Record<string, unknown>).event_type ?? (payload as Record<string, unknown>).event ?? '') : undefined,
-      reference: typeof payload === 'object' && payload !== null ? String((payload as Record<string, unknown>).tx_ref ?? (payload as Record<string, unknown>).reference ?? '') : undefined,
+      eventType,
+      reference,
       signature,
       payload,
     };
@@ -164,3 +182,19 @@ export const paychanguProvider = {
     };
   },
 };
+
+export const paychanguWebhookSpec = {
+  acceptedSignatureHeaders: ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS,
+  acceptedEventTypes: [...PAYCHANGU_ACCEPTED_EVENT_TYPES],
+  successfulStatuses: [...PAYCHANGU_SUCCESS_STATUSES],
+};
+
+export function isAcceptedPaychanguEventType(eventType: string | undefined): boolean {
+  if (!eventType) return false;
+  return PAYCHANGU_ACCEPTED_EVENT_TYPES.has(eventType.trim().toLowerCase());
+}
+
+export function isPaychanguSuccessStatus(status: string | undefined): boolean {
+  if (!status) return false;
+  return PAYCHANGU_SUCCESS_STATUSES.has(status.trim().toLowerCase());
+}
