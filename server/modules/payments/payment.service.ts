@@ -30,14 +30,14 @@ export class ServerPaymentService {
       ? await paychanguProvider.createPayment(request, this.config)
       : await this.registry.get(request.provider).createPayment(request);
 
-    paymentRepository.save({ ...result, verified: false });
+    await paymentRepository.save({ ...result, verified: false });
     return result;
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
     const verification = await paychanguProvider.verifyPayment(txRef, this.config);
 
-    paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
+    await paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
       ...current,
       verified: verification.verified,
       verification,

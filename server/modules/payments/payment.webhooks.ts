@@ -10,7 +10,7 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    applyVerifiedPayChanguPayment({
+    await applyVerifiedPayChanguPayment({
       ...result,
       verified: result.valid,
     });

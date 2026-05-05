@@ -1,8 +1,9 @@
 import type { OrderState } from '../../../src/modules/orders/orderState';
+import type { PoolClient } from 'pg';
 import { orderRepository, type StoredOrder } from './order.repository';
 
 export class ServerOrderService {
-  create(order: OrderState): StoredOrder {
+  create(order: OrderState): Promise<StoredOrder> {
     const stored: StoredOrder = {
       ...order,
       status: 'pending_payment',
@@ -11,7 +12,7 @@ export class ServerOrderService {
     return orderRepository.save(stored);
   }
 
-  markPaid(order: OrderState): StoredOrder {
+  markPaid(order: OrderState): Promise<StoredOrder> {
     return orderRepository.save({
       ...order,
       status: 'paid',
@@ -19,14 +20,14 @@ export class ServerOrderService {
     });
   }
 
-  confirmByPaymentReference(reference: string): StoredOrder | undefined {
+  confirmByPaymentReference(reference: string, client?: Pick<PoolClient, 'query'>): Promise<StoredOrder | undefined> {
     return orderRepository.updateByPaymentReference(reference, (current) => ({
       ...current,
       status: 'paid',
-    }));
+    }), client);
   }
 
-  complete(order: OrderState): StoredOrder {
+  complete(order: OrderState): Promise<StoredOrder> {
     return orderRepository.save({
       ...order,
       status: 'closed',
