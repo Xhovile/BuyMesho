@@ -22,7 +22,7 @@ export const paychanguProvider: PaymentGatewayProvider = {
   },
 
   async verifyWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
-    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.webhooks('paychangu'), {
+    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.paychangu.webhook, {
       method: 'POST',
       headers: {
         ...(signature ? { Signature: signature } : {}),
@@ -36,7 +36,7 @@ export const paychanguProvider: PaymentGatewayProvider = {
   },
 
   async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {
-    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.webhooks('paychangu'), {
+    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.paychangu.webhook, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
