@@ -33,7 +33,16 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    const parsedPayload = typeof payload === 'string' ? JSON.parse(payload) as unknown : payload;
+    let parsedPayload: unknown;
+    if (typeof payload === 'string') {
+      try {
+        parsedPayload = JSON.parse(payload) as unknown;
+      } catch {
+        throw new Error('Malformed webhook payload: invalid JSON');
+      }
+    } else {
+      parsedPayload = payload;
+    }
 
     if (isPayChanguSuccessEvent(parsedPayload)) {
       const body = parsedPayload as Record<string, unknown>;

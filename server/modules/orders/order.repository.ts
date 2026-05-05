@@ -72,6 +72,13 @@ export class SqliteOrderRepository {
   }
 
   private rowToOrder(row: Record<string, unknown>): StoredOrder {
+    let items: StoredOrder['items'];
+    try {
+      items = JSON.parse((row.items as string | null) ?? '[]') as StoredOrder['items'];
+    } catch {
+      items = [];
+    }
+
     return {
       id: row.id as string,
       buyerId: row.buyer_id as string,
@@ -84,7 +91,7 @@ export class SqliteOrderRepository {
       paymentProvider: (row.payment_provider as StoredOrder['paymentProvider']) ?? undefined,
       paymentReference: (row.payment_reference as string | null) ?? null,
       escrowId: (row.escrow_id as string | null) ?? null,
-      items: JSON.parse((row.items as string | null) ?? '[]') as StoredOrder['items'],
+      items,
       placedAt: (row.placed_at as string | null) ?? null,
       paidAt: (row.paid_at as string | null) ?? null,
       fulfilledAt: (row.fulfilled_at as string | null) ?? null,

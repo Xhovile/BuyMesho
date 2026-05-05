@@ -8,6 +8,7 @@ import { fileURLToPath } from "url";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
+import rateLimit from "express-rate-limit";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
@@ -3437,19 +3438,43 @@ app.post("/api/listings/:id/view", (req, res) => {
   });
   
   // Payment routes
-  app.post("/api/payments/paychangu", requireAuth, withAsyncRoute(async (req, res) => {
+  const paymentCreateLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many payment requests, please try again later." },
+  });
+
+  const paymentVerifyLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many verification requests, please try again later." },
+  });
+
+  const webhookLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 200,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many webhook requests." },
+  });
+
+  app.post("/api/payments/paychangu", paymentCreateLimiter, requireAuth, withAsyncRoute(async (req, res) => {
     const request = req.body as CreatePaymentRequest;
     const result = await paymentController.createPaychanguPayment(request);
     res.json(result);
   }));
 
-  app.get("/api/payments/paychangu/verify/:txRef", requireAuth, withAsyncRoute(async (req, res) => {
+  app.get("/api/payments/paychangu/verify/:txRef", paymentVerifyLimiter, requireAuth, withAsyncRoute(async (req, res) => {
     const txRef = decodeURIComponent(req.params.txRef);
     const result = await paymentController.verifyPaychangu(txRef);
     res.json(result);
   }));
 
-  app.post("/api/webhooks/:provider", withAsyncRoute(async (req, res) => {
+  app.post("/api/webhooks/:provider", webhookLimiter, withAsyncRoute(async (req, res) => {
     const { provider } = req.params;
 
     if (provider === "paychangu") {

@@ -57,6 +57,20 @@ export class SqlitePaymentRepository {
   }
 
   private rowToPayment(row: Record<string, unknown>): StoredPayment {
+    let rawResponse: Record<string, unknown> | undefined;
+    try {
+      rawResponse = row.raw_response ? JSON.parse(row.raw_response as string) as Record<string, unknown> : undefined;
+    } catch {
+      rawResponse = undefined;
+    }
+
+    let verification: PaymentVerificationResult | undefined;
+    try {
+      verification = row.verification ? JSON.parse(row.verification as string) as PaymentVerificationResult : undefined;
+    } catch {
+      verification = undefined;
+    }
+
     return {
       id: row.id as string,
       orderId: row.order_id as string,
@@ -67,9 +81,9 @@ export class SqlitePaymentRepository {
       providerReference: (row.provider_reference as string | null) ?? null,
       checkoutUrl: (row.checkout_url as string | null) ?? null,
       paidAt: (row.paid_at as string | null) ?? null,
-      rawResponse: row.raw_response ? JSON.parse(row.raw_response as string) as Record<string, unknown> : undefined,
+      rawResponse,
       verified: row.verified === 1,
-      verification: row.verification ? JSON.parse(row.verification as string) as PaymentVerificationResult : undefined,
+      verification,
       createdAt: row.created_at as string,
       updatedAt: row.updated_at as string,
     };
