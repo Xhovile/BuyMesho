@@ -1,8 +1,10 @@
+import { apiRequest } from '../../../shared/api/client';
+import { ENDPOINTS } from '../../../shared/api/endpoints';
 import { PaymentGatewayRegistry } from '../paymentGateway';
 import { flutterwaveProvider } from '../providers/flutterwave';
 import { paychanguProvider } from '../providers/paychangu';
 import { paystackProvider } from '../providers/paystack';
-import type { CreatePaymentRequest, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
 import type { PaymentProviderKey } from '../../../shared/types/payment';
 
 export class PaymentService {
@@ -26,6 +28,10 @@ export class PaymentService {
 
   async createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
     return this.registry.get(request.provider).createPayment(request);
+  }
+
+  async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
+    return apiRequest<PaymentVerificationResult>(ENDPOINTS.payments.paychangu.verify(txRef));
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {

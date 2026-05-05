@@ -9,18 +9,23 @@ export interface ApplyPayChanguResult {
   verification: PaymentVerificationResult;
 }
 
+const CAPTURED_STATUSES = new Set(['successful', 'success', 'completed', 'captured']);
+
 export function applyVerifiedPayChanguPayment(verification: PaymentVerificationResult): ApplyPayChanguResult {
   const reference = verification.reference ?? verification.txRef;
+  const shouldCapture = verification.verified &&
+    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase());
+
   const payment = paymentRepository.updateByReference(reference, (current) => ({
     ...current,
     verified: verification.verified,
     verification,
-    status: verification.verified ? 'captured' : current.status,
-    paidAt: verification.verified ? new Date().toISOString() : current.paidAt,
+    status: shouldCapture ? 'captured' : current.status,
+    paidAt: shouldCapture ? new Date().toISOString() : current.paidAt,
     updatedAt: new Date().toISOString(),
   }));
 
-  const order = verification.verified && reference
+  const order = shouldCapture && reference
     ? serverOrderService.confirmByPaymentReference(reference)
     : orderRepository.findByPaymentReference(reference);
 

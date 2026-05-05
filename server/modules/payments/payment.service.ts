@@ -4,6 +4,8 @@ import { flutterwaveProvider } from '../../../src/modules/payments/providers/flu
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
 import { paychanguProvider } from './paychangu.provider';
 import { paymentRepository } from './payment.repository';
+import dotenv from 'dotenv';
+dotenv.config();
 
 export interface ServerPaymentConfig {
   paychanguSecretKey?: string;
@@ -67,4 +69,8 @@ export class ServerPaymentService {
   }
 }
 
-export const serverPaymentService = new ServerPaymentService();
+export const serverPaymentService = new ServerPaymentService({
+  paychanguSecretKey: process.env.PAYCHANGU_SECRET_KEY,
+  paychanguWebhookSecret: process.env.PAYCHANGU_WEBHOOK_SECRET,
+  paychanguBaseUrl: process.env.PAYCHANGU_BASE_URL,
+});

@@ -41,26 +41,6 @@ function buildSeedOrder(reference: string): OrderState {
   };
 }
 
-function seedDemoPayment(order: OrderState): PaymentResult {
-  const now = new Date().toISOString();
-
-  return paymentRepository.save({
-    id: 'payment_demo_001',
-    orderId: order.id,
-    provider: 'paychangu',
-    method: 'mobile_money',
-    status: 'pending',
-    reference: order.paymentReference ?? order.id,
-    providerReference: 'paychangu_demo_001',
-    checkoutUrl: 'https://example.com/checkout',
-    paidAt: null,
-    rawResponse: {},
-    createdAt: now,
-    updatedAt: now,
-    verified: false,
-  });
-}
-
 export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
   const orderBefore = buildSeedOrder(txRef);
   serverOrderService.create(orderBefore);
@@ -84,15 +64,15 @@ export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguF
   };
 
   const created = await paymentController.createPaychanguPayment(request);
-  const seededPayment = seedDemoPayment(orderBefore);
+
   const verification: PaymentVerificationResult = {
     verified: true,
     provider: 'paychangu',
     txRef,
-    reference: seededPayment.reference,
+    reference: created.reference,
     status: 'captured',
-    currency: seededPayment.amount.currency,
-    amount: seededPayment.amount,
+    currency: orderBefore.total.currency,
+    amount: orderBefore.total,
     checkoutUrl: created.checkoutUrl ?? null,
     rawResponse: created.rawResponse,
   };

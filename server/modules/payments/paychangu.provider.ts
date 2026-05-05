@@ -1,4 +1,4 @@
-import { createHmac, randomUUID } from 'crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
 import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
 
 export interface PayChanguConfig {
@@ -36,7 +36,11 @@ function toISODate(): string {
 function signatureMatches(secret: string | undefined, payload: string, signature: string | undefined): boolean {
   if (!secret || !signature) return false;
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
-  return expected === signature;
+  try {
+    return timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
+  } catch {
+    return false;
+  }
 }
 
 export const paychanguProvider = {
@@ -124,12 +128,15 @@ export const paychanguProvider = {
       ? { amount: payload.amount, currency: String(payload.currency ?? 'MWK') }
       : undefined;
 
+    const paymentStatus = String(payload.status ?? '').toLowerCase();
+    const isSuccessful = ['successful', 'success', 'completed'].includes(paymentStatus);
+
     return {
-      verified: true,
+      verified: isSuccessful,
       provider: 'paychangu',
       txRef,
       reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
-      status: String(payload.status ?? 'captured'),
+      status: paymentStatus || 'unknown',
       currency: String(payload.currency ?? 'MWK'),
       amount,
       checkoutUrl: null,
