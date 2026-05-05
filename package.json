@@ -11,7 +11,8 @@
     "build:server": "tsc -p tsconfig.server.json",
     "start:server": "node dist-server/server.js",
     "lint": "node -e \"try { require('typescript'); } catch (e) { console.error('Dependencies are missing. Run npm ci before npm run lint.'); process.exit(1); }\" && tsc --noEmit",
-    "smoke:paychangu": "tsx scripts/paychangu-smoke.ts"
+    "smoke:paychangu": "tsx scripts/paychangu-smoke.ts",
+    "check:payment-endpoints": "tsx scripts/check-payment-endpoint-contract.ts"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
