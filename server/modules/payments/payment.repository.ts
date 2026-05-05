@@ -56,6 +56,10 @@ export class SqlitePaymentRepository {
     return this.save(next);
   }
 
+  clear(): void {
+    this.db.prepare('DELETE FROM payments').run();
+  }
+
   private rowToPayment(row: Record<string, unknown>): StoredPayment {
     let rawResponse: Record<string, unknown> | undefined;
     try {

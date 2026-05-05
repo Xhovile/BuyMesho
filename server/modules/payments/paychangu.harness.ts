@@ -1,16 +1,19 @@
 import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
+import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
+import { paymentController } from './payment.controller.js';
+import { seedDemoPayChanguPayment } from './paychangu.flow.js';
 
 export interface PayChanguFlowHarnessResult {
   orderBefore: OrderState;
   payment: PaymentResult;
   verification: PaymentVerificationResult;
-  applied: Awaited<ReturnType<typeof applyVerifiedPayChanguPayment>>;
-  orderAfter: Awaited<ReturnType<typeof orderRepository.findById>>;
+  applied: ReturnType<typeof applyVerifiedPayChanguPayment>;
+  orderAfter: ReturnType<typeof orderRepository.findById>;
 }
 
 function buildSeedOrder(reference: string): OrderState {
@@ -42,8 +45,7 @@ function buildSeedOrder(reference: string): OrderState {
 
 export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
   const orderBefore = buildSeedOrder(txRef);
-  await serverOrderService.create(orderBefore);
-  const created = await seedDemoPayment(orderBefore);
+  serverOrderService.create(orderBefore);
 
   const request: CreatePaymentRequest = {
     orderId: orderBefore.id,
@@ -77,14 +79,14 @@ export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguF
     rawResponse: created.rawResponse,
   };
 
-  const applied = await applyVerifiedPayChanguPayment(verification);
+  const applied = applyVerifiedPayChanguPayment(verification);
 
   return {
     orderBefore,
     payment: created,
     verification,
     applied,
-    orderAfter: await orderRepository.findById(orderBefore.id),
+    orderAfter: orderRepository.findById(orderBefore.id),
   };
 }
 

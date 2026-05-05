@@ -1,12 +1,11 @@
 import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
-import { pool } from '../../db.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 
 export interface ApplyPayChanguResult {
-  payment?: PaymentResult;
-  order?: Awaited<ReturnType<typeof orderRepository.findByPaymentReference>>;
+  payment?: ReturnType<typeof paymentRepository.findByReference>;
+  order?: ReturnType<typeof orderRepository.findByPaymentReference>;
   verification: PaymentVerificationResult;
 }
 
@@ -30,22 +29,14 @@ export function applyVerifiedPayChanguPayment(verification: PaymentVerificationR
     ? serverOrderService.confirmByPaymentReference(reference)
     : orderRepository.findByPaymentReference(reference);
 
-    await client.query('COMMIT');
-
-    return {
-      payment,
-      order,
-      verification,
-    };
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  return {
+    payment,
+    order,
+    verification,
+  };
 }
 
-export async function seedDemoPayChanguPayment(payment: PaymentResult): Promise<PaymentResult> {
+export function seedDemoPayChanguPayment(payment: PaymentResult): ReturnType<typeof paymentRepository.save> {
   return paymentRepository.save({
     ...payment,
     verified: false,

@@ -83,7 +83,6 @@ export class PaymentWebhookHandler {
       });
     }
 
-    await applyVerifiedPayChanguPayment(verification);
     return result;
   }
 
