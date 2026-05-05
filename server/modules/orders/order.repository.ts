@@ -27,6 +27,12 @@ export class InMemoryOrderRepository {
     this.orders.set(id, next);
     return next;
   }
+
+  updateByPaymentReference(reference: string, updater: (order: StoredOrder) => StoredOrder): StoredOrder | undefined {
+    const current = this.findByPaymentReference(reference);
+    if (!current) return undefined;
+    return this.update(current.id, updater);
+  }
 }
 
 export const orderRepository = new InMemoryOrderRepository();
