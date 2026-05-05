@@ -11,7 +11,7 @@ export function createPaymentRouter(requireAuth?: RequestHandler): express.Route
   const router = express.Router();
   const auth = requireAuth ?? ((_req, _res, next) => next());
 
-  router.post('/paychangu', auth, async (req, res) => {
+  router.post('/paychangu/initialize', auth, async (req, res) => {
     try {
       const result = await paymentController.createPaychanguPayment(req.body);
       res.status(201).json(result);
@@ -52,7 +52,7 @@ export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestH
 }
 
 export const paychanguRoutes = {
-  create: PAYMENT_ENDPOINTS.paychangu.create,
+  initialize: PAYMENT_ENDPOINTS.paychangu.initialize,
   verify: PAYMENT_ENDPOINTS.paychangu.verify,
   webhook: PAYMENT_ENDPOINTS.paychangu.webhook,
 } as const;
