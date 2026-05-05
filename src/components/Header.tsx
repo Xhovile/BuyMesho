@@ -300,10 +300,10 @@ export default function Header({
             </div>
           </div>
 
-          <div className="px-3 py-2.5 bg-zinc-100 border-t border-zinc-200">
+          <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
           <div className="mx-auto max-w-7xl">
             <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-center gap-6 pb-1">
+              <div className="flex min-w-max items-center gap-4 pb-0.5">
                 {QUICK_CHIPS.map((chip) => {
                   const isActive = chip === selectedChip;
                   return (
@@ -314,7 +314,7 @@ export default function Header({
                         setSelectedChip(chip);
                         onChipChange?.(chip);
                       }}
-                      className={`inline-flex items-center whitespace-nowrap px-0 py-1 text-[18px] font-bold font-sans leading-none transition-colors ${
+                      className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${
                         isActive
                           ? "text-zinc-800"
                           : "text-zinc-700 hover:text-zinc-800"
