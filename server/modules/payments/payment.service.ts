@@ -3,6 +3,7 @@ import { PaymentGatewayRegistry } from '../../../src/modules/payments/paymentGat
 import { flutterwaveProvider } from '../../../src/modules/payments/providers/flutterwave';
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
 import { paychanguProvider } from './paychangu.provider';
+import { paymentRepository } from './payment.repository';
 
 export interface ServerPaymentConfig {
   paychanguSecretKey?: string;
@@ -25,15 +26,24 @@ export class ServerPaymentService {
   }
 
   async createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
-    if (request.provider === 'paychangu') {
-      return paychanguProvider.createPayment(request, this.config);
-    }
+    const result = request.provider === 'paychangu'
+      ? await paychanguProvider.createPayment(request, this.config)
+      : await this.registry.get(request.provider).createPayment(request);
 
-    return this.registry.get(request.provider).createPayment(request);
+    paymentRepository.save({ ...result, verified: false });
+    return result;
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    return paychanguProvider.verifyPayment(txRef, this.config);
+    const verification = await paychanguProvider.verifyPayment(txRef, this.config);
+
+    paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
+      ...current,
+      verified: verification.verified,
+      verification,
+    }));
+
+    return verification;
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
