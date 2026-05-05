@@ -33,6 +33,36 @@ function toISODate(): string {
   return new Date().toISOString();
 }
 
+type VerificationState = 'paid' | 'pending' | 'failed' | 'reversed' | 'unknown';
+
+const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
+  success: 'paid',
+  succeeded: 'paid',
+  paid: 'paid',
+  captured: 'paid',
+  completed: 'paid',
+  pending: 'pending',
+  processing: 'pending',
+  initiated: 'pending',
+  queued: 'pending',
+  failed: 'failed',
+  cancelled: 'failed',
+  canceled: 'failed',
+  declined: 'failed',
+  expired: 'failed',
+  reversed: 'reversed',
+  refunded: 'reversed',
+  chargeback: 'reversed',
+};
+
+function normalizeProviderStatus(rawStatus: unknown): { normalized: VerificationState; providerStatus: string } {
+  const providerStatus = String(rawStatus ?? '').trim().toLowerCase();
+  return {
+    normalized: PAYCHANGU_STATUS_MAP[providerStatus] ?? 'unknown',
+    providerStatus,
+  };
+}
+
 function signatureMatches(secret: string | undefined, payload: string, signature: string | undefined): boolean {
   if (!secret || !signature) return false;
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
@@ -120,16 +150,32 @@ export const paychanguProvider = {
     }
 
     const payload = (data.data ?? data) as Record<string, unknown>;
-    const amount = typeof payload.amount === 'number'
-      ? { amount: payload.amount, currency: String(payload.currency ?? 'MWK') }
+    const amountValue = typeof payload.amount === 'number'
+      ? payload.amount
+      : typeof payload.amount === 'string'
+        ? Number(payload.amount)
+        : NaN;
+    const amount = Number.isFinite(amountValue)
+      ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
       : undefined;
+    const { normalized, providerStatus } = normalizeProviderStatus(payload.status);
+    const hasValidValue = !!amount && amount.amount > 0;
+    const verified = normalized === 'paid' && hasValidValue;
+    const failureReason = String(
+      payload.failure_reason
+      ?? payload.failureReason
+      ?? payload.error
+      ?? payload.message
+      ?? '',
+    ).trim() || undefined;
 
     return {
-      verified: true,
+      verified,
       provider: 'paychangu',
       txRef,
       reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
-      status: String(payload.status ?? 'captured'),
+      status: normalized,
+      failureReason: !verified ? (failureReason ?? `Payment is ${normalized}${providerStatus ? ` (${providerStatus})` : ''}`) : undefined,
       currency: String(payload.currency ?? 'MWK'),
       amount,
       checkoutUrl: null,

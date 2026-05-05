@@ -46,6 +46,7 @@ export interface PaymentVerificationResult {
   txRef: string;
   reference?: string;
   status?: PaymentIntentStatus | SettlementStatus | string;
+  failureReason?: string;
   currency?: string;
   amount?: MoneyValue;
   checkoutUrl?: string | null;
