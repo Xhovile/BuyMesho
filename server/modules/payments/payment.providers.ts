@@ -1,7 +1,7 @@
-import { PaymentGatewayRegistry } from '../../../src/modules/payments/paymentGateway';
-import { flutterwaveProvider } from '../../../src/modules/payments/providers/flutterwave';
-import { paychanguProvider } from '../../../src/modules/payments/providers/paychangu';
-import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
+import { PaymentGatewayRegistry } from '../../../src/modules/payments/paymentGateway.js';
+import { flutterwaveProvider } from '../../../src/modules/payments/providers/flutterwave.js';
+import { paychanguProvider } from '../../../src/modules/payments/providers/paychangu.js';
+import { paystackProvider } from '../../../src/modules/payments/providers/paystack.js';
 
 export function createPaymentProviderRegistry(): PaymentGatewayRegistry {
   const registry = new PaymentGatewayRegistry();

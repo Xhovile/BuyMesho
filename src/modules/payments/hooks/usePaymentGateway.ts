@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
-import { paymentService, PaymentService } from '../services/paymentService';
-import type { CreatePaymentRequest, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
-import type { PaymentProviderKey } from '../../../shared/types/payment';
+import { paymentService, PaymentService } from '../services/paymentService.js';
+import type { CreatePaymentRequest, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types.js';
+import type { PaymentProviderKey } from '../../../shared/types/payment.js';
 
 export interface UsePaymentGatewayResult {
   supportedProviders: PaymentProviderKey[];

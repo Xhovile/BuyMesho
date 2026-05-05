@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import { query } from '../../db';
-import type { OrderState } from '../../../src/modules/orders/orderState';
+import { query } from '../../db.js';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
 
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
@@ -107,8 +107,9 @@ export class OrderRepository {
     return this.save(updater(current), client);
   }
 
-  clear(): void {
-    this.orders.clear();
+  async clear(client?: Queryable): Promise<void> {
+    const runner = client ?? { query };
+    await runner.query('DELETE FROM orders');
   }
 }
 

@@ -1,12 +1,12 @@
-import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types';
-import { pool } from '../../db';
-import { paymentRepository } from './payment.repository';
-import { orderRepository } from '../orders/order.repository';
-import { serverOrderService } from '../orders/order.service';
+import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
+import { pool } from '../../db.js';
+import { paymentRepository } from './payment.repository.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { serverOrderService } from '../orders/order.service.js';
 
 export interface ApplyPayChanguResult {
   payment?: PaymentResult;
-  order?: ReturnType<typeof orderRepository.findByPaymentReference>;
+  order?: Awaited<ReturnType<typeof orderRepository.findByPaymentReference>>;
   verification: PaymentVerificationResult;
 }
 

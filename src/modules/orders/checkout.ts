@@ -1,7 +1,7 @@
-import type { CreatePaymentRequest } from '../payments/types';
-import type { OrderState, OrderStatus } from './orderState';
-import type { PaymentMethod, PaymentProviderKey } from '../../shared/types/payment';
-import type { MoneyValue } from '../../shared/types/common';
+import type { CreatePaymentRequest } from '../payments/types.js';
+import type { OrderState, OrderStatus } from './orderState.js';
+import type { PaymentMethod, PaymentProviderKey } from '../../shared/types/payment.js';
+import type { MoneyValue } from '../../shared/types/common.js';
 
 export interface CheckoutRequest {
   order: OrderState;

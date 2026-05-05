@@ -1,4 +1,4 @@
-import type { EscrowState } from '../../../src/shared/types/payment';
+import type { EscrowState } from '../../../src/shared/types/payment.js';
 
 export interface ServerReleaseContext {
   state: EscrowState;

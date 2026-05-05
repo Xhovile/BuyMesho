@@ -1,4 +1,5 @@
-import type { CreatePaymentRequest, PaymentGatewayProvider, PaymentProviderCapabilities, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
+import type { CreatePaymentRequest, PaymentProviderCapabilities, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types.js';
+import type { PaymentGatewayProvider } from '../paymentGateway.js';
 
 const capabilities: PaymentProviderCapabilities = {
   supportsWebhookVerification: true,

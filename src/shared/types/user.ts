@@ -1,4 +1,4 @@
-import type { EntityId, ISODateString, Nullable, Timestamped } from './common';
+import type { EntityId, ISODateString, Nullable, Timestamped } from './common.js';
 
 export type UserRole = 'buyer' | 'seller' | 'admin' | 'support';
 export type AccountStatus = 'active' | 'pending' | 'suspended' | 'deleted';

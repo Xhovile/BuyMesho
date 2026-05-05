@@ -1,7 +1,7 @@
-import { ENDPOINTS } from './endpoints';
-import { ApiError } from './errors';
-import type { ApiEnvelope } from '../types/common';
-import type { AuthSession } from '../types/user';
+import { ENDPOINTS } from './endpoints.js';
+import { ApiError } from './errors.js';
+import type { ApiEnvelope } from '../types/common.js';
+import type { AuthSession } from '../types/user.js';
 
 export interface RequestOptions extends RequestInit {
   authToken?: string;

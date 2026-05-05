@@ -679,7 +679,7 @@ async function startServer() {
   registerVerificationEmailRoutes(app);
   registerSessionRoutes(app);
   mountTotpRoutes(app);
-  app.use('/api/payments', createPaymentRouter());
+  app.use('/api/payments', createPaymentRouter(requireAuth));
   
   // Logging middleware
   app.use((req, res, next) => {

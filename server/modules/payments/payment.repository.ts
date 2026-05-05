@@ -1,6 +1,6 @@
 import type { PoolClient } from 'pg';
-import { query } from '../../db';
-import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types';
+import { query } from '../../db.js';
+import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
 
 export interface StoredPayment extends PaymentResult {
   verified?: boolean;
@@ -16,6 +16,7 @@ function toStoredPayment(row: Record<string, any>): StoredPayment {
     provider: row.provider,
     method: row.method,
     status: row.status,
+    amount: { amount: Number(row.amount), currency: row.currency },
     reference: row.reference,
     providerReference: row.provider_reference,
     checkoutUrl: row.checkout_url,
@@ -88,8 +89,9 @@ export class PaymentRepository {
     return this.save(next, client);
   }
 
-  clear(): void {
-    this.payments.clear();
+  async clear(client?: Queryable): Promise<void> {
+    const runner = client ?? { query };
+    await runner.query('DELETE FROM payments');
   }
 }
 

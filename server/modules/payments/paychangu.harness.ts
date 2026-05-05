@@ -1,17 +1,17 @@
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types';
-import type { OrderState } from '../../../src/modules/orders/orderState';
-import { paymentController } from './payment.controller';
-import { paymentRepository } from './payment.repository';
-import { orderRepository } from '../orders/order.repository';
-import { serverOrderService } from '../orders/order.service';
-import { applyVerifiedPayChanguPayment } from './paychangu.flow';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import { paymentController } from './payment.controller.js';
+import { paymentRepository } from './payment.repository.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { serverOrderService } from '../orders/order.service.js';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 
 export interface PayChanguFlowHarnessResult {
   orderBefore: OrderState;
   payment: PaymentResult;
   verification: PaymentVerificationResult;
-  applied: ReturnType<typeof applyVerifiedPayChanguPayment>;
-  orderAfter: ReturnType<typeof orderRepository.findById>;
+  applied: Awaited<ReturnType<typeof applyVerifiedPayChanguPayment>>;
+  orderAfter: Awaited<ReturnType<typeof orderRepository.findById>>;
 }
 
 function buildSeedOrder(reference: string): OrderState {
@@ -41,7 +41,7 @@ function buildSeedOrder(reference: string): OrderState {
   };
 }
 
-function seedDemoPayment(order: OrderState): PaymentResult {
+async function seedDemoPayment(order: OrderState): Promise<PaymentResult> {
   const now = new Date().toISOString();
 
   return paymentRepository.save({
@@ -50,6 +50,7 @@ function seedDemoPayment(order: OrderState): PaymentResult {
     provider: 'paychangu',
     method: 'mobile_money',
     status: 'pending',
+    amount: order.total,
     reference: order.paymentReference ?? order.id,
     providerReference: 'paychangu_demo_001',
     checkoutUrl: 'https://example.com/checkout',
@@ -63,7 +64,7 @@ function seedDemoPayment(order: OrderState): PaymentResult {
 
 export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguFlowHarnessResult> {
   const orderBefore = buildSeedOrder(txRef);
-  serverOrderService.create(orderBefore);
+  await serverOrderService.create(orderBefore);
 
   const request: CreatePaymentRequest = {
     orderId: orderBefore.id,
@@ -84,7 +85,7 @@ export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguF
   };
 
   const created = await paymentController.createPaychanguPayment(request);
-  const seededPayment = seedDemoPayment(orderBefore);
+  const seededPayment = await seedDemoPayment(orderBefore);
   const verification: PaymentVerificationResult = {
     verified: true,
     provider: 'paychangu',
@@ -97,14 +98,14 @@ export async function runPayChanguFlowHarness(txRef: string): Promise<PayChanguF
     rawResponse: created.rawResponse,
   };
 
-  const applied = applyVerifiedPayChanguPayment(verification);
+  const applied = await applyVerifiedPayChanguPayment(verification);
 
   return {
     orderBefore,
     payment: created,
     verification,
     applied,
-    orderAfter: orderRepository.findById(orderBefore.id),
+    orderAfter: await orderRepository.findById(orderBefore.id),
   };
 }
 
