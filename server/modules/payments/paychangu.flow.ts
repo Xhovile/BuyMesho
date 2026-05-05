@@ -1,4 +1,5 @@
 import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types';
+import { pool } from '../../db';
 import { paymentRepository } from './payment.repository';
 import { orderRepository } from '../orders/order.repository';
 import { serverOrderService } from '../orders/order.service';
@@ -29,14 +30,22 @@ export function applyVerifiedPayChanguPayment(verification: PaymentVerificationR
     ? serverOrderService.confirmByPaymentReference(reference)
     : orderRepository.findByPaymentReference(reference);
 
-  return {
-    payment,
-    order,
-    verification,
-  };
+    await client.query('COMMIT');
+
+    return {
+      payment,
+      order,
+      verification,
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
-export function seedDemoPayChanguPayment(payment: PaymentResult): PaymentResult {
+export async function seedDemoPayChanguPayment(payment: PaymentResult): Promise<PaymentResult> {
   return paymentRepository.save({
     ...payment,
     verified: false,

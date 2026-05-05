@@ -46,6 +46,7 @@ export interface PaymentVerificationResult {
   txRef: string;
   reference?: string;
   status?: PaymentIntentStatus | SettlementStatus | string;
+  failureReason?: string;
   currency?: string;
   amount?: MoneyValue;
   checkoutUrl?: string | null;
@@ -63,6 +64,7 @@ export interface WebhookVerificationResult {
 
 export interface RefundRequest {
   paymentId: EntityId;
+  provider: PaymentProviderKey;
   amount?: MoneyValue;
   reason?: string;
   metadata?: Record<string, unknown>;

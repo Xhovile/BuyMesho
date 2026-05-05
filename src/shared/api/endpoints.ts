@@ -13,8 +13,8 @@ export const ENDPOINTS = {
     paychangu: {
       create: `${API_BASE_PATH}/payments/paychangu`,
       verify: (txRef: string) => `${API_BASE_PATH}/payments/paychangu/verify/${encodeURIComponent(txRef)}`,
+      webhook: `${API_BASE_PATH}/payments/paychangu/webhook`,
     },
-    webhooks: (provider: string) => `${API_BASE_PATH}/webhooks/${provider}`,
   },
   escrow: {
     hold: (orderId: string) => `${API_BASE_PATH}/escrow/${orderId}/hold`,

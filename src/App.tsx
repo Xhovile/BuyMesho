@@ -3106,18 +3106,29 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     switch (activeChip) {
       case "Deals":
         return listings.filter((listing) => {
+          const listingMode = (listing.listing_mode || "").toLowerCase();
           const price = Number(listing.price ?? 0);
           const originalPrice = Number(listing.original_price ?? 0);
           const discountPercent = Number(listing.discount_percent ?? 0);
 
           return (
+            listingMode === "deal" ||
             discountPercent > 0 ||
             (Number.isFinite(originalPrice) && originalPrice > price && price > 0)
           );
         });
 
       case "Wholesale":
-        return listings.filter((listing) => Boolean(listing.is_wholesale));
+        return listings.filter((listing) => {
+          const listingMode = (listing.listing_mode || "").toLowerCase();
+          const packSize = Number(listing.pack_size ?? 0);
+
+          return (
+            listingMode === "wholesale" ||
+            Boolean(listing.is_wholesale) ||
+            (Number.isFinite(packSize) && packSize > 1)
+          );
+        });
 
       case "Events":
       // TODO: filter by event listings when the field is available

@@ -1,7 +1,7 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { motion } from "motion/react";
-import { formatMoney } from "../lib/listingPricing";
+import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -28,6 +28,11 @@ type ListingCardProps = {
   onOpenSeller: (sellerUid: string) => void;
 };
 
+function formatMWK(value: number): string {
+  const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
+  return `MWK ${safeValue.toLocaleString()}`;
+}
+
 export default function ListingCard({
   listing,
   onReport,
@@ -50,11 +55,14 @@ export default function ListingCard({
   onOpenDetails,
   onOpenSeller,
 }: ListingCardProps) {
+  const pricing = getListingPricing(listing);
   const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
   const sellerName =
     typeof listing.business_name === "string" && listing.business_name.trim()
       ? listing.business_name.trim()
       : "Seller";
+  const truncatedSellerName =
+    sellerName.length > 7 ? `${sellerName.slice(0, 7)}..` : sellerName;
 
   const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
   const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
@@ -79,12 +87,15 @@ export default function ListingCard({
       ? listing.university
       : "Unknown campus";
 
-  const listingMode = listing.listing_mode || "normal";
-  const modeBadge =
+  const listingMode = pricing.listingMode;
+  const offerLabel =
+    listingMode === "deal" ? "Discount" : listingMode === "wholesale" ? "Wholesale" : null;
+
+  const offerValue =
     listingMode === "deal"
-      ? "Deal"
+      ? `${formatMWK(pricing.price)}${pricing.discountPercent !== null ? ` -${pricing.discountPercent}%` : ""}`
       : listingMode === "wholesale"
-        ? "Wholesale"
+        ? formatMWK(pricing.price)
         : null;
 
   const handleOpenProfile = (event: ReactMouseEvent<HTMLButtonElement>) => {
@@ -138,7 +149,7 @@ export default function ListingCard({
                   ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"
                 } font-bold text-red-900`}
               >
-                {sellerName}
+                {truncatedSellerName}
               </p>
               {listing.is_verified ? (
                 <ShieldCheck className="w-3.5 h-3.5 shrink-0 fill-blue-50 text-blue-500" />
@@ -148,11 +159,6 @@ export default function ListingCard({
           </button>
 
           <div className="flex flex-col items-end gap-1">
-            {modeBadge ? (
-              <span className="shrink-0 rounded-full bg-zinc-900 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white">
-                {modeBadge}
-              </span>
-            ) : null}
             <span
               className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
                 ultraCompact
@@ -213,14 +219,37 @@ export default function ListingCard({
             />
           ) : null}
 
-          <div className="absolute bottom-3 left-3 max-w-[80%]">
-            <div
-              className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md ${
-                ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
-              } text-zinc-900`}
-            >
-              <span>{formatMoney(Number(listing.price) || 0)}</span>
-            </div>
+          <div className="absolute bottom-3 left-3 max-w-[86%]">
+            {offerLabel ? (
+              <div
+                className={`inline-flex flex-col gap-0.5 rounded-xl bg-white/88 px-2 py-1 shadow-sm backdrop-blur-md ${
+                  ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"
+                }`}
+              >
+                <span
+                  className={`font-black uppercase tracking-[0.18em] text-red-600 ${
+                    ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
+                  }`}
+                >
+                  {offerLabel}
+                </span>
+                <span
+                  className={`font-extrabold leading-none text-red-700 ${
+                    ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
+                  }`}
+                >
+                  {offerValue}
+                </span>
+              </div>
+            ) : (
+              <div
+                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md ${
+                  ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
+                } text-zinc-900`}
+              >
+                <span>{formatMoney(Number(listing.price) || 0)}</span>
+              </div>
+            )}
           </div>
         </div>
 

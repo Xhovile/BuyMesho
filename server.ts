@@ -12,6 +12,7 @@ import rateLimit from "express-rate-limit";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
+import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -446,6 +447,12 @@ try {
     console.log("Migration: Added listings.can_sell_individually");
   }
 
+  const hasSingleItemPrice = cols.some((c) => c.name === "single_item_price");
+  if (!hasSingleItemPrice) {
+    db.exec("ALTER TABLE listings ADD COLUMN single_item_price DOUBLE PRECISION");
+    console.log("Migration: Added listings.single_item_price");
+  }
+
   const hasIsWholesale = cols.some((c) => c.name === "is_wholesale");
   if (!hasIsWholesale) {
     db.exec("ALTER TABLE listings ADD COLUMN is_wholesale INTEGER NOT NULL DEFAULT 0");
@@ -681,6 +688,7 @@ async function startServer() {
   registerVerificationEmailRoutes(app);
   registerSessionRoutes(app);
   mountTotpRoutes(app);
+  app.use('/api/payments', createPaymentRouter());
   
   // Logging middleware
   app.use((req, res, next) => {
@@ -799,6 +807,7 @@ type NormalizedListingPricing = {
   deal_label: string | null;
   deal_expires_at: string | null;
   can_sell_individually: number | null;
+  single_item_price: number | null;
   is_wholesale: number;
   pack_size: number | null;
   bulk_units: string | null;
@@ -843,6 +852,7 @@ function normalizeListingPricing(body: any, existingListingMode?: "normal" | "de
   const isWholesale = toBooleanFlag(body.is_wholesale);
   const packSize = toFiniteNumber(body.pack_size);
   const bulkUnits = toTrimmedString(body.bulk_units);
+  const singleItemPriceInput = toFiniteNumber(body.single_item_price);
   const dealLabel = toTrimmedString(body.deal_label);
   const dealExpiresAt = toTrimmedString(body.deal_expires_at);
   const canSellIndividually =
@@ -855,7 +865,7 @@ function normalizeListingPricing(body: any, existingListingMode?: "normal" | "de
   const legacyDerivedMode =
     isWholesale
       ? "wholesale"
-      : (discountPercentInput !== null || originalPriceInput !== null)
+      : originalPriceInput !== null
         ? "deal"
         : undefined;
 
@@ -864,28 +874,32 @@ function normalizeListingPricing(body: any, existingListingMode?: "normal" | "de
       ? rawMode
       : legacyDerivedMode ?? existingListingMode ?? "normal";
 
-  const discount_percent =
-    discountPercentInput !== null &&
-    discountPercentInput > 0 &&
-    discountPercentInput <= 100
-      ? Math.round(discountPercentInput)
+  const discount_percent = null;
+  const original_price = listing_mode === "deal" && originalPriceInput !== null && originalPriceInput > price
+    ? originalPriceInput
+    : null;
+  const deal_label = listing_mode === "deal" ? dealLabel : null;
+  const deal_expires_at = listing_mode === "deal" ? dealExpiresAt : null;
+  const wholesaleFlag = listing_mode === "wholesale" ? 1 : 0;
+  const can_sell_individually = listing_mode === "wholesale" ? canSellIndividually : null;
+  const single_item_price =
+    listing_mode === "wholesale" && canSellIndividually === 1 && singleItemPriceInput !== null && singleItemPriceInput > 0
+      ? singleItemPriceInput
       : null;
-
-  const original_price =
-    originalPriceInput !== null && originalPriceInput > price
-      ? originalPriceInput
-      : computeOriginalPrice(price, discount_percent);
+  const safePackSize = listing_mode === "wholesale" ? packSize : null;
+  const safeBulkUnits = listing_mode === "wholesale" ? bulkUnits : null;
 
   return {
     price,
     original_price,
     discount_percent,
-    deal_label: dealLabel,
-    deal_expires_at: dealExpiresAt,
-    can_sell_individually: canSellIndividually,
-    is_wholesale: isWholesale,
-    pack_size: packSize,
-    bulk_units: bulkUnits,
+    deal_label,
+    deal_expires_at,
+    can_sell_individually,
+    single_item_price,
+    is_wholesale: wholesaleFlag,
+    pack_size: safePackSize,
+    bulk_units: safeBulkUnits,
     listing_mode,
   };
 }
@@ -923,6 +937,10 @@ function serializeListingRow(row: any) {
       row.can_sell_individually === null || row.can_sell_individually === undefined
         ? null
         : Boolean(row.can_sell_individually),
+    single_item_price:
+      row.single_item_price === null || row.single_item_price === undefined
+        ? null
+        : Number(row.single_item_price),
     photos: JSON.parse(row.photos || "[]"),
     spec_values: JSON.parse(row.spec_values || "{}"),
   };
@@ -1800,7 +1818,7 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   try {
     const info = db.prepare(`
       INSERT INTO listings (
-        seller_uid, name, price, original_price, discount_percent, deal_label, deal_expires_at, can_sell_individually, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
+        seller_uid, name, price, original_price, discount_percent, deal_label, deal_expires_at, can_sell_individually, single_item_price, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
         photos, video_url, whatsapp_number, status, condition,
         quantity, sold_quantity, updated_at
       )
@@ -1814,6 +1832,7 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
       pricing.deal_label,
       safeDealExpiresAt,
       safeCanSellIndividually,
+      pricing.single_item_price,
       safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
@@ -2310,6 +2329,7 @@ const safeCanSellIndividually = pricing.can_sell_individually;
         deal_label = ?,
         deal_expires_at = ?,
         can_sell_individually = ?,
+        single_item_price = ?,
         listing_mode = ?,
         is_wholesale = ?,
         pack_size = ?,
@@ -2337,6 +2357,7 @@ const safeCanSellIndividually = pricing.can_sell_individually;
       pricing.deal_label,
       safeDealExpiresAt,
       safeCanSellIndividually,
+      pricing.single_item_price,
       safeListingMode,
       isWholesale ? 1 : 0,
       safePackSize ?? null,
