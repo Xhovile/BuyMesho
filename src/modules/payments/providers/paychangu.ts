@@ -1,6 +1,7 @@
-import { apiRequest } from '../../../shared/api/client';
-import { ENDPOINTS } from '../../../shared/api/endpoints';
-import type { CreatePaymentRequest, PaymentGatewayProvider, PaymentProviderCapabilities, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
+import { apiRequest } from '../../../shared/api/client.js';
+import { ENDPOINTS } from '../../../shared/api/endpoints.js';
+import type { CreatePaymentRequest, PaymentProviderCapabilities, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types.js';
+import type { PaymentGatewayProvider } from '../paymentGateway.js';
 
 const capabilities: PaymentProviderCapabilities = {
   supportsWebhookVerification: true,

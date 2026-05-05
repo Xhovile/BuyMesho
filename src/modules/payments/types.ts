@@ -1,5 +1,5 @@
-import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common';
-import type { PaymentMethod, PaymentProviderKey, PaymentIntentStatus, SettlementStatus } from '../../shared/types/payment';
+import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common.js';
+import type { PaymentMethod, PaymentProviderKey, PaymentIntentStatus, SettlementStatus } from '../../shared/types/payment.js';
 
 export interface PaymentProviderCapabilities {
   supportsWebhookVerification: boolean;
@@ -33,6 +33,7 @@ export interface PaymentResult extends Timestamped {
   provider: PaymentProviderKey;
   method: PaymentMethod;
   status: PaymentIntentStatus;
+  amount: MoneyValue;
   reference: string;
   providerReference?: string | null;
   checkoutUrl?: string | null;

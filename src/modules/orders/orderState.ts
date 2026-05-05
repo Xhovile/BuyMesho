@@ -1,5 +1,5 @@
-import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common';
-import type { PaymentProviderKey } from '../../shared/types/payment';
+import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common.js';
+import type { PaymentProviderKey } from '../../shared/types/payment.js';
 
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_escrow' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed' | 'closed';
 export type OrderSource = 'listing' | 'layby' | 'event' | 'accommodation' | 'wholesale';

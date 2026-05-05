@@ -1,6 +1,6 @@
-import type { OrderState } from '../../../src/modules/orders/orderState';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
 import type { PoolClient } from 'pg';
-import { orderRepository, type StoredOrder } from './order.repository';
+import { orderRepository, type StoredOrder } from './order.repository.js';
 
 export class ServerOrderService {
   create(order: OrderState): Promise<StoredOrder> {

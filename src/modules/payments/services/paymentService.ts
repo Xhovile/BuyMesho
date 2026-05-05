@@ -1,12 +1,12 @@
-import { apiRequest } from '../../../shared/api/client';
-import { ENDPOINTS } from '../../../shared/api/endpoints';
-import { PaymentGatewayRegistry } from '../paymentGateway';
-import { flutterwaveProvider } from '../providers/flutterwave';
-import { paychanguProvider } from '../providers/paychangu';
-import { paystackProvider } from '../providers/paystack';
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
-import type { PaymentProviderKey } from '../../../shared/types/payment';
-import { ApiError } from '../../../shared/api/errors';
+import { apiRequest } from '../../../shared/api/client.js';
+import { ENDPOINTS } from '../../../shared/api/endpoints.js';
+import { PaymentGatewayRegistry } from '../paymentGateway.js';
+import { flutterwaveProvider } from '../providers/flutterwave.js';
+import { paychanguProvider } from '../providers/paychangu.js';
+import { paystackProvider } from '../providers/paystack.js';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types.js';
+import type { PaymentProviderKey } from '../../../shared/types/payment.js';
+import { ApiError } from '../../../shared/api/errors.js';
 
 export class PaymentService {
   constructor(private readonly registry = PaymentService.createDefaultRegistry()) {}

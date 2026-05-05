@@ -2,10 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
 import { createHmac } from 'crypto';
-import { mountPayChanguRoutes } from '../payment.routes';
-import { serverOrderService } from '../../orders/order.service';
-import { orderRepository } from '../../orders/order.repository';
-import { paymentRepository } from '../payment.repository';
+import { mountPayChanguRoutes } from '../payment.routes.js';
+import { serverOrderService } from '../../orders/order.service.js';
+import { orderRepository } from '../../orders/order.repository.js';
+import { paymentRepository } from '../payment.repository.js';
 
 const requireAuth: express.RequestHandler = (req, _res, next) => {
   req.user = { uid: 'buyer_1', email: 'buyer@example.com' };
@@ -13,15 +13,15 @@ const requireAuth: express.RequestHandler = (req, _res, next) => {
 };
 
 test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
-  orderRepository.clear();
-  paymentRepository.clear();
+  await orderRepository.clear();
+  await paymentRepository.clear();
 
   const app = express();
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
 
   const originalFetch = global.fetch;
-  global.fetch = (async (input: URL | RequestInfo, init?: RequestInit) => {
+  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (target.startsWith('https://api.paychangu.com/payment')) {
       return new Response(JSON.stringify({
@@ -32,7 +32,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
-    return originalFetch(input as RequestInfo, init);
+    return originalFetch(input, init);
   }) as typeof fetch;
 
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
@@ -43,7 +43,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
 
   try {
     const now = new Date().toISOString();
-    serverOrderService.create({
+    await serverOrderService.create({
       id: 'order_it_1', buyerId: 'buyer_1', sellerId: 'seller_1', source: 'listing', status: 'draft',
       currency: 'MWK', subtotal: { amount: 1000, currency: 'MWK' }, total: { amount: 1000, currency: 'MWK' },
       items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }],
@@ -76,8 +76,8 @@ test('integration: order -> paychangu payment -> verified webhook persists state
 
     assert.equal(webhookRes.status, 200);
 
-    const savedOrder = orderRepository.findById('order_it_1');
-    const savedPayment = paymentRepository.findByReference('txref-integration-1');
+    const savedOrder = await orderRepository.findById('order_it_1');
+    const savedPayment = await paymentRepository.findByReference('txref-integration-1');
 
     assert.equal(savedOrder?.status, 'paid');
     assert.equal(savedPayment?.verified, true);
@@ -85,7 +85,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   } finally {
     global.fetch = originalFetch;
     server.close();
-    orderRepository.clear();
-    paymentRepository.clear();
+    await orderRepository.clear();
+    await paymentRepository.clear();
   }
 });

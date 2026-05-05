@@ -1,5 +1,6 @@
-import type { EscrowLedgerEntry, MoneyValue } from '../../../src/modules/payments/types';
-import type { EscrowState } from '../../../src/shared/types/payment';
+import type { EscrowLedgerEntry } from '../../../src/shared/types/payment.js';
+import type { MoneyValue } from '../../../src/shared/types/common.js';
+import type { EscrowState } from '../../../src/shared/types/payment.js';
 
 export interface EscrowRecord {
   id: string;

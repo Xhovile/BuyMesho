@@ -1,5 +1,5 @@
-import type { CreatePaymentRequest, PaymentProviderCapabilities, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from './types';
-import type { PaymentProviderKey } from '../../shared/types/payment';
+import type { CreatePaymentRequest, PaymentProviderCapabilities, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from './types.js';
+import type { PaymentProviderKey } from '../../shared/types/payment.js';
 
 export interface PaymentGatewayProvider {
   readonly key: PaymentProviderKey;

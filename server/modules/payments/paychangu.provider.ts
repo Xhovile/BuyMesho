@@ -1,5 +1,6 @@
 import { createHmac, randomUUID } from 'crypto';
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
 const PAYCHANGU_SUCCESS_STATUSES = new Set(['success', 'successful', 'completed', 'paid', 'captured']);
@@ -89,7 +90,7 @@ export const paychanguProvider = {
     supportsWebhookVerification: true,
     supportsRefunds: false,
     supportsPartialCapture: false,
-    supportedMethods: ['card', 'bank_transfer', 'mobile_money'],
+    supportedMethods: ['card', 'bank_transfer', 'mobile_money'] as PaymentMethod[],
     currencies: ['MWK', 'USD', 'ZAR'],
   },
 
@@ -139,6 +140,7 @@ export const paychanguProvider = {
       provider: 'paychangu',
       method: request.method,
       status: 'pending',
+      amount: request.amount,
       reference: data.data?.tx_ref ?? data.data?.txRef ?? txRef,
       providerReference,
       checkoutUrl,
