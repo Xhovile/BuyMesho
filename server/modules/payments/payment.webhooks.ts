@@ -3,7 +3,7 @@ import { serverPaymentService } from './payment.service';
 import { serverOrderService } from '../orders/order.service';
 
 export class PaymentWebhookHandler {
-  async handlePaychanguWebhook(signature: string | undefined, payload: any): Promise<WebhookVerificationResult> {
+  async handlePaychanguWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
     const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload);
 
     if (!result.valid) {
@@ -11,15 +11,8 @@ export class PaymentWebhookHandler {
     }
 
     const reference = result.reference;
-
-    // Minimal flow: mark order as paid (replace with DB later)
     if (reference) {
-      const fakeOrder = {
-        id: reference,
-        status: 'pending_payment',
-      } as any;
-
-      serverOrderService.markPaid(fakeOrder);
+      serverOrderService.confirmByPaymentReference(reference);
     }
 
     return result;
