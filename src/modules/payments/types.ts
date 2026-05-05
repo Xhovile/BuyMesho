@@ -40,6 +40,18 @@ export interface PaymentResult extends Timestamped {
   rawResponse?: Record<string, unknown>;
 }
 
+export interface PaymentVerificationResult {
+  verified: boolean;
+  provider: PaymentProviderKey;
+  txRef: string;
+  reference?: string;
+  status?: PaymentIntentStatus | SettlementStatus | string;
+  currency?: string;
+  amount?: MoneyValue;
+  checkoutUrl?: string | null;
+  rawResponse?: Record<string, unknown>;
+}
+
 export interface WebhookVerificationResult {
   valid: boolean;
   provider: PaymentProviderKey;
