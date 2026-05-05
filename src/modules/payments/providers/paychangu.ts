@@ -1,4 +1,6 @@
-import type { CreatePaymentRequest, PaymentGatewayProvider, PaymentProviderCapabilities, PaymentResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
+import { apiRequest } from '../../../shared/api/client';
+import { ENDPOINTS } from '../../../shared/api/endpoints';
+import type { CreatePaymentRequest, PaymentGatewayProvider, PaymentProviderCapabilities, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../types';
 
 const capabilities: PaymentProviderCapabilities = {
   supportsWebhookVerification: true,
@@ -12,12 +14,21 @@ export const paychanguProvider: PaymentGatewayProvider = {
   key: 'paychangu',
   capabilities,
 
-  async createPayment(_request: CreatePaymentRequest): Promise<PaymentResult> {
-    throw new Error('PayChangu adapter not implemented yet');
+  async createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
+    return apiRequest<PaymentResult>(ENDPOINTS.payments.paychangu.create, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
   },
 
-  async verifyWebhook(_signature: string | undefined, _payload: unknown): Promise<WebhookVerificationResult> {
-    throw new Error('PayChangu webhook verification not implemented yet');
+  async verifyWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
+    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.webhooks('paychangu'), {
+      method: 'POST',
+      headers: {
+        ...(signature ? { Signature: signature } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
   },
 
   async refund(_request: RefundRequest): Promise<RefundResult> {
@@ -25,10 +36,9 @@ export const paychanguProvider: PaymentGatewayProvider = {
   },
 
   async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {
-    return {
-      valid: false,
-      provider: 'paychangu',
-      payload,
-    };
+    return apiRequest<WebhookVerificationResult>(ENDPOINTS.payments.webhooks('paychangu'), {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   },
 };
