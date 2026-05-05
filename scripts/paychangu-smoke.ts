@@ -1,3 +1,4 @@
+// Developer sandbox harness only. Do not treat this smoke flow as a production-readiness check.
 import { runPayChanguFlowHarness } from '../server/modules/payments/paychangu.harness';
 
 async function main() {

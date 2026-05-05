@@ -33,6 +33,10 @@ export class InMemoryOrderRepository {
     if (!current) return undefined;
     return this.update(current.id, updater);
   }
+
+  clear(): void {
+    this.orders.clear();
+  }
 }
 
 export const orderRepository = new InMemoryOrderRepository();

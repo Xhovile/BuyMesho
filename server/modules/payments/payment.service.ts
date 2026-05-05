@@ -17,6 +17,15 @@ export class ServerPaymentService {
     private readonly registry = ServerPaymentService.createDefaultRegistry(),
   ) {}
 
+
+  private resolveConfig(): ServerPaymentConfig {
+    return {
+      paychanguSecretKey: this.config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY,
+      paychanguWebhookSecret: this.config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET,
+      paychanguBaseUrl: this.config.paychanguBaseUrl ?? process.env.PAYCHANGU_BASE_URL,
+    };
+  }
+
   static createDefaultRegistry(): PaymentGatewayRegistry {
     const registry = new PaymentGatewayRegistry();
     registry.register(paystackProvider);
@@ -27,7 +36,7 @@ export class ServerPaymentService {
 
   async createPayment(request: CreatePaymentRequest): Promise<PaymentResult> {
     const result = request.provider === 'paychangu'
-      ? await paychanguProvider.createPayment(request, this.config)
+      ? await paychanguProvider.createPayment(request, this.resolveConfig())
       : await this.registry.get(request.provider).createPayment(request);
 
     paymentRepository.save({ ...result, verified: false });
@@ -35,7 +44,7 @@ export class ServerPaymentService {
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    const verification = await paychanguProvider.verifyPayment(txRef, this.config);
+    const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
 
     paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
       ...current,
@@ -52,7 +61,7 @@ export class ServerPaymentService {
 
   async verifyWebhook(providerKey: Parameters<PaymentGatewayRegistry['get']>[0], signature: string | undefined, payload: string | Record<string, unknown>): Promise<WebhookVerificationResult> {
     if (providerKey === 'paychangu') {
-      return paychanguProvider.verifyWebhook(signature, payload, this.config);
+      return paychanguProvider.verifyWebhook(signature, payload, this.resolveConfig());
     }
 
     return this.registry.get(providerKey).verifyWebhook(signature, payload);
@@ -67,4 +76,8 @@ export class ServerPaymentService {
   }
 }
 
-export const serverPaymentService = new ServerPaymentService();
+export const serverPaymentService = new ServerPaymentService({
+  paychanguSecretKey: process.env.PAYCHANGU_SECRET_KEY,
+  paychanguWebhookSecret: process.env.PAYCHANGU_WEBHOOK_SECRET,
+  paychanguBaseUrl: process.env.PAYCHANGU_BASE_URL,
+});

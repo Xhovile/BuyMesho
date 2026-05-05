@@ -24,6 +24,10 @@ export class InMemoryPaymentRepository {
     this.payments.set(reference, next);
     return next;
   }
+
+  clear(): void {
+    this.payments.clear();
+  }
 }
 
 export const paymentRepository = new InMemoryPaymentRepository();
