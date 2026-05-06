@@ -1,5 +1,6 @@
 import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { paymentController } from './payment.controller.js';
 import { paymentWebhookHandler } from './payment.webhooks.js';
 import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
@@ -10,6 +11,22 @@ import { orderRepository } from '../orders/order.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
+
+const checkoutLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many checkout requests. Please try again in a moment.' },
+});
+
+const initializeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
+});
 
 interface ListingRow {
   id: number;
@@ -29,7 +46,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
   const router = express.Router();
 
   // POST /api/payments/checkout — atomic order creation + PayChangu initialisation
-  router.post('/checkout', requireAuth, async (req, res) => {
+  router.post('/checkout', checkoutLimiter, requireAuth, async (req, res) => {
     try {
       const idempotencyKey = (req.headers['idempotency-key'] ?? req.headers['Idempotency-Key']) as string | undefined;
 
@@ -72,6 +89,13 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       }
 
       const safeQty = Math.max(1, Number(quantity));
+      const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+      if (availableQty === 0) {
+        return res.status(400).json({ error: 'This listing is out of stock' });
+      }
+      if (safeQty > availableQty) {
+        return res.status(400).json({ error: `Only ${availableQty} unit(s) available` });
+      }
       const unitPrice = Number(listing.price);
       const total = unitPrice * safeQty;
       const currency = 'MWK';
@@ -152,7 +176,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
   });
 
   // POST /api/payments/initialize — generic provider initialisation (dispatches by provider)
-  router.post('/initialize', requireAuth, async (req, res) => {
+  router.post('/initialize', initializeLimiter, requireAuth, async (req, res) => {
     try {
       const result = await serverPaymentService.createPayment(req.body as CreatePaymentRequest);
       res.status(201).json(result);

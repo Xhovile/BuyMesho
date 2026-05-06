@@ -1,12 +1,37 @@
 import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
+import rateLimit from 'express-rate-limit';
 import { getPaymentDb } from '../sqlite.js';
 import { escrowRepository } from '../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../modules/orders/order.service.js';
 
+const disputeLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again in a moment.' },
+});
+
+const payoutLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again in a moment.' },
+});
+
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
 }
+
+const escrowActionLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please try again in a moment.' },
+});
 
 export function createEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
@@ -25,7 +50,7 @@ export function createEscrowRouter(requireAuth: RequestHandler): express.Router 
   });
 
   // POST /api/escrow/:orderId/release — buyer or seller triggers release
-  router.post('/:orderId/release', requireAuth, (req, res) => {
+  router.post('/:orderId/release', escrowActionLimiter, requireAuth, (req, res) => {
     try {
       const { orderId } = req.params;
       const escrow = escrowRepository.findByOrderId(orderId);
@@ -44,7 +69,7 @@ export function createEscrowRouter(requireAuth: RequestHandler): express.Router 
   });
 
   // POST /api/escrow/:orderId/refund — refund buyer
-  router.post('/:orderId/refund', requireAuth, (req, res) => {
+  router.post('/:orderId/refund', escrowActionLimiter, requireAuth, (req, res) => {
     try {
       const { orderId } = req.params;
       const escrow = escrowRepository.findByOrderId(orderId);
@@ -69,7 +94,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
   const router = express.Router();
 
   // POST /api/disputes — open a dispute
-  router.post('/', requireAuth, (req, res) => {
+  router.post('/', disputeLimiter, requireAuth, (req, res) => {
     try {
       const { orderId, reason } = req.body as { orderId?: string; reason?: string };
       if (!orderId || !reason) {
@@ -117,7 +142,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
   });
 
   // PATCH /api/disputes/:id — resolve a dispute (admin only)
-  router.patch('/:id', requireAuth, (req, res) => {
+  router.patch('/:id', disputeLimiter, requireAuth, (req, res) => {
     try {
       if (!req.user?.is_admin) {
         return res.status(403).json({ error: 'Admin access required' });
@@ -149,7 +174,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
   const router = express.Router();
 
   // POST /api/payouts — admin triggers payout to seller after escrow release
-  router.post('/', requireAuth, (req, res) => {
+  router.post('/', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!req.user?.is_admin) {
         return res.status(403).json({ error: 'Admin access required' });

@@ -141,7 +141,7 @@ export default function CheckoutModal({
                 <div className="flex flex-col items-center gap-4 py-6">
                   <Loader2 className="h-10 w-10 animate-spin text-zinc-700" />
                   <p className="text-sm font-semibold text-zinc-600">
-                    Initialising secure checkout…
+                    Initializing secure checkout…
                   </p>
                 </div>
               )}
