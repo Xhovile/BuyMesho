@@ -1,9 +1,11 @@
+import type { HeaderChip } from "../constants";
+
 export type AppRoute =
   | "home"
   | "category"
   | "explore"
   | "saved"
-  | "hidden" 
+  | "hidden"
   | "settings"
   | "privacy"
   | "terms"
@@ -59,6 +61,15 @@ export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const PAYMENT_RETURN_PATH = "/payment/return";
+
+export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
+  All: EXPLORE_PATH,
+  Deals: `${EXPLORE_PATH}/deals`,
+  "Lay-by": `${EXPLORE_PATH}/lay-by`,
+  Events: `${EXPLORE_PATH}/events`,
+  Wholesale: `${EXPLORE_PATH}/wholesale`,
+  Accommodation: `${EXPLORE_PATH}/accommodation`,
+};
 
 const APP_HISTORY_STATE_KEY = "__buymesho";
 
@@ -124,8 +135,7 @@ const parsePositiveIntegerParam = (value: string | null, fallback: number) => {
   return parsed;
 };
 
-const parseBooleanParam = (value: string | null) =>
-  value === "1" || value === "true";
+const parseBooleanParam = (value: string | null) => value === "1" || value === "true";
 
 const parseSpecFiltersParam = (value: string | null) => {
   if (!value) return {};
@@ -156,18 +166,31 @@ export const getExploreStateFromLocation = (
     minPrice: params.get("minPrice") || DEFAULT_EXPLORE_QUERY_STATE.minPrice,
     maxPrice: params.get("maxPrice") || DEFAULT_EXPLORE_QUERY_STATE.maxPrice,
     hideSoldOut: parseBooleanParam(params.get("hideSoldOut")),
-    page: parsePositiveIntegerParam(
-      params.get("page"),
-      DEFAULT_EXPLORE_QUERY_STATE.page
-    ),
+    page: parsePositiveIntegerParam(params.get("page"), DEFAULT_EXPLORE_QUERY_STATE.page),
     specFilters: parseSpecFiltersParam(params.get("specFilters")),
   };
 };
 
-const writeExploreStateToUrl = (
-  url: URL,
-  state: Partial<ExploreQueryState>
-) => {
+export const getMarketChipFromPath = (pathname: string): HeaderChip => {
+  if (pathname === MARKET_CHIP_PATHS.Deals) return "Deals";
+  if (pathname === MARKET_CHIP_PATHS["Lay-by"]) return "Lay-by";
+  if (pathname === MARKET_CHIP_PATHS.Events) return "Events";
+  if (pathname === MARKET_CHIP_PATHS.Wholesale) return "Wholesale";
+  if (pathname === MARKET_CHIP_PATHS.Accommodation) return "Accommodation";
+  return "All";
+};
+
+export const getMarketChipFromLocation = (
+  location: Pick<Location, "pathname">
+): HeaderChip => getMarketChipFromPath(location.pathname);
+
+export const getMarketPathFromLocation = (pathname: string) => {
+  if (pathname === EXPLORE_PATH) return EXPLORE_PATH;
+  if (pathname.startsWith(`${EXPLORE_PATH}/`)) return pathname;
+  return EXPLORE_PATH;
+};
+
+const writeExploreStateToUrl = (url: URL, state: Partial<ExploreQueryState>) => {
   EXPLORE_QUERY_KEYS.forEach((key) => url.searchParams.delete(key));
 
   if (state.search) url.searchParams.set("search", state.search);
@@ -177,9 +200,7 @@ const writeExploreStateToUrl = (
   if (state.itemType) url.searchParams.set("itemType", state.itemType);
   if (state.status) url.searchParams.set("status", state.status);
   if (state.condition) url.searchParams.set("condition", state.condition);
-  if (state.sortBy && state.sortBy !== "newest") {
-    url.searchParams.set("sortBy", state.sortBy);
-  }
+  if (state.sortBy && state.sortBy !== "newest") url.searchParams.set("sortBy", state.sortBy);
   if (state.minPrice) url.searchParams.set("minPrice", state.minPrice);
   if (state.maxPrice) url.searchParams.set("maxPrice", state.maxPrice);
   if (state.hideSoldOut) url.searchParams.set("hideSoldOut", "1");
@@ -194,7 +215,7 @@ const syncExploreStateInUrl = (
   mode: "replace" | "push" = "replace"
 ) => {
   const url = new URL(window.location.href);
-  url.pathname = EXPLORE_PATH;
+  url.pathname = getMarketPathFromLocation(window.location.pathname);
   url.searchParams.delete("listing");
   url.searchParams.delete("image");
   url.searchParams.delete("uid");
@@ -214,6 +235,10 @@ export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
 
 export const pushExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
   syncExploreStateInUrl(state, "push");
+};
+
+export const navigateToMarketChip = (chip: HeaderChip) => {
+  navigateToPath(MARKET_CHIP_PATHS[chip]);
 };
 
 export const getAppRouteFromLocation = (
@@ -496,8 +521,7 @@ export const navigateToBecomeSeller = () => navigateToPath(BECOME_SELLER_PATH);
 export const navigateToChangePassword = () => navigateToPath(CHANGE_PASSWORD_PATH);
 export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
-export const navigateToAdminSellerApplications = () =>
-  navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
+export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
 
 export const getSellerUidFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
