@@ -69,6 +69,7 @@ export default function RootRouter() {
     getAppRouteFromLocation(window.location)
   );
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
+  const [locationPath, setLocationPath] = useState(() => window.location.pathname);
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -86,6 +87,7 @@ export default function RootRouter() {
     const handleRouteChange = () => {
       setRoute(getAppRouteFromLocation(window.location));
       setLocationSearch(window.location.search);
+      setLocationPath(window.location.pathname);
     };
 
     window.addEventListener("popstate", handleRouteChange);
@@ -96,14 +98,14 @@ export default function RootRouter() {
   }, []);
 
   useEffect(() => {
-  void Promise.allSettled([
-    import("./App.new"),
-    import("./HomePage"),
-    import("./CategoryPage"),
-    import("./MessagesInboxPage"),
-    import("./MessageThreadPage"),
-  ]);
-}, []);
+    void Promise.allSettled([
+      import("./App.new"),
+      import("./HomePage"),
+      import("./CategoryPage"),
+      import("./MessagesInboxPage"),
+      import("./MessageThreadPage"),
+    ]);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -148,7 +150,7 @@ export default function RootRouter() {
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
         {route === "category" ? <CategoryPage /> :
-        route === "explore" ? <App /> :
+        route === "explore" ? <App key={locationPath} /> :
         route === "saved" ? <SavedPage /> :
         route === "hidden" ? <HiddenCollectionsPage /> :
         route === "settings" ? <SettingsPage /> :

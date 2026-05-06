@@ -16,6 +16,7 @@ import MarketSection, {
 import { Listing } from "./types";
 import {
   getExploreStateFromLocation,
+  getMarketChipFromLocation,
   navigateToCreateListing,
   navigateToLogin,
   navigateToListingDetails,
@@ -28,6 +29,7 @@ import {
   navigateToProfile,
   replaceExploreStateInUrl,
   pushExploreStateInUrl,
+  navigateToMarketChip,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -42,6 +44,7 @@ const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
 
 export default function App() {
   const initialExploreState = getExploreStateFromLocation(window.location);
+  const activeChip = getMarketChipFromLocation(window.location);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialExploreState.search);
@@ -563,6 +566,8 @@ export default function App() {
         onProfileClick={navigateToProfile}
         userProfile={userProfile}
         firebaseUser={firebaseUser}
+        activeChip={activeChip}
+        onChipChange={navigateToMarketChip}
       />
 
       <main className="max-w-7xl mx-auto px-4">
@@ -579,6 +584,7 @@ export default function App() {
           isLoggedIn={!!firebaseUser}
           savedListingIds={savedListingIds}
           actions={marketActions}
+          activeChip={activeChip}
         />
       </main>
 
