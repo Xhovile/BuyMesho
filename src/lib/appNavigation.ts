@@ -300,11 +300,11 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === CHANGE_PASSWORD_PATH) {
     return "change_password";
-  } 
+  }
   
   if (location.pathname === CHANGE_EMAIL_PATH) {
     return "change_email";
-  } 
+  }
 
   if (location.pathname === EMAIL_ACTION_PATH) {
     return "email_action";
@@ -371,10 +371,10 @@ export const getAppRouteFromLocation = (
   }
 
   if (location.pathname === HIDDEN_PATH) {
-  return "hidden";
+    return "hidden";
   }
 
-  if (location.pathname === EXPLORE_PATH) {
+  if (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`)) {
     return "explore";
   }
 
