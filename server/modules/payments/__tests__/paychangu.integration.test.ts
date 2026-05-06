@@ -67,7 +67,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     // Step 1: Atomic checkout — listing + quantity + buyer context → order + payment in one shot
     const checkoutRes = await fetch(`${base}/api/payments/checkout`, {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: '******' },
+      headers: { 'content-type': 'application/json', authorization: 'Bearer test' },
       body: JSON.stringify({
         listingId: 999,
         quantity: 1,
@@ -91,7 +91,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     // Step 2: Verify payment (as the return page would)
     const verifyRes = await fetch(
       `${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`,
-      { headers: { authorization: '******' } },
+      { headers: { authorization: 'Bearer test' } },
     );
     assert.equal(verifyRes.status, 200, 'verify should return 200');
     const verifyResult = await verifyRes.json() as { verified?: boolean };
