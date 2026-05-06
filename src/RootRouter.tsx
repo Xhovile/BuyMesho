@@ -36,6 +36,7 @@ const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
+const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -181,6 +182,7 @@ export default function RootRouter() {
         route === "admin_seller_applications" ? (
           <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
         ) :
+        route === "payment_return" ? <PaymentReturnPage /> :
         <HomePage />}
       </Suspense>
       <AnimatePresence>

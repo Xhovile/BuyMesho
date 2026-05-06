@@ -27,7 +27,8 @@ export type AppRoute =
   | "email_action"
   | "my_listings"
   | "admin_reports"
-  | "admin_seller_applications";
+  | "admin_seller_applications"
+  | "payment_return";
 
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
@@ -57,6 +58,7 @@ export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
+export const PAYMENT_RETURN_PATH = "/payment/return";
 
 const APP_HISTORY_STATE_KEY = "__buymesho";
 
@@ -293,6 +295,10 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) {
     return "admin_seller_applications";
+  }
+
+  if (location.pathname === PAYMENT_RETURN_PATH) {
+    return "payment_return";
   }
 
   if (location.pathname === SELLER_PATH && params.has("uid")) {

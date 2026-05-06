@@ -1,7 +1,25 @@
 import express, { type RequestHandler } from 'express';
+import { randomUUID } from 'crypto';
 import { paymentController } from './payment.controller.js';
 import { paymentWebhookHandler } from './payment.webhooks.js';
 import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
+import { paychanguProvider } from './paychangu.provider.js';
+import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
+import { serverOrderService } from '../orders/order.service.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
+import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
+import type { OrderState } from '../../../src/modules/orders/orderState.js';
+
+interface ListingRow {
+  id: number;
+  seller_uid: string;
+  name: string;
+  price: number;
+  status: string;
+  quantity: number;
+  sold_quantity: number;
+}
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
@@ -9,6 +27,139 @@ function jsonError(error: unknown, fallback: string): { error: string } {
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
+
+  // POST /api/payments/checkout — atomic order creation + PayChangu initialisation
+  router.post('/checkout', requireAuth, async (req, res) => {
+    try {
+      const idempotencyKey = (req.headers['idempotency-key'] ?? req.headers['Idempotency-Key']) as string | undefined;
+
+      if (idempotencyKey) {
+        const cached = checkIdempotencyKey(idempotencyKey);
+        if (cached) {
+          return res.status(200).json(cached);
+        }
+      }
+
+      const {
+        listingId,
+        quantity = 1,
+        method = 'mobile_money',
+        returnUrl,
+        cancelUrl,
+        buyerName,
+        buyerPhone,
+      } = req.body as {
+        listingId?: number;
+        quantity?: number;
+        method?: string;
+        returnUrl?: string;
+        cancelUrl?: string;
+        buyerName?: string;
+        buyerPhone?: string;
+      };
+
+      if (!listingId) {
+        return res.status(400).json({ error: 'listingId is required' });
+      }
+
+      const db = getPaymentDb();
+      const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(listingId) as ListingRow | undefined;
+      if (!listing) {
+        return res.status(404).json({ error: 'Listing not found' });
+      }
+      if (listing.status === 'sold') {
+        return res.status(400).json({ error: 'This listing is no longer available' });
+      }
+
+      const safeQty = Math.max(1, Number(quantity));
+      const unitPrice = Number(listing.price);
+      const total = unitPrice * safeQty;
+      const currency = 'MWK';
+      const now = new Date().toISOString();
+      const buyerUid = req.user!.uid;
+      const buyerEmail = req.user!.email ?? '';
+      const orderId = `ord_${randomUUID()}`;
+
+      const order: OrderState = {
+        id: orderId,
+        buyerId: buyerUid,
+        sellerId: listing.seller_uid,
+        source: 'listing',
+        status: 'pending_payment',
+        currency,
+        subtotal: { amount: total, currency },
+        total: { amount: total, currency },
+        paymentProvider: 'paychangu',
+        items: [
+          {
+            listingId: String(listingId),
+            title: listing.name,
+            quantity: safeQty,
+            unitPrice: { amount: unitPrice, currency },
+          },
+        ],
+        placedAt: now,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      serverOrderService.create(order);
+
+      const config = createServerPaymentConfigFromEnv();
+      const paymentRequest: CreatePaymentRequest = {
+        orderId,
+        provider: 'paychangu',
+        method: method as CreatePaymentRequest['method'],
+        amount: { amount: total, currency },
+        customer: {
+          id: buyerUid,
+          name: buyerName || buyerEmail || buyerUid,
+          email: buyerEmail || undefined,
+          phoneNumber: buyerPhone,
+        },
+        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return`,
+        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1`,
+        metadata: {
+          listingId: String(listingId),
+          sellerId: listing.seller_uid,
+        },
+      };
+
+      const payment = await paychanguProvider.createPayment(paymentRequest, config);
+
+      orderRepository.update(orderId, (o) => ({
+        ...o,
+        paymentReference: payment.reference,
+        updatedAt: new Date().toISOString(),
+      }));
+
+      const result: Record<string, unknown> = {
+        orderId,
+        paymentId: payment.id,
+        reference: payment.reference,
+        checkoutUrl: payment.checkoutUrl,
+        status: payment.status,
+      };
+
+      if (idempotencyKey) {
+        storeIdempotencyKey(idempotencyKey, result);
+      }
+
+      return res.status(201).json(result);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Checkout failed'));
+    }
+  });
+
+  // POST /api/payments/initialize — generic provider initialisation (dispatches by provider)
+  router.post('/initialize', requireAuth, async (req, res) => {
+    try {
+      const result = await serverPaymentService.createPayment(req.body as CreatePaymentRequest);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(400).json(jsonError(error, 'Failed to initialize payment'));
+    }
+  });
 
   // POST /api/payments/paychangu/initialize
   router.post('/paychangu/initialize', requireAuth, async (req, res) => {
