@@ -1,4 +1,4 @@
-import { ExternalLink, MessageCircle, Share2, ShieldCheck, ShoppingBag } from "lucide-react";
+import { MessageCircle, Share2, ShieldCheck, ShoppingBag } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
 
@@ -15,7 +15,6 @@ export default function ListingSummary({
   isLoggedIn,
   currentUserUid,
   onMessageSeller,
-  onWhatsAppSeller,
   onShare,
   onBuyNow,
 }: {
@@ -25,7 +24,6 @@ export default function ListingSummary({
   isLoggedIn: boolean;
   currentUserUid?: string | null;
   onMessageSeller: () => void;
-  onWhatsAppSeller: () => void;
   onShare: () => void;
   onBuyNow?: () => void;
 }) {
@@ -100,26 +98,15 @@ export default function ListingSummary({
             </div>
           )}
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onWhatsAppSeller}
-              className="flex-1 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              <span className="truncate">WhatsApp</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onShare}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-              aria-label="Share listing"
-              title="Share listing"
-            >
-              <Share2 className="h-4 w-4 text-zinc-700" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onShare}
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+            aria-label="Share listing"
+            title="Share listing"
+          >
+            <Share2 className="h-4 w-4 text-zinc-700" />
+          </button>
         </div>
       </div>
     </aside>
