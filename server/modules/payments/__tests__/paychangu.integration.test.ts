@@ -6,22 +6,15 @@ import { mountPayChanguRoutes } from '../payment.routes.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
+import { getPaymentDb } from '../../../sqlite.js';
 
 const requireAuth: express.RequestHandler = (req, _res, next) => {
   (req as express.Request & { user?: unknown }).user = { uid: 'buyer_1', email: 'buyer@example.com' };
   next();
 };
 
-test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
-  orderRepository.clear();
-  paymentRepository.clear();
-
-  const app = express();
-  app.use(express.json());
-  mountPayChanguRoutes(app, requireAuth);
-
-  const originalFetch = global.fetch;
-  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+function mockFetch(originalFetch: typeof fetch): typeof fetch {
+  return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
       return new Response(JSON.stringify({
@@ -44,7 +37,106 @@ test('integration: order -> paychangu payment -> verified webhook persists state
     }
     return originalFetch(input, init);
   }) as typeof fetch;
+}
 
+test('integration: atomic checkout → paychangu payment → webhook persists state', async () => {
+  orderRepository.clear();
+  paymentRepository.clear();
+
+  // Seed a test listing so the /checkout endpoint can find it
+  const db = getPaymentDb();
+  db.prepare('DELETE FROM listings WHERE id = 999').run();
+  db.prepare(
+    `INSERT OR IGNORE INTO listings (id, seller_uid, name, price, status, quantity, sold_quantity)
+     VALUES (999, 'seller_1', 'Test Item', 1000, 'available', 5, 0)`,
+  ).run();
+
+  const app = express();
+  app.use(express.json());
+  mountPayChanguRoutes(app, requireAuth);
+
+  const originalFetch = global.fetch;
+  global.fetch = mockFetch(originalFetch);
+  process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
+
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    // Step 1: Atomic checkout — listing + quantity + buyer context → order + payment in one shot
+    const checkoutRes = await fetch(`${base}/api/payments/checkout`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', authorization: '******' },
+      body: JSON.stringify({
+        listingId: 999,
+        quantity: 1,
+        method: 'mobile_money',
+        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/cancel',
+        buyerName: 'Buyer One',
+      }),
+    });
+
+    assert.equal(checkoutRes.status, 201, 'checkout should return 201');
+    const checkoutResult = await checkoutRes.json() as {
+      orderId?: string;
+      reference?: string;
+      checkoutUrl?: string;
+    };
+    assert.ok(checkoutResult.orderId, 'checkout should return orderId');
+    assert.ok(checkoutResult.reference, 'checkout should return a payment reference');
+    assert.ok(checkoutResult.checkoutUrl, 'checkout should return checkoutUrl');
+
+    // Step 2: Verify payment (as the return page would)
+    const verifyRes = await fetch(
+      `${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`,
+      { headers: { authorization: '******' } },
+    );
+    assert.equal(verifyRes.status, 200, 'verify should return 200');
+    const verifyResult = await verifyRes.json() as { verified?: boolean };
+    assert.ok(verifyResult.verified, 'verify should return verified=true');
+
+    // Step 3: Webhook marks order as paid
+    const rawWebhook = JSON.stringify({
+      event_type: 'charge.success', tx_ref: checkoutResult.reference,
+      data: { tx_ref: checkoutResult.reference, status: 'successful', amount: 1000, currency: 'MWK' },
+    });
+    const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
+
+    const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
+      body: rawWebhook,
+    });
+    assert.equal(webhookRes.status, 200, 'webhook should return 200');
+
+    // Step 4: Assert final state
+    const savedOrder = orderRepository.findById(checkoutResult.orderId!);
+    const savedPayment = paymentRepository.findByReference(checkoutResult.reference!);
+
+    assert.equal(savedOrder?.status, 'in_escrow', 'order should be in escrow after successful payment');
+    assert.equal(savedPayment?.verified, true, 'payment should be verified');
+    assert.equal(savedPayment?.status, 'captured', 'payment status should be captured');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    orderRepository.clear();
+    paymentRepository.clear();
+    db.prepare('DELETE FROM listings WHERE id = 999').run();
+  }
+});
+
+test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
+  orderRepository.clear();
+  paymentRepository.clear();
+
+  const app = express();
+  app.use(express.json());
+  mountPayChanguRoutes(app, requireAuth);
+
+  const originalFetch = global.fetch;
+  global.fetch = mockFetch(originalFetch);
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
 
   const server = app.listen(0);
@@ -104,7 +196,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
     const savedOrder = orderRepository.findById('order_it_1');
     const savedPayment = paymentRepository.findByReference('txref-integration-1');
 
-    assert.equal(savedOrder?.status, 'paid', 'order should be marked paid');
+    assert.equal(savedOrder?.status, 'in_escrow', 'order should be in escrow after successful payment');
     assert.equal(savedPayment?.verified, true, 'payment should be verified');
     assert.equal(savedPayment?.status, 'captured', 'payment status should be captured');
   } finally {

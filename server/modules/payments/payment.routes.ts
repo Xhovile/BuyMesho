@@ -8,6 +8,7 @@ import { paychanguProvider } from './paychangu.provider.js';
 import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
+import { paymentRepository } from './payment.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -150,6 +151,8 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       };
 
       const payment = await paychanguProvider.createPayment(paymentRequest, config);
+
+      paymentRepository.save({ ...payment, verified: false });
 
       orderRepository.update(orderId, (o) => ({
         ...o,
