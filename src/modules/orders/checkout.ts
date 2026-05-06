@@ -2,11 +2,13 @@ import type { CreatePaymentRequest } from '../payments/types.js';
 import type { OrderState, OrderStatus } from './orderState.js';
 import type { PaymentMethod, PaymentProviderKey } from '../../shared/types/payment.js';
 import type { MoneyValue } from '../../shared/types/common.js';
+import type { PaymentCustomer } from '../payments/types.js';
 
 export interface CheckoutRequest {
   order: OrderState;
   provider: PaymentProviderKey;
   method: PaymentMethod;
+  customer?: Partial<PaymentCustomer>;
   returnUrl?: string;
   cancelUrl?: string;
 }
@@ -25,7 +27,9 @@ export function buildCheckoutPlan(request: CheckoutRequest): CheckoutPlan {
     amount: request.order.total as MoneyValue,
     customer: {
       id: request.order.buyerId,
-      name: request.order.buyerId,
+      name: request.customer?.name || request.customer?.email || request.order.buyerId,
+      email: request.customer?.email,
+      phoneNumber: request.customer?.phoneNumber,
     },
     returnUrl: request.returnUrl,
     cancelUrl: request.cancelUrl,

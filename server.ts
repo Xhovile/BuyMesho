@@ -13,6 +13,7 @@ import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
+import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -686,6 +687,9 @@ async function startServer() {
   registerSessionRoutes(app);
   mountTotpRoutes(app);
   app.use('/api/payments', createPaymentRouter(requireAuth));
+  app.use('/api/escrow', createEscrowRouter(requireAuth));
+  app.use('/api/disputes', createDisputeRouter(requireAuth));
+  app.use('/api/payouts', createPayoutRouter(requireAuth));
   
   // Logging middleware
   app.use((req, res, next) => {

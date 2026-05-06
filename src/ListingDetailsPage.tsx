@@ -23,6 +23,7 @@ import ListingDetailsBlock from "./components/listingDetails/ListingDetailsBlock
 import ListingTrustBlock from "./components/listingDetails/ListingTrustBlock";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingStatusPanel from "./components/listingDetails/ListingStatusPanel";
+import CheckoutModal from "./components/CheckoutModal";
 
 type SellerProfile = {
   uid?: string;
@@ -72,6 +73,7 @@ export default function ListingDetailsPage() {
   const [shareNoticeOpen, setShareNoticeOpen] = useState(false);
   const [shareNoticeMessage, setShareNoticeMessage] = useState("");
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const detailsRef = useRef<HTMLElement | null>(null);
   const exploreRef = useRef<HTMLElement | null>(null);
@@ -351,8 +353,15 @@ export default function ListingDetailsPage() {
     element?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleMessageSeller = async () => {
-    if (!listing) return;
+  const handleBuyNow = () => {
+    if (!firebaseUser) {
+      navigateToPath(LOGIN_PATH);
+      return;
+    }
+    setCheckoutOpen(true);
+  };
+
+  const handleMessageSeller = async () => {    if (!listing) return;
     if (!firebaseUser) {
       navigateToPath(LOGIN_PATH);
       return;
@@ -490,6 +499,7 @@ export default function ListingDetailsPage() {
                   onMessageSeller={handleMessageSeller}
                   onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
+                  onBuyNow={handleBuyNow}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
                 <ListingDetailsBlock
@@ -531,6 +541,16 @@ export default function ListingDetailsPage() {
       </main>
 
       <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={() => setShareNoticeOpen(false)} />
+
+      {listing && (
+        <CheckoutModal
+          listing={listing}
+          isOpen={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          buyerName={firebaseUser?.displayName}
+          buyerEmail={firebaseUser?.email}
+        />
+      )}
     </div>
   );
 }

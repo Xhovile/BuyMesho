@@ -2,6 +2,7 @@ import type { PaymentResult, PaymentVerificationResult } from '../../../src/modu
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
+import { escrowRepository } from '../escrow/escrow.repository.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
@@ -10,6 +11,11 @@ export interface ApplyPayChanguResult {
 }
 
 const CAPTURED_STATUSES = new Set(['successful', 'success', 'completed', 'captured']);
+
+function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
+  const payload = { orderId, buyerId, sellerId, event: 'order_paid', emittedAt: new Date().toISOString() };
+  console.log('[notification] order_paid', JSON.stringify(payload));
+}
 
 export function applyVerifiedPayChanguPayment(verification: PaymentVerificationResult): ApplyPayChanguResult {
   const reference = verification.reference ?? verification.txRef;
@@ -25,9 +31,22 @@ export function applyVerifiedPayChanguPayment(verification: PaymentVerificationR
     updatedAt: new Date().toISOString(),
   }));
 
-  const order = shouldCapture && reference
+  let order = shouldCapture && reference
     ? serverOrderService.confirmByPaymentReference(reference)
     : orderRepository.findByPaymentReference(reference);
+
+  if (shouldCapture && order) {
+    const escrowAmount = verification.amount?.amount ?? order.total.amount;
+    const currency = verification.currency ?? order.currency ?? 'MWK';
+
+    if (!escrowRepository.findByOrderId(order.id)) {
+      escrowRepository.create(order.id, currency, escrowAmount);
+    }
+
+    order = serverOrderService.setStatus(order.id, 'in_escrow') ?? order;
+
+    emitOrderPaidNotification(order.buyerId, order.sellerId, order.id);
+  }
 
   return {
     payment,

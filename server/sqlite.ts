@@ -52,7 +52,80 @@ function initPaymentSchema(db: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_orders_payment_reference ON orders(payment_reference);
+
+    CREATE TABLE IF NOT EXISTS escrows (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL UNIQUE,
+      state TEXT NOT NULL DEFAULT 'initiated',
+      currency TEXT NOT NULL,
+      balance_amount REAL NOT NULL DEFAULT 0,
+      balance_currency TEXT NOT NULL,
+      entries TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_escrows_order_id ON escrows(order_id);
+
+    CREATE TABLE IF NOT EXISTS idempotency_keys (
+      key TEXT PRIMARY KEY,
+      response TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS disputes (
+      id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL,
+      escrow_id TEXT,
+      opened_by TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open',
+      resolved_by TEXT,
+      resolution_note TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_disputes_order_id ON disputes(order_id);
+
+    CREATE TABLE IF NOT EXISTS payouts (
+      id TEXT PRIMARY KEY,
+      seller_id TEXT NOT NULL,
+      order_id TEXT,
+      escrow_id TEXT,
+      amount REAL NOT NULL,
+      currency TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'processing',
+      processed_by TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_payouts_seller_id ON payouts(seller_id);
   `);
+}
+
+const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+export function checkIdempotencyKey(key: string): Record<string, unknown> | null {
+  const db = getPaymentDb();
+  const cutoff = new Date(Date.now() - IDEMPOTENCY_TTL_MS).toISOString();
+  const row = db
+    .prepare('SELECT response FROM idempotency_keys WHERE key = ? AND created_at > ?')
+    .get(key, cutoff) as { response: string } | undefined;
+  if (!row) return null;
+  try {
+    return JSON.parse(row.response) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+export function storeIdempotencyKey(key: string, response: Record<string, unknown>): void {
+  const db = getPaymentDb();
+  db.prepare(
+    'INSERT OR REPLACE INTO idempotency_keys (key, response, created_at) VALUES (?, ?, ?)',
+  ).run(key, JSON.stringify(response), new Date().toISOString());
 }
 
 export function getPaymentDb(): Database.Database {

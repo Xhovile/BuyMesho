@@ -29,7 +29,8 @@ export type AppRoute =
   | "email_action"
   | "my_listings"
   | "admin_reports"
-  | "admin_seller_applications";
+  | "admin_seller_applications"
+  | "payment_return";
 
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
@@ -59,6 +60,7 @@ export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
+export const PAYMENT_RETURN_PATH = "/payment/return";
 
 export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
   All: EXPLORE_PATH,
@@ -244,34 +246,138 @@ export const getAppRouteFromLocation = (
 ): AppRoute => {
   const params = new URLSearchParams(location.search);
 
-  if (location.pathname === MESSAGES_PATH) return "messages";
-  if (location.pathname === LISTING_PATH && params.has("listing")) return "listing_details";
-  if (location.pathname === EDIT_PATH && params.has("id")) return "edit";
-  if (location.pathname === "/category" && params.has("category")) return "category";
-  if (location.pathname === CREATE_PATH) return "create";
-  if (location.pathname === LOGIN_PATH) return "login";
-  if (location.pathname === SIGNUP_PATH) return "signup";
-  if (location.pathname === FORGOT_PASSWORD_PATH) return "forgot_password";
-  if (location.pathname === PROFILE_PATH) return "profile";
-  if (location.pathname === VERIFY_EMAIL_PATH) return "verify_email";
-  if (location.pathname === EDIT_PROFILE_PATH) return "edit_profile";
-  if (location.pathname === EDIT_ACCOUNT_PATH) return "edit_account";
-  if (location.pathname === BECOME_SELLER_PATH) return "become_seller";
-  if (location.pathname === CHANGE_PASSWORD_PATH) return "change_password";
-  if (location.pathname === CHANGE_EMAIL_PATH) return "change_email";
-  if (location.pathname === EMAIL_ACTION_PATH) return "email_action";
-  if (location.pathname === MY_LISTINGS_PATH) return "my_listings";
-  if (location.pathname === ADMIN_REPORTS_PATH) return "admin_reports";
-  if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) return "admin_seller_applications";
-  if (location.pathname === SELLER_PATH && params.has("uid")) return "seller";
-  if (location.pathname === PRIVACY_PATH) return "privacy";
-  if (location.pathname === TERMS_PATH) return "terms";
-  if (location.pathname === SAFETY_PATH) return "safety";
-  if (location.pathname === REPORT_PATH) return "report";
-  if (location.pathname === SETTINGS_PATH) return "settings";
-  if (location.pathname === SAVED_PATH) return "saved";
-  if (location.pathname === HIDDEN_PATH) return "hidden";
-  if (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`)) return "explore";
+  if (location.pathname === MESSAGES_PATH) {
+    return "messages";
+  }
+
+  if (location.pathname === LISTING_PATH && params.has("listing")) {
+    return "listing_details";
+  }
+
+  if (location.pathname === EDIT_PATH && params.has("id")) {
+    return "edit";
+  }
+
+  if (location.pathname === "/category" && params.has("category")) {
+    return "category";
+  }
+
+  if (location.pathname === CREATE_PATH) {
+    return "create";
+  }
+
+  if (location.pathname === LOGIN_PATH) {
+    return "login";
+  }
+
+  if (location.pathname === SIGNUP_PATH) {
+    return "signup";
+  }
+
+  if (location.pathname === FORGOT_PASSWORD_PATH) {
+    return "forgot_password";
+  }
+
+  if (location.pathname === PROFILE_PATH) {
+    return "profile";
+  }
+
+  if (location.pathname === VERIFY_EMAIL_PATH) {
+    return "verify_email";
+  }
+
+  if (location.pathname === EDIT_PROFILE_PATH) {
+    return "edit_profile";
+  }
+
+  if (location.pathname === EDIT_ACCOUNT_PATH) {
+    return "edit_account";
+  }
+
+  if (location.pathname === BECOME_SELLER_PATH) {
+    return "become_seller";
+  }
+
+  if (location.pathname === CHANGE_PASSWORD_PATH) {
+    return "change_password";
+  } 
+  
+  if (location.pathname === CHANGE_EMAIL_PATH) {
+    return "change_email";
+  } 
+
+  if (location.pathname === EMAIL_ACTION_PATH) {
+    return "email_action";
+  }
+  
+  if (location.pathname === MY_LISTINGS_PATH) {
+    return "my_listings";
+  }
+
+  if (location.pathname === ADMIN_REPORTS_PATH) {
+    return "admin_reports";
+  }
+
+  if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) {
+    return "admin_seller_applications";
+  }
+
+  if (location.pathname === PAYMENT_RETURN_PATH) {
+    return "payment_return";
+  }
+
+  if (location.pathname === SELLER_PATH && params.has("uid")) {
+    return "seller";
+  }
+
+  if (location.pathname === PRIVACY_PATH) {
+    return "privacy";
+  }
+
+  if (location.pathname === TERMS_PATH) {
+    return "terms";
+  }
+
+  if (location.pathname === SAFETY_PATH) {
+    return "safety";
+  }
+
+  if (location.pathname === REPORT_PATH) {
+    return "report";
+  }
+
+  if (location.pathname === SETTINGS_PATH) {
+    return "settings";
+  }
+
+  if (location.pathname === PRIVACY_PATH) {
+    return "privacy";
+  }
+
+  if (location.pathname === TERMS_PATH) {
+    return "terms";
+  }
+
+  if (location.pathname === SAFETY_PATH) {
+    return "safety";
+  }
+
+  if (location.pathname === REPORT_PATH) {
+    return "report";
+  }
+
+  if (location.pathname === SAVED_PATH) {
+    return "saved";
+  }
+
+  if (location.pathname === HIDDEN_PATH) {
+  return "hidden";
+  }
+
+  if (location.pathname === EXPLORE_PATH) {
+    return "explore";
+  }
+
   return "home";
 };
 

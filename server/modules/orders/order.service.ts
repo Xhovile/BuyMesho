@@ -1,4 +1,4 @@
-import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import type { OrderState, OrderStatus } from '../../../src/modules/orders/orderState.js';
 import { orderRepository, type StoredOrder } from './order.repository.js';
 
 export class ServerOrderService {
@@ -32,6 +32,14 @@ export class ServerOrderService {
       status: 'closed',
       paymentReference: order.paymentReference ?? null,
     });
+  }
+
+  setStatus(orderId: string, status: OrderStatus): StoredOrder | undefined {
+    return orderRepository.update(orderId, (current) => ({
+      ...current,
+      status,
+      updatedAt: new Date().toISOString(),
+    }));
   }
 }
 
