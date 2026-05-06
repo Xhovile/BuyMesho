@@ -241,7 +241,7 @@ export default function ListingDetailsPage() {
   const handleShare = async () => {
     if (!listing) return;
     const shareUrl = buildListingShareUrl(listing.id, currentGalleryIndex);
-    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${listing.whatsapp_number}\n\nOpen this listing: ${shareUrl}`;
+    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\n\nOpen this listing: ${shareUrl}`;
 
     try {
       if ((navigator as any).share) {
@@ -375,22 +375,6 @@ export default function ListingDetailsPage() {
     }
   };
 
-  const handleWhatsAppSeller = async () => {
-    if (!listing) return;
-    if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
-      return;
-    }
-
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, { method: "POST", headers: { "Content-Type": "application/json" } });
-    } catch (error) {
-      console.error("Failed to track WhatsApp click", error);
-    }
-
-    window.open(`https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(`Hi, I'm interested in your \"${listing.name}\" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, currentGalleryIndex)}`)}`, "_blank", "noopener,noreferrer");
-  };
-
   const refreshRatingSummary = async (sellerUid: string) => {
     setRatingLoading(true);
     try {
@@ -497,7 +481,6 @@ export default function ListingDetailsPage() {
                   isLoggedIn={!!firebaseUser}
                   currentUserUid={firebaseUser?.uid}
                   onMessageSeller={handleMessageSeller}
-                  onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
                 />
@@ -505,7 +488,7 @@ export default function ListingDetailsPage() {
                 <ListingDetailsBlock
                   description={listing.description}
                   sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
-                  deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
+                  deliveryNote="Arrange collection, delivery, or campus handover directly through the in-app chat."
                 />
               </div>
             </section>
