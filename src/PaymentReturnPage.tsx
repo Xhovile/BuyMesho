@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, Loader2, ChevronLeft } from "lucide-react";
-import { EXPLORE_PATH, LISTING_PATH, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
