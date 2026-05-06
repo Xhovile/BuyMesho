@@ -9,6 +9,16 @@ let _db: Database.Database | null = null;
 
 function initPaymentSchema(db: Database.Database): void {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      seller_uid TEXT NOT NULL,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'available',
+      quantity INTEGER NOT NULL DEFAULT 1,
+      sold_quantity INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       order_id TEXT NOT NULL,
