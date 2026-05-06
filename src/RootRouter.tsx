@@ -23,6 +23,7 @@ const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
+const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
 const MessagesInboxPage = lazy(() => import("./MessagesInboxPage"));
 const MessageThreadPage = lazy(() => import("./MessageThreadPage"));
 const MyListingsPage = lazy(() => import("./MyListingsPage"));
@@ -36,6 +37,7 @@ const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
+const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -104,6 +106,7 @@ export default function RootRouter() {
       import("./CategoryPage"),
       import("./MessagesInboxPage"),
       import("./MessageThreadPage"),
+      import("./MarketComingSoonPage"),
     ]);
   }, []);
 
@@ -149,7 +152,8 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {route === "category" ? <CategoryPage /> :
+        {locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
+        route === "category" ? <CategoryPage /> :
         route === "explore" ? <App key={locationPath} /> :
         route === "saved" ? <SavedPage /> :
         route === "hidden" ? <HiddenCollectionsPage /> :
@@ -183,6 +187,7 @@ export default function RootRouter() {
         route === "admin_seller_applications" ? (
           <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
         ) :
+        route === "payment_return" ? <PaymentReturnPage /> :
         <HomePage />}
       </Suspense>
       <AnimatePresence>
