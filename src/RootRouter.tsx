@@ -23,6 +23,7 @@ const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
+const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
 const MessagesInboxPage = lazy(() => import("./MessagesInboxPage"));
 const MessageThreadPage = lazy(() => import("./MessageThreadPage"));
 const MyListingsPage = lazy(() => import("./MyListingsPage"));
@@ -105,6 +106,7 @@ export default function RootRouter() {
       import("./CategoryPage"),
       import("./MessagesInboxPage"),
       import("./MessageThreadPage"),
+      import("./MarketComingSoonPage"),
     ]);
   }, []);
 
@@ -150,7 +152,9 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {route === "category" ? <CategoryPage /> :
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? <MarketComingSoonPage /> :
+        locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
+        route === "category" ? <CategoryPage /> :
         route === "explore" ? <App key={locationPath} /> :
         route === "saved" ? <SavedPage /> :
         route === "hidden" ? <HiddenCollectionsPage /> :
