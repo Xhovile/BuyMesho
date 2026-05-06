@@ -152,7 +152,8 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? <MarketComingSoonPage /> :
+        locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
         route === "category" ? <CategoryPage /> :
         route === "explore" ? <App key={locationPath} /> :
         route === "saved" ? <SavedPage /> :
