@@ -28,10 +28,7 @@ export interface ListingDraft {
   university: University;
   photos: string[];
   video_url: string;
-  whatsapp_number: string;
-  status: ListingStatus;
-  condition: ListingCondition;
-  quantity: string;
+  whatsapp_number?: string;
   sold_quantity: string;
   listing_mode?: ListingMode;
   original_price?: string;
@@ -56,10 +53,7 @@ export interface CreateListingPayload {
   university: University;
   photos: string[];
   video_url?: string | null;
-  whatsapp_number: string;
-  status: ListingStatus;
-  condition: ListingCondition;
-  quantity: number;
+  whatsapp_number?: string;
   sold_quantity: number;
   listing_mode?: ListingMode;
   original_price?: number | null;
@@ -106,9 +100,7 @@ export interface Listing {
   university: University;
   photos: string[];
   video_url?: string | null;
-  whatsapp_number: string;
-  status: ListingStatus;
-  condition?: ListingCondition;
+  whatsapp_number?: string;
   created_at: string;
   updated_at?: string;
   quantity?: number;
