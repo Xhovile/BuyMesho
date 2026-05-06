@@ -1,4 +1,4 @@
-import { ExternalLink, MessageCircle, Share2, ShieldCheck, ShoppingBag } from "lucide-react";
+import { MessageCircle, Share2, ShieldCheck, ShoppingBag } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
 
@@ -15,7 +15,6 @@ export default function ListingSummary({
   isLoggedIn,
   currentUserUid,
   onMessageSeller,
-  onWhatsAppSeller,
   onShare,
   onBuyNow,
 }: {
@@ -25,12 +24,12 @@ export default function ListingSummary({
   isLoggedIn: boolean;
   currentUserUid?: string | null;
   onMessageSeller: () => void;
-  onWhatsAppSeller: () => void;
   onShare: () => void;
   onBuyNow?: () => void;
 }) {
   const isOwner = !!currentUserUid && currentUserUid === listing.seller_uid;
   const listingMode = listing.listing_mode || "normal";
+  const canBuy = !!onBuyNow && availableQuantity > 0 && listing.status !== "sold";
 
   const modeLabel =
     listingMode === "deal"
@@ -68,59 +67,44 @@ export default function ListingSummary({
           ) : null}
         </div>
 
-        <div className="grid gap-3 border-t border-zinc-200 pt-4">
-          {!isOwner ? (
-            <>
-              {onBuyNow && availableQuantity > 0 && listing.status !== "sold" && (
-                <button
-                  type="button"
-                  onClick={onBuyNow}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-emerald-700"
-                >
-                  <ShoppingBag className="h-4 w-4 shrink-0" />
-                  <span className="truncate">
-                    {isLoggedIn ? "Buy Now" : "Log in to buy"}
-                  </span>
-                </button>
-              )}
+        {!isOwner ? (
+          <div className="border-t border-zinc-200 pt-4">
+            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
               <button
                 type="button"
                 onClick={onMessageSeller}
-                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600"
               >
                 <MessageCircle className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {isLoggedIn ? "Message in app" : "Log in to message"}
-                </span>
+                <span className="truncate">Message</span>
               </button>
-            </>
-          ) : (
-            <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500">
-              This is your listing.
+
+              <button
+                type="button"
+                onClick={onBuyNow}
+                disabled={!canBuy}
+                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-lime-400 px-3 py-3 text-sm font-extrabold text-zinc-950 transition-colors hover:bg-lime-500 disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                <ShoppingBag className="h-4 w-4 shrink-0" />
+                <span className="truncate">Buy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onShare}
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                aria-label="Share listing"
+                title="Share listing"
+              >
+                <Share2 className="h-4 w-4 text-zinc-700" />
+              </button>
             </div>
-          )}
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={onWhatsAppSeller}
-              className="flex-1 inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50"
-            >
-              <ExternalLink className="h-4 w-4 shrink-0" />
-              <span className="truncate">WhatsApp</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onShare}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-              aria-label="Share listing"
-              title="Share listing"
-            >
-              <Share2 className="h-4 w-4 text-zinc-700" />
-            </button>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500">
+            This is your listing.
+          </div>
+        )}
       </div>
     </aside>
   );
