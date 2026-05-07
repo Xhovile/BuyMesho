@@ -72,8 +72,15 @@ export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
 };
 
 const APP_HISTORY_STATE_KEY = "__buymesho";
+const AUTH_RETURN_PATH_STORAGE_KEY = "__buymesho_auth_return_path";
 
 const markAppHistoryState = () => ({ [APP_HISTORY_STATE_KEY]: true });
+
+const sanitizeInternalReturnPath = (value: string | null | undefined) => {
+  if (!value) return null;
+  if (!value.startsWith("/") || value.startsWith("//")) return null;
+  return value;
+};
 
 export const isAppHistoryState = () => {
   const state = window.history.state;
@@ -401,6 +408,22 @@ export const navigateToPath = (path: string) => {
   window.history.pushState(markAppHistoryState(), "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const consumeAuthReturnPath = (fallbackPath: string = PROFILE_PATH) => {
+  const params = new URLSearchParams(window.location.search);
+  const queryReturnPath = sanitizeInternalReturnPath(params.get("returnTo"));
+  if (queryReturnPath) {
+    params.delete("returnTo");
+    const cleaned = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+    window.history.replaceState(window.history.state, "", cleaned);
+    sessionStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
+    return queryReturnPath;
+  }
+
+  const storedReturnPath = sanitizeInternalReturnPath(sessionStorage.getItem(AUTH_RETURN_PATH_STORAGE_KEY));
+  sessionStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
+  return storedReturnPath ?? fallbackPath;
 };
 
 export type SettingsSection = "privacy" | "terms" | "safety" | "report";
