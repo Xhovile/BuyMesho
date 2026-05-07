@@ -61,8 +61,8 @@ function TabButton({
       className={[
         "px-4 py-2 rounded-xl text-sm font-bold transition",
         active
-          ? "bg-white text-zinc-900 shadow-sm"
-          : "text-zinc-500 hover:text-zinc-800 hover:bg-white/60",
+          ? "bg-amber-500 text-white shadow-sm shadow-amber-500/30"
+          : "bg-zinc-200 text-zinc-600 hover:text-zinc-800 hover:bg-zinc-300",
         className,
       ].join(" ")}
     >

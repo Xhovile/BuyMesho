@@ -19,13 +19,23 @@ type FeedbackState = {
   message: string;
 } | null;
 
+const PASSWORD_REQUIREMENTS_MESSAGE =
+  "Use at least 8 characters with lowercase, uppercase, and a symbol (e.g. #, @, /).";
+
+const getPasswordChecks = (password: string) => ({
+  hasMinLength: password.length >= 8,
+  hasLowercase: /[a-z]/.test(password),
+  hasUppercase: /[A-Z]/.test(password),
+  hasSpecial: /[^A-Za-z0-9]/.test(password),
+});
+
 const getPasswordStrength = (password: string) => {
-  // Length is a hard prerequisite: anything under 8 chars is always Weak.
-  if (password.length < 8) return 0;
-  let score = 1; // one point awarded for meeting the minimum length
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
+  const checks = getPasswordChecks(password);
+  let score = 0;
+  if (checks.hasMinLength) score++;
+  if (checks.hasLowercase) score++;
+  if (checks.hasUppercase) score++;
+  if (checks.hasSpecial) score++;
   return score;
 };
 
@@ -37,10 +47,9 @@ const getPasswordStrengthLabel = (strength: number) => {
 };
 
 const getPasswordTip = (strength: number) => {
-  if (strength === 0) return "Use at least 8 characters.";
-  if (strength === 1) return "Add at least one number, symbol, or uppercase letter to improve it.";
-  if (strength === 2) return "Add more variety with uppercase letters, numbers, or symbols.";
-  if (strength === 3) return "Add the missing character type (uppercase, number, or symbol) to maximize strength.";
+  if (strength <= 1) return "Keep adding character variety to strengthen your password.";
+  if (strength === 2) return "Add the missing character types to strengthen your password.";
+  if (strength === 3) return "Add one more missing requirement to make your password stronger.";
   return "This password is in good shape.";
 };
 
@@ -108,13 +117,14 @@ export default function SignupPage() {
       return;
     }
 
-    if (form.password.length < 8) {
-      showFeedback("error", "Password too short", "Password must be at least 8 characters.");
-      return;
-    }
-
-    if (!/[0-9]/.test(form.password) && !/[^A-Za-z0-9]/.test(form.password)) {
-      showFeedback("error", "Password too weak", "Add at least one number or symbol.");
+    const passwordChecks = getPasswordChecks(form.password);
+    if (
+      !passwordChecks.hasMinLength ||
+      !passwordChecks.hasLowercase ||
+      !passwordChecks.hasUppercase ||
+      !passwordChecks.hasSpecial
+    ) {
+      showFeedback("error", "Password requirements not met", PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
 
@@ -163,7 +173,7 @@ export default function SignupPage() {
       } else if (err?.code === "auth/invalid-email") {
         message = "Please enter a valid email address.";
       } else if (err?.code === "auth/weak-password") {
-        message = "Password should be at least 8 characters.";
+        message = PASSWORD_REQUIREMENTS_MESSAGE;
       } else if (isPermissionError(err)) {
         message =
           "Account creation is temporarily unavailable due to a permissions issue. Please try again in a moment.";
@@ -247,6 +257,7 @@ export default function SignupPage() {
               </span>
             </div>
             <p className="text-xs text-zinc-500">{getPasswordTip(strength)}</p>
+            <p className="text-xs text-zinc-500">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
           </div>
         </div>
 
