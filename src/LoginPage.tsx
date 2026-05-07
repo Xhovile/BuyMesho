@@ -5,7 +5,12 @@ import FeedbackModal from "./components/FeedbackModal";
 import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
-import { navigateToPath } from "./lib/appNavigation";
+import {
+  consumeAuthReturnPath,
+  navigateToLogin,
+  navigateToPath,
+  navigateToSignup,
+} from "./lib/appNavigation";
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 
@@ -40,6 +45,8 @@ export default function LoginPage() {
 
   const closeFeedback = () => setFeedback(null);
 
+  const getPostAuthPath = () => consumeAuthReturnPath("/profile");
+
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -65,7 +72,7 @@ export default function LoginPage() {
         return;
       }
 
-      navigateToPath("/profile");
+      navigateToPath(getPostAuthPath());
     } catch (err: any) {
       if (err?.code === "auth/user-not-found") {
         showFeedback("error", "Login failed", "You do not have an account.", [
@@ -78,7 +85,7 @@ export default function LoginPage() {
             label: "Sign Up",
             onClick: () => {
               closeFeedback();
-              navigateToPath("/signup");
+              navigateToSignup();
             },
           },
         ]);
@@ -160,7 +167,7 @@ export default function LoginPage() {
 
       setTotpChallengeOpen(false);
       setTotpChallengeCode("");
-      navigateToPath("/profile");
+      navigateToPath(getPostAuthPath());
     } finally {
       setTotpChallengeBusy(false);
     }
@@ -173,7 +180,7 @@ export default function LoginPage() {
     try {
       await signOut(auth);
     } finally {
-      navigateToPath("/login");
+      navigateToLogin();
     }
   };
 
@@ -217,7 +224,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => navigateToPath("/signup")}
+            onClick={() => navigateToSignup()}
             className="text-zinc-500 hover:text-zinc-900 hover:underline"
           >
             Create account

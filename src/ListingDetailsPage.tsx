@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, LOGIN_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "./lib/listingUrl";
 import { getListingItemConfig } from "./listingSchemas";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -11,6 +11,7 @@ import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } 
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { startConversationFromListing } from "./lib/messages";
 import ListingActionsMenu from "./components/ListingActionsMenu";
+import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import ListingGallery from "./components/listingDetails/ListingGallery";
 import ListingSummary from "./components/listingDetails/ListingSummary";
@@ -73,6 +74,8 @@ export default function ListingDetailsPage() {
   const [shareNoticeMessage, setShareNoticeMessage] = useState("");
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | null>(null);
 
   const detailsRef = useRef<HTMLElement | null>(null);
   const exploreRef = useRef<HTMLElement | null>(null);
@@ -200,7 +203,7 @@ export default function ListingDetailsPage() {
   const sameCategoryListings = visibleRelated.filter((item) => item.category === listing?.category && item.id !== listing?.id);
   const sellerOtherListings = visibleRelated.filter((item) => item.seller_uid === listing?.seller_uid && item.id !== listing?.id);
   const showOffersBlock = listing?.listing_mode === "deal" || listing?.listing_mode === "wholesale";
-  
+
   useEffect(() => {
     const targets: Array<[SectionKey, HTMLElement | null]> = [
       ["details", detailsRef.current],
@@ -235,6 +238,21 @@ export default function ListingDetailsPage() {
   const openShareNotice = (message: string) => {
     setShareNoticeMessage(message);
     setShareNoticeOpen(true);
+  };
+
+  const openAuthPrompt = (action: "message" | "buy") => {
+    setAuthPromptAction(action);
+    setAuthPromptOpen(true);
+  };
+
+  const closeAuthPrompt = () => {
+    setAuthPromptOpen(false);
+    setAuthPromptAction(null);
+  };
+
+  const continueToAuth = () => {
+    closeAuthPrompt();
+    navigateToLogin();
   };
 
   const handleShare = async () => {
@@ -354,15 +372,16 @@ export default function ListingDetailsPage() {
 
   const handleBuyNow = () => {
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      openAuthPrompt("buy");
       return;
     }
     setCheckoutOpen(true);
   };
 
-  const handleMessageSeller = async () => {    if (!listing) return;
+  const handleMessageSeller = async () => {
+    if (!listing) return;
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      openAuthPrompt("message");
       return;
     }
 
@@ -522,6 +541,20 @@ export default function ListingDetailsPage() {
       </main>
 
       <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={() => setShareNoticeOpen(false)} />
+
+      <ConfirmModal
+        open={authPromptOpen}
+        title={authPromptAction === "buy" ? "Sign in to buy" : "Sign in to message"}
+        message={
+          authPromptAction === "buy"
+            ? "You need to sign in or create an account before you can buy this listing."
+            : "You need to sign in or create an account before you can message the seller."
+        }
+        confirmText="Continue"
+        cancelText="Cancel"
+        onCancel={closeAuthPrompt}
+        onConfirm={continueToAuth}
+      />
 
       {listing && (
         <CheckoutModal

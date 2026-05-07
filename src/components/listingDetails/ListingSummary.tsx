@@ -38,6 +38,9 @@ export default function ListingSummary({
         ? "Wholesale"
         : "Normal";
 
+  const actionButtonClass =
+    "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
+
   return (
     <aside>
       <div className="space-y-4 lg:space-y-5">
@@ -67,44 +70,49 @@ export default function ListingSummary({
           ) : null}
         </div>
 
-        {!isOwner ? (
-          <div className="border-t border-zinc-200 pt-4">
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-              <button
-                type="button"
-                onClick={onMessageSeller}
-                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600"
-              >
-                <MessageCircle className="h-4 w-4 shrink-0" />
-                <span className="truncate">Message</span>
-              </button>
+        <div className="border-t border-zinc-200 pt-4">
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+            <button
+              type="button"
+              onClick={isOwner ? undefined : onMessageSeller}
+              disabled={isOwner}
+              aria-disabled={isOwner}
+              className={`${actionButtonClass} bg-sky-500 text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45`}
+              title={isOwner ? "Messaging your own listing is disabled" : undefined}
+            >
+              <MessageCircle className="h-4 w-4 shrink-0" />
+              <span className="truncate">Message</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={onBuyNow}
-                disabled={!canBuy}
-                className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-lime-400 px-3 py-3 text-sm font-extrabold text-zinc-950 transition-colors hover:bg-lime-500 disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                <ShoppingBag className="h-4 w-4 shrink-0" />
-                <span className="truncate">Buy</span>
-              </button>
+            <button
+              type="button"
+              onClick={isOwner ? undefined : onBuyNow}
+              disabled={isOwner || !canBuy}
+              aria-disabled={isOwner || !canBuy}
+              className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500 disabled:cursor-not-allowed disabled:opacity-45`}
+              title={isOwner ? "Buying your own listing is disabled" : undefined}
+            >
+              <ShoppingBag className="h-4 w-4 shrink-0" />
+              <span className="truncate">Buy</span>
+            </button>
 
-              <button
-                type="button"
-                onClick={onShare}
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-                aria-label="Share listing"
-                title="Share listing"
-              >
-                <Share2 className="h-4 w-4 text-zinc-700" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={onShare}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+              aria-label="Share listing"
+              title="Share listing"
+            >
+              <Share2 className="h-4 w-4 text-zinc-700" />
+            </button>
           </div>
-        ) : (
-          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500">
-            This is your listing.
-          </div>
-        )}
+
+          {isOwner ? (
+            <p className="mt-3 text-xs font-medium text-zinc-500">
+              You can still share this listing, but messaging and buying are disabled for the owner.
+            </p>
+          ) : null}
+        </div>
       </div>
     </aside>
   );
