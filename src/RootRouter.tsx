@@ -6,6 +6,8 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import loaderImage from "../photos/LoaderPic.png";
 
 const App = lazy(() => import("./App.new"));
+const AdminHubPage = lazy(() => import("./AdminHubPage"));
+const AdminPaymentsPage = lazy(() => import("./AdminPaymentsPage"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
@@ -123,6 +125,8 @@ export default function RootRouter() {
       "change_email",
       "my_listings",
       "messages",
+      "admin",
+      "admin_payments",
     ];
 
     const isVerified = !!firebaseUser?.emailVerified;
@@ -182,6 +186,12 @@ export default function RootRouter() {
         route === "change_email" ? <ChangeEmailPage /> :
         route === "email_action" ? <EmailActionPage /> :
         route === "my_listings" ? <MyListingsPage /> :
+        route === "admin" ? (
+          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
+        ) :
+        route === "admin_payments" ? (
+          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+        ) :
         route === "admin_reports" ? (
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) :

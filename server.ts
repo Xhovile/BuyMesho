@@ -14,6 +14,7 @@ import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
+import { getPaymentDb } from "./server/sqlite.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -2906,6 +2907,32 @@ app.get("/api/admin/actions", requireAuth, (req, res) => {
   } catch (error) {
     console.error("Admin actions fetch error:", error);
     res.status(500).json({ error: "Failed to load admin actions" });
+  }
+});
+
+app.get("/api/admin/payments", requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+
+  if (!hasAdminAccess({ email: requesterEmail, uid: requesterUid, is_admin: req.user?.is_admin })) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  try {
+    const paymentDb = getPaymentDb();
+    const payments = paymentDb
+      .prepare(`
+        SELECT *
+        FROM payments
+        ORDER BY created_at DESC
+        LIMIT 100
+      `)
+      .all();
+
+    res.json(payments);
+  } catch (error) {
+    console.error("Admin payments fetch error:", error);
+    res.status(500).json({ error: "Failed to load payments" });
   }
 });
 

@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
+  ADMIN_PATH,
   BECOME_SELLER_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -19,6 +20,7 @@ import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
+import { useIsAdmin } from "../hooks/useIsAdmin";
 
 type HeaderProps = {
   searchValue: string;
@@ -46,6 +48,8 @@ export default function Header({
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
+
+  const { isAdmin } = useIsAdmin(firebaseUser);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -204,6 +208,17 @@ export default function Header({
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
+
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(ADMIN_PATH)}
+                      className={desktopNavButtonClass}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Admin Access
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -452,6 +467,23 @@ export default function Header({
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
+
+                  {isAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(ADMIN_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                        Admin Access
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"

@@ -28,6 +28,8 @@ export type AppRoute =
   | "change_email"
   | "email_action"
   | "my_listings"
+  | "admin"
+  | "admin_payments"
   | "admin_reports"
   | "admin_seller_applications"
   | "payment_return";
@@ -58,6 +60,8 @@ export const CHANGE_PASSWORD_PATH = "/change-password";
 export const CHANGE_EMAIL_PATH = "/change_email";
 export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
+export const ADMIN_PATH = "/admin";
+export const ADMIN_PAYMENTS_PATH = "/admin/payments";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const PAYMENT_RETURN_PATH = "/payment/return";
@@ -321,6 +325,14 @@ export const getAppRouteFromLocation = (
     return "my_listings";
   }
 
+  if (location.pathname === ADMIN_PATH) {
+    return "admin";
+  }
+
+  if (location.pathname === ADMIN_PAYMENTS_PATH) {
+    return "admin_payments";
+  }
+
   if (location.pathname === ADMIN_REPORTS_PATH) {
     return "admin_reports";
   }
@@ -546,6 +558,8 @@ export const navigateToEditAccount = () => navigateToPath(EDIT_ACCOUNT_PATH);
 export const navigateToBecomeSeller = () => navigateToPath(BECOME_SELLER_PATH);
 export const navigateToChangePassword = () => navigateToPath(CHANGE_PASSWORD_PATH);
 export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
+export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
+export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
 
