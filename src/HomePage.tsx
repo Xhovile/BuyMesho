@@ -539,7 +539,7 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                {isLoggedIn && isAdmin ? (
+                {isAdmin ? (
                   <button
                     type="button"
                     onClick={() => {

@@ -2910,7 +2910,14 @@ app.get("/api/admin/actions", requireAuth, (req, res) => {
   }
 });
 
-app.get("/api/admin/payments", requireAuth, (req, res) => {
+const adminApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get("/api/admin/payments", adminApiLimiter, requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
   const requesterUid = req.user?.uid || null;
 
