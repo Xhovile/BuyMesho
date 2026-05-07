@@ -19,13 +19,29 @@ type FeedbackState = {
   message: string;
 } | null;
 
-const getPasswordStrength = (password: string) => {
-  // Length is a hard prerequisite: anything under 8 chars is always Weak.
-  if (password.length < 8) return 0;
-  let score = 1; // one point awarded for meeting the minimum length
-  if (/[A-Z]/.test(password)) score++;
-  if (/[0-9]/.test(password)) score++;
-  if (/[^A-Za-z0-9]/.test(password)) score++;
+const PASSWORD_REQUIREMENTS_MESSAGE =
+  "Use at least 8 characters with lowercase, uppercase, and a symbol (e.g. #, @, /).";
+
+type PasswordChecks = {
+  hasMinLength: boolean;
+  hasLowercase: boolean;
+  hasUppercase: boolean;
+  hasSpecial: boolean;
+};
+
+const getPasswordChecks = (password: string): PasswordChecks => ({
+  hasMinLength: password.length >= 8,
+  hasLowercase: /[a-z]/.test(password),
+  hasUppercase: /[A-Z]/.test(password),
+  hasSpecial: /[^A-Za-z0-9]/.test(password),
+});
+
+const getPasswordStrength = (checks: PasswordChecks) => {
+  let score = 0;
+  if (checks.hasMinLength) score++;
+  if (checks.hasLowercase) score++;
+  if (checks.hasUppercase) score++;
+  if (checks.hasSpecial) score++;
   return score;
 };
 
@@ -36,12 +52,18 @@ const getPasswordStrengthLabel = (strength: number) => {
   return "Very strong";
 };
 
-const getPasswordTip = (strength: number) => {
-  if (strength === 0) return "Use at least 8 characters.";
-  if (strength === 1) return "Add at least one number, symbol, or uppercase letter to improve it.";
-  if (strength === 2) return "Add more variety with uppercase letters, numbers, or symbols.";
-  if (strength === 3) return "Add the missing character type (uppercase, number, or symbol) to maximize strength.";
-  return "This password is in good shape.";
+const getPasswordTip = (checks: PasswordChecks) => {
+  const missing: string[] = [];
+
+  if (!checks.hasMinLength) missing.push("8+ characters");
+  if (!checks.hasLowercase) missing.push("lowercase letters");
+  if (!checks.hasUppercase) missing.push("uppercase letters");
+  if (!checks.hasSpecial) missing.push("a symbol");
+
+  if (missing.length === 0) return "Looks good — strong password.";
+  if (missing.length === 1) return `Add ${missing[0]}.`;
+  if (missing.length === 2) return `Add ${missing[0]} and ${missing[1]}.`;
+  return `Add ${missing.slice(0, -1).join(", ")}, and ${missing[missing.length - 1]}.`;
 };
 
 const isPermissionError = (err: any) => {
@@ -82,7 +104,8 @@ export default function SignupPage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
-  const strength = getPasswordStrength(form.password);
+  const passwordChecks = getPasswordChecks(form.password);
+  const strength = getPasswordStrength(passwordChecks);
   const passwordsMatch =
     form.password.length > 0 && form.confirmPassword.length > 0 && form.password === form.confirmPassword;
 
@@ -108,13 +131,14 @@ export default function SignupPage() {
       return;
     }
 
-    if (form.password.length < 8) {
-      showFeedback("error", "Password too short", "Password must be at least 8 characters.");
-      return;
-    }
-
-    if (!/[0-9]/.test(form.password) && !/[^A-Za-z0-9]/.test(form.password)) {
-      showFeedback("error", "Password too weak", "Add at least one number or symbol.");
+    const passwordChecks = getPasswordChecks(form.password);
+    if (
+      !passwordChecks.hasMinLength ||
+      !passwordChecks.hasLowercase ||
+      !passwordChecks.hasUppercase ||
+      !passwordChecks.hasSpecial
+    ) {
+      showFeedback("error", "Password requirements not met", PASSWORD_REQUIREMENTS_MESSAGE);
       return;
     }
 
@@ -163,7 +187,7 @@ export default function SignupPage() {
       } else if (err?.code === "auth/invalid-email") {
         message = "Please enter a valid email address.";
       } else if (err?.code === "auth/weak-password") {
-        message = "Password should be at least 8 characters.";
+        message = PASSWORD_REQUIREMENTS_MESSAGE;
       } else if (isPermissionError(err)) {
         message =
           "Account creation is temporarily unavailable due to a permissions issue. Please try again in a moment.";
@@ -206,7 +230,9 @@ export default function SignupPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">
+            Password (8+ chars, lowercase, uppercase, symbol)
+          </label>
           <input
             required
             type="password"
@@ -246,7 +272,7 @@ export default function SignupPage() {
                 {getPasswordStrengthLabel(strength)}
               </span>
             </div>
-            <p className="text-xs text-zinc-500">{getPasswordTip(strength)}</p>
+            <p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p>
           </div>
         </div>
 
