@@ -22,15 +22,21 @@ type FeedbackState = {
 const PASSWORD_REQUIREMENTS_MESSAGE =
   "Use at least 8 characters with lowercase, uppercase, and a symbol (e.g. #, @, /).";
 
-const getPasswordChecks = (password: string) => ({
+type PasswordChecks = {
+  hasMinLength: boolean;
+  hasLowercase: boolean;
+  hasUppercase: boolean;
+  hasSpecial: boolean;
+};
+
+const getPasswordChecks = (password: string): PasswordChecks => ({
   hasMinLength: password.length >= 8,
   hasLowercase: /[a-z]/.test(password),
   hasUppercase: /[A-Z]/.test(password),
   hasSpecial: /[^A-Za-z0-9]/.test(password),
 });
 
-const getPasswordStrength = (password: string) => {
-  const checks = getPasswordChecks(password);
+const getPasswordStrength = (checks: PasswordChecks) => {
   let score = 0;
   if (checks.hasMinLength) score++;
   if (checks.hasLowercase) score++;
@@ -46,11 +52,18 @@ const getPasswordStrengthLabel = (strength: number) => {
   return "Very strong";
 };
 
-const getPasswordTip = (strength: number) => {
-  if (strength <= 1) return "Keep adding character variety to strengthen your password.";
-  if (strength === 2) return "Add the missing character types to strengthen your password.";
-  if (strength === 3) return "Add one more missing requirement to make your password stronger.";
-  return "This password is in good shape.";
+const getPasswordTip = (checks: PasswordChecks) => {
+  const missing: string[] = [];
+
+  if (!checks.hasMinLength) missing.push("8+ characters");
+  if (!checks.hasLowercase) missing.push("lowercase letters");
+  if (!checks.hasUppercase) missing.push("uppercase letters");
+  if (!checks.hasSpecial) missing.push("a symbol");
+
+  if (missing.length === 0) return "Looks good — strong password.";
+  if (missing.length === 1) return `Add ${missing[0]}.`;
+  if (missing.length === 2) return `Add ${missing[0]} and ${missing[1]}.`;
+  return `Add ${missing.slice(0, -1).join(", ")}, and ${missing[missing.length - 1]}.`;
 };
 
 const isPermissionError = (err: any) => {
@@ -91,7 +104,8 @@ export default function SignupPage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
-  const strength = getPasswordStrength(form.password);
+  const passwordChecks = getPasswordChecks(form.password);
+  const strength = getPasswordStrength(passwordChecks);
   const passwordsMatch =
     form.password.length > 0 && form.confirmPassword.length > 0 && form.password === form.confirmPassword;
 
@@ -216,7 +230,9 @@ export default function SignupPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">
+            Password (8+ chars, lowercase, uppercase, symbol)
+          </label>
           <input
             required
             type="password"
@@ -256,8 +272,7 @@ export default function SignupPage() {
                 {getPasswordStrengthLabel(strength)}
               </span>
             </div>
-            <p className="text-xs text-zinc-500">{getPasswordTip(strength)}</p>
-            <p className="text-xs text-zinc-500">{PASSWORD_REQUIREMENTS_MESSAGE}</p>
+            <p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p>
           </div>
         </div>
 
