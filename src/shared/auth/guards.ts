@@ -17,5 +17,5 @@ export function AuthGuard({ children, fallback = null }: GuardProps) {
     return fallback;
   }
 
-  return <>{children}</>;
+  return children;
 }

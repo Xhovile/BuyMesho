@@ -104,7 +104,6 @@ export default function EditProfilePage() {
         business_logo: form.logoUrl || undefined,
         university: form.university,
         bio: form.bio,
-        whatsapp_number: profile.whatsapp_number,
       };
       await apiFetch("/api/profile", {
         method: "PUT",
@@ -113,7 +112,6 @@ export default function EditProfilePage() {
           business_logo: updatedProfile.business_logo || "",
           university: updatedProfile.university,
           bio: updatedProfile.bio || "",
-          whatsapp_number: updatedProfile.whatsapp_number || "",
         }),
       });
       setProfile(updatedProfile);

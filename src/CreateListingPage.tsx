@@ -8,7 +8,6 @@ import { CATEGORIES } from "./constants";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { invalidateHomepageCache } from "./hooks/useHomePageData";
 import { resolveUniversity } from "./lib/university";
-import { resolveWhatsappNumber } from "./lib/whatsapp";
 import type { ListingDraft, UserProfile } from "./types";
 
 const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDraft => ({
@@ -22,7 +21,6 @@ const createInitialListingDraft = (userProfile?: UserProfile | null): ListingDra
   university: resolveUniversity(userProfile?.university),
   photos: [],
   video_url: "",
-  whatsapp_number: resolveWhatsappNumber(userProfile?.whatsapp_number),
   status: "available",
   condition: "used",
   quantity: "1",
@@ -77,7 +75,6 @@ export default function CreateListingPage() {
         business_logo: profile?.business_logo || "",
         university: profile?.university || listingDraft.university,
         bio: profile?.bio || "",
-        whatsapp_number: profile?.whatsapp_number || listingDraft.whatsapp_number,
         is_verified: true,
         is_seller: true,
       }),
