@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
+import { Loader2 } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -22,6 +23,16 @@ type FeedbackState = {
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
+  const [sending, setSending] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const timer = window.setInterval(() => {
+      setCooldownSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldownSeconds]);
 
   const showFeedback = (
     type: "success" | "error" | "info",
@@ -33,11 +44,16 @@ export default function ForgotPasswordPage() {
   const handleReset = async (e: FormEvent) => {
     e.preventDefault();
 
+    if (sending || cooldownSeconds > 0) {
+      return;
+    }
+
     if (!email.trim()) {
       showFeedback("info", "Email required", "Please enter your email address first.");
       return;
     }
 
+    setSending(true);
     try {
       await sendPasswordResetEmail(auth, email.trim());
       showFeedback(
@@ -45,6 +61,7 @@ export default function ForgotPasswordPage() {
         "Reset email sent",
         "Check your email inbox for the password reset link."
       );
+      setCooldownSeconds(35);
     } catch (err: any) {
       if (err?.code === "auth/user-not-found") {
         showFeedback(
@@ -77,6 +94,8 @@ export default function ForgotPasswordPage() {
         "Reset failed",
         err?.message || "We could not send the reset email."
       );
+    } finally {
+      setSending(false);
     }
   };
 
@@ -102,9 +121,23 @@ export default function ForgotPasswordPage() {
 
         <button
           type="submit"
-          className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+          disabled={sending || cooldownSeconds > 0}
+          className={`w-full sm:w-auto min-w-[200px] py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+            sending || cooldownSeconds > 0
+              ? "bg-zinc-500 text-white cursor-not-allowed"
+              : "bg-zinc-900 text-white hover:bg-zinc-800 active:scale-[0.98]"
+          }`}
         >
-          Send Reset Link
+          {sending ? (
+            <>
+              <Loader2 className="w-5 h-5 animate-spin" />
+              Sending...
+            </>
+          ) : cooldownSeconds > 0 ? (
+            `Send Reset Link (${cooldownSeconds}s)`
+          ) : (
+            "Send Reset Link"
+          )}
         </button>
       </form>
 
