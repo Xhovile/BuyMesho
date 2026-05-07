@@ -92,10 +92,10 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
 
       <ConfirmModal
         open={sellPrompt !== null}
-        title={sellPrompt === "guest" ? "Sign in to continue" : "Seller application"}
+        title={sellPrompt === "guest" ? "Sign in first" : "Seller application"}
         message={
           sellPrompt === "guest"
-            ? "You need to sign in before you can continue to the seller flow."
+            ? "You are not logged in yet. Continue to sign in or sign up, or cancel to stay here."
             : "You are about to be directed to the seller application page."
         }
         confirmText="Continue"
