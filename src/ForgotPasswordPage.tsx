@@ -20,6 +20,8 @@ type FeedbackState = {
   actions?: FeedbackAction[];
 } | null;
 
+const RESET_COOLDOWN_SECONDS = 35;
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -61,7 +63,7 @@ export default function ForgotPasswordPage() {
         "Reset email sent",
         "Check your email inbox for the password reset link."
       );
-      setCooldownSeconds(35);
+      setCooldownSeconds(RESET_COOLDOWN_SECONDS);
     } catch (err: any) {
       if (err?.code === "auth/user-not-found") {
         showFeedback(
