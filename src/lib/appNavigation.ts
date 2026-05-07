@@ -410,6 +410,9 @@ export const navigateToPath = (path: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+/**
+ * Returns the post-authentication route and clears any one-time return target.
+ */
 export const consumeAuthReturnPath = (fallbackPath: string = PROFILE_PATH) => {
   const params = new URLSearchParams(window.location.search);
   const queryReturnPath = sanitizeInternalReturnPath(params.get("returnTo"));

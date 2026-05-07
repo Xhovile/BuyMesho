@@ -203,7 +203,7 @@ export default function ListingDetailsPage() {
   const sameCategoryListings = visibleRelated.filter((item) => item.category === listing?.category && item.id !== listing?.id);
   const sellerOtherListings = visibleRelated.filter((item) => item.seller_uid === listing?.seller_uid && item.id !== listing?.id);
   const showOffersBlock = listing?.listing_mode === "deal" || listing?.listing_mode === "wholesale";
-  
+
   useEffect(() => {
     const targets: Array<[SectionKey, HTMLElement | null]> = [
       ["details", detailsRef.current],
@@ -378,7 +378,8 @@ export default function ListingDetailsPage() {
     setCheckoutOpen(true);
   };
 
-  const handleMessageSeller = async () => {    if (!listing) return;
+  const handleMessageSeller = async () => {
+    if (!listing) return;
     if (!firebaseUser) {
       openAuthPrompt("message");
       return;
