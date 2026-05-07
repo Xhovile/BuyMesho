@@ -133,19 +133,6 @@ export default function SettingsModal({
                 className="w-full flex items-center justify-between px-4 py-4 hover:bg-white transition-colors text-left"
               >
                 <div>
-                  <p className="font-medium text-zinc-900">Default WhatsApp Number</p>
-                  <p className="text-sm text-zinc-500">
-                    {userProfile.whatsapp_number || "Not added"}
-                  </p>
-                </div>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              <button
-                onClick={onOpenEditProfile}
-                className="w-full flex items-center justify-between px-4 py-4 border-t border-zinc-100 hover:bg-white transition-colors text-left"
-              >
-                <div>
                   <p className="font-medium text-zinc-900">Default Campus</p>
                   <p className="text-sm text-zinc-500">
                     {userProfile.university || "Not set"}

@@ -50,7 +50,6 @@ export type MarketSectionActions = {
   onHideListing: (listingId: number) => void;
   onToggleStatus: (listing: Listing) => void;
   onToggleSave: (listingId: number) => void;
-  requireLoginForContact: () => void;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (uid: string) => void;
 };
@@ -122,7 +121,6 @@ export default function MarketSection({
     onHideListing,
     onToggleStatus,
     onToggleSave,
-    requireLoginForContact,
     onOpenDetails,
     onOpenSeller,
   } = actions;
@@ -276,7 +274,6 @@ export default function MarketSection({
                 isSaved={savedListingIds.includes(listing.id)}
                 onToggleSave={onToggleSave}
                 isLoggedIn={isLoggedIn}
-                requireLoginForContact={requireLoginForContact}
                 onOpenDetails={onOpenDetails}
                 onOpenSeller={onOpenSeller}
                 compact

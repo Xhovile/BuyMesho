@@ -352,7 +352,7 @@ export default function MyListingsPage() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-4">
+                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-3">
                           <p className="text-[10px] font-bold uppercase text-zinc-400">Total listings</p>
                           <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
@@ -360,12 +360,7 @@ export default function MyListingsPage() {
                         <div className="rounded-2xl border border-zinc-200 bg-white p-3">
                           <p className="text-[10px] font-bold uppercase text-zinc-400">Total views</p>
                           <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">WhatsApp clicks</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_whatsapp_clicks}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                        </div>                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
                           <p className="text-[10px] font-bold uppercase text-zinc-400">Profile views</p>
                           <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
                         </div>

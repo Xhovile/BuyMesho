@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   institution TEXT NOT NULL,
   applicant_type TEXT NOT NULL,
   institution_id_number TEXT NOT NULL,
+  whatsapp_number TEXT,
   business_name TEXT NOT NULL,
   what_to_sell TEXT NOT NULL,
   business_description TEXT NOT NULL,
