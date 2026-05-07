@@ -33,6 +33,7 @@ export default function BecomeSellerModal({
       return;
     }
 
+
     if (!whatsappNumber.trim()) {
       alert("WhatsApp number is required.");
       return;

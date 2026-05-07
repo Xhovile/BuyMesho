@@ -69,7 +69,6 @@ export function useAccountProfile() {
           business_logo: profileForSync?.business_logo || "",
           university: profileForSync?.university || UNIVERSITIES[0],
           bio: profileForSync?.bio || "",
-          whatsapp_number: profileForSync?.whatsapp_number || "",
           is_verified: !!firebaseUser.emailVerified,
           is_seller: true,
         }),

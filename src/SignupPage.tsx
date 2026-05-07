@@ -54,6 +54,23 @@ const isPermissionError = (err: any) => {
   );
 };
 
+const bootstrapProfile = async (profile: UserProfile) => {
+  try {
+    await setDoc(doc(firestore, "users", profile.uid), profile, { merge: true });
+    return;
+  } catch (profileErr) {
+    console.warn("Direct Firestore profile bootstrap failed; trying server bootstrap.", profileErr);
+  }
+
+  await apiFetch("/api/profile/bootstrap", {
+    method: "POST",
+    body: JSON.stringify({
+      email: profile.email,
+      university: profile.university,
+    }),
+  });
+};
+
 export default function SignupPage() {
   const [form, setForm] = useState({
     university: resolveUniversity(),
@@ -118,12 +135,9 @@ export default function SignupPage() {
       };
 
       try {
-        await setDoc(doc(firestore, "users", user.uid), profile, { merge: true });
-      } catch (profileErr: any) {
-        if (!isPermissionError(profileErr)) {
-          throw profileErr;
-        }
-        console.warn("Profile bootstrap skipped because Firestore blocked the write.", profileErr);
+        await bootstrapProfile(profile);
+      } catch (profileErr) {
+        console.warn("Profile bootstrap failed after account creation.", profileErr);
       }
 
       let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";

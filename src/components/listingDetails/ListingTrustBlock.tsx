@@ -11,7 +11,6 @@ export type SellerProfile = {
   bio?: string;
   is_verified?: boolean;
   join_date?: string;
-  whatsapp_number?: string;
   profile_views?: number;
 };
 

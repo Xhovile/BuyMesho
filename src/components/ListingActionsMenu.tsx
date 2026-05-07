@@ -25,7 +25,6 @@ type ListingActionsMenuProps = {
   onToggleStatus?: (listing: Listing) => void | Promise<void>;
   onRecordSale?: (listing: Listing, quantity: number) => Promise<StockActionResponse | void> | StockActionResponse | void;
   onRestock?: (listing: Listing, quantity: number) => Promise<StockActionResponse | void> | StockActionResponse | void;
-  requireLoginForContact?: () => void;
 };
 
 function loadIdList(storageKey: string, itemValidator: (value: unknown) => boolean) {
@@ -57,7 +56,6 @@ export default function ListingActionsMenu({
   onHideListing,
   onRecordSale,
   onRestock,
-  requireLoginForContact,
 }: ListingActionsMenuProps) {
   const [open, setOpen] = useState(false);
   const [activeDialog, setActiveDialog] = useState<"record-sale" | "restock" | "delete" | "notice" | null>(null);
@@ -113,29 +111,6 @@ export default function ListingActionsMenu({
     setNoticeMessage("");
   };
 
-  const handleCopyWhatsApp = async () => {
-    if (!isLoggedIn) {
-      setOpen(false);
-      requireLoginForContact?.();
-      return;
-    }
-
-    const number = listing.whatsapp_number || "";
-    if (!number) {
-      openNotice("No WhatsApp number found for this listing.");
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(number);
-      openNotice("WhatsApp number copied.");
-    } catch {
-      openNotice(`Copy this number manually:\n${number}`);
-    } finally {
-      setOpen(false);
-    }
-  };
-
   const handleShare = async () => {
     const shareUrl = buildListingShareUrl(listing.id, 0);
     const shareLines = [
@@ -144,10 +119,6 @@ export default function ListingActionsMenu({
       `Price: MK ${Number(listing.price).toLocaleString()}`,
       `Campus: ${listing.university}`,
     ];
-
-    if (isLoggedIn && listing.whatsapp_number) {
-      shareLines.push(`WhatsApp: ${listing.whatsapp_number}`);
-    }
 
     shareLines.push("", `Open this listing: ${shareUrl}`);
     const shareText = shareLines.join("\n");
@@ -363,11 +334,7 @@ export default function ListingActionsMenu({
                   className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
                   Report listing
-                </button>
-                <button type="button" onClick={handleCopyWhatsApp} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-                  Copy WhatsApp number
-                </button>
-                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                </button>                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                   <span className="inline-flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
                     Share listing

@@ -486,13 +486,6 @@ export default function ListingStudioForm({
       return;
     }
 
-    if (!form.whatsapp_number.trim()) {
-      const message = "WhatsApp number is required.";
-      setFieldError("whatsapp_number", message);
-      showFeedback("error", "WhatsApp number required", message);
-      return;
-    }
-
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       const message = "Please enter a valid price greater than 0.";
       setFieldError("price", message);
@@ -616,7 +609,6 @@ export default function ListingStudioForm({
         item_type: form.item_type || null,
         spec_values: isSchemaDrivenCategory ? form.spec_values : {},
         university: form.university as University,
-        whatsapp_number: form.whatsapp_number,
         status: form.status,
         condition: form.condition,
         quantity: quantityNum,
@@ -658,11 +650,6 @@ export default function ListingStudioForm({
                 <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Price (MK)</label>
                 <input type="number" className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.price ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`} value={form.price} onChange={(e) => { clearFieldError("price"); setForm({ ...form, price: e.target.value }); }} />
                 {fieldErrors.price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.price}</p> : null}
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-                <input type="text" placeholder="265..." className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.whatsapp_number ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`} value={form.whatsapp_number} onChange={(e) => { clearFieldError("whatsapp_number"); setForm({ ...form, whatsapp_number: e.target.value }); }} />
-                {fieldErrors.whatsapp_number ? <p className="mt-1 text-xs text-red-600">{fieldErrors.whatsapp_number}</p> : null}
               </div>
             </div>
           </div>

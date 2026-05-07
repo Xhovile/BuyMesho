@@ -208,10 +208,10 @@ export default function TermsPage({
             </p>
           </Section>
 
-          <Section title="10. Communication Through WhatsApp or Other External Channels">
+          <Section title="10. Communication Through External Channels">
             <p>
-              BuyMesho may enable or encourage contact through WhatsApp or other
-              external communication tools. Once users move part or all of a
+              BuyMesho may enable or encourage contact through external
+              communication tools. Once users move part or all of a
               transaction outside the platform, BuyMesho may have limited
               visibility, control, or evidence of what occurs.
             </p>

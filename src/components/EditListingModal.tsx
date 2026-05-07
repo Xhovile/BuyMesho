@@ -39,7 +39,6 @@ export default function EditListingModal({
     spec_values: listing.spec_values || {},
     university: listing.university || "",
     condition: listing.condition || "used",
-    whatsapp_number: listing.whatsapp_number || "",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
     original_price: listing.original_price ? String(listing.original_price) : "",
@@ -65,7 +64,6 @@ export default function EditListingModal({
       spec_values: listing.spec_values || {},
       university: listing.university || "",
       condition: listing.condition || "used",
-      whatsapp_number: listing.whatsapp_number || "",
       quantity: String(listing.quantity ?? 1),
       sold_quantity: String(listing.sold_quantity ?? 0),
       original_price: listing.original_price ? String(listing.original_price) : "",
@@ -616,13 +614,6 @@ export default function EditListingModal({
       return;
     }
 
-    if (!form.whatsapp_number.trim()) {
-      const message = "WhatsApp number is required.";
-      setEditFieldError("whatsapp_number", message);
-      showFeedback("error", "WhatsApp number required", message);
-      return;
-    }
-
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       const message = "Please enter a valid price greater than 0.";
       setEditFieldError("price", message);
@@ -758,7 +749,6 @@ onSave({
   item_type: form.item_type || null,
   spec_values: isSchemaDrivenCategory ? form.spec_values : {},
   university: form.university as University,
-  whatsapp_number: form.whatsapp_number,
   condition: form.condition as "new" | "used" | "refurbished",
   quantity: quantityNum,
   sold_quantity: soldQuantityNum,
@@ -849,31 +839,6 @@ onSave({
                   />
                   {editFieldErrors.price ? (
                     <p className="mt-1 text-xs text-red-600">{editFieldErrors.price}</p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                    WhatsApp Number
-                  </label>
-                  <input
-                    type="text"
-                    value={form.whatsapp_number}
-                    onChange={(e) => {
-                      clearEditFieldError("whatsapp_number");
-                      setForm({ ...form, whatsapp_number: e.target.value });
-                    }}
-                    placeholder="265..."
-                    className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
-                      editFieldErrors.whatsapp_number
-                        ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
-                    }`}
-                  />
-                  {editFieldErrors.whatsapp_number ? (
-                    <p className="mt-1 text-xs text-red-600">
-                      {editFieldErrors.whatsapp_number}
-                    </p>
                   ) : null}
                 </div>
               </div>
