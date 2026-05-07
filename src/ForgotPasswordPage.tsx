@@ -122,6 +122,13 @@ export default function ForgotPasswordPage() {
         <button
           type="submit"
           disabled={sending || cooldownSeconds > 0}
+          aria-label={
+            sending
+              ? "Sending reset link"
+              : cooldownSeconds > 0
+                ? `Send reset link disabled. Try again in ${cooldownSeconds} seconds`
+                : "Send reset link"
+          }
           className={`w-full sm:w-auto min-w-[200px] py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
             sending || cooldownSeconds > 0
               ? "bg-zinc-500 text-white cursor-not-allowed"
@@ -139,6 +146,11 @@ export default function ForgotPasswordPage() {
             "Send Reset Link"
           )}
         </button>
+        <p className="sr-only" aria-live="polite" aria-atomic="true">
+          {cooldownSeconds > 0
+            ? `Reset link button disabled. ${cooldownSeconds} seconds remaining.`
+            : "Reset link button is active."}
+        </p>
       </form>
 
       {feedback && (
