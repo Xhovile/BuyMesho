@@ -1466,7 +1466,6 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
     institution,
     applicant_type,
     institution_id_number,
-    whatsapp_number,
     business_name,
     what_to_sell,
     business_description,
@@ -1537,7 +1536,6 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           institution = ?,
           applicant_type = ?,
           institution_id_number = ?,
-          whatsapp_number = ?,
           business_name = ?,
           what_to_sell = ?,
           business_description = ?,
@@ -1556,7 +1554,6 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
         institution.trim(),
         applicant_type,
         institution_id_number.trim(),
-        typeof whatsapp_number === "string" ? whatsapp_number.trim() : null,
         business_name.trim(),
         what_to_sell.trim(),
         business_description.trim(),
@@ -1573,7 +1570,6 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           institution,
           applicant_type,
           institution_id_number,
-          whatsapp_number,
           business_name,
           what_to_sell,
           business_description,
@@ -1582,7 +1578,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           agreed_to_rules,
           status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
       `).run(
         uid,
         email,
@@ -1590,7 +1586,6 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
         institution.trim(),
         applicant_type,
         institution_id_number.trim(),
-        typeof whatsapp_number === "string" ? whatsapp_number.trim() : null,
         business_name.trim(),
         what_to_sell.trim(),
         business_description.trim(),
@@ -2814,7 +2809,6 @@ app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
       sa.institution,
       sa.applicant_type,
       sa.institution_id_number,
-      sa.whatsapp_number,
       sa.business_name,
       sa.what_to_sell,
       sa.business_description,
