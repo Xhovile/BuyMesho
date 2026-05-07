@@ -33,7 +33,6 @@ type SellerProfile = {
   bio?: string;
   is_verified?: boolean;
   join_date?: string;
-  whatsapp_number?: string;
   profile_views?: number;
 };
 
@@ -466,7 +465,6 @@ export default function ListingDetailsPage() {
                         onToggleStatus={handleDetailToggleStatus}
                         onRecordSale={handleDetailRecordSale}
                         onRestock={handleDetailRestock}
-                        requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
                       />
                     }
                   />

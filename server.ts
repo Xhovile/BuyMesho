@@ -156,6 +156,7 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   institution TEXT NOT NULL,
   applicant_type TEXT NOT NULL,
   institution_id_number TEXT NOT NULL,
+  whatsapp_number TEXT,
   business_name TEXT NOT NULL,
   what_to_sell TEXT NOT NULL,
   business_description TEXT NOT NULL,
@@ -250,6 +251,17 @@ try {
   `);
 } catch (e) {
   console.warn("Seller applications index migration failed:", e);
+}
+
+try {
+  const cols = db.prepare("PRAGMA table_info(seller_applications)").all() as any[];
+  const hasWhatsappNumber = cols.some((c) => c.name === "whatsapp_number");
+  if (!hasWhatsappNumber) {
+    db.exec("ALTER TABLE seller_applications ADD COLUMN whatsapp_number TEXT");
+    console.log("Migration: Added seller_applications.whatsapp_number");
+  }
+} catch (e) {
+  console.warn("Seller applications whatsapp_number migration failed:", e);
 }
 
 // ✅ Migration: add video_url column if it doesn't exist
@@ -1466,6 +1478,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
     institution,
     applicant_type,
     institution_id_number,
+    whatsapp_number,
     business_name,
     what_to_sell,
     business_description,
@@ -1492,6 +1505,10 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
 
   if (!institution_id_number || typeof institution_id_number !== "string") {
     return res.status(400).json({ error: "institution_id_number is required" });
+  }
+
+  if (!whatsapp_number || typeof whatsapp_number !== "string") {
+    return res.status(400).json({ error: "whatsapp_number is required" });
   }
 
   if (!business_name || typeof business_name !== "string") {
@@ -1536,6 +1553,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           institution = ?,
           applicant_type = ?,
           institution_id_number = ?,
+          whatsapp_number = ?,
           business_name = ?,
           what_to_sell = ?,
           business_description = ?,
@@ -1554,6 +1572,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
         institution.trim(),
         applicant_type,
         institution_id_number.trim(),
+        whatsapp_number.trim(),
         business_name.trim(),
         what_to_sell.trim(),
         business_description.trim(),
@@ -1570,6 +1589,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           institution,
           applicant_type,
           institution_id_number,
+          whatsapp_number,
           business_name,
           what_to_sell,
           business_description,
@@ -1578,7 +1598,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
           agreed_to_rules,
           status
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
       `).run(
         uid,
         email,
@@ -1586,6 +1606,7 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
         institution.trim(),
         applicant_type,
         institution_id_number.trim(),
+        whatsapp_number.trim(),
         business_name.trim(),
         what_to_sell.trim(),
         business_description.trim(),
@@ -2809,6 +2830,7 @@ app.get("/api/admin/seller-applications", requireAuth, (req, res) => {
       sa.institution,
       sa.applicant_type,
       sa.institution_id_number,
+      sa.whatsapp_number,
       sa.business_name,
       sa.what_to_sell,
       sa.business_description,

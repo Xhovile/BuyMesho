@@ -476,7 +476,6 @@ export default function App() {
       university: updated.university ?? existing.university,
       photos: updated.photos ?? existing.photos ?? [],
       video_url: updated.video_url ?? existing.video_url ?? null,
-      whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
       status: updated.status ?? existing.status ?? "available",
       condition: updated.condition ?? existing.condition ?? "used",
       quantity: Number(updated.quantity ?? existing.quantity ?? 1),
@@ -552,7 +551,6 @@ export default function App() {
         status: listing.status === "sold" ? "available" : "sold",
       }),
     onToggleSave: toggleSavedListing,
-    requireLoginForContact: navigateToLogin,
     onOpenDetails: (listing) => navigateToListingDetails(listing.id),
     onOpenSeller: (uid) => navigateToSellerProfile(uid),
   };

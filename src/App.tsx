@@ -123,7 +123,6 @@ type SellerApplication = {
   institution: string | null;
   applicant_type: string | null;
   institution_id_number: string | null;
-  whatsapp_number: string | null;
   business_name: string | null;
   what_to_sell: string | null;
   business_description: string | null;
@@ -150,7 +149,6 @@ const createInitialListingDraft = (
   university: userProfile?.university || (UNIVERSITIES[0] as University),
   photos: [],
   video_url: "",
-  whatsapp_number: userProfile?.whatsapp_number || "",
   status: "available",
   condition: "used",
   quantity: "1",
@@ -689,8 +687,7 @@ useEffect(() => {
 
   const listingBasicReady =
     !!newListing.name.trim() &&
-    !!newListing.price &&
-    !!newListing.whatsapp_number.trim();
+    !!newListing.price;
 
   const listingSetupReady =
     !!newListing.category &&
@@ -729,7 +726,6 @@ const [editProfileForm, setEditProfileForm] = useState({
   businessName: "",
   university: UNIVERSITIES[0] as University,
   bio: "",
-  whatsappNumber: ""
 });
   
   useEffect(() => {
@@ -1205,7 +1201,6 @@ const openEditProfileFromSettings = () => {
     businessName: userProfile.business_name || "",
     university: userProfile.university || UNIVERSITIES[0],
     bio: userProfile.bio || "",
-    whatsappNumber: userProfile.whatsapp_number || "",
   });
 
   setShowSettingsModal(false);
@@ -1333,10 +1328,6 @@ const toggleSavedListing = (listingId: number) => {
   });
 };
 
-const requireLoginForContact = () => {
-  setShowProfileModal(true);
-  setAuthView("login");
-};
 
 const savedListings = React.useMemo(() => {
   return listings.filter(
@@ -1454,7 +1445,6 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     university: updated.university ?? existing.university,
     photos: updated.photos ?? existing.photos ?? [],
     video_url: updated.video_url ?? existing.video_url ?? null,
-    whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
     status: updated.status ?? existing.status ?? "available",
     condition: updated.condition ?? existing.condition ?? "used",
     quantity: Number(updated.quantity ?? existing.quantity ?? 1),
@@ -1506,41 +1496,12 @@ const handleToggleListingStatus = async (listing: Listing) => {
   }
 };
 
-  const handleDetailWhatsappClick = async (listing: Listing) => {
-  if (!firebaseUser) {
-    requireLoginForContact();
-    return;
-  }
-
-  try {
-    await fetch(`/api/listings/${listing.id}/whatsapp-click`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (e) {
-    console.error("Failed to track detail WhatsApp click", e);
-  }
-
-  const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
-
-  const message = encodeURIComponent(
-    `Hi, I'm interested in your "${listing.name}" on BuyMesho. Is it still available?\n\nListing: ${shareUrl}`
-  );
-
-  window.open(
-    `https://wa.me/${listing.whatsapp_number}?text=${message}`,
-    "_blank",
-    "noopener,noreferrer"
-  );
-};
-
 const handleDetailShare = async (listing: Listing) => {
   const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
   const shareText = `BuyMesho Listing
 ${listing.name}
 Price: MK ${Number(listing.price).toLocaleString()}
 Campus: ${listing.university}
-WhatsApp: ${listing.whatsapp_number}
 
 Open this listing: ${shareUrl}`;
 
@@ -1558,7 +1519,7 @@ Open this listing: ${shareUrl}`;
     showFeedback(
       "success",
       "Share text copied",
-      "Paste it on WhatsApp or anywhere you want."
+      "Paste it anywhere you want."
     );
   } catch {
     prompt("Copy to share:", shareText);
@@ -1855,18 +1816,17 @@ Open this listing: ${shareUrl}`;
 
     // 4) sync to SQLite backend (server)
     await apiFetch("/api/sellers", {
-  method: "POST",
-  body: JSON.stringify({
-    email: firebaseUser?.email,
-    business_name: userProfile?.business_name || "",
-    university: userProfile?.university || "",
-    bio: userProfile?.bio || "",
-    whatsapp_number: userProfile?.whatsapp_number || "",
-    is_verified: true,
-    is_seller: userProfile?.is_seller ?? true,
-    join_date: userProfile?.join_date || new Date().toISOString(),
-  }),
-});
+      method: "POST",
+      body: JSON.stringify({
+        email: firebaseUser?.email,
+        business_name: userProfile?.business_name || "",
+        university: userProfile?.university || "",
+        bio: userProfile?.bio || "",
+        is_verified: true,
+        is_seller: userProfile?.is_seller ?? true,
+        join_date: userProfile?.join_date || new Date().toISOString(),
+      }),
+    });
 
     showFeedback(
   "success",
@@ -2031,7 +1991,6 @@ const handleDeleteAccount = async () => {
     business_name: editProfileForm.businessName,
     university: editProfileForm.university,
     bio: editProfileForm.bio,
-    whatsapp_number: editProfileForm.whatsappNumber,
   };
 
   try {
@@ -2039,7 +1998,6 @@ const handleDeleteAccount = async () => {
       business_name: updatedProfile.business_name,
       university: updatedProfile.university,
       bio: updatedProfile.bio || "",
-      whatsapp_number: updatedProfile.whatsapp_number || "",
     });
 
     await apiFetch("/api/profile", {
@@ -2048,7 +2006,6 @@ const handleDeleteAccount = async () => {
         business_name: updatedProfile.business_name,
         university: updatedProfile.university,
         bio: updatedProfile.bio || "",
-        whatsapp_number: updatedProfile.whatsapp_number || "",
       }),
     });
 
@@ -2415,15 +2372,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       return;
     }
 
-    if (!newListing.whatsapp_number.trim()) {
-      setCreateFieldError("whatsapp_number", "WhatsApp number is required.");
-      showFeedback(
-        "error",
-        "WhatsApp number required",
-        "Please provide a WhatsApp number buyers can contact."
-      );
-      return;
-    }
 
     const parsedPrice = Number(newListing.price);
     if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
@@ -2498,7 +2446,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
       university: newListing.university,
       photos: newListing.photos.slice(0, 5),
       video_url: newListing.video_url?.trim() || null,
-      whatsapp_number: newListing.whatsapp_number,
       status: newListing.status,
       condition: newListing.condition,
       quantity: quantityNum,
@@ -3186,7 +3133,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     onHideListing: hideListingLocal,
     onToggleStatus: handleToggleListingStatus,
     onToggleSave: toggleSavedListing,
-    requireLoginForContact,
     onOpenDetails: (listing) => navigateToListingDetails(listing.id, 0),
     onOpenSeller: (uid) => navigateToSellerProfile(uid),
   };
@@ -3447,35 +3393,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                             />
                             {createFieldErrors.price ? (
                               <p className="mt-1 text-xs text-red-600">{createFieldErrors.price}</p>
-                            ) : null}
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-                              WhatsApp Number
-                            </label>
-                            <input
-                              required
-                              type="text"
-                              placeholder="265..."
-                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
-                                createFieldErrors.whatsapp_number
-                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
-                              }`}
-                              value={newListing.whatsapp_number}
-                              onChange={(e) => {
-                                clearCreateFieldError("whatsapp_number");
-                                setNewListing({
-                                  ...newListing,
-                                  whatsapp_number: e.target.value,
-                                });
-                              }}
-                            />
-                            {createFieldErrors.whatsapp_number ? (
-                              <p className="mt-1 text-xs text-red-600">
-                                {createFieldErrors.whatsapp_number}
-                              </p>
                             ) : null}
                           </div>
                         </div>
@@ -4054,6 +3971,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
  {isFirebaseConfigured && !firestoreError && authView === 'editProfile' && userProfile && (
   <form onSubmit={handleSaveProfile} className="p-8 space-y-4">
+
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
       <input
@@ -4076,17 +3994,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         })
       }
     />
-
-    <div>
-      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-      <input
-        type="text"
-        placeholder="265..."
-        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-        value={editProfileForm.whatsappNumber}
-        onChange={e => setEditProfileForm({ ...editProfileForm, whatsappNumber: e.target.value })}
-      />
-    </div>
 
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio</label>
@@ -4161,6 +4068,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, institutionIdNumber: e.target.value })}
       />
     </div>
+
 
     <div>
       <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
@@ -4396,15 +4304,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                         <p className="text-zinc-700 font-medium">{userProfile.university || "Not added"}</p>
                       </div>
 
-                      {isSellerAccount && (
-                        <div>
-                          <p className="text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp</p>
-                          <p className="text-zinc-700 font-medium">
-                            {userProfile.whatsapp_number || "Not added"}
-                          </p>
-                        </div>
-                      )}
-
                       <div>
                         <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
                         <p className="text-zinc-700 font-medium">
@@ -4579,7 +4478,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         institution: userProfile?.university || UNIVERSITIES[0],
         applicantType: "student",
         institutionIdNumber: "",
-        whatsappNumber: userProfile?.whatsapp_number || "",
+        whatsappNumber: "",
         businessName: userProfile?.business_name || "",
         whatToSell: "",
         businessDescription: "",
@@ -4603,7 +4502,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         businessName: userProfile.business_name || "",
         university: userProfile.university || UNIVERSITIES[0],
         bio: userProfile.bio || "",
-        whatsappNumber: userProfile.whatsapp_number || ""
       });
       setAuthView("editProfile");
     }}
@@ -4712,7 +4610,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                   isSaved={savedListingIds.includes(listing.id)}
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
-                  requireLoginForContact={requireLoginForContact}
                   onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
                   onOpenSeller={(uid) => navigateToSellerProfile(uid)}
                 />
@@ -4794,7 +4691,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                   isSaved={savedListingIds.includes(listing.id)}
                   onToggleSave={toggleSavedListing}
                   isLoggedIn={!!firebaseUser}
-                  requireLoginForContact={requireLoginForContact}
                   onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
                   onOpenSeller={(uid) => navigateToSellerProfile(uid)}
                 />
@@ -4982,8 +4878,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
                       isSaved={savedListingIds.includes(l.id)}
                       onToggleSave={toggleSavedListing}
                       isLoggedIn={!!firebaseUser}
-                      requireLoginForContact={requireLoginForContact}
-                      onOpenDetails={openDetails}
+                          onOpenDetails={openDetails}
                       onOpenSeller={openPublicProfile}
                     />
                   </div>
@@ -5059,7 +4954,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
     onHideSeller={hideSellerLocal}
     onHideListing={hideListingLocal}
     onToggleStatus={handleToggleListingStatus}
-    requireLoginForContact={requireLoginForContact}
   />
 
   {detailGalleryImages.length > 0 && (
@@ -5299,19 +5193,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
         <Eye className="w-3 h-3" />
         {detailsListing.views_count ?? 0}
       </span>
-    </div>
-
-    <div className="mt-2">
-      <button
-        type="button"
-        onClick={() => handleDetailWhatsappClick(detailsListing)}
-        className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3.5 rounded-2xl font-extrabold transition-colors"
-      >
-        Contact
-      </button>
-      <p className="text-center text-xs font-medium text-zinc-500 mt-2">
-        Chat in WhatsApp
-      </p>
     </div>
 
     <div className="text-xs font-bold text-zinc-400 uppercase mt-4 mb-3">

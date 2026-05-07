@@ -1,9 +1,10 @@
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
-import { PaymentGatewayRegistry } from '../../../src/modules/payments/paymentGateway';
-import { flutterwaveProvider } from '../../../src/modules/payments/providers/flutterwave';
-import { paystackProvider } from '../../../src/modules/payments/providers/paystack';
-import { paychanguProvider } from './paychangu.provider';
-import { paymentRepository } from './payment.repository';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import { ApiError } from '../../../src/shared/api/errors.js';
+import { PaymentGatewayRegistry } from '../../../src/modules/payments/paymentGateway.js';
+import { flutterwaveProvider } from '../../../src/modules/payments/providers/flutterwave.js';
+import { paystackProvider } from '../../../src/modules/payments/providers/paystack.js';
+import { paychanguProvider } from './paychangu.provider.js';
+import { paymentRepository } from './payment.repository.js';
 import dotenv from 'dotenv';
 dotenv.config();
 

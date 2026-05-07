@@ -27,7 +27,6 @@ export interface Listing extends Timestamped {
   price: MoneyValue;
   campusId?: string | null;
   universityId?: string | null;
-  whatsappNumber?: string | null;
   images: ListingImage[];
   publishedAt?: ISODateString | null;
   expiresAt?: ISODateString | null;

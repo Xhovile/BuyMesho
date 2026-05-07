@@ -6,7 +6,6 @@ import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import { resolveUniversity } from "./lib/university";
-import { resolveWhatsappNumber } from "./lib/whatsapp";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University } from "./types";
 
@@ -64,7 +63,6 @@ export default function BecomeSellerPage() {
     setForm((prev) => ({
       ...prev,
       institution: resolveUniversity(profile.university),
-      whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
       businessName: profile.business_name || "",
     }));
   }, [profile]);
@@ -257,7 +255,7 @@ export default function BecomeSellerPage() {
           </div>
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-            <input required type="text" value={form.whatsappNumber} onChange={(e) => setForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
+            <input required type="text" placeholder="265..." value={form.whatsappNumber} onChange={(e) => setForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl outline-none" />
           </div>
           <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>

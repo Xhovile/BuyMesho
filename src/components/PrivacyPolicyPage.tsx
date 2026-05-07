@@ -68,7 +68,7 @@ const sections: PolicySection[] = [
     ],
     bullets: [
       "Account and registration information, such as your email address, university selection, profile image or avatar, and other account details submitted during sign-up or profile management.",
-      "Seller profile information, such as business name, business logo, short bio, WhatsApp number, university affiliation, join date, verification status, and seller status information.",
+      "Seller profile information, such as business name, business logo, short bio, university affiliation, join date, verification status, and seller status information.",
       "Listing information, such as item names, categories, subcategories, item types, specifications, condition, price, quantity, description, uploaded photos or videos, availability status, and other content you choose to publish.",
       "Seller application and review information, such as full legal name, institution, applicant type, institution ID or registration details, business description, proof documents, reason for applying, review notes, and approval or rejection outcomes.",
       "Reports and support information, such as complaint subjects, reasons, details submitted through report forms, moderation notes, and issue-handling records.",

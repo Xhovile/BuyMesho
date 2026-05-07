@@ -1,4 +1,5 @@
 import type { EntityId, ISODateString, MoneyValue, Timestamped } from './common.js';
+export type { MoneyValue } from './common.js';
 
 export type PaymentProviderKey = 'paystack' | 'flutterwave' | 'paychangu';
 export type PaymentMethod = 'card' | 'bank_transfer' | 'mobile_money' | 'ussd' | 'wallet';
