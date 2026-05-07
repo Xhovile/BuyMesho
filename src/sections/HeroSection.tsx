@@ -1,12 +1,50 @@
 import { Plus } from "lucide-react";
 import { motion } from "motion/react";
+import { useState } from "react";
+import ConfirmModal from "../components/ConfirmModal";
+import { useAccountProfile } from "../hooks/useAccountProfile";
+import { useAuthUser } from "../hooks/useAuthUser";
+import { BECOME_SELLER_PATH, navigateToLogin, navigateToPath } from "../lib/appNavigation";
 
 type HeroSectionProps = {
   onListItem: () => void;
-  actionLabel: string;
 };
 
-export default function HeroSection({ onListItem, actionLabel }: HeroSectionProps) {
+type SellPromptState = "guest" | "seller_application" | null;
+
+export default function HeroSection({ onListItem }: HeroSectionProps) {
+  const { user: firebaseUser } = useAuthUser();
+  const { profile: userProfile } = useAccountProfile();
+  const [sellPrompt, setSellPrompt] = useState<SellPromptState>(null);
+
+  const isSeller = !!firebaseUser && !!userProfile?.is_seller;
+  const actionLabel = isSeller ? "List Item" : "Sell";
+
+  const handleHeroAction = () => {
+    if (isSeller) {
+      onListItem();
+      return;
+    }
+
+    setSellPrompt(firebaseUser ? "seller_application" : "guest");
+  };
+
+  const closePrompt = () => setSellPrompt(null);
+
+  const confirmPrompt = () => {
+    const promptType = sellPrompt;
+    closePrompt();
+
+    if (promptType === "guest") {
+      navigateToLogin();
+      return;
+    }
+
+    if (promptType === "seller_application") {
+      navigateToPath(BECOME_SELLER_PATH);
+    }
+  };
+
   return (
     <section className="relative px-4 pt-6 pb-4 sm:pt-8 sm:pb-5">
       <div className="absolute inset-x-4 top-0 -z-10 h-24 rounded-[2rem] bg-gradient-to-r from-red-900/5 via-white to-amber-300/10 blur-2xl" />
@@ -42,7 +80,7 @@ export default function HeroSection({ onListItem, actionLabel }: HeroSectionProp
           >
             <button
               type="button"
-              onClick={onListItem}
+              onClick={handleHeroAction}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               <Plus className="w-4 h-4" />
@@ -51,6 +89,20 @@ export default function HeroSection({ onListItem, actionLabel }: HeroSectionProp
           </motion.div>
         </div>
       </div>
+
+      <ConfirmModal
+        open={sellPrompt !== null}
+        title={sellPrompt === "guest" ? "Sign in to continue" : "Seller application"}
+        message={
+          sellPrompt === "guest"
+            ? "You need to sign in before you can continue to the seller flow."
+            : "You are about to be directed to the seller application page."
+        }
+        confirmText="Continue"
+        cancelText="Cancel"
+        onCancel={closePrompt}
+        onConfirm={confirmPrompt}
+      />
     </section>
   );
 }
