@@ -3,9 +3,10 @@ import { motion } from "motion/react";
 
 type HeroSectionProps = {
   onListItem: () => void;
+  actionLabel: string;
 };
 
-export default function HeroSection({ onListItem }: HeroSectionProps) {
+export default function HeroSection({ onListItem, actionLabel }: HeroSectionProps) {
   return (
     <section className="relative px-4 pt-6 pb-4 sm:pt-8 sm:pb-5">
       <div className="absolute inset-x-4 top-0 -z-10 h-24 rounded-[2rem] bg-gradient-to-r from-red-900/5 via-white to-amber-300/10 blur-2xl" />
@@ -45,7 +46,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               <Plus className="w-4 h-4" />
-              List Item
+              {actionLabel}
             </button>
           </motion.div>
         </div>
