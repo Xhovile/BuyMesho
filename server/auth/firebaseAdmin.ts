@@ -30,7 +30,7 @@ export function getFirebaseAdmin() {
   return admin;
 }
 
-export async function verifyIdToken(idToken: string) {
+export async function verifyIdToken(idToken: string, checkRevoked = false) {
   const adminApp = getFirebaseAdmin();
-  return adminApp.auth().verifyIdToken(idToken);
+  return adminApp.auth().verifyIdToken(idToken, checkRevoked);
 }

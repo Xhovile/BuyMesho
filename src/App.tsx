@@ -1,30 +1,66 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Plus, 
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import ConfirmModal from "./components/ConfirmModal";
+import PasswordPromptModal from "./components/PasswordPromptModal";
+import FormDropdown from "./components/FormDropdown";
+import {  
   User, 
-  MessageCircle, 
   ShieldCheck, 
   AlertTriangle, 
-  Filter,
-  ChevronRight,
   X,
   Camera,
-  Loader2,
   MapPin,
-  Tag,
   LogOut,
   Mail,
   Lock,
   Eye,
   EyeOff,
   RefreshCw, 
-  MoreVertical
+  Package, 
+  Loader2,
+  Settings,
+  Bookmark,
+  Expand,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Listing, Seller, University, Category } from './types';
+import {
+  Listing,
+  UserProfile,
+  University,
+  Category,
+  SellerDashboardData,
+  ListingDraft,
+  CreateListingPayload,
+  ListingSpecValue
+} from './types';
+import HeroSection from "./sections/HeroSection";
+import FeedbackModal from "./components/FeedbackModal";
 import { UNIVERSITIES, CATEGORIES } from './constants';
+import {
+  getListingSubcategories,
+  getListingItemTypes,
+  getListingItemConfig,
+  getBasicListingFields,
+  getAdvancedListingFields,
+  createEmptyListingSpecValues,
+  validateListingSpecValues
+} from "./listingSchemas";
+import type { ListingSpecField } from "./listingSchemas";
+import {
+  getListingParamsFromUrl,
+  buildListingShareUrl,
+  syncListingParamsInUrl,
+  clearListingParamFromUrl
+} from "./lib/listingUrl";
+import MarketSection, {
+  type MarketSectionActions,
+  type MarketSectionFilters,
+  type MarketSectionPagination,
+  type MarketSectionSetFilters,
+} from "./sections/MarketSection";
 import { auth, db as firestore } from './firebase';
+import ListingCard from "./components/ListingCard";
+import Header from "./components/Header";
+import type { HeaderChip } from "./constants";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -32,504 +68,140 @@ import {
   sendEmailVerification, 
   sendPasswordResetEmail,
   deleteUser,
-  User as FirebaseUser
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from 'firebase/auth';
 import { 
   doc, 
   setDoc, 
   getDoc, 
   deleteDoc,
-  updateDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api"; 
 import EditListingModal from "./components/EditListingModal";
-
-// --- Components ---
-const Navbar = ({ 
-  onSearch, 
-  onAddListing, 
-  onProfileClick,
-  userSeller,
-  firebaseUser
-}: { 
-  onSearch: (val: string) => void, 
-  onAddListing: () => void,
-  onProfileClick: () => void,
-  userSeller: Seller | null,
-  firebaseUser: FirebaseUser | null
-}) => {
-  return (
-    <nav className="sticky top-0 z-50 glass px-4 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5 cursor-pointer group" onClick={() => window.location.reload()}>
-          <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20 group-hover:scale-105 transition-transform">
-            B
-          </div>
-          <h1 className="hidden sm:block text-xl font-sans font-extrabold tracking-tight">
-            <span className="text-red-900">Buy</span><span className="text-zinc-700">Mesho</span>
-          </h1>
-        </div>
-
-        <div className="flex-1 max-w-md relative group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 group-focus-within:text-primary transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search products or services..."
-            className="w-full pl-11 pr-4 py-2.5 bg-zinc-100/50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 outline-none transition-all"
-            onChange={(e) => onSearch(e.target.value)}
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={onAddListing}
-            className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">List Item</span>
-          </button>
-          <button 
-            onClick={onProfileClick}
-            className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-primary/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
-          >
-            {userSeller ? (
-              <img src={userSeller.business_logo} alt="Profile" className="w-full h-full object-cover" />
-            ) : firebaseUser ? (
-              <div className="w-full h-full bg-primary/5 flex items-center justify-center text-primary font-bold">
-                {firebaseUser.email?.charAt(0).toUpperCase()}
-              </div>
-            ) : (
-              <User className="w-5 h-5 text-zinc-600" />
-            )}
-          </button>
-        </div>
-      </div>
-    </nav>
-  );
-};
-
-const ListingCard = ({
-  listing,
-  onReport,
-  currentUid,
-  onDelete,
-  onEdit,
-  onOpenProfile,
-  onHideListing,
-   onHideSeller,
-  onOpenDetails,
-}: {
-  listing: Listing;
-  onReport: (id: number) => any;
-  currentUid?: string;
-  onDelete?: (id: number) => void;
-  onEdit?: (listing: Listing) => void;
-  onHideListing?: (id: number) => void;
-  onHideSeller?: (uid: string) => void;
-  onOpenProfile?: (uid: string) => void;
-  onOpenDetails?: (listing: Listing, startIndex?: number) => void;
-}) => {
-  const sellerUid = listing.seller_uid;
-  const isOwner = !!currentUid && !!sellerUid && sellerUid === currentUid;
-  const [menuOpen, setMenuOpen] = useState(false);
-  const handleOpenProfile = () => {
-    if (sellerUid) onOpenProfile?.(sellerUid);
-  };
-  const handleOpenDetails = (startIndex = 0) => {
-  onOpenDetails?.(listing, startIndex);
- };
- useEffect(() => {
-    if (!menuOpen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMenuOpen(false);
-    };
-    const onClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      if (target.closest?.(`[data-listing-menu="${listing.id}"]`)) return;
-      setMenuOpen(false);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("click", onClick);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("click", onClick);
-    };
-  }, [menuOpen, listing.id]);
-
-  const safeAlert = (msg: string) => {
-    // keep it simple; later we can replace with a nicer toast
-    alert(msg);
-  };
-
-  const handleCopyWhatsApp = async () => {
-    const text = listing.whatsapp_number || "";
-    if (!text) return safeAlert("No WhatsApp number found.");
-    try {
-      await navigator.clipboard.writeText(text);
-      safeAlert("✅ WhatsApp number copied.");
-    } catch {
-      // Fallback for older browsers
-      prompt("Copy WhatsApp number:", text);
-    } finally {
-      setMenuOpen(false);
-    }
-  };
-
-  const handleShare = async () => {
-    const shareText = `BuyMesho Listing
-${listing.name}
-Price: MK ${Number(listing.price).toLocaleString()}
-Campus: ${listing.university}
-WhatsApp: ${listing.whatsapp_number}
-
-Open BuyMesho: ${window.location.href}`;
-
-   try {
-     if ((navigator as any).share) {
-  await (navigator as any).share({
-         title: `BuyMesho: ${listing.name}`,
-         text: shareText,
-       });
-       return;
-     }
-     // fallback: copy share text
-     await navigator.clipboard.writeText(shareText);
-     safeAlert("✅ Share text copied. Paste it on WhatsApp or anywhere.");
-   } catch {
-     // last fallback
-     prompt("Copy to share:", shareText);
-   } finally {
-     setMenuOpen(false);
-    }
-  };
-
-  const handleReportFromMenu = () => {
-    setMenuOpen(false);
-    onReport(listing.id);
-  };
-
-  const handleHideListing = () => {
-    setMenuOpen(false);
-    onHideListing?.(listing.id);
-  };
-
- const handleHideSeller = () => {
-   if (!sellerUid) return;
-   setMenuOpen(false);
-    onHideSeller?.(sellerUid);
-  };
-
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -4 }}
-      className="relative group"
-    >
-      {/* Blurred halo (makes edges feel soft where they meet the background) */}
-      <div className="absolute -inset-2 rounded-[28px] bg-white/60 blur-xl opacity-70 group-hover:opacity-100 transition pointer-events-none" />
-
-      <div className="relative bg-amber-50/70 rounded-3xl border border-zinc-200/70 overflow-hidden shadow-lg shadow-zinc-400/20 hover:shadow-xl hover:shadow-zinc-500/25 transition-all">
-      {/* Seller header (moved ABOVE the post for marketing) */}
-<div className="p-4 flex items-center justify-between">
-  <button
-    type="button"
-    onClick={handleOpenProfile}
-    className="flex items-center gap-2.5 text-left"
-  >
-    <div className="relative">
-      <img
-        src={listing.business_logo}
-        alt={listing.business_name}
-        className="w-9 h-9 rounded-xl object-cover border border-zinc-100 shadow-sm"
-      />
-      {listing.is_verified && (
-        <div className="absolute -right-1.5 -bottom-1.5 bg-white rounded-full p-0.5 shadow-sm">
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-500 fill-blue-50" />
-        </div>
-      )}
-    </div>
-
-    <div className="flex flex-col">
-      <span className="text-xs font-bold text-zinc-800 hover:underline">
-         {listing.business_name}
-      </span>
-       <span className="text-[10px] text-zinc-400 font-medium">View profile</span>
-    </div>
-  </button>
-
-  {/* Actions menu (owner + non-owner) */}
-  <div className="relative" data-listing-menu={listing.id}>
-    <button
-      type="button"
-      onClick={() => setMenuOpen(!menuOpen)}
-      className="p-2 rounded-xl hover:bg-zinc-100 active:scale-95 transition"
-      aria-label="Open actions menu"
-      aria-expanded={menuOpen}
-    >
-      <MoreVertical className="w-5 h-5 text-zinc-500" />
-    </button>
-
-    {menuOpen && (
-      <div className="absolute right-0 top-12 bg-white border border-zinc-200 rounded-xl shadow-md w-48 overflow-hidden z-10">
-        {isOwner ? (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onEdit?.(listing);
-              }}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onDelete?.(listing.id);
-              }}
-              className="block w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 text-sm font-semibold"
-            >
-              Delete
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={handleReportFromMenu}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Report listing
-            </button>
-            <button
-              type="button"
-              onClick={handleCopyWhatsApp}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Copy WhatsApp number
-            </button>
-            <button
-              type="button"
-              onClick={handleShare}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Share listing
-            </button>
-
-            <div className="h-px bg-zinc-100" />
-
-            {/* Keep hide options ONCE (fix duplicates) */}
-            <button
-              type="button"
-              onClick={handleHideListing}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-            >
-              Hide this listing
-            </button>
-            <button
-              type="button"
-              onClick={handleHideSeller}
-              className="block w-full text-left px-4 py-2 hover:bg-zinc-50 text-sm font-semibold"
-              disabled={!sellerUid}
-            >
-              Hide this seller
-            </button>
-          </>
-        )}
-      </div>
-    )}
-  </div>
-</div>
-      <div className="relative aspect-[1/1] overflow-hidden bg-zinc-100">
-      
-  {listing.video_url ? (
-  <button
-    type="button"
-    onClick={() => handleOpenDetails(0)} // ✅ opens details
-    className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-  >
-    <img
-      src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-      alt={listing.name}
-      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-      referrerPolicy="no-referrer"
-    />
-
-    {/* Play overlay (clicking this plays video, not details) */}
-    <div
-      className="absolute inset-0 flex items-center justify-center bg-black/30"
-     onClick={(e) => {
-      e.stopPropagation();
-     handleOpenDetails(0);
-   }}
-    >
-      <span className="bg-white/90 backdrop-blur-md text-zinc-900 font-bold px-4 py-2 rounded-xl shadow text-sm flex items-center gap-2">
-        ▶ Play
-      </span>
-    </div>
-  </button>
-) : (
-  <button
-    type="button"
-    onClick={() => handleOpenDetails(0)} // ✅ opens details
-    className="w-full h-full cursor-pointer relative focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
-  >
-    <img
-      src={listing.photos[0] || `https://picsum.photos/seed/${listing.id}/600/600`}
-      alt={listing.name}
-      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-      referrerPolicy="no-referrer"
-    />
-  </button>
-)}
-
-  {/* ✅ Photo count badge (works for BOTH video + non-video) */}
-  {listing.photos?.length > 1 && (
-  <button
-    type="button"
-    onClick={(e) => {
-      e.stopPropagation();
-      handleOpenDetails(0);
-    }}
-    className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm"
-  >
-    +{listing.photos.length - 1}
-  </button>
-)}
-
-  {/* Top-left location */}
-  <div className="absolute top-4 left-4 flex flex-col gap-2">
-    <span className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase tracking-wider text-zinc-800 flex items-center gap-1.5 shadow-sm">
-      <MapPin className="w-3 h-3 text-primary" /> {listing.university}
-    </span>
-  </div>
-
-  {/* Price */}
-  <div className="absolute bottom-4 left-4">
-    <div className="bg-white/90 backdrop-blur-md text-zinc-900 px-3 py-1.5 rounded-xl font-bold text-sm shadow-sm border border-white/20">
-      MK {listing.price.toLocaleString()}
-    </div>
-  </div>
-</div>
-
-      <div className="p-5">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-extrabold text-primary bg-primary/5 px-2 py-0.5 rounded-md uppercase tracking-wider">
-            {listing.category}
-          </span>
-
-          <a
-            href={`https://wa.me/${listing.whatsapp_number}?text=Hi, I'm interested in your ${listing.name} on BuyMesho.`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 bg-[#25D366] hover:bg-[#128C7E] text-white px-3 py-1.5 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all hover:shadow-lg hover:shadow-[#25D366]/20 active:scale-95"
-          >
-            <MessageCircle className="w-3.5 h-3.5" />
-            Contact
-          </a>
-        </div>
-
-        <h3 className="text-lg font-bold text-zinc-900 mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-          {listing.name}
-        </h3>
-        <p className="text-sm text-zinc-500 line-clamp-2 mb-5 h-10 leading-relaxed">
-          {listing.description}
-        </p>
-      </div>
-     </div>
-    </motion.div>
-   );
- };
-
-const FilterSection = ({ 
-  selectedUniv, 
-  setSelectedUniv, 
-  selectedCat, 
-  setSelectedCat,
-  sortBy,
-  setSortBy
-}: { 
-  selectedUniv: string, 
-  setSelectedUniv: (v: string) => void,
-  selectedCat: string,
-  setSelectedCat: (v: string) => void,
-  sortBy: string,
-  setSortBy: (v: string) => void
-}) => {
-  return (
-    <div className="py-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <div className="space-y-2">
-        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-          <MapPin className="w-3.5 h-3.5 text-primary" /> Select Campus
-        </label>
-        <div className="relative">
-          <select 
-            value={selectedUniv}
-            onChange={(e) => setSelectedUniv(e.target.value)}
-            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
-          >
-            <option value="">All Campuses</option>
-            {UNIVERSITIES.map(u => (
-              <option key={u} value={u}>{u}</option>
-            ))}
-          </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-          <Tag className="w-3.5 h-3.5 text-primary" /> Select Category
-        </label>
-        <div className="relative">
-          <select 
-            value={selectedCat}
-            onChange={(e) => setSelectedCat(e.target.value)}
-            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
-          >
-            <option value="">All Categories</option>
-            {CATEGORIES.map(c => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
-          </div>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400 flex items-center gap-2">
-          <RefreshCw className="w-3.5 h-3.5 text-primary" /> Sort By
-        </label>
-        <div className="relative">
-          <select 
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-full appearance-none bg-white border border-zinc-200 rounded-2xl px-4 py-3 text-sm font-bold text-zinc-700 outline-none focus:ring-4 focus:ring-primary/5 focus:border-primary/20 transition-all cursor-pointer"
-          >
-            <option value="newest">Newest First</option>
-            <option value="price_asc">Price: Low to High</option>
-            <option value="price_desc">Price: High to Low</option>
-          </select>
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-            <ChevronRight className="w-4 h-4 text-zinc-400 rotate-90" />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
+import SettingsModal from "./components/SettingsModal";
+import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
+import TermsPage from "./components/TermsPage";
+import SafetyTipsPage from "./components/SafetyTipsPage";
+import ReportProblemPage from "./components/ReportProblemPage";
+import ChangePasswordModal from "./components/ChangePasswordModal";
+import ReportListingModal from "./components/ReportListingModal";
+import AdminReportsModal from "./components/AdminReportsModal";
+import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
+import ListingActionsMenu from "./components/ListingActionsMenu";
+import { navigateToListingDetails,
+        navigateToPath, 
+        PROFILE_PATH, 
+        navigateToSellerProfile } from "./lib/appNavigation";
+import {
+  hideListingId,
+  hideSellerUid,
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+  unhideListingId,
+  unhideSellerUid,
+} from "./lib/hiddenCollections";
 
 // --- Main App ---
+
+type SellerRatingSummary = {
+  averageRating: number;
+  ratingCount: number;
+  myRating: number | null;
+};
+
+type SellerApplicationStatus = "pending" | "approved" | "rejected";
+
+type SellerApplication = {
+  id: number;
+  applicant_uid: string | null;
+  applicant_email: string | null;
+  full_legal_name: string | null;
+  institution: string | null;
+  applicant_type: string | null;
+  institution_id_number: string | null;
+  business_name: string | null;
+  what_to_sell: string | null;
+  business_description: string | null;
+  reason_for_applying: string | null;
+  proof_document_url: string | null;
+  status: SellerApplicationStatus;
+  review_notes: string | null;
+  reviewed_at: string | null;
+  reviewed_by_uid: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
+const createInitialListingDraft = (
+  userProfile?: UserProfile | null
+): ListingDraft => ({
+  name: "",
+  price: "",
+  description: "",
+  category: CATEGORIES[0] as Category,
+  subcategory: "",
+  item_type: "",
+  spec_values: {},
+  university: userProfile?.university || (UNIVERSITIES[0] as University),
+  photos: [],
+  video_url: "",
+  status: "available",
+  condition: "used",
+  quantity: "1",
+  sold_quantity: "0",
+  original_price: "",
+  discount_percent: "",
+  deal_label: "",
+  is_wholesale: false,
+  pack_size: "",
+  bulk_units: "",
+});
+
+function ListingFormSection({
+  title,
+  hint,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-2">
+      <div>
+        <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+          {title}
+        </h3>
+        {hint ? <p className="text-xs text-zinc-400 mt-1">{hint}</p> : null}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function ListingProgressPill({
+  label,
+  active,
+}: {
+  label: string;
+  active?: boolean;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${
+        active
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-zinc-200 bg-zinc-50 text-zinc-400"
+      }`}
+    >
+      {label}
+    </span>
+  );
+}
 
 export default function App() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -537,106 +209,537 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [selectedUniv, setSelectedUniv] = useState("");
   const [selectedCat, setSelectedCat] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [selectedItemType, setSelectedItemType] = useState("");
+  const [selectedSpecFilters, setSelectedSpecFilters] = useState<Record<string, string | string[] | boolean>>({});
   const [sortBy, setSortBy] = useState("newest");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [userSeller, setUserSeller] = useState<Seller | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [settingsView, setSettingsView] = useState<"menu" | "privacy" | "terms" | "safety" | "report">("menu");
+  const [settingsEntrySource, setSettingsEntrySource] = useState<"settings" | "footer">("settings");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile'>('login');
+  const [creatingListing, setCreatingListing] = useState(false);
+  const [authView, setAuthView] = useState<'login' | 'signup' | 'forgot' | 'profile' | 'editProfile' | 'editAccount' | 'becomeSeller'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [firestoreError, setFirestoreError] = useState<string | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
+const [showMyListingsModal, setShowMyListingsModal] = useState(false);
+const [myListings, setMyListings] = useState<Listing[]>([]);
+const [myListingsLoading, setMyListingsLoading] = useState(false);
 const [publicProfileOpen, setPublicProfileOpen] = useState(false);
 const [publicProfile, setPublicProfile] = useState<any | null>(null);
 const [publicProfileListings, setPublicProfileListings] = useState<Listing[]>([]);
 const [publicProfileLoading, setPublicProfileLoading] = useState(false);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+const [ratingSummary, setRatingSummary] = useState<SellerRatingSummary | null>(null);
+const [ratingLoading, setRatingLoading] = useState(false);
+const [ratingSubmitting, setRatingSubmitting] = useState(false);
+const [detailsOpen, setDetailsOpen] = useState(false);
 const [detailsListing, setDetailsListing] = useState<Listing | null>(null);
-const [galleryIndex, setGalleryIndex] = useState(0);
+const [activeDetailSpecGroup, setActiveDetailSpecGroup] = useState("");
+const detailSpecTabsRef = useRef<HTMLDivElement | null>(null);
+const [showDetailSpecTabsLeftHint, setShowDetailSpecTabsLeftHint] = useState(false);
+const [showDetailSpecTabsRightHint, setShowDetailSpecTabsRightHint] = useState(false);
+const [galleryIndex, setGalleryIndex] = useState(0); 
+const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
+const [reportListingId, setReportListingId] = useState<number | null>(null);
+const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
+const [showSavedModal, setShowSavedModal] = useState(false);
+const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
+const [showAdminSellerApplicationsModal, setShowAdminSellerApplicationsModal] = useState(false);
+const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
+const [reauthPassword, setReauthPassword] = useState("");
+const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
+const [sellerDashboard, setSellerDashboard] = useState<SellerDashboardData | null>(null);
+const [sellerDashboardLoading, setSellerDashboardLoading] = useState(false);
+const [detailsSellerProfile, setDetailsSellerProfile] = useState<any | null>(null);
+const [detailsRatingSummary, setDetailsRatingSummary] = useState<SellerRatingSummary | null>(null);
+const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
+const [detailsLoadingExtra, setDetailsLoadingExtra] = useState(false);  
+const detailsExtrasRequestIdRef = useRef(0);
+const [selectedCondition, setSelectedCondition] = useState("");
+const [selectedStatus, setSelectedStatus] = useState("");
+const [hideSoldOut, setHideSoldOut] = useState(false);
+const [minPrice, setMinPrice] = useState("");
+const [maxPrice, setMaxPrice] = useState("");
+const [currentPage, setCurrentPage] = useState(1);
+const [pageSize] = useState(12);
+const [activeChip, setActiveChip] = useState<HeaderChip>("All");
+const [totalResults, setTotalResults] = useState(0);
+const [totalPages, setTotalPages] = useState(1);
+const listingsFetchAbortRef = useRef<AbortController | null>(null);
+const listingsRequestIdRef = useRef(0);
 
-// Local-only hides (no backend needed)
-const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => {
-  try {
-    const raw = localStorage.getItem("hiddenListingIds");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => Number.isInteger(x)) : [];
-  } catch {
-    return [];
-  }
+  
+const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+  readHiddenSellerUids()
+);
+
+const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+  readHiddenListingIds()
+);
+
+useEffect(() => {
+  const syncHiddenCollections = () => {
+    setHiddenSellerUids(readHiddenSellerUids());
+    setHiddenListingIds(readHiddenListingIds());
+  };
+
+  syncHiddenCollections();
+  return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+}, []);
+  
+const [confirmState, setConfirmState] = useState<{
+  open: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  danger?: boolean;
+  onConfirm: (() => void) | null;
+} | null>(null);
+
+const [feedback, setFeedback] = useState<{
+  open: boolean;
+  type: "success" | "error" | "info";
+  title: string;
+  message: string;
+} | null>(null);
+const [createFieldErrors, setCreateFieldErrors] = useState<Record<string, string>>({});
+const [verificationResendAttemptCount, setVerificationResendAttemptCount] = useState(0);
+const [verificationCooldownSeconds, setVerificationCooldownSeconds] = useState(0);
+const [resendVerificationLoading, setResendVerificationLoading] = useState(false);
+const [passwordResetAttemptCount, setPasswordResetAttemptCount] = useState(0);
+const [passwordResetCooldownSeconds, setPasswordResetCooldownSeconds] = useState(0);
+const [passwordResetLoading, setPasswordResetLoading] = useState(false);
+const verificationCooldownEndsAtRef = useRef<number>(0);
+const passwordResetCooldownEndsAtRef = useRef<number>(0);
+
+const VERIFICATION_RESEND_ATTEMPT_KEY = "verification_resend_attempt_count";
+const VERIFICATION_RESEND_COOLDOWN_END_KEY = "verification_resend_cooldown_end_at";
+const VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY = "verification_resend_last_attempt_at";
+const PASSWORD_RESET_ATTEMPT_KEY = "password_reset_attempt_count";
+const PASSWORD_RESET_COOLDOWN_END_KEY = "password_reset_cooldown_end_at";
+const PASSWORD_RESET_LAST_ATTEMPT_AT_KEY = "password_reset_last_attempt_at";
+const ATTEMPT_ROLLING_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+  const [editAccountForm, setEditAccountForm] = useState({
+  university: UNIVERSITIES[0] as University,
 });
 
-const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => {
-  try {
-    const raw = localStorage.getItem("hiddenSellerUids");
-    const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.filter((x) => typeof x === "string") : [];
-  } catch {
-    return [];
+const showFeedback = (
+  type: "success" | "error" | "info",
+  title: string,
+  message: string
+) => {
+  setFeedback({
+    open: true,
+    type,
+    title,
+    message,
+  });
+};
+const closeFeedback = () => {
+  setFeedback(null);
+};
+
+const getCooldownSecondsForAttempt = (attemptCount: number) => {
+  if (attemptCount <= 0) return 2 * 60;
+  return 3 * 60;
+};
+
+const formatCooldownLabel = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+const getRemainingCooldownSecondsFromExpiry = (cooldownEndAt: number) => {
+  const remaining = Math.ceil((cooldownEndAt - Date.now()) / 1000);
+  return remaining > 0 ? remaining : 0;
+};
+
+useEffect(() => {
+  const now = Date.now();
+  const savedVerificationAttempts = Number(localStorage.getItem(VERIFICATION_RESEND_ATTEMPT_KEY) || 0);
+  const savedVerificationCooldownEnd = Number(localStorage.getItem(VERIFICATION_RESEND_COOLDOWN_END_KEY) || 0);
+  const savedVerificationLastAttemptAt = Number(localStorage.getItem(VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY) || 0);
+  const savedPasswordResetAttempts = Number(localStorage.getItem(PASSWORD_RESET_ATTEMPT_KEY) || 0);
+  const savedPasswordResetCooldownEnd = Number(localStorage.getItem(PASSWORD_RESET_COOLDOWN_END_KEY) || 0);
+  const savedPasswordResetLastAttemptAt = Number(localStorage.getItem(PASSWORD_RESET_LAST_ATTEMPT_AT_KEY) || 0);
+
+  if (Number.isFinite(savedVerificationAttempts) && savedVerificationAttempts >= 0) {
+    const isVerificationAttemptInWindow =
+      Number.isFinite(savedVerificationLastAttemptAt) &&
+      savedVerificationLastAttemptAt > 0 &&
+      now - savedVerificationLastAttemptAt <= ATTEMPT_ROLLING_WINDOW_MS;
+    const verificationAttemptCount = isVerificationAttemptInWindow ? savedVerificationAttempts : 0;
+    setVerificationResendAttemptCount(verificationAttemptCount);
+    localStorage.setItem(VERIFICATION_RESEND_ATTEMPT_KEY, String(verificationAttemptCount));
   }
-});
+  if (Number.isFinite(savedVerificationCooldownEnd) && savedVerificationCooldownEnd > 0) {
+    const verificationRemaining = getRemainingCooldownSecondsFromExpiry(savedVerificationCooldownEnd);
+    if (verificationRemaining > 0) {
+      verificationCooldownEndsAtRef.current = savedVerificationCooldownEnd;
+      setVerificationCooldownSeconds(verificationRemaining);
+    } else {
+      localStorage.removeItem(VERIFICATION_RESEND_COOLDOWN_END_KEY);
+    }
+  }
 
-const hideListingLocal = (id: number) => {
-  if (!Number.isInteger(id)) return;
+  if (Number.isFinite(savedPasswordResetAttempts) && savedPasswordResetAttempts >= 0) {
+    const isPasswordResetAttemptInWindow =
+      Number.isFinite(savedPasswordResetLastAttemptAt) &&
+      savedPasswordResetLastAttemptAt > 0 &&
+      now - savedPasswordResetLastAttemptAt <= ATTEMPT_ROLLING_WINDOW_MS;
+    const passwordResetCount = isPasswordResetAttemptInWindow ? savedPasswordResetAttempts : 0;
+    setPasswordResetAttemptCount(passwordResetCount);
+    localStorage.setItem(PASSWORD_RESET_ATTEMPT_KEY, String(passwordResetCount));
+  }
+  if (Number.isFinite(savedPasswordResetCooldownEnd) && savedPasswordResetCooldownEnd > 0) {
+    const passwordResetRemaining = getRemainingCooldownSecondsFromExpiry(savedPasswordResetCooldownEnd);
+    if (passwordResetRemaining > 0) {
+      passwordResetCooldownEndsAtRef.current = savedPasswordResetCooldownEnd;
+      setPasswordResetCooldownSeconds(passwordResetRemaining);
+    } else {
+      localStorage.removeItem(PASSWORD_RESET_COOLDOWN_END_KEY);
+    }
+  }
+}, []);
 
-  setHiddenListingIds((prev) => {
-    if (prev.includes(id)) return prev;
-    const next = [...prev, id];
-    localStorage.setItem("hiddenListingIds", JSON.stringify(next));
+useEffect(() => {
+  if (verificationCooldownSeconds <= 0) return;
+  const timer = window.setInterval(() => {
+    setVerificationCooldownSeconds(getRemainingCooldownSecondsFromExpiry(verificationCooldownEndsAtRef.current));
+  }, 1000);
+
+  return () => window.clearInterval(timer);
+}, [verificationCooldownSeconds]);
+
+useEffect(() => {
+  if (passwordResetCooldownSeconds <= 0) return;
+  const timer = window.setInterval(() => {
+    setPasswordResetCooldownSeconds(getRemainingCooldownSecondsFromExpiry(passwordResetCooldownEndsAtRef.current));
+  }, 1000);
+
+  return () => window.clearInterval(timer);
+}, [passwordResetCooldownSeconds]);
+
+const setCreateFieldError = (key: string, message: string) => {
+  setCreateFieldErrors((prev) => ({
+    ...prev,
+    [key]: message,
+  }));
+};
+
+const clearCreateFieldError = (key: string) => {
+  setCreateFieldErrors((prev) => {
+    if (!prev[key]) return prev;
+    const next = { ...prev };
+    delete next[key];
     return next;
   });
 };
 
+const askConfirm = ({
+  title,
+  message,
+  confirmText = "Confirm",
+  cancelText = "Cancel",
+  danger = false,
+  onConfirm,
+}: {
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  danger?: boolean;
+  onConfirm: () => void;
+}) => {
+  setConfirmState({
+    open: true,
+    title,
+    message,
+    confirmText,
+    cancelText,
+    danger,
+    onConfirm,
+  });
+};
+
+const closeConfirm = () => {
+  setConfirmState(null);
+};
+  
 const hideSellerLocal = (uid: string) => {
-  if (!uid || typeof uid !== "string") return;
-
-  setHiddenSellerUids((prev) => {
-    if (prev.includes(uid)) return prev;
-    const next = [...prev, uid];
-    localStorage.setItem("hiddenSellerUids", JSON.stringify(next));
-    return next;
-  });
+  hideSellerUid(uid);
 };
 
+const unhideSellerLocal = (uid: string) => {
+  unhideSellerUid(uid);
+};
+
+const hideListingLocal = (listingId: number) => {
+  hideListingId(listingId);
+};
+
+const unhideListingLocal = (listingId: number) => {
+  unhideListingId(listingId);
+};
+  
+  const sellerNameMap = React.useMemo(() => {
+  const map: Record<string, string> = {};
+
+  for (const listing of listings) {
+    if (listing.seller_uid && listing.business_name) {
+      map[listing.seller_uid] = listing.business_name;
+    }
+  }
+
+  if (userProfile?.uid && userProfile?.business_name) {
+    map[userProfile.uid] = userProfile.business_name;
+  }
+
+  if (publicProfile?.uid && publicProfile?.business_name) {
+    map[publicProfile.uid] = publicProfile.business_name;
+  }
+
+  return map;
+}, [listings, userProfile, publicProfile]);
+  
 const openDetails = (listing: Listing, startIndex = 0) => {
-  setDetailsListing(listing);
+  const optimisticListing = {
+    ...listing,
+    views_count: (listing.views_count ?? 0) + 1,
+  };
+
+  setDetailsListing(optimisticListing);
   setGalleryIndex(startIndex);
   setDetailsOpen(true);
+  syncListingParamsInUrl(listing.id, startIndex);
+  void trackListingView(listing.id);
+  void loadDetailsExtras(optimisticListing);
 };
 
 const closeDetails = () => {
+  detailsExtrasRequestIdRef.current += 1;
   setDetailsOpen(false);
   setDetailsListing(null);
   setGalleryIndex(0);
+  setIsImageFullscreenOpen(false);
+  clearListingParamFromUrl();
+  setDetailsSellerProfile(null);
+  setDetailsRatingSummary(null);
+  setRelatedListings([]);
+  setDetailsLoadingExtra(false);
 };
+
+const showPrevDetailImage = () => {
+  if (!detailGalleryImages.length) return;
+
+  const nextIndex =
+    galleryIndex === 0 ? detailGalleryImages.length - 1 : galleryIndex - 1;
+
+  setGalleryIndex(nextIndex);
+
+  if (detailsListing) {
+    syncListingParamsInUrl(detailsListing.id, nextIndex);
+  }
+};
+
+const showNextDetailImage = () => {
+  if (!detailGalleryImages.length) return;
+
+  const nextIndex =
+    galleryIndex === detailGalleryImages.length - 1 ? 0 : galleryIndex + 1;
+
+  setGalleryIndex(nextIndex);
+
+  if (detailsListing) {
+    syncListingParamsInUrl(detailsListing.id, nextIndex);
+  }
+};
+
+useEffect(() => {
+  if (!listings.length) return;
+
+  const { listing, imageIndex } = getListingParamsFromUrl();
+  if (!listing) return;
+
+  const foundListing = listings.find(
+    (item) => String(item.id) === String(listing)
+  );
+
+  if (foundListing) {
+    const safeIndex =
+      Array.isArray(foundListing.photos) && foundListing.photos.length > 0
+        ? Math.max(0, Math.min(imageIndex, foundListing.photos.length - 1))
+        : 0;
+
+    setDetailsListing(foundListing);
+    setGalleryIndex(safeIndex);
+    setDetailsOpen(true);
+    void loadDetailsExtras(foundListing);
+  }
+}, [listings]);
 
   const isFirebaseConfigured = true; // Hardcoded in firebase.ts
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  
+  const savedStorageKey = firebaseUser ? `savedListingIds:${firebaseUser.uid}` : "savedListingIds:guest";
+
+  const isAdminUser =
+    !!firebaseUser?.email &&
+    firebaseUser.email.toLowerCase() === "isaacmtsiriza310@gmail.com";
+  const isSellerAccount = !!userProfile?.is_seller;
+
   // Form states
-  const [newListing, setNewListing] = useState({
-    name: "",
-    price: "",
-    description: "",
-    category: CATEGORIES[0] as Category,
-    university: UNIVERSITIES[0] as University,
-    photos: [] as string[],
-    video_url: "",
-    whatsapp_number: ""
-  });
+  const [newListing, setNewListing] = useState(
+    createInitialListingDraft(null)
+  );
+  const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
+  const createSpecFieldRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isSchemaDrivenCategory =
+    getListingSubcategories(newListing.category).length > 0;
+
+  const availableSubcategories = useMemo(() => {
+    if (!isSchemaDrivenCategory) return [];
+    return getListingSubcategories(newListing.category);
+  }, [isSchemaDrivenCategory, newListing.category]);
+
+  const availableItemTypes = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory) return [];
+    return getListingItemTypes(newListing.category, newListing.subcategory);
+  }, [isSchemaDrivenCategory, newListing.category, newListing.subcategory]);
+
+  const selectedItemConfig = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return null;
+    }
+
+    return getListingItemConfig(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
+
+  const basicSpecFields = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return [];
+    }
+
+    return getBasicListingFields(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
+
+  const advancedSpecFields = React.useMemo(() => {
+    if (!isSchemaDrivenCategory || !newListing.subcategory || !newListing.item_type) {
+      return [];
+    }
+
+    return getAdvancedListingFields(
+      newListing.category,
+      newListing.subcategory,
+      newListing.item_type
+    );
+  }, [
+    isSchemaDrivenCategory,
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type
+  ]);
+
+  const requiredSpecCount = React.useMemo(() => {
+    return selectedItemConfig?.requiredKeys.length || 0;
+  }, [selectedItemConfig]);
+
+  const completedRequiredSpecCount = React.useMemo(() => {
+    if (!selectedItemConfig) return 0;
+
+    return selectedItemConfig.requiredKeys.filter((key) => {
+      const value = newListing.spec_values[key];
+      return !(
+        value === null ||
+        value === undefined ||
+        value === "" ||
+        (Array.isArray(value) && value.length === 0)
+      );
+    }).length;
+  }, [selectedItemConfig, newListing.spec_values]);
+
+  const advancedSpecCount = advancedSpecFields.length;
+
+  const listingBasicReady =
+    !!newListing.name.trim() &&
+    !!newListing.price;
+
+  const listingSetupReady =
+    !!newListing.category &&
+    !!newListing.university &&
+    !!newListing.condition &&
+    !!newListing.quantity;
+
+  const listingDetailsReady = isSchemaDrivenCategory
+    ? !!newListing.subcategory && !!newListing.item_type
+    : true;
+
+  const listingMediaReady = newListing.photos.length > 0;
 
   const [authForm, setAuthForm] = useState({
-    email: "",
-    password: "",
-    businessName: "",
-    university: UNIVERSITIES[0] as University,
-    logoUrl: "",
-    bio: ""
-  });
+  email: "",
+  password: "",
+  university: UNIVERSITIES[0] as University,
+});
+  
+  const [sellerUpgradeForm, setSellerUpgradeForm] = useState({
+  fullLegalName: "",
+  institution: UNIVERSITIES[0] as University,
+  applicantType: "student" as "student" | "staff" | "registered_business",
+  institutionIdNumber: "",
+  whatsappNumber: "",
+  businessName: "",
+  whatToSell: "",
+  businessDescription: "",
+  reasonForApplying: "",
+  proofDocumentUrl: "",
+  agreedToRules: false
+});
+  const [sellerApplication, setSellerApplication] = useState<SellerApplication | null>(null);
+  
+const [editProfileForm, setEditProfileForm] = useState({
+  businessName: "",
+  university: UNIVERSITIES[0] as University,
+  bio: "",
+});
+  
+  useEffect(() => {
+    setShowAdvancedSpecs(false);
+  }, [
+    newListing.category,
+    newListing.subcategory,
+    newListing.item_type,
+    showAddModal
+  ]);
 
   useEffect(() => {
-  if (authLoading) return; // wait until Firebase finishes checking
-
+    if (authLoading) return; // wait until Firebase finishes checking
+ 
   setProfileLoading(true);
 
   (async () => {
@@ -649,10 +752,10 @@ const closeDetails = () => {
           const docRef = doc(firestore, "users", firebaseUser.uid);
           const docSnap = await getDoc(docRef);
 
-          if (docSnap.exists()) {
-            const profile = docSnap.data() as Seller;
+      if (docSnap.exists()) {
+         const profile = docSnap.data() as UserProfile;
             console.log("Firestore: Profile found", profile.business_name);
-            setUserSeller(profile);
+            setUserProfile(profile);
 
             // Sync with SQLite backend
             try {
@@ -671,7 +774,7 @@ const closeDetails = () => {
             setAuthView("profile");
           } else {
             console.warn("Firestore: No profile document found for UID:", firebaseUser.uid);
-            setUserSeller(null);
+            setUserProfile(null);
             setAuthView("signup");
           }
         } catch (firestoreErr: any) {
@@ -679,7 +782,7 @@ const closeDetails = () => {
           setFirestoreError(firestoreErr.message || "Unknown Firestore error");
         }
       } else {
-        setUserSeller(null);
+        setUserProfile(null);
         setAuthView((prev) => (prev === "signup" || prev === "forgot" ? prev : "login"));
       }
     } finally {
@@ -687,33 +790,502 @@ const closeDetails = () => {
     }
   })();
 }, [firebaseUser, authLoading]);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(savedStorageKey);
+      const parsed = raw ? JSON.parse(raw) : [];
+      setSavedListingIds(
+        Array.isArray(parsed)
+          ? parsed.filter((x) => Number.isInteger(x))
+          : []
+      );
+    } catch {
+      setSavedListingIds([]);
+    }
+  }, [savedStorageKey]);
+
+  useEffect(() => {
+    if (!publicProfileOpen) {
+      setRatingSummary(null);
+      setRatingLoading(false);
+      setRatingSubmitting(false);
+    }
+  }, [publicProfileOpen]);
+
+useEffect(() => {
+  setCurrentPage(1);
+}, [
+  selectedUniv,
+  selectedCat,
+  selectedSubcategory,
+  selectedItemType,
+  selectedStatus,
+  selectedCondition,
+  hideSoldOut,
+  minPrice,
+  maxPrice,
+  search,
+  sortBy,
+  selectedSpecFilters,
+]);
+
+useEffect(() => {
+  setCurrentPage(1);
+}, [activeChip]);
+
+
+useEffect(() => {
+  if (authLoading || profileLoading) return;
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("create") !== "1") return;
+
+  params.delete("create");
+  const nextUrl =
+    `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setCreateFieldErrors({});
+  setShowAddModal(true);
+}, [authLoading, profileLoading, firebaseUser, userProfile, isSellerAccount]);
   
   useEffect(() => {
-    fetchListings();
-  }, [selectedUniv, selectedCat, search, sortBy]);
+  fetchListings();
+}, [
+  selectedUniv,
+  selectedCat,
+  selectedSubcategory,
+  selectedItemType,
+  selectedStatus,
+  selectedCondition,
+  hideSoldOut,
+  minPrice,
+  maxPrice,
+  search,
+  sortBy,
+  currentPage,
+  pageSize,
+  selectedSpecFilters,
+]);
+
+useEffect(() => {
+  return () => {
+    listingsFetchAbortRef.current?.abort();
+  };
+}, []);
 
   const fetchListings = async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (selectedUniv) params.append("university", selectedUniv);
-      if (selectedCat) params.append("category", selectedCat);
-      if (search) params.append("search", search);
-      if (sortBy) params.append("sortBy", sortBy);
-      
-      const res = await fetch(`/api/listings?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      setListings(data);
-    } catch (err) {
-      console.error("Fetch listings error:", err);
-    } finally {
-      setLoading(false);
+  const requestId = ++listingsRequestIdRef.current;
+  listingsFetchAbortRef.current?.abort();
+  const controller = new AbortController();
+  listingsFetchAbortRef.current = controller;
+
+  setLoading(true);
+  try {
+    const params = new URLSearchParams();
+
+    if (selectedUniv) params.append("university", selectedUniv);
+    if (selectedCat) params.append("category", selectedCat);
+    if (selectedSubcategory) params.append("subcategory", selectedSubcategory);
+    if (selectedItemType) params.append("itemType", selectedItemType);
+    if (selectedStatus) params.append("status", selectedStatus);
+    if (selectedCondition) params.append("condition", selectedCondition);
+    if (hideSoldOut) params.append("hideSoldOut", "1");
+    if (minPrice) params.append("minPrice", minPrice);
+    if (maxPrice) params.append("maxPrice", maxPrice);
+    if (search) params.append("search", search);
+    if (sortBy) params.append("sortBy", sortBy);
+    if (Object.keys(selectedSpecFilters).length > 0) {
+      params.append("specFilters", JSON.stringify(selectedSpecFilters));
     }
+
+    params.append("page", String(currentPage));
+    params.append("pageSize", String(pageSize));
+
+    const res = await fetch(`/api/listings?${params.toString()}`, {
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+    const data = await res.json();
+
+    if (requestId !== listingsRequestIdRef.current) return;
+
+    setListings(Array.isArray(data.items) ? data.items : []);
+    setTotalResults(Number(data.total || 0));
+    setTotalPages(Number(data.totalPages || 1));
+  } catch (err: any) {
+    if (err?.name === "AbortError") {
+      return;
+    }
+    if (requestId !== listingsRequestIdRef.current) return;
+
+    console.error("Fetch listings error:", err);
+    setListings([]);
+    setTotalResults(0);
+    setTotalPages(1);
+  } finally {
+    if (requestId !== listingsRequestIdRef.current) return;
+    setLoading(false);
+  }
+};
+
+const handleSelectedCategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedSubcategory("");
+  setSelectedItemType("");
+  setSelectedCat(value);
+};
+
+const handleSelectedSubcategoryChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType("");
+  setSelectedSubcategory(value);
+};
+
+const handleSelectedItemTypeChange = (value: string) => {
+  setSelectedSpecFilters({});
+  setSelectedItemType(value);
+};
+
+  const trackListingView = async (listingId: number) => {
+  try {
+    await fetch(`/api/listings/${listingId}/view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("Failed to track listing view", e);
+  }
+};
+
+  const trackSellerProfileView = async (sellerUid: string) => {
+  try {
+    await fetch(`/api/users/${sellerUid}/profile-view`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        viewer_uid: firebaseUser?.uid || null,
+      }),
+    });
+  } catch (e) {
+    console.error("Failed to track seller profile view", e);
+  }
+}; 
+
+const loadDetailsExtras = async (listing: Listing) => {
+  const requestId = ++detailsExtrasRequestIdRef.current;
+  setDetailsLoadingExtra(true);
+
+  const isTransientDetailExtrasError = (error: unknown) => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+      return (
+        msg.includes("failed to fetch") ||
+        msg.includes("networkerror") ||
+        msg.includes("network request failed") ||
+        msg.includes("load failed")
+      );
+    }
+
+    return false;
   };
+
+  const warnDetailExtrasFailure = (label: string, error: unknown) => {
+    if (isTransientDetailExtrasError(error)) return;
+    console.warn(label, error);
+  };
+
+  try {
+    const [sellerProfileResult, relatedResult] = await Promise.allSettled([
+     apiFetch(`/api/users/${listing.seller_uid}`),
+     apiFetch(`/api/listings/${listing.id}/related?limit=5`),
+   ]);
+
+    if (sellerProfileResult.status === "rejected") {
+      warnDetailExtrasFailure(
+        "Detail extras: seller profile request failed",
+        sellerProfileResult.reason
+      );
+    }
+
+    if (relatedResult.status === "rejected") {
+      warnDetailExtrasFailure(
+        "Detail extras: related listings request failed",
+        relatedResult.reason
+      );
+    }
+
+    const sellerProfile =
+      sellerProfileResult.status === "fulfilled" ? sellerProfileResult.value : null;
+    const relatedResponse =
+      relatedResult.status === "fulfilled" ? relatedResult.value : [];
+
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
+
+    setDetailsSellerProfile(sellerProfile || null);
+
+    if (firebaseUser) {
+      try {
+        const summary = await apiFetch(`/api/users/${listing.seller_uid}/rating-summary`);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
+        setDetailsRatingSummary(summary || null);
+      } catch (ratingError) {
+        warnDetailExtrasFailure("Detail extras: rating summary request failed", ratingError);
+        if (detailsExtrasRequestIdRef.current !== requestId) return;
+        setDetailsRatingSummary(null);
+      }
+    } else {
+      setDetailsRatingSummary(null);
+    }
+
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
+    setRelatedListings(Array.isArray(relatedResponse) ? relatedResponse : []);
+  } catch (e) {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
+    console.error("Failed to load detail extras", e);
+    setDetailsSellerProfile(null);
+    setDetailsRatingSummary(null);
+    setRelatedListings([]);
+  } finally {
+    if (detailsExtrasRequestIdRef.current !== requestId) return;
+    setDetailsLoadingExtra(false);
+  }
+};
+
+const fetchSellerDashboard = async () => {
+  if (!firebaseUser || !userProfile?.is_seller) {
+    setSellerDashboard(null);
+    return;
+  }
+
+  setSellerDashboardLoading(true);
+  try {
+    const data = await apiFetch("/api/seller/dashboard");
+    setSellerDashboard(data);
+  } catch (err) {
+    console.error("Failed to load seller dashboard", err);
+    setSellerDashboard(null);
+  } finally {
+    setSellerDashboardLoading(false);
+  }
+};
+
+  
+  useEffect(() => {
+  if (firebaseUser && userProfile?.is_seller) {
+    void fetchSellerDashboard();
+  } else {
+    setSellerDashboard(null);
+  }
+}, [firebaseUser, userProfile?.is_seller]);
+
+  useEffect(() => {
+  if (firebaseUser && !userProfile?.is_seller) {
+    void fetchSellerApplicationStatus();
+  } else {
+    setSellerApplication(null);
+  }
+}, [firebaseUser, userProfile?.is_seller]);
+
+
+const fetchMyListings = async () => {
+  if (!firebaseUser) return;
+
+  setMyListingsLoading(true);
+  try {
+    const data = await apiFetch(`/api/users/${firebaseUser.uid}/listings`);
+    setMyListings(Array.isArray(data) ? data : []);
+  } catch (err: any) {
+    showFeedback(
+  "error",
+  "Could not load listings",
+  err?.message || "We could not load your listings."
+);
+  } finally {
+    setMyListingsLoading(false);
+  }
+};
+
+const openMyListings = async () => {
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("login");
+    return;
+  }
+
+  setShowProfileModal(false);
+  setShowMyListingsModal(true);
+  await fetchMyListings();
+};
+
+const openSettings = () => {
+  setShowProfileModal(false);
+  setSettingsEntrySource("settings");
+  setSettingsView("menu");
+  setShowSettingsModal(true);
+};
+
+const closeSettings = () => {
+  setShowSettingsModal(false);
+  setSettingsView("menu");
+  setSettingsEntrySource("settings");
+};
+
+const openFooterView = (view: "privacy" | "terms" | "safety" | "report") => {
+  setShowProfileModal(false);
+  setSettingsEntrySource("footer");
+  setShowSettingsModal(true);
+  setSettingsView(view);
+};
+
+const handleFooterPageBack = () => {
+  if (settingsEntrySource === "settings") {
+    setSettingsView("menu");
+    return;
+  }
+
+  closeSettings();
+};
+
+const promptSellerUpgrade = () => {
+  setShowAddModal(false);
+
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile) {
+    setShowProfileModal(true);
+    setAuthView("signup");
+    return;
+  }
+
+  if (!userProfile.is_seller) {
+    setShowProfileModal(true);
+    setAuthView("profile");
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setShowAddModal(true);
+};
+
+const openEditProfileFromSettings = () => {
+  if (!userProfile) return;
+
+  setEditProfileForm({
+    businessName: userProfile.business_name || "",
+    university: userProfile.university || UNIVERSITIES[0],
+    bio: userProfile.bio || "",
+  });
+
+  setShowSettingsModal(false);
+  setShowProfileModal(true);
+  setAuthView("editProfile");
+};
+
+const openChangePassword = () => {
+  setShowChangePasswordModal(true);
+};
+
+const fetchRatingSummary = async (sellerUid: string) => {
+  if (!firebaseUser) {
+    setRatingSummary(null);
+    return;
+  }
+
+  setRatingLoading(true);
+  try {
+    const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+    setRatingSummary(summary);
+  } catch (e) {
+    console.error("Failed to load rating summary", e);
+    setRatingSummary(null);
+  } finally {
+    setRatingLoading(false);
+  }
+};
+
+const handleRateSeller = async (sellerUid: string, stars: number) => {
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("login");
+    return;
+  }
+
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
+
+  setRatingSubmitting(true);
+  try {
+    const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
+      method: "POST",
+      body: JSON.stringify({ stars }),
+    });
+    setRatingSummary(summary);
+  } catch (e: any) {
+    showFeedback(
+      "error",
+      "Rating failed",
+      e?.message || "We could not save your rating."
+    );
+  } finally {
+    setRatingSubmitting(false);
+  }
+};
+
+const handleRemoveSellerRating = async (sellerUid: string) => {
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("login");
+    return;
+  }
+
+  setRatingSubmitting(true);
+  try {
+    const summary = await apiFetch(`/api/users/${sellerUid}/rating`, {
+      method: "DELETE",
+    });
+    setRatingSummary(summary);
+  } catch (e: any) {
+    showFeedback(
+      "error",
+      "Remove rating failed",
+      e?.message || "We could not remove your rating."
+    );
+  } finally {
+    setRatingSubmitting(false);
+  }
+};
+
 const openPublicProfile = async (uid: string) => {
   setPublicProfileOpen(true);
   setPublicProfileLoading(true);
+  setRatingSummary(null);
+  void trackSellerProfileView(uid);
 
   try {
     const profile = await apiFetch(`/api/users/${uid}`);
@@ -721,24 +1293,127 @@ const openPublicProfile = async (uid: string) => {
 
     setPublicProfile(profile);
     setPublicProfileListings(listings || []);
+
+    if (firebaseUser) {
+      await fetchRatingSummary(uid);
+    } else {
+      setRatingSummary(null);
+    }
   } catch (e: any) {
-    alert(e?.message || "Failed to load profile");
+    showFeedback(
+     "error",
+     "Profile load failed",
+     e?.message || "We could not load this profile."
+   );
     setPublicProfileOpen(false);
   } finally {
     setPublicProfileLoading(false);
   }
 };
-  
-  const handleDeleteListing = async (listingId: number) => {
-  if (!confirm("Delete this listing?")) return;
 
+const toggleSavedListing = (listingId: number) => {
+  if (!firebaseUser) {
+    setShowProfileModal(true);
+    setAuthView("login");
+    return;
+  }
+
+  setSavedListingIds((prev) => {
+    const next = prev.includes(listingId)
+      ? prev.filter((id) => id !== listingId)
+      : [...prev, listingId];
+
+    localStorage.setItem(savedStorageKey, JSON.stringify(next));
+    return next;
+  });
+};
+
+
+const savedListings = React.useMemo(() => {
+  return listings.filter(
+    (listing) =>
+      savedListingIds.includes(listing.id) &&
+      !hiddenListingIds.includes(listing.id) &&
+      !hiddenSellerUids.includes(listing.seller_uid)
+  );
+}, [listings, savedListingIds, hiddenListingIds, hiddenSellerUids]);
+
+const visiblePublicProfileListings = publicProfileListings.filter(
+  (l) =>
+    !hiddenSellerUids.includes(l.seller_uid) &&
+    !hiddenListingIds.includes(l.id)
+);
+
+const detailGalleryImages = React.useMemo(() => {
+  if (!detailsListing) return [];
+
+  if (Array.isArray(detailsListing.photos) && detailsListing.photos.length > 0) {
+    return detailsListing.photos;
+  }
+
+  return [`https://picsum.photos/seed/${detailsListing.id}/800/800`];
+}, [detailsListing]);
+
+const DETAIL_SPEC_SCROLL_TOLERANCE = 4; // small buffer for rounding differences
+
+useEffect(() => {
+  if (!detailsListing) {
+    setActiveDetailSpecGroup("");
+    return;
+  }
+
+  const itemConfig =
+    detailsListing.category &&
+    detailsListing.subcategory &&
+    detailsListing.item_type
+      ? getListingItemConfig(
+          detailsListing.category,
+          detailsListing.subcategory,
+          detailsListing.item_type
+        )
+      : null;
+
+  const firstGroupTitle = itemConfig?.fieldGroups?.[0]?.title || "";
+  setActiveDetailSpecGroup(firstGroupTitle);
+}, [detailsListing]);
+  
+  const performDeleteListing = async (listingId: number) => {
   try {
     await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
-    // safest: refresh list from server
+
     fetchListings();
+
+    if (showMyListingsModal && firebaseUser) {
+      fetchMyListings();
+    }
+    void fetchSellerDashboard();
+
+    showFeedback(
+      "success",
+      "Listing deleted",
+      "The listing was deleted successfully."
+    );
   } catch (err: any) {
-    alert(err?.message || "Failed to delete listing");
+    showFeedback(
+      "error",
+      "Delete failed",
+      err?.message || "We could not delete the listing."
+    );
   }
+};
+
+const handleDeleteListing = async (listingId: number) => {
+  askConfirm({
+    title: "Delete listing",
+    message: "Are you sure you want to delete this listing?",
+    confirmText: "Delete",
+    cancelText: "Cancel",
+    danger: true,
+    onConfirm: () => {
+      closeConfirm();
+      void performDeleteListing(listingId);
+    },
+  });
 };
 
 const handleEditListing = (listing: Listing) => {
@@ -746,21 +1421,34 @@ const handleEditListing = (listing: Listing) => {
 };
 
 const handleUpdateListing = async (listingId: number, updated: Partial<Listing>) => {
-  const existing = listings.find((l) => l.id === listingId);
+  const existing =
+    listings.find((l) => l.id === listingId) ||
+    myListings.find((l) => l.id === listingId);
+
   if (!existing) {
-    alert("Listing not found in state. Refresh and try again.");
+    showFeedback(
+      "error",
+      "Listing not found",
+      "Refresh the page and try again."
+    );
     return;
   }
 
-  // Build payload with required backend fields
   const payload = {
     name: updated.name ?? existing.name,
     price: Number(updated.price ?? existing.price),
     description: updated.description ?? existing.description ?? "",
     category: updated.category ?? existing.category,
+    subcategory: updated.subcategory ?? existing.subcategory ?? null,
+    item_type: updated.item_type ?? existing.item_type ?? null,
+    spec_values: updated.spec_values ?? existing.spec_values ?? {},
     university: updated.university ?? existing.university,
     photos: updated.photos ?? existing.photos ?? [],
-    whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
+    video_url: updated.video_url ?? existing.video_url ?? null,
+    status: updated.status ?? existing.status ?? "available",
+    condition: updated.condition ?? existing.condition ?? "used",
+    quantity: Number(updated.quantity ?? existing.quantity ?? 1),
+    sold_quantity: Number(updated.sold_quantity ?? existing.sold_quantity ?? 0),
   };
 
   try {
@@ -769,13 +1457,72 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
       body: JSON.stringify(payload),
     });
 
-    // safest: refresh from server
     fetchListings();
 
-    // close modal
+    if (showMyListingsModal && firebaseUser) {
+      fetchMyListings();
+    }
+    void fetchSellerDashboard();
+
+    showFeedback(
+      "success",
+      "Listing updated",
+      "Your listing was updated successfully."
+    );
     setEditingListing(null);
   } catch (err: any) {
-    alert(err?.message || "Failed to update listing");
+    showFeedback(
+      "error",
+      "Update failed",
+      err?.message || "We could not update the listing."
+    );
+  }
+};
+
+const handleToggleListingStatus = async (listing: Listing) => {
+  const nextStatus = listing.status === "sold" ? "available" : "sold";
+
+  try {
+    await handleUpdateListing(listing.id, {
+      ...listing,
+      status: nextStatus,
+    });
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Status update failed",
+      err?.message || "We could not update the listing status."
+    );
+  }
+};
+
+const handleDetailShare = async (listing: Listing) => {
+  const shareUrl = buildListingShareUrl(listing.id, galleryIndex);
+  const shareText = `BuyMesho Listing
+${listing.name}
+Price: MK ${Number(listing.price).toLocaleString()}
+Campus: ${listing.university}
+
+Open this listing: ${shareUrl}`;
+
+  try {
+    if ((navigator as any).share) {
+      await (navigator as any).share({
+        title: `BuyMesho: ${listing.name}`,
+        text: shareText,
+        url: shareUrl,
+      });
+      return;
+    }
+
+    await navigator.clipboard.writeText(shareText);
+    showFeedback(
+      "success",
+      "Share text copied",
+      "Paste it anywhere you want."
+    );
+  } catch {
+    prompt("Copy to share:", shareText);
   }
 };
   
@@ -783,15 +1530,20 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     e.preventDefault();
     setLoading(true);
     console.log("Auth: Starting signup for", authForm.email);
+
     try {
       let user = auth.currentUser;
-      
+
       if (!user) {
         console.log("Auth: Creating new user in Firebase...");
-        const userCredential = await createUserWithEmailAndPassword(auth, authForm.email, authForm.password);
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          authForm.email,
+          authForm.password
+        );
         user = userCredential.user;
         console.log("Auth: User created successfully", user.uid);
-        
+
         console.log("Auth: Sending verification email...");
         await sendEmailVerification(user);
         console.log("Auth: Verification email sent");
@@ -799,15 +1551,13 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
         console.log("Auth: User already authenticated, skipping creation", user.uid);
       }
 
-      const profile: Seller = {
+      const profile: UserProfile = {
         uid: user.uid,
         email: authForm.email,
-        business_name: authForm.businessName,
-        business_logo: authForm.logoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(authForm.businessName)}&background=random`,
         university: authForm.university,
-        bio: authForm.bio,
         is_verified: false,
-        join_date: new Date().toISOString()
+        is_seller: false,
+        join_date: new Date().toISOString(),
       };
 
       console.log("Auth: Saving profile to Firestore...");
@@ -816,33 +1566,53 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 
       console.log("Auth: Syncing to SQLite...");
       try {
-  await apiFetch("/api/sellers", {
-    method: "POST",
-    body: JSON.stringify(profile),
-  });
-} catch (e: any) {
-  console.warn("Auth: SQLite sync failed", e?.message || e);
-}
+        await apiFetch("/api/sellers", {
+          method: "POST",
+          body: JSON.stringify(profile),
+        });
+      } catch (e: any) {
+        console.warn("Auth: SQLite sync failed", e?.message || e);
+      }
 
-      setUserSeller(profile);
-      alert("Account created! Please check your email for verification.");
-      setAuthView('profile');
+      setUserProfile(profile);
+      showFeedback(
+        "success",
+        "Account created",
+        "Please check your email and verify your account."
+      );
+      setAuthView("profile");
     } catch (err: any) {
       console.error("Auth: Signup failed", err);
       let message = err.message;
 
-      if (err.code === 'auth/email-already-in-use') {
-        message = "This email is already registered. Would you like to log in instead?";
-        if (window.confirm(message)) {
-          setAuthView('login');
-          return;
-        }
+      if (err.code === "auth/email-already-in-use") {
+        askConfirm({
+          title: "Account already exists",
+          message: "This email is already registered. Would you like to log in instead?",
+          confirmText: "Go to login",
+          cancelText: "Stay here",
+          danger: false,
+          onConfirm: () => {
+            closeConfirm();
+            setAuthView("login");
+          },
+        });
+        return;
       }
-      if (err.code === 'auth/invalid-email') message = "Please enter a valid email address.";
-      if (err.code === 'auth/weak-password') message = "Password should be at least 6 characters.";
-      if (err.message && err.message.includes("blocked")) message = "API Connection Error. Please check your Firebase configuration.";
-      
-      alert(message);
+
+      if (err.code === "auth/invalid-email") {
+        message = "Please enter a valid email address.";
+      }
+
+      if (err.code === "auth/weak-password") {
+        message = "Password should be at least 6 characters.";
+      }
+
+      if (err.message && err.message.includes("blocked")) {
+        message = "API Connection Error. Please check your Firebase configuration.";
+      }
+
+      showFeedback("error", "Signup failed", message);
     } finally {
       setLoading(false);
     }
@@ -850,38 +1620,56 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!isFirebaseConfigured) {
-      alert("Firebase is not configured. Please add your VITE_FIREBASE_* secrets.");
+      showFeedback(
+        "error",
+        "Firebase not configured",
+        "Please add your VITE_FIREBASE_* secrets."
+      );
       return;
     }
+
     setLoading(true);
     console.log("Auth: Attempting login for", authForm.email);
+
     try {
       console.log("Auth: Calling signInWithEmailAndPassword...");
-      const userCredential = await signInWithEmailAndPassword(auth, authForm.email, authForm.password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        authForm.email,
+        authForm.password
+      );
       console.log("Auth: Login successful", userCredential.user.uid);
-      // onAuthStateChanged will handle the view transition
     } catch (err: any) {
       console.error("Auth: Login failed", err);
       let message = "Invalid email or password. Please try again.";
-      
-      if (err.code === 'auth/invalid-credential') {
-        message = "Invalid email or password. If you've forgotten your password, you can reset it.";
-        if (window.confirm(message + "\n\nWould you like to reset your password now?")) {
-          setAuthView('forgot');
-          return;
-        }
-      } else if (err.code === 'auth/user-not-found') {
+
+      if (err.code === "auth/invalid-credential") {
+        askConfirm({
+          title: "Login failed",
+          message:
+            "Invalid email or password. If you've forgotten your password, would you like to reset it now?",
+          confirmText: "Reset password",
+          cancelText: "Try again",
+          danger: false,
+          onConfirm: () => {
+            closeConfirm();
+            setAuthView("forgot");
+          },
+        });
+        return;
+      } else if (err.code === "auth/user-not-found") {
         message = "No account found with this email. Please sign up first.";
-      } else if (err.code === 'auth/wrong-password') {
+      } else if (err.code === "auth/wrong-password") {
         message = "Incorrect password. Please try again.";
-      } else if (err.code === 'auth/too-many-requests') {
+      } else if (err.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
       } else if (err.message && err.message.includes("blocked")) {
         message = "API Connection Error. Please check your Firebase configuration.";
       }
-      
-      alert(message);
+
+      showFeedback("error", "Login failed", message);
     } finally {
       setLoading(false);
     }
@@ -889,22 +1677,117 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!authForm.email) return alert("Please enter your email");
+
+    if (!authForm.email) {
+      showFeedback(
+        "info",
+        "Email required",
+        "Please enter your email address first."
+      );
+      return;
+    }
+
+    if (passwordResetCooldownSeconds > 0) {
+      showFeedback(
+        "info",
+        "Please wait",
+        `You can request another reset link in ${formatCooldownLabel(passwordResetCooldownSeconds)}.`
+      );
+      return;
+    }
+
+    setPasswordResetLoading(true);
     try {
       await sendPasswordResetEmail(auth, authForm.email);
-      alert("Password reset email sent!");
-      setAuthView('login');
+      const nextCooldownSeconds = getCooldownSecondsForAttempt(passwordResetAttemptCount);
+      const nextAttemptCount = passwordResetAttemptCount + 1;
+      const nextCooldownEndAt = Date.now() + nextCooldownSeconds * 1000;
+      setPasswordResetAttemptCount(nextAttemptCount);
+      setPasswordResetCooldownSeconds(nextCooldownSeconds);
+      passwordResetCooldownEndsAtRef.current = nextCooldownEndAt;
+      localStorage.setItem(PASSWORD_RESET_ATTEMPT_KEY, String(nextAttemptCount));
+      localStorage.setItem(PASSWORD_RESET_COOLDOWN_END_KEY, String(nextCooldownEndAt));
+      localStorage.setItem(PASSWORD_RESET_LAST_ATTEMPT_AT_KEY, String(Date.now()));
+
+      showFeedback(
+        "success",
+        "Reset email sent",
+        `Check your email inbox for the password reset link. You can request another link in ${formatCooldownLabel(nextCooldownSeconds)}.`
+      );
     } catch (err: any) {
-      alert(err.message);
+      showFeedback(
+        "error",
+        "Reset failed",
+        err?.message || "We could not send the reset email."
+      );
+    } finally {
+      setPasswordResetLoading(false);
     }
   };
 
+  const handleResendVerificationEmail = async () => {
+    if (!firebaseUser) return;
+
+    setResendVerificationLoading(true);
+    try {
+      await firebaseUser.reload();
+      const refreshedUser = auth.currentUser;
+
+      if (refreshedUser?.emailVerified) {
+        showFeedback(
+          "success",
+          "Already verified",
+          "Your email is already verified. Click “I've Verified” or refresh the page to update the prompt."
+        );
+        return;
+      }
+
+      if (verificationCooldownSeconds > 0) {
+        showFeedback(
+          "info",
+          "Please wait",
+          `You can resend the verification email in ${formatCooldownLabel(verificationCooldownSeconds)}.`
+        );
+        return;
+      }
+
+      await sendEmailVerification(firebaseUser);
+      const nextCooldownSeconds = getCooldownSecondsForAttempt(verificationResendAttemptCount);
+      const nextAttemptCount = verificationResendAttemptCount + 1;
+      const nextCooldownEndAt = Date.now() + nextCooldownSeconds * 1000;
+      setVerificationResendAttemptCount(nextAttemptCount);
+      setVerificationCooldownSeconds(nextCooldownSeconds);
+      verificationCooldownEndsAtRef.current = nextCooldownEndAt;
+      localStorage.setItem(VERIFICATION_RESEND_ATTEMPT_KEY, String(nextAttemptCount));
+      localStorage.setItem(VERIFICATION_RESEND_COOLDOWN_END_KEY, String(nextCooldownEndAt));
+      localStorage.setItem(VERIFICATION_RESEND_LAST_ATTEMPT_AT_KEY, String(Date.now()));
+
+      showFeedback(
+        "success",
+        "Verification email resent",
+        `Check your inbox for the new verification email. You can resend again in ${formatCooldownLabel(nextCooldownSeconds)}.`
+      );
+    } catch (e: any) {
+      showFeedback(
+        "error",
+        "Resend failed",
+        e?.message || "We could not resend the verification email."
+      );
+    } finally {
+      setResendVerificationLoading(false);
+    }
+  };
+  
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      setUserSeller(null);
+      setUserProfile(null);
     } catch (err: any) {
-      alert(err.message);
+      showFeedback(
+        "error",
+        "Logout failed",
+        err?.message || "We could not log you out."
+      );
     }
   };
   const refreshVerificationStatus = async () => {
@@ -916,7 +1799,11 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     const refreshedUser = auth.currentUser;
     
       if (!refreshedUser?.emailVerified) {
-      alert("Not verified yet. Please click the verification link in your email, then try again.");
+      showFeedback(
+       "info",
+       "Verification still pending",
+       "Please click the verification link in your email, then try again."
+    );
       return;
     }
 
@@ -925,66 +1812,319 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
     await updateDoc(userRef, { is_verified: true });
 
     // 3) update your local state so UI updates instantly
-    setUserSeller((prev: any) => (prev ? { ...prev, is_verified: true } : prev));
+    setUserProfile((prev: any) => (prev ? { ...prev, is_verified: true } : prev));
 
     // 4) sync to SQLite backend (server)
     await apiFetch("/api/sellers", {
-  method: "POST",
-  body: JSON.stringify({
-    email: firebaseUser?.email,
-    business_name: userSeller?.business_name || "",
-    business_logo: userSeller?.business_logo || "",
-    university: userSeller?.university || "",
-    bio: userSeller?.bio || "",
-    is_verified: true,
-    join_date: userSeller?.join_date || new Date().toISOString(),
-  }),
-});
+      method: "POST",
+      body: JSON.stringify({
+        email: firebaseUser?.email,
+        business_name: userProfile?.business_name || "",
+        university: userProfile?.university || "",
+        bio: userProfile?.bio || "",
+        is_verified: true,
+        is_seller: userProfile?.is_seller ?? true,
+        join_date: userProfile?.join_date || new Date().toISOString(),
+      }),
+    });
 
-    alert("✅ Verified! You can now create listings.");
+    showFeedback(
+  "success",
+  "Email verified",
+  "Your account is now verified. You can start selling."
+);
   } catch (e: any) {
     console.error(e);
-    alert(e?.message || "Failed to refresh verification status.");
-  }
-};
-
-  const handleDeleteAccount = async () => {
-  if (!firebaseUser) return;
-  if (
-    !confirm(
-      "Are you sure you want to delete your account? This will permanently remove your profile and all your listings."
-    )
-  )
-    return;
-
-  try {
-    // ✅ 1) Delete from SQLite backend first (needs auth token)
-    await apiFetch("/api/profile", { method: "DELETE" });
-
-    // 2) Delete from Firestore
-    await deleteDoc(doc(firestore, "users", firebaseUser.uid));
-
-    // 3) Delete from Firebase Auth
-    await deleteUser(firebaseUser);
-
-    alert("Account deleted.");
-  } catch (err: any) {
-    alert(
-      "Error deleting account: " +
-        (err?.message || String(err)) +
-        ". You may need to re-authenticate to perform this action."
+    showFeedback(
+      "error",
+      "Verification refresh failed",
+      e?.message || "We could not refresh your verification status."
     );
   }
 };
+
+  const handlePasswordPromptSubmit = async () => {
+  try {
+    if (!firebaseUser?.email) {
+      throw new Error("No email found for this account.");
+    }
+
+    if (!reauthPassword.trim()) {
+      showFeedback(
+        "info",
+        "Password required",
+        "Please enter your password to continue."
+      );
+      return;
+    }
+
+    const credential = EmailAuthProvider.credential(
+      firebaseUser.email,
+      reauthPassword
+    );
+
+    await reauthenticateWithCredential(auth.currentUser!, credential);
+
+    setPasswordPromptOpen(false);
+    setReauthPassword("");
+
+    if (pendingDeleteAfterReauth) {
+      setPendingDeleteAfterReauth(false);
+      await performDeleteAccount();
+    }
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Reauthentication failed",
+      err?.message || "We could not verify your password."
+    );
+  }
+};
+
+const closePasswordPrompt = () => {
+  setPasswordPromptOpen(false);
+  setReauthPassword("");
+  setPendingDeleteAfterReauth(false);
+};
+
+const performDeleteAccount = async () => {
+  if (!firebaseUser) return;
+
+  try {
+    if (!firebaseUser.email) {
+      throw new Error("No email found for this account.");
+    }
+
+    try {
+      await deleteUser(firebaseUser);
+    } catch (authErr: any) {
+      if (authErr?.code === "auth/requires-recent-login") {
+        setPendingDeleteAfterReauth(true);
+        setPasswordPromptOpen(true);
+        return;
+      }
+      throw authErr;
+    }
+
+    try {
+      await apiFetch("/api/profile", { method: "DELETE" });
+    } catch (apiErr) {
+      console.warn("Backend profile deletion failed:", apiErr);
+    }
+
+    try {
+      await deleteDoc(doc(firestore, "users", firebaseUser.uid));
+    } catch (firestoreErr) {
+      console.warn("Firestore profile deletion failed:", firestoreErr);
+    }
+
+    showFeedback(
+      "success",
+      "Account deleted",
+      "Your account and profile were removed successfully."
+    );
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Delete account failed",
+      err?.message || "We could not delete your account."
+    );
+  }
+};
+
+const handleDeleteAccount = async () => {
+  askConfirm({
+    title: "Delete account",
+    message:
+      "Are you sure you want to delete your account? This will permanently remove your profile and all your listings.",
+    confirmText: "Delete account",
+    cancelText: "Cancel",
+    danger: true,
+    onConfirm: () => {
+      closeConfirm();
+      void performDeleteAccount();
+    },
+  });
+};
+
+  const handleSaveAccount = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!firebaseUser || !userProfile) return;
+
+  const updatedProfile: UserProfile = {
+    ...userProfile,
+    university: editAccountForm.university,
+  };
+
+  try {
+    await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+      university: updatedProfile.university,
+    });
+
+    await apiFetch("/api/sellers", {
+      method: "POST",
+      body: JSON.stringify(updatedProfile),
+    });
+
+    setUserProfile(updatedProfile);
+    setAuthView("profile");
+    showFeedback(
+     "success",
+     "Account updated",
+     "Your account details were saved successfully."
+   );
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Account update failed",
+      err?.message || "We could not update your account."
+    );
+  }
+};
+  
+  const handleSaveProfile = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!firebaseUser || !userProfile) return;
+
+  const updatedProfile: UserProfile = {
+    ...userProfile,
+    business_name: editProfileForm.businessName,
+    university: editProfileForm.university,
+    bio: editProfileForm.bio,
+  };
+
+  try {
+    await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+      business_name: updatedProfile.business_name,
+      university: updatedProfile.university,
+      bio: updatedProfile.bio || "",
+    });
+
+    await apiFetch("/api/profile", {
+      method: "PUT",
+      body: JSON.stringify({
+        business_name: updatedProfile.business_name,
+        university: updatedProfile.university,
+        bio: updatedProfile.bio || "",
+      }),
+    });
+
+    setUserProfile(updatedProfile);
+    setAuthView("profile");
+    showFeedback(
+     "success",
+     "Profile updated",
+     "Your seller profile was saved successfully."
+   );
+  } catch (err: any) {
+    showFeedback(
+      "error",
+      "Profile update failed",
+      err?.message || "We could not update your profile."
+    );
+  }
+};
+
+  const fetchSellerApplicationStatus = async () => {
+    if (!firebaseUser) {
+      setSellerApplication(null);
+      return;
+    }
+
+    try {
+      const data = await apiFetch("/api/profile/seller-application");
+
+      if (
+        data?.status === "pending" ||
+        data?.status === "approved" ||
+        data?.status === "rejected"
+      ) {
+        setSellerApplication(data as SellerApplication);
+
+        if (data.status === "approved" && userProfile && !userProfile.is_seller) {
+          await updateDoc(doc(firestore, "users", firebaseUser.uid), {
+            is_seller: true,
+          });
+
+          const nextProfile = { ...userProfile, is_seller: true };
+          setUserProfile(nextProfile);
+
+          await apiFetch("/api/sellers", {
+            method: "POST",
+            body: JSON.stringify(nextProfile),
+          });
+        }
+      } else {
+        setSellerApplication(null);
+      }
+    } catch (err) {
+      console.error("Failed to fetch seller application status", err);
+      setSellerApplication(null);
+    }
+  };
+  
+  const handleBecomeSeller = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!firebaseUser || !userProfile) return;
+
+  try {
+    const submitted = await apiFetch("/api/profile/become-seller", {
+      method: "POST",
+      body: JSON.stringify({
+        full_legal_name: sellerUpgradeForm.fullLegalName,
+        institution: sellerUpgradeForm.institution,
+        applicant_type: sellerUpgradeForm.applicantType,
+        institution_id_number: sellerUpgradeForm.institutionIdNumber,
+        whatsapp_number: sellerUpgradeForm.whatsappNumber,
+        business_name: sellerUpgradeForm.businessName,
+        what_to_sell: sellerUpgradeForm.whatToSell,
+        business_description: sellerUpgradeForm.businessDescription,
+        reason_for_applying: sellerUpgradeForm.reasonForApplying,
+        proof_document_url: sellerUpgradeForm.proofDocumentUrl,
+        agreed_to_rules: sellerUpgradeForm.agreedToRules,
+      }),
+    });
+
+    const nextApplication = submitted?.application;
+    if (
+      nextApplication &&
+      (nextApplication.status === "pending" ||
+        nextApplication.status === "approved" ||
+        nextApplication.status === "rejected")
+    ) {
+      setSellerApplication(nextApplication as SellerApplication);
+    } else {
+      setSellerApplication(null);
+    }
+
+    showFeedback(
+      "success",
+      "Application submitted",
+      "Your application is pending manual review."
+    );
+    setAuthView("profile");
+  } catch (err: any) {
+    showFeedback(
+     "error",
+     "Application failed",
+     err?.message || "We could not submit your seller application."
+   );
+  }
+};
+  
   const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const files = Array.from(e.target.files || []);
+  const files: File[] = Array.from(e.target.files ?? []);
   if (!files.length) return;
 
   const remaining = 5 - newListing.photos.length;
-  const selected = files.slice(0, remaining);
+  const selected: File[] = files.slice(0, remaining);
 
   if (selected.length < files.length) {
-    alert("Max 5 photos per listing.");
+    showFeedback(
+      "info",
+      "Photo limit reached",
+      "You can upload a maximum of 5 photos per listing."
+    );
   }
 
   setUploading(true);
@@ -993,7 +2133,7 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 
     for (const file of selected) {
       const formData = new FormData();
-      formData.append("image", file);
+      formData.append("image", file as Blob);
 
       const res = await fetch("/api/upload/", { method: "POST", body: formData });
       const text = await res.text();
@@ -1007,8 +2147,13 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
       ...prev,
       photos: [...prev.photos, ...uploadedUrls].slice(0, 5),
     }));
+    clearCreateFieldError("photos");
   } catch (err: any) {
-    alert(err?.message || "Failed to upload images");
+    showFeedback(
+  "error",
+  "Image upload failed",
+  err?.message || "We could not upload the images."
+);
   } finally {
     setUploading(false);
     e.target.value = "";
@@ -1016,13 +2161,13 @@ const handleUpdateListing = async (listingId: number, updated: Partial<Listing>)
 };
 
 const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
+  const file: File | undefined = e.target.files?.[0];
   if (!file) return;
 
   setUploading(true);
   try {
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", file as Blob);
 
     const res = await fetch("/api/upload/", { method: "POST", body: formData });
     const text = await res.text();
@@ -1032,74 +2177,314 @@ const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
     setNewListing((prev) => ({ ...prev, video_url: data.url }));
   } catch (err: any) {
-    alert(err?.message || "Failed to upload video");
+    showFeedback(
+  "error",
+  "Video upload failed",
+  err?.message || "We could not upload the video."
+);
   } finally {
     setUploading(false);
     e.target.value = "";
   }
 };
+
+const handleNewListingCategoryChange = (category: Category) => {
+  setCreateFieldErrors({});
+  setNewListing((prev) => ({
+    ...prev,
+    category,
+    subcategory: "",
+    item_type: "",
+    spec_values: {},
+  }));
+};
+
+const handleNewListingSubcategoryChange = (subcategory: string) => {
+  clearCreateFieldError("subcategory");
+  clearCreateFieldError("item_type");
+  setNewListing((prev) => ({
+    ...prev,
+    subcategory,
+    item_type: "",
+    spec_values: {},
+  }));
+};
+
+const handleNewListingItemTypeChange = (itemType: string) => {
+  clearCreateFieldError("item_type");
+  setCreateFieldErrors((prev) => {
+    const next = { ...prev };
+    Object.keys(next).forEach((key) => {
+      if (createSpecFieldRefs.current[key]) {
+        delete next[key];
+      }
+    });
+    return next;
+  });
+  setNewListing((prev) => ({
+    ...prev,
+    item_type: itemType,
+    spec_values: createEmptyListingSpecValues(
+      prev.category,
+      prev.subcategory,
+      itemType
+    ),
+  }));
+};
+
+const handleNewListingUniversityChange = (university: University) => {
+  setNewListing((prev) => ({
+    ...prev,
+    university,
+  }));
+};
+
+const handleSpecValueChange = (key: string, value: ListingSpecValue) => {
+  clearCreateFieldError(key);
+  setNewListing((prev) => ({
+    ...prev,
+    spec_values: {
+      ...prev.spec_values,
+      [key]: value,
+    },
+  }));
+};
+
+const hasMeaningfulTitle = (rawTitle: string) => {
+  const trimmed = rawTitle.trim();
+  if (trimmed.length < 3) return false;
+  const alnumCount = (trimmed.match(/[a-zA-Z0-9]/g) ?? []).length;
+  return alnumCount >= 3;
+};
+
+const scrollToCreateSpecField = (fieldKey: string) => {
+  const target = createSpecFieldRefs.current[fieldKey];
+  if (!target) return;
+
+  target.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+  });
+};
+  
   const handleCreateListing = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userSeller || !firebaseUser) return;
-    
-    if (!firebaseUser.emailVerified) {
-      alert("Please verify your email before posting a listing.");
+  e.preventDefault();
+
+  if (creatingListing) return;
+  setCreatingListing(true);
+
+  try {
+    setCreateFieldErrors({});
+    if (!userProfile || !firebaseUser) return;
+
+    if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+    }
+
+    if (isSchemaDrivenCategory) {
+      if (!newListing.subcategory || !newListing.item_type) {
+        if (!newListing.subcategory) {
+          setCreateFieldError("subcategory", "Please choose a subcategory.");
+        }
+        if (!newListing.item_type) {
+          setCreateFieldError("item_type", "Please choose an item type.");
+        }
+        showFeedback(
+          "info",
+          "Item details needed",
+          "Please choose a subcategory and item type first."
+        );
+        return;
+      }
+
+      const validation = validateListingSpecValues(
+        newListing.category,
+        newListing.subcategory,
+        newListing.item_type,
+        newListing.spec_values
+      );
+
+      if (!validation.isValid) {
+        const firstError = validation.errors[0];
+        const errorKey = firstError?.key;
+        const nextErrors = validation.errors.reduce<Record<string, string>>(
+          (acc, error) => {
+            if (error.key) {
+              acc[error.key] = error.message;
+            }
+            return acc;
+          },
+          {}
+        );
+        setCreateFieldErrors(nextErrors);
+
+        if (errorKey) {
+          const erroredField = selectedItemConfig?.schema.fields.find(
+            (field) => field.key === errorKey
+          );
+
+          if (erroredField?.advanced) {
+            setShowAdvancedSpecs(true);
+            setTimeout(() => {
+              scrollToCreateSpecField(errorKey);
+            }, 150);
+          } else {
+            setTimeout(() => {
+              scrollToCreateSpecField(errorKey);
+            }, 0);
+          }
+        }
+
+        showFeedback(
+          "error",
+          "Missing or invalid details",
+          firstError?.message || "Please complete the required item details."
+        );
+        return;
+      }
+    }
+
+    if (!hasMeaningfulTitle(newListing.name)) {
+      setCreateFieldError(
+        "name",
+        "Please enter a clear listing title with at least 3 letters or numbers."
+      );
+      showFeedback(
+        "error",
+        "Title needed",
+        "Please enter a clear listing title with at least 3 letters or numbers."
+      );
       return;
     }
 
-    try {
-await apiFetch("/api/listings", {
-  method: "POST",
-  body: JSON.stringify({
-    ...newListing,
-    price: parseFloat(newListing.price),
-    photos: newListing.photos.slice(0, 5),
-    video_url: newListing.video_url?.trim() || null,
-  }),
-});
+    const trimmedDescription = newListing.description.trim();
+    if (trimmedDescription.length < 10) {
+      setCreateFieldError(
+        "description",
+        "Please enter a product description of at least 10 characters."
+      );
+      showFeedback(
+        "error",
+        "Description needed",
+        "Please enter a product description of at least 10 characters."
+      );
+      return;
+    }
 
-  setShowAddModal(false);
-  setNewListing({
-    name: "",
-    price: "",
-    description: "",
-    category: CATEGORIES[0] as Category,
-    university: UNIVERSITIES[0] as University,
-    photos: [] as string[],
-    video_url: "",
-    whatsapp_number: "",
-  });
 
-  fetchListings();
+    const parsedPrice = Number(newListing.price);
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+      setCreateFieldError("price", "Please enter a valid price greater than 0.");
+      showFeedback(
+        "error",
+        "Invalid price",
+        "Please enter a valid price greater than 0."
+      );
+      return;
+    }
 
-} catch (err: any) {
-  alert(err?.message || "Failed to create listing");
-}
+    if (newListing.photos.length < 1) {
+      setCreateFieldError("photos", "Add at least 1 photo.");
+      showFeedback(
+        "error",
+        "Photo required",
+        "Add at least 1 photo so buyers can trust what is being sold."
+      );
+      return;
+    }
+
+    const quantityNum = Number(newListing.quantity || 1);
+    const soldQuantityNum = Number(newListing.sold_quantity || 0);
+    if (!Number.isInteger(quantityNum) || quantityNum < 1) {
+      setCreateFieldError(
+        "quantity",
+        "Total quantity must be a whole number of at least 1."
+      );
+      showFeedback(
+        "error",
+        "Invalid quantity",
+        "Total quantity must be a whole number of at least 1."
+      );
+      return;
+    }
+
+    if (!Number.isInteger(soldQuantityNum) || soldQuantityNum < 0) {
+      setCreateFieldError("sold_quantity", "Sold quantity cannot be negative.");
+      showFeedback(
+        "error",
+        "Invalid sold quantity",
+        "Sold quantity cannot be negative."
+      );
+      return;
+    }
+
+    if (soldQuantityNum > quantityNum) {
+      setCreateFieldError(
+        "sold_quantity",
+        "Sold quantity cannot be greater than total quantity."
+      );
+      showFeedback(
+        "error",
+        "Invalid stock values",
+        "Sold quantity cannot be greater than total quantity."
+      );
+      return;
+    }
+
+    const payload: CreateListingPayload = {
+      name: newListing.name,
+      price: parsedPrice,
+      description: newListing.description,
+      category: newListing.category,
+      subcategory: newListing.subcategory || null,
+      item_type: newListing.item_type || null,
+      spec_values:
+        isSchemaDrivenCategory && newListing.item_type
+          ? newListing.spec_values
+          : {},
+      university: newListing.university,
+      photos: newListing.photos.slice(0, 5),
+      video_url: newListing.video_url?.trim() || null,
+      status: newListing.status,
+      condition: newListing.condition,
+      quantity: quantityNum,
+      sold_quantity: soldQuantityNum,
+    };
+
+    await apiFetch("/api/listings", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    setShowAddModal(false);
+    setNewListing(createInitialListingDraft(userProfile));
+    setCreateFieldErrors({});
+
+    fetchListings();
+    void fetchSellerDashboard();
+  } catch (err: any) {
+    showFeedback(
+     "error",
+     "Listing creation failed",
+     err?.message || "We could not create your listing."
+   );
+  } finally {
+    setCreatingListing(false);
+  }
 };
   
-  const handleReport = async (listingId: number) => {
-    const reason = prompt("Why are you reporting this listing?");
-    if (!reason) return;
-
-    try {
-      await fetch('/api/reports', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ listing_id: listingId, reason })
-      });
-      alert("Report submitted. Thank you for keeping our community safe.");
-    } catch (err) {
-      alert("Failed to submit report");
-    }
-  };
+  const handleReport = (listingId: number) => {
+  setReportListingId(listingId);
+};
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file: File | undefined = e.target.files?.[0];
     if (!file) return;
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", file as Blob);
 
     try {
       const res = await fetch("/api/upload/", {
@@ -1129,8 +2514,10 @@ await apiFetch("/api/listings", {
         if (contentType && contentType.includes("application/json")) {
           const data = JSON.parse(responseText);
         if (data.url) {
-         setAuthForm((prev) => ({ ...prev, logoUrl: data.url }));
-          }
+           if (authView === "becomeSeller") {
+             setSellerUpgradeForm((prev) => ({ ...prev, proofDocumentUrl: data.url }));
+           }
+        }
         } else {
           console.error("Non-JSON response:", responseText);
           throw new Error(`Server returned non-JSON response: ${responseText.substring(0, 50)}...`);
@@ -1141,110 +2528,662 @@ await apiFetch("/api/listings", {
       }
     } catch (err) {
       console.error("Upload failed", err);
-      alert(err instanceof Error ? err.message : "Image upload failed. Please try again.");
+      showFeedback(
+       "error",
+       "Upload failed",
+       err instanceof Error ? err.message : "Image upload failed. Please try again."
+     );
     } finally {
       setUploading(false);
     }
   };
 
+  const formatDetailDate = (value?: string) => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString();
+  };
+
+  const getListingFreshnessTone = (listing: Listing) => {
+    const sourceDate = listing.updated_at || listing.created_at;
+    if (!sourceDate) return "Fresh";
+
+    const now = Date.now();
+    const then = new Date(sourceDate).getTime();
+    if (Number.isNaN(then)) return "Fresh";
+
+    const diffHours = (now - then) / (1000 * 60 * 60);
+
+    if (diffHours < 24) return "Just posted";
+    if (diffHours < 72) return "Recently updated";
+    if (diffHours < 168) return "This week";
+    return "Older listing";
+  };
+
+  const getDetailSpecRows = (
+    listing: Listing,
+    sellerProfile: any | null,
+    ratingSummary: SellerRatingSummary | null
+  ) => {
+    const sellerJoinedLabel = formatDetailDate(sellerProfile?.join_date);
+
+    switch (listing.category) {
+      case "Electronics & Gadgets":
+        return [
+          { label: "Device State", value: listing.condition || "used" },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
+        ];
+
+      case "Fashion & Clothing":
+        return [
+          { label: "Wear State", value: listing.condition || "used" },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
+        ];
+
+      case "Food & Snacks":
+        return [
+          { label: "Item State", value: listing.condition || "new" },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
+        ];
+
+      case "Academic Services":
+        return [
+          { label: "Service Type", value: listing.category },
+        ];
+
+      case "Beauty & Personal Care":
+        return [
+          { label: "Product State", value: listing.condition || "new" },
+          {
+            label: "Available",
+            value: String(
+              Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0))
+            ),
+          },
+        ];
+
+      default:
+        return [
+          { label: "Condition", value: listing.condition || "used" },
+          { label: "Seller Joined", value: sellerJoinedLabel },
+        ];
+    }
+  };
+
+  const detailAvailableQuantity =
+    detailsListing
+      ? Math.max(
+          0,
+          Number(detailsListing.quantity ?? 1) - Number(detailsListing.sold_quantity ?? 0)
+        )
+      : 0;
+
+  const isDetailsOwner =
+    !!firebaseUser?.uid &&
+    !!detailsListing?.seller_uid &&
+    detailsListing.seller_uid === firebaseUser.uid;
+
+  const renderListingSpecField = (field: ListingSpecField) => {
+    const rawValue = newListing.spec_values[field.key];
+    const value =
+      rawValue === null || rawValue === undefined ? "" : rawValue;
+
+    const isRequired =
+      !!field.required ||
+      !!selectedItemConfig?.requiredKeys.includes(field.key);
+
+    const labelText = `${field.label}${isRequired ? " *" : ""}`;
+    const fieldError = createFieldErrors[field.key];
+    const inputClass = `w-full px-4 py-2 bg-zinc-50 border rounded-xl outline-none ${
+      fieldError
+        ? "border-red-500 focus:ring-2 focus:ring-red-200"
+        : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+    }`;
+
+    if (field.type === "select") {
+      return (
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
+          <div className={fieldError ? "rounded-xl ring-2 ring-red-200" : ""}>
+            <FormDropdown
+              label={labelText}
+              value={value as string}
+              options={field.options || []}
+              onChange={(selected) => handleSpecValueChange(field.key, selected)}
+              placeholder={`Select ${field.label}`}
+            />
+          </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "textarea") {
+      return (
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <textarea
+            value={value as string}
+            onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+            className={`${inputClass} h-24 resize-none`}
+            placeholder={field.placeholder || ""}
+          />
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "boolean") {
+      const boolValue = typeof rawValue === "boolean" ? rawValue : null;
+
+      return (
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <div
+            className={`grid grid-cols-3 gap-2 rounded-xl ${
+              fieldError ? "ring-2 ring-red-200 p-1" : ""
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, null)}
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                boolValue === null
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              Not set
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, true)}
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                boolValue === true
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              Yes
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSpecValueChange(field.key, false)}
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                boolValue === false
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-zinc-50 text-zinc-600 border-zinc-200 hover:bg-zinc-100"
+              }`}
+            >
+              No
+            </button>
+          </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "multiselect") {
+      const selectedValues = Array.isArray(rawValue) ? rawValue : [];
+
+      return (
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">
+            {labelText}
+          </label>
+          <div
+            className={`grid grid-cols-2 gap-2 rounded-xl border bg-zinc-50 p-3 ${
+              fieldError ? "border-red-500 ring-2 ring-red-200" : "border-zinc-200"
+            }`}
+          >
+            {(field.options || []).map((option: string) => {
+              const isChecked = selectedValues.includes(option);
+
+              return (
+                <label key={option} className="flex items-center gap-2 text-sm text-zinc-700">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        handleSpecValueChange(field.key, [...selectedValues, option]);
+                        return;
+                      }
+
+                      handleSpecValueChange(
+                        field.key,
+                        selectedValues.filter((item: string) => item !== option)
+                      );
+                    }}
+                  />
+                  <span>{option}</span>
+                </label>
+              );
+            })}
+          </div>
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    if (field.type === "number") {
+      return (
+        <div
+          key={field.key}
+          ref={(el) => {
+            createSpecFieldRefs.current[field.key] = el;
+          }}
+        >
+          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+            {labelText}
+          </label>
+          <input
+            type="number"
+            value={value === "" ? "" : String(value)}
+            onChange={(e) =>
+              handleSpecValueChange(
+                field.key,
+                e.target.value === "" ? null : Number(e.target.value)
+              )
+            }
+            className={inputClass}
+            placeholder={field.placeholder || ""}
+          />
+          {fieldError ? (
+            <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+          ) : null}
+          {field.helpText ? (
+            <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={field.key}
+        ref={(el) => {
+          createSpecFieldRefs.current[field.key] = el;
+        }}
+      >
+        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+          {labelText}
+        </label>
+        <input
+          type="text"
+          value={value as string}
+          onChange={(e) => handleSpecValueChange(field.key, e.target.value)}
+          className={inputClass}
+          placeholder={field.placeholder || ""}
+        />
+        {fieldError ? (
+          <p className="mt-1 text-xs text-red-600">{fieldError}</p>
+        ) : null}
+        {field.helpText ? (
+          <p className="mt-1 text-xs text-zinc-500">{field.helpText}</p>
+        ) : null}
+      </div>
+    );
+  };
+
+  const formatSpecValue = (value: unknown): string => {
+    if (Array.isArray(value)) {
+      return value.length ? value.join(", ") : "—";
+    }
+
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+
+    if (value === null || value === undefined || value === "") {
+      return "—";
+    }
+
+    return String(value);
+  };
+
+  const getListingSpecDisplayRows = (listing: Listing) => {
+    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
+      return [];
+    }
+
+    const itemConfig = getListingItemConfig(
+      listing.category,
+      listing.subcategory,
+      listing.item_type
+    );
+
+    if (!itemConfig) {
+      return [];
+    }
+
+    return itemConfig.schema.fields
+      .map((field) => {
+        const rawValue = listing.spec_values?.[field.key];
+
+        if (
+          rawValue === null ||
+          rawValue === undefined ||
+          rawValue === "" ||
+          (Array.isArray(rawValue) && rawValue.length === 0)
+        ) {
+          return null;
+        }
+
+        return {
+          key: field.key,
+          label: field.label,
+          value: formatSpecValue(rawValue),
+          advanced: !!field.advanced,
+        };
+      })
+      .filter(Boolean) as Array<{
+        key: string;
+        label: string;
+        value: string;
+        advanced: boolean;
+      }>;
+  };
+
+  const getDetailSpecGroups = (listing: Listing) => {
+    if (!listing.category || !listing.subcategory || !listing.item_type || !listing.spec_values) {
+      return [];
+    }
+
+    const itemConfig = getListingItemConfig(
+      listing.category,
+      listing.subcategory,
+      listing.item_type
+    );
+
+    if (!itemConfig) return [];
+
+    return itemConfig.fieldGroups
+      .map((group) => {
+        const rows = group.keys
+          .map((key) => {
+            const field = itemConfig.schema.fields.find((f) => f.key === key);
+            if (!field) return null;
+
+            const rawValue = listing.spec_values?.[key];
+
+            if (
+              rawValue === null ||
+              rawValue === undefined ||
+              rawValue === "" ||
+              (Array.isArray(rawValue) && rawValue.length === 0)
+            ) {
+              return null;
+            }
+
+            return {
+              key,
+              label: field.label,
+              value: formatSpecValue(rawValue),
+            };
+          })
+          .filter(Boolean) as Array<{ key: string; label: string; value: string }>;
+
+        if (!rows.length) return null;
+
+        return {
+          title: group.title,
+          rows,
+        };
+      })
+      .filter(Boolean) as Array<{
+        title: string;
+        rows: Array<{ key: string; label: string; value: string }>;
+      }>;
+  };
+
+  const detailSpecRows = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getDetailSpecRows(detailsListing, detailsSellerProfile, detailsRatingSummary);
+  }, [detailsListing, detailsSellerProfile, detailsRatingSummary]);
+
+  const detailStructuredSpecRows = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getListingSpecDisplayRows(detailsListing);
+  }, [detailsListing]);
+
+  const detailSpecGroups = React.useMemo(() => {
+    if (!detailsListing) return [];
+    return getDetailSpecGroups(detailsListing);
+  }, [detailsListing]);
+
+  const activeSpecGroup =
+    detailSpecGroups.find((group) => group.title === activeDetailSpecGroup) ||
+    detailSpecGroups[0] ||
+    null;
+  const activeStructuredSpecRows = activeSpecGroup?.rows || detailStructuredSpecRows;
+
+  useEffect(() => {
+    const el = detailSpecTabsRef.current;
+
+    const updateScrollHintsVisibility = () => {
+      if (!el) {
+        setShowDetailSpecTabsLeftHint(false);
+        setShowDetailSpecTabsRightHint(false);
+        return;
+      }
+
+      const canScroll = el.scrollWidth > el.clientWidth + DETAIL_SPEC_SCROLL_TOLERANCE;
+      const hasMoreToLeft = el.scrollLeft > DETAIL_SPEC_SCROLL_TOLERANCE;
+      const hasMoreToRight =
+        el.scrollLeft + el.clientWidth < el.scrollWidth - DETAIL_SPEC_SCROLL_TOLERANCE;
+
+      setShowDetailSpecTabsLeftHint(canScroll && hasMoreToLeft);
+      setShowDetailSpecTabsRightHint(canScroll && hasMoreToRight);
+    };
+
+    updateScrollHintsVisibility();
+
+    if (!el) return;
+
+    el.addEventListener("scroll", updateScrollHintsVisibility, { passive: true });
+    window.addEventListener("resize", updateScrollHintsVisibility);
+
+    return () => {
+      el.removeEventListener("scroll", updateScrollHintsVisibility);
+      window.removeEventListener("resize", updateScrollHintsVisibility);
+    };
+  }, [detailSpecGroups, detailsOpen, activeDetailSpecGroup]);
+
+  const chipFilteredListings = useMemo(() => {
+    switch (activeChip) {
+      case "Deals":
+        return listings.filter((listing) => {
+          const listingMode = (listing.listing_mode || "").toLowerCase();
+          const price = Number(listing.price ?? 0);
+          const originalPrice = Number(listing.original_price ?? 0);
+          const discountPercent = Number(listing.discount_percent ?? 0);
+
+          return (
+            listingMode === "deal" ||
+            discountPercent > 0 ||
+            (Number.isFinite(originalPrice) && originalPrice > price && price > 0)
+          );
+        });
+
+      case "Wholesale":
+        return listings.filter((listing) => {
+          const listingMode = (listing.listing_mode || "").toLowerCase();
+          const packSize = Number(listing.pack_size ?? 0);
+
+          return (
+            listingMode === "wholesale" ||
+            Boolean(listing.is_wholesale) ||
+            (Number.isFinite(packSize) && packSize > 1)
+          );
+        });
+
+      case "Events":
+      // TODO: filter by event listings when the field is available
+      case "Lay-by":
+      // TODO: filter by lay-by listings when the field is available
+      case "Accommodation":
+      // TODO: filter by accommodation listings when the field is available
+      case "All":
+      default:
+        return listings;
+    }
+  }, [listings, activeChip]);
+
+  const marketFilters: MarketSectionFilters = {
+    selectedUniv,
+    selectedCat,
+    selectedSubcategory,
+    selectedItemType,
+    selectedSpecFilters,
+    selectedStatus,
+    selectedCondition,
+    hideSoldOut,
+    minPrice,
+    maxPrice,
+    sortBy,
+  };
+
+  const marketSetFilters: MarketSectionSetFilters = {
+    setSelectedUniv,
+    setSelectedCat: handleSelectedCategoryChange,
+    setSelectedSubcategory: handleSelectedSubcategoryChange,
+    setSelectedItemType: handleSelectedItemTypeChange,
+    setSelectedSpecFilters,
+    setSelectedStatus,
+    setSelectedCondition,
+    setHideSoldOut,
+    setMinPrice,
+    setMaxPrice,
+    setSortBy,
+  };
+
+  const marketPagination: MarketSectionPagination = {
+    currentPage,
+    setCurrentPage,
+    totalPages,
+    totalListingsCount: totalResults,
+    pageSize,
+  };
+
+  const marketActions: MarketSectionActions = {
+    onReport: handleReport,
+    onDelete: handleDeleteListing,
+    onEdit: handleEditListing,
+    onHideSeller: hideSellerLocal,
+    onHideListing: hideListingLocal,
+    onToggleStatus: handleToggleListingStatus,
+    onToggleSave: toggleSavedListing,
+    onOpenDetails: (listing) => navigateToListingDetails(listing.id, 0),
+    onOpenSeller: (uid) => navigateToSellerProfile(uid),
+  };
+
   return (
    <div className="min-h-screen pb-20 bg-zinc-100">
-      <Navbar 
+      <Header 
+        searchValue={search}
         onSearch={setSearch} 
-        onAddListing={() => setShowAddModal(true)}
-        onProfileClick={() => setShowProfileModal(true)}
-        userSeller={userSeller}
-        firebaseUser={firebaseUser}
+        onAddListing={() => {
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
+
+  setNewListing(createInitialListingDraft(userProfile));
+  setShowAddModal(true);
+}}
+          onProfileClick={() => navigateToPath(PROFILE_PATH)}
+          userProfile={userProfile}
+          firebaseUser={firebaseUser}
+          activeChip={activeChip}
+          onChipChange={setActiveChip}
       />
 
       <main className="max-w-7xl mx-auto px-4">
-        {/* Hero Section */}
-        <section className="py-12 sm:py-24 text-center space-y-6">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-6xl sm:text-8xl font-black tracking-tighter font-sans mb-16 sm:mb-24"
-          >
-            <span className="text-red-900">Buy</span>
-            <span className="text-zinc-700">Mesho</span>
-          </motion.h1>
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl font-extrabold text-zinc-900 tracking-tight leading-[1.1]"
-          >
-            Buy & Sell anything <br/> 
-            <span className="text-primary">on your campus.</span>
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-500 max-w-xl mx-auto text-base sm:text-lg font-medium"
-          >
-            Connect with fellow students at MUBAS, MUST, UNIMA and more. 
-            Safe, fast, and exclusive to your university community.
-          </motion.p>
-        </section>
+        <HeroSection
+    onListItem={() => {
+  if (!isSellerAccount) {
+    promptSellerUpgrade();
+    return;
+  }
 
-        <FilterSection 
-          selectedUniv={selectedUniv} 
-          setSelectedUniv={setSelectedUniv}
-          selectedCat={selectedCat}
-          setSelectedCat={setSelectedCat}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
-
-        <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl font-bold text-zinc-900 flex items-center gap-2">
-            Recent Listings
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-          </h3>
-          <div className="text-xs font-bold text-zinc-400">
-            Showing {listings.length} items
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            <p className="text-zinc-500 font-medium">Loading marketplace...</p>
-          </div>
-        ) : (() => {
-          const visibleListings = listings.filter(
-            (l) =>
-              !hiddenListingIds.includes(l.id) &&
-              !hiddenSellerUids.includes(l.seller_uid)
-          );
-          return visibleListings.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {visibleListings.map((listing) => (
-                 <ListingCard
-                   key={listing.id}
-                   listing={listing}
-                   onReport={handleReport}
-                   currentUid={firebaseUser?.uid}
-                   onDelete={handleDeleteListing}
-                   onOpenProfile={openPublicProfile}
-                   onEdit={handleEditListing}
-                   onOpenDetails={openDetails}
-                   onHideListing={hideListingLocal}
-                   onHideSeller={hideSellerLocal}
-                  />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-zinc-300" />
-            </div>
-            <h3 className="text-lg font-bold text-zinc-900">No listings found</h3>
-            <p className="text-zinc-500">Try adjusting your filters or search terms.</p>
-          </div>
-         );
-       })()}
+  setNewListing(createInitialListingDraft(userProfile));
+  setShowAddModal(true);
+}}
+  />     
+        <MarketSection
+  loading={loading}
+  listings={chipFilteredListings}
+  hiddenSellerUids={hiddenSellerUids}
+  hiddenListingIds={hiddenListingIds}
+  filters={marketFilters}
+  setFilters={marketSetFilters}
+  pagination={marketPagination}
+  firebaseUserUid={firebaseUser?.uid}
+  isLoggedIn={!!firebaseUser}
+  savedListingIds={savedListingIds}
+  actions={marketActions}
+  activeChip={activeChip}
+/>
       </main>
 
       <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
@@ -1259,10 +3198,37 @@ await apiFetch("/api/listings", {
           </div>
           
           <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Safety</a>
-            <a href="#" className="hover:text-primary transition-colors">Contact</a>
+            <button
+              type="button"
+              onClick={() => openFooterView("privacy")}
+              className="hover:text-primary transition-colors"
+            >
+              Privacy
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openFooterView("terms")}
+              className="hover:text-primary transition-colors"
+            >
+              Terms
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openFooterView("safety")}
+              className="hover:text-primary transition-colors"
+            >
+              Safety
+            </button>
+
+            <button
+              type="button"
+              onClick={() => openFooterView("report")}
+              className="hover:text-primary transition-colors"
+            >
+              Contact
+            </button>
           </div>
 
           <div className="text-xs font-bold text-zinc-300">
@@ -1280,26 +3246,54 @@ await apiFetch("/api/listings", {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => {
+                setCreateFieldErrors({});
+                setShowAddModal(false);
+              }}
               className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-white rounded-3xl overflow-hidden shadow-2xl"
+              className="relative w-full max-w-4xl bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col"
             >
-              <div className="p-8 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50">
+              <div className="p-6 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 flex-shrink-0">
                 <div>
-                  <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
+                  <h2 className="text-xl font-extrabold text-zinc-900 tracking-tight">Create Listing</h2>
                   <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">Post your item to the campus</p>
                 </div>
-                <button onClick={() => setShowAddModal(false)} className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100">
+                <button
+                  onClick={() => {
+                    setCreateFieldErrors({});
+                    setShowAddModal(false);
+                  }}
+                  className="p-2.5 hover:bg-white hover:shadow-md rounded-2xl transition-all border border-transparent hover:border-zinc-100"
+                >
                   <X className="w-5 h-5 text-zinc-400" />
                 </button>
               </div>
 
-              {!userSeller ? (
+              {!isSellerAccount ? (
+                <div className="p-8 text-center">
+                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-primary" />
+                  </div>
+                  <h3 className="text-lg font-bold mb-2">Seller Account Required</h3>
+                  <p className="text-zinc-500 mb-6">
+                    You need a seller account before you can post listings.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowAddModal(false);
+                      setShowProfileModal(true);
+                    }}
+                    className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                  >
+                    Back to Profile
+                  </button>
+                </div>
+              ) : !userProfile ? (
                 <div className="p-8 text-center">
                   <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                     <User className="w-8 h-8 text-primary" />
@@ -1327,162 +3321,414 @@ await apiFetch("/api/listings", {
                     >
                       <RefreshCw className="w-4 h-4" /> I've Verified
                     </button>
-                    <button 
-                      onClick={async () => {
-                        if (firebaseUser) {
-                          await sendEmailVerification(firebaseUser);
-                          alert("Verification email resent!");
-                        }
-                      }}
-                      className="text-primary text-sm font-bold hover:underline"
+                    <motion.button
+                      type="button"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleResendVerificationEmail}
+                      disabled={resendVerificationLoading || verificationCooldownSeconds > 0}
+                      className={`text-primary text-sm font-bold hover:underline disabled:no-underline ${
+                        resendVerificationLoading || verificationCooldownSeconds > 0
+                          ? "opacity-60 cursor-not-allowed"
+                          : ""
+                      }`}
                     >
-                      Resend Verification Email
-                    </button>
+                      {resendVerificationLoading
+                        ? "Sending..."
+                        : verificationCooldownSeconds > 0
+                        ? `Resend in ${formatCooldownLabel(verificationCooldownSeconds)}`
+                        : "Resend Verification Email"}
+                    </motion.button>
                   </div>
                 </div>
               ) : (
-                <form onSubmit={handleCreateListing} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>
-                    <input 
-                      required
-                      type="text" 
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                      value={newListing.name}
-                      onChange={e => setNewListing({...newListing, name: e.target.value})}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Price (MK)</label>
-                      <input 
-                        required
-                        type="number" 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.price}
-                        onChange={e => setNewListing({...newListing, price: e.target.value})}
-                      />
+                <form onSubmit={handleCreateListing} className="flex flex-col min-h-0 flex-1">
+                  <div className="p-6 overflow-y-auto flex-1">
+                    <div className="space-y-4 pr-1">
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Basic Info
+                        </p>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Product Name
+                          </label>
+                          <input
+                            required
+                            type="text"
+                            className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                              createFieldErrors.name
+                                ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                            }`}
+                            value={newListing.name}
+                            onChange={(e) => {
+                              clearCreateFieldError("name");
+                              setNewListing({ ...newListing, name: e.target.value });
+                            }}
+                          />
+                          {createFieldErrors.name ? (
+                            <p className="mt-1 text-xs text-red-600">{createFieldErrors.name}</p>
+                          ) : null}
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Price (MK)
+                            </label>
+                            <input
+                              required
+                              type="number"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.price
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
+                              value={newListing.price}
+                              onChange={(e) => {
+                                clearCreateFieldError("price");
+                                setNewListing({ ...newListing, price: e.target.value });
+                              }}
+                            />
+                            {createFieldErrors.price ? (
+                              <p className="mt-1 text-xs text-red-600">{createFieldErrors.price}</p>
+                            ) : null}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Listing Setup
+                        </p>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Total Quantity
+                            </label>
+                            <input
+                              required
+                              type="number"
+                              min="1"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.quantity
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
+                              value={newListing.quantity}
+                              onChange={(e) => {
+                                clearCreateFieldError("quantity");
+                                setNewListing({ ...newListing, quantity: e.target.value });
+                              }}
+                            />
+                            {createFieldErrors.quantity ? (
+                              <p className="mt-1 text-xs text-red-600">{createFieldErrors.quantity}</p>
+                            ) : null}
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                              Sold Quantity
+                            </label>
+                            <input
+                              type="number"
+                              min="0"
+                              className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${
+                                createFieldErrors.sold_quantity
+                                  ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                                  : "border-zinc-200 focus:ring-2 focus:ring-primary/20"
+                              }`}
+                              value={newListing.sold_quantity}
+                              onChange={(e) => {
+                                clearCreateFieldError("sold_quantity");
+                                setNewListing({
+                                  ...newListing,
+                                  sold_quantity: e.target.value,
+                                });
+                              }}
+                            />
+                            {createFieldErrors.sold_quantity ? (
+                              <p className="mt-1 text-xs text-red-600">
+                                {createFieldErrors.sold_quantity}
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormDropdown
+                            label="Category"
+                            value={newListing.category}
+                            options={CATEGORIES}
+                            searchPlaceholder="Search category..."
+                            onChange={(value) =>
+                              handleNewListingCategoryChange(value as Category)
+                            }
+                          />
+
+                          <FormDropdown
+                            label="University"
+                            value={newListing.university}
+                            options={UNIVERSITIES}
+                            searchPlaceholder="Search university..."
+                            onChange={(value) =>
+                              handleNewListingUniversityChange(value as University)
+                            }
+                          />
+                        </div>
+
+                        <FormDropdown
+                          label="Condition"
+                          value={newListing.condition}
+                          options={["new", "used", "refurbished"]}
+                          onChange={(value) =>
+                            setNewListing({
+                              ...newListing,
+                              condition: value as "new" | "used" | "refurbished",
+                            })
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Description
+                        </p>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Product Description
+                          </label>
+                          <textarea
+                            required
+                            rows={4}
+                            className={`w-full px-4 py-3 bg-white border rounded-xl focus:ring-2 focus:ring-primary/20 outline-none resize-none ${
+                              createFieldErrors.description
+                                ? "border-red-400 ring-2 ring-red-200"
+                                : "border-zinc-200"
+                            }`}
+                            value={newListing.description}
+                            onChange={(e) => {
+                              clearCreateFieldError("description");
+                              setNewListing({
+                                ...newListing,
+                                description: e.target.value,
+                              });
+                            }}
+                          />
+                          {createFieldErrors.description ? (
+                            <p className="mt-1 text-xs text-red-600">
+                              {createFieldErrors.description}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      {isSchemaDrivenCategory && (
+                        <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                          <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                            Item Details
+                          </p>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <div
+                                className={
+                                  createFieldErrors.subcategory ? "rounded-xl ring-2 ring-red-200" : ""
+                                }
+                              >
+                                <FormDropdown
+                                  label="Subcategory"
+                                  value={newListing.subcategory}
+                                  options={availableSubcategories}
+                                  onChange={handleNewListingSubcategoryChange}
+                                />
+                              </div>
+                              {createFieldErrors.subcategory ? (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {createFieldErrors.subcategory}
+                                </p>
+                              ) : null}
+                            </div>
+                            <div>
+                              <div
+                                className={
+                                  createFieldErrors.item_type ? "rounded-xl ring-2 ring-red-200" : ""
+                                }
+                              >
+                                <FormDropdown
+                                  label="Item Type"
+                                  value={newListing.item_type}
+                                  options={availableItemTypes}
+                                  onChange={handleNewListingItemTypeChange}
+                                />
+                              </div>
+                              {createFieldErrors.item_type ? (
+                                <p className="mt-1 text-xs text-red-600">
+                                  {createFieldErrors.item_type}
+                                </p>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          {newListing.subcategory &&
+                            newListing.item_type &&
+                            selectedItemConfig && (
+                              <div className="space-y-4 rounded-2xl border border-zinc-200 bg-white p-4">
+                                <div>
+                                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                                    Item Details
+                                  </p>
+                                  <p className="text-xs text-zinc-400 mt-1">
+                                    {requiredSpecCount > 0
+                                      ? `${completedRequiredSpecCount}/${requiredSpecCount} required fields completed. Fill required fields marked with *.`
+                                      : "Fill required fields marked with *."}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-4">
+                                  {basicSpecFields.map(renderListingSpecField)}
+                                </div>
+
+                                {advancedSpecFields.length > 0 && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setShowAdvancedSpecs((prev) => !prev)}
+                                      className="text-sm font-bold text-primary hover:underline"
+                                    >
+                                      {showAdvancedSpecs
+                                        ? "Hide optional advanced details"
+                                        : `Add optional advanced details (${advancedSpecCount})`}
+                                    </button>
+                                  </div>
+                                )}
+
+                                {showAdvancedSpecs && advancedSpecFields.length > 0 && (
+                                  <div className="grid grid-cols-1 gap-4 border-t border-zinc-200 pt-4">
+                                    {advancedSpecFields.map(renderListingSpecField)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                        </div>
+                      )}
+
+                      <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                        <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">
+                          Media
+                        </p>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Photos (max 5)
+                          </label>
+
+                          {newListing.photos.length > 0 && (
+                            <div className="grid grid-cols-3 gap-3 mb-3">
+                              {newListing.photos.map((url, idx) => (
+                                <div
+                                  key={`${url}-${idx}`}
+                                  className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`Photo ${idx + 1}`}
+                                    className="w-full h-full object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      clearCreateFieldError("photos");
+                                      setNewListing((prev) => ({
+                                        ...prev,
+                                        photos: prev.photos.filter((_, i) => i !== idx),
+                                      }));
+                                    }}
+                                    className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImagesUpload}
+                            disabled={uploading || newListing.photos.length >= 5}
+                            className={`w-full rounded-xl border p-2 ${
+                              createFieldErrors.photos
+                                ? "border-red-500 ring-2 ring-red-200"
+                                : "border-zinc-200"
+                            }`}
+                          />
+                          {createFieldErrors.photos ? (
+                            <p className="mt-1 text-xs text-red-600">{createFieldErrors.photos}</p>
+                          ) : null}
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
+                            Video (optional, 1)
+                          </label>
+
+                          {newListing.video_url ? (
+                            <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
+                              <video src={newListing.video_url} controls className="w-full" />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setNewListing((prev) => ({ ...prev, video_url: "" }))
+                                }
+                                className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : null}
+
+                          <input
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoUpload}
+                            disabled={uploading || !!newListing.video_url}
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-                      <input 
-                        required
-                        type="text" 
-                        placeholder="265..."
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.whatsapp_number}
-                        onChange={e => setNewListing({...newListing, whatsapp_number: e.target.value})}
-                      />
-                    </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Category</label>
-                      <select 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.category}
-                        onChange={e => setNewListing({...newListing, category: e.target.value as Category})}
-                      >
-                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-                      <select 
-                        className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={newListing.university}
-                        onChange={e => setNewListing({...newListing, university: e.target.value as University})}
-                      >
-                        {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-                      </select>
-                    </div>
+
+                  <div className="p-6 border-t border-zinc-100 bg-white flex gap-3 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCreateFieldErrors({});
+                        setShowAddModal(false);
+                      }}
+                      className="flex-1 flex-shrink-0 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={uploading || creatingListing}
+                      className={`flex-1 flex-shrink-0 bg-primary text-white py-3 rounded-xl font-bold transition-colors ${
+                        uploading || creatingListing
+                          ? "opacity-50 cursor-not-allowed"
+                          : "hover:bg-primary-dark"
+                      }`}
+                    >
+                      {uploading ? "Please wait..." : creatingListing ? "Posting..." : "Post Listing"}
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Description</label>
-                    <textarea 
-                      required
-                      className="w-full px-4 py-2 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-24 resize-none"
-                      value={newListing.description}
-                      onChange={e => setNewListing({...newListing, description: e.target.value})}
-                    />
-                  </div>
-                  <div>
-  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-    Photos (max 5)
-  </label>
-
-  {newListing.photos.length > 0 && (
-    <div className="grid grid-cols-3 gap-3 mb-3">
-      {newListing.photos.map((url, idx) => (
-        <div
-          key={`${url}-${idx}`}
-          className="relative aspect-square rounded-xl overflow-hidden border bg-zinc-100"
-        >
-          <img
-            src={url}
-            alt={`Photo ${idx + 1}`}
-            className="w-full h-full object-cover"
-          />
-          <button
-            type="button"
-            onClick={() =>
-              setNewListing((prev) => ({
-                ...prev,
-                photos: prev.photos.filter((_, i) => i !== idx),
-              }))
-            }
-            className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  )}
-
-  <input
-    type="file"
-    accept="image/*"
-    multiple
-    onChange={handleImagesUpload}
-    disabled={uploading || newListing.photos.length >= 5}
-    className="w-full"
-  />
-</div>
-
-<div className="mt-4">
-  <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">
-    Video (optional, 1)
-  </label>
-
-  {newListing.video_url ? (
-    <div className="relative rounded-xl overflow-hidden border bg-zinc-100 mb-3">
-      <video src={newListing.video_url} controls className="w-full" />
-      <button
-        type="button"
-        onClick={() => setNewListing((prev) => ({ ...prev, video_url: "" }))}
-        className="absolute top-2 right-2 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"
-      >
-        <X className="w-4 h-4" />
-      </button>
-    </div>
-  ) : null}
-
-  <input
-    type="file"
-    accept="video/*"
-    onChange={handleVideoUpload}
-    disabled={uploading || !!newListing.video_url}
-    className="w-full"
-  />
-</div>
-                  <button 
-                    type="submit"
-                    disabled={uploading}
-                    className={`w-full bg-primary text-white py-3 rounded-xl font-bold transition-colors mt-4 ${uploading ? "opacity-50 cursor-not-allowed" : "hover:bg-primary-dark"}`}
-                  >
-                    {uploading ? "Please wait..." : "Post Listing"}
-                  </button>
                 </form>
               )}
             </motion.div>
@@ -1509,7 +3755,10 @@ await apiFetch("/api/listings", {
                   {authView === 'login' && "Welcome Back"}
                   {authView === 'signup' && "Join BuyMesho"}
                   {authView === 'forgot' && "Reset Password"}
+                  {authView === 'editProfile' && "Edit Profile"}
+                  {authView === 'becomeSeller' && "Apply to Become a Seller"}
                   {authView === 'profile' && "My Profile"}
+                  {authView === 'editAccount' && "Edit Account"}
                 </h2>
                 <button onClick={() => setShowProfileModal(false)} className="p-2 hover:bg-zinc-100 rounded-full transition-colors">
                   <X className="w-5 h-5" />
@@ -1612,101 +3861,56 @@ await apiFetch("/api/listings", {
                     )}
                   </form>
                 )}
+      
+ {isFirebaseConfigured && !firestoreError && authView === 'signup' && (
+  <form onSubmit={handleSignUp} className="p-8 space-y-4">
+ <FormDropdown
+  label="University"
+  value={authForm.university}
+  options={UNIVERSITIES}
+  onChange={(value) =>
+    setAuthForm({ ...authForm, university: value as University })
+  }
+/>
 
-                {isFirebaseConfigured && !firestoreError && authView === 'signup' && (
-                  <form onSubmit={handleSignUp} className="p-8 space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
-                        <input 
-                          required
-                          type="text" 
-                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                          value={authForm.businessName}
-                          onChange={e => setAuthForm({...authForm, businessName: e.target.value})}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">University</label>
-                        <select 
-                          className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                          value={authForm.university}
-                          onChange={e => setAuthForm({...authForm, university: e.target.value as University})}
-                        >
-                          {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
-                      <input 
-                        required
-                        type="email" 
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={authForm.email}
-                        onChange={e => setAuthForm({...authForm, email: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
-                      <input 
-                        required
-                        type="password" 
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={authForm.password}
-                        onChange={e => setAuthForm({...authForm, password: e.target.value})}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Logo</label>
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
-                          {authForm.logoUrl ? (
-                            <img src={authForm.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-zinc-400">
-                              <Camera className="w-6 h-6" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <input 
-                            type="file" 
-                            accept="image/*"
-                            onChange={handleFileUpload}
-                            className="hidden"
-                            id="logo-upload"
-                          />
-                          <label 
-                            htmlFor="logo-upload"
-                            className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
-                          >
-                            {uploading ? "Uploading..." : "Upload Logo"}
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio (Optional)</label>
-                      <textarea 
-                        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
-                        value={authForm.bio}
-                        onChange={e => setAuthForm({...authForm, bio: e.target.value})}
-                      />
-                    </div>
-                    <button 
-                      type="submit"
-                      disabled={loading || uploading}
-                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
-                    >
-                      {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
-                    </button>
-                    <p className="text-center text-sm text-zinc-500">
-                      Already have an account?{" "}
-                      <button type="button" onClick={() => setAuthView('login')} className="text-primary font-bold hover:underline">Log In</button>
-                    </p>
-                  </form>
-                )}
+  <div>
+    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Email Address</label>
+    <input
+      required
+      type="email"
+      className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+      value={authForm.email}
+      onChange={e => setAuthForm({ ...authForm, email: e.target.value })}
+    />
+  </div>
+
+  <div>
+    <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Password</label>
+    <input
+      required
+      type="password"
+      className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+      value={authForm.password}
+      onChange={e => setAuthForm({ ...authForm, password: e.target.value })}
+    />
+  </div>
+
+  <button
+    type="submit"
+    disabled={loading}
+    className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors flex items-center justify-center gap-2"
+  >
+    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
+  </button>
+
+  <p className="text-center text-sm text-zinc-500">
+    Already have an account?{" "}
+    <button type="button" onClick={() => setAuthView('login')} className="text-primary font-bold hover:underline">
+       Log In
+      </button>
+    </p>
+  </form> 
+)}
 
                 {isFirebaseConfigured && !firestoreError && authView === 'forgot' && (
                   <form onSubmit={handleForgotPassword} className="p-8 space-y-4">
@@ -1721,12 +3925,22 @@ await apiFetch("/api/listings", {
                         onChange={e => setAuthForm({...authForm, email: e.target.value})}
                       />
                     </div>
-                    <button 
+                    <motion.button
                       type="submit"
-                      className="w-full bg-primary text-white py-4 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                      whileTap={{ scale: 0.99 }}
+                      disabled={passwordResetLoading || passwordResetCooldownSeconds > 0}
+                      className={`w-full bg-primary text-white py-4 rounded-xl font-bold transition-colors ${
+                        passwordResetLoading || passwordResetCooldownSeconds > 0
+                          ? "opacity-60 cursor-not-allowed"
+                          : "hover:bg-primary-dark"
+                      }`}
                     >
-                      Send Reset Link
-                    </button>
+                      {passwordResetLoading
+                        ? "Sending..."
+                        : passwordResetCooldownSeconds > 0
+                        ? `Wait ${formatCooldownLabel(passwordResetCooldownSeconds)}`
+                        : "Send Reset Link"}
+                    </motion.button>
                     <button 
                       type="button" 
                       onClick={() => setAuthView('login')}
@@ -1736,21 +3950,276 @@ await apiFetch("/api/listings", {
                     </button>
                   </form>
                 )}
+    {isFirebaseConfigured && !firestoreError && authView === 'editAccount' && userProfile && (
+  <form onSubmit={handleSaveAccount} className="p-8 space-y-4">
+    <FormDropdown
+      label="University"
+      value={editAccountForm.university}
+      options={UNIVERSITIES}
+      onChange={(value) =>
+        setEditAccountForm({
+         ...editAccountForm,
+         university: value as University,
+       })
+      }
+    />
 
-                {isFirebaseConfigured && !firestoreError && authView === 'profile' && userSeller && (
+    <button type="submit" className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors">Save Changes</button>
+    <button type="button" onClick={() => setAuthView("profile")} className="w-full text-sm font-bold text-zinc-500 hover:underline">Back to Profile</button>
+  </form>
+)}
+
+ {isFirebaseConfigured && !firestoreError && authView === 'editProfile' && userProfile && (
+  <form onSubmit={handleSaveProfile} className="p-8 space-y-4">
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={editProfileForm.businessName}
+        onChange={e => setEditProfileForm({ ...editProfileForm, businessName: e.target.value })}
+      />
+    </div>
+
+    <FormDropdown
+      label="University"
+      value={editProfileForm.university}
+      options={UNIVERSITIES}
+      onChange={(value) =>
+        setEditProfileForm({
+          ...editProfileForm,
+          university: value as University,
+        })
+      }
+    />
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Short Bio</label>
+      <textarea
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+        value={editProfileForm.bio}
+        onChange={e => setEditProfileForm({ ...editProfileForm, bio: e.target.value })}
+      />
+    </div>
+
+    <button
+      type="submit"
+      className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+    >
+      Save Changes
+    </button>
+
+    <button
+      type="button"
+      onClick={() => setAuthView("profile")}
+      className="w-full text-sm font-bold text-zinc-500 hover:underline"
+    >
+      Back to Profile
+    </button>
+  </form>
+)}
+
+                {isFirebaseConfigured && !firestoreError && authView === 'becomeSeller' && userProfile && (
+  <form onSubmit={handleBecomeSeller} className="p-8 space-y-4">
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Full Legal Name</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.fullLegalName}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, fullLegalName: e.target.value })}
+      />
+    </div>
+
+     <FormDropdown
+        label="Institution"
+        value={sellerUpgradeForm.institution}
+        options={UNIVERSITIES}
+        onChange={(value) =>
+          setSellerUpgradeForm({
+            ...sellerUpgradeForm,
+            institution: value as University,
+          })
+        }
+      />
+
+    <FormDropdown
+      label="Applicant Type"
+      value={sellerUpgradeForm.applicantType}
+      options={["student", "staff", "registered_business"]}
+      onChange={(value) =>
+        setSellerUpgradeForm({
+          ...sellerUpgradeForm,
+          applicantType: value as "student" | "staff" | "registered_business",
+        })
+      }
+    />
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Institution ID / Registration Number</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.institutionIdNumber}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, institutionIdNumber: e.target.value })}
+      />
+    </div>
+
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
+      <input
+        required
+        type="text"
+        placeholder="265..."
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.whatsappNumber}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, whatsappNumber: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Name</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.businessName}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, businessName: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">What Do You Want to Sell?</label>
+      <input
+        required
+        type="text"
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none"
+        value={sellerUpgradeForm.whatToSell}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, whatToSell: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Business Description</label>
+      <textarea
+        required
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+        value={sellerUpgradeForm.businessDescription}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, businessDescription: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Reason for Applying</label>
+      <textarea
+        required
+        className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none h-20 resize-none"
+        value={sellerUpgradeForm.reasonForApplying}
+        onChange={e => setSellerUpgradeForm({ ...sellerUpgradeForm, reasonForApplying: e.target.value })}
+      />
+    </div>
+
+    <div>
+      <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Proof Document Upload</label>
+      <div className="flex items-center gap-4">
+        <div className="w-16 h-16 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex-shrink-0">
+          {sellerUpgradeForm.proofDocumentUrl ? (
+            <img src={sellerUpgradeForm.proofDocumentUrl} alt="Proof document" className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-zinc-400">
+              <Camera className="w-6 h-6" />
+            </div>
+          )}
+        </div>
+        <div className="flex-1">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileUpload}
+            className="hidden"
+            id="seller-logo-upload"
+          />
+          <label
+            htmlFor="seller-logo-upload"
+            className="inline-block px-4 py-2 bg-zinc-100 hover:bg-zinc-200 rounded-lg text-sm font-bold cursor-pointer transition-colors"
+          >
+            {uploading ? "Uploading..." : "Upload Proof"}
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+      <p className="font-bold mb-1">Application flow: submitted → pending review → approved/rejected.</p>
+      <p>False information can lead to rejection, suspension, or account removal.</p>
+    </div>
+
+    <div className="flex items-start gap-2">
+      <input
+        required
+        id="seller-rules-agreement"
+        type="checkbox"
+        checked={sellerUpgradeForm.agreedToRules}
+        onChange={(e) =>
+          setSellerUpgradeForm({
+            ...sellerUpgradeForm,
+            agreedToRules: e.target.checked,
+          })
+        }
+        className="mt-1"
+      />
+      <label htmlFor="seller-rules-agreement" className="text-sm text-zinc-600">
+        I agree to seller rules and prohibited-items policy.
+      </label>
+    </div>
+
+    <button
+      type="submit"
+      disabled={uploading || !sellerUpgradeForm.proofDocumentUrl || !sellerUpgradeForm.agreedToRules}
+      className="w-full bg-zinc-900 text-white py-4 rounded-xl font-bold hover:bg-zinc-800 transition-colors"
+    >
+      Submit Seller Application
+    </button>
+
+    {sellerApplication && (
+      <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 space-y-1">
+        <p>
+          Current application status:{" "}
+          <span className="font-bold capitalize">{sellerApplication.status}</span>
+        </p>
+        <p>
+          Reviewed date:{" "}
+          <span className="font-medium">
+            {sellerApplication.reviewed_at
+              ? new Date(sellerApplication.reviewed_at).toLocaleString()
+              : "Not reviewed yet"}
+          </span>
+        </p>
+        {sellerApplication.review_notes ? (
+          <p>
+            Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+          </p>
+        ) : null}
+      </div>
+    )}
+
+    <button
+      type="button"
+      onClick={() => setAuthView("profile")}
+      className="w-full text-sm font-bold text-zinc-500 hover:underline"
+    >
+      Back to Profile
+    </button>
+  </form>
+)}
+
+                {isFirebaseConfigured && !firestoreError && authView === 'profile' && userProfile && (
                   <div className="p-8 text-center">
-                    <div className="relative w-24 h-24 mx-auto mb-4">
-                      <img src={userSeller.business_logo} alt="Logo" className="w-full h-full rounded-full object-cover border-4 border-zinc-50 shadow-sm" />
-                      {userSeller.is_verified && (
-                        <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
-                          <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="text-2xl font-display mb-1">{userSeller.business_name}</h3>
-                    <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
-                      <MapPin className="w-4 h-4" /> {userSeller.university}
-                    </p>
                     {!firebaseUser?.emailVerified && (
                       <div className="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl text-amber-700 text-xs font-medium space-y-3">
                         <div className="flex items-center gap-2 justify-center">
@@ -1758,53 +4227,323 @@ await apiFetch("/api/listings", {
                           <span>Verify your email to post listings</span>
                         </div>
                         <div className="flex flex-col gap-2">
-                          <button 
+                          <button
                             onClick={refreshVerificationStatus}
                             className="w-full bg-amber-100 hover:bg-amber-200 text-amber-800 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2"
                           >
                             <RefreshCw className="w-3 h-3" /> I've Verified
                           </button>
-                          <button 
-                            onClick={async () => {
-                              if (firebaseUser) {
-                                try {
-                                  await sendEmailVerification(firebaseUser);
-                                  alert("Verification email resent!");
-                                } catch (e: any) {
-                                  alert(e.message);
-                                }
-                              }
-                            }}
-                            className="text-amber-600 hover:underline font-bold"
+                          <motion.button
+                            type="button"
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleResendVerificationEmail}
+                            disabled={resendVerificationLoading || verificationCooldownSeconds > 0}
+                            className={`text-amber-600 hover:underline font-bold disabled:no-underline ${
+                              resendVerificationLoading || verificationCooldownSeconds > 0
+                                ? "opacity-60 cursor-not-allowed"
+                                : ""
+                            }`}
                           >
-                            Resend Email
-                          </button>
+                            {resendVerificationLoading
+                              ? "Sending..."
+                              : verificationCooldownSeconds > 0
+                              ? `Resend in ${formatCooldownLabel(verificationCooldownSeconds)}`
+                              : "Resend Email"}
+                          </motion.button>
                         </div>
                       </div>
                     )}
-                    {userSeller.bio && (
-                      <p className="text-sm text-zinc-600 mb-6 max-w-xs mx-auto italic">
-                        "{userSeller.bio}"
-                      </p>
+
+                    {isSellerAccount ? (
+                      <>
+                        <div className="relative w-24 h-24 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center">
+                          <span className="text-xl font-black text-zinc-500">
+                            {(userProfile.business_name || "S").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
+                          {userProfile.is_verified && (
+                            <div className="absolute -right-1 -bottom-1 bg-white rounded-full p-1 shadow-sm">
+                              <ShieldCheck className="w-5 h-5 text-blue-500 fill-blue-50" />
+                            </div>
+                          )}
+                        </div>
+
+                        <h3 className="text-2xl font-display mb-1">
+                          {userProfile.business_name || "Seller Profile"}
+                        </h3>
+
+                        <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
+                          <MapPin className="w-4 h-4" /> {userProfile.university || "University not set"}
+                        </p>
+
+                        {userProfile.bio && (
+                          <p className="text-sm text-zinc-600 mb-6 max-w-xs mx-auto italic">
+                            "{userProfile.bio}"
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                       <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden">
+                         <User className="w-10 h-10 text-zinc-400" />
+                       </div>
+                        <h3 className="text-2xl font-display mb-1">My Account</h3>
+                        <p className="text-zinc-500 text-sm mb-4 flex items-center justify-center gap-1">
+                          <MapPin className="w-4 h-4" /> {userProfile.university || "University not set"}
+                        </p>
+                      </>
                     )}
+
                     <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-3">
                       <div>
                         <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Email</p>
-                        <p className="text-zinc-700 font-medium">{userSeller.email}</p>
+                        <p className="text-zinc-700 font-medium">{userProfile.email}</p>
                       </div>
+
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">University</p>
+                        <p className="text-zinc-700 font-medium">{userProfile.university || "Not added"}</p>
+                      </div>
+
                       <div>
                         <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Member Since</p>
-                        <p className="text-zinc-700 font-medium">{new Date(userSeller.join_date).toLocaleDateString()}</p>
+                        <p className="text-zinc-700 font-medium">
+                          {new Date(userProfile.join_date).toLocaleDateString()}
+                        </p>
                       </div>
                     </div>
+
+        {isSellerAccount && (
+  <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-3">
+    <p className="text-xs font-bold text-zinc-400 uppercase">Seller Dashboard</p>
+
+    {sellerDashboardLoading ? (
+      <p className="text-sm text-zinc-500">Loading dashboard...</p>
+    ) : sellerDashboard ? (
+      <>
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase">Active</p>
+            <p className="text-lg font-extrabold text-zinc-900">
+              {sellerDashboard.stats.active_listings}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase">Sold</p>
+            <p className="text-lg font-extrabold text-zinc-900">
+              {sellerDashboard.stats.sold_listings}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase">Views</p>
+            <p className="text-lg font-extrabold text-zinc-900">
+              {sellerDashboard.stats.total_views}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase">Profile Views</p>
+            <p className="text-lg font-extrabold text-zinc-900">
+              {sellerDashboard.seller.profile_views}
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase">Repeat Seller</p>
+            <p className="text-lg font-extrabold text-zinc-900">
+              {sellerDashboard.stats.repeat_seller_activity ? "Yes" : "No"}
+            </p>
+          </div>
+        </div>
+
+        {sellerDashboard.top_listing && (
+          <div className="bg-white rounded-xl p-3 border border-zinc-200">
+            <p className="text-xs text-zinc-400 font-bold uppercase mb-1">Top Listing</p>
+            <p className="font-bold text-zinc-900">{sellerDashboard.top_listing.name}</p>
+            <p className="text-sm text-zinc-500 mt-1">
+              {sellerDashboard.top_listing.views_count} views
+            </p>
+          </div>
+        )}
+      </>
+    ) : (
+      <p className="text-sm text-zinc-500">No dashboard data yet.</p>
+    )}
+  </div>
+)}
+
+                    <div className="bg-zinc-50 rounded-2xl p-4 text-left mb-6 space-y-4">
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Hidden Sellers</p>
+                        {hiddenSellerUids.length ? (
+                          <div className="space-y-2">
+                            {hiddenSellerUids.map((uid) => (
+                              <button
+                                key={uid}
+                                onClick={() => unhideSellerLocal(uid)}
+                                className="w-full text-left px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium hover:bg-zinc-100"
+                              >
+                                {sellerNameMap[uid] ? `Unhide ${sellerNameMap[uid]}` : "Unhide seller"}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-zinc-500">No hidden sellers.</p>
+                        )}
+                      </div>
+
+                      <div>
+                        <p className="text-xs font-bold text-zinc-400 uppercase mb-2">Hidden Listings</p>
+                        {hiddenListingIds.length ? (
+                          <div className="space-y-2">
+                            {hiddenListingIds.map((id) => {
+                              const listing = listings.find((l) => l.id === id);
+
+                              return (
+                                <button
+                                  key={id}
+                                  onClick={() => unhideListingLocal(id)}
+                                  className="w-full text-left px-3 py-2 bg-white border border-zinc-200 rounded-xl text-sm font-medium hover:bg-zinc-100"
+                                >
+                                  {listing ? `Unhide ${listing.name}` : `Unhide listing #${id}`}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-zinc-500">No hidden listings.</p>
+                        )}
+                      </div>
+                    </div>
+
                     <div className="flex flex-col gap-3">
-                      <button 
+                      {isSellerAccount && (
+                        <button
+                          onClick={openMyListings}
+                          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <Package className="w-4 h-4" /> My Listings & Dashboard
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setShowSavedModal(true)}
+                        className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Bookmark className="w-4 h-4" /> Saved Items
+                      </button>
+
+                      {!isSellerAccount && (
+  <button
+    onClick={() => {
+      setEditAccountForm({
+        university: userProfile?.university || UNIVERSITIES[0],
+      });
+      setAuthView("editAccount");
+    }}
+    className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors"
+  >
+    Edit Account
+  </button>
+)}
+
+{!isSellerAccount && sellerApplication && (
+  <div className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-left text-sm text-zinc-700 space-y-1">
+    <p>
+      Application status:{" "}
+      <span className="font-bold capitalize">{sellerApplication.status}</span>
+    </p>
+    <p>
+      Reviewed date:{" "}
+      <span className="font-medium">
+        {sellerApplication.reviewed_at
+          ? new Date(sellerApplication.reviewed_at).toLocaleString()
+          : "Not reviewed yet"}
+      </span>
+    </p>
+    {sellerApplication.review_notes ? (
+      <p>
+        Review note: <span className="font-medium">{sellerApplication.review_notes}</span>
+      </p>
+    ) : null}
+  </div>
+)}
+
+{!isSellerAccount && (
+  <button
+    onClick={() => {
+      setSellerUpgradeForm({
+        fullLegalName: "",
+        institution: userProfile?.university || UNIVERSITIES[0],
+        applicantType: "student",
+        institutionIdNumber: "",
+        whatsappNumber: "",
+        businessName: userProfile?.business_name || "",
+        whatToSell: "",
+        businessDescription: "",
+        reasonForApplying: "",
+        proofDocumentUrl: "",
+        agreedToRules: false,
+      });
+      setAuthView("becomeSeller");
+    }}
+    className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
+  >
+    Apply to Become a Seller
+  </button>
+)}
+                      
+{isSellerAccount && (
+  <button
+    onClick={() => {
+      if (!userProfile) return;
+      setEditProfileForm({
+        businessName: userProfile.business_name || "",
+        university: userProfile.university || UNIVERSITIES[0],
+        bio: userProfile.bio || "",
+      });
+      setAuthView("editProfile");
+    }}
+    className="w-full bg-zinc-900 hover:bg-zinc-800 text-white py-3 rounded-xl font-bold transition-colors"
+  >
+    Edit Profile
+  </button>
+)}
+
+                      <button
+                        onClick={openSettings}
+                        className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Settings className="w-4 h-4" /> Settings
+                      </button>
+
+                      {isAdminUser && (
+                        <button
+                          onClick={() => setShowAdminReportsModal(true)}
+                          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ShieldCheck className="w-4 h-4" /> Admin Reports
+                        </button>
+                      )}
+
+                      {isAdminUser && (
+                        <button
+                          onClick={() => setShowAdminSellerApplicationsModal(true)}
+                          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
+                        >
+                          <ShieldCheck className="w-4 h-4" /> Seller Applications
+                        </button>
+                      )}
+
+                      <button
                         onClick={handleLogout}
                         className="w-full bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                       >
                         <LogOut className="w-4 h-4" /> Log Out
                       </button>
-                      <button 
+
+                      <button
                         onClick={handleDeleteAccount}
                         className="text-red-500 text-xs font-bold hover:underline"
                       >
@@ -1817,7 +4556,163 @@ await apiFetch("/api/listings", {
             </motion.div>
           </div>
         )}
-        
+
+  {showMyListingsModal && (
+  <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={() => setShowMyListingsModal(false)}
+      className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+    />
+
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+      className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+    >
+      <div className="p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h2 className="text-2xl font-extrabold text-zinc-900">My Listings</h2>
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+            Manage your posts
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowMyListingsModal(false)}
+          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="p-6 overflow-y-auto flex-1">
+        {myListingsLoading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-zinc-500 font-medium">Loading your listings...</p>
+          </div>
+        ) : myListings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {myListings.map((listing) => (
+              <div key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={handleReport}
+                  currentUid={firebaseUser?.uid}
+                  onDelete={handleDeleteListing}
+                  onEdit={handleEditListing}
+                  onHideSeller={hideSellerLocal}
+                  onToggleStatus={handleToggleListingStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={toggleSavedListing}
+                  isLoggedIn={!!firebaseUser}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
+                  onOpenSeller={(uid) => navigateToSellerProfile(uid)}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Package className="w-8 h-8 text-zinc-300" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900">No listings yet</h3>
+            <p className="text-zinc-500 mb-6">
+              You have not posted anything yet.
+            </p>
+            <button
+              onClick={() => {
+                setShowMyListingsModal(false);
+                setNewListing(createInitialListingDraft(userProfile));
+                setShowAddModal(true);
+              }}
+              className="bg-zinc-900 hover:bg-zinc-800 text-white px-5 py-3 rounded-xl font-bold transition-colors"
+            >
+              Create Your First Listing
+            </button>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  </div>
+)}
+
+  {showSavedModal && (
+  <div className="fixed inset-0 z-[75] flex items-center justify-center p-4">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={() => setShowSavedModal(false)}
+      className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm"
+    />
+
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95, y: 20 }}
+      className="relative w-full max-w-5xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+    >
+      <div className="p-6 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
+        <div>
+          <h2 className="text-2xl font-extrabold text-zinc-900">Saved Items</h2>
+          <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest mt-1">
+            Your saved listings
+          </p>
+        </div>
+
+        <button
+          onClick={() => setShowSavedModal(false)}
+          className="p-2 hover:bg-zinc-100 rounded-full transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+
+      <div className="p-6 overflow-y-auto flex-1">
+        {savedListings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {savedListings.map((listing) => (
+              <div key={listing.id}>
+                <ListingCard
+                  listing={listing}
+                  onReport={handleReport}
+                  currentUid={firebaseUser?.uid}
+                  onDelete={handleDeleteListing}
+                  onEdit={handleEditListing}
+                  onHideSeller={hideSellerLocal}
+                  onHideListing={hideListingLocal}
+                  onToggleStatus={handleToggleListingStatus}
+                  isSaved={savedListingIds.includes(listing.id)}
+                  onToggleSave={toggleSavedListing}
+                  isLoggedIn={!!firebaseUser}
+                  onOpenDetails={(listing) => navigateToListingDetails(listing.id, 0)}
+                  onOpenSeller={(uid) => navigateToSellerProfile(uid)}
+                />
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Bookmark className="w-8 h-8 text-zinc-300" />
+            </div>
+            <h3 className="text-lg font-bold text-zinc-900">No saved items yet</h3>
+            <p className="text-zinc-500">
+              Save products you may want to buy later.
+            </p>
+          </div>
+        )}
+      </div>
+    </motion.div>
+  </div>
+)}
+
   {publicProfileOpen && (
   <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
     <div
@@ -1857,11 +4752,11 @@ await apiFetch("/api/listings", {
         ) : publicProfile ? (
           <>
             <div className="flex items-center gap-4 mb-6">
-              <img
-                src={publicProfile.business_logo}
-                alt={publicProfile.business_name}
-                className="w-20 h-20 rounded-2xl object-cover border"
-              />
+              <div className="w-20 h-20 rounded-2xl bg-zinc-100 border flex items-center justify-center">
+                <span className="text-lg font-black text-zinc-500">
+                  {(publicProfile.business_name || "S").split(" ").map((w: string) => w[0]).join("").slice(0, 2).toUpperCase()}
+                </span>
+              </div>
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className="text-2xl font-extrabold">
@@ -1880,34 +4775,113 @@ await apiFetch("/api/listings", {
               </div>
             </div>
 
+            <div className="bg-zinc-50 rounded-2xl p-4 mb-6 border border-zinc-100">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller Rating</p>
+
+                  {ratingLoading ? (
+                    <p className="text-sm text-zinc-500">Loading rating...</p>
+                  ) : ratingSummary ? (
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-extrabold text-zinc-900">
+                        {ratingSummary.averageRating.toFixed(1)}
+                      </span>
+                      <span className="text-amber-500 text-base tracking-wide">
+                        {"★".repeat(Math.round(ratingSummary.averageRating))}
+                        {"☆".repeat(5 - Math.round(ratingSummary.averageRating))}
+                      </span>
+                      <span className="text-zinc-500">
+                        ({ratingSummary.ratingCount} rating{ratingSummary.ratingCount === 1 ? "" : "s"})
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-zinc-500">
+                      {firebaseUser ? "No ratings yet." : "Log in to view and leave ratings."}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const active = (ratingSummary?.myRating ?? 0) >= star;
+
+                      return (
+                        <button
+                          key={star}
+                          type="button"
+                          disabled={ratingSubmitting || !publicProfile?.uid || publicProfile?.uid === firebaseUser?.uid}
+                          onClick={() => handleRateSeller(publicProfile.uid, star)}
+                          className={`text-2xl leading-none transition-transform ${
+                            active ? "text-amber-500" : "text-zinc-300"
+                          } ${
+                            ratingSubmitting || publicProfile?.uid === firebaseUser?.uid
+                              ? "cursor-not-allowed opacity-60"
+                              : "hover:scale-110"
+                          }`}
+                          aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
+                        >
+                          ★
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {publicProfile?.uid === firebaseUser?.uid ? (
+                    <p className="text-xs text-zinc-500 font-medium">
+                      You cannot rate yourself.
+                    </p>
+                  ) : ratingSummary?.myRating ? (
+                    <div className="flex items-center gap-3">
+                      <p className="text-xs text-zinc-500 font-medium">
+                        Your rating: {ratingSummary.myRating}/5
+                      </p>
+                      <button
+                        type="button"
+                        disabled={ratingSubmitting || !publicProfile?.uid}
+                        onClick={() => handleRemoveSellerRating(publicProfile.uid)}
+                        className="text-xs font-bold text-red-600 hover:underline disabled:opacity-60"
+                      >
+                        Remove rating
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-zinc-500 font-medium">
+                      Tap a star to rate this seller.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-lg font-bold">Listings</h4>
               <span className="text-xs text-zinc-400 font-bold">
-                {publicProfileListings.length} item(s)
+                {visiblePublicProfileListings.length} item(s)
               </span>
             </div>
 
-            {publicProfileListings.length ? (
+            {visiblePublicProfileListings.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {publicProfileListings
-                  .filter(
-                    (l) =>
-                      !hiddenListingIds.includes(l.id) &&
-                      !hiddenSellerUids.includes(l.seller_uid)
-                  )
-                  .map((l) => (
-                  <ListingCard
-                    key={l.id}
-                    listing={l}
-                    onReport={handleReport}
-                    currentUid={firebaseUser?.uid}
-                    onDelete={handleDeleteListing}
-                    onEdit={handleEditListing}
-                    onOpenProfile={openPublicProfile}
-                    onOpenDetails={openDetails}
-                    onHideListing={hideListingLocal}
-                    onHideSeller={hideSellerLocal}
-                  />
+                {visiblePublicProfileListings.map((l) => (
+                  <div key={l.id}>
+                    <ListingCard
+                      listing={l}
+                      onReport={handleReport}
+                      currentUid={firebaseUser?.uid}
+                      onDelete={handleDeleteListing}
+                      onEdit={handleEditListing}
+                      onHideSeller={hideSellerLocal}
+                      onHideListing={hideListingLocal}
+                      onToggleStatus={handleToggleListingStatus}
+                      isSaved={savedListingIds.includes(l.id)}
+                      onToggleSave={toggleSavedListing}
+                      isLoggedIn={!!firebaseUser}
+                          onOpenDetails={openDetails}
+                      onOpenSeller={openPublicProfile}
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
@@ -1937,55 +4911,84 @@ await apiFetch("/api/listings", {
       initial={{ scale: 0.95 }}
       animate={{ scale: 1 }}
       exit={{ scale: 0.95 }}
-      className="relative w-full max-w-3xl mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+      className="relative w-[min(96vw,1200px)] mx-4 bg-white rounded-3xl overflow-hidden shadow-2xl h-[92vh] max-h-[92vh] flex flex-col"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="p-4 border-b flex items-center justify-between">
-        <button
-          type="button"
-          onClick={closeDetails}
-          className="p-2 rounded-full hover:bg-zinc-100"
-        >
-          <X className="w-5 h-5" />
-        </button>
+        <div className="w-10" />
 
         <h2 className="text-lg font-bold flex-1 text-center truncate px-2">
           {detailsListing.name}
         </h2>
 
-        <div className="w-10" />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={closeDetails}
+            className="h-10 w-10 rounded-full border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 flex items-center justify-center transition-all shadow-sm"
+            aria-label="Close details"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        <div className="relative rounded-2xl overflow-hidden bg-zinc-100">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-4">
+        <div className="relative rounded-2xl overflow-hidden bg-zinc-100 h-[340px] sm:h-[440px] md:h-[520px]">
           <img
-            src={
-              detailsListing.photos?.[galleryIndex] ||
-              `https://picsum.photos/seed/${detailsListing.id}/800/800`
-            }
+            src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
             alt={detailsListing.name}
-            className="w-full object-contain max-h-[60vh]"
+            className="w-full h-full object-contain"
           />
 
-          {detailsListing.photos?.length > 1 && (
+<div className="absolute top-3 right-3 z-20 flex items-center gap-2">
+  <ListingActionsMenu
+    listing={detailsListing}
+    currentUid={firebaseUser?.uid}
+    isLoggedIn={!!firebaseUser}
+    isSaved={savedListingIds.includes(detailsListing.id)}
+    variant="detail"
+    onReport={handleReport}
+    onDelete={handleDeleteListing}
+    onEdit={handleEditListing}
+    onHideSeller={hideSellerLocal}
+    onHideListing={hideListingLocal}
+    onToggleStatus={handleToggleListingStatus}
+  />
+
+  {detailGalleryImages.length > 0 && (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        setIsImageFullscreenOpen(true);
+      }}
+      className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-white/85 hover:bg-white text-zinc-900 border border-white/60 shadow flex items-center justify-center"
+      aria-label="Open fullscreen image"
+    >
+      <Expand className="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
+  )}
+</div>
+          {detailGalleryImages.length > 1 && (
+            <div className="absolute bottom-3 left-3 sm:left-auto sm:right-3 px-3 py-1.5 rounded-full bg-black/70 text-white text-xs font-bold">
+              {galleryIndex + 1} / {detailGalleryImages.length}
+            </div>
+          )}
+
+          {detailGalleryImages.length > 1 && (
             <div className="absolute inset-0 flex items-center justify-between px-2">
               <button
                 type="button"
-                onClick={() => setGalleryIndex((i) => Math.max(0, i - 1))}
+                onClick={showPrevDetailImage}
                 className="p-2 bg-white/80 hover:bg-white rounded-full"
-                disabled={galleryIndex === 0}
               >
                 ‹
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  setGalleryIndex((i) =>
-                    Math.min(detailsListing.photos.length - 1, i + 1)
-                  )
-                }
+                onClick={showNextDetailImage}
                 className="p-2 bg-white/80 hover:bg-white rounded-full"
-                disabled={galleryIndex === detailsListing.photos.length - 1}
               >
                 ›
               </button>
@@ -1993,13 +4996,18 @@ await apiFetch("/api/listings", {
           )}
         </div>
         
-        {detailsListing.photos?.length > 1 && (
+ {detailGalleryImages.length > 1 && (
   <div className="flex gap-2 overflow-x-auto pb-1">
-    {detailsListing.photos.map((url, idx) => (
+    {detailGalleryImages.map((url, idx) => (
       <button
         key={idx}
         type="button"
-        onClick={() => setGalleryIndex(idx)}
+        onClick={() => {
+          setGalleryIndex(idx);
+          if (detailsListing) {
+            syncListingParamsInUrl(detailsListing.id, idx);
+          }
+        }}
         className={`w-16 h-16 rounded-xl overflow-hidden border flex-shrink-0 ${
           idx === galleryIndex ? "border-zinc-900" : "border-zinc-200"
         }`}
@@ -2011,33 +5019,413 @@ await apiFetch("/api/listings", {
    </div>
   )}
         
-        {detailsListing.video_url ? (
-          <div className="rounded-2xl overflow-hidden border bg-black">
-            <video src={detailsListing.video_url} controls className="w-full" />
-          </div>
-        ) : null}
+  {detailsListing.video_url ? (
+    <div className="rounded-2xl overflow-hidden border bg-black">
+      <video src={detailsListing.video_url} controls className="w-full" />
+    </div>
+  ) : null}
 
-        <div>
-          <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
-            Description
-          </div>
-          <div className="text-sm text-zinc-700 whitespace-pre-wrap">
-            {detailsListing.description}
-          </div>
+<div className="space-y-4">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <p className="text-2xl font-extrabold text-zinc-900">
+        MK {Number(detailsListing.price).toLocaleString()}
+      </p>
+      <p className="text-base sm:text-lg font-semibold text-zinc-900 mt-1">
+        Listed by {detailsListing.business_name}
+      </p>
+    </div>
+
+    <span className="px-3 py-1.5 rounded-xl bg-zinc-100 text-zinc-700 text-xs font-bold uppercase">
+      {detailsListing.category}
+    </span>
+  </div>
+
+  <div>
+    <div className="text-xs font-bold text-zinc-400 uppercase mb-1">
+      Description
+    </div>
+    <div className="text-sm text-zinc-700 whitespace-pre-wrap">
+      {detailsListing.description}
+    </div>
+  </div>
+
+  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Condition</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1 capitalize">
+        {detailsListing.condition || "used"}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Posted</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {formatDetailDate(detailsListing.created_at)}
+      </p>
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-3 border border-zinc-100">
+      <p className="text-[11px] font-bold text-zinc-400 uppercase">Seller Joined</p>
+      <p className="text-sm font-bold text-zinc-900 mt-1">
+        {formatDetailDate(detailsSellerProfile?.join_date)}
+      </p>
+    </div>
+  </div>
+</div>
+
+<div className="grid grid-cols-1 xl:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)] gap-4">
+  <div>
+    <div className="text-xs font-black text-zinc-900 uppercase mb-3">
+      Specs
+    </div>
+
+    {detailSpecGroups.length > 0 && (
+      <div className="relative mb-3 h-9">
+        <div
+          ref={detailSpecTabsRef}
+          className="flex h-full items-center gap-2 overflow-x-auto pb-1 px-6"
+        >
+          {detailSpecGroups.map((group) => (
+            <button
+              key={group.title}
+              type="button"
+              onClick={() => setActiveDetailSpecGroup(group.title)}
+              className={`flex-shrink-0 px-3 py-1 rounded-lg text-xs font-bold border transition ${
+                activeSpecGroup?.title === group.title
+                  ? "bg-zinc-900 text-white border-zinc-900"
+                  : "bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50"
+              }`}
+            >
+              {group.title}
+            </button>
+          ))}
         </div>
+
+        {showDetailSpecTabsLeftHint && (
+          <span
+            className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
+            aria-hidden="true"
+          >
+            {"<"}
+          </span>
+        )}
+        {showDetailSpecTabsRightHint && (
+          <span
+            className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-zinc-500 font-bold"
+            aria-hidden="true"
+          >
+            {">"}
+          </span>
+        )}
+      </div>
+    )}
+
+    <div className="rounded-2xl border border-zinc-200 bg-white divide-y divide-zinc-200 h-[320px] overflow-y-auto shadow-sm">
+      {activeStructuredSpecRows.length > 0 ? (
+        activeStructuredSpecRows.map((row) => (
+          <div
+            key={row.key}
+            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
+          >
+            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+              {row.label}
+            </p>
+            <p className="text-sm font-semibold text-zinc-900 text-right break-words">
+              {row.value}
+            </p>
+          </div>
+        ))
+      ) : (
+        detailSpecRows.map((row) => (
+          <div
+            key={row.label}
+            className="px-4 py-3 grid grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] gap-4 items-start"
+          >
+            <p className="text-[11px] font-semibold text-zinc-600 uppercase tracking-wide border-r border-zinc-200 pr-4">
+              {row.label}
+            </p>
+            <p className="text-sm font-semibold text-zinc-900 text-right break-words capitalize">
+              {row.value}
+            </p>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+
+  <div>
+    <div className="text-xs font-bold text-zinc-400 uppercase mb-3">
+      Seller Rating
+    </div>
+
+    <div className="bg-zinc-50 rounded-2xl p-4 border border-zinc-100">
+      {detailsLoadingExtra ? (
+        <p className="text-sm text-zinc-500">Loading seller info...</p>
+      ) : detailsRatingSummary ? (
+        <div className="flex items-center gap-2 text-sm flex-wrap">
+          <span className="font-extrabold text-zinc-900">
+            {detailsRatingSummary.averageRating.toFixed(1)}
+          </span>
+          <span className="text-amber-500 text-base tracking-wide">
+            {"★".repeat(Math.round(detailsRatingSummary.averageRating))}
+            {"☆".repeat(5 - Math.round(detailsRatingSummary.averageRating))}
+          </span>
+          <span className="text-zinc-500">
+            ({detailsRatingSummary.ratingCount} rating{detailsRatingSummary.ratingCount === 1 ? "" : "s"})
+          </span>
+        </div>
+      ) : (
+        <p className="text-sm text-zinc-500">Seller ratings are not available. Sign in to view ratings, or this seller may not have any yet.</p>
+       )}
+    </div>
+
+    <div className="flex flex-wrap gap-2 pt-1">
+      <span className="px-2.5 py-1 border border-zinc-200 bg-white rounded-full text-[11px] font-medium text-zinc-600 shadow-sm">
+        Available: {detailAvailableQuantity}
+      </span>
+
+      <span className="px-2.5 py-1 border border-zinc-200 bg-white rounded-full text-[11px] font-medium text-zinc-600 shadow-sm">
+        Sold: {detailsListing.sold_quantity ?? 0}
+      </span>
+
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-zinc-200 bg-white rounded-full text-[11px] font-medium text-zinc-600 shadow-sm">
+        <Eye className="w-3 h-3" />
+        {detailsListing.views_count ?? 0}
+      </span>
+    </div>
+
+    <div className="text-xs font-bold text-zinc-400 uppercase mt-4 mb-3">
+      Related Listings
+    </div>
+
+    {detailsLoadingExtra ? (
+      <p className="text-sm text-zinc-500">Loading related listings...</p>
+    ) : relatedListings.length > 0 ? (
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {relatedListings.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => openDetails(item, 0)}
+            className="w-full text-left border border-zinc-200 rounded-2xl p-3 hover:bg-zinc-50 transition"
+          >
+            <div className="flex gap-3">
+              <img
+                src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/300/300`}
+                alt={item.name}
+                className="w-16 h-16 rounded-xl object-cover border"
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-zinc-900 line-clamp-1">{item.name}</p>
+                <p className="text-sm text-zinc-500 line-clamp-1">{item.business_name}</p>
+                <p className="text-sm font-extrabold text-zinc-900 mt-1">
+                  MK {Number(item.price).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-zinc-500">No related listings yet.</p>
+    )}
+  </div>
+</div>
+        
       </div>
     </motion.div>
   </motion.div>
 )}
+
+{isImageFullscreenOpen && detailsOpen && detailsListing && (
+  <motion.div
+    key="fullscreen-image-modal"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    className="fixed inset-0 z-[95] flex items-center justify-center bg-black/95 p-4"
+    onClick={() => setIsImageFullscreenOpen(false)}
+  >
+    <button
+      type="button"
+      onClick={() => setIsImageFullscreenOpen(false)}
+      className="absolute top-5 right-5 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+    >
+      <X className="w-5 h-5" />
+    </button>
+
+    {detailGalleryImages.length > 1 && (
+      <>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            showPrevDetailImage();
+          }}
+          className="absolute left-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            showNextDetailImage();
+          }}
+          className="absolute right-5 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white"
+        >
+          ›
+        </button>
+
+        <div className="absolute bottom-5 right-5 px-3 py-1.5 rounded-full bg-white/10 text-white text-sm font-bold">
+          {galleryIndex + 1} / {detailGalleryImages.length}
+        </div>
+      </>
+    )}
+
+    <div
+      className="max-w-[95vw] max-h-[90vh] w-full h-full flex items-center justify-center"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <img
+        src={detailGalleryImages[galleryIndex] || detailGalleryImages[0]}
+        alt={detailsListing.name}
+        className="max-w-full max-h-full object-contain rounded-2xl"
+      />
+    </div>
+  </motion.div>
+)}
        
+{showSettingsModal && userProfile && settingsView === "menu" && (
+  <SettingsModal
+    userProfile={userProfile}
+    firebaseUser={firebaseUser}
+    isSellerAccount={isSellerAccount}
+    onClose={closeSettings}
+    onOpenEditProfile={openEditProfileFromSettings}
+    onOpenChangePassword={openChangePassword}
+    onDeleteAccount={handleDeleteAccount}
+    onRefreshVerification={refreshVerificationStatus}
+    onOpenView={setSettingsView}
+  />
+)}
+
+{showSettingsModal && settingsView === "privacy" && (
+  <div className="fixed inset-0 z-[76] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
+    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <PrivacyPolicyPage
+        onBack={handleFooterPageBack}
+      />
+    </div>
+  </div>
+)}
+
+{showSettingsModal && settingsView === "terms" && (
+  <div className="fixed inset-0 z-[76] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
+    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <TermsPage
+        onBack={handleFooterPageBack}
+      />
+    </div>
+  </div>
+)}
+        
+{showSettingsModal && settingsView === "safety" && (
+  <div className="fixed inset-0 z-[76] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
+    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <SafetyTipsPage
+        onBack={handleFooterPageBack}
+      />
+    </div>
+  </div>
+)}
+        
+{showSettingsModal && settingsView === "report" && (
+  <div className="fixed inset-0 z-[76] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-zinc-900/60 backdrop-blur-sm" onClick={closeSettings} />
+    <div className="relative w-full max-w-4xl bg-white rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <ReportProblemPage
+       onBack={handleFooterPageBack}
+       isLoggedIn={!!firebaseUser}
+      />
+    </div>
+  </div>
+)}
+        
+{showChangePasswordModal && firebaseUser && (
+  <ChangePasswordModal
+    user={firebaseUser}
+    onClose={() => setShowChangePasswordModal(false)}
+  />
+)}
+
+ {showAdminReportsModal && isAdminUser && (
+ <AdminReportsModal
+    onClose={() => setShowAdminReportsModal(false)}
+    onOpenUser={openPublicProfile}
+  />
+)}
+
+{showAdminSellerApplicationsModal && isAdminUser && (
+  <AdminSellerApplicationsModal
+    onClose={() => setShowAdminSellerApplicationsModal(false)}
+  />
+)}
+        
+{reportListingId !== null && (
+  <ReportListingModal
+    listingId={reportListingId}
+    onClose={() => setReportListingId(null)}
+  />
+)}
+
       </AnimatePresence>
       {editingListing && (
   <EditListingModal
     listing={editingListing}
     onClose={() => setEditingListing(null)}
     onSave={(updated) => handleUpdateListing(editingListing.id, updated)}
+    showFeedback={showFeedback}
+  />
+)}
+      {confirmState && (
+  <ConfirmModal
+    open={confirmState.open}
+    title={confirmState.title}
+    message={confirmState.message}
+    confirmText={confirmState.confirmText}
+    cancelText={confirmState.cancelText}
+    danger={confirmState.danger}
+    onCancel={closeConfirm}
+    onConfirm={() => {
+      confirmState.onConfirm?.();
+    }}
+  />
+)}
+
+      <PasswordPromptModal
+  open={passwordPromptOpen}
+  title="Confirm your password"
+  message="For security, enter your password to continue."
+  password={reauthPassword}
+  onPasswordChange={setReauthPassword}
+  onSubmit={handlePasswordPromptSubmit}
+  onCancel={closePasswordPrompt}
+/>
+     {feedback && (
+  <FeedbackModal
+    open={feedback.open}
+    type={feedback.type}
+    title={feedback.title}
+    message={feedback.message}
+    onClose={closeFeedback}
   />
 )}
     </div>
-  );
-  }
+ );
+}
