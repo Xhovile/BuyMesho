@@ -1,16 +1,12 @@
 # BuyMesho
 
-**A campus marketplace for university students and sorroinding communities in Malawi, built around internal messaging, secure checkout, and payment commerce.**
-
-BuyMesho helps students buy, sell, and manage transactions within trusted campus communities through a clean marketplace flow.
-
----
+**A campus marketplace for university students in Malawi, built around internal messaging, secure checkout, and payment-led commerce.**
 
 ## Overview
 
-BuyMesho is designed to make campus commerce faster, safer, and easier to manage.
+BuyMesho helps students buy, sell, and manage transactions within trusted campus communities through a clean marketplace flow.
 
-Instead of relying on scattered social posts or external contact channels, it focuses on:
+Instead of relying on scattered social posts or external contact channels, the product focuses on:
 - campus-based trust
 - fast listing creation
 - structured product discovery
@@ -20,69 +16,42 @@ Instead of relying on scattered social posts or external contact channels, it fo
 
 Sellers can create profiles and post listings. Buyers can browse by campus and category, message sellers inside the platform, and complete purchases through the built-in commerce flow.
 
-BuyMesho is no longer built around WhatsApp redirection. The product direction is now centered on in-app communication, payment handling, and stronger transaction control.
+## Core features
 
----
+- User authentication and email verification
+- Seller profile creation and editing
+- Listing creation, browsing, search, and filtering
+- Featured and promoted listings
+- Internal messaging between buyers and sellers
+- Checkout flow for orders and payments
+- Payment verification and order confirmation
+- Escrow-related order handling
+- Reporting and moderation support
 
-## Why BuyMesho Exists
+## Communication
 
-Students often buy and sell through scattered social posts, group chats, and word of mouth. That works, but it is messy, hard to search, and difficult to manage once transactions become serious.
+BuyMesho uses internal messaging as the primary communication layer.
 
-BuyMesho solves that by giving students one organized place to:
-- discover items and services
-- post listings
-- compare options
-- message sellers privately
-- complete checkout
-- track order status
-- report suspicious content
+- Conversations are tied to listings and user accounts
+- Buyers and sellers can communicate without leaving the platform
+- Messaging is designed to support trust, traceability, and moderation
 
-The goal is to build a trusted campus marketplace that feels local, relevant, and practical.
+## Commerce
 
----
+The commerce flow is centered on checkout, payment initialization, verification, and order state updates.
 
-## Core Features
-
-### User Authentication
-- Sign up with email and password
-- Log in and log out
-- Password reset
-- Email verification
-- Seller profile creation
-
-### Seller Profiles
-- Business or seller name
-- Logo or profile image
-- University or campus
-- Short bio
-- Trust and verification controls
-
-### Listings
-- Create product or service listings
-- Upload listing photos
-- Add title, price, description, category, and university
-- View listings in a grid feed
-- Filter by campus
-- Filter by category
-- Search listings
-- Sort by newest or price
-- Highlight featured or promoted listings
-
-### Communication
-- Internal private messaging between buyers and sellers
-- Conversation threads tied to listings and user accounts
-- No WhatsApp-based primary contact flow
-
-### Commerce
 - Buy Now flow
 - Add to Cart flow
-- Checkout flow
-- Payment initialization
-- Payment verification
-- Order confirmation
-- Escrow or release logic where applicable
+- Checkout modal for purchase initiation
+- Payment initialization through the backend
+- Payment verification on the return page
+- Order confirmation after successful payment
+- Escrow handoff when payment is captured
 
-### Safety
+## Safety
+
+Trust and platform control are part of the core system.
+
 - Report listing feature
 - Backend-protected authenticated routes
 - Verified UID from Firebase tokens
@@ -90,9 +59,7 @@ The goal is to build a trusted campus marketplace that feels local, relevant, an
 - Moderation and trust controls
 - Order and dispute handling support
 
----
-
-## Tech Stack
+## Tech stack
 
 ### Frontend
 - React
@@ -108,20 +75,22 @@ The goal is to build a trusted campus marketplace that feels local, relevant, an
 - SQLite (`better-sqlite3`)
 - Firebase Admin SDK
 
-### Other Services
+### Other services
 - Firebase Authentication
 - Firebase Firestore
 - Cloudinary for image hosting and uploads
 
----
+## Current development status
 
-## Current Development Status
+BuyMesho is now shaped around internal messaging and a payment-led purchase flow.
 
-BuyMesho is now being shaped around internal messaging and a payment-led purchase flow.
+The current checkout path is already wired through the app:
+- `CheckoutModal` posts to `/api/payments/checkout` with listing, quantity, buyer, return URL, and cancel URL data.
+- `PaymentReturnPage` reads `tx_ref` from the URL and verifies the payment server-side.
+- The payment service and webhook flow update the order and payment state after successful capture.
+- When payment is confirmed, the order is moved into escrow handling on the server.
 
-The current architecture below is the active direction for the commerce system, including payments, escrow, orders, and post-payment handling.
-
-## Payment Gateway & Escrow Module Structure
+## Payment Gateway & Escrow module structure
 
 ```bash
 src/
@@ -220,6 +189,7 @@ server/
       payment.controller.ts
       payment.providers.ts
       payment.webhooks.ts
+      payment.routes.ts
     escrow/
       escrow.service.ts
       escrow.ledger.ts
@@ -233,9 +203,7 @@ server/
       dispute.service.ts
 ```
 
----
-
-## Setup / Run Instructions
+## Setup / run instructions
 
 ### Frontend
 ```bash
@@ -250,38 +218,10 @@ npm install
 npm run dev
 ```
 
-### Environment Variables
+### Environment variables
 Create the required `.env` files for frontend and backend and configure:
 - Firebase credentials
 - database connection settings
 - payment gateway keys
 - image upload credentials
 - webhook secrets
-
----
-
-## Development Notes
-
-- The marketplace is built to scale from campus trust into structured commerce.
-- Internal messaging is part of the core product, not an add-on.
-- Payment handling and escrow logic should stay aligned with order creation and verification.
-- The codebase should keep listing discovery, messaging, and checkout as separate modules.
-
----
-
-## Project Direction
-
-BuyMesho is being developed as a serious marketplace product, not a social link directory.
-
-The priority is to keep the platform:
-- trustworthy
-- searchable
-- mobile-friendly
-- transaction-ready
-- easy to expand across campuses
-
----
-
-## License
-
-Private project. All rights reserved.
