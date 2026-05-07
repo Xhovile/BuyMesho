@@ -9,8 +9,6 @@ import {
   ShieldCheck,
   User,
   Lock,
-  ClipboardList,
-  Flag,
   EyeOff,
   ChevronRight,
 } from "lucide-react";
@@ -20,14 +18,11 @@ import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
 import {
-  ADMIN_REPORTS_PATH,
-  ADMIN_SELLER_APPLICATIONS_PATH,
   HIDDEN_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
 import { getAvatarUrl } from "./lib/avatar";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { useIsAdmin } from "./hooks/useIsAdmin";
 
 type FeedbackState = {
   open: boolean;
@@ -39,7 +34,6 @@ type FeedbackState = {
 export default function ProfilePage() {
   const { firebaseUser, authLoading, profile, profileLoading, emailVerified } =
     useAccountProfile();
-  const { isAdmin } = useIsAdmin(firebaseUser);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const avatarUrl = getAvatarUrl(profile, firebaseUser);
   const profileActionsDisabled = !emailVerified;
@@ -166,46 +160,6 @@ export default function ProfilePage() {
                       </button>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {isAdmin && (
-              <div className="rounded-3xl border border-indigo-200 bg-indigo-50 p-4 sm:p-5">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-indigo-500">
-                  Admin tools
-                </p>
-
-                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
-                    disabled={profileActionsDisabled}
-                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Flag className="w-5 h-5 text-indigo-700" />
-                      <p className="font-bold text-zinc-900">Reports</p>
-                    </div>
-                    <p className="text-sm text-zinc-500 mt-1">
-                      Review and resolve listing/user reports.
-                    </p>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
-                    disabled={profileActionsDisabled}
-                    className="rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-left hover:bg-indigo-100 transition-colors disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ClipboardList className="w-5 h-5 text-indigo-700" />
-                      <p className="font-bold text-zinc-900">Seller Approvals</p>
-                    </div>
-                    <p className="text-sm text-zinc-500 mt-1">
-                      Approve or reject seller applications.
-                    </p>
-                  </button>
                 </div>
               </div>
             )}

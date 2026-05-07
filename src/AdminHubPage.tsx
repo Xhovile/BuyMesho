@@ -47,15 +47,16 @@ export default function AdminHubPage() {
               <button
                 key={card.title}
                 onClick={() => navigateToPath(card.path)}
-                className="bg-white border border-zinc-200 rounded-3xl p-6 text-left hover:shadow-lg transition"
+                className="bg-white border border-zinc-200 rounded-3xl px-4 py-3 text-left hover:shadow-lg transition"
               >
-                <div className="w-14 h-14 rounded-2xl bg-zinc-100 flex items-center justify-center">
-                  <Icon className="w-7 h-7 text-zinc-700" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-zinc-700" />
+                  </div>
+                  <h2 className="text-lg font-black text-zinc-900">
+                    {card.title}
+                  </h2>
                 </div>
-
-                <h2 className="mt-5 text-xl font-black text-zinc-900">
-                  {card.title}
-                </h2>
 
                 <p className="mt-2 text-sm text-zinc-600">
                   {card.desc}
