@@ -1,75 +1,65 @@
 # BuyMesho
 
-BuyMesho is a **campus-focused marketplace platform** built for university students in Malawi to **buy and sell products or services** within their campus communities.
+**A campus marketplace for university students in Malawi, built around internal messaging, secure checkout, and payment-led commerce.**
 
-It is designed to be simple, practical, and secure:
+## Overview
 
-- Students can create seller profiles
-- Sellers can post listings
-- Buyers can browse listings by campus and category
-- Buyers contact sellers directly through **WhatsApp**
-- Users can report suspicious or inappropriate listings
+BuyMesho helps students buy, sell, and manage transactions within trusted campus communities through a clean marketplace flow.
 
-BuyMesho is intentionally **not** an in-app messaging platform.  
-Instead, it uses **WhatsApp redirection** to keep the system lighter, simpler, and easier to manage.
-
----
-
-## Core Idea
-
-The platform solves a basic but real problem:
-
-> Students need a simple place to discover and sell items within their own university environment.
-
-BuyMesho focuses on:
-
+Instead of relying on scattered social posts or external contact channels, the product focuses on:
 - campus-based trust
 - fast listing creation
-- lightweight communication
-- simple product discovery
-- secure seller authentication
+- structured product discovery
+- internal private messaging
+- secure checkout and payment flow
+- seller verification and moderation
 
----
+Sellers can create profiles and post listings. Buyers can browse by campus and category, message sellers inside the platform, and complete purchases through the built-in commerce flow.
 
-## Features
+## Core features
 
-### User Authentication
-- Sign up with email and password
-- Log in and log out
-- Password reset
-- Email verification
-- Seller profile creation
+- User authentication and email verification
+- Seller profile creation and editing
+- Listing creation, browsing, search, and filtering
+- Featured and promoted listings
+- Internal messaging between buyers and sellers
+- Checkout flow for orders and payments
+- Payment verification and order confirmation
+- Escrow-related order handling
+- Reporting and moderation support
 
-### Seller Profiles
-- Business/seller name
-- Logo or profile image
-- University/campus
-- Short bio
+## Communication
 
-### Listings
-- Create product/service listings
-- Upload listing photos
-- Add title, price, description, category, and university
-- Add WhatsApp contact number
-- View listings in a grid feed
-- Filter by campus
-- Filter by category
-- Search listings
-- Sort by newest or price
+BuyMesho uses internal messaging as the primary communication layer.
 
-### Communication
-- Buyers contact sellers directly through **WhatsApp**
-- No internal private messaging system
+- Conversations are tied to listings and user accounts
+- Buyers and sellers can communicate without leaving the platform
+- Messaging is designed to support trust, traceability, and moderation
 
-### Safety
+## Commerce
+
+The commerce flow is centered on checkout, payment initialization, verification, and order state updates.
+
+- Buy Now flow
+- Add to Cart flow
+- Checkout modal for purchase initiation
+- Payment initialization through the backend
+- Payment verification on the return page
+- Order confirmation after successful payment
+- Escrow handoff when payment is captured
+
+## Safety
+
+Trust and platform control are part of the core system.
+
 - Report listing feature
 - Backend-protected authenticated routes
 - Verified UID from Firebase tokens
 - No client-controlled seller identity
+- Moderation and trust controls
+- Order and dispute handling support
 
----
-
-## Tech Stack
+## Tech stack
 
 ### Frontend
 - React
@@ -85,31 +75,153 @@ BuyMesho focuses on:
 - SQLite (`better-sqlite3`)
 - Firebase Admin SDK
 
-### Other Services
+### Other services
 - Firebase Authentication
 - Firebase Firestore
-- Cloudinary (image hosting/upload)
+- Cloudinary for image hosting and uploads
 
----
+## Current development status
 
-## Project Structure
+BuyMesho is now shaped around internal messaging and a payment-led purchase flow.
+
+The current checkout path is already wired through the app:
+- `CheckoutModal` posts to `/api/payments/checkout` with listing, quantity, buyer, return URL, and cancel URL data.
+- `PaymentReturnPage` reads `tx_ref` from the URL and verifies the payment server-side.
+- The payment service and webhook flow update the order and payment state after successful capture.
+- When payment is confirmed, the order is moved into escrow handling on the server.
+
+## Payment Gateway & Escrow module structure
 
 ```bash
-.
-├── src/                      # Frontend source files
-│   ├── App.tsx
-│   ├── firebase.ts
-│   ├── constants.ts
-│   ├── types.ts
-│   └── ...
-├── server/
-│   ├── auth/
-│   │   └── firebaseAdmin.ts
-│   ├── middleware/
-│   │   └── requireAuth.ts
-│   └── types/
-│       └── express.d.ts
-├── server.ts                 # Main Express backend
-├── package.json
-├── tsconfig.json
-└── README.md
+src/
+  shared/
+    api/
+      client.ts
+      endpoints.ts
+      errors.ts
+    auth/
+      authContext.tsx
+      useAuth.ts
+      guards.ts
+    ui/
+      Button.tsx
+      Input.tsx
+      Modal.tsx
+      Loader.tsx
+      EmptyState.tsx
+    utils/
+      formatMoney.ts
+      formatDate.ts
+      slugify.ts
+      ids.ts
+    types/
+      common.ts
+      payment.ts
+      listing.ts
+      user.ts
+    constants/
+      app.ts
+      payment.ts
+      chips.ts
+    hooks/
+      useDebounce.ts
+      useLocalStorage.ts
+      usePagination.ts
+
+  modules/
+    listings/
+      components/
+      hooks/
+      services/
+      types.ts
+      listingMapper.ts
+
+    users/
+      components/
+      hooks/
+      services/
+      types.ts
+
+    messaging/
+      components/
+      hooks/
+      services/
+      types.ts
+      conversationService.ts
+
+    payments/
+      components/
+      hooks/
+      services/
+      types.ts
+      paymentGateway.ts
+      providers/
+        paystack.ts
+        flutterwave.ts
+        paychangu.ts
+
+    escrow/
+      ledger.ts
+      states.ts
+      releaseRules.ts
+      disputes.ts
+
+    orders/
+      checkout.ts
+      orderState.ts
+      orderService.ts
+
+    bookings/
+      bookingService.ts
+      bookingState.ts
+
+    notifications/
+      notifications.ts
+      templates.ts
+server/
+  modules/
+    messaging/
+      messaging.service.ts
+      messaging.controller.ts
+      messaging.routes.ts
+    payments/
+      payment.service.ts
+      payment.controller.ts
+      payment.providers.ts
+      payment.webhooks.ts
+      payment.routes.ts
+    escrow/
+      escrow.service.ts
+      escrow.ledger.ts
+      escrow.rules.ts
+    orders/
+      order.service.ts
+      order.routes.ts
+    payouts/
+      payout.service.ts
+    disputes/
+      dispute.service.ts
+```
+
+## Setup / run instructions
+
+### Frontend
+```bash
+npm install
+npm run dev
+```
+
+### Backend
+```bash
+cd server
+npm install
+npm run dev
+```
+
+### Environment variables
+Create the required `.env` files for frontend and backend and configure:
+- Firebase credentials
+- database connection settings
+- payment gateway keys
+- image upload credentials
+- webhook secrets
