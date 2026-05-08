@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import FeedbackModal from "./components/FeedbackModal";
@@ -101,6 +101,8 @@ export default function SignupPage() {
     confirmPassword: "",
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
@@ -233,14 +235,24 @@ export default function SignupPage() {
           <label className="block text-sm font-medium text-zinc-600 mb-2">
             Password (8+ chars, lowercase, uppercase, symbol)
           </label>
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className={fieldClass}
-          />
+          <div className="relative">
+            <input
+              required
+              type={showPassword ? "text" : "password"}
+              autoComplete="new-password"
+              value={form.password}
+              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              className={`${fieldClass} pr-10`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
 
           <div className="mt-3 space-y-2">
             <div className="h-1.5 bg-zinc-200 rounded-full overflow-hidden">
@@ -278,14 +290,24 @@ export default function SignupPage() {
 
         <div>
           <label className="block text-sm font-medium text-zinc-600 mb-2">Confirm Password</label>
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            value={form.confirmPassword}
-            onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-            className={fieldClass}
-          />
+          <div className="relative">
+            <input
+              required
+              type={showConfirmPassword ? "text" : "password"}
+              autoComplete="new-password"
+              value={form.confirmPassword}
+              onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+              className={`${fieldClass} pr-10`}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword((prev) => !prev)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors"
+              aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+            >
+              {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
 
           {form.confirmPassword.length > 0 && (
             <p className={`text-sm mt-2 ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>
