@@ -1,6 +1,7 @@
 import { ClipboardList, ShieldCheck, Webhook, ArrowLeft } from "lucide-react";
 import { navigateToAdminPayments, navigateToAdminReports, navigateToAdminSellerApplications, navigateToPath } from "./lib/appNavigation";
 import AdminRouteGuard from "./components/AdminRouteGuard";
+import type { ElementType } from "react";
 
 function AdminCard({
   title,
@@ -11,7 +12,7 @@ function AdminCard({
 }: {
   title: string;
   description: string;
-  icon: React.ElementType;
+  icon: ElementType;
   onClick: () => void;
   tone?: "zinc" | "emerald" | "amber" | "blue";
 }) {
