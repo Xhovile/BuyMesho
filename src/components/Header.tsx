@@ -114,8 +114,8 @@ export default function Header({
   useEffect(() => {
     const updateHeaderVisibility = () => {
       setTopRowHidden((prev) => {
-        if (prev) return window.scrollY >= 1;
-        return window.scrollY > 10;
+        if (prev) return window.scrollY >= 2;
+        return window.scrollY > 20;
       });
     };
 
