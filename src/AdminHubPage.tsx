@@ -63,7 +63,7 @@ function AdminHubContent() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <section className="px-1">
           <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
             BuyMesho control room
