@@ -1,20 +1,22 @@
-import type { PaymentVerificationResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import type { WebhookVerificationResult } from '../../../src/modules/payments/types.js';
 import { serverPaymentService } from './payment.service.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import { paymentRepository } from './payment.repository.js';
-import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus } from './paychangu.provider.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { isAcceptedPaychanguEventType } from './paychangu.provider.js';
 import { getPaymentDb } from '../../sqlite.js';
 
 function asRecord(payload: unknown): Record<string, unknown> {
   if (typeof payload === 'string') {
     try {
       const parsed = JSON.parse(payload) as unknown;
-      return typeof parsed === 'object' && parsed !== null ? parsed as Record<string, unknown> : {};
+      return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
     } catch {
       return {};
     }
   }
-  return typeof payload === 'object' && payload !== null ? payload as Record<string, unknown> : {};
+
+  return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
 }
 
 const SUCCESS_EVENT_TYPES = new Set([
@@ -28,8 +30,8 @@ const SUCCESS_STATUSES = new Set(['successful', 'success', 'completed', 'capture
 
 function isPayChanguSuccessEvent(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false;
-  const body = payload as Record<string, unknown>;
 
+  const body = payload as Record<string, unknown>;
   const eventType = String(body.event_type ?? body.event ?? '').toLowerCase();
   if (eventType && !SUCCESS_EVENT_TYPES.has(eventType)) {
     return false;
@@ -40,6 +42,20 @@ function isPayChanguSuccessEvent(payload: unknown): boolean {
   return SUCCESS_STATUSES.has(status);
 }
 
+function extractTxRef(payload: unknown, fallback?: string): string {
+  const body = asRecord(payload);
+  const data = (body.data as Record<string, unknown> | undefined) ?? body;
+
+  return String(
+    data.tx_ref ??
+    data.txRef ??
+    body.tx_ref ??
+    body.txRef ??
+    fallback ??
+    ''
+  ).trim();
+}
+
 function logWebhookEvent(params: {
   signatureValid: boolean;
   eventType?: string;
@@ -48,7 +64,9 @@ function logWebhookEvent(params: {
 }): void {
   try {
     const db = getPaymentDb();
-    const rawPayload = typeof params.payload === 'string' ? params.payload : JSON.stringify(params.payload ?? {});
+    const rawPayload = typeof params.payload === 'string'
+      ? params.payload
+      : JSON.stringify(params.payload ?? {});
 
     db.prepare(
       `INSERT INTO payment_webhook_events
@@ -68,7 +86,10 @@ function logWebhookEvent(params: {
 }
 
 export class PaymentWebhookHandler {
-  async handlePaychanguWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
+  async handlePaychanguWebhook(
+    signature: string | undefined,
+    payload: unknown
+  ): Promise<WebhookVerificationResult> {
     const body = asRecord(payload);
     const eventType = String(body.event_type ?? body.event ?? '').trim().toLowerCase() || undefined;
     const reference = String(body.tx_ref ?? body.txRef ?? body.reference ?? '').trim() || undefined;
@@ -105,9 +126,9 @@ export class PaymentWebhookHandler {
       return result;
     }
 
-    const txRef = extractTxRef(parsedPayload, result.reference ?? result.txRef);
+    const txRef = extractTxRef(parsedPayload, result.reference);
     if (!txRef) {
-      throw new Error('Missing PayChangu txRef in webhook payload');
+      throw new Error('Missing PayChangu tx_ref in webhook payload');
     }
 
     const payment = paymentRepository.findByReference(txRef);
@@ -115,7 +136,7 @@ export class PaymentWebhookHandler {
       throw new Error(`No stored payment found for PayChangu reference: ${txRef}`);
     }
 
-    const order = orderRepository.findById(payment.orderId) ?? orderRepository.findByPaymentReference(txRef);
+    const order = orderRepository.findByPaymentReference(txRef) ?? orderRepository.findById(payment.orderId);
     if (!order) {
       throw new Error(`No stored order found for PayChangu payment reference: ${txRef}`);
     }
@@ -131,7 +152,11 @@ export class PaymentWebhookHandler {
       ? { amount: rawAmount, currency: webhookCurrency }
       : undefined;
 
-    if (amount && (amount.amount !== order.total.amount || amount.currency.toUpperCase() !== order.total.currency.toUpperCase())) {
+    if (
+      amount &&
+      (amount.amount !== order.total.amount ||
+        amount.currency.toUpperCase() !== order.total.currency.toUpperCase())
+    ) {
       throw new Error(`Webhook amount does not match order total for order ${order.id}`);
     }
 
@@ -149,11 +174,18 @@ export class PaymentWebhookHandler {
     return result;
   }
 
-  verify(providerKey: Parameters<typeof serverPaymentService.verifyWebhook>[0], signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
+  verify(
+    providerKey: Parameters<typeof serverPaymentService.verifyWebhook>[0],
+    signature: string | undefined,
+    payload: unknown
+  ): Promise<WebhookVerificationResult> {
     return serverPaymentService.verifyWebhook(providerKey, signature, payload as string);
   }
 
-  parse(providerKey: Parameters<typeof serverPaymentService.parseWebhook>[0], payload: unknown): Promise<WebhookVerificationResult> {
+  parse(
+    providerKey: Parameters<typeof serverPaymentService.parseWebhook>[0],
+    payload: unknown
+  ): Promise<WebhookVerificationResult> {
     return serverPaymentService.parseWebhook(providerKey, payload);
   }
 }
