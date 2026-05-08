@@ -212,23 +212,23 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
-    try {
-      const rawBody = Buffer.isBuffer(req.body)
-        ? req.body.toString('utf8')
-        : typeof req.body === 'string'
-          ? req.body
-          : JSON.stringify(req.body ?? {});
+  router.post('/paychangu/webhook', async (req, res) => {
+  try {
+    const rawBody = (req as express.Request & { rawBody?: Buffer }).rawBody?.toString('utf8');
 
-      const payload = rawBody ? JSON.parse(rawBody) : {};
-      const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
-
-      res.status(200).json(result);
-    } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to process webhook'));
+    if (!rawBody) {
+      return res.status(400).json({ error: 'Missing raw webhook body' });
     }
-  });
+
+    const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
+
+    const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json(jsonError(error, 'Failed to process webhook'));
+  }
+});
 
   return router;
 }
