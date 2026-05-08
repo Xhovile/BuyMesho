@@ -25,6 +25,7 @@ export type BuyerPaymentRecord = {
   status: BuyerPaymentStatus;
   checkoutUrl: string | null;
   txRef: string | null;
+  deliveryConfirmed?: boolean;
   createdAt: string;
   updatedAt: string;
 };
