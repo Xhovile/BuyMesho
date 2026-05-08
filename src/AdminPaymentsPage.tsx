@@ -116,6 +116,7 @@ export default function AdminPaymentsPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"payments" | "webhooks">("payments");
 
   const load = async () => {
     setError(null);
@@ -180,29 +181,48 @@ export default function AdminPaymentsPage() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
-                Payments & Webhooks
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
-                This page shows the payment row, order row, escrow state, and the webhook delivery log in one place.
-                Pending means the payment exists but has not yet been confirmed into the order/escrow flow.
-              </p>
-            </div>
+        <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between px-1">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
+              Payments & Webhooks
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
+              This page shows the payment row, order row, escrow state, and the webhook delivery log in one place.
+              Pending means the payment exists but has not yet been confirmed into the order/escrow flow.
+            </p>
+          </div>
 
-            <div className="grid min-w-[240px] grid-cols-2 gap-3 rounded-3xl border border-zinc-200 bg-zinc-50 p-4">
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Payments</p>
-                <p className="mt-1 text-lg font-black text-zinc-900">{stats.totalPayments}</p>
-              </div>
-              <div>
-                <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Webhooks</p>
-                <p className="mt-1 text-lg font-black text-zinc-900">{stats.totalWebhooks}</p>
-              </div>
-            </div>
+          <div role="tablist" aria-label="View selector" className="flex items-stretch overflow-hidden rounded-2xl border border-zinc-200 shrink-0">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "payments"}
+              onClick={() => setActiveTab("payments")}
+              className={`flex flex-col items-start px-5 py-3 text-left transition-colors ${
+                activeTab === "payments"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"
+              }`}
+            >
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-70">Payments</span>
+              <span className="mt-0.5 text-lg font-black leading-none">{stats.totalPayments}</span>
+            </button>
+            <div className="w-px bg-zinc-200 self-stretch" />
+            <button
+              type="button"
+              role="tab"
+              aria-selected={activeTab === "webhooks"}
+              onClick={() => setActiveTab("webhooks")}
+              className={`flex flex-col items-start px-5 py-3 text-left transition-colors ${
+                activeTab === "webhooks"
+                  ? "bg-zinc-700 text-white"
+                  : "bg-zinc-100 text-zinc-400 hover:bg-zinc-200"
+              }`}
+            >
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] opacity-70">Webhooks</span>
+              <span className="mt-0.5 text-lg font-black leading-none">{stats.totalWebhooks}</span>
+            </button>
           </div>
         </section>
 
@@ -222,6 +242,7 @@ export default function AdminPaymentsPage() {
           </div>
         ) : null}
 
+        {activeTab === "payments" && (
         <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
           <div className="border-b border-zinc-100 px-5 py-4">
             <div className="flex items-center gap-2">
@@ -335,7 +356,9 @@ export default function AdminPaymentsPage() {
             </div>
           )}
         </section>
+        )}
 
+        {activeTab === "webhooks" && (
         <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
           <div className="border-b border-zinc-100 px-5 py-4">
             <div className="flex items-center gap-2">
@@ -401,6 +424,7 @@ export default function AdminPaymentsPage() {
             </div>
           )}
         </section>
+        )}
 
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
           <div className="flex items-start gap-3">
