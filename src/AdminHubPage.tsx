@@ -1,71 +1,109 @@
-import {
-  Shield,
-  ClipboardList,
-  Webhook,
-} from "lucide-react";
+import { ClipboardList, ShieldCheck, Webhook, ArrowLeft } from "lucide-react";
+import { navigateToAdminPayments, navigateToAdminReports, navigateToAdminSellerApplications, navigateToPath } from "./lib/appNavigation";
+import AdminRouteGuard from "./components/AdminRouteGuard";
 
-import { navigateToPath } from "./lib/appNavigation";
-
-export default function AdminHubPage() {
-  const cards = [
-    {
-      title: "Reports",
-      desc: "Moderate reports and complaints",
-      icon: ClipboardList,
-      path: "/admin/reports",
-    },
-    {
-      title: "Seller Approvals",
-      desc: "Approve or reject seller applications",
-      icon: Shield,
-      path: "/admin/seller-applications",
-    },
-    {
-      title: "Payments & Webhooks",
-      desc: "Track payment and webhook activity",
-      icon: Webhook,
-      path: "/admin/payments",
-    },
-  ];
+function AdminCard({
+  title,
+  description,
+  icon: Icon,
+  onClick,
+  tone = "zinc",
+}: {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  onClick: () => void;
+  tone?: "zinc" | "emerald" | "amber" | "blue";
+}) {
+  const toneClasses: Record<typeof tone, string> = {
+    zinc: "border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50",
+    emerald: "border-emerald-200 hover:border-emerald-300 hover:bg-emerald-50/60",
+    amber: "border-amber-200 hover:border-amber-300 hover:bg-amber-50/60",
+    blue: "border-blue-200 hover:border-blue-300 hover:bg-blue-50/60",
+  };
 
   return (
-    <div className="min-h-screen bg-zinc-100 p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-black text-zinc-900">
-          Admin Dashboard
-        </h1>
-
-        <p className="mt-2 text-zinc-600">
-          Centralized moderation and monitoring tools.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-8">
-          {cards.map((card) => {
-            const Icon = card.icon;
-
-            return (
-              <button
-                key={card.title}
-                onClick={() => navigateToPath(card.path)}
-                className="bg-white border border-zinc-200 rounded-3xl px-4 py-3 text-left hover:shadow-lg transition"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-zinc-700" />
-                  </div>
-                  <h2 className="text-lg font-black text-zinc-900">
-                    {card.title}
-                  </h2>
-                </div>
-
-                <p className="mt-2 text-sm text-zinc-600">
-                  {card.desc}
-                </p>
-              </button>
-            );
-          })}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[2rem] border bg-white p-6 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg ${toneClasses[tone]}`}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700">
+          <Icon className="h-6 w-6" />
+        </div>
+        <div>
+          <p className="text-lg font-black tracking-tight text-zinc-900">{title}</p>
+          <p className="mt-1 text-sm text-zinc-500">{description}</p>
         </div>
       </div>
+    </button>
+  );
+}
+
+function AdminHubContent() {
+  return (
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => navigateToPath("/")}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Market
+          </button>
+
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-bold text-zinc-700">
+            Admin Access
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+            BuyMesho control room
+          </h1>
+          <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
+            This is the central admin entry point. Use it to manage reports, seller approvals, and payment monitoring.
+          </p>
+        </section>
+
+        <section className="grid gap-4 md:grid-cols-3">
+          <AdminCard
+            title="Reports"
+            description="Review and manage user reports."
+            icon={ClipboardList}
+            tone="blue"
+            onClick={() => navigateToAdminReports()}
+          />
+          <AdminCard
+            title="Seller Approvals"
+            description="Approve or reject seller applications."
+            icon={ShieldCheck}
+            tone="emerald"
+            onClick={() => navigateToAdminSellerApplications()}
+          />
+          <AdminCard
+            title="Payments & Webhooks"
+            description="Monitor payment status, webhook delivery, and escrow state."
+            icon={Webhook}
+            tone="amber"
+            onClick={() => navigateToAdminPayments()}
+          />
+        </section>
+      </main>
     </div>
+  );
+}
+
+export default function AdminHubPage() {
+  return (
+    <AdminRouteGuard>
+      <AdminHubContent />
+    </AdminRouteGuard>
   );
 }
