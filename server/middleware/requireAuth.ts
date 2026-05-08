@@ -1,30 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyIdToken } from "../auth/firebaseAdmin.js";
+import { isConfiguredAdmin } from "../auth/adminAccess.js";
 import { getTotpEnrollment, verifyTotpVerifiedSession } from "../../src/server/totpStore.js";
-
-const ADMIN_ENV_EMAILS = (
-  process.env.ADMIN_EMAILS ||
-  process.env.VITE_ADMIN_EMAILS ||
-  ""
-)
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
-
-const ADMIN_ENV_UIDS = (
-  process.env.ADMIN_UIDS ||
-  process.env.VITE_ADMIN_UIDS ||
-  ""
-)
-  .split(",")
-  .map((u) => u.trim())
-  .filter(Boolean);
-
-function isEnvAdmin(uid: string | undefined, email: string | undefined): boolean {
-  if (uid && ADMIN_ENV_UIDS.includes(uid)) return true;
-  if (email && ADMIN_ENV_EMAILS.includes(email.toLowerCase())) return true;
-  return false;
-}
 
 function getBearerToken(req: Request): string | null {
   const header = req.headers.authorization;
@@ -70,7 +47,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       is_admin:
         (decoded as any).admin === true ||
         (decoded as any).role === "admin" ||
-        isEnvAdmin(uid, email),
+        isConfiguredAdmin({ uid, email }),
     };
 
     next();
@@ -101,7 +78,7 @@ export async function attachOptionalAuth(req: Request, _res: Response, next: Nex
       is_admin:
         (decoded as any).admin === true ||
         (decoded as any).role === "admin" ||
-        isEnvAdmin(uid, email),
+        isConfiguredAdmin({ uid, email }),
     };
   } catch {
     // Ignore optional auth failures and continue unauthenticated.
