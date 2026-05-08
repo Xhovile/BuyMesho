@@ -16,6 +16,8 @@ export interface ServerPaymentConfig {
   paychanguBaseUrl?: string;
 }
 
+const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';
+
 function readEnv(name: string): string | undefined {
   const value = process.env[name]?.trim();
   return value ? value : undefined;
@@ -148,9 +150,9 @@ export class ServerPaymentService {
     const provider = this.registry.get(request.provider);
 
     if (!provider.capabilities.supportsRefunds) {
-      throw new ApiError(`Refunds are not supported for provider: ${request.provider}`, {
-        message: `Refunds are not supported for provider: ${request.provider}`,
-        code: 'REFUNDS_UNSUPPORTED',
+      throw new ApiError(REFUND_UNAVAILABLE_MESSAGE, {
+        message: REFUND_UNAVAILABLE_MESSAGE,
+        code: 'REFUNDS_UNAVAILABLE',
         status: 501,
       });
     }
