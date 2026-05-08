@@ -1,7 +1,15 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { getAppRouteFromLocation, navigateToPath, type AppRoute, LOGIN_PATH, PROFILE_PATH, SETTINGS_PATH, VERIFY_EMAIL_PATH } from "./lib/appNavigation";
+import {
+  getAppRouteFromLocation,
+  navigateToPath,
+  type AppRoute,
+  LOGIN_PATH,
+  PROFILE_PATH,
+  SETTINGS_PATH,
+  VERIFY_EMAIL_PATH,
+} from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import loaderImage from "../photos/LoaderPic.png";
 
@@ -12,6 +20,8 @@ const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
 const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
+const BuyerPaymentsPage = lazy(() => import("./BuyerPaymentsPage"));
+const CartPage = lazy(() => import("./CartPage"));
 const ChangeEmailPage = lazy(() => import("./ChangeEmailPage"));
 const ChangePasswordPage = lazy(() => import("./ChangePasswordPage"));
 const CategoryPage = lazy(() => import("./CategoryPage"));
@@ -22,7 +32,7 @@ const EditProfilePage = lazy(() => import("./EditProfilePage"));
 const EmailActionPage = lazy(() => import("./EmailActionPage"));
 const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
 const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
-const HomePage = lazy(() => import("./HomePage"));
+const HomePage = lazy(() => import("./HomePageWithShortcuts"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
 const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
@@ -104,11 +114,13 @@ export default function RootRouter() {
   useEffect(() => {
     void Promise.allSettled([
       import("./App.new"),
-      import("./HomePage"),
+      import("./HomePageWithShortcuts"),
       import("./CategoryPage"),
       import("./MessagesInboxPage"),
       import("./MessageThreadPage"),
       import("./MarketComingSoonPage"),
+      import("./BuyerPaymentsPage"),
+      import("./CartPage"),
     ]);
   }, []);
 
@@ -129,20 +141,21 @@ export default function RootRouter() {
       "admin_payments",
     ];
 
+    const requiresAuth = locationPath === "/buyer-payments" || locationPath === "/cart";
     const isVerified = !!firebaseUser?.emailVerified;
 
     if (!firebaseUser) {
       if (route === "verify_email") {
         navigateToPath(LOGIN_PATH);
       }
-      if (protectedRoutes.includes(route)) {
+      if (protectedRoutes.includes(route) || requiresAuth) {
         navigateToPath(LOGIN_PATH);
       }
       return;
     }
 
     if (!isVerified) {
-      if (protectedRoutes.includes(route)) {
+      if (protectedRoutes.includes(route) || requiresAuth) {
         navigateToPath(VERIFY_EMAIL_PATH);
       }
       return;
@@ -151,55 +164,92 @@ export default function RootRouter() {
     if (route === "verify_email") {
       navigateToPath(PROFILE_PATH);
     }
-  }, [authLoading, firebaseUser, route]);
+  }, [authLoading, firebaseUser, route, locationPath]);
 
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? <MarketComingSoonPage /> :
-        locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
-        route === "category" ? <CategoryPage /> :
-        route === "explore" ? <App key={locationPath} /> :
-        route === "saved" ? <SavedPage /> :
-        route === "hidden" ? <HiddenCollectionsPage /> :
-        route === "settings" ? <SettingsPage /> :
-        route === "privacy" ? <PrivacyPolicyPage onBack={() => window.history.back()} /> :
-        route === "terms" ? <TermsPage onBack={() => window.history.back()} /> :
-        route === "safety" ? <SafetyTipsPage onBack={() => window.history.back()} /> :
-        route === "report" ? <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} /> :
-        route === "seller" ? <SellerProfilePage /> :
-        route === "listing_details" ? <ListingDetailsPage /> :
-        route === "messages" ? (
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? (
+          <MarketComingSoonPage />
+        ) : locationPath.startsWith("/market/coming-soon") ? (
+          <MarketComingSoonPage />
+        ) : locationPath === "/buyer-payments" ? (
+          <BuyerPaymentsPage />
+        ) : locationPath === "/cart" ? (
+          <CartPage />
+        ) : route === "category" ? (
+          <CategoryPage />
+        ) : route === "explore" ? (
+          <App key={locationPath} />
+        ) : route === "saved" ? (
+          <SavedPage />
+        ) : route === "hidden" ? (
+          <HiddenCollectionsPage />
+        ) : route === "settings" ? (
+          <SettingsPage />
+        ) : route === "privacy" ? (
+          <PrivacyPolicyPage onBack={() => window.history.back()} />
+        ) : route === "terms" ? (
+          <TermsPage onBack={() => window.history.back()} />
+        ) : route === "safety" ? (
+          <SafetyTipsPage onBack={() => window.history.back()} />
+        ) : route === "report" ? (
+          <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} />
+        ) : route === "seller" ? (
+          <SellerProfilePage />
+        ) : route === "listing_details" ? (
+          <ListingDetailsPage />
+        ) : route === "messages" ? (
           isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
-        ) :
-        route === "create" ? <CreateListingPage /> :
-        route === "edit" ? <EditListingPage /> :
-        route === "login" ? <LoginPage /> :
-        route === "signup" ? <SignupPage /> :
-        route === "forgot_password" ? <ForgotPasswordPage /> :
-        route === "profile" ? <ProfilePage /> :
-        route === "verify_email" ? <VerifyEmailPage /> :
-        route === "edit_profile" ? <EditProfilePage /> :
-        route === "edit_account" ? <EditAccountPage /> :
-        route === "become_seller" ? <BecomeSellerPage /> :
-        route === "change_password" ? <ChangePasswordPage /> :
-        route === "change_email" ? <ChangeEmailPage /> :
-        route === "email_action" ? <EmailActionPage /> :
-        route === "my_listings" ? <MyListingsPage /> :
-        route === "admin" ? (
-          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
-        ) :
-        route === "admin_payments" ? (
-          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
-        ) :
-        route === "admin_reports" ? (
-          <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
-        ) :
-        route === "admin_seller_applications" ? (
-          <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
-        ) :
-        route === "payment_return" ? <PaymentReturnPage /> :
-        <HomePage />}
+        ) : route === "create" ? (
+          <CreateListingPage />
+        ) : route === "edit" ? (
+          <EditListingPage />
+        ) : route === "login" ? (
+          <LoginPage />
+        ) : route === "signup" ? (
+          <SignupPage />
+        ) : route === "forgot_password" ? (
+          <ForgotPasswordPage />
+        ) : route === "profile" ? (
+          <ProfilePage />
+        ) : route === "verify_email" ? (
+          <VerifyEmailPage />
+        ) : route === "edit_profile" ? (
+          <EditProfilePage />
+        ) : route === "edit_account" ? (
+          <EditAccountPage />
+        ) : route === "become_seller" ? (
+          <BecomeSellerPage />
+        ) : route === "change_password" ? (
+          <ChangePasswordPage />
+        ) : route === "change_email" ? (
+          <ChangeEmailPage />
+        ) : route === "email_action" ? (
+          <EmailActionPage />
+        ) : route === "my_listings" ? (
+          <MyListingsPage />
+        ) : route === "admin" ? (
+          <AdminRouteGuard>
+            <AdminHubPage />
+          </AdminRouteGuard>
+        ) : route === "admin_payments" ? (
+          <AdminRouteGuard>
+            <AdminPaymentsPage />
+          </AdminRouteGuard>
+        ) : route === "admin_reports" ? (
+          <AdminRouteGuard>
+            <AdminReportsPage />
+          </AdminRouteGuard>
+        ) : route === "admin_seller_applications" ? (
+          <AdminRouteGuard>
+            <AdminSellerApplicationsPage />
+          </AdminRouteGuard>
+        ) : route === "payment_return" ? (
+          <PaymentReturnPage />
+        ) : (
+          <HomePage />
+        )}
       </Suspense>
       <AnimatePresence>
         {showScrollTop && (
