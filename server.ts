@@ -13,6 +13,7 @@ import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
+import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
 import { getPaymentDb } from "./server/sqlite.js";
 import { CATEGORIES } from "./src/constants.js";
