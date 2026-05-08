@@ -3,6 +3,7 @@ import { serverPaymentService } from './payment.service.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import { paymentRepository } from './payment.repository.js';
 import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus } from './paychangu.provider.js';
+import { getPaymentDb } from '../../sqlite.js';
 
 function asRecord(payload: unknown): Record<string, unknown> {
   if (typeof payload === 'string') {
@@ -39,13 +40,52 @@ function isPayChanguSuccessEvent(payload: unknown): boolean {
   return SUCCESS_STATUSES.has(status);
 }
 
+function logWebhookEvent(params: {
+  signatureValid: boolean;
+  eventType?: string;
+  reference?: string;
+  payload: unknown;
+}): void {
+  try {
+    const db = getPaymentDb();
+    const rawPayload = typeof params.payload === 'string' ? params.payload : JSON.stringify(params.payload ?? {});
+
+    db.prepare(
+      `INSERT INTO payment_webhook_events
+       (provider, reference, event_type, signature_valid, payload, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).run(
+      'paychangu',
+      params.reference ?? null,
+      params.eventType ?? null,
+      params.signatureValid ? 1 : 0,
+      rawPayload,
+      new Date().toISOString(),
+    );
+  } catch (error) {
+    console.warn('[webhook] failed to store PayChangu webhook event', error);
+  }
+}
+
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(signature: string | undefined, payload: unknown): Promise<WebhookVerificationResult> {
-    const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload as string);
-    if (!result.valid) throw new Error('Invalid PayChangu webhook signature');
-
     const body = asRecord(payload);
-    const eventType = String(body.event_type ?? body.event ?? '').trim().toLowerCase();
+    const eventType = String(body.event_type ?? body.event ?? '').trim().toLowerCase() || undefined;
+    const reference = String(body.tx_ref ?? body.txRef ?? body.reference ?? '').trim() || undefined;
+
+    const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload as string);
+
+    logWebhookEvent({
+      signatureValid: result.valid,
+      eventType,
+      reference: reference ?? result.reference ?? undefined,
+      payload,
+    });
+
+    if (!result.valid) {
+      throw new Error('Invalid PayChangu webhook signature');
+    }
+
     if (!isAcceptedPaychanguEventType(eventType)) {
       throw new Error(`Unsupported PayChangu event type: ${eventType || 'unknown'}`);
     }
