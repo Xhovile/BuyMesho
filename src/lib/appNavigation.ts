@@ -65,6 +65,8 @@ export const ADMIN_PAYMENTS_PATH = "/admin/payments";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const PAYMENT_RETURN_PATH = "/payment/return";
+export const BUYER_PAYMENTS_PATH = "/buyer-payments";
+export const CART_PATH = "/cart";
 
 export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
   All: EXPLORE_PATH,
@@ -562,6 +564,8 @@ export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
 export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
+export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
+export const navigateToCart = () => navigateToPath(CART_PATH);
 
 export const getSellerUidFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
