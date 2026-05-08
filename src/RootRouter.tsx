@@ -36,9 +36,11 @@ const HomePage = lazy(() => import("./HomePageWithShortcuts"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
 const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
-const MessagesInboxPage = lazy(() => import("./MessagesInboxPage"));
 const MessageThreadPage = lazy(() => import("./MessageThreadPage"));
+const MessagesInboxPage = lazy(() => import("./MessagesInboxPage"));
 const MyListingsPage = lazy(() => import("./MyListingsPage"));
+const OrderDisputePage = lazy(() => import("./OrderDisputePage"));
+const OrderTrackingPage = lazy(() => import("./OrderTrackingPage"));
 const PrivacyPolicyPage = lazy(() => import("./components/PrivacyPolicyPage"));
 const ProfilePage = lazy(() => import("./ProfilePage"));
 const ReportProblemPage = lazy(() => import("./components/ReportProblemPage"));
@@ -77,6 +79,8 @@ export default function RootRouter() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
   const isMessageThread = route === "messages" && !!threadConversationId;
+  const isOrderDisputePath = locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute");
+  const isOrderTrackingPath = locationPath.startsWith("/orders/") && !locationPath.endsWith("/dispute");
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -106,6 +110,8 @@ export default function RootRouter() {
       import("./BuyerPaymentsPage"),
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
+      import("./OrderTrackingPage"),
+      import("./OrderDisputePage"),
     ]);
   }, []);
 
@@ -126,7 +132,7 @@ export default function RootRouter() {
       "admin_payments",
     ];
 
-    const requiresAuth = locationPath === "/buyer-payments" || locationPath === "/cart";
+    const requiresAuth = locationPath === "/buyer-payments" || locationPath === "/cart" || locationPath.startsWith("/orders/");
     const isVerified = !!firebaseUser?.emailVerified;
 
     if (!firebaseUser) {
@@ -150,6 +156,10 @@ export default function RootRouter() {
           <MarketComingSoonPage />
         ) : locationPath.startsWith("/market/coming-soon") ? (
           <MarketComingSoonPage />
+        ) : locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute") ? (
+          <OrderDisputePage />
+        ) : isOrderTrackingPath ? (
+          <OrderTrackingPage />
         ) : locationPath === "/buyer-payments" ? (
           <BuyerPaymentsPage />
         ) : locationPath === "/cart" ? (
