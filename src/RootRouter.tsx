@@ -15,7 +15,7 @@ import loaderImage from "../photos/LoaderPic.png";
 
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
-const AdminPaymentsPage = lazy(() => import("./AdminPaymentsPage"));
+const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
@@ -58,30 +58,18 @@ function RouteLoader({ route }: { route: AppRoute }) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white px-4">
         <div className="flex w-full max-w-xl flex-col items-center gap-6">
-          <img
-            src={loaderImage}
-            alt="BuyMesho loading"
-            className="h-auto w-full max-w-[280px] object-contain"
-          />
-          <div className="progress-outer w-3/4 md:w-2/3">
-            <div className="progress-inner" />
-          </div>
+          <img src={loaderImage} alt="BuyMesho loading" className="h-auto w-full max-w-[280px] object-contain" />
+          <div className="progress-outer w-3/4 md:w-2/3"><div className="progress-inner" /></div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="flex h-screen items-center justify-center bg-zinc-100/70">
-      <Loader2 className="h-10 w-10 animate-spin text-zinc-700" />
-    </div>
-  );
+  return <div className="flex h-screen items-center justify-center bg-zinc-100/70"><Loader2 className="h-10 w-10 animate-spin text-zinc-700" /></div>;
 }
 
 export default function RootRouter() {
-  const [route, setRoute] = useState<AppRoute>(() =>
-    getAppRouteFromLocation(window.location)
-  );
+  const [route, setRoute] = useState<AppRoute>(() => getAppRouteFromLocation(window.location));
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
   const [locationPath, setLocationPath] = useState(() => window.location.pathname);
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
@@ -103,12 +91,8 @@ export default function RootRouter() {
       setLocationSearch(window.location.search);
       setLocationPath(window.location.pathname);
     };
-
     window.addEventListener("popstate", handleRouteChange);
-
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange);
-    };
+    return () => window.removeEventListener("popstate", handleRouteChange);
   }, []);
 
   useEffect(() => {
@@ -121,6 +105,7 @@ export default function RootRouter() {
       import("./MarketComingSoonPage"),
       import("./BuyerPaymentsPage"),
       import("./CartPage"),
+      import("./AdminPaymentsConsole"),
     ]);
   }, []);
 
@@ -145,25 +130,17 @@ export default function RootRouter() {
     const isVerified = !!firebaseUser?.emailVerified;
 
     if (!firebaseUser) {
-      if (route === "verify_email") {
-        navigateToPath(LOGIN_PATH);
-      }
-      if (protectedRoutes.includes(route) || requiresAuth) {
-        navigateToPath(LOGIN_PATH);
-      }
+      if (route === "verify_email") navigateToPath(LOGIN_PATH);
+      if (protectedRoutes.includes(route) || requiresAuth) navigateToPath(LOGIN_PATH);
       return;
     }
 
     if (!isVerified) {
-      if (protectedRoutes.includes(route) || requiresAuth) {
-        navigateToPath(VERIFY_EMAIL_PATH);
-      }
+      if (protectedRoutes.includes(route) || requiresAuth) navigateToPath(VERIFY_EMAIL_PATH);
       return;
     }
 
-    if (route === "verify_email") {
-      navigateToPath(PROFILE_PATH);
-    }
+    if (route === "verify_email") navigateToPath(PROFILE_PATH);
   }, [authLoading, firebaseUser, route, locationPath]);
 
   return (
@@ -230,21 +207,13 @@ export default function RootRouter() {
         ) : route === "my_listings" ? (
           <MyListingsPage />
         ) : route === "admin" ? (
-          <AdminRouteGuard>
-            <AdminHubPage />
-          </AdminRouteGuard>
+          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
         ) : route === "admin_payments" ? (
-          <AdminRouteGuard>
-            <AdminPaymentsPage />
-          </AdminRouteGuard>
+          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
         ) : route === "admin_reports" ? (
-          <AdminRouteGuard>
-            <AdminReportsPage />
-          </AdminRouteGuard>
+          <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) : route === "admin_seller_applications" ? (
-          <AdminRouteGuard>
-            <AdminSellerApplicationsPage />
-          </AdminRouteGuard>
+          <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
         ) : route === "payment_return" ? (
           <PaymentReturnPage />
         ) : (
@@ -253,17 +222,7 @@ export default function RootRouter() {
       </Suspense>
       <AnimatePresence>
         {showScrollTop && (
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 16, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.92 }}
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 h-12 w-12 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center transition-all active:scale-95"
-            aria-label="Scroll to top"
-          >
-            <ArrowUp className="w-5 h-5" />
-          </motion.button>
+          <motion.button type="button" initial={{ opacity: 0, y: 16, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.92 }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 h-12 w-12 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center transition-all active:scale-95" aria-label="Scroll to top"><ArrowUp className="w-5 h-5" /></motion.button>
         )}
       </AnimatePresence>
     </>
