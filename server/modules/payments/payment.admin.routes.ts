@@ -7,12 +7,40 @@ function jsonError(error: unknown, fallback: string): { error: string } {
   };
 }
 
+function parseCsvEnv(value: string | undefined, normalizeLowercase = false): string[] {
+  return String(value ?? '')
+    .split(',')
+    .map((item) => {
+      const trimmed = item.trim();
+      return normalizeLowercase ? trimmed.toLowerCase() : trimmed;
+    })
+    .filter(Boolean);
+}
+
+function hasAdminAccess(user?: { is_admin?: boolean; uid?: string | null; email?: string | null }) {
+  if (user?.is_admin === true) return true;
+
+  const adminEmails = parseCsvEnv(
+    process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS,
+    true
+  );
+  const adminUids = parseCsvEnv(process.env.ADMIN_UIDS || process.env.VITE_ADMIN_UIDS);
+
+  const email = typeof user?.email === 'string' ? user.email.trim().toLowerCase() : '';
+  if (email && adminEmails.includes(email)) return true;
+
+  const uid = typeof user?.uid === 'string' ? user.uid.trim() : '';
+  if (uid && adminUids.includes(uid)) return true;
+
+  return false;
+}
+
 export function createPaymentAdminRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
   router.get('/payments', requireAuth, (req, res) => {
     try {
-      if (!req.user?.is_admin) {
+      if (!hasAdminAccess(req.user)) {
         return res.status(403).json({
           error: 'Admin access required',
         });
@@ -66,7 +94,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
 
   router.get('/webhook-events', requireAuth, (req, res) => {
     try {
-      if (!req.user?.is_admin) {
+      if (!hasAdminAccess(req.user)) {
         return res.status(403).json({
           error: 'Admin access required',
         });
@@ -98,7 +126,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
 
   router.get('/payment-summary', requireAuth, (req, res) => {
     try {
-      if (!req.user?.is_admin) {
+      if (!hasAdminAccess(req.user)) {
         return res.status(403).json({
           error: 'Admin access required',
         });
