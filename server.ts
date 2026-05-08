@@ -687,6 +687,7 @@ async function startServer() {
   registerSessionRoutes(app);
   mountTotpRoutes(app);
   app.use('/api/payments', createPaymentRouter(requireAuth));
+  app.use('/api/admin', createPaymentAdminRouter(requireAuth));
   app.use('/api/escrow', createEscrowRouter(requireAuth));
   app.use('/api/disputes', createDisputeRouter(requireAuth));
   app.use('/api/payouts', createPayoutRouter(requireAuth));
