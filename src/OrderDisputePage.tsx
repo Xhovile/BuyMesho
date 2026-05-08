@@ -3,6 +3,27 @@ import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "
 import { navigateBackOrPath, EXPLORE_PATH } from "./lib/appNavigation";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 
+const DISPUTES_KEY = "__buymesho_buyer_disputes";
+
+type DisputeRecord = {
+  id: string;
+  orderId: string | null;
+  reference: string | null;
+  reason: string;
+  details: string;
+  createdAt: string;
+};
+
+const saveDispute = (record: DisputeRecord) => {
+  try {
+    const raw = localStorage.getItem(DISPUTES_KEY);
+    const existing: DisputeRecord[] = raw ? (JSON.parse(raw) as DisputeRecord[]) : [];
+    localStorage.setItem(DISPUTES_KEY, JSON.stringify([record, ...existing].slice(0, 50)));
+  } catch {
+    // ignore storage errors
+  }
+};
+
 export default function OrderDisputePage() {
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
   const [reason, setReason] = useState("");
@@ -33,6 +54,14 @@ export default function OrderDisputePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason.trim()) return;
+    saveDispute({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      orderId: order?.orderId ?? null,
+      reference: order?.reference ?? orderId,
+      reason,
+      details: details.trim(),
+      createdAt: new Date().toISOString(),
+    });
     setSubmitted(true);
   };
 
@@ -150,10 +179,7 @@ export default function OrderDisputePage() {
                     <AlertTriangle className="h-4 w-4" />
                     Before you submit
                   </div>
-                  <p className="mt-2 leading-6">
-                    Only raise a dispute if you have a genuine issue with your order. False disputes may result in account
-                    restrictions.
-                  </p>
+                  <p className="mt-2 leading-6">Only raise a dispute if you have a genuine issue with your order. False disputes may result in account restrictions.</p>
                 </div>
 
                 <button
