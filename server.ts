@@ -11,6 +11,7 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
+import { getConfiguredAdminEmails, hasAdminAccess } from "./server/auth/adminAccess.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
@@ -588,47 +589,10 @@ try {
   console.warn("Seller ratings index setup failed:", e);
 }
 
-const ADMIN_EMAILS = (
-  process.env.ADMIN_EMAILS ||
-  process.env.VITE_ADMIN_EMAILS ||
-  ""
-)
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
-
-if (ADMIN_EMAILS.length === 0) {
+if (getConfiguredAdminEmails().length === 0) {
   console.warn(
     "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
   );
-}
-
-const ADMIN_UIDS = (
-  process.env.ADMIN_UIDS ||
-  process.env.VITE_ADMIN_UIDS ||
-  ""
-)
-  .split(",")
-  .map((uid) => uid.trim())
-  .filter(Boolean);
-
-function isAdminUser(identity?: { email?: string | null; uid?: string | null }) {
-  const email = identity?.email ? String(identity.email).toLowerCase() : "";
-  if (email && ADMIN_EMAILS.includes(email)) return true;
-
-  const uid = identity?.uid ? String(identity.uid) : "";
-  if (uid && ADMIN_UIDS.includes(uid)) return true;
-
-  return false;
-}
-
-function hasAdminAccess(identity?: {
-  email?: string | null;
-  uid?: string | null;
-  is_admin?: boolean;
-}) {
-  if (identity?.is_admin === true) return true;
-  return isAdminUser(identity);
 }
 
 function logAdminAction({
