@@ -193,9 +193,11 @@ export default function AdminPaymentsPage() {
             </p>
           </div>
 
-          <div className="flex items-stretch overflow-hidden rounded-2xl border border-zinc-200 shrink-0">
+          <div role="tablist" aria-label="View selector" className="flex items-stretch overflow-hidden rounded-2xl border border-zinc-200 shrink-0">
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "payments"}
               onClick={() => setActiveTab("payments")}
               className={`flex flex-col items-start px-5 py-3 text-left transition-colors ${
                 activeTab === "payments"
@@ -209,6 +211,8 @@ export default function AdminPaymentsPage() {
             <div className="w-px bg-zinc-200 self-stretch" />
             <button
               type="button"
+              role="tab"
+              aria-selected={activeTab === "webhooks"}
               onClick={() => setActiveTab("webhooks")}
               className={`flex flex-col items-start px-5 py-3 text-left transition-colors ${
                 activeTab === "webhooks"
