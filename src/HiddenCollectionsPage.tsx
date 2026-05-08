@@ -29,7 +29,6 @@ type SellerProfile = {
   business_name?: string | null;
   university?: string | null;
   bio?: string | null;
-  whatsapp_number?: string | null;
   is_verified?: boolean;
   is_seller?: boolean;
 };

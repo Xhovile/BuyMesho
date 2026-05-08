@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Loader2, ShoppingBag, X } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
+import { ENDPOINTS } from "../shared/api/endpoints";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 
@@ -60,7 +61,7 @@ export default function CheckoutModal({
       const returnUrl = `${window.location.origin}/payment/return`;
       const cancelUrl = `${window.location.origin}/payment/return?cancelled=1`;
 
-      const result = (await apiFetch("/api/payments/checkout", {
+      const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

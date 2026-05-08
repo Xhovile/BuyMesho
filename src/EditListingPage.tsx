@@ -14,7 +14,6 @@ import {
 } from "./lib/appNavigation";
 import { fetchListingById } from "./lib/listings";
 import { resolveUniversity } from "./lib/university";
-import { resolveWhatsappNumber } from "./lib/whatsapp";
 import type { CreateListingPayload, Listing, ListingDraft } from "./types";
 
 type FeedbackState = {
@@ -30,7 +29,7 @@ function deriveListingMode(listing: Listing): import("./types").ListingMode {
   return "normal";
 }
 
-function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp?: string): ListingDraft {
+function toDraft(listing: Listing, fallbackUniversity?: string): ListingDraft {
   return {
     name: listing.name || "",
     price: String(listing.price ?? ""),
@@ -42,7 +41,6 @@ function toDraft(listing: Listing, fallbackUniversity?: string, fallbackWhatsapp
     university: resolveUniversity(listing.university || fallbackUniversity),
     photos: Array.isArray(listing.photos) ? listing.photos : [],
     video_url: listing.video_url || "",
-    whatsapp_number: resolveWhatsappNumber(listing.whatsapp_number || fallbackWhatsapp),
     status: listing.status || "available",
     condition: listing.condition || "used",
     quantity: String(listing.quantity ?? 1),
@@ -230,7 +228,7 @@ export default function EditListingPage() {
 
             <ListingStudioFormWide
               mode="edit"
-              initialData={toDraft(listing, profile?.university, profile?.whatsapp_number)}
+              initialData={toDraft(listing, profile?.university)}
               onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
               onSubmit={handleSave}
               showFeedback={showFeedback}

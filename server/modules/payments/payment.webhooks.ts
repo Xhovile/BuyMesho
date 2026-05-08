@@ -101,27 +101,50 @@ export class PaymentWebhookHandler {
       parsedPayload = payload;
     }
 
-    if (isPayChanguSuccessEvent(parsedPayload)) {
-      const body = parsedPayload as Record<string, unknown>;
-      const data = (body.data as Record<string, unknown> | undefined) ?? body;
-      const txRef = String(data.tx_ref ?? data.txRef ?? result.reference ?? '');
-      const currency = String(data.currency ?? 'MWK');
-      const rawAmount = data.amount;
-      const amount = typeof rawAmount === 'number'
-        ? { amount: rawAmount, currency }
-        : undefined;
-
-      applyVerifiedPayChanguPayment({
-        verified: true,
-        provider: 'paychangu',
-        txRef,
-        reference: txRef,
-        status: String(data.status ?? 'captured'),
-        currency,
-        amount,
-        rawResponse: body,
-      });
+    if (!isPayChanguSuccessEvent(parsedPayload)) {
+      return result;
     }
+
+    const txRef = extractTxRef(parsedPayload, result.reference ?? result.txRef);
+    if (!txRef) {
+      throw new Error('Missing PayChangu txRef in webhook payload');
+    }
+
+    const payment = paymentRepository.findByReference(txRef);
+    if (!payment) {
+      throw new Error(`No stored payment found for PayChangu reference: ${txRef}`);
+    }
+
+    const order = orderRepository.findById(payment.orderId) ?? orderRepository.findByPaymentReference(txRef);
+    if (!order) {
+      throw new Error(`No stored order found for PayChangu payment reference: ${txRef}`);
+    }
+
+    if (order.paymentReference && order.paymentReference !== txRef) {
+      throw new Error(`Webhook reference does not match the order payment reference for order ${order.id}`);
+    }
+
+    const data = (parsedPayload as Record<string, unknown>).data as Record<string, unknown> | undefined;
+    const webhookCurrency = String(data?.currency ?? order.currency ?? 'MWK');
+    const rawAmount = data?.amount;
+    const amount = typeof rawAmount === 'number'
+      ? { amount: rawAmount, currency: webhookCurrency }
+      : undefined;
+
+    if (amount && (amount.amount !== order.total.amount || amount.currency.toUpperCase() !== order.total.currency.toUpperCase())) {
+      throw new Error(`Webhook amount does not match order total for order ${order.id}`);
+    }
+
+    applyVerifiedPayChanguPayment({
+      verified: true,
+      provider: 'paychangu',
+      txRef,
+      reference: txRef,
+      status: String(data?.status ?? 'captured'),
+      currency: webhookCurrency,
+      amount,
+      rawResponse: asRecord(parsedPayload),
+    });
 
     return result;
   }

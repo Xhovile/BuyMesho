@@ -3,7 +3,11 @@ import LegacyExploreApp from "./AppLegacy";
 import { getListingParamsFromUrl } from "./lib/listingUrl";
 import { EXPLORE_PATH, navigateToListingDetails } from "./lib/appNavigation";
 
-export default function App() {
+type AppProps = {
+  locationPath?: string;
+};
+
+export default function App(_props: AppProps) {
   useEffect(() => {
     const redirectLegacyExploreListing = () => {
       const { listing, imageIndex } = getListingParamsFromUrl();
@@ -21,4 +25,4 @@ export default function App() {
   }, []);
 
   return <LegacyExploreApp />;
-} 
+}

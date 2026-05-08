@@ -6,6 +6,8 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import loaderImage from "../photos/LoaderPic.png";
 
 const App = lazy(() => import("./App.new"));
+const AdminHubPage = lazy(() => import("./AdminHubPage"));
+const AdminPaymentsPage = lazy(() => import("./AdminPaymentsPage"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
@@ -23,6 +25,7 @@ const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
+const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
 const MessagesInboxPage = lazy(() => import("./MessagesInboxPage"));
 const MessageThreadPage = lazy(() => import("./MessageThreadPage"));
 const MyListingsPage = lazy(() => import("./MyListingsPage"));
@@ -70,6 +73,7 @@ export default function RootRouter() {
     getAppRouteFromLocation(window.location)
   );
   const [locationSearch, setLocationSearch] = useState(() => window.location.search);
+  const [locationPath, setLocationPath] = useState(() => window.location.pathname);
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -87,6 +91,7 @@ export default function RootRouter() {
     const handleRouteChange = () => {
       setRoute(getAppRouteFromLocation(window.location));
       setLocationSearch(window.location.search);
+      setLocationPath(window.location.pathname);
     };
 
     window.addEventListener("popstate", handleRouteChange);
@@ -97,14 +102,15 @@ export default function RootRouter() {
   }, []);
 
   useEffect(() => {
-  void Promise.allSettled([
-    import("./App.new"),
-    import("./HomePage"),
-    import("./CategoryPage"),
-    import("./MessagesInboxPage"),
-    import("./MessageThreadPage"),
-  ]);
-}, []);
+    void Promise.allSettled([
+      import("./App.new"),
+      import("./HomePage"),
+      import("./CategoryPage"),
+      import("./MessagesInboxPage"),
+      import("./MessageThreadPage"),
+      import("./MarketComingSoonPage"),
+    ]);
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
@@ -119,6 +125,8 @@ export default function RootRouter() {
       "change_email",
       "my_listings",
       "messages",
+      "admin",
+      "admin_payments",
     ];
 
     const isVerified = !!firebaseUser?.emailVerified;
@@ -148,8 +156,10 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {route === "category" ? <CategoryPage /> :
-        route === "explore" ? <App /> :
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? <MarketComingSoonPage /> :
+        locationPath.startsWith("/market/coming-soon") ? <MarketComingSoonPage /> :
+        route === "category" ? <CategoryPage /> :
+        route === "explore" ? <App key={locationPath} /> :
         route === "saved" ? <SavedPage /> :
         route === "hidden" ? <HiddenCollectionsPage /> :
         route === "settings" ? <SettingsPage /> :
@@ -176,6 +186,12 @@ export default function RootRouter() {
         route === "change_email" ? <ChangeEmailPage /> :
         route === "email_action" ? <EmailActionPage /> :
         route === "my_listings" ? <MyListingsPage /> :
+        route === "admin" ? (
+          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
+        ) :
+        route === "admin_payments" ? (
+          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+        ) :
         route === "admin_reports" ? (
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) :

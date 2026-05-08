@@ -13,11 +13,13 @@ export class SqlitePaymentRepository {
 
   save(payment: StoredPayment): StoredPayment {
     this.db.prepare(`
-      INSERT INTO payments (id, order_id, provider, method, status, reference, provider_reference, checkout_url, paid_at, raw_response, verified, verification, created_at, updated_at)
-      VALUES (@id, @order_id, @provider, @method, @status, @reference, @provider_reference, @checkout_url, @paid_at, @raw_response, @verified, @verification, @created_at, @updated_at)
+      INSERT INTO payments (id, order_id, provider, method, status, reference, provider_reference, currency, amount, checkout_url, paid_at, raw_response, verified, verification, created_at, updated_at)
+      VALUES (@id, @order_id, @provider, @method, @status, @reference, @provider_reference, @currency, @amount, @checkout_url, @paid_at, @raw_response, @verified, @verification, @created_at, @updated_at)
       ON CONFLICT(reference) DO UPDATE SET
         status = excluded.status,
         provider_reference = excluded.provider_reference,
+        currency = excluded.currency,
+        amount = excluded.amount,
         checkout_url = excluded.checkout_url,
         paid_at = excluded.paid_at,
         raw_response = excluded.raw_response,
@@ -32,6 +34,8 @@ export class SqlitePaymentRepository {
       status: payment.status,
       reference: payment.reference,
       provider_reference: payment.providerReference ?? null,
+      currency: payment.amount.currency,
+      amount: payment.amount.amount,
       checkout_url: payment.checkoutUrl ?? null,
       paid_at: payment.paidAt ?? null,
       raw_response: payment.rawResponse ? JSON.stringify(payment.rawResponse) : null,
@@ -83,6 +87,10 @@ export class SqlitePaymentRepository {
       status: row.status as StoredPayment['status'],
       reference: row.reference as string,
       providerReference: (row.provider_reference as string | null) ?? null,
+      amount: {
+        amount: Number(row.amount ?? 0),
+        currency: String(row.currency ?? 'MWK'),
+      },
       checkoutUrl: (row.checkout_url as string | null) ?? null,
       paidAt: (row.paid_at as string | null) ?? null,
       rawResponse,

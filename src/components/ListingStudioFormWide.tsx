@@ -373,11 +373,6 @@ export default function ListingStudioFormWide({
       return;
     }
 
-    if (!form.whatsapp_number.trim()) {
-      setError("whatsapp_number", "WhatsApp number is required.");
-      return;
-    }
-
     if (!Number.isFinite(priceNum) || priceNum <= 0) {
       setError("price", "Please enter a valid price.");
       return;
@@ -464,7 +459,6 @@ export default function ListingStudioFormWide({
       item_type: form.item_type || null,
       spec_values: isSchemaDrivenCategory ? form.spec_values : {},
       university: form.university as University,
-      whatsapp_number: form.whatsapp_number,
       status: form.status,
       condition: form.condition,
       quantity: quantityNum,
@@ -542,11 +536,6 @@ export default function ListingStudioFormWide({
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Price (MK)</label>
                 <input type="number" value={form.price} onChange={(e) => { clearError("price"); setForm((prev) => ({ ...prev, price: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.price ? "border-red-500" : "border-zinc-200"}`} />
                 {fieldErrors.price ? <p className="mt-1 text-xs text-red-600">{fieldErrors.price}</p> : null}
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">WhatsApp number</label>
-                <input value={form.whatsapp_number} onChange={(e) => { clearError("whatsapp_number"); setForm((prev) => ({ ...prev, whatsapp_number: e.target.value })); }} className={`w-full rounded-2xl border bg-white px-4 py-3 outline-none focus:ring-2 focus:ring-primary/20 ${fieldErrors.whatsapp_number ? "border-red-500" : "border-zinc-200"}`} />
-                {fieldErrors.whatsapp_number ? <p className="mt-1 text-xs text-red-600">{fieldErrors.whatsapp_number}</p> : null}
               </div>
               <div>
                 <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-400">Total quantity</label>

@@ -7,8 +7,25 @@ const __dirname = path.dirname(__filename);
 
 let _db: Database.Database | null = null;
 
+function ensureColumn(db: Database.Database, tableName: string, columnName: string, definition: string): void {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  if (!columns.some((column) => column.name === columnName)) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  }
+}
+
 function initPaymentSchema(db: Database.Database): void {
   db.exec(`
+    CREATE TABLE IF NOT EXISTS listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      seller_uid TEXT NOT NULL,
+      name TEXT NOT NULL,
+      price REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'available',
+      quantity INTEGER NOT NULL DEFAULT 1,
+      sold_quantity INTEGER NOT NULL DEFAULT 0
+    );
+
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       order_id TEXT NOT NULL,
@@ -17,6 +34,8 @@ function initPaymentSchema(db: Database.Database): void {
       status TEXT NOT NULL DEFAULT 'pending',
       reference TEXT NOT NULL UNIQUE,
       provider_reference TEXT,
+      currency TEXT NOT NULL DEFAULT 'MWK',
+      amount REAL NOT NULL DEFAULT 0,
       checkout_url TEXT,
       paid_at TEXT,
       raw_response TEXT,
@@ -119,6 +138,9 @@ function initPaymentSchema(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_payouts_seller_id ON payouts(seller_id);
   `);
+
+  ensureColumn(db, 'payments', 'currency', "TEXT NOT NULL DEFAULT 'MWK'");
+  ensureColumn(db, 'payments', 'amount', 'REAL NOT NULL DEFAULT 0');
 }
 
 const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000; // 10 minutes

@@ -11,13 +11,17 @@ async function runMigration() {
     const schemaPath = path.join(__dirname, "schema.sql");
     const sql = fs.readFileSync(schemaPath, "utf8");
 
-    await pool.query(sql);
-    console.log("PostgreSQL schema applied successfully.");
+    const client = await pool.connect();
+    try {
+      await client.query(sql);
+    } finally {
+      client.release();
+    }
+
+    console.log("SQLite schema applied successfully.");
   } catch (error) {
     console.error("Migration failed:", error);
     process.exit(1);
-  } finally {
-    await pool.end();
   }
 }
 

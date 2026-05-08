@@ -137,15 +137,17 @@ export function RelatedRailCard({
               </p>
             )}
           </div>
-
-          <span
-            className={`truncate font-bold uppercase tracking-[0.12em] text-zinc-500 ${
-              isDesktop ? "max-w-[100px] text-[10px]" : "max-w-[72px] text-[9px]"
-            }`}
-          >
-            {item.university}
-          </span>
         </div>
+
+        {item.description?.trim() ? (
+          <p
+            className={`min-h-[1.25rem] text-zinc-500 ${isDesktop ? "line-clamp-2 text-[11px] leading-5" : "line-clamp-1 text-[10px] leading-4"}`}
+          >
+            {item.description.trim()}
+          </p>
+        ) : (
+          <div className="min-h-[1.25rem]" />
+        )}
 
         <button
           type="button"

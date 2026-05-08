@@ -8,6 +8,7 @@ import { paychanguProvider } from './paychangu.provider.js';
 import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
+import { paymentRepository } from './payment.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -45,7 +46,6 @@ function jsonError(error: unknown, fallback: string): { error: string } {
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  // POST /api/payments/checkout — atomic order creation + PayChangu initialisation
   router.post('/checkout', checkoutLimiter, requireAuth, async (req, res) => {
     try {
       const idempotencyKey = (req.headers['idempotency-key'] ?? req.headers['Idempotency-Key']) as string | undefined;
@@ -84,18 +84,22 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       if (!listing) {
         return res.status(404).json({ error: 'Listing not found' });
       }
+
       if (listing.status === 'sold') {
         return res.status(400).json({ error: 'This listing is no longer available' });
       }
 
       const safeQty = Math.max(1, Number(quantity));
       const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+
       if (availableQty === 0) {
         return res.status(400).json({ error: 'This listing is out of stock' });
       }
+
       if (safeQty > availableQty) {
         return res.status(400).json({ error: `Only ${availableQty} unit(s) available` });
       }
+
       const unitPrice = Number(listing.price);
       const total = unitPrice * safeQty;
       const currency = 'MWK';
@@ -130,6 +134,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       serverOrderService.create(order);
 
       const config = createServerPaymentConfigFromEnv();
+
       const paymentRequest: CreatePaymentRequest = {
         orderId,
         provider: 'paychangu',
@@ -150,6 +155,8 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       };
 
       const payment = await paychanguProvider.createPayment(paymentRequest, config);
+
+      paymentRepository.save({ ...payment, verified: false });
 
       orderRepository.update(orderId, (o) => ({
         ...o,
@@ -175,7 +182,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/initialize — generic provider initialisation (dispatches by provider)
   router.post('/initialize', initializeLimiter, requireAuth, async (req, res) => {
     try {
       const result = await serverPaymentService.createPayment(req.body as CreatePaymentRequest);
@@ -185,7 +191,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/paychangu/initialize
   router.post('/paychangu/initialize', requireAuth, async (req, res) => {
     try {
       const result = await paymentController.createPaychanguPayment(req.body);
@@ -195,8 +200,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // GET /api/payments/paychangu/verify/:txRef
-  router.get('/paychangu/verify/:txRef', requireAuth, async (req, res) => {
+  // Public verification route for payment_return redirects.
+  // PayChangu redirects the browser back without the app Bearer token.
+  router.get('/paychangu/verify/:txRef', async (req, res) => {
     try {
       const txRef = decodeURIComponent(req.params.txRef);
       const result = await paymentController.verifyPaychangu(txRef);
@@ -206,7 +212,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/paychangu/webhook  (no auth — called by payment provider)
   router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
     try {
       const rawBody = Buffer.isBuffer(req.body)
@@ -214,9 +219,11 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         : typeof req.body === 'string'
           ? req.body
           : JSON.stringify(req.body ?? {});
+
       const payload = rawBody ? JSON.parse(rawBody) : {};
       const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
       const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
+
       res.status(200).json(result);
     } catch (error) {
       res.status(400).json(jsonError(error, 'Failed to process webhook'));

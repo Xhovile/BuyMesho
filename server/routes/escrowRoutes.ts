@@ -61,7 +61,10 @@ export function createEscrowRouter(requireAuth: RequestHandler): express.Router 
         return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
       }
       const updated = escrowRepository.updateState(orderId, 'released');
-      serverOrderService.setStatus(orderId, 'fulfilled');
+      const orderUpdated = serverOrderService.setStatus(orderId, 'fulfilled');
+      if (!orderUpdated) {
+        console.warn(`[escrow] release: order ${orderId} not found when updating status to fulfilled`);
+      }
       return res.status(200).json(updated);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to release escrow'));
@@ -80,7 +83,10 @@ export function createEscrowRouter(requireAuth: RequestHandler): express.Router 
         return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
       }
       const updated = escrowRepository.updateState(orderId, 'refunded');
-      serverOrderService.setStatus(orderId, 'refunded');
+      const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
+      if (!orderUpdated) {
+        console.warn(`[escrow] refund: order ${orderId} not found when updating status to refunded`);
+      }
       return res.status(200).json(updated);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to refund escrow'));
@@ -126,7 +132,7 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
   });
 
   // GET /api/disputes/:orderId — fetch dispute for an order
-  router.get('/:orderId', requireAuth, (req, res) => {
+  router.get('/:orderId', disputeLimiter, requireAuth, (req, res) => {
     try {
       const db = getPaymentDb();
       const dispute = db

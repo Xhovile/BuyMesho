@@ -4,7 +4,11 @@ import { signOut } from "firebase/auth";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import { auth } from "./firebase";
-import { navigateToPath } from "./lib/appNavigation";
+import {
+  consumeAuthReturnPath,
+  navigateToLogin,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { refreshEmailVerificationState, resendVerificationEmail } from "./lib/security";
 import { useAuthUser } from "./hooks/useAuthUser";
 
@@ -32,11 +36,11 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (authLoading) return;
     if (!firebaseUser) {
-      navigateToPath("/login");
+      navigateToLogin();
       return;
     }
     if (emailVerified) {
-      navigateToPath("/profile");
+      navigateToPath(consumeAuthReturnPath("/profile"));
     }
   }, [authLoading, firebaseUser, emailVerified]);
 
@@ -56,11 +60,11 @@ export default function VerifyEmailPage() {
         showFeedback(
           "success",
           "Email verified",
-          "Verification complete. Open Profile to continue.",
+          "Verification complete. Continue to the page you were on.",
           [
             {
-              label: "Go to Profile",
-              onClick: () => navigateToPath("/profile"),
+              label: "Continue",
+              onClick: () => navigateToPath(consumeAuthReturnPath("/profile")),
             },
           ]
         );
@@ -95,7 +99,7 @@ export default function VerifyEmailPage() {
     setBusy(true);
     try {
       await signOut(auth);
-      navigateToPath("/login");
+      navigateToLogin();
     } finally {
       setBusy(false);
     }

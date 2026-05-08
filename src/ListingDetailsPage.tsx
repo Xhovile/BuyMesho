@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, LOGIN_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "./lib/listingUrl";
 import { getListingItemConfig } from "./listingSchemas";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -10,7 +10,13 @@ import { fetchListingById } from "./lib/listings";
 import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } from "./lib/savedListings";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { startConversationFromListing } from "./lib/messages";
+import {
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+} from "./lib/hiddenCollections";
 import ListingActionsMenu from "./components/ListingActionsMenu";
+import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import ListingGallery from "./components/listingDetails/ListingGallery";
 import ListingSummary from "./components/listingDetails/ListingSummary";
@@ -33,7 +39,6 @@ type SellerProfile = {
   bio?: string;
   is_verified?: boolean;
   join_date?: string;
-  whatsapp_number?: string;
   profile_views?: number;
 };
 
@@ -74,6 +79,14 @@ export default function ListingDetailsPage() {
   const [shareNoticeMessage, setShareNoticeMessage] = useState("");
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [authPromptOpen, setAuthPromptOpen] = useState(false);
+  const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | null>(null);
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+    readHiddenSellerUids()
+  );
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+    readHiddenListingIds()
+  );
 
   const detailsRef = useRef<HTMLElement | null>(null);
   const exploreRef = useRef<HTMLElement | null>(null);
@@ -155,6 +168,15 @@ export default function ListingDetailsPage() {
     void refreshRatingSummary(listing.seller_uid);
   }, [listing?.seller_uid, firebaseUser?.uid]);
 
+  useEffect(() => {
+    const syncHiddenCollections = () => {
+      setHiddenSellerUids(readHiddenSellerUids());
+      setHiddenListingIds(readHiddenListingIds());
+    };
+
+    return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
   const galleryImages = useMemo(() => {
     if (!listing) return [];
     return Array.isArray(listing.photos) && listing.photos.length > 0 ? listing.photos : [`https://picsum.photos/seed/${listing.id}/900/900`];
@@ -196,12 +218,28 @@ export default function ListingDetailsPage() {
 
   const availableQuantity = listing ? Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)) : 0;
   const currentImage = galleryImages[currentGalleryIndex] || galleryImages[0] || "";
-  const visibleRelated = relatedListings.slice(0, 18);
+  const hiddenSellerSet = useMemo(
+    () => new Set(hiddenSellerUids),
+    [hiddenSellerUids]
+  );
+  const hiddenListingSet = useMemo(
+    () => new Set(hiddenListingIds),
+    [hiddenListingIds]
+  );
+  const visibleRelated = relatedListings
+    .filter((item) => {
+      const listingIdValue = Number(item.id);
+      const hiddenByListingId =
+        Number.isInteger(listingIdValue) && hiddenListingSet.has(listingIdValue);
+      const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+      return !hiddenByListingId && !hiddenBySeller;
+    })
+    .slice(0, 18);
   const sameCampusListings = visibleRelated.filter((item) => item.university === listing?.university && item.id !== listing?.id);
   const sameCategoryListings = visibleRelated.filter((item) => item.category === listing?.category && item.id !== listing?.id);
   const sellerOtherListings = visibleRelated.filter((item) => item.seller_uid === listing?.seller_uid && item.id !== listing?.id);
   const showOffersBlock = listing?.listing_mode === "deal" || listing?.listing_mode === "wholesale";
-  
+
   useEffect(() => {
     const targets: Array<[SectionKey, HTMLElement | null]> = [
       ["details", detailsRef.current],
@@ -238,10 +276,25 @@ export default function ListingDetailsPage() {
     setShareNoticeOpen(true);
   };
 
+  const openAuthPrompt = (action: "message" | "buy") => {
+    setAuthPromptAction(action);
+    setAuthPromptOpen(true);
+  };
+
+  const closeAuthPrompt = () => {
+    setAuthPromptOpen(false);
+    setAuthPromptAction(null);
+  };
+
+  const continueToAuth = () => {
+    closeAuthPrompt();
+    navigateToLogin();
+  };
+
   const handleShare = async () => {
     if (!listing) return;
     const shareUrl = buildListingShareUrl(listing.id, currentGalleryIndex);
-    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\nWhatsApp: ${listing.whatsapp_number}\n\nOpen this listing: ${shareUrl}`;
+    const shareText = `BuyMesho Listing\n${listing.name}\nPrice: MK ${Number(listing.price).toLocaleString()}\nCampus: ${listing.university}\n\nOpen this listing: ${shareUrl}`;
 
     try {
       if ((navigator as any).share) {
@@ -355,15 +408,16 @@ export default function ListingDetailsPage() {
 
   const handleBuyNow = () => {
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      openAuthPrompt("buy");
       return;
     }
     setCheckoutOpen(true);
   };
 
-  const handleMessageSeller = async () => {    if (!listing) return;
+  const handleMessageSeller = async () => {
+    if (!listing) return;
     if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
+      openAuthPrompt("message");
       return;
     }
 
@@ -373,22 +427,6 @@ export default function ListingDetailsPage() {
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to open conversation.");
     }
-  };
-
-  const handleWhatsAppSeller = async () => {
-    if (!listing) return;
-    if (!firebaseUser) {
-      navigateToPath(LOGIN_PATH);
-      return;
-    }
-
-    try {
-      await fetch(`/api/listings/${listing.id}/whatsapp-click`, { method: "POST", headers: { "Content-Type": "application/json" } });
-    } catch (error) {
-      console.error("Failed to track WhatsApp click", error);
-    }
-
-    window.open(`https://wa.me/${listing.whatsapp_number}?text=${encodeURIComponent(`Hi, I'm interested in your \"${listing.name}\" on BuyMesho. Is it still available?\n\nListing: ${buildListingShareUrl(listing.id, currentGalleryIndex)}`)}`, "_blank", "noopener,noreferrer");
   };
 
   const refreshRatingSummary = async (sellerUid: string) => {
@@ -482,7 +520,6 @@ export default function ListingDetailsPage() {
                         onToggleStatus={handleDetailToggleStatus}
                         onRecordSale={handleDetailRecordSale}
                         onRestock={handleDetailRestock}
-                        requireLoginForContact={() => navigateToPath(LOGIN_PATH)}
                       />
                     }
                   />
@@ -497,7 +534,6 @@ export default function ListingDetailsPage() {
                   isLoggedIn={!!firebaseUser}
                   currentUserUid={firebaseUser?.uid}
                   onMessageSeller={handleMessageSeller}
-                  onWhatsAppSeller={handleWhatsAppSeller}
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
                 />
@@ -505,7 +541,7 @@ export default function ListingDetailsPage() {
                 <ListingDetailsBlock
                   description={listing.description}
                   sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
-                  deliveryNote="Contact the seller on WhatsApp to confirm collection, delivery, or campus handover details."
+                  deliveryNote="Arrange collection, delivery, or campus handover directly through the in-app chat."
                 />
               </div>
             </section>
@@ -541,6 +577,20 @@ export default function ListingDetailsPage() {
       </main>
 
       <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={() => setShareNoticeOpen(false)} />
+
+      <ConfirmModal
+        open={authPromptOpen}
+        title={authPromptAction === "buy" ? "Sign in to buy" : "Sign in to message"}
+        message={
+          authPromptAction === "buy"
+            ? "You need to sign in or create an account before you can buy this listing."
+            : "You need to sign in or create an account before you can message the seller."
+        }
+        confirmText="Continue"
+        cancelText="Cancel"
+        onCancel={closeAuthPrompt}
+        onConfirm={continueToAuth}
+      />
 
       {listing && (
         <CheckoutModal
