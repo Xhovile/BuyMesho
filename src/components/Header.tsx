@@ -115,7 +115,7 @@ export default function Header({
     const updateHeaderVisibility = () => {
       setTopRowHidden((prev) => {
         if (prev) return window.scrollY >= 2;
-        return window.scrollY > 20;
+        return window.scrollY > 40;
       });
     };
 
