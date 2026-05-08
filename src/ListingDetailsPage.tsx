@@ -10,6 +10,11 @@ import { fetchListingById } from "./lib/listings";
 import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } from "./lib/savedListings";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { startConversationFromListing } from "./lib/messages";
+import {
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+} from "./lib/hiddenCollections";
 import ListingActionsMenu from "./components/ListingActionsMenu";
 import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
@@ -76,6 +81,12 @@ export default function ListingDetailsPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | null>(null);
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+    readHiddenSellerUids()
+  );
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+    readHiddenListingIds()
+  );
 
   const detailsRef = useRef<HTMLElement | null>(null);
   const exploreRef = useRef<HTMLElement | null>(null);
@@ -157,6 +168,16 @@ export default function ListingDetailsPage() {
     void refreshRatingSummary(listing.seller_uid);
   }, [listing?.seller_uid, firebaseUser?.uid]);
 
+  useEffect(() => {
+    const syncHiddenCollections = () => {
+      setHiddenSellerUids(readHiddenSellerUids());
+      setHiddenListingIds(readHiddenListingIds());
+    };
+
+    syncHiddenCollections();
+    return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
   const galleryImages = useMemo(() => {
     if (!listing) return [];
     return Array.isArray(listing.photos) && listing.photos.length > 0 ? listing.photos : [`https://picsum.photos/seed/${listing.id}/900/900`];
@@ -198,7 +219,23 @@ export default function ListingDetailsPage() {
 
   const availableQuantity = listing ? Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)) : 0;
   const currentImage = galleryImages[currentGalleryIndex] || galleryImages[0] || "";
-  const visibleRelated = relatedListings.slice(0, 18);
+  const hiddenSellerSet = useMemo(
+    () => new Set(hiddenSellerUids),
+    [hiddenSellerUids]
+  );
+  const hiddenListingSet = useMemo(
+    () => new Set(hiddenListingIds),
+    [hiddenListingIds]
+  );
+  const visibleRelated = relatedListings
+    .filter((item) => {
+      const listingIdValue = Number(item.id);
+      const hiddenByListingId =
+        Number.isInteger(listingIdValue) && hiddenListingSet.has(listingIdValue);
+      const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+      return !hiddenByListingId && !hiddenBySeller;
+    })
+    .slice(0, 18);
   const sameCampusListings = visibleRelated.filter((item) => item.university === listing?.university && item.id !== listing?.id);
   const sameCategoryListings = visibleRelated.filter((item) => item.category === listing?.category && item.id !== listing?.id);
   const sellerOtherListings = visibleRelated.filter((item) => item.seller_uid === listing?.seller_uid && item.id !== listing?.id);
