@@ -45,15 +45,18 @@ export default function PaymentReturnPage() {
         if (!mounted) return;
 
         if (result.verified) {
-          if (result.reference || txRef) {
-            updateBuyerPaymentStatus(result.reference ?? txRef, {
-              status: "captured",
-              orderId: result.orderId ?? null,
-              txRef,
-            });
-          }
+          const reference = result.reference ?? txRef;
+          updateBuyerPaymentStatus(reference, {
+            status: "captured",
+            orderId: result.orderId ?? null,
+            txRef,
+          });
           setOrderId(result.orderId ?? null);
           setStatus("success");
+
+          setTimeout(() => {
+            navigateToPath(`/orders/${encodeURIComponent(reference)}`);
+          }, 900);
         } else {
           updateBuyerPaymentStatus(txRef, { status: "failed", txRef });
           setErrorMessage(result.status ? `Payment status: ${result.status}` : "The payment could not be verified.");
@@ -89,6 +92,7 @@ export default function PaymentReturnPage() {
             <h1 className="text-2xl font-black text-zinc-900">Payment successful!</h1>
             <p className="text-sm text-zinc-600 leading-6">Your payment has been confirmed and your order is now held securely in escrow. The seller has been notified.</p>
             {orderId && <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">Order: {orderId}</p>}
+            <p className="text-xs text-zinc-400">Redirecting to your order tracking page…</p>
             <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors">Continue shopping</button>
           </div>
         )}
