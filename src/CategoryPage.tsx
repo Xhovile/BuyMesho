@@ -186,7 +186,6 @@ export default function CategoryPage() {
       setHiddenListingIds(readHiddenListingIds());
     };
 
-    syncHiddenCollections();
     return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
   }, []);
 
@@ -237,8 +236,7 @@ export default function CategoryPage() {
       const listingId = Number(item.id);
       const hiddenByListingId =
         Number.isInteger(listingId) && hiddenListingSet.has(listingId);
-      const hiddenBySeller =
-        typeof item.seller_uid === "string" && hiddenSellerSet.has(item.seller_uid);
+      const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
 
       if (hiddenByListingId || hiddenBySeller) return false;
 

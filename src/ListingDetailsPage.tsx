@@ -174,7 +174,6 @@ export default function ListingDetailsPage() {
       setHiddenListingIds(readHiddenListingIds());
     };
 
-    syncHiddenCollections();
     return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
   }, []);
 

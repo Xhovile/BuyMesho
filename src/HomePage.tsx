@@ -1,4 +1,4 @@
-import { type ElementType, useEffect, useMemo, useState } from "react";
+import { type ElementType, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
@@ -237,7 +237,6 @@ export default function HomePage() {
       setHiddenListingIds(readHiddenListingIds());
     };
 
-    syncHiddenCollections();
     return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
   }, []);
 
@@ -250,26 +249,28 @@ export default function HomePage() {
     [hiddenListingIds]
   );
 
-  const filterHiddenListings = (items: SectionListing[]) =>
-    items.filter((item) => {
-      const id = Number(item.id);
-      const hiddenByListingId = Number.isInteger(id) && hiddenListingSet.has(id);
-      const hiddenBySeller =
-        typeof item.seller_uid === "string" && hiddenSellerSet.has(item.seller_uid);
-      return !hiddenByListingId && !hiddenBySeller;
-    });
+  const filterHiddenListings = useCallback(
+    (items: SectionListing[]) =>
+      items.filter((item) => {
+        const id = Number(item.id);
+        const hiddenByListingId = Number.isInteger(id) && hiddenListingSet.has(id);
+        const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+        return !hiddenByListingId && !hiddenBySeller;
+      }),
+    [hiddenListingSet, hiddenSellerSet]
+  );
 
   const filteredRecommendedListings = useMemo(
     () => filterHiddenListings(recommendedListings),
-    [recommendedListings, hiddenListingSet, hiddenSellerSet]
+    [recommendedListings, filterHiddenListings]
   );
   const filteredFeaturedListings = useMemo(
     () => filterHiddenListings(featuredListings),
-    [featuredListings, hiddenListingSet, hiddenSellerSet]
+    [featuredListings, filterHiddenListings]
   );
   const filteredNewestListings = useMemo(
     () => filterHiddenListings(newestListings),
-    [newestListings, hiddenListingSet, hiddenSellerSet]
+    [newestListings, filterHiddenListings]
   );
   const filteredSectionListings = useMemo(() => {
     const next: Record<string, SectionListing[]> = {};
@@ -277,7 +278,7 @@ export default function HomePage() {
       next[key] = filterHiddenListings(items);
     }
     return next;
-  }, [sectionListings, hiddenListingSet, hiddenSellerSet]);
+  }, [sectionListings, filterHiddenListings]);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
