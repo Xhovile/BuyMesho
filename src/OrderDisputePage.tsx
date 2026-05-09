@@ -1,68 +1,60 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "lucide-react";
 import { navigateBackOrPath, EXPLORE_PATH } from "./lib/appNavigation";
-import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
-
-const DISPUTES_KEY = "__buymesho_buyer_disputes";
-
-type DisputeRecord = {
-  id: string;
-  orderId: string | null;
-  reference: string | null;
-  reason: string;
-  details: string;
-  createdAt: string;
-};
-
-const saveDispute = (record: DisputeRecord) => {
-  try {
-    const raw = localStorage.getItem(DISPUTES_KEY);
-    const existing: DisputeRecord[] = raw ? (JSON.parse(raw) as DisputeRecord[]) : [];
-    localStorage.setItem(DISPUTES_KEY, JSON.stringify([record, ...existing].slice(0, 50)));
-  } catch {
-    // ignore storage errors
-  }
-};
+import { fetchOrderById, openOrderDispute, type OrderBundle } from "./lib/orderApi";
 
 export default function OrderDisputePage() {
-  const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
+  const [bundle, setBundle] = useState<OrderBundle | null>(null);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const sync = () => setPayments(readBuyerPayments());
-    sync();
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "__buymesho_buyer_payments") sync();
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
-
-  const orderId = useMemo(() => {
+  const orderParam = useMemo(() => {
     const parts = window.location.pathname.split("/");
     const disputeIndex = parts.indexOf("dispute");
     return disputeIndex > 0 ? decodeURIComponent(parts[disputeIndex - 1]) : null;
   }, []);
 
-  const order = useMemo(
-    () => payments.find((p) => p.reference === orderId || p.orderId === orderId) ?? null,
-    [payments, orderId],
-  );
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await fetchOrderById(orderParam ?? "");
+        setBundle(data);
+      } catch (err) {
+        setBundle(null);
+        setError(err instanceof Error ? err.message : "Failed to load order.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (orderParam) {
+      void load();
+    } else {
+      setLoading(false);
+      setError("Missing order identifier in URL.");
+    }
+  }, [orderParam]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const order = bundle?.order ?? null;
+  const paymentReference = typeof order?.paymentReference === "string" ? order.paymentReference : orderParam;
+  const totalAmount = Number(order?.total?.amount ?? 0);
+  const totalCurrency = String(order?.total?.currency ?? "MWK");
+  const itemTitle = order?.items?.[0]?.title ?? "—";
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason.trim()) return;
-    saveDispute({
-      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      orderId: order?.orderId ?? null,
-      reference: order?.reference ?? orderId,
-      reason,
-      details: details.trim(),
-      createdAt: new Date().toISOString(),
-    });
-    setSubmitted(true);
+    if (!reason.trim() || !order) return;
+    try {
+      setError(null);
+      await openOrderDispute(order.id, [reason.trim(), details.trim()].filter(Boolean).join(" — "));
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit dispute.");
+    }
   };
 
   return (
@@ -90,7 +82,15 @@ export default function OrderDisputePage() {
             </div>
           </div>
 
-          {order ? (
+          {loading ? (
+            <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-6 text-sm leading-6 text-zinc-600">
+              Loading order details…
+            </div>
+          ) : error ? (
+            <div className="mt-6 rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm leading-6 text-red-700">
+              {error}
+            </div>
+          ) : order ? (
             <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-zinc-500" />
@@ -99,11 +99,11 @@ export default function OrderDisputePage() {
               <div className="mt-4 grid gap-3 text-sm">
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <span className="text-zinc-500">Reference</span>
-                  <p className="mt-1 break-all font-semibold text-zinc-900">{order.reference}</p>
+                  <p className="mt-1 break-all font-semibold text-zinc-900">{paymentReference}</p>
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <span className="text-zinc-500">Item</span>
-                  <p className="mt-1 font-semibold text-zinc-900">{order.listingTitle}</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{itemTitle}</p>
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <span className="text-zinc-500">Status</span>
@@ -111,7 +111,7 @@ export default function OrderDisputePage() {
                 </div>
                 <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
                   <span className="text-zinc-500">Total</span>
-                  <p className="mt-1 font-semibold text-zinc-900">MWK {order.totalPrice.toLocaleString()}</p>
+                  <p className="mt-1 font-semibold text-zinc-900">{totalCurrency} {totalAmount.toLocaleString()}</p>
                 </div>
               </div>
             </div>

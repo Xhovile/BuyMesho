@@ -1,25 +1,94 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BadgeCheck, CheckCircle2, CreditCard, Truck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ArrowLeft, BadgeCheck, CreditCard, ShieldAlert, Truck } from "lucide-react";
 import { navigateBackOrPath, navigateToPath, CART_PATH, EXPLORE_PATH } from "./lib/appNavigation";
-import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
+import { fetchOrderByReference, openOrderDispute, releaseOrderEscrow, type OrderBundle } from "./lib/orderApi";
 
 const stages = ["Order placed", "Payment pending", "Payment confirmed", "Funds in escrow", "Delivered", "Funds released"];
 
 export default function OrderTrackingPage() {
-  const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
+  const [bundle, setBundle] = useState<OrderBundle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
 
-  useEffect(() => {
-    const sync = () => setPayments(readBuyerPayments());
-    sync();
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === "__buymesho_buyer_payments") sync();
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
+  const reference = useMemo(() => {
+    const segments = window.location.pathname.split("/").filter(Boolean);
+    return segments[1] ? decodeURIComponent(segments[1]) : null;
   }, []);
 
-  const latest = useMemo(() => payments[0] ?? null, [payments]);
-  const activeIndex = latest?.status === "captured" ? 2 : latest?.status === "failed" ? 1 : latest?.status === "refunded" ? 5 : latest?.status === "cancelled" ? 1 : 0;
+  const reload = useCallback(async () => {
+    if (!reference) {
+      setError("No order reference found in URL.");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchOrderByReference(reference);
+      setBundle(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load order details.");
+      setBundle(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [reference]);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const order = bundle?.order ?? null;
+  const paymentStatus = typeof bundle?.payment?.status === "string" ? String(bundle?.payment?.status) : order?.status ?? "pending";
+  const escrowState = typeof bundle?.escrow?.state === "string" ? String(bundle?.escrow?.state) : "initiated";
+  const activeIndex = useMemo(() => {
+    if (!order) return 0;
+    if (escrowState === "released" || order.status === "fulfilled" || order.status === "closed") return 5;
+    if (order.status === "in_escrow" || escrowState === "funded" || escrowState === "held" || escrowState === "disputed") return 3;
+    if (order.status === "paid") return 2;
+    if (order.status === "pending_payment") return 1;
+    if (order.status === "refunded" || order.status === "cancelled") return 5;
+    return 0;
+  }, [escrowState, order]);
+
+  const totalAmount = Number(order?.total?.amount ?? 0);
+  const totalCurrency = String(order?.total?.currency ?? "MWK");
+  const firstItemTitle = order?.items?.[0]?.title ?? "—";
+
+  const handleConfirmDelivery = async () => {
+    if (!order) return;
+    try {
+      setSubmitting("release");
+      setError(null);
+      await releaseOrderEscrow(order.id);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to confirm delivery.");
+    } finally {
+      setSubmitting(null);
+    }
+  };
+
+  const handleOpenDispute = async () => {
+    if (!order) return;
+    if (!disputeReason.trim()) {
+      setError("Please provide a dispute reason.");
+      return;
+    }
+    try {
+      setSubmitting("dispute");
+      setError(null);
+      await openOrderDispute(order.id, disputeReason.trim());
+      setDisputeReason("");
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit dispute.");
+    } finally {
+      setSubmitting(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -38,7 +107,15 @@ export default function OrderTrackingPage() {
             </div>
           </div>
 
-          {latest ? (
+          {loading ? (
+            <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-6 text-sm leading-6 text-zinc-600">
+              Loading order details…
+            </div>
+          ) : error ? (
+            <div className="mt-6 rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm leading-6 text-red-700">
+              {error}
+            </div>
+          ) : order ? (
             <div className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
               <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
                 <h2 className="text-lg font-black text-zinc-950">Progress</h2>
@@ -61,11 +138,49 @@ export default function OrderTrackingPage() {
               <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
                 <div className="flex items-center gap-3"><BadgeCheck className="h-5 w-5 text-red-900" /><h2 className="text-lg font-black text-zinc-950">Order details</h2></div>
                 <div className="mt-4 space-y-3 text-sm">
-                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Reference</span><p className="mt-1 font-semibold text-zinc-900 break-all">{latest.reference}</p></div>
-                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Item</span><p className="mt-1 font-semibold text-zinc-900">{latest.listingTitle}</p></div>
-                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Payment status</span><p className="mt-1 font-semibold text-zinc-900">{latest.status}</p></div>
-                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Order ID</span><p className="mt-1 font-semibold text-zinc-900 break-all">{latest.orderId ?? "—"}</p></div>
-                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Total</span><p className="mt-1 font-semibold text-zinc-900">MWK {latest.totalPrice.toLocaleString()}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Reference</span><p className="mt-1 font-semibold text-zinc-900 break-all">{reference}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Item</span><p className="mt-1 font-semibold text-zinc-900">{firstItemTitle}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Payment status</span><p className="mt-1 font-semibold text-zinc-900">{paymentStatus}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Order status</span><p className="mt-1 font-semibold text-zinc-900">{order.status}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Escrow state</span><p className="mt-1 font-semibold text-zinc-900">{escrowState}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Order ID</span><p className="mt-1 font-semibold text-zinc-900 break-all">{order.id}</p></div>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3"><span className="text-zinc-500">Total</span><p className="mt-1 font-semibold text-zinc-900">{totalCurrency} {totalAmount.toLocaleString()}</p></div>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => void handleConfirmDelivery()}
+                    disabled={submitting !== null}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
+                  >
+                    <CreditCard className="h-4 w-4" />
+                    {submitting === "release" ? "Confirming..." : "Confirm delivery (release escrow)"}
+                  </button>
+                  <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                    <label className="mb-2 block text-xs font-bold text-zinc-600">Dispute reason</label>
+                    <input
+                      value={disputeReason}
+                      onChange={(e) => setDisputeReason(e.target.value)}
+                      className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+                      placeholder="Describe the issue"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => void handleOpenDispute()}
+                      disabled={submitting !== null}
+                      className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-60"
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                      {submitting === "dispute" ? "Submitting..." : "Open dispute"}
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => reference && navigateToPath(`/orders/${encodeURIComponent(reference)}/dispute`)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Go to dispute form
+                  </button>
                 </div>
               </div>
             </div>
