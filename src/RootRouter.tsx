@@ -32,7 +32,7 @@ const EditProfilePage = lazy(() => import("./EditProfilePage"));
 const EmailActionPage = lazy(() => import("./EmailActionPage"));
 const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
 const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
-const HomePage = lazy(() => import("./HomePageWithShortcuts"));
+const HomePage = lazy(() => import("./HomePage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
 const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
@@ -102,7 +102,7 @@ export default function RootRouter() {
   useEffect(() => {
     void Promise.allSettled([
       import("./App.new"),
-      import("./HomePageWithShortcuts"),
+      import("./HomePage"),
       import("./CategoryPage"),
       import("./MessagesInboxPage"),
       import("./MessageThreadPage"),

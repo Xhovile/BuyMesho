@@ -132,6 +132,7 @@ export class ServerPaymentService {
     const strictVerification: PaymentVerificationResult = {
       ...verification,
       verified: strictVerified,
+      orderId: payment?.orderId,
       failureReason,
     };
 

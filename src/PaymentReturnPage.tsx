@@ -46,12 +46,16 @@ export default function PaymentReturnPage() {
 
         if (result.verified) {
           const reference = result.reference ?? txRef;
+          const orderIdFromLegacyShape = (result as unknown as Record<string, unknown>).order_id;
+          const resolvedOrderId =
+            result.orderId ??
+            (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
           updateBuyerPaymentStatus(reference, {
             status: "captured",
-            orderId: result.orderId ?? null,
+            orderId: resolvedOrderId,
             txRef,
           });
-          setOrderId(result.orderId ?? null);
+          setOrderId(resolvedOrderId);
           setStatus("success");
 
           setTimeout(() => {
@@ -76,10 +80,10 @@ export default function PaymentReturnPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-lg">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <div className="mx-auto w-full max-w-4xl px-4 py-10 sm:py-14">
         {status === "loading" && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 py-14 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
             <h1 className="text-xl font-extrabold text-zinc-900">Verifying payment…</h1>
             <p className="text-sm text-zinc-500">Please wait while we confirm your payment.</p>
@@ -87,33 +91,41 @@ export default function PaymentReturnPage() {
         )}
 
         {status === "success" && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500" />
             <h1 className="text-2xl font-black text-zinc-900">Payment successful!</h1>
-            <p className="text-sm text-zinc-600 leading-6">Your payment has been confirmed and your order is now held securely in escrow. The seller has been notified.</p>
-            {orderId && <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">Order: {orderId}</p>}
+            <p className="text-sm text-zinc-600 leading-6">Your payment has been confirmed.</p>
+            {orderId ? (
+              <p className="rounded-xl border border-zinc-200 bg-white px-4 py-2 text-xs font-mono text-zinc-600">
+                Order ID: {orderId}
+              </p>
+            ) : null}
             <p className="text-xs text-zinc-400">Redirecting to your order tracking page…</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors">Continue shopping</button>
+            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors">Continue shopping</button>
           </div>
         )}
 
         {status === "failed" && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
             <AlertTriangle className="h-14 w-14 text-red-500" />
             <h1 className="text-2xl font-black text-zinc-900">Payment failed</h1>
             <p className="text-sm text-zinc-600 leading-6">{errorMessage ?? "We could not verify your payment. Please try again or contact support."}</p>
-            <button type="button" onClick={() => window.history.back()} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="w-full rounded-2xl bg-zinc-100 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+              <button type="button" onClick={() => window.history.back()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
+            </div>
           </div>
         )}
 
         {status === "cancelled" && (
-          <div className="flex flex-col items-center gap-4 text-center">
+          <div className="flex flex-col items-center gap-4 py-8 text-center">
             <AlertTriangle className="h-14 w-14 text-amber-500" />
             <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
             <p className="text-sm text-zinc-600 leading-6">You cancelled the payment. Your order was not charged.</p>
-            <button type="button" onClick={() => window.history.back()} className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="w-full rounded-2xl bg-zinc-100 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
+            <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
+              <button type="button" onClick={() => window.history.back()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
+            </div>
           </div>
         )}
       </div>
