@@ -42,6 +42,7 @@ type VerificationState = 'paid' | 'pending' | 'failed' | 'reversed' | 'unknown';
 
 const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
   success: 'paid',
+  successful: 'paid',
   succeeded: 'paid',
   paid: 'paid',
   captured: 'paid',
