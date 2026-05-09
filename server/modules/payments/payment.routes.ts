@@ -30,6 +30,14 @@ const initializeLimiter = rateLimit({
   message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
 });
 
+const orderLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many order lookup requests. Please try again in a moment.' },
+});
+
 interface ListingRow {
   id: number;
   seller_uid: string;
@@ -248,7 +256,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.get('/orders/me', requireAuth, (req, res) => {
+  router.get('/orders/me', orderLookupLimiter, requireAuth, (req, res) => {
     try {
       const db = getPaymentDb();
       const orderIds = db
@@ -265,7 +273,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.get('/orders/by-reference/:reference', requireAuth, (req, res) => {
+  router.get('/orders/by-reference/:reference', orderLookupLimiter, requireAuth, (req, res) => {
     try {
       const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
       if (!bundle) return res.status(404).json({ error: 'Order not found' });
@@ -276,7 +284,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.get('/orders/:idOrReference', requireAuth, (req, res) => {
+  router.get('/orders/:idOrReference', orderLookupLimiter, requireAuth, (req, res) => {
     try {
       const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
       if (!bundle) return res.status(404).json({ error: 'Order not found' });
