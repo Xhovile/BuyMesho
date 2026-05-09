@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, BadgeCheck, CheckCircle2, CreditCard, ShieldAlert, Truck, TriangleAlert } from "lucide-react";
+import { ArrowLeft, BadgeCheck, CheckCircle2, CreditCard, Truck } from "lucide-react";
 import { navigateBackOrPath, navigateToPath, CART_PATH, EXPLORE_PATH } from "./lib/appNavigation";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 
@@ -75,16 +75,6 @@ export default function OrderTrackingPage() {
             </div>
           )}
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
-            <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-              <div className="flex items-center gap-3"><ShieldAlert className="h-5 w-5 text-red-900" /><h3 className="text-lg font-black text-zinc-950">What the buyer can do</h3></div>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-zinc-600"><li>Confirm delivery</li><li>Open a dispute</li><li>View payment status</li><li>Check escrow state</li></ul>
-            </div>
-            <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
-              <div className="flex items-center gap-3"><TriangleAlert className="h-5 w-5 text-red-900" /><h3 className="text-lg font-black text-zinc-950">What stays hidden</h3></div>
-              <ul className="mt-4 space-y-3 text-sm leading-6 text-zinc-600"><li>Webhook logs</li><li>Signature failures</li><li>Admin tables</li><li>Raw payment records</li></ul>
-            </div>
-          </div>
         </section>
       </div>
     </div>
