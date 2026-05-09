@@ -46,7 +46,7 @@ export default function PaymentReturnPage() {
 
         if (result.verified) {
           const reference = result.reference ?? txRef;
-          const orderIdFromLegacyShape = (result as Record<string, unknown>).order_id;
+          const orderIdFromLegacyShape = (result as unknown as Record<string, unknown>).order_id;
           const resolvedOrderId =
             result.orderId ??
             (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
