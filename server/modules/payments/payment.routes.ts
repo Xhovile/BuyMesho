@@ -9,6 +9,7 @@ import { serverPaymentService, createServerPaymentConfigFromEnv } from './paymen
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { paymentRepository } from './payment.repository.js';
+import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -41,6 +42,53 @@ interface ListingRow {
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
+}
+
+type AuthUser = {
+  uid: string;
+  is_admin?: boolean;
+};
+
+type OrderBundle = {
+  order: ReturnType<typeof orderRepository.findById>;
+  payment: ReturnType<typeof paymentRepository.findByReference> | null;
+  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
+  dispute: Record<string, unknown> | null;
+};
+
+type OrderLookupResult = OrderBundle | 'forbidden' | null;
+
+function findOrderByParam(param: string) {
+  const byId = orderRepository.findById(param);
+  if (byId) return byId;
+  return orderRepository.findByPaymentReference(param);
+}
+
+function buildOrderBundle(orderId: string): OrderBundle | null {
+  const order = orderRepository.findById(orderId);
+  if (!order) return null;
+
+  const db = getPaymentDb();
+  const paymentReference = order.paymentReference ?? null;
+  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
+  const escrow = escrowRepository.findByOrderId(order.id) ?? null;
+  const dispute = db
+    .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
+    .get(order.id) as Record<string, unknown> | undefined;
+
+  return {
+    order,
+    payment,
+    escrow,
+    dispute: dispute ?? null,
+  };
+}
+
+function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderLookupResult {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
+  return buildOrderBundle(order.id);
 }
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
@@ -197,6 +245,45 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       res.status(201).json(result);
     } catch (error) {
       res.status(400).json(jsonError(error, 'Failed to create payment'));
+    }
+  });
+
+  router.get('/orders/me', requireAuth, (req, res) => {
+    try {
+      const db = getPaymentDb();
+      const orderIds = db
+        .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC')
+        .all(req.user!.uid) as Array<{ id: string }>;
+
+      const bundles = orderIds
+        .map((row) => buildOrderBundle(row.id))
+        .filter((bundle): bundle is OrderBundle => bundle !== null);
+
+      return res.status(200).json(bundles);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch buyer orders'));
+    }
+  });
+
+  router.get('/orders/by-reference/:reference', requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  router.get('/orders/:idOrReference', requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
     }
   });
 
