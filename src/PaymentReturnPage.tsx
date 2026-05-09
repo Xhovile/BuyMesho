@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, Loader2, ChevronLeft } from "lucide-react";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
-import { updateBuyerPaymentStatus } from "./lib/buyerState";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -24,9 +23,6 @@ export default function PaymentReturnPage() {
     const cancelled = params.get("cancelled");
 
     if (cancelled === "1") {
-      if (txRef) {
-        updateBuyerPaymentStatus(txRef, { status: "cancelled", txRef });
-      }
       setStatus("cancelled");
       return;
     }
@@ -50,11 +46,6 @@ export default function PaymentReturnPage() {
           const resolvedOrderId =
             result.orderId ??
             (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
-          updateBuyerPaymentStatus(reference, {
-            status: "captured",
-            orderId: resolvedOrderId,
-            txRef,
-          });
           setOrderId(resolvedOrderId);
           setStatus("success");
 
@@ -62,13 +53,11 @@ export default function PaymentReturnPage() {
             navigateToPath(`/orders/${encodeURIComponent(reference)}`);
           }, 900);
         } else {
-          updateBuyerPaymentStatus(txRef, { status: "failed", txRef });
           setErrorMessage(result.status ? `Payment status: ${result.status}` : "The payment could not be verified.");
           setStatus("failed");
         }
       } catch (err: unknown) {
         if (!mounted) return;
-        updateBuyerPaymentStatus(txRef, { status: "failed", txRef });
         setErrorMessage(err instanceof Error ? err.message : "Verification failed.");
         setStatus("failed");
       }
