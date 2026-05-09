@@ -11,7 +11,6 @@ interface VerifyResult {
   reference?: string;
   status?: string;
   orderId?: string;
-  order_id?: string;
 }
 
 export default function PaymentReturnPage() {
@@ -47,7 +46,10 @@ export default function PaymentReturnPage() {
 
         if (result.verified) {
           const reference = result.reference ?? txRef;
-          const resolvedOrderId = result.orderId ?? result.order_id ?? null;
+          const orderIdFromLegacyShape = (result as Record<string, unknown>).order_id;
+          const resolvedOrderId =
+            result.orderId ??
+            (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
           updateBuyerPaymentStatus(reference, {
             status: "captured",
             orderId: resolvedOrderId,
