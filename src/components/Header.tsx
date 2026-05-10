@@ -99,7 +99,7 @@ export default function Header({
     navigateToPath(BECOME_SELLER_PATH);
   };
 
-  const handleBuyerPaymentsClick = (afterClose?: () => void) => {
+  const handlePaymentsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
       afterClose?.();
       setAuthGuardOpen(true);
@@ -135,9 +135,10 @@ export default function Header({
   const desktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
+  const pathname = typeof window === "undefined" ? HOME_PATH : window.location.pathname;
   const isMarketRoute =
-    window.location.pathname === EXPLORE_PATH ||
-    window.location.pathname.startsWith(`${EXPLORE_PATH}/`);
+    pathname === EXPLORE_PATH ||
+    pathname.startsWith(`${EXPLORE_PATH}/`);
   const primaryDrawerPath = isMarketRoute ? HOME_PATH : EXPLORE_PATH;
   const primaryDrawerLabel = isMarketRoute ? "Home" : "Market";
 
@@ -216,7 +217,7 @@ export default function Header({
                       {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                     </div>
                   </button>
-                  <button type="button" onClick={() => handleBuyerPaymentsClick()} className={desktopNavButtonClass}>
+                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
                     <CreditCard className="w-4 h-4" />
                     Buyer Payments
                   </button>
@@ -391,7 +392,7 @@ export default function Header({
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button type="button" onClick={() => handleBuyerPaymentsClick(closeMenu)} className={navButtonClass}>
+              <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <CreditCard className="w-4 h-4 text-zinc-500" />
                   Payments
