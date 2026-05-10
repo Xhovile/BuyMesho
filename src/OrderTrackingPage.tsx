@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, BadgeCheck, CreditCard, ShieldAlert, Truck } from "lucide-react";
 import { navigateBackOrPath, navigateToPath, CART_PATH, EXPLORE_PATH } from "./lib/appNavigation";
 import { fetchOrderByReference, openOrderDispute, releaseOrderEscrow, type OrderBundle } from "./lib/orderApi";
+import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
+import OrderProgressTracker from "./components/orders/OrderProgressTracker";
+import OrderDetailsCard from "./components/orders/OrderDetailsCard";
+import DisputeActionsCard from "./components/orders/DisputeActionsCard";
 
 const stages = ["Order placed", "Payment pending", "Payment confirmed", "Funds in escrow", "Delivered", "Funds released"];
 
