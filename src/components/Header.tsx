@@ -8,6 +8,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
+  CART_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -23,8 +24,6 @@ import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 import { useIsAdmin } from "../hooks/useIsAdmin";
-
-const CART_PATH = "/cart";
 
 type HeaderProps = {
   searchValue: string;
@@ -386,7 +385,11 @@ export default function Header({
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
               <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <House className="w-4 h-4 text-zinc-500" />
+                  {primaryDrawerLabel === "Home" ? (
+                    <House className="w-4 h-4 text-zinc-500" />
+                  ) : (
+                    <Store className="w-4 h-4 text-zinc-500" />
+                  )}
                   {primaryDrawerLabel}
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />

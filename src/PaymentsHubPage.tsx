@@ -91,6 +91,8 @@ export default function PaymentsHubPage() {
               icon={Wallet}
               title="Payment Method"
               description="Add Card details, Mobile Money, and saved payment setup."
+              actionLabel="Manage Payment Setup"
+              onAction={() => navigateToPath(BUYER_PAYMENTS_PATH)}
             />
 
             <HubCard
