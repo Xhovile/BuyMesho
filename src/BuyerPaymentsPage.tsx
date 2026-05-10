@@ -84,7 +84,7 @@ export default function BuyerPaymentsPage() {
 
         <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500 text-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
