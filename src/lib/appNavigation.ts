@@ -588,4 +588,4 @@ export const getEditListingIdFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   const value = params.get("id");
   return value ? Number(value) : null;
-};/ UPDATED FILE WITH ORDER NAVIGATION HELPERS ADDED
+};
