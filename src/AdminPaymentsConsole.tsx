@@ -118,41 +118,72 @@ function StatCard({
   );
 }
 
-function formatDate(value?: string | null): string {
-  if (!value) return "—";
+function toDisplayText(value: unknown, fallback = "—"): string {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === "string") return value.trim() ? value : fallback;
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+  if (Array.isArray(value) && value.length === 0) return fallback;
+  if (typeof value === "object" && value !== null && Object.keys(value as Record<string, unknown>).length === 0) {
+    return fallback;
+  }
   try {
-    return new Date(value).toLocaleString();
+    const serialized = JSON.stringify(value);
+    return serialized || fallback;
   } catch {
-    return value;
+    return fallback;
   }
 }
 
-function normalizeStatusLabel(value: string | null | undefined): string {
-  return value ? value.replace(/_/g, " ") : "—";
+function toStatusToken(value: unknown): string {
+  if (typeof value === "string") return value.trim().toLowerCase();
+  if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value).toLowerCase();
+  return "";
 }
 
-function paymentTone(status: string): Tone {
-  if (["captured", "paid"].includes(status)) return "emerald";
-  if (status === "pending") return "amber";
-  if (["failed", "cancelled"].includes(status)) return "rose";
+function toReference(value: unknown): string | null {
+  const normalized = toDisplayText(value, "");
+  return normalized || null;
+}
+
+function formatDate(value?: unknown): string {
+  if (!value) return "—";
+  try {
+    return new Date(String(value)).toLocaleString();
+  } catch {
+    return toDisplayText(value);
+  }
+}
+
+function normalizeStatusLabel(value: unknown): string {
+  const label = toDisplayText(value, "");
+  return label ? label.replace(/_/g, " ") : "—";
+}
+
+function paymentTone(status: unknown): Tone {
+  const token = toStatusToken(status);
+  if (["captured", "paid"].includes(token)) return "emerald";
+  if (token === "pending") return "amber";
+  if (["failed", "cancelled"].includes(token)) return "rose";
   return "zinc";
 }
 
-function orderTone(status: string | null): Tone {
-  if (!status) return "zinc";
-  if (status === "fulfilled") return "emerald";
-  if (status === "refunded") return "rose";
-  if (["paid", "in_escrow", "pending_payment"].includes(status)) return "blue";
-  if (status === "disputed") return "amber";
+function orderTone(status: unknown): Tone {
+  const token = toStatusToken(status);
+  if (!token) return "zinc";
+  if (token === "fulfilled") return "emerald";
+  if (token === "refunded") return "rose";
+  if (["paid", "in_escrow", "pending_payment"].includes(token)) return "blue";
+  if (token === "disputed") return "amber";
   return "zinc";
 }
 
-function escrowTone(status: string | null): Tone {
-  if (!status) return "zinc";
-  if (status === "released") return "emerald";
-  if (status === "refunded") return "rose";
-  if (status === "disputed") return "amber";
-  if (["initiated", "funded", "held"].includes(status)) return "blue";
+function escrowTone(status: unknown): Tone {
+  const token = toStatusToken(status);
+  if (!token) return "zinc";
+  if (token === "released") return "emerald";
+  if (token === "refunded") return "rose";
+  if (token === "disputed") return "amber";
+  if (["initiated", "funded", "held"].includes(token)) return "blue";
   return "zinc";
 }
 
@@ -313,9 +344,9 @@ export default function AdminPaymentsConsole() {
       verifiedPayments:
         summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
       paidPayments:
-        summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(p.payment_status)).length,
+        summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(toStatusToken(p.payment_status))).length,
       pendingPayments:
-        summary?.summary?.pending_payments ?? payments.filter((p) => p.payment_status === "pending").length,
+        summary?.summary?.pending_payments ?? payments.filter((p) => toStatusToken(p.payment_status) === "pending").length,
       totalWebhooks: summary?.webhookSummary?.total_webhooks ?? webhookEvents.length,
       validWebhooks:
         summary?.webhookSummary?.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
@@ -405,7 +436,7 @@ export default function AdminPaymentsConsole() {
               <h2 className="text-lg font-black">Transaction lifecycle</h2>
             </div>
             <p className="mt-2 text-sm text-zinc-600">
-              Showing the latest reference: {lifecyclePayment.reference}
+              Showing the latest reference: {toDisplayText(lifecyclePayment.reference)}
             </p>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {lifecycleSteps.map((step) => (
@@ -464,25 +495,25 @@ export default function AdminPaymentsConsole() {
                       <tr
                         key={payment.id}
                         className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
-                        onClick={() => setSelectedReference(payment.reference)}
+                        onClick={() => setSelectedReference(toReference(payment.reference))}
                       >
                         <td className="p-4">
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
                             BuyMesho reference
                           </p>
-                          <p className="mt-1 break-all font-mono text-xs">{payment.reference}</p>
-                          <p className="mt-2 text-[11px] text-zinc-400">{payment.provider}</p>
+                          <p className="mt-1 break-all font-mono text-xs">{toDisplayText(payment.reference)}</p>
+                          <p className="mt-2 text-[11px] text-zinc-400">{toDisplayText(payment.provider)}</p>
                         </td>
                         <td className="p-4">
-                          <StatusPill label={payment.payment_status} tone={paymentTone(payment.payment_status)} />
-                          <div className="mt-2 text-xs text-zinc-500">{payment.method}</div>
+                          <StatusPill label={normalizeStatusLabel(payment.payment_status)} tone={paymentTone(payment.payment_status)} />
+                          <div className="mt-2 text-xs text-zinc-500">{toDisplayText(payment.method)}</div>
                           <div className="mt-1 text-[11px] text-zinc-400">
                             Verified: {Number(payment.verified) === 1 ? "yes" : "no"}
                           </div>
                         </td>
                         <td className="p-4">
                           <StatusPill label={normalizeStatusLabel(payment.order_status)} tone={orderTone(payment.order_status)} />
-                          <div className="mt-2 break-all text-xs text-zinc-500">{payment.order_id}</div>
+                          <div className="mt-2 break-all text-xs text-zinc-500">{toDisplayText(payment.order_id)}</div>
                           <div className="mt-1 text-[11px] text-zinc-400">
                             Order paid: {formatDate(payment.order_paid_at)}
                           </div>
@@ -499,7 +530,7 @@ export default function AdminPaymentsConsole() {
                             {payment.currency} {payment.amount}
                           </div>
                           <div className="mt-1 text-[11px] text-zinc-400">
-                            Gateway reference: {payment.provider_reference || "—"}
+                            Gateway reference: {toDisplayText(payment.provider_reference)}
                           </div>
                         </td>
                         <td className="p-4 text-xs text-zinc-500">{formatDate(payment.updated_at)}</td>
@@ -539,8 +570,8 @@ export default function AdminPaymentsConsole() {
                   <tbody>
                     {webhookEvents.map((event) => (
                       <tr key={event.id} className="border-t border-zinc-100">
-                        <td className="p-4">{event.event_type || "—"}</td>
-                        <td className="p-4 font-mono text-xs break-all">{event.reference || "—"}</td>
+                        <td className="p-4">{toDisplayText(event.event_type)}</td>
+                        <td className="p-4 font-mono text-xs break-all">{toDisplayText(event.reference)}</td>
                         <td className="p-4">
                           {Number(event.signature_valid) === 1 ? (
                             <StatusPill label="Valid" tone="emerald" />
@@ -604,7 +635,7 @@ export default function AdminPaymentsConsole() {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                   Payment detail
                 </p>
-                <h3 className="mt-1 text-lg font-black text-zinc-950">{selectedPayment.reference}</h3>
+                <h3 className="mt-1 text-lg font-black text-zinc-950">{toDisplayText(selectedPayment.reference)}</h3>
               </div>
               <button
                 type="button"
@@ -621,15 +652,15 @@ export default function AdminPaymentsConsole() {
                 <div className="mt-4 grid gap-3">
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">BuyMesho reference</span>
-                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.reference}</span>
+                    <span className="break-all font-semibold text-zinc-900">{toDisplayText(selectedPayment.reference)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">PayChangu reference</span>
-                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.provider_reference || "—"}</span>
+                    <span className="break-all font-semibold text-zinc-900">{toDisplayText(selectedPayment.provider_reference)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Payment status</span>
-                    <StatusPill label={selectedPayment.payment_status} tone={paymentTone(selectedPayment.payment_status)} />
+                    <StatusPill label={normalizeStatusLabel(selectedPayment.payment_status)} tone={paymentTone(selectedPayment.payment_status)} />
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order status</span>
@@ -647,11 +678,11 @@ export default function AdminPaymentsConsole() {
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order ID</span>
-                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.order_id}</span>
+                    <span className="break-all font-semibold text-zinc-900">{toDisplayText(selectedPayment.order_id)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Escrow ID</span>
-                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.escrow_id || "—"}</span>
+                    <span className="break-all font-semibold text-zinc-900">{toDisplayText(selectedPayment.escrow_id)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Payment verified at</span>
@@ -679,7 +710,7 @@ export default function AdminPaymentsConsole() {
                     selectedHooks.map((event) => (
                       <div key={event.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm">
                         <div className="flex items-center justify-between gap-3">
-                          <p className="font-bold text-zinc-900">{event.event_type || "Webhook event"}</p>
+                          <p className="font-bold text-zinc-900">{toDisplayText(event.event_type, "Webhook event")}</p>
                           <StatusPill
                             label={Number(event.signature_valid) === 1 ? "Valid" : "Invalid"}
                             tone={Number(event.signature_valid) === 1 ? "emerald" : "rose"}
@@ -693,7 +724,7 @@ export default function AdminPaymentsConsole() {
                               View payload
                             </summary>
                             <pre className="mt-3 max-h-48 overflow-auto rounded-2xl bg-zinc-950 p-4 text-[11px] leading-relaxed text-zinc-100">
-                              {event.payload}
+                              {toDisplayText(event.payload)}
                             </pre>
                           </details>
                         ) : null}
