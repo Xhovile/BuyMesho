@@ -12,6 +12,7 @@ import {
   HOME_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
+  PAYMENTS_HUB_PATH,
   SETTINGS_PATH,
   navigateToPath,
 } from "../lib/appNavigation";
@@ -23,7 +24,6 @@ import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
 import { useIsAdmin } from "../hooks/useIsAdmin";
 
-const BUYER_PAYMENTS_PATH = "/buyer-payments";
 const CART_PATH = "/cart";
 
 type HeaderProps = {
@@ -106,7 +106,7 @@ export default function Header({
       return;
     }
     afterClose?.();
-    navigateToPath(BUYER_PAYMENTS_PATH);
+    navigateToPath(PAYMENTS_HUB_PATH);
   };
 
   const handleCartClick = (afterClose?: () => void) => {
@@ -219,7 +219,7 @@ export default function Header({
                   </button>
                   <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
                     <CreditCard className="w-4 h-4" />
-                    Buyer Payments
+                    Payments
                   </button>
                   <button type="button" onClick={() => handleCartClick()} className={desktopNavButtonClass}>
                     <ShoppingCart className="w-4 h-4" />

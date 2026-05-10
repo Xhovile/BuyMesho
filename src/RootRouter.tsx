@@ -52,6 +52,7 @@ const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
+const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -108,6 +109,7 @@ export default function RootRouter() {
       import("./MessageThreadPage"),
       import("./MarketComingSoonPage"),
       import("./BuyerPaymentsPage"),
+      import("./PaymentsHubPage"),
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
       import("./OrderTrackingPage"),
@@ -132,7 +134,11 @@ export default function RootRouter() {
       "admin_payments",
     ];
 
-    const requiresAuth = locationPath === "/buyer-payments" || locationPath === "/cart" || locationPath.startsWith("/orders/");
+    const requiresAuth =
+      locationPath === "/payments" ||
+      locationPath === "/buyer-payments" ||
+      locationPath === "/cart" ||
+      locationPath.startsWith("/orders/");
     const isVerified = !!firebaseUser?.emailVerified;
 
     if (!firebaseUser) {
@@ -160,6 +166,8 @@ export default function RootRouter() {
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
           <OrderTrackingPage />
+        ) : locationPath === "/payments" ? (
+          <PaymentsHubPage />
         ) : locationPath === "/buyer-payments" ? (
           <BuyerPaymentsPage />
         ) : locationPath === "/cart" ? (
