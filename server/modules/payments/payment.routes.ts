@@ -308,22 +308,26 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
   });
 
   router.post('/paychangu/webhook', async (req, res) => {
-  try {
-    const rawBody = (req as express.Request & { rawBody?: Buffer }).rawBody?.toString('utf8');
+    try {
+      const rawBodyBuf = (req as express.Request & { rawBody?: Buffer }).rawBody;
+      // Fall back to the already-parsed body when raw body middleware is not configured.
+      // paychanguProvider.verifyWebhook handles both string and object payloads via
+      // parseWebhookPayload, so HMAC verification works correctly in either case.
+      const payload: unknown = rawBodyBuf ? rawBodyBuf.toString('utf8') : req.body;
 
-    if (!rawBody) {
-      return res.status(400).json({ error: 'Missing raw webhook body' });
+      if (!payload) {
+        return res.status(400).json({ error: 'Missing webhook body' });
+      }
+
+      const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
+
+      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, payload);
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to process webhook'));
     }
-
-    const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
-
-    const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
-
-    return res.status(200).json(result);
-  } catch (error) {
-    return res.status(400).json(jsonError(error, 'Failed to process webhook'));
-  }
-});
+  });
 
   return router;
 }
