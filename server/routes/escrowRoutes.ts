@@ -1,8 +1,9 @@
-import express, { type RequestHandler } from 'express';
+import express, { type Request, type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { getPaymentDb } from '../sqlite.js';
 import { escrowRepository } from '../modules/escrow/escrow.repository.js';
+import { orderRepository } from '../modules/orders/order.repository.js';
 import { serverOrderService } from '../modules/orders/order.service.js';
 
 const disputeLimiter = rateLimit({
@@ -33,60 +34,116 @@ const escrowActionLimiter = rateLimit({
   message: { error: 'Too many requests. Please try again in a moment.' },
 });
 
+function getRequestUser(req: Request): { uid: string; is_admin?: boolean } | null {
+  if (!req.user?.uid) return null;
+  return { uid: req.user.uid, is_admin: req.user.is_admin === true };
+}
+
+function canAccessOrder(req: Request, order: { buyerId: string; sellerId: string }): boolean {
+  const user = getRequestUser(req);
+  if (!user) return false;
+  if (user.is_admin) return true;
+  return user.uid === order.buyerId || user.uid === order.sellerId;
+}
+
+function assertOrderAccess(req: Request, orderId: string) {
+  const order = orderRepository.findById(orderId);
+
+  if (!order) {
+    return { error: { status: 404, body: { error: 'Order not found' } } as const };
+  }
+
+  if (!canAccessOrder(req, order)) {
+    return {
+      error: {
+        status: 403,
+        body: { error: 'You are not allowed to access this order' },
+      } as const,
+    };
+  }
+
+  return { order };
+}
+
 export function createEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  // GET /api/escrow/:orderId — fetch escrow status
   router.get('/:orderId', requireAuth, (req, res) => {
     try {
+      const access = assertOrderAccess(req, req.params.orderId);
+
+      if ('error' in access) {
+        return res.status(access.error.status).json(access.error.body);
+      }
+
       const escrow = escrowRepository.findByOrderId(req.params.orderId);
+
       if (!escrow) {
         return res.status(404).json({ error: 'Escrow not found for this order' });
       }
+
       return res.status(200).json(escrow);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch escrow'));
     }
   });
 
-  // POST /api/escrow/:orderId/release — buyer or seller triggers release
   router.post('/:orderId/release', escrowActionLimiter, requireAuth, (req, res) => {
     try {
+      const access = assertOrderAccess(req, req.params.orderId);
+
+      if ('error' in access) {
+        return res.status(access.error.status).json(access.error.body);
+      }
+
       const { orderId } = req.params;
       const escrow = escrowRepository.findByOrderId(orderId);
+
       if (!escrow) {
         return res.status(404).json({ error: 'Escrow not found' });
       }
+
       if (escrow.state === 'released' || escrow.state === 'refunded' || escrow.state === 'closed') {
         return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
       }
+
       const updated = escrowRepository.updateState(orderId, 'released');
       const orderUpdated = serverOrderService.setStatus(orderId, 'fulfilled');
+
       if (!orderUpdated) {
         console.warn(`[escrow] release: order ${orderId} not found when updating status to fulfilled`);
       }
+
       return res.status(200).json(updated);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to release escrow'));
     }
   });
 
-  // POST /api/escrow/:orderId/refund — refund buyer
   router.post('/:orderId/refund', escrowActionLimiter, requireAuth, (req, res) => {
     try {
+      if (!req.user?.is_admin) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+
       const { orderId } = req.params;
       const escrow = escrowRepository.findByOrderId(orderId);
+
       if (!escrow) {
         return res.status(404).json({ error: 'Escrow not found' });
       }
+
       if (escrow.state === 'released' || escrow.state === 'refunded' || escrow.state === 'closed') {
         return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
       }
+
       const updated = escrowRepository.updateState(orderId, 'refunded');
       const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
+
       if (!orderUpdated) {
         console.warn(`[escrow] refund: order ${orderId} not found when updating status to refunded`);
       }
+
       return res.status(200).json(updated);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to refund escrow'));
@@ -99,13 +156,20 @@ export function createEscrowRouter(requireAuth: RequestHandler): express.Router 
 export function createDisputeRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  // POST /api/disputes — open a dispute
   router.post('/', disputeLimiter, requireAuth, (req, res) => {
     try {
       const { orderId, reason } = req.body as { orderId?: string; reason?: string };
+
       if (!orderId || !reason) {
         return res.status(400).json({ error: 'orderId and reason are required' });
       }
+
+      const access = assertOrderAccess(req, orderId);
+
+      if ('error' in access) {
+        return res.status(access.error.status).json(access.error.body);
+      }
+
       const openedBy = req.user!.uid;
       const now = new Date().toISOString();
       const id = randomUUID();
@@ -123,50 +187,72 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         serverOrderService.setStatus(orderId, 'disputed');
       }
 
-      console.log('[notification] dispute_opened', JSON.stringify({ id, orderId, openedBy }));
-
-      return res.status(201).json({ id, orderId, openedBy, reason, status: 'open', createdAt: now });
+      return res.status(201).json({
+        id,
+        orderId,
+        openedBy,
+        reason,
+        status: 'open',
+        createdAt: now,
+      });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));
     }
   });
 
-  // GET /api/disputes/:orderId — fetch dispute for an order
   router.get('/:orderId', disputeLimiter, requireAuth, (req, res) => {
     try {
+      const access = assertOrderAccess(req, req.params.orderId);
+
+      if ('error' in access) {
+        return res.status(access.error.status).json(access.error.body);
+      }
+
       const db = getPaymentDb();
       const dispute = db
         .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
         .get(req.params.orderId);
+
       if (!dispute) {
         return res.status(404).json({ error: 'No dispute found for this order' });
       }
+
       return res.status(200).json(dispute);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to fetch dispute'));
     }
   });
 
-  // PATCH /api/disputes/:id — resolve a dispute (admin only)
   router.patch('/:id', disputeLimiter, requireAuth, (req, res) => {
     try {
       if (!req.user?.is_admin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
-      const { status, resolutionNote } = req.body as { status?: string; resolutionNote?: string };
+
+      const { status, resolutionNote } = req.body as {
+        status?: string;
+        resolutionNote?: string;
+      };
+
       if (!status || !['resolved', 'rejected'].includes(status)) {
         return res.status(400).json({ error: 'status must be "resolved" or "rejected"' });
       }
+
       const now = new Date().toISOString();
       const db = getPaymentDb();
+
       db.prepare(
-        `UPDATE disputes SET status = ?, resolved_by = ?, resolution_note = ?, updated_at = ? WHERE id = ?`,
+        `UPDATE disputes
+         SET status = ?, resolved_by = ?, resolution_note = ?, updated_at = ?
+         WHERE id = ?`,
       ).run(status, req.user.uid, resolutionNote ?? null, now, req.params.id);
 
       const updated = db.prepare('SELECT * FROM disputes WHERE id = ?').get(req.params.id);
+
       if (!updated) {
         return res.status(404).json({ error: 'Dispute not found' });
       }
+
       return res.status(200).json(updated);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to resolve dispute'));
@@ -179,18 +265,19 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 export function createPayoutRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  // POST /api/payouts — admin triggers payout to seller after escrow release
   router.post('/', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!req.user?.is_admin) {
         return res.status(403).json({ error: 'Admin access required' });
       }
+
       const { sellerId, orderId, amount, currency = 'MWK' } = req.body as {
         sellerId?: string;
         orderId?: string;
         amount?: number;
         currency?: string;
       };
+
       if (!sellerId || !amount) {
         return res.status(400).json({ error: 'sellerId and amount are required' });
       }
@@ -205,9 +292,15 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
          VALUES (?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)`,
       ).run(id, sellerId, orderId ?? null, escrow?.id ?? null, amount, currency, req.user.uid, now, now);
 
-      console.log('[payout] initiated', JSON.stringify({ id, sellerId, orderId, amount, currency }));
-
-      return res.status(201).json({ id, sellerId, orderId, amount, currency, status: 'processing', createdAt: now });
+      return res.status(201).json({
+        id,
+        sellerId,
+        orderId,
+        amount,
+        currency,
+        status: 'processing',
+        createdAt: now,
+      });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to process payout'));
     }
