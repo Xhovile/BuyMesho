@@ -50,21 +50,20 @@ type WebhookEventRow = {
 };
 
 type SummaryResponse = {
-  summary: {
-    total_payments: number;
-    verified_payments: number;
-    paid_payments: number;
-    pending_payments: number;
+  summary?: {
+    total_payments?: number;
+    verified_payments?: number;
+    paid_payments?: number;
+    pending_payments?: number;
   };
-  webhookSummary: {
-    total_webhooks: number;
-    valid_webhooks: number;
-    invalid_webhooks: number;
+  webhookSummary?: {
+    total_webhooks?: number;
+    valid_webhooks?: number;
+    invalid_webhooks?: number;
   };
 };
 
 type Tone = "zinc" | "emerald" | "amber" | "rose" | "blue";
-
 type LifecycleState = "done" | "active" | "waiting" | "issue";
 
 type LifecycleStep = {
@@ -90,6 +89,35 @@ function StatusPill({ label, tone = "zinc" }: { label: string; tone?: Tone }) {
   );
 }
 
+function StatCard({
+  label,
+  value,
+  tone = "zinc",
+}: {
+  label: string;
+  value: number;
+  tone?: Tone;
+}) {
+  const toneClass: Record<Tone, string> = {
+    zinc: "text-zinc-900",
+    emerald: "text-emerald-700",
+    amber: "text-amber-700",
+    blue: "text-blue-700",
+    rose: "text-rose-700",
+  };
+
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+        {label}
+      </p>
+      <p className={`mt-1 text-2xl font-black tracking-tight ${toneClass[tone]}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function formatDate(value?: string | null): string {
   if (!value) return "—";
   try {
@@ -112,10 +140,10 @@ function paymentTone(status: string): Tone {
 
 function orderTone(status: string | null): Tone {
   if (!status) return "zinc";
-  if (["fulfilled"].includes(status)) return "emerald";
-  if (["refunded"].includes(status)) return "rose";
+  if (status === "fulfilled") return "emerald";
+  if (status === "refunded") return "rose";
   if (["paid", "in_escrow", "pending_payment"].includes(status)) return "blue";
-  if (["disputed"].includes(status)) return "amber";
+  if (status === "disputed") return "amber";
   return "zinc";
 }
 
@@ -183,25 +211,19 @@ function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow
     {
       number: 1,
       title: "Payment created",
-      detail: hasPayment
-        ? "BuyMesho stored a payment row for this checkout attempt."
-        : "No payment row exists yet.",
+      detail: hasPayment ? "BuyMesho stored a payment row for this checkout attempt." : "No payment row exists yet.",
       state: hasPayment ? "done" : "waiting",
     },
     {
       number: 2,
       title: "Checkout opened",
-      detail: hasCheckout
-        ? "The buyer was sent to the provider checkout URL."
-        : "Waiting for checkout creation.",
+      detail: hasCheckout ? "The buyer was sent to the provider checkout URL." : "Waiting for checkout creation.",
       state: hasCheckout ? "done" : hasPayment ? "active" : "waiting",
     },
     {
       number: 3,
       title: "Webhook received",
-      detail: hasWebhook
-        ? "PayChangu callback delivery was captured."
-        : "No webhook event has arrived yet.",
+      detail: hasWebhook ? "PayChangu callback delivery was captured." : "No webhook event has arrived yet.",
       state: hasWebhook ? "active" : "waiting",
     },
     {
@@ -217,25 +239,19 @@ function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow
     {
       number: 5,
       title: "Order confirmed",
-      detail: isPaid
-        ? "The order was marked paid and moved into the confirmed flow."
-        : "The order is still pending confirmation.",
+      detail: isPaid ? "The order was marked paid and moved into the confirmed flow." : "The order is still pending confirmation.",
       state: isPaid ? "done" : "waiting",
     },
     {
       number: 6,
       title: "Escrow active",
-      detail: isEscrowActive
-        ? "Funds are represented as active escrow for the order."
-        : "Escrow has not started yet.",
+      detail: isEscrowActive ? "Funds are represented as active escrow for the order." : "Escrow has not started yet.",
       state: isEscrowActive ? (isDisputed ? "issue" : "active") : "waiting",
     },
     {
       number: 7,
       title: "Buyer confirmed delivery",
-      detail: isDelivered
-        ? "The order has been marked fulfilled after delivery confirmation."
-        : "Waiting for delivery confirmation.",
+      detail: isDelivered ? "The order has been marked fulfilled after delivery confirmation." : "Waiting for delivery confirmation.",
       state: isDelivered ? "done" : "waiting",
     },
     {
@@ -246,11 +262,12 @@ function buildLifecycleSteps(payment?: PaymentRow | null, hooks: WebhookEventRow
           ? "Funds were released to the seller."
           : "Funds were refunded to the buyer."
         : "Final settlement has not happened yet.",
-      state: payment?.escrow_state === "released"
-        ? "done"
-        : payment?.escrow_state === "refunded"
-          ? "issue"
-          : "waiting",
+      state:
+        payment?.escrow_state === "released"
+          ? "done"
+          : payment?.escrow_state === "refunded"
+            ? "issue"
+            : "waiting",
     },
   ];
 }
@@ -277,7 +294,7 @@ export default function AdminPaymentsConsole() {
 
       setPayments(Array.isArray(paymentsData) ? paymentsData : []);
       setWebhookEvents(Array.isArray(webhookData) ? webhookData : []);
-      setSummary(summaryData as SummaryResponse);
+      setSummary((summaryData ?? {}) as SummaryResponse);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to load payment monitoring data.");
     } finally {
@@ -290,21 +307,34 @@ export default function AdminPaymentsConsole() {
     void load();
   }, []);
 
-  const stats = useMemo(() => ({
-  totalPayments: summary?.summary?.total_payments ?? payments.length,
-  verifiedPayments: summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
-  paidPayments: summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(p.payment_status)).length,
-  pendingPayments: summary?.summary?.pending_payments ?? payments.filter((p) => p.payment_status === "pending").length,
-  totalWebhooks: summary?.webhookSummary?.total_webhooks ?? webhookEvents.length,
-  validWebhooks: summary?.webhookSummary?.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
-  invalidWebhooks: summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
-}), [payments, webhookEvents, summary]);
-  
-  const latest = payments[0] ?? null;
-  const selected = payments.find((p) => p.reference === selectedReference) ?? null;
-  const selectedHooks = selectedReference ? webhookEvents.filter((e) => e.reference === selectedReference) : [];
-  const lifecyclePayment = selected ?? latest;
-  const lifecycleSteps = buildLifecycleSteps(lifecyclePayment, selectedReference ? selectedHooks : webhookEvents.filter((event) => !!latest && event.reference === latest.reference));
+  const stats = useMemo(
+    () => ({
+      totalPayments: summary?.summary?.total_payments ?? payments.length,
+      verifiedPayments:
+        summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
+      paidPayments:
+        summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(p.payment_status)).length,
+      pendingPayments:
+        summary?.summary?.pending_payments ?? payments.filter((p) => p.payment_status === "pending").length,
+      totalWebhooks: summary?.webhookSummary?.total_webhooks ?? webhookEvents.length,
+      validWebhooks:
+        summary?.webhookSummary?.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
+      invalidWebhooks:
+        summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
+    }),
+    [payments, webhookEvents, summary],
+  );
+
+  const latestPayment = payments[0] ?? null;
+  const selectedPayment = payments.find((p) => p.reference === selectedReference) ?? null;
+  const selectedHooks = selectedReference
+    ? webhookEvents.filter((e) => e.reference === selectedReference)
+    : [];
+  const lifecyclePayment = selectedPayment ?? latestPayment;
+  const lifecycleSteps = buildLifecycleSteps(
+    lifecyclePayment,
+    selectedReference ? selectedHooks : latestPayment ? webhookEvents.filter((event) => event.reference === latestPayment.reference) : webhookEvents,
+  );
 
   const close = () => setSelectedReference(null);
 
@@ -334,10 +364,12 @@ export default function AdminPaymentsConsole() {
       </header>
 
       <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
-        <section className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between px-1">
+        <section className="flex flex-col gap-5 px-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">Payments & Webhooks</h1>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
+              Payments & Webhooks
+            </h1>
             <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
               Admin monitoring only. Buyer order status belongs elsewhere.
             </p>
@@ -373,9 +405,7 @@ export default function AdminPaymentsConsole() {
               <h2 className="text-lg font-black">Transaction lifecycle</h2>
             </div>
             <p className="mt-2 text-sm text-zinc-600">
-              {selected
-                ? `Showing the selected reference: ${selected.reference}`
-                : `Showing the latest reference: ${lifecyclePayment.reference}`}
+              Showing the latest reference: {lifecyclePayment.reference}
             </p>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {lifecycleSteps.map((step) => (
@@ -402,7 +432,7 @@ export default function AdminPaymentsConsole() {
         ) : null}
 
         {activeTab === "payments" ? (
-          <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
+          <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-100 px-5 py-4">
               <div className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
@@ -440,7 +470,7 @@ export default function AdminPaymentsConsole() {
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
                             BuyMesho reference
                           </p>
-                          <p className="mt-1 font-mono text-xs break-all">{payment.reference}</p>
+                          <p className="mt-1 break-all font-mono text-xs">{payment.reference}</p>
                           <p className="mt-2 text-[11px] text-zinc-400">{payment.provider}</p>
                         </td>
                         <td className="p-4">
@@ -452,7 +482,7 @@ export default function AdminPaymentsConsole() {
                         </td>
                         <td className="p-4">
                           <StatusPill label={normalizeStatusLabel(payment.order_status)} tone={orderTone(payment.order_status)} />
-                          <div className="mt-2 text-xs text-zinc-500 break-all">{payment.order_id}</div>
+                          <div className="mt-2 break-all text-xs text-zinc-500">{payment.order_id}</div>
                           <div className="mt-1 text-[11px] text-zinc-400">
                             Order paid: {formatDate(payment.order_paid_at)}
                           </div>
@@ -481,7 +511,7 @@ export default function AdminPaymentsConsole() {
             )}
           </section>
         ) : (
-          <section className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm overflow-hidden">
+          <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
             <div className="border-b border-zinc-100 px-5 py-4">
               <div className="flex items-center gap-2">
                 <Webhook className="h-5 w-5" />
@@ -546,9 +576,24 @@ export default function AdminPaymentsConsole() {
             </div>
           </div>
         </section>
+
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="flex items-start gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700">
+              <BadgeInfo className="h-5 w-5" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-black text-zinc-900">Notes</p>
+              <p className="text-sm leading-relaxed text-zinc-600">
+                This page is intentionally defensive. If summary data is missing or incomplete, it falls back to the live
+                payment and webhook rows instead of crashing the app.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
-      {selected ? (
+      {selectedPayment ? (
         <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={close}>
           <aside
             className="ml-auto h-full w-full max-w-xl overflow-y-auto bg-white shadow-2xl"
@@ -556,10 +601,16 @@ export default function AdminPaymentsConsole() {
           >
             <div className="sticky top-0 flex items-center justify-between border-b border-zinc-100 bg-white px-5 py-4">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payment detail</p>
-                <h3 className="mt-1 text-lg font-black text-zinc-950">{selected.reference}</h3>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                  Payment detail
+                </p>
+                <h3 className="mt-1 text-lg font-black text-zinc-950">{selectedPayment.reference}</h3>
               </div>
-              <button type="button" onClick={close} className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50">
+              <button
+                type="button"
+                onClick={close}
+                className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50"
+              >
                 <X className="h-5 w-5 text-zinc-500" />
               </button>
             </div>
@@ -570,53 +621,53 @@ export default function AdminPaymentsConsole() {
                 <div className="mt-4 grid gap-3">
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">BuyMesho reference</span>
-                    <span className="font-semibold text-zinc-900 break-all">{selected.reference}</span>
+                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.reference}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">PayChangu reference</span>
-                    <span className="font-semibold text-zinc-900 break-all">{selected.provider_reference || "—"}</span>
+                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.provider_reference || "—"}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Payment status</span>
-                    <StatusPill label={selected.payment_status} tone={paymentTone(selected.payment_status)} />
+                    <StatusPill label={selectedPayment.payment_status} tone={paymentTone(selectedPayment.payment_status)} />
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order status</span>
-                    <StatusPill label={normalizeStatusLabel(selected.order_status)} tone={orderTone(selected.order_status)} />
+                    <StatusPill label={normalizeStatusLabel(selectedPayment.order_status)} tone={orderTone(selectedPayment.order_status)} />
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Escrow status</span>
-                    <StatusPill label={normalizeStatusLabel(selected.escrow_state)} tone={escrowTone(selected.escrow_state)} />
+                    <StatusPill label={normalizeStatusLabel(selectedPayment.escrow_state)} tone={escrowTone(selectedPayment.escrow_state)} />
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Amount</span>
                     <span className="font-semibold text-zinc-900">
-                      {selected.currency} {Number(selected.amount).toLocaleString()}
+                      {selectedPayment.currency} {Number(selectedPayment.amount).toLocaleString()}
                     </span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order ID</span>
-                    <span className="font-semibold text-zinc-900 break-all">{selected.order_id}</span>
+                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.order_id}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Escrow ID</span>
-                    <span className="font-semibold text-zinc-900 break-all">{selected.escrow_id || "—"}</span>
+                    <span className="break-all font-semibold text-zinc-900">{selectedPayment.escrow_id || "—"}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Payment verified at</span>
-                    <span className="font-semibold text-zinc-900 break-all">{formatDate(selected.paid_at)}</span>
+                    <span className="break-all font-semibold text-zinc-900">{formatDate(selectedPayment.paid_at)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order paid at</span>
-                    <span className="font-semibold text-zinc-900 break-all">{formatDate(selected.order_paid_at)}</span>
+                    <span className="break-all font-semibold text-zinc-900">{formatDate(selectedPayment.order_paid_at)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Order fulfilled at</span>
-                    <span className="font-semibold text-zinc-900 break-all">{formatDate(selected.order_fulfilled_at)}</span>
+                    <span className="break-all font-semibold text-zinc-900">{formatDate(selectedPayment.order_fulfilled_at)}</span>
                   </div>
                   <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
                     <span className="text-zinc-500">Escrow updated at</span>
-                    <span className="font-semibold text-zinc-900 break-all">{formatDate(selected.escrow_updated_at)}</span>
+                    <span className="break-all font-semibold text-zinc-900">{formatDate(selectedPayment.escrow_updated_at)}</span>
                   </div>
                 </div>
               </section>
@@ -637,7 +688,7 @@ export default function AdminPaymentsConsole() {
                         <div className="mt-2 text-xs text-zinc-500">{formatDate(event.created_at)}</div>
                         {event.payload ? (
                           <details className="mt-2">
-                            <summary className="cursor-pointer inline-flex items-center gap-2 text-xs font-bold text-zinc-600">
+                            <summary className="inline-flex cursor-pointer items-center gap-2 text-xs font-bold text-zinc-600">
                               <BadgeInfo className="h-3.5 w-3.5" />
                               View payload
                             </summary>
@@ -652,16 +703,6 @@ export default function AdminPaymentsConsole() {
                     <p className="text-sm text-zinc-500">No webhook events matched this reference.</p>
                   )}
                 </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-                <div className="flex items-center gap-2 font-black">
-                  <CircleAlert className="h-4 w-4" />
-                  Control note
-                </div>
-                <p className="mt-2 leading-6">
-                  This drawer is for diagnosis only. Buyer-facing order actions still belong on the buyer tracking page, not here.
-                </p>
               </section>
             </div>
           </aside>
