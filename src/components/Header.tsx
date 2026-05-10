@@ -8,6 +8,7 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
+  EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
@@ -133,6 +134,12 @@ export default function Header({
 
   const desktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
+
+  const isMarketRoute =
+    window.location.pathname === EXPLORE_PATH ||
+    window.location.pathname.startsWith(`${EXPLORE_PATH}/`);
+  const primaryDrawerPath = isMarketRoute ? HOME_PATH : EXPLORE_PATH;
+  const primaryDrawerLabel = isMarketRoute ? "Home" : "Market";
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
@@ -376,15 +383,23 @@ export default function Header({
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              <button type="button" onClick={() => handleSellClick(closeMenu)} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors">
+              <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                  {isSeller ? "List Item" : "Sell"}
+                  <House className="w-4 h-4 text-zinc-500" />
+                  {primaryDrawerLabel}
                 </span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button type="button" onClick={() => { closeMenu(); handleMessagesClick(); }} className={navButtonClass}>
+              <button type="button" onClick={() => handleBuyerPaymentsClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <CreditCard className="w-4 h-4 text-zinc-500" />
+                  Payments
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <MessageSquareText className="w-4 h-4 text-zinc-500" />
                   <div className="flex items-center gap-2">
@@ -395,29 +410,15 @@ export default function Header({
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button type="button" onClick={() => { closeMenu(); handleBuyerPaymentsClick(); }} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <CreditCard className="w-4 h-4 text-zinc-500" />
-                  Buyer Payments
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              <button type="button" onClick={() => { closeMenu(); handleCartClick(); }} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <ShoppingCart className="w-4 h-4 text-zinc-500" />
-                  Cart
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              <button type="button" onClick={() => { closeMenu(); navigateToPath(HOME_PATH); }} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <House className="w-4 h-4 text-zinc-500" />
-                  Home
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
+              {isAdmin ? (
+                <button type="button" onClick={() => { closeMenu(); navigateToPath(ADMIN_PATH); }} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3">
+                    <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                    Admin Access
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              ) : null}
 
               <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
@@ -437,16 +438,6 @@ export default function Header({
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
 
-                  {isAdmin ? (
-                    <button type="button" onClick={() => { closeMenu(); navigateToPath(ADMIN_PATH); }} className={navButtonClass}>
-                      <span className="inline-flex items-center gap-3">
-                        <ShieldCheck className="w-4 h-4 text-zinc-500" />
-                        Admin Access
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
-                    </button>
-                  ) : null}
-
                   <button
                     type="button"
                     onClick={() => handleLogout(closeMenu)}
@@ -454,21 +445,12 @@ export default function Header({
                   >
                     <span className="inline-flex items-center gap-3 text-red-600">
                       <LogOut className="w-4 h-4" />
-                      Log Out
+                      Logout
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 </>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => { closeMenu(); navigateToPath("/signup"); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
-                    Sign Up
-                  </button>
-                  <button type="button" onClick={() => { closeMenu(); navigateToPath("/login"); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
-                    Sign In
-                  </button>
-                </div>
-              )}
+              ) : null}
             </div>
           </motion.div>
         )}
