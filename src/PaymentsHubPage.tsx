@@ -48,7 +48,7 @@ type SavedPaymentMethods = {
   };
   mobileMoney?: {
     provider: string;
-    maskedNumber: string;
+    isConfigured: boolean;
   };
 };
 
@@ -210,7 +210,7 @@ export default function PaymentsHubPage() {
       ...savedMethods,
       mobileMoney: {
         provider: mobileProvider,
-        maskedNumber: `••• ••• ${digits.slice(-3)}`,
+        isConfigured: true,
       },
     };
 
@@ -343,7 +343,7 @@ export default function PaymentsHubPage() {
                   {savedMethods.mobileMoney ? (
                     <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700">
                       <p className="font-bold text-zinc-900">{savedMethods.mobileMoney.provider}</p>
-                      <p className="mt-1">{savedMethods.mobileMoney.maskedNumber}</p>
+                      <p className="mt-1">Number added for this device.</p>
                     </div>
                   ) : null}
                 </form>
