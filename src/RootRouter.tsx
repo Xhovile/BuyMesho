@@ -2,8 +2,12 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
+  BALANCE_PATH,
+  DISPUTES_PATH,
   getAppRouteFromLocation,
   navigateToPath,
+  PAYMENT_METHOD_PATH,
+  TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
   PROFILE_PATH,
@@ -53,6 +57,10 @@ const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
 const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
+const BalancePage = lazy(() => import("./BalancePage"));
+const PaymentMethodPage = lazy(() => import("./PaymentMethodPage"));
+const TrackOrderPage = lazy(() => import("./TrackOrderPage"));
+const DisputesPage = lazy(() => import("./DisputesPage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -110,6 +118,10 @@ export default function RootRouter() {
       import("./MarketComingSoonPage"),
       import("./BuyerPaymentsPage"),
       import("./PaymentsHubPage"),
+      import("./BalancePage"),
+      import("./PaymentMethodPage"),
+      import("./TrackOrderPage"),
+      import("./DisputesPage"),
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
       import("./OrderTrackingPage"),
@@ -135,7 +147,7 @@ export default function RootRouter() {
     ];
 
     const requiresAuth =
-      locationPath === "/payments" ||
+      locationPath.startsWith("/payments") ||
       locationPath === "/buyer-payments" ||
       locationPath === "/cart" ||
       locationPath.startsWith("/orders/");
@@ -166,6 +178,14 @@ export default function RootRouter() {
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
           <OrderTrackingPage />
+        ) : locationPath === BALANCE_PATH ? (
+          <BalancePage />
+        ) : locationPath === PAYMENT_METHOD_PATH ? (
+          <PaymentMethodPage />
+        ) : locationPath === TRACK_ORDER_PATH ? (
+          <TrackOrderPage />
+        ) : locationPath === DISPUTES_PATH ? (
+          <DisputesPage />
         ) : locationPath === "/payments" ? (
           <PaymentsHubPage />
         ) : locationPath === "/buyer-payments" ? (

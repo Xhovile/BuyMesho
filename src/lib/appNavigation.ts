@@ -66,6 +66,10 @@ export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
+export const BALANCE_PATH = "/payments/balance";
+export const PAYMENT_METHOD_PATH = "/payments/payment-method";
+export const TRACK_ORDER_PATH = "/payments/track-order";
+export const DISPUTES_PATH = "/payments/disputes";
 export const BUYER_PAYMENTS_PATH = "/buyer-payments";
 export const CART_PATH = "/cart";
 
@@ -566,6 +570,10 @@ export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH)
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
+export const navigateToBalance = () => navigateToPath(BALANCE_PATH);
+export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
+export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
+export const navigateToDisputes = () => navigateToPath(DISPUTES_PATH);
 export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
 export const navigateToCart = () => navigateToPath(CART_PATH);
 export const ORDER_TRACKING_BASE_PATH = "/orders";
