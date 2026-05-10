@@ -106,11 +106,12 @@ export default function CartPage() {
           </div>
         </div>
 
-        <section className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Cart</p>
+
+        <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-900 text-white"><ShoppingCart className="h-5 w-5" /></div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-yellow-500 text-white"><ShoppingCart className="h-5 w-5" /></div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Cart</p>
               <h1 className="text-3xl font-black tracking-tight text-zinc-950">Added items and available items</h1>
             </div>
           </div>
