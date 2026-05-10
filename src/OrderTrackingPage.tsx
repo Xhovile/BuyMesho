@@ -176,7 +176,7 @@ export default function OrderTrackingPage() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => reference && navigateToPath(`/orders/${encodeURIComponent(reference)}/dispute`)}
+                    onClick={() => reference && navigateToOrderDispute(reference) }
                     className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
                   >
                     Go to dispute form
