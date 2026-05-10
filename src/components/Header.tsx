@@ -367,13 +367,17 @@ export default function Header({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-[1px]">
               <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   {primaryDrawerLabel === "Home" ? (
-                    <House className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <House className="w-4 h-4 text-white" />
+                    </span>
                   ) : (
-                    <Store className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                      <Store className="w-4 h-4 text-white" />
+                    </span>
                   )}
                   {primaryDrawerLabel}
                 </span>
@@ -382,7 +386,9 @@ export default function Header({
 
               <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <CreditCard className="w-4 h-4 text-zinc-500" />
+                  <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-4 h-4 text-white" />
+                  </span>
                   Payments
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -390,7 +396,9 @@ export default function Header({
 
               <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                    <MessageSquareText className="w-4 h-4 text-white" />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span>Messages</span>
                     {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
@@ -402,7 +410,9 @@ export default function Header({
               {isAdmin ? (
                 <button type="button" onClick={() => { closeMenu(); navigateToPath(ADMIN_PATH); }} className={navButtonClass}>
                   <span className="inline-flex items-center gap-3">
-                    <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-white" />
+                    </span>
                     Admin Access
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -411,7 +421,9 @@ export default function Header({
 
               <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <Settings className="w-4 h-4 text-zinc-500" />
+                  <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                    <Settings className="w-4 h-4 text-white" />
+                  </span>
                   Settings
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -421,7 +433,9 @@ export default function Header({
                 <>
                   <button type="button" onClick={() => { closeMenu(); onProfileClick(); }} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
-                      <User className="w-4 h-4 text-zinc-500" />
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
                       Profile
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -432,8 +446,10 @@ export default function Header({
                     onClick={() => handleLogout(closeMenu)}
                     className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
                   >
-                    <span className="inline-flex items-center gap-3 text-red-600">
-                      <LogOut className="w-4 h-4" />
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                        <LogOut className="w-4 h-4 text-white" />
+                      </span>
                       Logout
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
