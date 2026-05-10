@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, ShoppingCart } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -8,7 +8,6 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
-  CART_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -106,16 +105,6 @@ export default function Header({
     }
     afterClose?.();
     navigateToPath(PAYMENTS_HUB_PATH);
-  };
-
-  const handleCartClick = (afterClose?: () => void) => {
-    if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
-      return;
-    }
-    afterClose?.();
-    navigateToPath(CART_PATH);
   };
 
   const handleLogout = async (afterClose?: () => void) => {
@@ -219,10 +208,6 @@ export default function Header({
                   <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
                     <CreditCard className="w-4 h-4" />
                     Payments
-                  </button>
-                  <button type="button" onClick={() => handleCartClick()} className={desktopNavButtonClass}>
-                    <ShoppingCart className="w-4 h-4" />
-                    Cart
                   </button>
                   <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
                     <Settings className="w-4 h-4" />

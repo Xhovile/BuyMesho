@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "lucide-react";
-import { navigateBackOrPath, EXPLORE_PATH } from "./lib/appNavigation";
+import { navigateBackOrPath, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
 import { fetchOrderById, openOrderDispute, type OrderBundle } from "./lib/orderApi";
 
 export default function OrderDisputePage() {
@@ -63,7 +63,7 @@ export default function OrderDisputePage() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />

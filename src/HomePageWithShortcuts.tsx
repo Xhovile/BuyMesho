@@ -1,9 +1,8 @@
-import { CreditCard, ShoppingCart } from "lucide-react";
+import { CreditCard } from "lucide-react";
 import HomePage from "./HomePage";
 import { navigateToPath } from "./lib/appNavigation";
 
-const BUYER_PAYMENTS_PATH = "/buyer-payments";
-const CART_PATH = "/cart";
+const PAYMENTS_HUB_PATH = "/payments";
 
 function ShortcutButton({
   icon: Icon,
@@ -36,13 +35,8 @@ export default function HomePageWithShortcuts() {
           <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-2 rounded-[2rem] border border-zinc-200/80 bg-white/95 p-2 shadow-2xl shadow-zinc-400/15 backdrop-blur-sm">
             <ShortcutButton
               icon={CreditCard}
-              label="Buyer Payments"
-              onClick={() => navigateToPath(BUYER_PAYMENTS_PATH)}
-            />
-            <ShortcutButton
-              icon={ShoppingCart}
-              label="Cart"
-              onClick={() => navigateToPath(CART_PATH)}
+              label="Payments"
+              onClick={() => navigateToPath(PAYMENTS_HUB_PATH)}
             />
           </div>
         </div>

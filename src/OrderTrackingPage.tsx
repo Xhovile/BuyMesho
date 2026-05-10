@@ -3,9 +3,8 @@ import { ArrowLeft, CreditCard, Truck } from "lucide-react";
 import {
   navigateBackOrPath,
   navigateToOrderDispute,
+  PAYMENTS_HUB_PATH,
   navigateToPath,
-  CART_PATH,
-  EXPLORE_PATH,
 } from "./lib/appNavigation";
 import {
   fetchOrderByReference,
@@ -111,6 +110,9 @@ export default function OrderTrackingPage() {
     return 0;
   }, [escrowState, order]);
 
+  const paidAt = typeof bundle?.payment?.paid_at === "string" ? bundle.payment.paid_at : null;
+  const escrowUpdatedAt = typeof bundle?.escrow?.updated_at === "string" ? bundle.escrow.updated_at : null;
+
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
   const firstItemTitle = order?.items?.[0]?.title ?? "—";
@@ -165,7 +167,7 @@ export default function OrderTrackingPage() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -174,11 +176,11 @@ export default function OrderTrackingPage() {
 
           <button
             type="button"
-            onClick={() => navigateToPath(CART_PATH)}
+            onClick={() => navigateToPath(PAYMENTS_HUB_PATH)}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
           >
             <CreditCard className="h-4 w-4" />
-            Cart
+            Payments
           </button>
         </div>
 
@@ -215,8 +217,8 @@ export default function OrderTrackingPage() {
                   paymentStatus,
                   escrowState,
                 }}
-                paidAt={bundle?.payment?.paid_at ?? null}
-                escrowUpdatedAt={bundle?.escrow?.updated_at ?? null}
+                paidAt={paidAt}
+                escrowUpdatedAt={escrowUpdatedAt}
               />
 
               <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">

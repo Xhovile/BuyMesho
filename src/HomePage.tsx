@@ -11,7 +11,6 @@ import {
   Plus,
   Settings,
   ShoppingBag,
-  ShoppingCart,
   ShieldCheck,
   Smartphone,
   Store,
@@ -24,9 +23,8 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
-  BUYER_PAYMENTS_PATH,
-  CART_PATH,
   EXPLORE_PATH,
+  PAYMENTS_HUB_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
   PRIVACY_PATH,
@@ -347,17 +345,7 @@ export default function HomePage() {
       return;
     }
     afterClose?.();
-    navigateToPath(BUYER_PAYMENTS_PATH);
-  };
-
-  const handleCartClick = (afterClose?: () => void) => {
-    if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
-      return;
-    }
-    afterClose?.();
-    navigateToPath(CART_PATH);
+    navigateToPath(PAYMENTS_HUB_PATH);
   };
 
   useEffect(() => {
@@ -443,15 +431,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 <CreditCard className="w-4 h-4" />
-                Buyer Payments
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCartClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Cart
+                Payments
               </button>
               <button
                 type="button"
@@ -623,19 +603,7 @@ export default function HomePage() {
                 >
                   <span className="inline-flex items-center gap-3">
                     <CreditCard className="w-4 h-4 text-zinc-500" />
-                    Buyer Payments
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleCartClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <ShoppingCart className="w-4 h-4 text-zinc-500" />
-                    Cart
+                    Payments
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>

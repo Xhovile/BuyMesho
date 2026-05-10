@@ -49,7 +49,24 @@ export const readBuyerCart = (): BuyerCartItem[] => readJson(BUYER_CART_KEY, [])
 export const readBuyerPayments = (): BuyerPaymentRecord[] => readJson(BUYER_PAYMENTS_KEY, []);
 
 export const setBuyerCartItem = (item: BuyerCartItem) => {
-  writeJson(BUYER_CART_KEY, [item]);
+  const current = readBuyerCart();
+  const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
+
+  if (index >= 0) {
+    current[index] = { ...current[index], ...item, addedAt: item.addedAt };
+  } else {
+    current.unshift(item);
+  }
+
+  writeJson(BUYER_CART_KEY, current.slice(0, 20));
+};
+
+export const removeBuyerCartItem = (listingId: string) => {
+  const current = readBuyerCart();
+  writeJson(
+    BUYER_CART_KEY,
+    current.filter((item) => String(item.listingId) !== String(listingId)),
+  );
 };
 
 export const clearBuyerCart = () => {
