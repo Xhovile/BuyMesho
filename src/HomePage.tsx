@@ -543,20 +543,22 @@ export default function HomePage() {
               </div>
 
               {/* Drawer body */}
-              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-[1px]">
                 <button
                   type="button"
                   onClick={() => {
                     closeMenu();
                     navigateToPath(EXPLORE_PATH);
                   }}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
+                  className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <ShoppingBag className="w-4 h-4" />
+                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                      <ShoppingBag className="w-4 h-4 text-white" />
+                    </span>
                     Market
                   </span>
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 <button
@@ -565,7 +567,9 @@ export default function HomePage() {
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <CreditCard className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                      <CreditCard className="w-4 h-4 text-white" />
+                    </span>
                     Payments
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -577,7 +581,9 @@ export default function HomePage() {
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                      <MessageSquareText className="w-4 h-4 text-white" />
+                    </span>
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
 
@@ -601,7 +607,9 @@ export default function HomePage() {
                     className={navButtonClass}
                   >
                     <span className="inline-flex items-center gap-3">
-                      <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                      <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </span>
                       Admin Access
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -614,7 +622,9 @@ export default function HomePage() {
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <Settings className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                      <Settings className="w-4 h-4 text-white" />
+                    </span>
                     Settings
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -626,7 +636,9 @@ export default function HomePage() {
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <UserRound className="w-4 h-4 text-zinc-500" />
+                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                      <UserRound className="w-4 h-4 text-white" />
+                    </span>
                     Profile
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -641,8 +653,10 @@ export default function HomePage() {
     }}
     className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
   >
-    <span className="inline-flex items-center gap-3 text-red-600">
-      <LogOut className="w-4 h-4" />
+    <span className="inline-flex items-center gap-3">
+      <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+        <LogOut className="w-4 h-4 text-white" />
+      </span>
       Log Out
     </span>
     <ChevronRight className="w-4 h-4 text-zinc-400" />
