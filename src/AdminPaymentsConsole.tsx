@@ -291,15 +291,15 @@ export default function AdminPaymentsConsole() {
   }, []);
 
   const stats = useMemo(() => ({
-    totalPayments: summary?.summary.total_payments ?? payments.length,
-    verifiedPayments: summary?.summary.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
-    paidPayments: summary?.summary.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(p.payment_status)).length,
-    pendingPayments: summary?.summary.pending_payments ?? payments.filter((p) => p.payment_status === "pending").length,
-    totalWebhooks: summary?.webhookSummary.total_webhooks ?? webhookEvents.length,
-    validWebhooks: summary?.webhookSummary.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
-    invalidWebhooks: summary?.webhookSummary.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
-  }), [payments, webhookEvents, summary]);
-
+  totalPayments: summary?.summary?.total_payments ?? payments.length,
+  verifiedPayments: summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
+  paidPayments: summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured"].includes(p.payment_status)).length,
+  pendingPayments: summary?.summary?.pending_payments ?? payments.filter((p) => p.payment_status === "pending").length,
+  totalWebhooks: summary?.webhookSummary?.total_webhooks ?? webhookEvents.length,
+  validWebhooks: summary?.webhookSummary?.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
+  invalidWebhooks: summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
+}), [payments, webhookEvents, summary]);
+  
   const latest = payments[0] ?? null;
   const selected = payments.find((p) => p.reference === selectedReference) ?? null;
   const selectedHooks = selectedReference ? webhookEvents.filter((e) => e.reference === selectedReference) : [];
