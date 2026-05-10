@@ -33,7 +33,7 @@ export default function PaymentsHubPage() {
           <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
             <h1 className="text-3xl font-black tracking-tight text-zinc-950">Payment actions</h1>
             <p className="mt-3 text-sm leading-6 text-zinc-600">
-              Select one section below to open its separate page.
+              Select an action below.
             </p>
 
             {showSellerBalanceAction ? (
