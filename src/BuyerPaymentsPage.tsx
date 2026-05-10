@@ -80,13 +80,14 @@ export default function BuyerPaymentsPage() {
           </button>
         </div>
 
-        <section className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Buyer Payments</p>
+
+        <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-900 text-white">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer Payments</p>
               <h1 className="text-3xl font-black tracking-tight text-zinc-950">Pending, paid, rejected, and error statuses</h1>
             </div>
           </div>

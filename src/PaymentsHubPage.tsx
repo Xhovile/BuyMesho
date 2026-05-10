@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, ShieldAlert, ShoppingCart, Truck, Wallet } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Truck, Wallet } from "lucide-react";
 import {
   BALANCE_PATH,
   BUYER_PAYMENTS_PATH,
@@ -13,12 +13,12 @@ import {
 } from "./lib/appNavigation";
 
 const paymentActions = [
-  { label: "Balance", icon: Wallet, path: BALANCE_PATH },
-  { label: "Payment Method", icon: CreditCard, path: PAYMENT_METHOD_PATH },
-  { label: "Cart", icon: ShoppingCart, path: CART_PATH },
-  { label: "Track Order", icon: Truck, path: TRACK_ORDER_PATH },
-  { label: "Buyer Payments", icon: CreditCard, path: BUYER_PAYMENTS_PATH },
-  { label: "Disputes", icon: ShieldAlert, path: DISPUTES_PATH },
+  { label: "Balance", icon: Wallet, path: BALANCE_PATH, iconBg: "bg-zinc-500" },
+  { label: "Payment Method", icon: CreditCard, path: PAYMENT_METHOD_PATH, iconBg: "bg-orange-500" },
+  { label: "Cart", icon: ShoppingCart, path: CART_PATH, iconBg: "bg-yellow-500" },
+  { label: "Track Order", icon: Truck, path: TRACK_ORDER_PATH, iconBg: "bg-blue-500" },
+  { label: "Buyer Payments", icon: CreditCard, path: BUYER_PAYMENTS_PATH, iconBg: "bg-indigo-500" },
+  { label: "Disputes", icon: ShieldAlert, path: DISPUTES_PATH, iconBg: "bg-red-900" },
 ] as const;
 
 export default function PaymentsHubPage() {
@@ -34,9 +34,10 @@ export default function PaymentsHubPage() {
           Back
         </button>
 
-        <section className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Payments</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Payment actions</h1>
+        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Payments</p>
+
+        <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+          <h1 className="text-3xl font-black tracking-tight text-zinc-950">Payment actions</h1>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
             Select one section below to open its separate page.
           </p>
@@ -48,13 +49,14 @@ export default function PaymentsHubPage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(action.path)}
-                    className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-bold text-zinc-800 hover:bg-white"
+                    className="flex w-full items-center gap-3 bg-white px-5 py-4 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50"
                     aria-label={`Open ${action.label}`}
                   >
-                    <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-zinc-700">
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${action.iconBg} text-white`}>
                       <action.icon className="h-4 w-4" />
                     </span>
                     <span>{action.label}</span>
+                    <ChevronRight className="ml-auto h-4 w-4 text-zinc-300" />
                   </button>
                 </li>
               ))}
