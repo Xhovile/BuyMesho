@@ -116,7 +116,7 @@ export default function AdminPaymentsPage() {
       ]);
       setPayments(Array.isArray(paymentsData) ? paymentsData : []);
       setWebhookEvents(Array.isArray(webhookData) ? webhookData : []);
-      setSummary(summaryData as SummaryResponse);
+      setSummary(summaryData ?? {});
     } catch (err: any) {
       setError(err?.message || "Failed to load payment monitoring data.");
     } finally {
