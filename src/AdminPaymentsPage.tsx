@@ -141,8 +141,8 @@ export default function AdminPaymentsPage() {
   const lifecycle = latestPayment
     ? [
         { label: "Payment created", active: true, note: new Date(latestPayment.created_at).toLocaleString() },
-        { label: "Webhook received", active: latestPayment.signature_valid === 1 || Number(latestPayment.verified) === 1, note: latestPayment.provider_reference || latestPayment.reference },
-        { label: "Order confirmed", active: ["paid", "captured", "in_escrow", "fulfilled"].includes(latestPayment.order_status || ""), note: latestPayment.order_status || "pending_payment" },
+           { label: "Webhook received", active: Number(latestPayment.verified) === 1, note: latestPayment.provider_reference || latestPayment.reference },     
+      { label: "Order confirmed", active: ["paid", "captured", "in_escrow", "fulfilled"].includes(latestPayment.order_status || ""), note: latestPayment.order_status || "pending_payment" },
         { label: "Escrow active", active: ["initiated", "active", "released", "refunded", "disputed"].includes(latestPayment.escrow_state || ""), note: latestPayment.escrow_state || "pending" },
         { label: "Final state", active: ["fulfilled", "released", "refunded"].includes(latestPayment.escrow_state || latestPayment.order_status || ""), note: latestPayment.escrow_state || latestPayment.order_status || "pending" },
       ]
