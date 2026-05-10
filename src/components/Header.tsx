@@ -198,6 +198,10 @@ export default function Header({
                     <House className="w-4 h-4" />
                     Home
                   </button>
+                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
+                    <CreditCard className="w-4 h-4" />
+                    Payments
+                  </button>
                   <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
                     <MessageSquareText className="w-4 h-4" />
                     <div className="flex items-center gap-2">
@@ -205,20 +209,16 @@ export default function Header({
                       {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                     </div>
                   </button>
-                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
-                    <CreditCard className="w-4 h-4" />
-                    Payments
-                  </button>
-                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
                   {isAdmin ? (
                     <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
                       <ShieldCheck className="w-4 h-4" />
                       Admin Access
                     </button>
                   ) : null}
+                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
