@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, ShoppingCart } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -8,7 +8,6 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
-  CART_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -108,16 +107,6 @@ export default function Header({
     navigateToPath(PAYMENTS_HUB_PATH);
   };
 
-  const handleCartClick = (afterClose?: () => void) => {
-    if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
-      return;
-    }
-    afterClose?.();
-    navigateToPath(CART_PATH);
-  };
-
   const handleLogout = async (afterClose?: () => void) => {
     afterClose?.();
     try {
@@ -209,6 +198,10 @@ export default function Header({
                     <House className="w-4 h-4" />
                     Home
                   </button>
+                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
+                    <CreditCard className="w-4 h-4" />
+                    Payments
+                  </button>
                   <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
                     <MessageSquareText className="w-4 h-4" />
                     <div className="flex items-center gap-2">
@@ -216,24 +209,16 @@ export default function Header({
                       {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                     </div>
                   </button>
-                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
-                    <CreditCard className="w-4 h-4" />
-                    Payments
-                  </button>
-                  <button type="button" onClick={() => handleCartClick()} className={desktopNavButtonClass}>
-                    <ShoppingCart className="w-4 h-4" />
-                    Cart
-                  </button>
-                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
                   {isAdmin ? (
                     <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
                       <ShieldCheck className="w-4 h-4" />
                       Admin Access
                     </button>
                   ) : null}
+                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">

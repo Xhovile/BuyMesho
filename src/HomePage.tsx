@@ -11,7 +11,6 @@ import {
   Plus,
   Settings,
   ShoppingBag,
-  ShoppingCart,
   ShieldCheck,
   Smartphone,
   Store,
@@ -24,9 +23,8 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
-  BUYER_PAYMENTS_PATH,
-  CART_PATH,
   EXPLORE_PATH,
+  PAYMENTS_HUB_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
   PRIVACY_PATH,
@@ -347,17 +345,7 @@ export default function HomePage() {
       return;
     }
     afterClose?.();
-    navigateToPath(BUYER_PAYMENTS_PATH);
-  };
-
-  const handleCartClick = (afterClose?: () => void) => {
-    if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
-      return;
-    }
-    afterClose?.();
-    navigateToPath(CART_PATH);
+    navigateToPath(PAYMENTS_HUB_PATH);
   };
 
   useEffect(() => {
@@ -415,11 +403,11 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => handleSettingsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
+                onClick={() => handleBuyerPaymentsClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
-                <Settings className="w-4 h-4" />
-                Settings
+                <CreditCard className="w-4 h-4" />
+                Payments
               </button>
               <button
                 type="button"
@@ -437,31 +425,6 @@ export default function HomePage() {
                   ) : null}
                 </div>
               </button>
-              <button
-                type="button"
-                onClick={() => handleBuyerPaymentsClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-              >
-                <CreditCard className="w-4 h-4" />
-                Buyer Payments
-              </button>
-              <button
-                type="button"
-                onClick={() => handleCartClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Cart
-              </button>
-              <button
-                type="button"
-                onClick={() => handleProfileClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-              >
-                <UserRound className="w-4 h-4" />
-                Profile
-              </button>
-
               {isAdmin ? (
                 <button
                   type="button"
@@ -472,6 +435,22 @@ export default function HomePage() {
                   Admin Access
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => handleSettingsClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
+              >
+                <Settings className="w-4 h-4" />
+                Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => handleProfileClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                <UserRound className="w-4 h-4" />
+                Profile
+              </button>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -569,22 +548,6 @@ export default function HomePage() {
                   type="button"
                   onClick={() => {
                     closeMenu();
-                    handleStartSelling();
-                  }}
-                  disabled={isSellerProfileLoading}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-zinc-900"
-                >
-                  <span className="inline-flex items-center gap-3">
-                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                    {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
-                  </span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    closeMenu();
                     navigateToPath(EXPLORE_PATH);
                   }}
                   className="w-full flex items-center justify-between gap-3 rounded-2xl bg-red-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-red-800 transition-colors"
@@ -594,6 +557,18 @@ export default function HomePage() {
                     Market
                   </span>
                   <ChevronRight className="w-4 h-4" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleBuyerPaymentsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <CreditCard className="w-4 h-4 text-zinc-500" />
+                    Payments
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
                 <button
@@ -616,29 +591,22 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleBuyerPaymentsClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <CreditCard className="w-4 h-4 text-zinc-500" />
-                    Buyer Payments
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleCartClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <ShoppingCart className="w-4 h-4 text-zinc-500" />
-                    Cart
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      navigateToPath(ADMIN_PATH);
+                    }}
+                    className={navButtonClass}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                      Admin Access
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ) : null}
 
                 <button
                   type="button"
@@ -663,23 +631,6 @@ export default function HomePage() {
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
-
-                {isAdmin ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath(ADMIN_PATH);
-                    }}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <ShieldCheck className="w-4 h-4 text-zinc-500" />
-                      Admin Access
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                ) : null}
 
  {isLoggedIn ? (
   <button
