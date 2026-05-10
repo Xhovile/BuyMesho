@@ -1,4 +1,4 @@
-import { ShieldCheck, ShieldAlert } from 'lucide-react';
+import { ShieldAlert, ShieldCheck } from 'lucide-react';
 import {
   getEscrowDescription,
   getEscrowHeadline,
@@ -33,11 +33,7 @@ export default function EscrowProtectionCard({
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex items-start gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-zinc-900 text-white">
-          {disputed ? (
-            <ShieldAlert className="h-5 w-5" />
-          ) : (
-            <ShieldCheck className="h-5 w-5" />
-          )}
+          {disputed ? <ShieldAlert className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
         </div>
 
         <div>
