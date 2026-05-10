@@ -1,5 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types';
+import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
 const PAYCHANGU_SUCCESS_STATUSES = new Set(['success', 'successful', 'completed', 'paid', 'captured']);
@@ -41,6 +42,7 @@ type VerificationState = 'paid' | 'pending' | 'failed' | 'reversed' | 'unknown';
 
 const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
   success: 'paid',
+  successful: 'paid',
   succeeded: 'paid',
   paid: 'paid',
   captured: 'paid',
@@ -67,6 +69,39 @@ function normalizeProviderStatus(rawStatus: unknown): { normalized: Verification
   };
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseWebhookPayload(payload: unknown): { rawPayload: string; parsedPayload: Record<string, unknown> | null } {
+  if (typeof payload === 'string') {
+    try {
+      const parsed = JSON.parse(payload) as unknown;
+      return {
+        rawPayload: payload,
+        parsedPayload: isPlainRecord(parsed) ? parsed : null,
+      };
+    } catch {
+      return {
+        rawPayload: payload,
+        parsedPayload: null,
+      };
+    }
+  }
+
+  if (isPlainRecord(payload)) {
+    return {
+      rawPayload: JSON.stringify(payload),
+      parsedPayload: payload,
+    };
+  }
+
+  return {
+    rawPayload: JSON.stringify(payload),
+    parsedPayload: null,
+  };
+}
+
 function signatureMatches(secret: string | undefined, payload: string, signature: string | undefined): boolean {
   if (!secret || !signature) return false;
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
@@ -74,16 +109,6 @@ function signatureMatches(secret: string | undefined, payload: string, signature
     return timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
   } catch {
     return false;
-  }
-}
-
-function getPayloadRecord(payload: string | Record<string, unknown>): Record<string, unknown> {
-  if (typeof payload !== 'string') return payload;
-  try {
-    const parsed = JSON.parse(payload) as unknown;
-    return typeof parsed === 'object' && parsed !== null ? parsed as Record<string, unknown> : {};
-  } catch {
-    return {};
   }
 }
 
@@ -177,22 +202,13 @@ export const paychanguProvider = {
     const amount = Number.isFinite(amountValue)
       ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
       : undefined;
-    const { normalized, providerStatus } = normalizeProviderStatus(payload.status);
+    const { normalized } = normalizeProviderStatus(payload.status);
     const hasValidValue = !!amount && amount.amount > 0;
     const verified = normalized === 'paid' && hasValidValue;
-    const failureReason = String(
-      payload.failure_reason
-      ?? payload.failureReason
-      ?? payload.error
-      ?? payload.message
-      ?? '',
-    ).trim() || undefined;
-
     const paymentStatus = String(payload.status ?? '').toLowerCase();
-    const isSuccessful = ['successful', 'success', 'completed'].includes(paymentStatus);
 
     return {
-      verified: isSuccessful,
+      verified,
       provider: 'paychangu',
       txRef,
       reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
@@ -205,17 +221,15 @@ export const paychanguProvider = {
   },
 
   async verifyWebhook(signature: string | undefined, payload: string | Record<string, unknown>, config: PayChanguConfig = {}): Promise<WebhookVerificationResult> {
-    const rawPayload = typeof payload === 'string' ? payload : JSON.stringify(payload);
-    const parsedPayload = typeof payload === 'string'
-      ? (JSON.parse(payload) as Record<string, unknown>)
-      : payload;
+    const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
+
     return {
-      valid: signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
+      valid: parsedPayload !== null && signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
       provider: 'paychangu',
-      eventType: String(parsedPayload.event_type ?? parsedPayload.event ?? ''),
-      reference: String(parsedPayload.tx_ref ?? parsedPayload.reference ?? ''),
+      eventType: parsedPayload ? String(parsedPayload.event_type ?? parsedPayload.event ?? '') : undefined,
+      reference: parsedPayload ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '') : undefined,
       signature,
-      payload,
+      payload: parsedPayload ?? payload,
     };
   },
 
@@ -224,13 +238,14 @@ export const paychanguProvider = {
   },
 
   async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {
-    const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+    const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
+
     return {
-      valid: false,
+      valid: parsedPayload !== null,
       provider: 'paychangu',
-      eventType: typeof payload === 'object' && payload !== null ? String((payload as Record<string, unknown>).event_type ?? (payload as Record<string, unknown>).event ?? '') : undefined,
-      reference: typeof payload === 'object' && payload !== null ? String((payload as Record<string, unknown>).tx_ref ?? (payload as Record<string, unknown>).reference ?? '') : undefined,
-      payload: body,
+      eventType: parsedPayload ? String(parsedPayload.event_type ?? parsedPayload.event ?? '') : undefined,
+      reference: parsedPayload ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '') : undefined,
+      payload: parsedPayload ?? rawPayload,
     };
   },
 };

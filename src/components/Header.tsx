@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, ShoppingCart } from "lucide-react";
 import { type FormEvent, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -6,6 +6,7 @@ import { signOut } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
+  ADMIN_PATH,
   BECOME_SELLER_PATH,
   HOME_PATH,
   LOGIN_PATH,
@@ -19,6 +20,10 @@ import BrandMark from "./BrandMark";
 import FeedbackModal from "./FeedbackModal";
 import { auth } from "../firebase";
 import { fetchInbox } from "../lib/messages";
+import { useIsAdmin } from "../hooks/useIsAdmin";
+
+const BUYER_PAYMENTS_PATH = "/buyer-payments";
+const CART_PATH = "/cart";
 
 type HeaderProps = {
   searchValue: string;
@@ -46,6 +51,8 @@ export default function Header({
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
+
+  const { isAdmin } = useIsAdmin(firebaseUser);
 
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
     .charAt(0)
@@ -91,6 +98,26 @@ export default function Header({
     navigateToPath(BECOME_SELLER_PATH);
   };
 
+  const handleBuyerPaymentsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(BUYER_PAYMENTS_PATH);
+  };
+
+  const handleCartClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(CART_PATH);
+  };
+
   const handleLogout = async (afterClose?: () => void) => {
     afterClose?.();
     try {
@@ -110,7 +137,7 @@ export default function Header({
   useEffect(() => {
     const updateHeaderVisibility = () => {
       setTopRowHidden((prev) => {
-        if (prev) return window.scrollY >= 4;
+        if (prev) return window.scrollY >= 2;
         return window.scrollY > 30;
       });
     };
@@ -171,39 +198,35 @@ export default function Header({
                 <BrandMark />
 
                 <div className="hidden md:flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(HOME_PATH)}
-                    className={desktopNavButtonClass}
-                  >
+                  <button type="button" onClick={() => navigateToPath(HOME_PATH)} className={desktopNavButtonClass}>
                     <House className="w-4 h-4" />
                     Home
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleMessagesClick()}
-                    className={desktopNavButtonClass}
-                  >
+                  <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
                     <MessageSquareText className="w-4 h-4" />
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
-                      {unreadCount > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                          {unreadCount}
-                        </span>
-                      ) : null}
+                      {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                     </div>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSettingsClick()}
-                    className={desktopNavButtonClass}
-                  >
+                  <button type="button" onClick={() => handleBuyerPaymentsClick()} className={desktopNavButtonClass}>
+                    <CreditCard className="w-4 h-4" />
+                    Buyer Payments
+                  </button>
+                  <button type="button" onClick={() => handleCartClick()} className={desktopNavButtonClass}>
+                    <ShoppingCart className="w-4 h-4" />
+                    Cart
+                  </button>
+                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
                     <Settings className="w-4 h-4" />
                     Settings
                   </button>
+                  {isAdmin ? (
+                    <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
+                      <ShieldCheck className="w-4 h-4" />
+                      Admin Access
+                    </button>
+                  ) : null}
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -251,22 +274,13 @@ export default function Header({
               </div>
             </div>
 
-            <div
-              className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
-            >
-              <form
-                onSubmit={(e: FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  onSearch(searchValue.trim());
-                }}
-                className="w-full"
-              >
+            <div className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}>
+              <form onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
+                onSearch(searchValue.trim());
+              }} className="w-full">
                 <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                  <div
-                    className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
-                      topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
-                    }`}
-                  >
+                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
                     <input
                       type="text"
                       value={searchValue}
@@ -274,11 +288,7 @@ export default function Header({
                       placeholder="Search listings, products, or services..."
                       className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
                     />
-                    <button
-                      type="submit"
-                      aria-label="Search listings"
-                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
-                    >
+                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4">
                       Search
                     </button>
                   </div>
@@ -301,36 +311,32 @@ export default function Header({
           </div>
 
           <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
-          <div className="mx-auto max-w-7xl">
-            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-center gap-4 pb-0.5">
-                {QUICK_CHIPS.map((chip) => {
-                  const isActive = chip === selectedChip;
-                  return (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        setSelectedChip(chip);
-                        onChipChange?.(chip);
-                      }}
-                      className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${
-                        isActive
-                          ? "text-zinc-800"
-                          : "text-zinc-700 hover:text-zinc-800"
-                      }`}
-                      aria-pressed={isActive}
-                      aria-label={chip}
-                    >
-                      <span>{chip}</span>
-                    </button>
-                  );
-                })}
+            <div className="mx-auto max-w-7xl">
+              <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex min-w-max items-center gap-4 pb-0.5">
+                  {QUICK_CHIPS.map((chip) => {
+                    const isActive = chip === selectedChip;
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          setSelectedChip(chip);
+                          onChipChange?.(chip);
+                        }}
+                        className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${isActive ? "text-zinc-800" : "text-zinc-700 hover:text-zinc-800"}`}
+                        aria-pressed={isActive}
+                        aria-label={chip}
+                      >
+                        <span>{chip}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </nav>
 
       <AnimatePresence>
@@ -364,22 +370,13 @@ export default function Header({
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
                 <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
               </div>
-              <button
-                type="button"
-                onClick={closeMenu}
-                aria-label="Close menu"
-                className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
-              >
+              <button type="button" onClick={closeMenu} aria-label="Close menu" className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors">
                 <X className="w-4 h-4 text-zinc-600" />
               </button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              <button
-                type="button"
-                onClick={() => handleSellClick(closeMenu)}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-              >
+              <button type="button" onClick={() => handleSellClick(closeMenu)} className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors">
                 <span className="inline-flex items-center gap-3">
                   {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
                   {isSeller ? "List Item" : "Sell"}
@@ -387,36 +384,34 @@ export default function Header({
                 <ChevronRight className="w-4 h-4" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  handleMessagesClick();
-                }}
-                className={navButtonClass}
-              >
+              <button type="button" onClick={() => { closeMenu(); handleMessagesClick(); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <MessageSquareText className="w-4 h-4 text-zinc-500" />
                   <div className="flex items-center gap-2">
                     <span>Messages</span>
-                    {unreadCount > 0 ? (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                        {unreadCount}
-                      </span>
-                    ) : null}
+                    {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                   </div>
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  navigateToPath(HOME_PATH);
-                }}
-                className={navButtonClass}
-              >
+              <button type="button" onClick={() => { closeMenu(); handleBuyerPaymentsClick(); }} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <CreditCard className="w-4 h-4 text-zinc-500" />
+                  Buyer Payments
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => { closeMenu(); handleCartClick(); }} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <ShoppingCart className="w-4 h-4 text-zinc-500" />
+                  Cart
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => { closeMenu(); navigateToPath(HOME_PATH); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <House className="w-4 h-4 text-zinc-500" />
                   Home
@@ -424,11 +419,7 @@ export default function Header({
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => handleSettingsClick(closeMenu)}
-                className={navButtonClass}
-              >
+              <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <Settings className="w-4 h-4 text-zinc-500" />
                   Settings
@@ -438,20 +429,23 @@ export default function Header({
 
               {firebaseUser ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onProfileClick();
-                    }}
-                    className={navButtonClass}
-                  >
+                  <button type="button" onClick={() => { closeMenu(); onProfileClick(); }} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
                       <User className="w-4 h-4 text-zinc-500" />
                       Profile
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
+
+                  {isAdmin ? (
+                    <button type="button" onClick={() => { closeMenu(); navigateToPath(ADMIN_PATH); }} className={navButtonClass}>
+                      <span className="inline-flex items-center gap-3">
+                        <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                        Admin Access
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"
@@ -467,24 +461,10 @@ export default function Header({
                 </>
               ) : (
                 <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath("/signup");
-                    }}
-                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                  >
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath("/signup"); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
                     Sign Up
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath("/login");
-                    }}
-                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                  >
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath("/login"); }} className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50">
                     Sign In
                   </button>
                 </div>

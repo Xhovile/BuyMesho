@@ -16,6 +16,7 @@ import MarketSection, {
 import { Listing } from "./types";
 import {
   getExploreStateFromLocation,
+  getMarketChipFromLocation,
   navigateToCreateListing,
   navigateToLogin,
   navigateToListingDetails,
@@ -28,6 +29,7 @@ import {
   navigateToProfile,
   replaceExploreStateInUrl,
   pushExploreStateInUrl,
+  navigateToMarketChip,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -42,6 +44,7 @@ const CATEGORY_QUERY_TO_CANONICAL: Record<string, string> = {
 
 export default function App() {
   const initialExploreState = getExploreStateFromLocation(window.location);
+  const activeChip = getMarketChipFromLocation(window.location);
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(initialExploreState.search);
@@ -473,7 +476,6 @@ export default function App() {
       university: updated.university ?? existing.university,
       photos: updated.photos ?? existing.photos ?? [],
       video_url: updated.video_url ?? existing.video_url ?? null,
-      whatsapp_number: updated.whatsapp_number ?? existing.whatsapp_number,
       status: updated.status ?? existing.status ?? "available",
       condition: updated.condition ?? existing.condition ?? "used",
       quantity: Number(updated.quantity ?? existing.quantity ?? 1),
@@ -549,7 +551,6 @@ export default function App() {
         status: listing.status === "sold" ? "available" : "sold",
       }),
     onToggleSave: toggleSavedListing,
-    requireLoginForContact: navigateToLogin,
     onOpenDetails: (listing) => navigateToListingDetails(listing.id),
     onOpenSeller: (uid) => navigateToSellerProfile(uid),
   };
@@ -563,6 +564,8 @@ export default function App() {
         onProfileClick={navigateToProfile}
         userProfile={userProfile}
         firebaseUser={firebaseUser}
+        activeChip={activeChip}
+        onChipChange={navigateToMarketChip}
       />
 
       <main className="max-w-7xl mx-auto px-4">
@@ -579,6 +582,7 @@ export default function App() {
           isLoggedIn={!!firebaseUser}
           savedListingIds={savedListingIds}
           actions={marketActions}
+          activeChip={activeChip}
         />
       </main>
 

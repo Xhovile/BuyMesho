@@ -11,6 +11,8 @@ const capabilities: PaymentProviderCapabilities = {
   currencies: ['MWK', 'USD', 'ZAR'],
 };
 
+const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';
+
 function extractTxRef(payload: unknown): string {
   const p = payload as Record<string, unknown>;
   const txRef = p?.tx_ref ?? p?.txRef;
@@ -43,7 +45,7 @@ export const paychanguProvider: PaymentGatewayProvider = {
   },
 
   async refund(_request: RefundRequest): Promise<RefundResult> {
-    throw new Error('PayChangu refund flow not implemented yet');
+    throw new Error(REFUND_UNAVAILABLE_MESSAGE);
   },
 
   async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {

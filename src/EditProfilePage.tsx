@@ -7,7 +7,6 @@ import { UNIVERSITIES } from "./constants";
 import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import { resolveUniversity } from "./lib/university";
-import { resolveWhatsappNumber } from "./lib/whatsapp";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import type { University, UserProfile } from "./types";
 
@@ -25,7 +24,6 @@ export default function EditProfilePage() {
     university: resolveUniversity(),
     logoUrl: "",
     bio: "",
-    whatsappNumber: "",
   });
   const [formReady, setFormReady] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,7 +51,6 @@ export default function EditProfilePage() {
           university: resolveUniversity(serverProfile.university),
           logoUrl: serverProfile.business_logo || "",
           bio: serverProfile.bio || "",
-          whatsappNumber: resolveWhatsappNumber(serverProfile.whatsapp_number),
         });
       } catch (err) {
         // Log the failure and fall back to Firestore-backed profile data
@@ -63,7 +60,6 @@ export default function EditProfilePage() {
           university: resolveUniversity(profile.university),
           logoUrl: profile.business_logo || "",
           bio: profile.bio || "",
-          whatsappNumber: resolveWhatsappNumber(profile.whatsapp_number),
         });
       }
       formInitialized.current = true;
@@ -108,7 +104,6 @@ export default function EditProfilePage() {
         business_logo: form.logoUrl || undefined,
         university: form.university,
         bio: form.bio,
-        whatsapp_number: form.whatsappNumber,
       };
       await apiFetch("/api/profile", {
         method: "PUT",
@@ -117,7 +112,6 @@ export default function EditProfilePage() {
           business_logo: updatedProfile.business_logo || "",
           university: updatedProfile.university,
           bio: updatedProfile.bio || "",
-          whatsapp_number: updatedProfile.whatsapp_number || "",
         }),
       });
       setProfile(updatedProfile);
@@ -163,10 +157,6 @@ export default function EditProfilePage() {
           </div>
           <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
           <div>
-            <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">WhatsApp Number</label>
-            <input type="text" value={form.whatsappNumber} onChange={(e) => setForm((prev) => ({ ...prev, whatsappNumber: e.target.value }))} className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" />
-          </div>
-          <div>
             <label className="block text-xs font-bold text-zinc-400 uppercase mb-2">Business Logo</label>
             <div className="flex items-center gap-4">
               <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 overflow-hidden flex items-center justify-center flex-shrink-0">
@@ -210,4 +200,3 @@ export default function EditProfilePage() {
     </AccountPageShell>
   );
 }
-

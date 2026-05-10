@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ChevronLeft,
   Loader2,
   RefreshCw,
+  ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
-import FormDropdown from "./components/FormDropdown";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -37,6 +38,88 @@ type ReportRow = {
   seller_business_name?: string | null;
 };
 
+type MainTab = "content" | "chats";
+type ContentTab = "listings" | "sellers";
+type ContentStatusFilter = "all" | "open" | "reviewed" | "resolved";
+type ChatStatusFilter = "open" | "resolved" | "all";
+
+function TabButton({
+  active,
+  children,
+  onClick,
+  className = "",
+}: {
+  active: boolean;
+  children: React.ReactNode;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "px-4 py-2 rounded-xl text-sm font-bold transition",
+        active
+          ? "bg-zinc-700 text-white shadow-sm shadow-zinc-700/30"
+          : "bg-zinc-200 text-zinc-600 hover:text-zinc-800 hover:bg-zinc-300",
+        className,
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  accent = "zinc",
+}: {
+  label: string;
+  value: string | number;
+  accent?: "zinc" | "amber" | "blue" | "emerald" | "red";
+}) {
+  const accentStyles: Record<"zinc" | "amber" | "blue" | "emerald" | "red", string> = {
+    zinc: "text-zinc-900",
+    amber: "text-amber-700",
+    blue: "text-blue-700",
+    emerald: "text-emerald-700",
+    red: "text-red-700",
+  };
+
+  return (
+    <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
+      <p className="text-xs font-bold text-zinc-400 uppercase">{label}</p>
+      <p className={`text-2xl font-extrabold mt-1 ${accentStyles[accent]}`}>{value}</p>
+    </div>
+  );
+}
+
+function EmptyState({
+  title,
+  description,
+  icon = "shield",
+}: {
+  title: string;
+  description: string;
+  icon?: "shield" | "chat";
+}) {
+  return (
+    <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
+      <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        {icon === "shield" ? (
+          <ShieldCheck className="w-8 h-8 text-zinc-300" />
+        ) : (
+          <ShieldAlert className="w-8 h-8 text-zinc-300" />
+        )}
+      </div>
+      <h3 className="text-lg font-bold text-zinc-900">{title}</h3>
+      <p className="text-zinc-500 mt-1">{description}</p>
+    </div>
+  );
+}
+
 function MessageReportCard({
   report,
   onResolve,
@@ -52,7 +135,7 @@ function MessageReportCard({
         <div className="space-y-3 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-red-50 text-red-700 border border-red-200">
-              message report
+              chat report
             </span>
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200">
               {report.status}
@@ -116,7 +199,185 @@ function MessageReportCard({
   );
 }
 
+function ContentReportCard({
+  report,
+  onUpdateStatus,
+  onToggleListingVisibility,
+  onToggleSellerSuspension,
+  onViewUser,
+  busy,
+}: {
+  report: ReportRow;
+  onUpdateStatus: (status: "open" | "reviewed" | "resolved") => void;
+  onToggleListingVisibility: () => void;
+  onToggleSellerSuspension: () => void;
+  onViewUser: () => void;
+  busy: boolean;
+}) {
+  const isListing = report.type === "listing";
+  const isSeller = report.type === "problem";
+  const targetName = isListing ? report.listing_name || `Listing #${report.listing_id}` : report.seller_business_name || "Unknown seller";
+
+  return (
+    <div className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div className="space-y-3 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
+                isListing
+                  ? "bg-red-50 text-red-700 border-red-200"
+                  : "bg-zinc-100 text-zinc-700 border-zinc-200"
+              }`}
+            >
+              {isListing ? "listing report" : "seller report"}
+            </span>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
+                report.status === "resolved"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                  : report.status === "reviewed"
+                  ? "bg-blue-50 text-blue-700 border-blue-200"
+                  : "bg-amber-50 text-amber-700 border-amber-200"
+              }`}
+            >
+              {report.status}
+            </span>
+            <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-extrabold text-zinc-900">{report.subject || report.reason}</h3>
+            <p className="text-sm text-zinc-500 mt-1">
+              {new Date(report.created_at).toLocaleDateString(undefined, {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reason</p>
+              <p className="text-zinc-800">{report.reason}</p>
+            </div>
+
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reporter Email</p>
+              <p className="text-zinc-800">{report.reporter_email || "Unknown"}</p>
+            </div>
+
+            <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Target</p>
+              <p className="text-zinc-800">{targetName}</p>
+            </div>
+
+            {isListing ? (
+              <>
+                <div className="bg-zinc-50 rounded-2xl p-3">
+                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Listing Visibility</p>
+                  <p className="text-zinc-800">{report.listing_is_hidden === 1 ? "Hidden" : "Visible"}</p>
+                </div>
+                <div className="bg-zinc-50 rounded-2xl p-3">
+                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller Status</p>
+                  <p className="text-zinc-800">
+                    {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="bg-zinc-50 rounded-2xl p-3">
+                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller Status</p>
+                  <p className="text-zinc-800">
+                    {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
+                  </p>
+                </div>
+                <div className="bg-zinc-50 rounded-2xl p-3">
+                  <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller ID</p>
+                  <p className="text-zinc-800 break-all">{report.seller_uid || "Unknown"}</p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {report.details ? (
+            <div className="bg-zinc-50 rounded-2xl p-4">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Details</p>
+              <p className="text-sm text-zinc-700 whitespace-pre-wrap">{report.details}</p>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-2 min-w-[180px]">
+          <button
+            onClick={() => onUpdateStatus("open")}
+            disabled={busy}
+            className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
+          >
+            Open
+          </button>
+          <button
+            onClick={() => onUpdateStatus("reviewed")}
+            disabled={busy}
+            className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
+          >
+            Reviewed
+          </button>
+          <button
+            onClick={() => onUpdateStatus("resolved")}
+            disabled={busy}
+            className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
+          >
+            Resolved
+          </button>
+
+          {isListing ? (
+            <button
+              onClick={onToggleListingVisibility}
+              disabled={busy}
+              className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
+                report.listing_is_hidden === 1
+                  ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                  : "bg-red-100 hover:bg-red-200 text-red-800"
+              }`}
+            >
+              {report.listing_is_hidden === 1 ? "Unhide Listing" : "Hide Listing"}
+            </button>
+          ) : (
+            <button
+              onClick={onToggleSellerSuspension}
+              disabled={busy}
+              className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
+                report.seller_is_suspended === 1
+                  ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
+                  : "bg-red-100 hover:bg-red-200 text-red-800"
+              }`}
+            >
+              {report.seller_is_suspended === 1 ? "Unsuspend Seller" : "Suspend Seller"}
+            </button>
+          )}
+
+          <button
+            onClick={onViewUser}
+            disabled={busy}
+            className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-bold disabled:opacity-60"
+          >
+            View User
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminReportsPage() {
+  const [mainTab, setMainTab] = useState<MainTab>("content");
+  const [contentTab, setContentTab] = useState<ContentTab>("listings");
+  const [contentStatusFilter, setContentStatusFilter] = useState<ContentStatusFilter>("all");
+  const [chatStatusFilter, setChatStatusFilter] = useState<ChatStatusFilter>("open");
+
   const [reports, setReports] = useState<ReportRow[]>([]);
   const [messageReports, setMessageReports] = useState<MessageReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,22 +385,15 @@ export default function AdminReportsPage() {
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [messageUpdatingId, setMessageUpdatingId] = useState<number | null>(null);
   const [enforcingKey, setEnforcingKey] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
-  const [reportView, setReportView] = useState<"active" | "resolved">("active");
-  const activeStatusFilterOptions = ["All active", "Open", "Reviewed"] as const;
-  const typeFilterOptions = ["All types", "Listing", "Problem"] as const;
 
-  const fetchReports = async () => {
+  const fetchContentReports = async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (reportView === "resolved") {
-        params.append("status", "resolved");
-      } else if (statusFilter) {
-        params.append("status", statusFilter);
+      params.append("type", contentTab === "listings" ? "listing" : "problem");
+      if (contentStatusFilter !== "all") {
+        params.append("status", contentStatusFilter);
       }
-      if (typeFilter) params.append("type", typeFilter);
 
       const query = params.toString();
       const data = await apiFetch(`/api/admin/reports${query ? `?${query}` : ""}`);
@@ -151,10 +405,10 @@ export default function AdminReportsPage() {
     }
   };
 
-  const fetchMsgReports = async () => {
+  const fetchChatReports = async () => {
     setMessageLoading(true);
     try {
-      const items = await fetchMessageReports("open");
+      const items = await fetchMessageReports(chatStatusFilter);
       setMessageReports(items);
     } catch (err: any) {
       alert(err?.message || "Failed to load message reports.");
@@ -164,22 +418,14 @@ export default function AdminReportsPage() {
   };
 
   useEffect(() => {
-    fetchReports();
-    fetchMsgReports();
-  }, [statusFilter, typeFilter, reportView]);
+    void fetchContentReports();
+  }, [contentTab, contentStatusFilter]);
 
   useEffect(() => {
-    if (reportView === "resolved") {
-      setStatusFilter("resolved");
-    } else if (statusFilter === "resolved") {
-      setStatusFilter("");
-    }
-  }, [reportView]);
+    void fetchChatReports();
+  }, [chatStatusFilter]);
 
-  const updateStatus = async (
-    id: number,
-    status: "open" | "reviewed" | "resolved"
-  ) => {
+  const updateStatus = async (id: number, status: "open" | "reviewed" | "resolved") => {
     setUpdatingId(id);
     try {
       await apiFetch(`/api/admin/reports/${id}/status`, {
@@ -214,16 +460,13 @@ export default function AdminReportsPage() {
     setEnforcingKey(key);
 
     try {
-      await apiFetch(
-        `/api/admin/listings/${listingId}/${shouldHide ? "hide" : "unhide"}`,
-        { method: "POST" }
-      );
+      await apiFetch(`/api/admin/listings/${listingId}/${shouldHide ? "hide" : "unhide"}`, {
+        method: "POST",
+      });
 
       setReports((prev) =>
         prev.map((report) =>
-          report.listing_id === listingId
-            ? { ...report, listing_is_hidden: shouldHide ? 1 : 0 }
-            : report
+          report.listing_id === listingId ? { ...report, listing_is_hidden: shouldHide ? 1 : 0 } : report
         )
       );
     } catch (err: any) {
@@ -238,16 +481,13 @@ export default function AdminReportsPage() {
     setEnforcingKey(key);
 
     try {
-      await apiFetch(
-        `/api/admin/sellers/${sellerUid}/${shouldSuspend ? "suspend" : "unsuspend"}`,
-        { method: "POST" }
-      );
+      await apiFetch(`/api/admin/sellers/${sellerUid}/${shouldSuspend ? "suspend" : "unsuspend"}`, {
+        method: "POST",
+      });
 
       setReports((prev) =>
         prev.map((report) =>
-          report.seller_uid === sellerUid
-            ? { ...report, seller_is_suspended: shouldSuspend ? 1 : 0 }
-            : report
+          report.seller_uid === sellerUid ? { ...report, seller_is_suspended: shouldSuspend ? 1 : 0 } : report
         )
       );
     } catch (err: any) {
@@ -257,35 +497,35 @@ export default function AdminReportsPage() {
     }
   };
 
-  const counts = useMemo(() => {
-    return {
-      total: reports.length,
-      open: reports.filter((r) => r.status === "open").length,
-      reviewed: reports.filter((r) => r.status === "reviewed").length,
-      resolved: reports.filter((r) => r.status === "resolved").length,
-    };
+  const contentFiltered = useMemo(() => {
+    return reports;
   }, [reports]);
 
-  const statusBadge = (status: string) => {
-    if (status === "resolved") return "bg-emerald-50 text-emerald-700 border border-emerald-200";
-    if (status === "reviewed") return "bg-blue-50 text-blue-700 border border-blue-200";
-    return "bg-amber-50 text-amber-700 border border-amber-200";
-  };
+  const contentCounts = useMemo(() => {
+    return {
+      total: contentFiltered.length,
+      open: contentFiltered.filter((r) => r.status === "open").length,
+      reviewed: contentFiltered.filter((r) => r.status === "reviewed").length,
+      resolved: contentFiltered.filter((r) => r.status === "resolved").length,
+      listings: contentFiltered.filter((r) => r.type === "listing").length,
+      sellers: contentFiltered.filter((r) => r.type === "problem").length,
+    };
+  }, [contentFiltered]);
 
-  const typeBadge = (type: string) => {
-    if (type === "problem") return "bg-zinc-100 text-zinc-700";
-    return "bg-red-50 text-red-700";
-  };
+  const chatCounts = useMemo(() => {
+    return {
+      total: messageReports.length,
+      open: messageReports.filter((r) => r.status === "open").length,
+      resolved: messageReports.filter((r) => r.status === "resolved").length,
+    };
+  }, [messageReports]);
 
-  const listingVisibilityBadge = (hidden?: number | null) =>
-    hidden === 1
-      ? "bg-red-50 text-red-700 border border-red-200"
-      : "bg-emerald-50 text-emerald-700 border border-emerald-200";
 
-  const sellerSuspensionBadge = (suspended?: number | null) =>
-    suspended === 1
-      ? "bg-red-50 text-red-700 border border-red-200"
-      : "bg-emerald-50 text-emerald-700 border border-emerald-200";
+  const currentContentTitle = contentTab === "listings" ? "Listings reports" : "Seller reports";
+  const currentContentDescription =
+    contentTab === "listings"
+      ? "Review listing complaints, hide or unhide listings, and close the case when done."
+      : "Review seller complaints, suspend or unsuspend sellers, and keep the record clean.";
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -305,7 +545,7 @@ export default function AdminReportsPage() {
                 <span className="text-zinc-700">Mesho</span>
               </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Admin reports
+                Admin moderation
               </p>
             </div>
           </button>
@@ -321,6 +561,53 @@ export default function AdminReportsPage() {
         </div>
       </header>
 
+      <div className="sticky top-[73px] z-30 bg-zinc-100/95 backdrop-blur border-b border-zinc-200">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <div className="inline-flex rounded-2xl bg-zinc-100 p-1 gap-1 shadow-sm">
+              <TabButton active={mainTab === "content"} onClick={() => setMainTab("content")}>
+                Content
+              </TabButton>
+              <TabButton active={mainTab === "chats"} onClick={() => setMainTab("chats")}>
+                Chats
+              </TabButton>
+            </div>
+
+            {mainTab === "content" ? (
+              <div className="inline-flex rounded-2xl bg-zinc-100 p-1 gap-1 shadow-sm">
+                <TabButton
+                  active={contentTab === "listings"}
+                  onClick={() => setContentTab("listings")}
+                >
+                  Listings
+                </TabButton>
+                <TabButton
+                  active={contentTab === "sellers"}
+                  onClick={() => setContentTab("sellers")}
+                >
+                  Sellers
+                </TabButton>
+              </div>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (mainTab === "content") {
+                void fetchContentReports();
+              } else {
+                void fetchChatReports();
+              }
+            }}
+            className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
       <main className="max-w-7xl mx-auto px-4 py-8">
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
@@ -329,10 +616,12 @@ export default function AdminReportsPage() {
                 Admin
               </p>
               <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
-                Review submitted reports.
+                {mainTab === "content" ? currentContentTitle : "Chat reports queue"}
               </h1>
               <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
-                This page replaces the old floating admin reports modal with a proper page surface.
+                {mainTab === "content"
+                  ? currentContentDescription
+                  : "Review reported conversations, keep evidence, and resolve abuse without deleting the record."}
               </p>
             </div>
 
@@ -341,452 +630,169 @@ export default function AdminReportsPage() {
                 Current view
               </p>
               <p className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
-                {reportView === "active" ? "Active Reports" : "Resolved Reports"}
+                {mainTab === "content"
+                  ? contentTab === "listings"
+                    ? "Listings"
+                    : "Sellers"
+                  : "Chats"}
               </p>
             </div>
           </div>
         </section>
 
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          {reportView === "active" ? (
-            <>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Active Total</p>
-                <p className="text-2xl font-extrabold text-zinc-900 mt-1">
-                  {counts.open + counts.reviewed}
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Open</p>
-                <p className="text-2xl font-extrabold text-amber-700 mt-1">{counts.open}</p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Reviewed</p>
-                <p className="text-2xl font-extrabold text-blue-700 mt-1">{counts.reviewed}</p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Resolved</p>
-                <p className="text-2xl font-extrabold text-emerald-700 mt-1">{counts.resolved}</p>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Resolved Total</p>
-                <p className="text-2xl font-extrabold text-zinc-900 mt-1">{counts.resolved}</p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Listing Reports</p>
-                <p className="text-2xl font-extrabold text-red-700 mt-1">
-                  {reports.filter((r) => r.type === "listing").length}
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Problem Reports</p>
-                <p className="text-2xl font-extrabold text-zinc-700 mt-1">
-                  {reports.filter((r) => r.type === "problem").length}
-                </p>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-4 shadow-sm">
-                <p className="text-xs font-bold text-zinc-400 uppercase">Archive</p>
-                <p className="text-sm font-bold text-zinc-500 mt-2">Resolved only</p>
-              </div>
-            </>
-          )}
-        </section>
+        {mainTab === "content" ? (
+          <>
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <StatCard label="Total" value={contentCounts.total} />
+              <StatCard label="Open" value={contentCounts.open} accent="amber" />
+              <StatCard label="Reviewed" value={contentCounts.reviewed} accent="blue" />
+              <StatCard label="Resolved" value={contentCounts.resolved} accent="emerald" />
+            </section>
 
-        <section className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="inline-flex bg-zinc-100 rounded-2xl p-1 gap-1">
-            <button
-              type="button"
-              onClick={() => setReportView("active")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                reportView === "active"
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-800"
-              }`}
-            >
-              Active Reports
-            </button>
-            <button
-              type="button"
-              onClick={() => setReportView("resolved")}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
-                reportView === "resolved"
-                  ? "bg-white text-zinc-900 shadow-sm"
-                  : "text-zinc-500 hover:text-zinc-800"
-              }`}
-            >
-              Resolved Reports
-            </button>
-          </div>
+            <section className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="inline-flex bg-zinc-100 rounded-2xl p-1 gap-1">
+                <TabButton
+                  active={contentStatusFilter === "all"}
+                  onClick={() => setContentStatusFilter("all")}
+                >
+                  All
+                </TabButton>
+                <TabButton
+                  active={contentStatusFilter === "open"}
+                  onClick={() => setContentStatusFilter("open")}
+                >
+                  Open
+                </TabButton>
+                <TabButton
+                  active={contentStatusFilter === "reviewed"}
+                  onClick={() => setContentStatusFilter("reviewed")}
+                >
+                  Reviewed
+                </TabButton>
+                <TabButton
+                  active={contentStatusFilter === "resolved"}
+                  onClick={() => setContentStatusFilter("resolved")}
+                >
+                  Resolved
+                </TabButton>
+              </div>
+            </section>
 
-          <button
-            onClick={fetchReports}
-            className="px-4 py-3 bg-zinc-900 text-white rounded-xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </button>
-        </section>
-
-        <section className="sticky top-[72px] z-10 bg-zinc-100/95 backdrop-blur pb-4">
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row gap-3">
-              {reportView === "active" && (
-                <div className="sm:min-w-[220px]">
-                  <FormDropdown
-                    label="Status"
-                    value={
-                      statusFilter === "open"
-                        ? "Open"
-                        : statusFilter === "reviewed"
-                        ? "Reviewed"
-                        : "All active"
-                    }
-                    options={[...activeStatusFilterOptions]}
-                    onChange={(value) =>
-                      setStatusFilter(
-                        value === "Open" ? "open" : value === "Reviewed" ? "reviewed" : ""
-                      )
-                    }
-                  />
+            <section className="mt-6 space-y-4">
+              {loading ? (
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
+                  <p className="text-zinc-500 font-medium">Loading reports...</p>
                 </div>
-              )}
-
-              <div className="sm:min-w-[220px]">
-                <FormDropdown
-                  label="Type"
-                  value={
-                    typeFilter === "listing"
-                      ? "Listing"
-                      : typeFilter === "problem"
-                      ? "Problem"
-                      : "All types"
-                  }
-                  options={[...typeFilterOptions]}
-                  onChange={(value) =>
-                    setTypeFilter(
-                      value === "Listing" ? "listing" : value === "Problem" ? "problem" : ""
-                    )
+              ) : contentFiltered.filter((r) =>
+                  contentTab === "listings" ? r.type === "listing" : r.type === "problem"
+                ).filter((r) =>
+                  contentStatusFilter === "all" ? true : r.status === contentStatusFilter
+                ).length === 0 ? (
+                <EmptyState
+                  title="No reports found"
+                  description={
+                    contentStatusFilter === "resolved"
+                      ? "There are no resolved reports matching the current filters."
+                      : "There are no reports matching the current filters."
                   }
                 />
+              ) : (
+                contentFiltered
+                  .filter((r) =>
+                    contentTab === "listings" ? r.type === "listing" : r.type === "problem"
+                  )
+                  .filter((r) =>
+                    contentStatusFilter === "all" ? true : r.status === contentStatusFilter
+                  )
+                  .map((report) => {
+                    const key = report.id;
+                    const busy =
+                      updatingId === report.id ||
+                      enforcingKey === `listing-${report.listing_id}-hide` ||
+                      enforcingKey === `listing-${report.listing_id}-unhide` ||
+                      enforcingKey === `seller-${report.seller_uid}-suspend` ||
+                      enforcingKey === `seller-${report.seller_uid}-unsuspend`;
+
+                    return (
+                      <ContentReportCard
+                        key={key}
+                        report={report}
+                        busy={busy}
+                        onUpdateStatus={(status) => void updateStatus(report.id, status)}
+                        onToggleListingVisibility={() => {
+                          if (report.listing_id == null) return;
+                          void toggleListingVisibility(report.listing_id, report.listing_is_hidden !== 1);
+                        }}
+                        onToggleSellerSuspension={() => {
+                          if (!report.seller_uid) return;
+                          void toggleSellerSuspension(report.seller_uid, report.seller_is_suspended !== 1);
+                        }}
+                        onViewUser={() => {
+                          const uid = report.seller_uid || report.reporter_uid;
+                          if (uid) navigateToSellerProfile(uid);
+                        }}
+                      />
+                    );
+                  })
+              )}
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+              <StatCard label="Total" value={chatCounts.total} />
+              <StatCard label="Open" value={chatCounts.open} accent="amber" />
+              <StatCard label="Resolved" value={chatCounts.resolved} accent="emerald" />
+              <StatCard label="Queue" value={chatCounts.open} accent="red" />
+            </section>
+
+            <section className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="inline-flex bg-zinc-100 rounded-2xl p-1 gap-1">
+                <TabButton active={chatStatusFilter === "open"} onClick={() => setChatStatusFilter("open")}>
+                  Open
+                </TabButton>
+                <TabButton
+                  active={chatStatusFilter === "resolved"}
+                  onClick={() => setChatStatusFilter("resolved")}
+                >
+                  Resolved
+                </TabButton>
+                <TabButton active={chatStatusFilter === "all"} onClick={() => setChatStatusFilter("all")}>
+                  All
+                </TabButton>
               </div>
-            </div>
-          </div>
-        </section>
+            </section>
 
-        <section className="mt-6 space-y-4">
-          {loading ? (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
-              <p className="text-zinc-500 font-medium">Loading reports...</p>
-            </div>
-          ) : reports.length === 0 ? (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
-              <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShieldCheck className="w-8 h-8 text-zinc-300" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900">No reports found</h3>
-              <p className="text-zinc-500">
-                {reportView === "resolved"
-                  ? "There are no resolved reports matching the current filters."
-                  : "There are no active reports matching the current filters."}
-              </p>
-            </div>
-          ) : (
-            reports.map((report) => (
-              <div
-                key={report.id}
-                className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm"
-              >
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${typeBadge(
-                          report.type
-                        )}`}
-                      >
-                        {report.type}
-                      </span>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${statusBadge(
-                          report.status
-                        )}`}
-                      >
-                        {report.status}
-                      </span>
-                      {report.type === "listing" && (
-                        <>
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${listingVisibilityBadge(
-                              report.listing_is_hidden
-                            )}`}
-                          >
-                            {report.listing_is_hidden === 1 ? "Hidden" : "Visible"}
-                          </span>
-
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${sellerSuspensionBadge(
-                              report.seller_is_suspended
-                            )}`}
-                          >
-                            {report.seller_is_suspended === 1 ? "Seller Suspended" : "Seller Active"}
-                          </span>
-                        </>
-                      )}
-                      <span className="text-xs text-zinc-400 font-bold">#{report.id}</span>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-extrabold text-zinc-900">
-                        {report.subject || report.reason}
-                      </h3>
-                      <p className="text-sm text-zinc-500 mt-1">
-                        {new Date(report.created_at).toLocaleDateString(undefined, {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}{" "}
-                        •{" "}
-                        {new Date(report.created_at).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      <div className="bg-zinc-50 rounded-2xl p-3">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reason</p>
-                        <p className="text-zinc-800">{report.reason}</p>
-                      </div>
-
-                      <div className="bg-zinc-50 rounded-2xl p-3">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
-                          Reporter Email
-                        </p>
-                        <p className="text-zinc-800">{report.reporter_email || "Unknown"}</p>
-                      </div>
-
-                      {report.type === "listing" && (
-                        <>
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Listing</p>
-                            <p className="text-zinc-800">
-                              {report.listing_name || `Listing #${report.listing_id}`}
-                            </p>
-                          </div>
-
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller</p>
-                            <p className="text-zinc-800">
-                              {report.seller_business_name || "Unknown seller"}
-                            </p>
-                          </div>
-
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
-                              Listing Visibility
-                            </p>
-                            <p className="text-zinc-800">
-                              {report.listing_is_hidden === 1 ? "Hidden" : "Visible"}
-                            </p>
-                          </div>
-
-                          <div className="bg-zinc-50 rounded-2xl p-3">
-                            <p className="text-xs font-bold text-zinc-400 uppercase mb-1">
-                              Seller Status
-                            </p>
-                            <p className="text-zinc-800">
-                              {report.seller_is_suspended === 1 ? "Suspended" : "Active"}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-
-                    {report.details && (
-                      <div className="bg-zinc-50 rounded-2xl p-4">
-                        <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Details</p>
-                        <p className="text-sm text-zinc-700 whitespace-pre-wrap">{report.details}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col gap-2 min-w-[180px]">
-                    {reportView === "active" ? (
-                      <>
-                        <button
-                          onClick={() => updateStatus(report.id, "open")}
-                          disabled={updatingId === report.id}
-                          className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
-                        >
-                          {updatingId === report.id && report.status !== "open" ? "Updating..." : "Mark Open"}
-                        </button>
-
-                        <button
-                          onClick={() => updateStatus(report.id, "reviewed")}
-                          disabled={updatingId === report.id}
-                          className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
-                        >
-                          {updatingId === report.id && report.status !== "reviewed"
-                            ? "Updating..."
-                            : "Mark Reviewed"}
-                        </button>
-
-                        <button
-                          onClick={() => updateStatus(report.id, "resolved")}
-                          disabled={updatingId === report.id}
-                          className="px-4 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-sm font-bold disabled:opacity-60"
-                        >
-                          {updatingId === report.id && report.status !== "resolved"
-                            ? "Updating..."
-                            : "Mark Resolved"}
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => updateStatus(report.id, "open")}
-                          disabled={updatingId === report.id}
-                          className="px-4 py-2 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 text-sm font-bold disabled:opacity-60"
-                        >
-                          {updatingId === report.id ? "Updating..." : "Reopen"}
-                        </button>
-
-                        <button
-                          onClick={() => updateStatus(report.id, "reviewed")}
-                          disabled={updatingId === report.id}
-                          className="px-4 py-2 rounded-xl bg-blue-100 hover:bg-blue-200 text-blue-800 text-sm font-bold disabled:opacity-60"
-                        >
-                          {updatingId === report.id ? "Updating..." : "Move to Reviewed"}
-                        </button>
-                      </>
-                    )}
-
-                    {report.type === "listing" && report.listing_id && (
-                      <>
-                        <button
-                          onClick={() =>
-                            toggleListingVisibility(
-                              report.listing_id!,
-                              report.listing_is_hidden !== 1
-                            )
-                          }
-                          disabled={
-                            enforcingKey ===
-                            `listing-${report.listing_id}-${report.listing_is_hidden === 1 ? "unhide" : "hide"}`
-                          }
-                          className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
-                            report.listing_is_hidden === 1
-                              ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
-                              : "bg-red-100 hover:bg-red-200 text-red-800"
-                          }`}
-                        >
-                          {enforcingKey ===
-                          `listing-${report.listing_id}-${report.listing_is_hidden === 1 ? "unhide" : "hide"}`
-                            ? "Updating..."
-                            : report.listing_is_hidden === 1
-                            ? "Unhide Listing"
-                            : "Hide Listing"}
-                        </button>
-
-                        {report.seller_uid && (
-                          <button
-                            onClick={() =>
-                              toggleSellerSuspension(
-                                report.seller_uid!,
-                                report.seller_is_suspended !== 1
-                              )
-                            }
-                            disabled={
-                              enforcingKey ===
-                              `seller-${report.seller_uid}-${report.seller_is_suspended === 1 ? "unsuspend" : "suspend"}`
-                            }
-                            className={`px-4 py-2 rounded-xl text-sm font-bold disabled:opacity-60 ${
-                              report.seller_is_suspended === 1
-                                ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800"
-                                : "bg-red-100 hover:bg-red-200 text-red-800"
-                            }`}
-                          >
-                            {enforcingKey ===
-                            `seller-${report.seller_uid}-${report.seller_is_suspended === 1 ? "unsuspend" : "suspend"}`
-                              ? "Updating..."
-                              : report.seller_is_suspended === 1
-                              ? "Unsuspend Seller"
-                              : "Suspend Seller"}
-                          </button>
-                        )}
-                      </>
-                    )}
-
-                    {(report.seller_uid || report.reporter_uid) && (
-                      <button
-                        onClick={() =>
-                          navigateToSellerProfile(
-                            (report.type === "listing" ? report.seller_uid : report.reporter_uid)!
-                          )
-                        }
-                        className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-sm font-bold"
-                      >
-                        View User
-                      </button>
-                    )}
-                  </div>
+            <section className="mt-6 space-y-4">
+              {messageLoading ? (
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
+                  <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
+                  <p className="text-zinc-500 font-medium">Loading message reports...</p>
                 </div>
-              </div>
-            ))
-          )}
-        </section>
-
-        <section className="mt-10 space-y-4">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                  Message moderation
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">
-                  Chat reports queue
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={fetchMsgReports}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh queue
-              </button>
-            </div>
-          </div>
-
-          {messageLoading ? (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm flex flex-col items-center justify-center gap-4">
-              <Loader2 className="w-8 h-8 text-zinc-700 animate-spin" />
-              <p className="text-zinc-500 font-medium">Loading message reports...</p>
-            </div>
-          ) : messageReports.length === 0 ? (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
-              <div className="w-20 h-20 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShieldCheck className="w-8 h-8 text-zinc-300" />
-              </div>
-              <h3 className="text-lg font-bold text-zinc-900">No open message reports</h3>
-              <p className="text-zinc-500">Anything reported from chat will appear here for review.</p>
-            </div>
-          ) : (
-            messageReports.map((report) => (
-              <MessageReportCard
-                key={report.id}
-                report={report}
-                resolving={messageUpdatingId === report.id}
-                onResolve={() => void resolveMsgReport(report.id)}
-              />
-            ))
-          )}
-        </section>
+              ) : messageReports.length === 0 ? (
+                <EmptyState
+                  title={chatStatusFilter === "resolved" ? "No resolved chat reports" : "No open message reports"}
+                  description={
+                    chatStatusFilter === "resolved"
+                      ? "There are no resolved chat reports matching the current filter."
+                      : "Anything reported from chat will appear here for review."
+                  }
+                  icon="chat"
+                />
+              ) : (
+                messageReports.map((report) => (
+                  <MessageReportCard
+                    key={report.id}
+                    report={report}
+                    resolving={messageUpdatingId === report.id}
+                    onResolve={() => void resolveMsgReport(report.id)}
+                  />
+                ))
+              )}
+            </section>
+          </>
+        )}
 
         <div className="mt-8">
           <button

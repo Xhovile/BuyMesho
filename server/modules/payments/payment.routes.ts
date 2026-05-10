@@ -8,6 +8,8 @@ import { paychanguProvider } from './paychangu.provider.js';
 import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
+import { paymentRepository } from './payment.repository.js';
+import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -28,6 +30,14 @@ const initializeLimiter = rateLimit({
   message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
 });
 
+const orderLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many order lookup requests. Please try again in a moment.' },
+});
+
 interface ListingRow {
   id: number;
   seller_uid: string;
@@ -42,10 +52,56 @@ function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
 }
 
+type AuthUser = {
+  uid: string;
+  is_admin?: boolean;
+};
+
+type OrderBundle = {
+  order: ReturnType<typeof orderRepository.findById>;
+  payment: ReturnType<typeof paymentRepository.findByReference> | null;
+  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
+  dispute: Record<string, unknown> | null;
+};
+
+type OrderLookupResult = OrderBundle | 'forbidden' | null;
+
+function findOrderByParam(param: string) {
+  const byId = orderRepository.findById(param);
+  if (byId) return byId;
+  return orderRepository.findByPaymentReference(param);
+}
+
+function buildOrderBundle(orderId: string): OrderBundle | null {
+  const order = orderRepository.findById(orderId);
+  if (!order) return null;
+
+  const db = getPaymentDb();
+  const paymentReference = order.paymentReference ?? null;
+  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
+  const escrow = escrowRepository.findByOrderId(order.id) ?? null;
+  const dispute = db
+    .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
+    .get(order.id) as Record<string, unknown> | undefined;
+
+  return {
+    order,
+    payment,
+    escrow,
+    dispute: dispute ?? null,
+  };
+}
+
+function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderLookupResult {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
+  return buildOrderBundle(order.id);
+}
+
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  // POST /api/payments/checkout — atomic order creation + PayChangu initialisation
   router.post('/checkout', checkoutLimiter, requireAuth, async (req, res) => {
     try {
       const idempotencyKey = (req.headers['idempotency-key'] ?? req.headers['Idempotency-Key']) as string | undefined;
@@ -84,18 +140,22 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       if (!listing) {
         return res.status(404).json({ error: 'Listing not found' });
       }
+
       if (listing.status === 'sold') {
         return res.status(400).json({ error: 'This listing is no longer available' });
       }
 
       const safeQty = Math.max(1, Number(quantity));
       const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+
       if (availableQty === 0) {
         return res.status(400).json({ error: 'This listing is out of stock' });
       }
+
       if (safeQty > availableQty) {
         return res.status(400).json({ error: `Only ${availableQty} unit(s) available` });
       }
+
       const unitPrice = Number(listing.price);
       const total = unitPrice * safeQty;
       const currency = 'MWK';
@@ -130,6 +190,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       serverOrderService.create(order);
 
       const config = createServerPaymentConfigFromEnv();
+
       const paymentRequest: CreatePaymentRequest = {
         orderId,
         provider: 'paychangu',
@@ -150,6 +211,8 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       };
 
       const payment = await paychanguProvider.createPayment(paymentRequest, config);
+
+      paymentRepository.save({ ...payment, verified: false });
 
       orderRepository.update(orderId, (o) => ({
         ...o,
@@ -175,7 +238,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/initialize — generic provider initialisation (dispatches by provider)
   router.post('/initialize', initializeLimiter, requireAuth, async (req, res) => {
     try {
       const result = await serverPaymentService.createPayment(req.body as CreatePaymentRequest);
@@ -185,7 +247,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/paychangu/initialize
   router.post('/paychangu/initialize', requireAuth, async (req, res) => {
     try {
       const result = await paymentController.createPaychanguPayment(req.body);
@@ -195,8 +256,48 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // GET /api/payments/paychangu/verify/:txRef
-  router.get('/paychangu/verify/:txRef', requireAuth, async (req, res) => {
+  router.get('/orders/me', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const db = getPaymentDb();
+      const orderIds = db
+        .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC')
+        .all(req.user!.uid) as Array<{ id: string }>;
+
+      const bundles = orderIds
+        .map((row) => buildOrderBundle(row.id))
+        .filter((bundle): bundle is OrderBundle => bundle !== null);
+
+      return res.status(200).json(bundles);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch buyer orders'));
+    }
+  });
+
+  router.get('/orders/by-reference/:reference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  router.get('/orders/:idOrReference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  // Public verification route for payment_return redirects.
+  // PayChangu redirects the browser back without the app Bearer token.
+  router.get('/paychangu/verify/:txRef', async (req, res) => {
     try {
       const txRef = decodeURIComponent(req.params.txRef);
       const result = await paymentController.verifyPaychangu(txRef);
@@ -206,20 +307,25 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/paychangu/webhook  (no auth — called by payment provider)
-  router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+  router.post('/paychangu/webhook', async (req, res) => {
     try {
-      const rawBody = Buffer.isBuffer(req.body)
-        ? req.body.toString('utf8')
-        : typeof req.body === 'string'
-          ? req.body
-          : JSON.stringify(req.body ?? {});
-      const payload = rawBody ? JSON.parse(rawBody) : {};
+      const rawBodyBuf = (req as express.Request & { rawBody?: Buffer }).rawBody;
+      // Fall back to the already-parsed body when raw body middleware is not configured.
+      // paychanguProvider.verifyWebhook handles both string and object payloads via
+      // parseWebhookPayload, so HMAC verification works correctly in either case.
+      const payload: unknown = rawBodyBuf ? rawBodyBuf.toString('utf8') : req.body;
+
+      if (!payload) {
+        return res.status(400).json({ error: 'Missing webhook body' });
+      }
+
       const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
-      res.status(200).json(result);
+
+      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, payload);
+
+      return res.status(200).json(result);
     } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to process webhook'));
+      return res.status(400).json(jsonError(error, 'Failed to process webhook'));
     }
   });
 

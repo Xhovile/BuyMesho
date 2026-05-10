@@ -18,7 +18,6 @@ type ListingCardProps = {
   onRestock?: (listing: Listing, quantity: number) => void | Promise<void>;
   isSaved?: boolean;
   onToggleSave?: (listingId: number) => void;
-  requireLoginForContact?: () => void;
   isLoggedIn?: boolean;
   compact?: boolean;
   ultraCompact?: boolean;
@@ -46,7 +45,6 @@ export default function ListingCard({
   onRestock,
   isSaved,
   onToggleSave,
-  requireLoginForContact,
   isLoggedIn,
   compact = false,
   ultraCompact = false,
@@ -215,7 +213,6 @@ export default function ListingCard({
               onToggleStatus={onToggleStatus}
               onRecordSale={onRecordSale}
               onRestock={onRestock}
-              requireLoginForContact={requireLoginForContact}
             />
           ) : null}
 

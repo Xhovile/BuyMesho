@@ -1,15 +1,18 @@
-import { type ElementType, useEffect, useState } from "react";
+import { type ElementType, useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BookOpen,
   Check,
   ChevronRight,
+  CreditCard,
   LogOut,
   Menu,
   MessageSquareText,
   Plus,
   Settings,
   ShoppingBag,
+  ShoppingCart,
+  ShieldCheck,
   Smartphone,
   Store,
   Sparkles,
@@ -19,7 +22,10 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  ADMIN_PATH,
   BECOME_SELLER_PATH,
+  BUYER_PAYMENTS_PATH,
+  CART_PATH,
   EXPLORE_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
@@ -38,6 +44,12 @@ import { navigateToMessages } from "./lib/messagesNavigation";
 import { fetchInbox } from "./lib/messages";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useHomePageData } from "./hooks/useHomePageData";
+import { useIsAdmin } from "./hooks/useIsAdmin";
+import {
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+} from "./lib/hiddenCollections";
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
@@ -60,6 +72,7 @@ type SectionListing = {
   photos?: string[];
   category?: string;
   university?: string;
+  seller_uid?: string;
 };
 
 const HOME_CATEGORY_KEYS = {
@@ -206,6 +219,13 @@ export default function HomePage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+    readHiddenSellerUids()
+  );
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+    readHiddenListingIds()
+  );
+  const { isAdmin } = useIsAdmin(firebaseUser);
   const {
     recommendedListings,
     newestListings,
@@ -214,6 +234,55 @@ export default function HomePage() {
     loading,
     error,
   } = useHomePageData(featuredSections);
+
+  useEffect(() => {
+    const syncHiddenCollections = () => {
+      setHiddenSellerUids(readHiddenSellerUids());
+      setHiddenListingIds(readHiddenListingIds());
+    };
+
+    return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
+  const hiddenSellerSet = useMemo(
+    () => new Set(hiddenSellerUids),
+    [hiddenSellerUids]
+  );
+  const hiddenListingSet = useMemo(
+    () => new Set(hiddenListingIds),
+    [hiddenListingIds]
+  );
+
+  const filterHiddenListings = useCallback(
+    (items: SectionListing[]) =>
+      items.filter((item) => {
+        const id = Number(item.id);
+        const hiddenByListingId = Number.isInteger(id) && hiddenListingSet.has(id);
+        const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+        return !hiddenByListingId && !hiddenBySeller;
+      }),
+    [hiddenListingSet, hiddenSellerSet]
+  );
+
+  const filteredRecommendedListings = useMemo(
+    () => filterHiddenListings(recommendedListings),
+    [recommendedListings, filterHiddenListings]
+  );
+  const filteredFeaturedListings = useMemo(
+    () => filterHiddenListings(featuredListings),
+    [featuredListings, filterHiddenListings]
+  );
+  const filteredNewestListings = useMemo(
+    () => filterHiddenListings(newestListings),
+    [newestListings, filterHiddenListings]
+  );
+  const filteredSectionListings = useMemo(() => {
+    const next: Record<string, SectionListing[]> = {};
+    for (const [key, items] of Object.entries(sectionListings)) {
+      next[key] = filterHiddenListings(items);
+    }
+    return next;
+  }, [sectionListings, filterHiddenListings]);
 
   const handleStartSelling = () => {
     if (!firebaseUser) {
@@ -269,6 +338,26 @@ export default function HomePage() {
     }
     afterClose?.();
     navigateToMessages();
+  };
+
+  const handleBuyerPaymentsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(BUYER_PAYMENTS_PATH);
+  };
+
+  const handleCartClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      afterClose?.();
+      setAuthGuardOpen(true);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(CART_PATH);
   };
 
   useEffect(() => {
@@ -350,12 +439,39 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
+                onClick={() => handleBuyerPaymentsClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                Buyer Payments
+              </button>
+              <button
+                type="button"
+                onClick={() => handleCartClick()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Cart
+              </button>
+              <button
+                type="button"
                 onClick={() => handleProfileClick()}
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 <UserRound className="w-4 h-4" />
                 Profile
               </button>
+
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(ADMIN_PATH)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Admin Access
+                </button>
+              ) : null}
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
@@ -502,6 +618,30 @@ export default function HomePage() {
 
                 <button
                   type="button"
+                  onClick={() => handleBuyerPaymentsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <CreditCard className="w-4 h-4 text-zinc-500" />
+                    Buyer Payments
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCartClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <ShoppingCart className="w-4 h-4 text-zinc-500" />
+                    Cart
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => handleSettingsClick(closeMenu)}
                   className={navButtonClass}
                 >
@@ -523,6 +663,23 @@ export default function HomePage() {
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
+
+                {isAdmin ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      navigateToPath(ADMIN_PATH);
+                    }}
+                    className={navButtonClass}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <ShieldCheck className="w-4 h-4 text-zinc-500" />
+                      Admin Access
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ) : null}
 
  {isLoggedIn ? (
   <button
@@ -671,7 +828,7 @@ export default function HomePage() {
                 </h2>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
-                    const listings = sectionListings[section.key] || [];
+                    const listings = filteredSectionListings[section.key] || [];
                     return (
                       <CategorySection
                         key={section.key}
@@ -694,7 +851,7 @@ export default function HomePage() {
                   <ListingStrip
                     title="Picked for you"
                     description="Campus-aware picks based on what is active and relevant now."
-                    listings={recommendedListings}
+                    listings={filteredRecommendedListings}
                     loading={loading}
                     maxItems={8}
                     variant="featured"
@@ -703,7 +860,7 @@ export default function HomePage() {
                   <ListingStrip
                     title="Trending now"
                     description=""
-                    listings={featuredListings}
+                    listings={filteredFeaturedListings}
                     loading={loading}
                     maxItems={6}
                     variant="supporting"
@@ -712,7 +869,7 @@ export default function HomePage() {
                   <ListingStrip
                     title="New"
                     description=""
-                    listings={newestListings}
+                    listings={filteredNewestListings}
                     loading={loading}
                     maxItems={6}
                     variant="supporting"

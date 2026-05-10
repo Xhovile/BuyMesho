@@ -32,7 +32,6 @@ export interface SellerProfile extends Timestamped {
   businessName: string;
   campusId?: Nullable<string>;
   description?: Nullable<string>;
-  whatsappNumber?: Nullable<string>;
   logoUrl?: Nullable<string>;
   isVerified: boolean;
 }

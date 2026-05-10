@@ -11,9 +11,12 @@ import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
+import { getConfiguredAdminEmails, hasAdminAccess } from "./server/auth/adminAccess.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
+import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
+import { getPaymentDb } from "./server/sqlite.js";
 import { CATEGORIES } from "./src/constants.js";
 import {
   getListingSubcategories,
@@ -141,7 +144,6 @@ db.exec(`
   profile_picture TEXT,
   university TEXT,
   bio TEXT,
-  whatsapp_number TEXT,
   is_verified INTEGER DEFAULT 0,
   is_seller INTEGER NOT NULL DEFAULT 0,
   is_suspended INTEGER NOT NULL DEFAULT 0,
@@ -157,7 +159,7 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   institution TEXT NOT NULL,
   applicant_type TEXT NOT NULL,
   institution_id_number TEXT NOT NULL,
-  whatsapp_number TEXT NOT NULL,
+  whatsapp_number TEXT,
   business_name TEXT NOT NULL,
   what_to_sell TEXT NOT NULL,
   business_description TEXT NOT NULL,
@@ -196,7 +198,6 @@ CREATE TABLE IF NOT EXISTS seller_applications (
   is_seller INTEGER NOT NULL DEFAULT 1,
   photos TEXT,
   video_url TEXT,
-  whatsapp_number TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'available',
   condition TEXT NOT NULL DEFAULT 'used',
   views_count INTEGER NOT NULL DEFAULT 0,
@@ -255,6 +256,17 @@ try {
   console.warn("Seller applications index migration failed:", e);
 }
 
+try {
+  const cols = db.prepare("PRAGMA table_info(seller_applications)").all() as any[];
+  const hasWhatsappNumber = cols.some((c) => c.name === "whatsapp_number");
+  if (!hasWhatsappNumber) {
+    db.exec("ALTER TABLE seller_applications ADD COLUMN whatsapp_number TEXT");
+    console.log("Migration: Added seller_applications.whatsapp_number");
+  }
+} catch (e) {
+  console.warn("Seller applications whatsapp_number migration failed:", e);
+}
+
 // ✅ Migration: add video_url column if it doesn't exist
 try {
   const cols = db.prepare("PRAGMA table_info(listings)").all() as any[];
@@ -276,17 +288,6 @@ try {
   }
 } catch (e) {
   console.warn("Listings status migration check failed:", e);
-}
-
-try {
-  const cols = db.prepare("PRAGMA table_info(sellers)").all() as any[];
-  const hasWhatsapp = cols.some((c) => c.name === "whatsapp_number");
-  if (!hasWhatsapp) {
-    db.exec("ALTER TABLE sellers ADD COLUMN whatsapp_number TEXT");
-    console.log("Migration: Added sellers.whatsapp_number");
-  }
-} catch (e) {
-  console.warn("Sellers migration check failed:", e);
 }
 
 try {
@@ -588,47 +589,10 @@ try {
   console.warn("Seller ratings index setup failed:", e);
 }
 
-const ADMIN_EMAILS = (
-  process.env.ADMIN_EMAILS ||
-  process.env.VITE_ADMIN_EMAILS ||
-  ""
-)
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
-
-if (ADMIN_EMAILS.length === 0) {
+if (getConfiguredAdminEmails().length === 0) {
   console.warn(
     "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
   );
-}
-
-const ADMIN_UIDS = (
-  process.env.ADMIN_UIDS ||
-  process.env.VITE_ADMIN_UIDS ||
-  ""
-)
-  .split(",")
-  .map((uid) => uid.trim())
-  .filter(Boolean);
-
-function isAdminUser(identity?: { email?: string | null; uid?: string | null }) {
-  const email = identity?.email ? String(identity.email).toLowerCase() : "";
-  if (email && ADMIN_EMAILS.includes(email)) return true;
-
-  const uid = identity?.uid ? String(identity.uid) : "";
-  if (uid && ADMIN_UIDS.includes(uid)) return true;
-
-  return false;
-}
-
-function hasAdminAccess(identity?: {
-  email?: string | null;
-  uid?: string | null;
-  is_admin?: boolean;
-}) {
-  if (identity?.is_admin === true) return true;
-  return isAdminUser(identity);
 }
 
 function logAdminAction({
@@ -687,6 +651,7 @@ async function startServer() {
   registerSessionRoutes(app);
   mountTotpRoutes(app);
   app.use('/api/payments', createPaymentRouter(requireAuth));
+  app.use('/api/admin', createPaymentAdminRouter(requireAuth));
   app.use('/api/escrow', createEscrowRouter(requireAuth));
   app.use('/api/disputes', createDisputeRouter(requireAuth));
   app.use('/api/payouts', createPayoutRouter(requireAuth));
@@ -1205,7 +1170,6 @@ const {
   business_name,
   university,
   bio,
-  whatsapp_number,
   is_verified,
   is_seller
 } = req.body;
@@ -1217,16 +1181,14 @@ const incomingSeller = is_seller === true || is_seller === 1 ? 1 : 0;
 const safeBusinessName = typeof business_name === "string" && business_name.trim() ? business_name.trim() : null;
 const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
 const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
-const safeWhatsapp = typeof whatsapp_number === "string" && whatsapp_number.trim() ? whatsapp_number.trim() : null;
       
 db.prepare(`
-  INSERT INTO sellers (uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO sellers (uid, email, business_name, university, bio, is_verified, is_seller)
+VALUES (?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(uid) DO UPDATE SET
     email = excluded.email,
     business_name = excluded.business_name,
     university = excluded.university,
-    whatsapp_number = excluded.whatsapp_number,
     is_seller = excluded.is_seller,
     bio = excluded.bio,
     -- important: only allow upgrading to verified, never downgrade
@@ -1240,7 +1202,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   safeBusinessName,
   safeUniversity,
   safeBio,
-  safeWhatsapp,
   incomingVerified,
   incomingSeller
 );
@@ -1308,8 +1269,8 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       db.prepare(
         `
           INSERT INTO sellers (
-            uid, email, business_name, university, bio, whatsapp_number, is_verified, is_seller, join_date
-          ) VALUES (?, ?, NULL, ?, NULL, NULL, ?, ?, ?)
+            uid, email, business_name, university, bio, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, ?, NULL, ?, ?, ?)
           ON CONFLICT(uid) DO UPDATE SET
             email = excluded.email,
             university = COALESCE(sellers.university, excluded.university),
@@ -1349,7 +1310,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     try {
       const profile = db
         .prepare(
-          "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, whatsapp_number, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+          "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
         )
         .get(uid);
       if (!profile) return res.status(404).json({ error: "Profile not found" });
@@ -1362,7 +1323,7 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
   app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
-  const { business_name, business_logo, university, bio, whatsapp_number } = req.body;
+  const { business_name, business_logo, university, bio } = req.body;
 
   if (!business_name || typeof business_name !== "string") {
     return res.status(400).json({ error: "business_name is required" });
@@ -1385,14 +1346,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 
     db.prepare(`
       UPDATE sellers
-      SET business_name = ?, business_logo = ?, university = ?, bio = ?, whatsapp_number = ?
+      SET business_name = ?, business_logo = ?, university = ?, bio = ?
       WHERE uid = ?
     `).run(
       business_name,
       safeLogoUrl,
       university,
       bio ?? null,
-      whatsapp_number ?? null,
       uid
     );
 
@@ -1404,7 +1364,6 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         business_logo: safeLogoUrl,
         university,
         bio: bio ?? null,
-        whatsapp_number: whatsapp_number ?? null,
       }, { merge: true });
     } catch (firestoreSyncError) {
       console.warn("Failed to sync profile update to Firestore:", firestoreSyncError);
@@ -1707,7 +1666,6 @@ const {
   university,
   photos,
   video_url,
-  whatsapp_number,
   status,
   condition,
   quantity,
@@ -1722,13 +1680,11 @@ const {
   pack_size,
   bulk_units,
 } = req.body;
-  const allowedConditions = ["new", "used", "refurbished"];
+const allowedConditions = ["new", "used", "refurbished"];
 const safeCondition = allowedConditions.includes(condition) ? condition : "used";
 const safeName = typeof name === "string" ? name.trim() : "";
 const safeCategory = typeof category === "string" ? category.trim() : "";
 const safeUniversity = typeof university === "string" ? university.trim() : "";
-const safeWhatsappNumber =
-  typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
 const numericPrice = Number(price);
 
     // ✅ Validate photos + video
@@ -1779,10 +1735,6 @@ if (!safeUniversity) {
   return res.status(400).json({ error: "university is required" });
 }
 
-if (!safeWhatsappNumber) {
-  return res.status(400).json({ error: "whatsapp_number is required" });
-}
-
 if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
   return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
 }
@@ -1820,10 +1772,10 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
     const info = db.prepare(`
       INSERT INTO listings (
         seller_uid, name, price, original_price, discount_percent, deal_label, deal_expires_at, can_sell_individually, single_item_price, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
-        photos, video_url, whatsapp_number, status, condition,
+        photos, video_url, status, condition,
         quantity, sold_quantity, updated_at
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
     `).run(
       seller_uid,
       safeName,
@@ -1846,7 +1798,6 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
       safeUniversity,
       JSON.stringify(safePhotos),
       safeVideoUrl,
-      safeWhatsappNumber,
       safeStatus,
       safeCondition,
       safeQuantity,
@@ -2199,7 +2150,6 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
       university,
       photos,
       video_url,
-      whatsapp_number,
       status,
       condition,
       quantity,
@@ -2219,8 +2169,6 @@ if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
     const safeName = typeof name === "string" ? name.trim() : "";
     const safeCategory = typeof category === "string" ? category.trim() : "";
     const safeUniversity = typeof university === "string" ? university.trim() : "";
-    const safeWhatsappNumber =
-      typeof whatsapp_number === "string" ? whatsapp_number.trim() : "";
     const numericPrice = Number(price);
     const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
 if (safePhotos.length < 1) {
@@ -2290,10 +2238,6 @@ const safeCanSellIndividually = pricing.can_sell_individually;
     return res.status(400).json({ error: "university is required" });
   }
 
-  if (!safeWhatsappNumber) {
-    return res.status(400).json({ error: "whatsapp_number is required" });
-  }
-
   if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
     return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
   }
@@ -2343,7 +2287,6 @@ const safeCanSellIndividually = pricing.can_sell_individually;
         university = ?,
         photos = ?,
         video_url = ?,
-        whatsapp_number = ?,
         status = ?,
         condition = ?,
         quantity = ?,
@@ -2371,7 +2314,6 @@ const safeCanSellIndividually = pricing.can_sell_individually;
       safeUniversity,
       JSON.stringify(safePhotos),
       safeVideoUrl,
-      safeWhatsappNumber,
       safeStatus,
       safeCondition,
       safeQuantity,
@@ -2934,6 +2876,39 @@ app.get("/api/admin/actions", requireAuth, (req, res) => {
   }
 });
 
+const adminApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get("/api/admin/payments", adminApiLimiter, requireAuth, (req, res) => {
+  const requesterEmail = (req.user as any)?.email || null;
+  const requesterUid = req.user?.uid || null;
+
+  if (!hasAdminAccess({ email: requesterEmail, uid: requesterUid, is_admin: req.user?.is_admin })) {
+    return res.status(403).json({ error: "Forbidden: admin access required" });
+  }
+
+  try {
+    const paymentDb = getPaymentDb();
+    const payments = paymentDb
+      .prepare(`
+        SELECT *
+        FROM payments
+        ORDER BY created_at DESC
+        LIMIT 100
+      `)
+      .all();
+
+    res.json(payments);
+  } catch (error) {
+    console.error("Admin payments fetch error:", error);
+    res.status(500).json({ error: "Failed to load payments" });
+  }
+});
+
 app.patch("/api/admin/reports/:id/status", requireAuth, (req, res) => {
   const requesterEmail = (req.user as any)?.email || null;
   const requesterUid = req.user?.uid || null;
@@ -3060,23 +3035,20 @@ app.patch(
           email,
           business_name,
           university,
-          whatsapp_number,
           is_verified,
           is_seller
         )
-        VALUES (?, ?, ?, ?, ?, ?, 1)
+        VALUES (?, ?, ?, ?, ?, 1)
         ON CONFLICT(uid) DO UPDATE SET
           email = COALESCE(excluded.email, sellers.email),
           business_name = excluded.business_name,
           university = excluded.university,
-          whatsapp_number = excluded.whatsapp_number,
           is_seller = 1
       `).run(
         application.applicant_uid,
         application.applicant_email,
         application.business_name,
         application.institution,
-        application.whatsapp_number,
         1
       );
 
@@ -3089,7 +3061,6 @@ app.patch(
           .set({
             is_seller: true,
             business_name: application.business_name ?? null,
-            whatsapp_number: application.whatsapp_number ?? null,
             university: application.institution ?? null,
           }, { merge: true });
       } catch (firestoreSyncError) {
