@@ -580,6 +580,17 @@ export const navigateToOrderTracking = (reference: string) =>
 export const navigateToOrderDispute = (reference: string) =>
   navigateToPath(buildOrderDisputePath(reference));
 
+export const buildOrderTrackingPath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`;
+
+export const buildOrderDisputePath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}/dispute`;
+
+export const navigateToOrderTracking = (reference: string) =>
+  navigateToPath(buildOrderTrackingPath(reference));
+
+export const navigateToOrderDispute = (reference: string) =>
+  navigateToPath(buildOrderDisputePath(reference));
 export const getSellerUidFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   return params.get("uid");
@@ -589,4 +600,4 @@ export const getEditListingIdFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   const value = params.get("id");
   return value ? Number(value) : null;
-};
+};/ UPDATED FILE WITH ORDER NAVIGATION HELPERS ADDED
