@@ -122,9 +122,13 @@ function toDisplayText(value: unknown, fallback = "—"): string {
   if (value === null || value === undefined) return fallback;
   if (typeof value === "string") return value.trim() ? value : fallback;
   if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value);
+  if (Array.isArray(value) && value.length === 0) return fallback;
+  if (typeof value === "object" && value !== null && Object.keys(value as Record<string, unknown>).length === 0) {
+    return fallback;
+  }
   try {
     const serialized = JSON.stringify(value);
-    return serialized && serialized !== "{}" ? serialized : fallback;
+    return serialized || fallback;
   } catch {
     return fallback;
   }
@@ -134,6 +138,11 @@ function toStatusToken(value: unknown): string {
   if (typeof value === "string") return value.trim().toLowerCase();
   if (typeof value === "number" || typeof value === "boolean" || typeof value === "bigint") return String(value).toLowerCase();
   return "";
+}
+
+function toReference(value: unknown): string | null {
+  const normalized = toDisplayText(value, "");
+  return normalized || null;
 }
 
 function formatDate(value?: unknown): string {
@@ -486,7 +495,7 @@ export default function AdminPaymentsConsole() {
                       <tr
                         key={payment.id}
                         className="cursor-pointer border-t border-zinc-100 hover:bg-zinc-50"
-                        onClick={() => setSelectedReference(toDisplayText(payment.reference, ""))}
+                        onClick={() => setSelectedReference(toReference(payment.reference))}
                       >
                         <td className="p-4">
                           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">
