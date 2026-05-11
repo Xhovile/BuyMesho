@@ -442,13 +442,28 @@ export default function HomePage() {
               >
                 <Settings className="w-4 h-4" />
               </button>
-              <button
-                type="button"
-                onClick={() => handleProfileClick()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-              >
-                <UserRound className="w-4 h-4" />
-              </button>
+                  <button
+                    onClick={() => {
+                      if (!firebaseUser) {
+                        setAuthGuardOpen(true);
+                        return;
+                      }
+                      onProfileClick();
+                    }}
+                    className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                  >
+                    {firebaseUser ? (
+                      avatarUrl ? (
+                        <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                          {fallbackLetter}
+                        </div>
+                      )
+                    ) : (
+                      <User className="w-5 h-5 text-zinc-600" />
+                    )}
+                  </button>
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
