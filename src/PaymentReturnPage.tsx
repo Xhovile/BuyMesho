@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, Loader2, ChevronLeft } from "lucide-react";
-import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
+import { EXPLORE_PATH, LISTING_PATH, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import { readBuyerPayments, removeBuyerCartItem, updateBuyerPaymentStatus } from "./lib/buyerState";
 
@@ -13,15 +13,21 @@ interface VerifyResult {
   orderId?: string;
 }
 
+const buildListingDetailsPath = (listingId: string | null) =>
+  listingId ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0` : EXPLORE_PATH;
+
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fallbackListingId, setFallbackListingId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const txRef = params.get("tx_ref") ?? params.get("txRef");
     const cancelled = params.get("cancelled");
+    const listingIdFromReturn = params.get("listingId");
+    setFallbackListingId(listingIdFromReturn);
 
     if (cancelled === "1") {
       setStatus("cancelled");
@@ -50,14 +56,18 @@ export default function PaymentReturnPage() {
           const matchingPayment = readBuyerPayments().find(
             (record) => record.reference === reference || record.txRef === reference || record.reference === txRef || record.txRef === txRef,
           );
+          setFallbackListingId(matchingPayment?.listingId ?? listingIdFromReturn);
           updateBuyerPaymentStatus(reference, {
             status: "captured",
             txRef,
             orderId: resolvedOrderId ?? matchingPayment?.orderId ?? null,
           });
-          if (matchingPayment?.listingId) {
-            removeBuyerCartItem(matchingPayment.listingId);
-          }
+          const purchasedListingIds = matchingPayment?.listingIds?.length
+            ? matchingPayment.listingIds
+            : matchingPayment?.listingId
+              ? [matchingPayment.listingId]
+              : [];
+          purchasedListingIds.forEach((listingId) => removeBuyerCartItem(listingId));
 
           setOrderId(resolvedOrderId);
           setStatus("success");
@@ -103,7 +113,7 @@ export default function PaymentReturnPage() {
               </p>
             ) : null}
             <p className="text-xs text-zinc-400">Redirecting to your order tracking page…</p>
-            <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="mt-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors">Continue shopping</button>
+            <button type="button" onClick={() => navigateToPath(buildListingDetailsPath(fallbackListingId))} className="mt-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors">Back to listing</button>
           </div>
         )}
 
@@ -113,7 +123,7 @@ export default function PaymentReturnPage() {
             <h1 className="text-2xl font-black text-zinc-900">Payment failed</h1>
             <p className="text-sm text-zinc-600 leading-6">{errorMessage ?? "We could not verify your payment. Please try again or contact support."}</p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(buildListingDetailsPath(fallbackListingId))} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
               <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
             </div>
           </div>
@@ -125,7 +135,7 @@ export default function PaymentReturnPage() {
             <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
             <p className="text-sm text-zinc-600 leading-6">You cancelled the payment. Your order was not charged.</p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(buildListingDetailsPath(fallbackListingId))} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
               <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
             </div>
           </div>

@@ -1,16 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, ShoppingCart, Trash2 } from "lucide-react";
 
-import { navigateBackOrPath, navigateToPath, PAYMENTS_HUB_PATH, EXPLORE_PATH } from "./lib/appNavigation";
+import { navigateBackOrPath, EXPLORE_PATH } from "./lib/appNavigation";
 import {
   readBuyerCart,
-  readBuyerPayments,
   removeBuyerCartItem,
+  touchBuyerPaymentFromCheckout,
   type BuyerCartItem,
-  type BuyerPaymentRecord,
 } from "./lib/buyerState";
 import { formatMoney } from "./shared/utils/formatMoney";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
+import { apiFetch } from "./lib/api";
+import { ENDPOINTS } from "./shared/api/endpoints";
 
 export default function CartPage() {
   const ready = useRequireVerifiedUser();
@@ -20,7 +21,8 @@ export default function CartPage() {
 
 function CartPageContent() {
   const [items, setItems] = useState<BuyerCartItem[]>([]);
-  const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
+  const [checkingOut, setCheckingOut] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -28,7 +30,6 @@ function CartPageContent() {
     const sync = () => {
       if (!mounted) return;
       setItems(readBuyerCart());
-      setPayments(readBuyerPayments());
     };
 
     sync();
@@ -42,11 +43,6 @@ function CartPageContent() {
     };
   }, []);
 
-  const latestPendingCheckoutUrl = useMemo(
-    () => payments.find((record) => record.status === "pending" && record.checkoutUrl)?.checkoutUrl ?? null,
-    [payments]
-  );
-
   const itemCount = useMemo(() => items.reduce((total, item) => total + item.quantity, 0), [items]);
   const subtotal = useMemo(() => items.reduce((total, item) => total + item.totalPrice, 0), [items]);
 
@@ -55,13 +51,63 @@ function CartPageContent() {
     setItems((current) => current.filter((item) => String(item.listingId) !== String(listingId)));
   };
 
-  const handlePay = () => {
-    if (latestPendingCheckoutUrl) {
-      window.location.href = latestPendingCheckoutUrl;
-      return;
-    }
+  const handleBuy = async () => {
+    if (!items.length || checkingOut) return;
 
-    navigateToPath(PAYMENTS_HUB_PATH);
+    setCheckingOut(true);
+    setCheckoutError(null);
+
+    try {
+      const firstListingId = String(items[0].listingId);
+      const returnUrl = `${window.location.origin}/payment/return?listingId=${encodeURIComponent(firstListingId)}`;
+      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingId=${encodeURIComponent(firstListingId)}`;
+
+      const result = (await apiFetch(ENDPOINTS.payments.checkout, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            listingId: item.listingId,
+            quantity: item.quantity,
+          })),
+          method: "mobile_money",
+          returnUrl,
+          cancelUrl,
+        }),
+      })) as {
+        orderId: string;
+        paymentId: string;
+        reference: string;
+        checkoutUrl: string | null;
+      };
+
+      touchBuyerPaymentFromCheckout({
+        reference: result.reference,
+        orderId: result.orderId,
+        paymentId: result.paymentId,
+        listingId: firstListingId,
+        listingIds: items.map((item) => String(item.listingId)),
+        listingTitle: items.length === 1 ? items[0].listingTitle : `Cart checkout (${items.length} items)`,
+        quantity: itemCount,
+        totalPrice: subtotal,
+        checkoutUrl: result.checkoutUrl,
+        txRef: result.reference,
+      });
+
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
+      setCheckoutError("Checkout was created, but no payment link was returned. Please try again from your payments page.");
+    } catch (err) {
+      setCheckoutError(err instanceof Error ? err.message : "Cart checkout failed. Please try again.");
+    } finally {
+      setCheckingOut(false);
+    }
   };
 
   return (
@@ -88,7 +134,7 @@ function CartPageContent() {
 
             <div>
               <h1 className="text-3xl font-black tracking-tight text-zinc-950">Your selected items</h1>
-              <p className="mt-1 text-sm text-zinc-500">Review items, remove anything unnecessary, then continue to payment.</p>
+              <p className="mt-1 text-sm text-zinc-500">Review items, remove anything unnecessary, then buy everything in one checkout.</p>
             </div>
           </div>
 
@@ -158,19 +204,21 @@ function CartPageContent() {
 
                 <button
                   type="button"
-                  onClick={handlePay}
-                  className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+                  onClick={handleBuy}
+                  disabled={!items.length || checkingOut}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
                 >
-                  Continue to payment
+                  {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                  Buy
                 </button>
               </div>
 
               <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
                 <h2 className="text-lg font-black text-zinc-950">Payment status</h2>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  {latestPendingCheckoutUrl
-                    ? "A pending checkout exists. Continue payment from here."
-                    : "No pending checkout is available. You will be taken to the payments hub."}
+                  {checkoutError
+                    ? checkoutError
+                    : "Tap Buy to create one secure payment for every item currently in your cart."}
                 </p>
               </div>
             </div>

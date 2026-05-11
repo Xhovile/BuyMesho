@@ -9,9 +9,9 @@ function jsonError(error: unknown, fallback: string): { error: string } {
 }
 
 type OrderLookupResult = {
-  order: ReturnType<typeof orderRepository.findById>;
-  payment: ReturnType<typeof paymentRepository.findByReference>;
-  escrow: ReturnType<typeof escrowRepository.findByOrderId>;
+  order: NonNullable<ReturnType<typeof orderRepository.findById>>;
+  payment: ReturnType<typeof paymentRepository.findByReference> | null;
+  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
   dispute: Record<string, unknown> | null;
 };
 

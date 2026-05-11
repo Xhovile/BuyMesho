@@ -7,6 +7,7 @@ export type OrderBundle = {
     paymentReference?: string | null;
     total?: { amount?: number; currency?: string };
     items?: Array<{
+      listingId?: string;
       title?: string;
       quantity?: number;
       unitPrice?: { amount?: number; currency?: string };

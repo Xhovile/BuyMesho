@@ -41,11 +41,32 @@ export function canAccessOrder(req: Request, order: { buyerId: string; sellerId:
   return user.uid === order.buyerId || user.uid === order.sellerId;
 }
 
-export function assertOrderAccess(req: Request, orderId: string, orderRepository: { findById: (id: string) => any }) {
+type OrderAccessOrder = { buyerId: string; sellerId: string };
+
+type OrderAccessDenied = {
+  error: {
+    status: number;
+    body: { error: string };
+  };
+};
+
+type OrderAccessGranted<TOrder extends OrderAccessOrder> = {
+  order: TOrder;
+};
+
+type OrderAccessResult<TOrder extends OrderAccessOrder> =
+  | OrderAccessDenied
+  | OrderAccessGranted<TOrder>;
+
+export function assertOrderAccess<TOrder extends OrderAccessOrder>(
+  req: Request,
+  orderId: string,
+  orderRepository: { findById: (id: string) => TOrder | undefined },
+): OrderAccessResult<TOrder> {
   const order = orderRepository.findById(orderId);
 
   if (!order) {
-    return { error: { status: 404, body: { error: 'Order not found' } } as const };
+    return { error: { status: 404, body: { error: 'Order not found' } } };
   }
 
   if (!canAccessOrder(req, order)) {
@@ -53,7 +74,7 @@ export function assertOrderAccess(req: Request, orderId: string, orderRepository
       error: {
         status: 403,
         body: { error: 'You are not allowed to access this order' },
-      } as const,
+      },
     };
   }
 
