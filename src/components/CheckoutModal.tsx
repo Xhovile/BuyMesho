@@ -4,10 +4,7 @@ import { CheckCircle2, Loader2, ShoppingBag, X } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
-import {
-  setBuyerCartItem,
-  touchBuyerPaymentFromCheckout,
-} from "../lib/buyerState";
+import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 
@@ -81,17 +78,6 @@ export default function CheckoutModal({
         }),
       })) as CheckoutResult;
 
-      const storedAt = new Date().toISOString();
-      setBuyerCartItem({
-        listingId: String(listing.id),
-        listingTitle: listing.name,
-        listingImage: listing.photos?.[0] ?? null,
-        university: listing.university ?? null,
-        quantity,
-        unitPrice,
-        totalPrice: total,
-        addedAt: storedAt,
-      });
       touchBuyerPaymentFromCheckout({
         reference: result.reference,
         orderId: result.orderId,

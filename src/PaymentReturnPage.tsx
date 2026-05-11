@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, AlertTriangle, Loader2, ChevronLeft } from "lucide-react";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { readBuyerPayments, removeBuyerCartItem, updateBuyerPaymentStatus } from "./lib/buyerState";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -46,11 +47,23 @@ export default function PaymentReturnPage() {
           const resolvedOrderId =
             result.orderId ??
             (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
+          const matchingPayment = readBuyerPayments().find(
+            (record) => record.reference === reference || record.txRef === reference || record.reference === txRef || record.txRef === txRef,
+          );
+          updateBuyerPaymentStatus(reference, {
+            status: "captured",
+            txRef,
+            orderId: resolvedOrderId ?? matchingPayment?.orderId ?? null,
+          });
+          if (matchingPayment?.listingId) {
+            removeBuyerCartItem(matchingPayment.listingId);
+          }
+
           setOrderId(resolvedOrderId);
           setStatus("success");
 
           setTimeout(() => {
-            navigateToPath(`/orders/${encodeURIComponent(reference)}`);
+            navigateToPath(`/orders/${encodeURIComponent(reference)}`, { replace: true });
           }, 900);
         } else {
           setErrorMessage(result.status ? `Payment status: ${result.status}` : "The payment could not be verified.");
@@ -100,7 +113,7 @@ export default function PaymentReturnPage() {
             <h1 className="text-2xl font-black text-zinc-900">Payment failed</h1>
             <p className="text-sm text-zinc-600 leading-6">{errorMessage ?? "We could not verify your payment. Please try again or contact support."}</p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={() => window.history.back()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
               <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
             </div>
           </div>
@@ -112,7 +125,7 @@ export default function PaymentReturnPage() {
             <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
             <p className="text-sm text-zinc-600 leading-6">You cancelled the payment. Your order was not charged.</p>
             <div className="mt-2 flex flex-wrap items-center justify-center gap-3">
-              <button type="button" onClick={() => window.history.back()} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
+              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"><ChevronLeft className="h-4 w-4" />Go back</button>
               <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="rounded-2xl bg-zinc-100 px-5 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors">Browse listings</button>
             </div>
           </div>

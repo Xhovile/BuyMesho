@@ -406,24 +406,27 @@ export const getAppRouteFromLocation = (
   return "home";
 };
 
-export const navigateToPath = (path: string) => {
-  const url = new URL(window.location.href);
-  url.pathname = path;
+export const navigateToPath = (path: string, options?: { replace?: boolean }) => {
+  const url = new URL(path, window.location.href);
 
-  if (path !== EXPLORE_PATH && path !== LISTING_PATH) {
+  if (url.pathname !== EXPLORE_PATH && url.pathname !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
   }
 
-  if (path !== SELLER_PATH) {
+  if (url.pathname !== SELLER_PATH) {
     url.searchParams.delete("uid");
   }
 
-  if (path !== EDIT_PATH) {
+  if (url.pathname !== EDIT_PATH) {
     url.searchParams.delete("id");
   }
 
-  window.history.pushState(markAppHistoryState(), "", url.toString());
+  if (options?.replace) {
+    window.history.replaceState(markAppHistoryState(), "", url.toString());
+  } else {
+    window.history.pushState(markAppHistoryState(), "", url.toString());
+  }
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
