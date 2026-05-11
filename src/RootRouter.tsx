@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  BALANCE_PATH,
   DISPUTES_PATH,
   getAppRouteFromLocation,
   navigateToPath,
@@ -57,7 +56,6 @@ const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
 const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
-const BalancePage = lazy(() => import("./BalancePage"));
 const PaymentMethodPage = lazy(() => import("./PaymentMethodPage"));
 const TrackOrderPage = lazy(() => import("./TrackOrderPage"));
 const DisputesPage = lazy(() => import("./DisputesPage"));
@@ -118,7 +116,6 @@ export default function RootRouter() {
       import("./MarketComingSoonPage"),
       import("./BuyerPaymentsPage"),
       import("./PaymentsHubPage"),
-      import("./BalancePage"),
       import("./PaymentMethodPage"),
       import("./TrackOrderPage"),
       import("./DisputesPage"),
@@ -178,8 +175,6 @@ export default function RootRouter() {
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
           <OrderTrackingPage />
-        ) : locationPath === BALANCE_PATH ? (
-          <BalancePage />
         ) : locationPath === PAYMENT_METHOD_PATH ? (
           <PaymentMethodPage />
         ) : locationPath === TRACK_ORDER_PATH ? (
