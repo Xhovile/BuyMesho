@@ -10,6 +10,7 @@ import { v2 as cloudinary } from "cloudinary";
 import dotenv from "dotenv";
 import rateLimit from "express-rate-limit";
 import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth.js";
+import { requireFirebaseUser } from "./server/middleware/requireFirebaseUser.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { getConfiguredAdminEmails, hasAdminAccess } from "./server/auth/adminAccess.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
@@ -650,11 +651,11 @@ async function startServer() {
   registerVerificationEmailRoutes(app);
   registerSessionRoutes(app);
   mountTotpRoutes(app);
-  app.use('/api/payments', createPaymentRouter(requireAuth));
+  app.use('/api/payments', createPaymentRouter(requireFirebaseUser));
   app.use('/api/admin', createPaymentAdminRouter(requireAuth));
-  app.use('/api/escrow', createEscrowRouter(requireAuth));
-  app.use('/api/disputes', createDisputeRouter(requireAuth));
-  app.use('/api/payouts', createPayoutRouter(requireAuth));
+  app.use('/api/escrow', createEscrowRouter(requireFirebaseUser));
+  app.use('/api/disputes', createDisputeRouter(requireFirebaseUser));
+  app.use('/api/payouts', createPayoutRouter(requireFirebaseUser));
   
   // Logging middleware
   app.use((req, res, next) => {

@@ -16,6 +16,7 @@ import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
 import OrderProgressTracker from "./components/orders/OrderProgressTracker";
 import OrderDetailsCard from "./components/orders/OrderDetailsCard";
 import DisputeActionsCard from "./components/orders/DisputeActionsCard";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 const stages = [
   "Order placed",
@@ -27,6 +28,12 @@ const stages = [
 ];
 
 export default function OrderTrackingPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <OrderTrackingPageContent />;
+}
+
+function OrderTrackingPageContent() {
   const [bundle, setBundle] = useState<OrderBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

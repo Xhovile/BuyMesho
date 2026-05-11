@@ -10,8 +10,15 @@ import {
   type BuyerPaymentRecord,
 } from "./lib/buyerState";
 import { formatMoney } from "./shared/utils/formatMoney";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function CartPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <CartPageContent />;
+}
+
+function CartPageContent() {
   const [items, setItems] = useState<BuyerCartItem[]>([]);
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
 

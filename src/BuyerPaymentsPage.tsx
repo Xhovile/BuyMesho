@@ -11,6 +11,7 @@ import {
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
   if (status === "paid") return "bg-emerald-100 text-emerald-700";
@@ -20,6 +21,12 @@ function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
 }
 
 export default function BuyerPaymentsPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <BuyerPaymentsPageContent />;
+}
+
+function BuyerPaymentsPageContent() {
   const [orders, setOrders] = useState<OrderBundle[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
