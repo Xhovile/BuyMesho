@@ -30,11 +30,7 @@ function useRequireVerifiedUser() {
 
 function getPaymentMethodsKey() {
   const uid = auth.currentUser?.uid;
-
-  if (!uid) {
-    return "__buymesho_payment_methods_guest";
-  }
-
+  if (!uid) return null;
   return `__buymesho_payment_methods_${uid}`;
 }
 
