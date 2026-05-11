@@ -1,8 +1,32 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { onAuthStateChanged } from "firebase/auth";
 import { ArrowLeft, ChevronDown, CreditCard, Smartphone, Trash2 } from "lucide-react";
-import { PAYMENTS_HUB_PATH, navigateBackOrPath } from "./lib/appNavigation";
+import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
+import { LOGIN_PATH, VERIFY_EMAIL_PATH,PAYMENTS_HUB_PATH,navigateToPath } from "./lib/appNavigation";
+import { useEffect, useState, type FormEvent } from "react";
+
+function useRequireVerifiedUser() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        navigateToPath(LOGIN_PATH);
+        return;
+      }
+
+      if (!user.emailVerified) {
+        navigateToPath(VERIFY_EMAIL_PATH);
+        return;
+      }
+
+      setReady(true);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  return ready;
+} 
 
 function getPaymentMethodsKey() {
   const uid = auth.currentUser?.uid;
@@ -169,6 +193,8 @@ function PaymentSectionTitle({
 }
 
 export default function PaymentMethodPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
   const [savedMethods, setSavedMethods] = useState<SavedPaymentMethods>(emptySavedMethods());
   const [cardholderName, setCardholderName] = useState("");
   const [cardNumber, setCardNumber] = useState("");
