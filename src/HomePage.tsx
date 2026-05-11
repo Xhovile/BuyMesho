@@ -51,6 +51,7 @@ import {
 import CategorySection from "./components/home/CategorySection";
 import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
+import FloatingCartButton from "./components/FloatingCartButton";
 import { signOut } from "firebase/auth";
 import { auth } from "./firebase";
 
@@ -387,6 +388,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <FloatingCartButton isLoggedIn={isLoggedIn} />
       <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           <div className="flex items-center justify-between gap-4">
