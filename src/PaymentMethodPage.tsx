@@ -1,8 +1,17 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ArrowLeft, ChevronDown, CreditCard, Smartphone, Trash2 } from "lucide-react";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath } from "./lib/appNavigation";
+import { auth } from "./firebase";
 
-const PAYMENT_METHODS_KEY = "__buymesho_payment_methods";
+function getPaymentMethodsKey() {
+  const uid = auth.currentUser?.uid;
+
+  if (!uid) {
+    return "__buymesho_payment_methods_guest";
+  }
+
+  return `__buymesho_payment_methods_${uid}`;
+}
 
 type SavedCard = {
   id: string;
@@ -84,7 +93,7 @@ function normalizeSavedMobileMoney(value: unknown): SavedMobileMoney | null {
 
 function readSavedPaymentMethods(): SavedPaymentMethods {
   try {
-    const raw = localStorage.getItem(PAYMENT_METHODS_KEY);
+    const raw = localStorage.getItem(getPaymentMethodsKey());
     if (!raw) return emptySavedMethods();
 
     const parsed = JSON.parse(raw) as SavedPaymentMethods | LegacySavedPaymentMethods;
@@ -128,7 +137,7 @@ function readSavedPaymentMethods(): SavedPaymentMethods {
 }
 
 function savePaymentMethods(value: SavedPaymentMethods) {
-  localStorage.setItem(PAYMENT_METHODS_KEY, JSON.stringify(value));
+  localStorage.setItem(getPaymentMethodsKey(), JSON.stringify(value));
 }
 
 function PaymentSectionTitle({
