@@ -2,6 +2,7 @@ import { auth } from "../firebase";
 
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
 const BUYER_PAYMENTS_KEY = "__buymesho_buyer_payments";
+const BUYER_CART_UPDATED_EVENT = "buymesho:buyer-cart-updated";
 
 export type BuyerCartItem = {
   listingId: string;
@@ -48,6 +49,10 @@ const writeJson = (key: string, value: unknown) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
+const emitBuyerCartUpdated = () => {
+  window.dispatchEvent(new CustomEvent(BUYER_CART_UPDATED_EVENT));
+};
+
 const getScopedStorageKey = (baseKey: string) => {
   const uid = auth.currentUser?.uid;
   if (!uid) return null;
@@ -83,6 +88,7 @@ export const setBuyerCartItem = (item: BuyerCartItem) => {
   }
 
   writeJson(cartKey, current.slice(0, 20));
+  emitBuyerCartUpdated();
 };
 
 export const removeBuyerCartItem = (listingId: string) => {
@@ -94,12 +100,30 @@ export const removeBuyerCartItem = (listingId: string) => {
     cartKey,
     current.filter((item) => String(item.listingId) !== String(listingId)),
   );
+  emitBuyerCartUpdated();
 };
 
 export const clearBuyerCart = () => {
   const key = getBuyerCartKey();
   if (!key) return;
   localStorage.removeItem(key);
+  emitBuyerCartUpdated();
+};
+
+export const subscribeToBuyerCartChanges = (listener: () => void) => {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key && event.key.startsWith(BUYER_CART_KEY)) {
+      listener();
+    }
+  };
+
+  window.addEventListener(BUYER_CART_UPDATED_EVENT, listener as EventListener);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(BUYER_CART_UPDATED_EVENT, listener as EventListener);
+    window.removeEventListener("storage", handleStorage);
+  };
 };
 
 export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {

@@ -1,14 +1,82 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ConfirmModal from "./ConfirmModal";
 import { navigateToCart, navigateToLogin } from "../lib/appNavigation";
+import { readBuyerCart, subscribeToBuyerCartChanges } from "../lib/buyerState";
 
 type FloatingCartButtonProps = {
   isLoggedIn: boolean;
   className?: string;
+  stickyHeaderSelector?: string;
 };
 
-export default function FloatingCartButton({ isLoggedIn, className = "" }: FloatingCartButtonProps) {
+const MD_BREAKPOINT = 768;
+const HEADER_SPACING = 10;
+const MIN_TOP_OFFSET = 72;
+const DEFAULT_TOP_OFFSET_DESKTOP = 104;
+const DEFAULT_TOP_OFFSET_MOBILE = 84;
+const DEFAULT_STICKY_HEADER_SELECTOR = "nav.sticky.top-0, header.sticky.top-0";
+
+export default function FloatingCartButton({
+  isLoggedIn,
+  className = "",
+  stickyHeaderSelector = DEFAULT_STICKY_HEADER_SELECTOR,
+}: FloatingCartButtonProps) {
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+  const [topOffset, setTopOffset] = useState(96);
+
+  useEffect(() => {
+    const updateCartCount = () => {
+      if (!isLoggedIn) {
+        setCartCount(0);
+        return;
+      }
+      setCartCount(readBuyerCart().length);
+    };
+
+    updateCartCount();
+    const unsubscribe = subscribeToBuyerCartChanges(updateCartCount);
+    window.addEventListener("focus", updateCartCount);
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("focus", updateCartCount);
+    };
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    let rafId: number | null = null;
+
+    const updatePosition = () => {
+      const stickyHeader = document.querySelector<HTMLElement>(stickyHeaderSelector);
+      if (stickyHeader) {
+        const offset = Math.max(Math.round(stickyHeader.getBoundingClientRect().bottom) + HEADER_SPACING, MIN_TOP_OFFSET);
+        setTopOffset(offset);
+        return;
+      }
+      setTopOffset(window.innerWidth >= MD_BREAKPOINT ? DEFAULT_TOP_OFFSET_DESKTOP : DEFAULT_TOP_OFFSET_MOBILE);
+    };
+
+    const schedulePositionUpdate = () => {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        updatePosition();
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("scroll", schedulePositionUpdate, { passive: true });
+    window.addEventListener("resize", schedulePositionUpdate, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", schedulePositionUpdate);
+      window.removeEventListener("resize", schedulePositionUpdate);
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+    };
+  }, [stickyHeaderSelector]);
 
   const openCart = () => {
     if (!isLoggedIn) {
@@ -24,11 +92,19 @@ export default function FloatingCartButton({ isLoggedIn, className = "" }: Float
       <button
         type="button"
         onClick={openCart}
-        className={`fixed right-4 top-24 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-yellow-500 text-white shadow-xl shadow-yellow-500/30 ring-1 ring-yellow-300 transition hover:-translate-y-0.5 hover:bg-yellow-400 focus:outline-none focus:ring-4 focus:ring-yellow-200 sm:right-6 ${className}`}
+        style={{ top: `${topOffset}px` }}
+        className={`fixed right-3 z-40 flex h-12 w-[54px] items-center justify-center rounded-full border border-amber-200/80 bg-amber-400/70 text-white shadow-xl shadow-amber-500/30 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-amber-400/85 focus:outline-none focus:ring-4 focus:ring-amber-200/70 sm:right-5 md:h-14 md:w-[64px] ${className}`}
         aria-label="Open cart"
         title="Open cart"
       >
-        <viconic-icon icon="p4:shopping-cart-add" className="text-2xl text-white" />
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white shadow-inner shadow-amber-300/60 md:h-9 md:w-9">
+          <viconic-icon icon="p4:shopping-cart-add" className="text-xl text-white md:text-2xl" />
+        </span>
+        {cartCount > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-950 px-1 text-[10px] font-black leading-none text-white ring-2 ring-amber-100/80">
+            {cartCount > 9 ? "9+" : cartCount}
+          </span>
+        ) : null}
       </button>
 
       <ConfirmModal
