@@ -212,7 +212,7 @@ export default function Header({
                   {isAdmin ? (
                     <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
                       <ShieldCheck className="w-4 h-4" />
-                      Admin Access
+                      ADMIN
                     </button>
                   ) : null}
                   <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
@@ -413,7 +413,7 @@ export default function Header({
                     <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
                       <ShieldCheck className="w-4 h-4 text-white" />
                     </span>
-                    Admin Access
+                    ADMIN
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
