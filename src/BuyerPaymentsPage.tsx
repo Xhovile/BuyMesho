@@ -87,8 +87,8 @@ function BuyerPaymentsPageContent() {
           </button>
         </div>
 
-            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
-            Buyer Analytics
+            <h1 className="text-4xl font-black tracking-tight text-zinc-650 sm:text-5xl">
+            BUYER ANALYTICS
             </h1>
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
