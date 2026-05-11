@@ -59,8 +59,8 @@ export default function CheckoutModal({
     setStep("loading");
     setError(null);
     try {
-      const returnUrl = `${window.location.origin}/payment/return`;
-      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1`;
+      const returnUrl = `${window.location.origin}/payment/return?listingId=${encodeURIComponent(String(listing.id))}`;
+      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingId=${encodeURIComponent(String(listing.id))}`;
 
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
@@ -83,6 +83,7 @@ export default function CheckoutModal({
         orderId: result.orderId,
         paymentId: result.paymentId,
         listingId: String(listing.id),
+        listingIds: [String(listing.id)],
         listingTitle: listing.name,
         quantity,
         totalPrice: total,

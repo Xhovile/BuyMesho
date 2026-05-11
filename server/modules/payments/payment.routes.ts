@@ -116,14 +116,16 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const {
         listingId,
         quantity = 1,
+        items,
         method = 'mobile_money',
         returnUrl,
         cancelUrl,
         buyerName,
         buyerPhone,
       } = req.body as {
-        listingId?: number;
+        listingId?: number | string;
         quantity?: number;
+        items?: Array<{ listingId?: number | string; quantity?: number }>;
         method?: string;
         returnUrl?: string;
         cancelUrl?: string;
@@ -131,57 +133,84 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         buyerPhone?: string;
       };
 
-      if (!listingId) {
-        return res.status(400).json({ error: 'listingId is required' });
+      const requestedItems = Array.isArray(items) && items.length > 0
+        ? items.map((item) => ({ listingId: item.listingId, quantity: item.quantity ?? 1 }))
+        : listingId
+          ? [{ listingId, quantity }]
+          : [];
+
+      if (requestedItems.length === 0) {
+        return res.status(400).json({ error: 'listingId or items are required' });
       }
 
       const db = getPaymentDb();
-      const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(listingId) as ListingRow | undefined;
-      if (!listing) {
-        return res.status(404).json({ error: 'Listing not found' });
-      }
-
-      if (listing.status === 'sold') {
-        return res.status(400).json({ error: 'This listing is no longer available' });
-      }
-
-      const safeQty = Math.max(1, Number(quantity));
-      const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
-
-      if (availableQty === 0) {
-        return res.status(400).json({ error: 'This listing is out of stock' });
-      }
-
-      if (safeQty > availableQty) {
-        return res.status(400).json({ error: `Only ${availableQty} unit(s) available` });
-      }
-
-      const unitPrice = Number(listing.price);
-      const total = unitPrice * safeQty;
       const currency = 'MWK';
       const now = new Date().toISOString();
       const buyerUid = req.user!.uid;
       const buyerEmail = req.user!.email ?? '';
       const orderId = `ord_${randomUUID()}`;
 
+      const orderItems: OrderState['items'] = [];
+      const listingIds: string[] = [];
+      const sellerIds = new Set<string>();
+      let total = 0;
+
+      for (const item of requestedItems) {
+        const numericListingId = Number(item.listingId);
+        if (!Number.isInteger(numericListingId) || numericListingId <= 0) {
+          return res.status(400).json({ error: 'Each checkout item requires a valid listingId' });
+        }
+
+        const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(numericListingId) as ListingRow | undefined;
+        if (!listing) {
+          return res.status(404).json({ error: `Listing ${numericListingId} not found` });
+        }
+
+        if (listing.status === 'sold') {
+          return res.status(400).json({ error: `${listing.name} is no longer available` });
+        }
+
+        const parsedQty = Number(item.quantity ?? 1);
+        if (!Number.isFinite(parsedQty) || parsedQty <= 0) {
+          return res.status(400).json({ error: `Invalid quantity for ${listing.name}` });
+        }
+
+        const safeQty = Math.max(1, Math.floor(parsedQty));
+        const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+
+        if (availableQty === 0) {
+          return res.status(400).json({ error: `${listing.name} is out of stock` });
+        }
+
+        if (safeQty > availableQty) {
+          return res.status(400).json({ error: `Only ${availableQty} unit(s) available for ${listing.name}` });
+        }
+
+        const unitPrice = Number(listing.price);
+        total += unitPrice * safeQty;
+        sellerIds.add(listing.seller_uid);
+        listingIds.push(String(numericListingId));
+        orderItems.push({
+          listingId: String(numericListingId),
+          title: listing.name,
+          quantity: safeQty,
+          unitPrice: { amount: unitPrice, currency },
+        });
+      }
+
+      const primarySellerId = sellerIds.values().next().value ?? 'multiple-sellers';
+
       const order: OrderState = {
         id: orderId,
         buyerId: buyerUid,
-        sellerId: listing.seller_uid,
+        sellerId: primarySellerId,
         source: 'listing',
         status: 'pending_payment',
         currency,
         subtotal: { amount: total, currency },
         total: { amount: total, currency },
         paymentProvider: 'paychangu',
-        items: [
-          {
-            listingId: String(listingId),
-            title: listing.name,
-            quantity: safeQty,
-            unitPrice: { amount: unitPrice, currency },
-          },
-        ],
+        items: orderItems,
         placedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -202,11 +231,13 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           email: buyerEmail || undefined,
           phoneNumber: buyerPhone,
         },
-        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return`,
-        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1`,
+        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return?listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
+        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1&listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
         metadata: {
-          listingId: String(listingId),
-          sellerId: listing.seller_uid,
+          listingId: listingIds[0],
+          listingIds,
+          sellerId: primarySellerId,
+          sellerIds: Array.from(sellerIds),
         },
       };
 
