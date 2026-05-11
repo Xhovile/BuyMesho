@@ -432,7 +432,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  Admin Access
+                  ADMIN
                 </button>
               ) : null}
               <button
@@ -441,7 +441,6 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800"
               >
                 <Settings className="w-4 h-4" />
-                Settings
               </button>
               <button
                 type="button"
@@ -449,7 +448,6 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 <UserRound className="w-4 h-4" />
-                Profile
               </button>
             </div>
 
@@ -610,7 +608,7 @@ export default function HomePage() {
                       <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
                         <ShieldCheck className="w-4 h-4 text-white" />
                       </span>
-                      Admin Access
+                      ADMIN
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
