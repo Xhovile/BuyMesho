@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CreditCard, ShoppingCart, Trash2 } from "lucide-react";
+import { ArrowLeft, ShoppingCart, Trash2 } from "lucide-react";
 
 import { navigateBackOrPath, navigateToPath, PAYMENTS_HUB_PATH, EXPLORE_PATH } from "./lib/appNavigation";
 import {
@@ -67,7 +67,7 @@ function CartPageContent() {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             type="button"
             onClick={() => navigateBackOrPath(EXPLORE_PATH)}
@@ -76,26 +76,6 @@ function CartPageContent() {
             <ArrowLeft className="h-4 w-4" />
             Back to market
           </button>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              Add more items
-            </button>
-
-            <button
-              type="button"
-              onClick={handlePay}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
-            >
-              <CreditCard className="h-4 w-4" />
-              Pay
-            </button>
-          </div>
         </div>
 
         <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Cart</p>

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CreditCard, Truck } from "lucide-react";
 import {
-  navigateBackOrPath,
   navigateToOrderDispute,
   PAYMENTS_HUB_PATH,
   navigateToPath,
@@ -174,7 +173,7 @@ function OrderTrackingPageContent() {
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
+            onClick={() => navigateToPath(PAYMENTS_HUB_PATH)}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
