@@ -1,38 +1,32 @@
-import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Truck, Wallet } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, ChevronRight, Wallet } from "lucide-react";
 import {
-  BALANCE_PATH,
-  BUYER_PAYMENTS_PATH,
-  CART_PATH,
-  DISPUTES_PATH,
   EXPLORE_PATH,
   PAYMENTS_HUB_PATH,
-  PAYMENT_METHOD_PATH,
-  TRACK_ORDER_PATH,
   navigateBackOrPath,
-  navigateToPath,
 } from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
+import FeedbackModal from "./components/FeedbackModal";
 
-const paymentActions = [
-  { label: "Balance", icon: Wallet, path: BALANCE_PATH, iconBg: "bg-zinc-500" },
-  { label: "Payment Method", icon: CreditCard, path: PAYMENT_METHOD_PATH, iconBg: "bg-orange-500" },
-  { label: "Cart", icon: ShoppingCart, path: CART_PATH, iconBg: "bg-yellow-500" },
-  { label: "Track Order", icon: Truck, path: TRACK_ORDER_PATH, iconBg: "bg-blue-500" },
-  { label: "Buyer Payments", icon: CreditCard, path: BUYER_PAYMENTS_PATH, iconBg: "bg-indigo-500" },
-  { label: "Disputes", icon: ShieldAlert, path: DISPUTES_PATH, iconBg: "bg-red-900" },
-] as const;
+const sellerBalanceAction = { label: "Balance", icon: Wallet, iconBg: "bg-zinc-500" } as const;
 
 export default function PaymentsHubPage() {
+  const { profile, profileLoading } = useAccountProfile();
+  const [showComingSoon, setShowComingSoon] = useState(false);
+  const showSellerBalanceAction = !profileLoading && !!profile?.is_seller;
+
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-        <button
-          type="button"
-          onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
+    <>
+      <div className="min-h-screen bg-zinc-100 text-zinc-900">
+        <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+          <button
+            type="button"
+            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </button>
 
         <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Payments</p>
         <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Payment actions</h1>
@@ -63,6 +57,20 @@ export default function PaymentsHubPage() {
 
         <p className="mt-4 text-xs text-zinc-500">Current page: {PAYMENTS_HUB_PATH}</p>
       </div>
-    </div>
+      <FeedbackModal
+        open={showComingSoon}
+        type="info"
+        title="Coming soon"
+        message="Seller balances overview coming soon."
+        onClose={() => setShowComingSoon(false)}
+        actions={[
+          {
+            label: "Cancel",
+            onClick: () => setShowComingSoon(false),
+            variant: "secondary",
+          },
+        ]}
+      />
+    </>
   );
 }
