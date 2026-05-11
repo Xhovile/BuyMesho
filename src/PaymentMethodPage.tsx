@@ -185,7 +185,6 @@ export default function PaymentMethodPage() {
       setOpenSection(loaded.cards.length > 0 || loaded.mobileMoney.length === 0 ? "card" : "mobile");
     };
 
-    refreshSavedMethods();
     const unsubscribe = onAuthStateChanged(auth, refreshSavedMethods);
 
     return () => unsubscribe();
