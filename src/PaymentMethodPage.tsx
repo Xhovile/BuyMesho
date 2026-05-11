@@ -2,30 +2,8 @@ import { ArrowLeft, ChevronDown, CreditCard, Smartphone, Trash2 } from "lucide-r
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { useEffect, useState, type FormEvent } from "react";
-import { LOGIN_PATH, VERIFY_EMAIL_PATH, PAYMENTS_HUB_PATH, navigateToPath } from "./lib/appNavigation"; 
-function useRequireVerifiedUser() {
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        navigateToPath(LOGIN_PATH);
-        return;
-      }
-
-      if (!user.emailVerified) {
-        navigateToPath(VERIFY_EMAIL_PATH);
-        return;
-      }
-
-      setReady(true);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return ready;
-} 
+import { PAYMENTS_HUB_PATH } from "./lib/appNavigation";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 function getPaymentMethodsKey() {
   const uid = auth.currentUser?.uid;
@@ -187,12 +165,6 @@ function PaymentSectionTitle({
   );
 }
 
-function PaymentMethodGate() {
-  const ready = useRequireVerifiedUser();
-  if (!ready) return null;
-  return <PaymentMethodPageContent />;
-}
-
 function PaymentMethodPageContent() {
   const [savedMethods, setSavedMethods] = useState<SavedPaymentMethods>(emptySavedMethods());
   const [cardholderName, setCardholderName] = useState("");
@@ -230,7 +202,6 @@ function PaymentMethodPageContent() {
       setMessage("Add a cardholder name, expiry, and at least the last four card digits.");
       return;
     }
-    
     const nextCard: SavedCard = {
       id: makeCardId(cardholderName, digits.slice(-4), cardExpiry),
       cardholderName: cardholderName.trim(),
@@ -486,6 +457,9 @@ function PaymentMethodPageContent() {
     </div>
   );
 }
+
 export default function PaymentMethodPage() {
-  return <PaymentMethodGate />;
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <PaymentMethodPageContent />;
 }

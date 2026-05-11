@@ -1,8 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderDispute } from "./lib/appNavigation";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function DisputesPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <DisputesPageContent />;
+}
+
+function DisputesPageContent() {
   const [reference, setReference] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

@@ -1,8 +1,15 @@
 import { useState, type FormEvent } from "react";
 import { ArrowLeft, Truck } from "lucide-react";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
+import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function TrackOrderPage() {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <TrackOrderPageContent />;
+}
+
+function TrackOrderPageContent() {
   const [reference, setReference] = useState("");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
