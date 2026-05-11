@@ -49,18 +49,30 @@ const writeJson = (key: string, value: unknown) => {
 
 const getScopedStorageKey = (baseKey: string) => {
   const uid = auth.currentUser?.uid;
-  return uid ? `${baseKey}_${uid}` : `${baseKey}_guest`;
+  if (!uid) return null;
+  return `${baseKey}_${uid}`;
 };
 
 const getBuyerCartKey = () => getScopedStorageKey(BUYER_CART_KEY);
 const getBuyerPaymentsKey = () => getScopedStorageKey(BUYER_PAYMENTS_KEY);
 
-export const readBuyerCart = (storageKey: string = getBuyerCartKey()): BuyerCartItem[] => readJson(storageKey, []);
-export const readBuyerPayments = (storageKey: string = getBuyerPaymentsKey()): BuyerPaymentRecord[] => readJson(storageKey, []);
+export const readBuyerCart = (): BuyerCartItem[] => {
+  const key = getBuyerCartKey();
+  if (!key) return [];
+  return readJson(key, []);
+};
+
+export const readBuyerPayments = (): BuyerPaymentRecord[] => {
+  const key = getBuyerPaymentsKey();
+  if (!key) return [];
+  return readJson(key, []);
+};
 
 export const setBuyerCartItem = (item: BuyerCartItem) => {
   const cartKey = getBuyerCartKey();
-  const current = readBuyerCart(cartKey);
+  if (!cartKey) return;
+
+  const current = readBuyerCart();
   const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
 
   if (index >= 0) {
@@ -74,7 +86,9 @@ export const setBuyerCartItem = (item: BuyerCartItem) => {
 
 export const removeBuyerCartItem = (listingId: string) => {
   const cartKey = getBuyerCartKey();
-  const current = readBuyerCart(cartKey);
+  if (!cartKey) return;
+
+  const current = readBuyerCart();
   writeJson(
     cartKey,
     current.filter((item) => String(item.listingId) !== String(listingId)),
@@ -82,26 +96,38 @@ export const removeBuyerCartItem = (listingId: string) => {
 };
 
 export const clearBuyerCart = () => {
-  localStorage.removeItem(getBuyerCartKey());
+  const key = getBuyerCartKey();
+  if (!key) return;
+  localStorage.removeItem(key);
 };
 
 export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
   const paymentsKey = getBuyerPaymentsKey();
-  const current = readBuyerPayments(paymentsKey);
-  const index = current.findIndex((item) => item.reference === record.reference || (record.txRef && item.txRef === record.txRef));
+  if (!paymentsKey) return;
+
+  const current = readBuyerPayments();
+  const index = current.findIndex(
+    (item) => item.reference === record.reference || (record.txRef && item.txRef === record.txRef),
+  );
+
   if (index >= 0) {
     current[index] = { ...current[index], ...record };
   } else {
     current.unshift(record);
   }
+
   writeJson(paymentsKey, current.slice(0, 20));
 };
 
 export const clearBuyerPaymentRecords = () => {
-  localStorage.removeItem(getBuyerPaymentsKey());
+  const key = getBuyerPaymentsKey();
+  if (!key) return;
+  localStorage.removeItem(key);
 };
 
-export const touchBuyerPaymentFromCheckout = (record: Omit<BuyerPaymentRecord, "status" | "createdAt" | "updatedAt">) => {
+export const touchBuyerPaymentFromCheckout = (
+  record: Omit<BuyerPaymentRecord, "status" | "createdAt" | "updatedAt">,
+) => {
   const now = new Date().toISOString();
   upsertBuyerPayment({
     ...record,
@@ -113,10 +139,12 @@ export const touchBuyerPaymentFromCheckout = (record: Omit<BuyerPaymentRecord, "
 
 export const updateBuyerPaymentStatus = (
   reference: string,
-  patch: Partial<BuyerPaymentRecord> & { status?: BuyerPaymentStatus }
+  patch: Partial<BuyerPaymentRecord> & { status?: BuyerPaymentStatus },
 ) => {
   const paymentsKey = getBuyerPaymentsKey();
-  const current = readBuyerPayments(paymentsKey);
+  if (!paymentsKey) return;
+
+  const current = readBuyerPayments();
   const next = current.map((item) =>
     item.reference === reference || (patch.txRef && item.txRef === patch.txRef)
       ? {
@@ -126,5 +154,6 @@ export const updateBuyerPaymentStatus = (
         }
       : item,
   );
+
   writeJson(paymentsKey, next);
 };
