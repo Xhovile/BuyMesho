@@ -2,7 +2,7 @@ import { ArrowLeft, ChevronDown, CreditCard, Smartphone, Trash2 } from "lucide-r
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./firebase";
 import { useEffect, useState, type FormEvent } from "react";
-import { PAYMENTS_HUB_PATH } from "./lib/appNavigation";
+import { PAYMENTS_HUB_PATH, navigateBackOrPath } from "./lib/appNavigation";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 function getPaymentMethodsKey() {
