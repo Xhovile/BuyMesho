@@ -215,7 +215,7 @@ export default function Header({
                       ADMIN
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
+                  <button type="button" onClick={() => handleSettingsClick()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800">
                     <Settings className="w-4 h-4" />
                   </button>
                 </div>
