@@ -24,30 +24,40 @@ export default function DisputesPage() {
           Back
         </button>
 
-        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Disputes</p>
+        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">
+          Disputes
+        </p>
 
-        <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-900 text-white">
-              <ShieldAlert className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="mt-1 text-3xl font-black tracking-tight text-zinc-950">Open a dispute</h1>
-            </div>
+        <div className="mt-2 flex items-start gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-900 text-white">
+            <ShieldAlert className="h-5 w-5" />
           </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+              Open a dispute
+            </h1>
+            <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
+              Enter the order or payment reference related to the issue.
+            </p>
+          </div>
+        </div>
 
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <form onSubmit={handleSubmit} className="mt-8 rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
               value={reference}
               onChange={(event) => setReference(event.target.value)}
               placeholder="Enter order or payment reference"
               className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
             />
-            <button type="submit" className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800">
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+            >
               Open dispute
             </button>
-          </form>
-        </section>
+          </div>
+        </form>
       </div>
     </div>
   );

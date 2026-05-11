@@ -28,38 +28,34 @@ export default function PaymentsHubPage() {
             Back
           </button>
 
-          <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Payments</p>
+        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Payments</p>
+        <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">Payment actions</h1>
+        <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-600 sm:text-base">
+          Select one section below to open its separate page.
+        </p>
 
-          <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-            <h1 className="text-3xl font-black tracking-tight text-zinc-950">Payment actions</h1>
-            <p className="mt-3 text-sm leading-6 text-zinc-600">
-              Select an action below.
-            </p>
+        <nav className="mt-8 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm">
+          <ol>
+            {paymentActions.map((action, index) => (
+              <li key={action.label} className={index > 0 ? "border-t border-zinc-200" : ""}>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(action.path)}
+                  className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                  aria-label={`Open ${action.label}`}
+                >
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${action.iconBg} text-white`}>
+                    <action.icon className="h-4 w-4" />
+                  </span>
+                  <span>{action.label}</span>
+                  <ChevronRight className="ml-auto h-4 w-4 text-zinc-300" />
+                </button>
+              </li>
+            ))}
+          </ol>
+        </nav>
 
-            {showSellerBalanceAction ? (
-              <nav className="mt-6 rounded-[1.75rem] border border-zinc-200 bg-zinc-50">
-                <ol>
-                  <li>
-                    <button
-                      type="button"
-                      onClick={() => setShowComingSoon(true)}
-                      className="flex w-full items-center gap-3 bg-white px-5 py-4 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                      aria-label={`Open ${sellerBalanceAction.label}`}
-                    >
-                      <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${sellerBalanceAction.iconBg} text-white`}>
-                        <sellerBalanceAction.icon className="h-4 w-4" />
-                      </span>
-                      <span>{sellerBalanceAction.label}</span>
-                      <ChevronRight className="ml-auto h-4 w-4 text-zinc-300" />
-                    </button>
-                  </li>
-                </ol>
-              </nav>
-            ) : null}
-
-            <p className="mt-4 text-xs text-zinc-500">Current page: {PAYMENTS_HUB_PATH}</p>
-          </section>
-        </div>
+        <p className="mt-4 text-xs text-zinc-500">Current page: {PAYMENTS_HUB_PATH}</p>
       </div>
       <FeedbackModal
         open={showComingSoon}
