@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Truck, Wallet } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Receipt, Truck, Wallet } from "lucide-react";
 import {
   BUYER_PAYMENTS_PATH,
   DISPUTES_PATH,
@@ -14,13 +14,13 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import FeedbackModal from "./components/FeedbackModal";
 
 const paymentActions = [
-  { label: "Buyer payments", path: BUYER_PAYMENTS_PATH, icon: ShoppingCart, iconBg: "bg-emerald-600" },
-  { label: "Payment methods", path: PAYMENT_METHOD_PATH, icon: CreditCard, iconBg: "bg-[#438c7c]" },
-  { label: "Track order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
+  { label: "Payment Analytics", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
+  { label: "Payment Methods", path: PAYMENT_METHOD_PATH, icon: CreditCard, iconBg: "bg-[#438c7c]" },
+  { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
   { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-red-900" },
 ] as const;
 
-const sellerBalanceAction = { label: "Balance", icon: Wallet, iconBg: "bg-zinc-500" } as const;
+const sellerBalanceAction = { label: "Balances Overview", icon: Wallet, iconBg: "bg-zinc-500" } as const;
 
 export default function PaymentsHubPage() {
   const { profile, profileLoading } = useAccountProfile();
