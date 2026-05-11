@@ -231,9 +231,6 @@ function PaymentMethodPageContent() {
       return;
     }
     
-export default function PaymentMethodPage() {
-  return <PaymentMethodGate />;
-}
     const nextCard: SavedCard = {
       id: makeCardId(cardholderName, digits.slice(-4), cardExpiry),
       cardholderName: cardholderName.trim(),
@@ -293,7 +290,10 @@ export default function PaymentMethodPage() {
     }));
     setMessage("Mobile money method removed.");
   };
-
+  
+export default function PaymentMethodPage() {
+  return <PaymentMethodGate />;
+}
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
