@@ -290,10 +290,7 @@ function PaymentMethodPageContent() {
     }));
     setMessage("Mobile money method removed.");
   };
-  
-export default function PaymentMethodPage() {
-  return <PaymentMethodGate />;
-}
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
@@ -488,4 +485,7 @@ export default function PaymentMethodPage() {
       </div>
     </div>
   );
+}
+export default function PaymentMethodPage() {
+  return <PaymentMethodGate />;
 }
