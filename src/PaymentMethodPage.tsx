@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { onAuthStateChanged } from "firebase/auth";
 import { ArrowLeft, ChevronDown, CreditCard, Smartphone, Trash2 } from "lucide-react";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath } from "./lib/appNavigation";
 import { auth } from "./firebase";
@@ -178,9 +179,16 @@ export default function PaymentMethodPage() {
   const [openSection, setOpenSection] = useState<"card" | "mobile">("card");
 
   useEffect(() => {
-    const loaded = readSavedPaymentMethods();
-    setSavedMethods(loaded);
-    setOpenSection(loaded.cards.length > 0 || loaded.mobileMoney.length === 0 ? "card" : "mobile");
+    const refreshSavedMethods = () => {
+      const loaded = readSavedPaymentMethods();
+      setSavedMethods(loaded);
+      setOpenSection(loaded.cards.length > 0 || loaded.mobileMoney.length === 0 ? "card" : "mobile");
+    };
+
+    refreshSavedMethods();
+    const unsubscribe = onAuthStateChanged(auth, refreshSavedMethods);
+
+    return () => unsubscribe();
   }, []);
 
   const persistMethods = (updater: (current: SavedPaymentMethods) => SavedPaymentMethods) => {
