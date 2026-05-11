@@ -75,7 +75,7 @@ function BuyerPaymentsPageContent() {
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Payments hub
+            Payments page
           </button>
           <button
             type="button"
@@ -87,8 +87,8 @@ function BuyerPaymentsPageContent() {
           </button>
         </div>
 
-            <p className="text-4xl font-black tracking-tight text-zinc-650 sm:text-5xl">
-            BUYER ANALYTICS
+            <p className="text-2xl font-black tracking-tight text-zinc-800 sm:text-3xl">
+              BUYER ANALYTICS
             </p>
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
