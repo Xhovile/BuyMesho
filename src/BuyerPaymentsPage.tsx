@@ -87,15 +87,12 @@ function BuyerPaymentsPageContent() {
           </button>
         </div>
 
-        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">
-          Buyer payments
-        </p>
+            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+            Buyer Analytics
+            </h1>
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
-              Payment statuses
-            </h1>
             <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
               Pending, paid, rejected, and failed payment activity.
             </p>
