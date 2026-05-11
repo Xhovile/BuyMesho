@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -35,6 +35,8 @@ type HeaderProps = {
   onChipChange?: (chip: HeaderChip) => void;
 };
 
+const DESKTOP_BREAKPOINT = 768;
+
 export default function Header({
   searchValue,
   onSearch,
@@ -50,6 +52,7 @@ export default function Header({
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
+  const visibilityRafRef = useRef<number | null>(null);
 
   const { isAdmin } = useIsAdmin(firebaseUser);
 
@@ -132,20 +135,34 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
+      if (window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches) {
+        setTopRowHidden(false);
+        return;
+      }
       setTopRowHidden((prev) => {
         if (prev) return window.scrollY >= 2;
         return window.scrollY > 30;
       });
     };
 
-    const onScroll = () => {
-      window.requestAnimationFrame(updateHeaderVisibility);
+    const scheduleVisibilityUpdate = () => {
+      if (visibilityRafRef.current !== null) return;
+      visibilityRafRef.current = window.requestAnimationFrame(() => {
+        visibilityRafRef.current = null;
+        updateHeaderVisibility();
+      });
     };
 
     updateHeaderVisibility();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", scheduleVisibilityUpdate, { passive: true });
+    window.addEventListener("resize", scheduleVisibilityUpdate, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", scheduleVisibilityUpdate);
+      window.removeEventListener("resize", scheduleVisibilityUpdate);
+      if (visibilityRafRef.current !== null) {
+        window.cancelAnimationFrame(visibilityRafRef.current);
+        visibilityRafRef.current = null;
+      }
     };
   }, []);
 
@@ -195,15 +212,15 @@ export default function Header({
 
                 <div className="hidden md:flex items-center gap-2">
                   <button type="button" onClick={() => navigateToPath(HOME_PATH)} className={desktopNavButtonClass}>
-                    <House className="w-4 h-4" />
+                    <House className="w-4 h-4 text-blue-500" />
                     Home
                   </button>
                   <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
-                    <CreditCard className="w-4 h-4" />
+                    <CreditCard className="w-4 h-4 text-amber-500" />
                     Payments
                   </button>
                   <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
-                    <MessageSquareText className="w-4 h-4" />
+                    <MessageSquareText className="w-4 h-4 text-teal-500" />
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
                       {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
@@ -211,12 +228,12 @@ export default function Header({
                   </button>
                   {isAdmin ? (
                     <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
-                      <ShieldCheck className="w-4 h-4" />
+                      <ShieldCheck className="w-4 h-4 text-slate-700" />
                       ADMIN
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => handleSettingsClick()} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-900 bg-slate-900 text-sm font-bold text-white hover:bg-slate-800">
-                    <Settings className="w-4 h-4" />
+                  <button type="button" onClick={() => handleSettingsClick()} aria-label="Settings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-500 bg-slate-500 text-sm font-bold text-white hover:bg-slate-600 hover:border-slate-600 transition-colors">
+                    <Settings className="w-4 h-4 text-white" />
                   </button>
                 </div>
 
@@ -225,7 +242,7 @@ export default function Header({
                     onClick={() => handleSellClick()}
                     className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
                   >
-                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                    {isSeller ? <Plus className="w-4 h-4 text-red-500" /> : <Store className="w-4 h-4 text-red-500" />}
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
                   </button>
 
