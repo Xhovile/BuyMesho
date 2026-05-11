@@ -120,20 +120,17 @@ function CartPageContent() {
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to market
+            Back
           </button>
         </div>
 
-        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Cart</p>
+        <p className="mt-6 text-xl font-black uppercase tracking-[0.2em] text-zinc-600">CART</p>
 
         <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yellow-500 text-white">
-              <ShoppingCart className="h-5 w-5" />
-            </div>
 
             <div>
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950">Your selected items</h1>
+              <h1 className="text-lg font-black tracking-tight text-zinc-950">Your selected items</h1>
               <p className="mt-1 text-sm text-zinc-500">Review items, remove anything unnecessary, then buy everything in one checkout.</p>
             </div>
           </div>
@@ -209,7 +206,7 @@ function CartPageContent() {
                   className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:bg-zinc-300"
                 >
                   {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                  Buy
+                  Buy Now
                 </button>
               </div>
 
