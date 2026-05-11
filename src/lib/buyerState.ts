@@ -1,3 +1,5 @@
+import { auth } from "../firebase";
+
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
 const BUYER_PAYMENTS_KEY = "__buymesho_buyer_payments";
 
@@ -45,8 +47,16 @@ const writeJson = (key: string, value: unknown) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
-export const readBuyerCart = (): BuyerCartItem[] => readJson(BUYER_CART_KEY, []);
-export const readBuyerPayments = (): BuyerPaymentRecord[] => readJson(BUYER_PAYMENTS_KEY, []);
+const getScopedStorageKey = (baseKey: string) => {
+  const uid = auth.currentUser?.uid;
+  return uid ? `${baseKey}_${uid}` : `${baseKey}_guest`;
+};
+
+const getBuyerCartKey = () => getScopedStorageKey(BUYER_CART_KEY);
+const getBuyerPaymentsKey = () => getScopedStorageKey(BUYER_PAYMENTS_KEY);
+
+export const readBuyerCart = (): BuyerCartItem[] => readJson(getBuyerCartKey(), []);
+export const readBuyerPayments = (): BuyerPaymentRecord[] => readJson(getBuyerPaymentsKey(), []);
 
 export const setBuyerCartItem = (item: BuyerCartItem) => {
   const current = readBuyerCart();
@@ -58,19 +68,19 @@ export const setBuyerCartItem = (item: BuyerCartItem) => {
     current.unshift(item);
   }
 
-  writeJson(BUYER_CART_KEY, current.slice(0, 20));
+  writeJson(getBuyerCartKey(), current.slice(0, 20));
 };
 
 export const removeBuyerCartItem = (listingId: string) => {
   const current = readBuyerCart();
   writeJson(
-    BUYER_CART_KEY,
+    getBuyerCartKey(),
     current.filter((item) => String(item.listingId) !== String(listingId)),
   );
 };
 
 export const clearBuyerCart = () => {
-  localStorage.removeItem(BUYER_CART_KEY);
+  localStorage.removeItem(getBuyerCartKey());
 };
 
 export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
@@ -81,11 +91,11 @@ export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
   } else {
     current.unshift(record);
   }
-  writeJson(BUYER_PAYMENTS_KEY, current.slice(0, 20));
+  writeJson(getBuyerPaymentsKey(), current.slice(0, 20));
 };
 
 export const clearBuyerPaymentRecords = () => {
-  localStorage.removeItem(BUYER_PAYMENTS_KEY);
+  localStorage.removeItem(getBuyerPaymentsKey());
 };
 
 export const touchBuyerPaymentFromCheckout = (record: Omit<BuyerPaymentRecord, "status" | "createdAt" | "updatedAt">) => {
@@ -112,5 +122,5 @@ export const updateBuyerPaymentStatus = (
         }
       : item,
   );
-  writeJson(BUYER_PAYMENTS_KEY, next);
+  writeJson(getBuyerPaymentsKey(), next);
 };
