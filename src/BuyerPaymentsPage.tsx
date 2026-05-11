@@ -80,70 +80,81 @@ export default function BuyerPaymentsPage() {
           </button>
         </div>
 
-        <p className="mt-6 text-sm font-black uppercase tracking-[0.2em] text-zinc-600">Buyer Payments</p>
+        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">
+          Buyer payments
+        </p>
 
-        <section className="mt-2 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-              <CreditCard className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950">Pending, paid, rejected, and error statuses</h1>
-            </div>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
+            <CreditCard className="h-5 w-5" />
           </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-4">
-            <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Pending</p>
-              <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.pending}</p>
-            </div>
-            <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Paid</p>
-              <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.paid}</p>
-            </div>
-            <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Rejected</p>
-              <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.rejected}</p>
-            </div>
-            <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Error</p>
-              <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.error}</p>
-            </div>
+          <div>
+            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+              Payment statuses
+            </h1>
+            <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
+              Pending, paid, rejected, and failed payment activity.
+            </p>
           </div>
+        </div>
 
-          {error ? (
-            <div className="mt-6 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">{error}</div>
-          ) : null}
+        <div className="mt-8 grid gap-4 md:grid-cols-4">
+          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Pending</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.pending}</p>
+          </div>
+          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Paid</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.paid}</p>
+          </div>
+          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Rejected</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.rejected}</p>
+          </div>
+          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Error</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.error}</p>
+          </div>
+        </div>
 
-          <div className="mt-6 space-y-3">
-            {loading ? (
-              <p className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-600">Loading payment activity…</p>
-            ) : summary.records.length ? (
-              summary.records.map((record) => (
-                <button
-                  key={record.key}
-                  type="button"
-                  onClick={() => navigateToOrderTracking(record.reference)}
-                  className="w-full rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-5 text-left hover:bg-zinc-100"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="font-black text-zinc-950">{record.title}</p>
-                      <p className="mt-1 text-sm text-zinc-500">{record.reference}</p>
-                    </div>
-                    <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusPillClass(record.status)}`}>
-                      {record.status}
-                    </span>
+        {error ? (
+          <div className="mt-6 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+            {error}
+          </div>
+        ) : null}
+
+        <div className="mt-6 space-y-3">
+          {loading ? (
+            <p className="rounded-[1.75rem] border border-zinc-200 bg-white p-6 text-sm text-zinc-600 shadow-sm">
+              Loading payment activity…
+            </p>
+          ) : summary.records.length ? (
+            summary.records.map((record) => (
+              <button
+                key={record.key}
+                type="button"
+                onClick={() => navigateToOrderTracking(record.reference)}
+                className="w-full rounded-[1.75rem] border border-zinc-200 bg-white p-5 text-left shadow-sm hover:bg-zinc-50"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-black text-zinc-950">{record.title}</p>
+                    <p className="mt-1 text-sm text-zinc-500">{record.reference}</p>
                   </div>
-                  <p className="mt-3 text-sm font-bold text-zinc-950">{formatMoney(record.amount, record.currency)}</p>
-                  <p className="mt-1 text-sm leading-6 text-zinc-600">{record.detail}</p>
-                </button>
-              ))
-            ) : (
-              <p className="rounded-[1.75rem] border border-dashed border-zinc-200 p-6 text-sm text-zinc-600">No buyer payments have been recorded yet.</p>
-            )}
-          </div>
-        </section>
+                  <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusPillClass(record.status)}`}>
+                    {record.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-bold text-zinc-950">{formatMoney(record.amount, record.currency)}</p>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">{record.detail}</p>
+              </button>
+            ))
+          ) : (
+            <p className="rounded-[1.75rem] border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-600 shadow-sm">
+              No buyer payments have been recorded yet.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
