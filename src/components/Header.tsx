@@ -1,5 +1,5 @@
 import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
@@ -35,6 +35,8 @@ type HeaderProps = {
   onChipChange?: (chip: HeaderChip) => void;
 };
 
+const DESKTOP_BREAKPOINT = 768;
+
 export default function Header({
   searchValue,
   onSearch,
@@ -50,6 +52,7 @@ export default function Header({
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
+  const visibilityRafRef = useRef<number | null>(null);
 
   const { isAdmin } = useIsAdmin(firebaseUser);
 
@@ -132,7 +135,7 @@ export default function Header({
 
   useEffect(() => {
     const updateHeaderVisibility = () => {
-      if (window.matchMedia("(min-width: 768px)").matches) {
+      if (window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches) {
         setTopRowHidden(false);
         return;
       }
@@ -142,16 +145,24 @@ export default function Header({
       });
     };
 
-    const onScroll = () => {
-      window.requestAnimationFrame(updateHeaderVisibility);
+    const scheduleVisibilityUpdate = () => {
+      if (visibilityRafRef.current !== null) return;
+      visibilityRafRef.current = window.requestAnimationFrame(() => {
+        visibilityRafRef.current = null;
+        updateHeaderVisibility();
+      });
     };
 
     updateHeaderVisibility();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", updateHeaderVisibility);
+    window.addEventListener("scroll", scheduleVisibilityUpdate, { passive: true });
+    window.addEventListener("resize", scheduleVisibilityUpdate, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", updateHeaderVisibility);
+      window.removeEventListener("scroll", scheduleVisibilityUpdate);
+      window.removeEventListener("resize", scheduleVisibilityUpdate);
+      if (visibilityRafRef.current !== null) {
+        window.cancelAnimationFrame(visibilityRafRef.current);
+        visibilityRafRef.current = null;
+      }
     };
   }, []);
 
@@ -221,8 +232,8 @@ export default function Header({
                       ADMIN
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
-                    <Settings className="w-4 h-4 text-slate-500" />
+                  <button type="button" onClick={() => handleSettingsClick()} aria-label="Settings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-500 bg-slate-500 text-sm font-bold text-white hover:bg-slate-600 hover:border-slate-600 transition-colors">
+                    <Settings className="w-4 h-4 text-white" />
                   </button>
                 </div>
 
