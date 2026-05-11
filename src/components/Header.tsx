@@ -217,7 +217,6 @@ export default function Header({
                   ) : null}
                   <button type="button" onClick={() => handleSettingsClick()} className={desktopNavButtonClass}>
                     <Settings className="w-4 h-4" />
-                    Settings
                   </button>
                 </div>
 
