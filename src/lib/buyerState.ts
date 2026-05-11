@@ -1,3 +1,5 @@
+import { auth } from "../firebase";
+
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
 const BUYER_PAYMENTS_KEY = "__buymesho_buyer_payments";
 
@@ -45,11 +47,20 @@ const writeJson = (key: string, value: unknown) => {
   localStorage.setItem(key, JSON.stringify(value));
 };
 
-export const readBuyerCart = (): BuyerCartItem[] => readJson(BUYER_CART_KEY, []);
-export const readBuyerPayments = (): BuyerPaymentRecord[] => readJson(BUYER_PAYMENTS_KEY, []);
+const getScopedStorageKey = (baseKey: string) => {
+  const uid = auth.currentUser?.uid;
+  return uid ? `${baseKey}_${uid}` : `${baseKey}_guest`;
+};
+
+const getBuyerCartKey = () => getScopedStorageKey(BUYER_CART_KEY);
+const getBuyerPaymentsKey = () => getScopedStorageKey(BUYER_PAYMENTS_KEY);
+
+export const readBuyerCart = (storageKey: string = getBuyerCartKey()): BuyerCartItem[] => readJson(storageKey, []);
+export const readBuyerPayments = (storageKey: string = getBuyerPaymentsKey()): BuyerPaymentRecord[] => readJson(storageKey, []);
 
 export const setBuyerCartItem = (item: BuyerCartItem) => {
-  const current = readBuyerCart();
+  const cartKey = getBuyerCartKey();
+  const current = readBuyerCart(cartKey);
   const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
 
   if (index >= 0) {
@@ -58,34 +69,36 @@ export const setBuyerCartItem = (item: BuyerCartItem) => {
     current.unshift(item);
   }
 
-  writeJson(BUYER_CART_KEY, current.slice(0, 20));
+  writeJson(cartKey, current.slice(0, 20));
 };
 
 export const removeBuyerCartItem = (listingId: string) => {
-  const current = readBuyerCart();
+  const cartKey = getBuyerCartKey();
+  const current = readBuyerCart(cartKey);
   writeJson(
-    BUYER_CART_KEY,
+    cartKey,
     current.filter((item) => String(item.listingId) !== String(listingId)),
   );
 };
 
 export const clearBuyerCart = () => {
-  localStorage.removeItem(BUYER_CART_KEY);
+  localStorage.removeItem(getBuyerCartKey());
 };
 
 export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
-  const current = readBuyerPayments();
+  const paymentsKey = getBuyerPaymentsKey();
+  const current = readBuyerPayments(paymentsKey);
   const index = current.findIndex((item) => item.reference === record.reference || (record.txRef && item.txRef === record.txRef));
   if (index >= 0) {
     current[index] = { ...current[index], ...record };
   } else {
     current.unshift(record);
   }
-  writeJson(BUYER_PAYMENTS_KEY, current.slice(0, 20));
+  writeJson(paymentsKey, current.slice(0, 20));
 };
 
 export const clearBuyerPaymentRecords = () => {
-  localStorage.removeItem(BUYER_PAYMENTS_KEY);
+  localStorage.removeItem(getBuyerPaymentsKey());
 };
 
 export const touchBuyerPaymentFromCheckout = (record: Omit<BuyerPaymentRecord, "status" | "createdAt" | "updatedAt">) => {
@@ -102,7 +115,8 @@ export const updateBuyerPaymentStatus = (
   reference: string,
   patch: Partial<BuyerPaymentRecord> & { status?: BuyerPaymentStatus }
 ) => {
-  const current = readBuyerPayments();
+  const paymentsKey = getBuyerPaymentsKey();
+  const current = readBuyerPayments(paymentsKey);
   const next = current.map((item) =>
     item.reference === reference || (patch.txRef && item.txRef === patch.txRef)
       ? {
@@ -112,5 +126,5 @@ export const updateBuyerPaymentStatus = (
         }
       : item,
   );
-  writeJson(BUYER_PAYMENTS_KEY, next);
+  writeJson(paymentsKey, next);
 };
