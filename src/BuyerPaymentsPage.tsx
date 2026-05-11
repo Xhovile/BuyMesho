@@ -92,9 +92,6 @@ function BuyerPaymentsPageContent() {
         </p>
 
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-500 text-white">
-            <CreditCard className="h-5 w-5" />
-          </div>
           <div>
             <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
               Payment statuses
