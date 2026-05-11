@@ -65,7 +65,7 @@ export default function PaymentsHubPage() {
         open={showComingSoon}
         type="info"
         title="Coming soon"
-        message="This feature is coming soon."
+        message="Seller balances overview coming soon."
         onClose={() => setShowComingSoon(false)}
         actions={[
           {
