@@ -3,8 +3,25 @@ import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, Re
 import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
-const PAYCHANGU_SUCCESS_STATUSES = new Set(['success', 'successful', 'completed', 'paid', 'captured']);
-const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set(['payment.success', 'charge.success', 'api.charge.payment']);
+const PAYCHANGU_SUCCESS_STATUSES = new Set([
+  'success',
+  'successful',
+  'succeeded',
+  'completed',
+  'paid',
+  'captured',
+  'processed',
+  'approved',
+]);
+const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
+  'payment.success',
+  'payment.successful',
+  'payment.completed',
+  'charge.success',
+  'charge.completed',
+  'api.charge.payment',
+  'transaction.success',
+]);
 
 export interface PayChanguConfig {
   paychanguSecretKey?: string;
@@ -47,6 +64,8 @@ const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
   paid: 'paid',
   captured: 'paid',
   completed: 'paid',
+  processed: 'paid',
+  approved: 'paid',
   pending: 'pending',
   processing: 'pending',
   initiated: 'pending',
