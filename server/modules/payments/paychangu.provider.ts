@@ -3,7 +3,7 @@ import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, Re
 import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
-const PAYCHANGU_SUCCESS_STATUSES = new Set([
+export const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'success',
   'successful',
   'succeeded',
@@ -13,7 +13,7 @@ const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'processed',
   'approved',
 ]);
-const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
+export const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
   'payment.success',
   'payment.successful',
   'payment.completed',
@@ -86,6 +86,10 @@ function normalizeProviderStatus(rawStatus: unknown): { normalized: Verification
     normalized: PAYCHANGU_STATUS_MAP[providerStatus] ?? 'unknown',
     providerStatus,
   };
+}
+
+export function normalizePaychanguStatus(rawStatus: unknown): VerificationState {
+  return normalizeProviderStatus(rawStatus).normalized;
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

@@ -338,13 +338,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.post('/paychangu/webhook', async (req, res) => {
+  router.post('/paychangu/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     try {
-      const rawBodyBuf = (req as express.Request & { rawBody?: Buffer }).rawBody;
-      // Fall back to the already-parsed body when raw body middleware is not configured.
-      // paychanguProvider.verifyWebhook handles both string and object payloads via
-      // parseWebhookPayload, so HMAC verification works correctly in either case.
-      const payload: unknown = rawBodyBuf ? rawBodyBuf.toString('utf8') : req.body;
+      const payload: unknown = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
 
       if (!payload) {
         return res.status(400).json({ error: 'Missing webhook body' });
