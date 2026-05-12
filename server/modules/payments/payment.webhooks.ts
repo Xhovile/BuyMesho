@@ -61,15 +61,23 @@ export class PaymentWebhookHandler {
       const state = normalizePaychanguStatus(details.status);
       const payment = txRef ? paymentRepository.findByReference(txRef) : undefined;
 
-      if (txRef && payment && state !== 'unknown') {
+      if (txRef && payment) {
         if (state === 'paid') {
           const order = orderRepository.findByPaymentReference(txRef) ?? orderRepository.findById(payment.orderId);
           if (!order) throw new Error(`No stored order found for PayChangu payment reference: ${txRef}`);
           const amount = asAmount(details.data?.amount);
           const currency = String(details.data?.currency ?? order.currency ?? 'MWK');
           applyVerifiedPayChanguPayment({ verified: true, provider: 'paychangu', txRef, reference: txRef, status: String(details.status ?? 'captured'), currency, amount: typeof amount === 'number' ? { amount, currency } : undefined, rawResponse: asRecord(rawPayload) });
+        } else if (state === 'pending' || state === 'failed' || state === 'reversed') {
+          paymentRepository.updateByReference(txRef, (current) => ({ ...current, status: state === 'pending' ? 'pending' : state === 'failed' ? 'failed' : 'cancelled', verified: false, verification: { verified: false, provider: 'paychangu', txRef, reference: txRef, status: String(details.status ?? state), currency: current.amount.currency, amount: current.amount, rawResponse: asRecord(rawPayload) }, updatedAt: new Date().toISOString() }));
         } else {
-          paymentRepository.updateByReference(txRef, (current) => ({ ...current, status: state === 'pending' ? 'pending' : state === 'failed' ? 'failed' : 'refunded', verified: false, verification: { verified: false, provider: 'paychangu', txRef, reference: txRef, status: String(details.status ?? state), currency: current.amount.currency, amount: current.amount, rawResponse: asRecord(rawPayload) }, updatedAt: new Date().toISOString() }));
+          const strictVerification = await serverPaymentService.verifyPaychanguPayment(txRef);
+          if (strictVerification.verified) {
+            applyVerifiedPayChanguPayment({
+              ...strictVerification,
+              rawResponse: asRecord(rawPayload),
+            });
+          }
         }
       }
 
