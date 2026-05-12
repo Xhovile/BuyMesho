@@ -10,17 +10,60 @@ export interface ApplyPayChanguResult {
   verification: PaymentVerificationResult;
 }
 
-const CAPTURED_STATUSES = new Set(['successful', 'success', 'succeeded', 'completed', 'captured', 'paid']);
+const CAPTURED_STATUSES = new Set([
+  'successful',
+  'success',
+  'succeeded',
+  'completed',
+  'captured',
+  'paid',
+]);
+
+function normalizeReference(value: string | undefined | null): string {
+  return String(value ?? '')
+    .trim()
+    .replace(/^PAYCHANGU-/i, '');
+}
+
+function resolveReference(verification: PaymentVerificationResult): string {
+  return normalizeReference(verification.reference ?? verification.txRef);
+}
 
 function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
-  const payload = { orderId, buyerId, sellerId, event: 'order_paid', emittedAt: new Date().toISOString() };
+  const payload = {
+    orderId,
+    buyerId,
+    sellerId,
+    event: 'order_paid',
+    emittedAt: new Date().toISOString(),
+  };
+
   console.log('[notification] order_paid', JSON.stringify(payload));
 }
 
-export function applyVerifiedPayChanguPayment(verification: PaymentVerificationResult): ApplyPayChanguResult {
-  const reference = verification.reference ?? verification.txRef;
-  const shouldCapture = verification.verified &&
-    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase());
+function isCaptured(verification: PaymentVerificationResult): boolean {
+  return Boolean(
+    verification.verified &&
+    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase())
+  );
+}
+
+function resolveOrderByReference(reference: string) {
+  return (
+    orderRepository.findByPaymentReference(reference) ??
+    undefined
+  );
+}
+
+export function applyVerifiedPayChanguPayment(
+  verification: PaymentVerificationResult
+): ApplyPayChanguResult {
+  const reference = resolveReference(verification);
+  if (!reference) {
+    throw new Error('Missing PayChangu reference');
+  }
+
+  const shouldCapture = isCaptured(verification);
 
   const payment = paymentRepository.updateByReference(reference, (current) => ({
     ...current,
@@ -31,31 +74,66 @@ export function applyVerifiedPayChanguPayment(verification: PaymentVerificationR
     updatedAt: new Date().toISOString(),
   }));
 
-  let order = shouldCapture && reference
-    ? serverOrderService.confirmByPaymentReference(reference)
-    : orderRepository.findByPaymentReference(reference);
+  let order = resolveOrderByReference(reference);
 
-  if (shouldCapture && order) {
-    const escrowAmount = verification.amount?.amount ?? order.total.amount;
-    const currency = verification.currency ?? order.currency ?? 'MWK';
+  if (!order && payment) {
+    order = orderRepository.findById(payment.orderId);
+  }
 
-    if (!escrowRepository.findByOrderId(order.id)) {
-      escrowRepository.create(order.id, currency, escrowAmount);
-    }
+  if (!order) {
+    return {
+      payment,
+      verification,
+    };
+  }
 
-    order = serverOrderService.setStatus(order.id, 'in_escrow') ?? order;
+  if (!shouldCapture) {
+    return {
+      payment,
+      order,
+      verification,
+    };
+  }
 
-    emitOrderPaidNotification(order.buyerId, order.sellerId, order.id);
+  const confirmedOrder =
+    serverOrderService.confirmByPaymentReference(reference) ??
+    serverOrderService.setStatus(order.id, 'paid') ??
+    order;
+
+  const activeOrder = confirmedOrder ?? order;
+
+  const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
+  const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+
+  if (!escrowRepository.findByOrderId(activeOrder.id)) {
+    escrowRepository.create(activeOrder.id, currency, escrowAmount);
+  }
+
+  const escrowedOrder =
+    serverOrderService.setStatus(activeOrder.id, 'in_escrow') ??
+    activeOrder;
+
+  if (
+    escrowedOrder.status === 'in_escrow' &&
+    order.status !== 'in_escrow'
+  ) {
+    emitOrderPaidNotification(
+      escrowedOrder.buyerId,
+      escrowedOrder.sellerId,
+      escrowedOrder.id
+    );
   }
 
   return {
     payment,
-    order,
+    order: escrowedOrder,
     verification,
   };
 }
 
-export function seedDemoPayChanguPayment(payment: PaymentResult): ReturnType<typeof paymentRepository.save> {
+export function seedDemoPayChanguPayment(
+  payment: PaymentResult
+): ReturnType<typeof paymentRepository.save> {
   return paymentRepository.save({
     ...payment,
     verified: false,
