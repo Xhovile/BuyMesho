@@ -340,13 +340,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
   router.post('/paychangu/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
     try {
-      const payload: unknown = Buffer.isBuffer(req.body)
-        ? req.body.toString('utf8')
-        : typeof req.body === 'string'
-          ? req.body
-          : req.body && typeof req.body === 'object'
-            ? JSON.stringify(req.body)
-            : '';
+      const payload: unknown = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
 
       if (!payload) {
         return res.status(400).json({ error: 'Missing webhook body' });
