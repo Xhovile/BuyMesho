@@ -93,15 +93,13 @@ export default function FloatingCartButton({
         type="button"
         onClick={openCart}
         style={{ top: `${topOffset}px` }}
-        className={`fixed right-3 z-40 flex h-12 w-[54px] items-center justify-center rounded-full border border-amber-200/80 bg-amber-400/70 text-white shadow-xl shadow-amber-500/30 backdrop-blur-md transition hover:-translate-y-0.5 hover:bg-amber-400/85 focus:outline-none focus:ring-4 focus:ring-amber-200/70 sm:right-5 md:h-14 md:w-[64px] ${className}`}
+        className={`fixed right-3 z-40 inline-flex h-10 min-w-[44px] items-center justify-center rounded-full border border-white/15 bg-[#2a2233]/85 px-3 text-white shadow-lg shadow-black/25 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[#221a2b]/90 focus:outline-none focus:ring-2 focus:ring-white/45 sm:right-5 md:h-11 md:px-3.5 ${className}`}
         aria-label="Open cart"
         title="Open cart"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-white shadow-inner shadow-amber-300/60 md:h-9 md:w-9">
-          <viconic-icon icon="p4:shopping-cart-add" className="text-xl text-white md:text-2xl" />
-        </span>
+        <viconic-icon icon="p4:shopping-cart-add" className="text-lg text-white md:text-xl" />
         {cartCount > 0 ? (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-zinc-950 px-1 text-[10px] font-black leading-none text-white ring-2 ring-amber-100/80">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#a81f4a] px-1 text-[10px] font-black leading-none text-white ring-2 ring-white/80">
             {cartCount > 9 ? "9+" : cartCount}
           </span>
         ) : null}
