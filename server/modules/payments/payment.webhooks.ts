@@ -55,33 +55,21 @@ function getPayChanguEventDetails(payload: unknown): {
 
   return {
     eventType: asTrimmedString(raw.event_type ?? raw.event),
-    status: asTrimmedString(data.status),
+    status: asTrimmedString(
+      data.status ??
+      raw.status
+    ),
     txRef: asTrimmedString(
       data.tx_ref ??
       data.txRef ??
       data.reference ??
       raw.tx_ref ??
       raw.txRef ??
-      raw.reference,
+      raw.reference
     ),
     data,
     raw,
   };
-}
-
-const SUCCESS_EVENT_TYPES = new Set([
-  'payment.success',
-  'payment.successful',
-  'payment.completed',
-  'charge.success',
-  'charge.completed',
-  'api.charge.payment',
-  'transaction.success',
-]);
-
-function isPayChanguSuccessEvent(payload: unknown): boolean {
-  const { eventType, status } = getPayChanguEventDetails(payload);
-  return Boolean(status && isPayChanguSuccessStatus(status) && (!eventType || SUCCESS_EVENT_TYPES.has(eventType.toLowerCase())));
 }
 
 function extractTxRef(payload: unknown, fallback?: string): string {
@@ -119,14 +107,12 @@ function logWebhookEvent(params: {
 }
 
 function shouldProcessWebhook(payload: unknown): boolean {
-  const { eventType, status } = getPayChanguEventDetails(payload);
-  const eventAccepted = !eventType || isAcceptedPaychanguEventType(eventType);
-  const statusAccepted = Boolean(status && isPayChanguSuccessStatus(status));
+  const { status } = getPayChanguEventDetails(payload);
 
-  // Be permissive about event names as long as the status is clearly successful.
-  // A signed payload with a successful status should advance the order even if
-  // the provider emits a slightly different success event type.
-  return statusAccepted || (eventAccepted && statusAccepted);
+  // The important gate is the provider status, not the exact event name.
+  // If the webhook is signed and the provider status is successful, the order
+  // should move forward.
+  return Boolean(status && isPayChanguSuccessStatus(status));
 }
 
 function isDuplicateCapture(txRef: string): boolean {
@@ -152,7 +138,11 @@ export class PaymentWebhookHandler {
     const reference = details.txRef;
 
     const verificationPayload = typeof payload === 'string' ? payload : payload;
-    const result = await serverPaymentService.verifyWebhook('paychangu', signature, verificationPayload as string);
+    const result = await serverPaymentService.verifyWebhook(
+      'paychangu',
+      signature,
+      verificationPayload as string
+    );
 
     logWebhookEvent({
       signatureValid: result.valid,
@@ -194,8 +184,9 @@ export class PaymentWebhookHandler {
         })()
       : payload;
 
-    if (!isPayChanguSuccessEvent(parsedPayload)) {
-      console.info('[webhook] ignoring PayChangu webhook that does not look successful enough to confirm payment', {
+    // Do not block progression on event name. The success status is enough.
+    if (!shouldProcessWebhook(parsedPayload)) {
+      console.info('[webhook] ignoring PayChangu webhook that does not have a successful status', {
         eventType,
         status: details.status ?? 'unknown',
         reference: reference ?? result.reference ?? 'unknown',
@@ -209,12 +200,12 @@ export class PaymentWebhookHandler {
     }
 
     if (isDuplicateCapture(txRef)) {
-  console.info('[webhook] skipping duplicate PayChangu capture replay', {
-    txRef,
-    eventType: eventType ?? 'unknown',
-    status: details.status ?? 'unknown',
-  });
-  return result;
+      console.info('[webhook] skipping duplicate PayChangu capture replay', {
+        txRef,
+        eventType: eventType ?? 'unknown',
+        status: details.status ?? 'unknown',
+      });
+      return result;
     }
 
     const payment = paymentRepository.findByReference(txRef);
@@ -222,7 +213,10 @@ export class PaymentWebhookHandler {
       throw new Error(`No stored payment found for PayChangu reference: ${txRef}`);
     }
 
-    const order = orderRepository.findByPaymentReference(txRef) ?? orderRepository.findById(payment.orderId);
+    const order =
+      orderRepository.findByPaymentReference(txRef) ??
+      orderRepository.findById(payment.orderId);
+
     if (!order) {
       throw new Error(`No stored order found for PayChangu payment reference: ${txRef}`);
     }
@@ -231,7 +225,11 @@ export class PaymentWebhookHandler {
       throw new Error(`Webhook reference does not match the order payment reference for order ${order.id}`);
     }
 
-    const data = asOptionalRecord((parsedPayload as Record<string, unknown>).data) ?? asOptionalRecord(parsedPayload) ?? undefined;
+    const data =
+      asOptionalRecord((parsedPayload as Record<string, unknown>).data) ??
+      asOptionalRecord(parsedPayload) ??
+      undefined;
+
     const webhookCurrency = String(data?.currency ?? order.currency ?? 'MWK');
     const rawAmount = data?.amount;
     const parsedAmount = asAmount(rawAmount);
