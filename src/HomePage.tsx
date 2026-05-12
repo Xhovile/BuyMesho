@@ -387,6 +387,8 @@ export default function HomePage() {
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
   const desktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
+  const desktopProfileButtonClass =
+    "w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white";
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -449,7 +451,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => handleProfileClick()}
-                className="w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white"
+                className={desktopProfileButtonClass}
               >
                 <UserRound className="w-5 h-5 text-zinc-600" />
               </button>
