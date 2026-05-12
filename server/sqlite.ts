@@ -89,8 +89,14 @@ function initPaymentSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS payment_webhook_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       provider TEXT NOT NULL,
+      provider_event_id TEXT,
       reference TEXT,
+      tx_ref TEXT,
       event_type TEXT,
+      payload_hash TEXT,
+      processing_status TEXT NOT NULL DEFAULT 'received',
+      processed_at TEXT,
+      error TEXT,
       signature_valid INTEGER NOT NULL DEFAULT 0,
       payload TEXT,
       created_at TEXT NOT NULL
@@ -101,6 +107,12 @@ function initPaymentSchema(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_created_at
     ON payment_webhook_events(created_at DESC);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_event_id
+    ON payment_webhook_events(provider, provider_event_id);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_dedupe
+    ON payment_webhook_events(provider, tx_ref, event_type, payload_hash);
 
     CREATE TABLE IF NOT EXISTS idempotency_keys (
       key TEXT PRIMARY KEY,
@@ -141,6 +153,12 @@ function initPaymentSchema(db: Database.Database): void {
 
   ensureColumn(db, 'payments', 'currency', "TEXT NOT NULL DEFAULT 'MWK'");
   ensureColumn(db, 'payments', 'amount', 'REAL NOT NULL DEFAULT 0');
+  ensureColumn(db, 'payment_webhook_events', 'provider_event_id', 'TEXT');
+  ensureColumn(db, 'payment_webhook_events', 'tx_ref', 'TEXT');
+  ensureColumn(db, 'payment_webhook_events', 'payload_hash', 'TEXT');
+  ensureColumn(db, 'payment_webhook_events', 'processing_status', "TEXT NOT NULL DEFAULT 'received'");
+  ensureColumn(db, 'payment_webhook_events', 'processed_at', 'TEXT');
+  ensureColumn(db, 'payment_webhook_events', 'error', 'TEXT');
 }
 
 const IDEMPOTENCY_TTL_MS = 10 * 60 * 1000; // 10 minutes
