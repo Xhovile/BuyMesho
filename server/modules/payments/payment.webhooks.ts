@@ -129,6 +129,19 @@ function shouldProcessWebhook(payload: unknown): boolean {
   return statusAccepted || (eventAccepted && statusAccepted);
 }
 
+function isDuplicateCapture(txRef: string): boolean {
+  const payment = paymentRepository.findByReference(txRef);
+  if (!payment || payment.status !== 'captured') {
+    return false;
+  }
+
+  const order =
+    orderRepository.findByPaymentReference(txRef) ??
+    orderRepository.findById(payment.orderId);
+
+  return Boolean(order && order.status === 'in_escrow');
+}
+
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(
     signature: string | undefined,
