@@ -208,6 +208,15 @@ export class PaymentWebhookHandler {
       throw new Error('Missing PayChangu tx_ref in webhook payload');
     }
 
+    if (isDuplicateCapture(txRef)) {
+  console.info('[webhook] skipping duplicate PayChangu capture replay', {
+    txRef,
+    eventType: eventType ?? 'unknown',
+    status: details.status ?? 'unknown',
+  });
+  return result;
+    }
+
     const payment = paymentRepository.findByReference(txRef);
     if (!payment) {
       throw new Error(`No stored payment found for PayChangu reference: ${txRef}`);
