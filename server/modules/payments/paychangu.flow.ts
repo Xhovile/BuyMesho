@@ -10,7 +10,7 @@ export interface ApplyPayChanguResult {
   verification: PaymentVerificationResult;
 }
 
-const CAPTURED_STATUSES = new Set(['successful', 'success', 'completed', 'captured']);
+const CAPTURED_STATUSES = new Set(['successful', 'success', 'succeeded', 'completed', 'captured', 'paid']);
 
 function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
   const payload = { orderId, buyerId, sellerId, event: 'order_paid', emittedAt: new Date().toISOString() };

@@ -3,7 +3,7 @@ import { serverPaymentService } from './payment.service.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
-import { isAcceptedPaychanguEventType } from './paychangu.provider.js';
+import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus } from './paychangu.provider.js';
 import { getPaymentDb } from '../../sqlite.js';
 
 function asRecord(payload: unknown): Record<string, unknown> {
@@ -19,27 +19,18 @@ function asRecord(payload: unknown): Record<string, unknown> {
   return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
 }
 
-const SUCCESS_EVENT_TYPES = new Set([
-  'payment.success',
-  'payment.successful',
-  'charge.success',
-  'charge.completed',
-]);
-
-const SUCCESS_STATUSES = new Set(['successful', 'success', 'completed', 'captured']);
-
 function isPayChanguSuccessEvent(payload: unknown): boolean {
   if (!payload || typeof payload !== 'object') return false;
 
   const body = payload as Record<string, unknown>;
   const eventType = String(body.event_type ?? body.event ?? '').toLowerCase();
-  if (eventType && !SUCCESS_EVENT_TYPES.has(eventType)) {
+  if (eventType && !isAcceptedPaychanguEventType(eventType)) {
     return false;
   }
 
   const data = (body.data as Record<string, unknown> | undefined) ?? body;
   const status = String(data.status ?? '').toLowerCase();
-  return SUCCESS_STATUSES.has(status);
+  return isPaychanguSuccessStatus(status);
 }
 
 function extractTxRef(payload: unknown, fallback?: string): string {

@@ -99,8 +99,8 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
 
     // Step 3: Webhook marks order as paid
     const rawWebhook = JSON.stringify({
-      event_type: 'charge.success', tx_ref: checkoutResult.reference,
-      data: { tx_ref: checkoutResult.reference, status: 'successful', amount: 1000, currency: 'MWK' },
+      event_type: 'api.charge.payment', tx_ref: checkoutResult.reference,
+      data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' },
     });
     const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
 
