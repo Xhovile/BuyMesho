@@ -385,10 +385,16 @@ export default function HomePage() {
   const closeMenu = () => setMobileMenuOpen(false);
   const navButtonClass =
     "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
-  const desktopNavButtonClass =
+  const marketDesktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
   const desktopProfileButtonClass =
     "w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white";
+  const marketDesktopIconClass = {
+    market: "w-4 h-4 text-rose-500",
+    payments: "w-4 h-4 text-amber-500",
+    messages: "w-4 h-4 text-teal-500",
+    admin: "w-4 h-4 text-slate-700",
+  } as const;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -402,25 +408,25 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigateToPath(EXPLORE_PATH)}
-                className={desktopNavButtonClass}
+                className={marketDesktopNavButtonClass}
               >
-                <ShoppingBag className="w-4 h-4 text-rose-500" />
+                <ShoppingBag className={marketDesktopIconClass.market} />
                 Market
               </button>
               <button
                 type="button"
                 onClick={() => handleBuyerPaymentsClick()}
-                className={desktopNavButtonClass}
+                className={marketDesktopNavButtonClass}
               >
-                <CreditCard className="w-4 h-4 text-amber-500" />
+                <CreditCard className={marketDesktopIconClass.payments} />
                 Payments
               </button>
               <button
                 type="button"
                 onClick={() => handleMessagesClick()}
-                className={desktopNavButtonClass}
+                className={marketDesktopNavButtonClass}
               >
-                <MessageSquareText className="w-4 h-4 text-teal-500" />
+                <MessageSquareText className={marketDesktopIconClass.messages} />
                 <div className="flex items-center gap-2">
                   <span>Messages</span>
 
@@ -435,9 +441,9 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(ADMIN_PATH)}
-                    className={desktopNavButtonClass}
+                    className={marketDesktopNavButtonClass}
                   >
-                    <ShieldCheck className="w-4 h-4 text-slate-700" />
+                    <ShieldCheck className={marketDesktopIconClass.admin} />
                     ADMIN
                   </button>
                 ) : null}
