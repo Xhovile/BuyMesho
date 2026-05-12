@@ -388,7 +388,7 @@ export default function HomePage() {
   const marketDesktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
   const desktopProfileButtonClass =
-    "w-11 h-11 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95 bg-white";
+    "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95";
   const marketDesktopIconClass = {
     market: "w-4 h-4 text-rose-500",
     payments: "w-4 h-4 text-amber-500",
