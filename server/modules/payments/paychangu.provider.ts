@@ -217,18 +217,20 @@ export const paychanguProvider = {
     }
 
     const payload = (data.data ?? data) as Record<string, unknown>;
-    const amountValue = typeof payload.amount === 'number'
-      ? payload.amount
-      : typeof payload.amount === 'string'
-        ? Number(payload.amount)
-        : NaN;
+    const amountValue =
+      typeof payload.amount === 'number'
+        ? payload.amount
+        : typeof payload.amount === 'string'
+          ? Number(payload.amount)
+          : NaN;
+
     const amount = Number.isFinite(amountValue)
       ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
       : undefined;
-    const { normalized } = normalizeProviderStatus(payload.status);
+
+    const paymentStatus = String(payload.status ?? '').trim().toLowerCase();
     const hasValidValue = !!amount && amount.amount > 0;
-    const verified = normalized === 'paid' && hasValidValue;
-    const paymentStatus = String(payload.status ?? '').toLowerCase();
+    const verified = isPaychanguSuccessStatus(paymentStatus) && hasValidValue;
 
     return {
       verified,

@@ -13,6 +13,17 @@ interface VerifyResult {
   orderId?: string;
 }
 
+const SUCCESS_PAYMENT_STATUSES = new Set([
+  'success',
+  'successful',
+  'succeeded',
+  'completed',
+  'paid',
+  'captured',
+  'processed',
+  'approved',
+]);
+
 const buildListingDetailsPath = (listingId: string | null) =>
   listingId ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0` : EXPLORE_PATH;
 
@@ -60,7 +71,10 @@ export default function PaymentReturnPage() {
 
         if (!mounted) return;
 
-        if (result.verified) {
+        const normalizedStatus = String(result.status ?? '').trim().toLowerCase();
+        const isSuccessful = result.verified || SUCCESS_PAYMENT_STATUSES.has(normalizedStatus);
+
+        if (isSuccessful) {
           const reference = result.reference ?? txRef;
 
           const orderIdFromLegacyShape = (result as unknown as Record<string, unknown>).order_id;
