@@ -19,32 +19,74 @@ function asRecord(payload: unknown): Record<string, unknown> {
   return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
 }
 
-function isPayChanguSuccessEvent(payload: unknown): boolean {
-  if (!payload || typeof payload !== 'object') return false;
+function asOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
 
-  const body = payload as Record<string, unknown>;
-  const eventType = String(body.event_type ?? body.event ?? '').toLowerCase();
-  if (eventType && !isAcceptedPaychanguEventType(eventType)) {
-    return false;
+function asTrimmedString(value: unknown): string | undefined {
+  const text = String(value ?? '').trim();
+  return text ? text : undefined;
+}
+
+function asAmount(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
   }
 
-  const data = (body.data as Record<string, unknown> | undefined) ?? body;
-  const status = String(data.status ?? '').toLowerCase();
-  return isPaychanguSuccessStatus(status);
+  if (typeof value === 'string') {
+    const parsed = Number(value.trim());
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }
+
+  return undefined;
+}
+
+function getPayChanguEventDetails(payload: unknown): {
+  eventType?: string;
+  status?: string;
+  txRef?: string;
+  data?: Record<string, unknown>;
+  raw: Record<string, unknown>;
+} {
+  const raw = asRecord(payload);
+  const data = asOptionalRecord(raw.data) ?? raw;
+
+  return {
+    eventType: asTrimmedString(raw.event_type ?? raw.event),
+    status: asTrimmedString(data.status),
+    txRef: asTrimmedString(
+      data.tx_ref ??
+      data.txRef ??
+      data.reference ??
+      raw.tx_ref ??
+      raw.txRef ??
+      raw.reference,
+    ),
+    data,
+    raw,
+  };
+}
+
+const SUCCESS_EVENT_TYPES = new Set([
+  'payment.success',
+  'payment.successful',
+  'payment.completed',
+  'charge.success',
+  'charge.completed',
+  'api.charge.payment',
+  'transaction.success',
+]);
+
+function isPayChanguSuccessEvent(payload: unknown): boolean {
+  const { eventType, status } = getPayChanguEventDetails(payload);
+  return Boolean(status && isPayChanguSuccessStatus(status) && (!eventType || SUCCESS_EVENT_TYPES.has(eventType.toLowerCase())));
 }
 
 function extractTxRef(payload: unknown, fallback?: string): string {
-  const body = asRecord(payload);
-  const data = (body.data as Record<string, unknown> | undefined) ?? body;
-
-  return String(
-    data.tx_ref ??
-    data.txRef ??
-    body.tx_ref ??
-    body.txRef ??
-    fallback ??
-    ''
-  ).trim();
+  const details = getPayChanguEventDetails(payload);
+  return (details.txRef ?? fallback ?? '').trim();
 }
 
 function logWebhookEvent(params: {
@@ -76,16 +118,41 @@ function logWebhookEvent(params: {
   }
 }
 
+function shouldProcessWebhook(payload: unknown): boolean {
+  const { eventType, status } = getPayChanguEventDetails(payload);
+  const eventAccepted = !eventType || isAcceptedPaychanguEventType(eventType);
+  const statusAccepted = Boolean(status && isPayChanguSuccessStatus(status));
+
+  // Be permissive about event names as long as the status is clearly successful.
+  // A signed payload with a successful status should advance the order even if
+  // the provider emits a slightly different success event type.
+  return statusAccepted || (eventAccepted && statusAccepted);
+}
+
+function isDuplicateCapture(txRef: string): boolean {
+  const payment = paymentRepository.findByReference(txRef);
+  if (!payment || payment.status !== 'captured') {
+    return false;
+  }
+
+  const order =
+    orderRepository.findByPaymentReference(txRef) ??
+    orderRepository.findById(payment.orderId);
+
+  return Boolean(order && order.status === 'in_escrow');
+}
+
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(
     signature: string | undefined,
     payload: unknown
   ): Promise<WebhookVerificationResult> {
-    const body = asRecord(payload);
-    const eventType = String(body.event_type ?? body.event ?? '').trim().toLowerCase() || undefined;
-    const reference = String(body.tx_ref ?? body.txRef ?? body.reference ?? '').trim() || undefined;
+    const details = getPayChanguEventDetails(payload);
+    const eventType = details.eventType?.toLowerCase() || undefined;
+    const reference = details.txRef;
 
-    const result = await serverPaymentService.verifyWebhook('paychangu', signature, payload as string);
+    const verificationPayload = typeof payload === 'string' ? payload : payload;
+    const result = await serverPaymentService.verifyWebhook('paychangu', signature, verificationPayload as string);
 
     logWebhookEvent({
       signatureValid: result.valid,
@@ -98,28 +165,56 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    if (!isAcceptedPaychanguEventType(eventType)) {
-      throw new Error(`Unsupported PayChangu event type: ${eventType || 'unknown'}`);
+    if (!details.status || !isPayChanguSuccessStatus(details.status)) {
+      if (eventType && !isAcceptedPaychanguEventType(eventType)) {
+        console.info('[webhook] ignoring non-success PayChangu event', {
+          eventType,
+          status: details.status ?? 'unknown',
+          reference: reference ?? result.reference ?? 'unknown',
+        });
+      }
+      return result;
     }
 
-    let parsedPayload: unknown;
-    if (typeof payload === 'string') {
-      try {
-        parsedPayload = JSON.parse(payload) as unknown;
-      } catch {
-        throw new Error('Malformed webhook payload: invalid JSON');
-      }
-    } else {
-      parsedPayload = payload;
+    if (eventType && !isAcceptedPaychanguEventType(eventType)) {
+      console.info('[webhook] proceeding with successful PayChangu event that uses an unrecognized event type', {
+        eventType,
+        status: details.status,
+        reference: reference ?? result.reference ?? 'unknown',
+      });
     }
+
+    const parsedPayload = typeof payload === 'string'
+      ? (() => {
+          try {
+            return JSON.parse(payload) as unknown;
+          } catch {
+            throw new Error('Malformed webhook payload: invalid JSON');
+          }
+        })()
+      : payload;
 
     if (!isPayChanguSuccessEvent(parsedPayload)) {
+      console.info('[webhook] ignoring PayChangu webhook that does not look successful enough to confirm payment', {
+        eventType,
+        status: details.status ?? 'unknown',
+        reference: reference ?? result.reference ?? 'unknown',
+      });
       return result;
     }
 
     const txRef = extractTxRef(parsedPayload, result.reference);
     if (!txRef) {
       throw new Error('Missing PayChangu tx_ref in webhook payload');
+    }
+
+    if (isDuplicateCapture(txRef)) {
+  console.info('[webhook] skipping duplicate PayChangu capture replay', {
+    txRef,
+    eventType: eventType ?? 'unknown',
+    status: details.status ?? 'unknown',
+  });
+  return result;
     }
 
     const payment = paymentRepository.findByReference(txRef);
@@ -136,11 +231,12 @@ export class PaymentWebhookHandler {
       throw new Error(`Webhook reference does not match the order payment reference for order ${order.id}`);
     }
 
-    const data = (parsedPayload as Record<string, unknown>).data as Record<string, unknown> | undefined;
+    const data = asOptionalRecord((parsedPayload as Record<string, unknown>).data) ?? asOptionalRecord(parsedPayload) ?? undefined;
     const webhookCurrency = String(data?.currency ?? order.currency ?? 'MWK');
     const rawAmount = data?.amount;
-    const amount = typeof rawAmount === 'number'
-      ? { amount: rawAmount, currency: webhookCurrency }
+    const parsedAmount = asAmount(rawAmount);
+    const amount = typeof parsedAmount === 'number'
+      ? { amount: parsedAmount, currency: webhookCurrency }
       : undefined;
 
     if (
@@ -156,7 +252,7 @@ export class PaymentWebhookHandler {
       provider: 'paychangu',
       txRef,
       reference: txRef,
-      status: String(data?.status ?? 'captured'),
+      status: String(data?.status ?? details.status ?? 'captured'),
       currency: webhookCurrency,
       amount,
       rawResponse: asRecord(parsedPayload),

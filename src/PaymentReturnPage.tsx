@@ -24,9 +24,10 @@ export default function PaymentReturnPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const txRef = params.get("tx_ref") ?? params.get("txRef");
+    const txRefFromUrl = params.get("tx_ref") ?? params.get("txRef");
     const cancelled = params.get("cancelled");
     const listingIdFromReturn = params.get("listingId");
+
     setFallbackListingId(listingIdFromReturn);
 
     if (cancelled === "1") {
@@ -34,13 +35,25 @@ export default function PaymentReturnPage() {
       return;
     }
 
+    const buyerPayments = readBuyerPayments();
+
+    const latestPendingPayment = buyerPayments
+      .filter((payment) => payment.status === "pending")
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+
+    const txRef = txRefFromUrl
+      ?? latestPendingPayment?.txRef
+      ?? latestPendingPayment?.reference
+      ?? null;
+
     if (!txRef) {
       setStatus("failed");
-      setErrorMessage("No payment reference found in the URL.");
+      setErrorMessage("No payment reference could be recovered for verification.");
       return;
     }
 
     let mounted = true;
+
     void (async () => {
       try {
         const result = (await apiFetch(`/api/payments/paychangu/verify/${encodeURIComponent(txRef)}`)) as VerifyResult;
@@ -49,24 +62,35 @@ export default function PaymentReturnPage() {
 
         if (result.verified) {
           const reference = result.reference ?? txRef;
+
           const orderIdFromLegacyShape = (result as unknown as Record<string, unknown>).order_id;
+
           const resolvedOrderId =
             result.orderId ??
             (typeof orderIdFromLegacyShape === "string" ? orderIdFromLegacyShape : null);
-          const matchingPayment = readBuyerPayments().find(
-            (record) => record.reference === reference || record.txRef === reference || record.reference === txRef || record.txRef === txRef,
+
+          const matchingPayment = buyerPayments.find(
+            (record) =>
+              record.reference === reference ||
+              record.txRef === reference ||
+              record.reference === txRef ||
+              record.txRef === txRef,
           );
+
           setFallbackListingId(matchingPayment?.listingId ?? listingIdFromReturn);
+
           updateBuyerPaymentStatus(reference, {
             status: "captured",
-            txRef,
+            txRef: reference,
             orderId: resolvedOrderId ?? matchingPayment?.orderId ?? null,
           });
+
           const purchasedListingIds = matchingPayment?.listingIds?.length
             ? matchingPayment.listingIds
             : matchingPayment?.listingId
               ? [matchingPayment.listingId]
               : [];
+
           purchasedListingIds.forEach((listingId) => removeBuyerCartItem(listingId));
 
           setOrderId(resolvedOrderId);
@@ -81,6 +105,7 @@ export default function PaymentReturnPage() {
         }
       } catch (err: unknown) {
         if (!mounted) return;
+
         setErrorMessage(err instanceof Error ? err.message : "Verification failed.");
         setStatus("failed");
       }

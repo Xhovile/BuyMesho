@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { ShoppingCart } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import { navigateToCart, navigateToLogin } from "../lib/appNavigation";
 import { readBuyerCart, subscribeToBuyerCartChanges } from "../lib/buyerState";
@@ -93,13 +94,13 @@ export default function FloatingCartButton({
         type="button"
         onClick={openCart}
         style={{ top: `${topOffset}px` }}
-        className={`fixed right-3 z-40 inline-flex h-10 min-w-[44px] items-center justify-center rounded-full border border-white/15 bg-[#2a2233]/85 px-3 text-white shadow-lg shadow-black/25 backdrop-blur-sm transition hover:-translate-y-0.5 hover:bg-[#221a2b]/90 focus:outline-none focus:ring-2 focus:ring-white/45 sm:right-5 md:h-11 md:px-3.5 ${className}`}
+        className={`fixed right-3 z-40 inline-flex h-10 min-w-[44px] items-center justify-center rounded-full border border-rose-800 bg-rose-700 px-3 text-white shadow-lg shadow-rose-950/30 transition hover:-translate-y-0.5 hover:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-white/45 sm:right-5 md:h-11 md:px-3.5 ${className}`}
         aria-label="Open cart"
         title="Open cart"
       >
-        <viconic-icon icon="p4:shopping-cart-add" className="text-lg text-white md:text-xl" />
+        <ShoppingCart className="h-5 w-5 text-white md:h-[22px] md:w-[22px]" />
         {cartCount > 0 ? (
-          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#a81f4a] px-1 text-[10px] font-black leading-none text-white ring-2 ring-white/80">
+          <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-700 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white/80">
             {cartCount > 9 ? "9+" : cartCount}
           </span>
         ) : null}
