@@ -658,6 +658,15 @@ async function startServer() {
     next();
   });
 
+// keep global parsers, but exclude the webhook path if needed
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+registerVerificationEmailRoutes(app);
+registerSessionRoutes(app);
+mountTotpRoutes(app);
+app.use('/api/payments', createPaymentRouter(requireFirebaseUser));
+
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
