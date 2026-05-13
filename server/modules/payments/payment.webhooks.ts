@@ -112,7 +112,7 @@ function shouldProcessWebhook(payload: unknown): boolean {
   // The important gate is the provider status, not the exact event name.
   // If the webhook is signed and the provider status is successful, the order
   // should move forward.
-  return Boolean(status && isPayChanguSuccessStatus(status));
+  return Boolean(status && isPaychanguSuccessStatus(status));
 }
 
 function isDuplicateCapture(txRef: string): boolean {
@@ -155,7 +155,7 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    if (!details.status || !isPayChanguSuccessStatus(details.status)) {
+    if (!details.status || !isPaychanguSuccessStatus(details.status)) {
       if (eventType && !isAcceptedPaychanguEventType(eventType)) {
         console.info('[webhook] ignoring non-success PayChangu event', {
           eventType,
