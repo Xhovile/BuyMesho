@@ -1,8 +1,16 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'crypto';
-import type { CreatePaymentRequest, PaymentResult, PaymentVerificationResult, RefundRequest, RefundResult, WebhookVerificationResult } from '../../../src/modules/payments/types.js';
+import type {
+  CreatePaymentRequest,
+  PaymentResult,
+  PaymentVerificationResult,
+  RefundRequest,
+  RefundResult,
+  WebhookVerificationResult,
+} from '../../../src/modules/payments/types.js';
 import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
+
 export const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'success',
   'successful',
@@ -13,6 +21,7 @@ export const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'processed',
   'approved',
 ]);
+
 export const PAYCHANGU_ACCEPTED_EVENT_TYPES = new Set([
   'payment.success',
   'payment.successful',
@@ -80,7 +89,10 @@ const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
   chargeback: 'reversed',
 };
 
-function normalizeProviderStatus(rawStatus: unknown): { normalized: VerificationState; providerStatus: string } {
+function normalizeProviderStatus(rawStatus: unknown): {
+  normalized: VerificationState;
+  providerStatus: string;
+} {
   const providerStatus = String(rawStatus ?? '').trim().toLowerCase();
   return {
     normalized: PAYCHANGU_STATUS_MAP[providerStatus] ?? 'unknown',
@@ -96,7 +108,9 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseWebhookPayload(payload: unknown): { rawPayload: string; parsedPayload: Record<string, unknown> | null } {
+function parseWebhookPayload(
+  payload: unknown,
+): { rawPayload: string; parsedPayload: Record<string, unknown> | null } {
   if (typeof payload === 'string') {
     try {
       const parsed = JSON.parse(payload) as unknown;
@@ -125,11 +139,20 @@ function parseWebhookPayload(payload: unknown): { rawPayload: string; parsedPayl
   };
 }
 
-function signatureMatches(secret: string | undefined, payload: string, signature: string | undefined): boolean {
+function signatureMatches(
+  secret: string | undefined,
+  payload: string,
+  signature: string | undefined,
+): boolean {
   if (!secret || !signature) return false;
+
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
+
   try {
-    return timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(signature, 'utf8'));
+    return timingSafeEqual(
+      Buffer.from(expected, 'utf8'),
+      Buffer.from(signature, 'utf8'),
+    );
   } catch {
     return false;
   }
@@ -137,6 +160,7 @@ function signatureMatches(secret: string | undefined, payload: string, signature
 
 export const paychanguProvider = {
   key: 'paychangu' as const,
+
   capabilities: {
     supportsWebhookVerification: true,
     supportsRefunds: false,
@@ -145,7 +169,10 @@ export const paychanguProvider = {
     currencies: ['MWK', 'USD', 'ZAR'],
   },
 
-  async createPayment(request: CreatePaymentRequest, config: PayChanguConfig = {}): Promise<PaymentResult> {
+  async createPayment(
+    request: CreatePaymentRequest,
+    config: PayChanguConfig = {},
+  ): Promise<PaymentResult> {
     const baseUrl = getBaseUrl(config);
     const reference = `PAYCHANGU-${request.orderId}-${Date.now()}`;
     const txRef = normalizeTxRef(undefined, reference);
@@ -172,12 +199,15 @@ export const paychanguProvider = {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(config.paychanguSecretKey ? { Authorization: `Bearer ${config.paychanguSecretKey}` } : {}),
+        ...(config.paychanguSecretKey
+          ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
+          : {}),
       },
       body: JSON.stringify(payload),
     });
 
     const data = (await response.json()) as PayChanguPaymentInitResponse;
+
     if (!response.ok) {
       throw new Error(data.message ?? 'PayChangu payment initialization failed');
     }
@@ -202,69 +232,77 @@ export const paychanguProvider = {
     };
   },
 
-async verifyPayment(
-  txRef: string,
-  config: PayChanguConfig = {},
-): Promise<PaymentVerificationResult> {
-  const baseUrl = getBaseUrl(config);
+  async verifyPayment(
+    txRef: string,
+    config: PayChanguConfig = {},
+  ): Promise<PaymentVerificationResult> {
+    const baseUrl = getBaseUrl(config);
 
-  const response = await fetch(
-    `${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`,
-    {
-      method: 'GET',
-      headers: {
-        ...(config.paychanguSecretKey
-          ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
-          : {}),
+    const response = await fetch(
+      `${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`,
+      {
+        method: 'GET',
+        headers: {
+          ...(config.paychanguSecretKey
+            ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
+            : {}),
+        },
       },
-    },
-  );
-
-  const data = (await response.json()) as Record<string, unknown>;
-
-  if (!response.ok) {
-    throw new Error(
-      (data.message as string | undefined) ?? 'PayChangu verification failed',
     );
-  }
 
-  const payload = (data.data ?? data) as Record<string, unknown>;
+    const data = (await response.json()) as Record<string, unknown>;
 
-  const amountValue =
-    typeof payload.amount === 'number'
-      ? payload.amount
-      : typeof payload.amount === 'string'
-        ? Number(payload.amount)
-        : NaN;
+    if (!response.ok) {
+      throw new Error(
+        (data.message as string | undefined) ?? 'PayChangu verification failed',
+      );
+    }
 
-  const amount = Number.isFinite(amountValue)
-    ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
-    : undefined;
+    const payload = (data.data ?? data) as Record<string, unknown>;
 
-  const paymentStatus = String(payload.status ?? '').trim().toLowerCase();
-  const hasValidValue = !!amount && amount.amount > 0;
-  const verified = isPaychanguSuccessStatus(paymentStatus) && hasValidValue;
+    const amountValue =
+      typeof payload.amount === 'number'
+        ? payload.amount
+        : typeof payload.amount === 'string'
+          ? Number(payload.amount)
+          : NaN;
 
-  return {
-    verified,
-    provider: 'paychangu',
-    txRef,
-    reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
-    status: paymentStatus || 'unknown',
-    currency: String(payload.currency ?? 'MWK'),
-    amount,
-    checkoutUrl: null,
-    rawResponse: data,
-  };
-}
-  async verifyWebhook(signature: string | undefined, payload: string | Record<string, unknown>, config: PayChanguConfig = {}): Promise<WebhookVerificationResult> {
+    const amount = Number.isFinite(amountValue)
+      ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
+      : undefined;
+
+    const providerStatus = String(payload.status ?? '').trim().toLowerCase();
+    const verified = isPaychanguSuccessStatus(providerStatus) && !!amount && amount.amount > 0;
+
+    return {
+      verified,
+      provider: 'paychangu',
+      txRef,
+      reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
+      status: providerStatus || 'unknown',
+      currency: String(payload.currency ?? 'MWK'),
+      amount,
+      checkoutUrl: null,
+      rawResponse: data,
+    };
+  },
+
+  async verifyWebhook(
+    signature: string | undefined,
+    payload: string | Record<string, unknown>,
+    config: PayChanguConfig = {},
+  ): Promise<WebhookVerificationResult> {
     const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
 
     return {
       valid: parsedPayload !== null && signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
       provider: 'paychangu',
-      eventType: parsedPayload ? String(parsedPayload.event_type ?? parsedPayload.event ?? '') : undefined,
-      reference: parsedPayload ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '') : undefined,
+      eventType: parsedPayload
+        ? String(parsedPayload.event_type ?? parsedPayload.event ?? '')
+        : undefined,
+      reference: parsedPayload
+        ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '')
+        : undefined,
       signature,
       payload: parsedPayload ?? payload,
     };
@@ -274,14 +312,20 @@ async verifyPayment(
     throw new Error('PayChangu refund flow is not enabled yet');
   },
 
-  async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {
+  async parseWebhook(
+    payload: unknown,
+  ): Promise<WebhookVerificationResult> {
     const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
 
     return {
       valid: parsedPayload !== null,
       provider: 'paychangu',
-      eventType: parsedPayload ? String(parsedPayload.event_type ?? parsedPayload.event ?? '') : undefined,
-      reference: parsedPayload ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '') : undefined,
+      eventType: parsedPayload
+        ? String(parsedPayload.event_type ?? parsedPayload.event ?? '')
+        : undefined,
+      reference: parsedPayload
+        ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '')
+        : undefined,
       payload: parsedPayload ?? rawPayload,
     };
   },
