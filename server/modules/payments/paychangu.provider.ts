@@ -147,15 +147,47 @@ function signatureMatches(
   if (!secret || !signature) return false;
 
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
+  const normalizedSignature = signature.trim();
+  const candidateSignatures = [
+    normalizedSignature,
+    normalizedSignature.replace(/^sha256=/i, ''),
+  ];
 
-  try {
-    return timingSafeEqual(
-      Buffer.from(expected, 'utf8'),
-      Buffer.from(signature, 'utf8'),
-    );
-  } catch {
-    return false;
+  const expectedHex = Buffer.from(expected, 'hex');
+
+  for (const candidate of candidateSignatures) {
+    const value = candidate.trim();
+    if (!value) continue;
+
+    if (/^[a-f0-9]+$/i.test(value) && value.length % 2 === 0) {
+      try {
+        const candidateHex = Buffer.from(value.toLowerCase(), 'hex');
+        if (
+          candidateHex.length === expectedHex.length &&
+          timingSafeEqual(expectedHex, candidateHex)
+        ) {
+          return true;
+        }
+      } catch {
+        // continue with next candidate
+      }
+    }
+
+    try {
+      const expectedUtf8 = Buffer.from(expected, 'utf8');
+      const candidateUtf8 = Buffer.from(value, 'utf8');
+      if (
+        candidateUtf8.length === expectedUtf8.length &&
+        timingSafeEqual(expectedUtf8, candidateUtf8)
+      ) {
+        return true;
+      }
+    } catch {
+      // continue with next candidate
+    }
   }
+
+  return false;
 }
 
 export const paychanguProvider = {
