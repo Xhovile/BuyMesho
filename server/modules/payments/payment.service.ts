@@ -81,9 +81,9 @@ export class ServerPaymentService {
   }
 
   private resolveConfig(): ServerPaymentConfig {
-    const envPayChanguSecretKey = process.env.PAYCHANGU_SECRET_KEY;
-    const envPayChanguWebhookSecret = process.env.PAYCHANGU_WEBHOOK_SECRET;
-    const envPayChanguBaseUrl = process.env.PAYCHANGU_BASE_URL;
+    const envPayChanguSecretKey = readEnv('PAYCHANGU_SECRET_KEY');
+    const envPayChanguWebhookSecret = readEnv('PAYCHANGU_WEBHOOK_SECRET');
+    const envPayChanguBaseUrl = readEnv('PAYCHANGU_BASE_URL');
 
     return {
       paychanguSecretKey: envPayChanguSecretKey ?? this.config.paychanguSecretKey,
