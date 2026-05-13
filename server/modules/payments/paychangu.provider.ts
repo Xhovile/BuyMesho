@@ -202,23 +202,33 @@ export const paychanguProvider = {
     };
   },
 
-  async verifyPayment(txRef: string, config: PayChanguConfig = {}): Promise<PaymentVerificationResult> {
+async verifyPayment(
+  txRef: string,
+  config: PayChanguConfig = {},
+): Promise<PaymentVerificationResult> {
   const baseUrl = getBaseUrl(config);
 
-  const response = await fetch(`${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`, {
-    method: 'GET',
-    headers: {
-      ...(config.paychanguSecretKey ? { Authorization: `Bearer ${config.paychanguSecretKey}` } : {}),
+  const response = await fetch(
+    `${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`,
+    {
+      method: 'GET',
+      headers: {
+        ...(config.paychanguSecretKey
+          ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
+          : {}),
+      },
     },
-  });
+  );
 
-  const data = (await response.json()) as Record;
+  const data = (await response.json()) as Record<string, unknown>;
 
   if (!response.ok) {
-    throw new Error((data.message as string | undefined) ?? 'PayChangu verification failed');
+    throw new Error(
+      (data.message as string | undefined) ?? 'PayChangu verification failed',
+    );
   }
 
-  const payload = (data.data ?? data) as Record;
+  const payload = (data.data ?? data) as Record<string, unknown>;
 
   const amountValue =
     typeof payload.amount === 'number'
@@ -231,22 +241,22 @@ export const paychanguProvider = {
     ? { amount: amountValue, currency: String(payload.currency ?? 'MWK') }
     : undefined;
 
-  const providerStatus = String(payload.status ?? '').trim().toLowerCase();
-  const verified = isPaychanguSuccessStatus(providerStatus) && !!amount && amount.amount > 0;
+  const paymentStatus = String(payload.status ?? '').trim().toLowerCase();
+  const hasValidValue = !!amount && amount.amount > 0;
+  const verified = isPaychanguSuccessStatus(paymentStatus) && hasValidValue;
 
   return {
     verified,
     provider: 'paychangu',
     txRef,
     reference: String(payload.tx_ref ?? payload.txRef ?? txRef),
-    status: providerStatus || 'unknown',
+    status: paymentStatus || 'unknown',
     currency: String(payload.currency ?? 'MWK'),
     amount,
     checkoutUrl: null,
     rawResponse: data,
   };
 }
-
   async verifyWebhook(signature: string | undefined, payload: string | Record<string, unknown>, config: PayChanguConfig = {}): Promise<WebhookVerificationResult> {
     const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
 
