@@ -147,15 +147,33 @@ function signatureMatches(
   if (!secret || !signature) return false;
 
   const expected = createHmac('sha256', secret).update(payload).digest('hex');
+  const normalizedSignature = signature.trim();
+  const candidateSignatures = [
+    normalizedSignature,
+    normalizedSignature.replace(/^sha256=/i, ''),
+  ];
 
-  try {
-    return timingSafeEqual(
-      Buffer.from(expected, 'utf8'),
-      Buffer.from(signature, 'utf8'),
-    );
-  } catch {
-    return false;
+  const expectedHex = Buffer.from(expected, 'hex');
+
+  for (const candidate of candidateSignatures) {
+    if (!candidate) continue;
+    if (/^[a-fA-F0-9]+$/.test(candidate) && candidate.length % 2 === 0) {
+      try {
+        const candidateHex = Buffer.from(candidate.toLowerCase(), 'hex');
+        if (
+          candidateHex.length === expectedHex.length &&
+          timingSafeEqual(expectedHex, candidateHex)
+        ) {
+          return true;
+        }
+      } catch {
+        // continue with next candidate
+      }
+    }
+
   }
+
+  return false;
 }
 
 export const paychanguProvider = {
