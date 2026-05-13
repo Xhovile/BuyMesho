@@ -81,10 +81,14 @@ export class ServerPaymentService {
   }
 
   private resolveConfig(): ServerPaymentConfig {
+    const envPayChanguSecretKey = readEnv('PAYCHANGU_SECRET_KEY');
+    const envPayChanguWebhookSecret = readEnv('PAYCHANGU_WEBHOOK_SECRET');
+    const envPayChanguBaseUrl = readEnv('PAYCHANGU_BASE_URL');
+
     return {
-      paychanguSecretKey: this.config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY,
-      paychanguWebhookSecret: this.config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET,
-      paychanguBaseUrl: this.config.paychanguBaseUrl ?? process.env.PAYCHANGU_BASE_URL,
+      paychanguSecretKey: envPayChanguSecretKey ?? this.config.paychanguSecretKey,
+      paychanguWebhookSecret: envPayChanguWebhookSecret ?? this.config.paychanguWebhookSecret,
+      paychanguBaseUrl: envPayChanguBaseUrl ?? this.config.paychanguBaseUrl,
     };
   }
 
