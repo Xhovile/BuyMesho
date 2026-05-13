@@ -3,25 +3,34 @@ import { serverPaymentService } from './payment.service.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
-import { isAcceptedPaychanguEventType, isPaychanguSuccessStatus } from './paychangu.provider.js';
+import {
+  isAcceptedPaychanguEventType,
+  isPaychanguSuccessStatus,
+} from './paychangu.provider.js';
 import { getPaymentDb } from '../../sqlite.js';
 
-function asRecord(payload: unknown): Record<string, unknown> {
+type PlainRecord = Record<string, unknown>;
+
+function asRecord(payload: unknown): PlainRecord {
   if (typeof payload === 'string') {
     try {
       const parsed = JSON.parse(payload) as unknown;
-      return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+      return typeof parsed === 'object' && parsed !== null
+        ? (parsed as PlainRecord)
+        : {};
     } catch {
       return {};
     }
   }
 
-  return typeof payload === 'object' && payload !== null ? (payload as Record<string, unknown>) : {};
+  return typeof payload === 'object' && payload !== null
+    ? (payload as PlainRecord)
+    : {};
 }
 
-function asOptionalRecord(value: unknown): Record<string, unknown> | undefined {
+function asOptionalRecord(value: unknown): PlainRecord | undefined {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
+    ? (value as PlainRecord)
     : undefined;
 }
 
@@ -43,29 +52,38 @@ function asAmount(value: unknown): number | undefined {
   return undefined;
 }
 
+function normalizeRawPayload(payload: unknown): string {
+  if (typeof payload === 'string') {
+    return payload;
+  }
+
+  if (Buffer.isBuffer(payload)) {
+    return payload.toString('utf8');
+  }
+
+  return '';
+}
+
 function getPayChanguEventDetails(payload: unknown): {
   eventType?: string;
   status?: string;
   txRef?: string;
-  data?: Record<string, unknown>;
-  raw: Record<string, unknown>;
+  data?: PlainRecord;
+  raw: PlainRecord;
 } {
   const raw = asRecord(payload);
   const data = asOptionalRecord(raw.data) ?? raw;
 
   return {
     eventType: asTrimmedString(raw.event_type ?? raw.event),
-    status: asTrimmedString(
-      data.status ??
-      raw.status
-    ),
+    status: asTrimmedString(data.status ?? raw.status),
     txRef: asTrimmedString(
       data.tx_ref ??
-      data.txRef ??
-      data.reference ??
-      raw.tx_ref ??
-      raw.txRef ??
-      raw.reference
+        data.txRef ??
+        data.reference ??
+        raw.tx_ref ??
+        raw.txRef ??
+        raw.reference
     ),
     data,
     raw,
@@ -85,21 +103,26 @@ function logWebhookEvent(params: {
 }): void {
   try {
     const db = getPaymentDb();
-    const rawPayload = typeof params.payload === 'string'
-      ? params.payload
-      : JSON.stringify(params.payload ?? {});
+    const rawPayload =
+      typeof params.payload === 'string'
+        ? params.payload
+        : Buffer.isBuffer(params.payload)
+          ? params.payload.toString('utf8')
+          : JSON.stringify(params.payload ?? {});
 
     db.prepare(
-      `INSERT INTO payment_webhook_events
-       (provider, reference, event_type, signature_valid, payload, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+      `
+      INSERT INTO payment_webhook_events
+        (provider, reference, event_type, signature_valid, payload, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      `
     ).run(
       'paychangu',
       params.reference ?? null,
       params.eventType ?? null,
       params.signatureValid ? 1 : 0,
       rawPayload,
-      new Date().toISOString(),
+      new Date().toISOString()
     );
   } catch (error) {
     console.warn('[webhook] failed to store PayChangu webhook event', error);
@@ -136,18 +159,16 @@ export class PaymentWebhookHandler {
     const details = getPayChanguEventDetails(payload);
     const eventType = details.eventType?.toLowerCase() || undefined;
     const reference = details.txRef;
+    const rawPayload = normalizeRawPayload(payload);
 
-const rawPayload =
-  Buffer.isBuffer(payload)
-    ? payload.toString('utf8')
-    : typeof payload === 'string'
-      ? payload
-      : JSON.stringify(payload ?? {});
-    
+    if (!rawPayload) {
+      throw new Error('Missing raw webhook body');
+    }
+
     const result = await serverPaymentService.verifyWebhook(
       'paychangu',
       signature,
-      verificationPayload as string
+      rawPayload
     );
 
     logWebhookEvent({
@@ -163,40 +184,52 @@ const rawPayload =
 
     if (!details.status || !isPaychanguSuccessStatus(details.status)) {
       if (eventType && !isAcceptedPaychanguEventType(eventType)) {
-        console.info('[webhook] ignoring non-success PayChangu event', {
-          eventType,
-          status: details.status ?? 'unknown',
-          reference: reference ?? result.reference ?? 'unknown',
-        });
+        console.info(
+          '[webhook] ignoring non-success PayChangu event',
+          {
+            eventType,
+            status: details.status ?? 'unknown',
+            reference: reference ?? result.reference ?? 'unknown',
+          }
+        );
       }
+
       return result;
     }
 
     if (eventType && !isAcceptedPaychanguEventType(eventType)) {
-      console.info('[webhook] proceeding with successful PayChangu event that uses an unrecognized event type', {
-        eventType,
-        status: details.status,
-        reference: reference ?? result.reference ?? 'unknown',
-      });
+      console.info(
+        '[webhook] proceeding with successful PayChangu event that uses an unrecognized event type',
+        {
+          eventType,
+          status: details.status,
+          reference: reference ?? result.reference ?? 'unknown',
+        }
+      );
     }
 
-    const parsedPayload = typeof payload === 'string'
-      ? (() => {
-          try {
-            return JSON.parse(payload) as unknown;
-          } catch {
-            throw new Error('Malformed webhook payload: invalid JSON');
-          }
-        })()
-      : payload;
+    const parsedPayload =
+      typeof payload === 'string'
+        ? (() => {
+            try {
+              return JSON.parse(payload) as unknown;
+            } catch {
+              throw new Error('Malformed webhook payload: invalid JSON');
+            }
+          })()
+        : payload;
 
-    // Do not block progression on event name. The success status is enough.
+    // Do not block progression on event name.
+    // The success status is enough.
     if (!shouldProcessWebhook(parsedPayload)) {
-      console.info('[webhook] ignoring PayChangu webhook that does not have a successful status', {
-        eventType,
-        status: details.status ?? 'unknown',
-        reference: reference ?? result.reference ?? 'unknown',
-      });
+      console.info(
+        '[webhook] ignoring PayChangu webhook that does not have a successful status',
+        {
+          eventType,
+          status: details.status ?? 'unknown',
+          reference: reference ?? result.reference ?? 'unknown',
+        }
+      );
       return result;
     }
 
@@ -228,20 +261,24 @@ const rawPayload =
     }
 
     if (order.paymentReference && order.paymentReference !== txRef) {
-      throw new Error(`Webhook reference does not match the order payment reference for order ${order.id}`);
+      throw new Error(
+        `Webhook reference does not match the order payment reference for order ${order.id}`
+      );
     }
 
     const data =
-      asOptionalRecord((parsedPayload as Record<string, unknown>).data) ??
+      asOptionalRecord((parsedPayload as PlainRecord).data) ??
       asOptionalRecord(parsedPayload) ??
       undefined;
 
     const webhookCurrency = String(data?.currency ?? order.currency ?? 'MWK');
     const rawAmount = data?.amount;
     const parsedAmount = asAmount(rawAmount);
-    const amount = typeof parsedAmount === 'number'
-      ? { amount: parsedAmount, currency: webhookCurrency }
-      : undefined;
+
+    const amount =
+      typeof parsedAmount === 'number'
+        ? { amount: parsedAmount, currency: webhookCurrency }
+        : undefined;
 
     if (
       amount &&
@@ -266,17 +303,15 @@ const rawPayload =
   }
 
   verify(
-    providerKey: Parameters<typeof serverPaymentService.verifyWebhook>[0],
+    providerKey: string,
     signature: string | undefined,
     payload: unknown
   ): Promise<WebhookVerificationResult> {
-    return serverPaymentService.verifyWebhook(providerKey, signature, payload as string);
+    const rawPayload = normalizeRawPayload(payload);
+    return serverPaymentService.verifyWebhook(providerKey, signature, rawPayload);
   }
 
-  parse(
-    providerKey: Parameters<typeof serverPaymentService.parseWebhook>[0],
-    payload: unknown
-  ): Promise<WebhookVerificationResult> {
+  parse(providerKey: string, payload: unknown): Promise<unknown> {
     return serverPaymentService.parseWebhook(providerKey, payload);
   }
 }
