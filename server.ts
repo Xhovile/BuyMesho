@@ -638,6 +638,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  // Ensure PayChangu webhook receives raw JSON bytes for signature verification.
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
+
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -657,15 +660,6 @@ async function startServer() {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
   });
-
-// keep global parsers, but exclude the webhook path if needed
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-
-registerVerificationEmailRoutes(app);
-registerSessionRoutes(app);
-mountTotpRoutes(app);
-app.use('/api/payments', createPaymentRouter(requireFirebaseUser));
 
   // API Routes
   app.get("/api/upload", (req, res) => {
