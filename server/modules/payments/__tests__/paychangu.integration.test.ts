@@ -52,6 +52,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   ).run();
 
   const app = express();
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
 
@@ -139,6 +140,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   paymentRepository.clear();
 
   const app = express();
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
 
@@ -219,6 +221,7 @@ test('integration: pending webhook updates payment only and does not create escr
   orderRepository.clear();
   paymentRepository.clear();
   const app = express();
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
   const originalFetch = global.fetch;
