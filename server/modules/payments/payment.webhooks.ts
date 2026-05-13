@@ -137,7 +137,13 @@ export class PaymentWebhookHandler {
     const eventType = details.eventType?.toLowerCase() || undefined;
     const reference = details.txRef;
 
-    const verificationPayload = typeof payload === 'string' ? payload : payload;
+const rawPayload =
+  Buffer.isBuffer(payload)
+    ? payload.toString('utf8')
+    : typeof payload === 'string'
+      ? payload
+      : JSON.stringify(payload ?? {});
+    
     const result = await serverPaymentService.verifyWebhook(
       'paychangu',
       signature,
