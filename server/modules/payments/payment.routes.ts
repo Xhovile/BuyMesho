@@ -338,23 +338,27 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.post('/paychangu/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
-    try {
-      const payload: unknown = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+  router.post('/paychangu/webhook', async (req, res) => {
+  try {
+    const rawBody =
+      Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
+      typeof req.body === 'string' ? req.body :
+      req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
+      '';
 
-      if (!payload) {
-        return res.status(400).json({ error: 'Missing webhook body' });
-      }
-
-      const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
-
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, payload);
-
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(400).json(jsonError(error, 'Failed to process webhook'));
+    if (!rawBody) {
+      return res.status(400).json({ error: 'Missing webhook body' });
     }
-  });
+
+    const signature =
+      req.header('x-paychangu-signature') ?? req.header('Signature');
+
+    const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json(jsonError(error, 'Failed to process webhook'));
+  }
+});
 
   return router;
 }
