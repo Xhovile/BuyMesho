@@ -156,12 +156,10 @@ function signatureMatches(
   const expectedHex = Buffer.from(expected, 'hex');
 
   for (const candidate of candidateSignatures) {
-    const value = candidate.trim();
-    if (!value) continue;
-
-    if (/^[a-f0-9]+$/i.test(value) && value.length % 2 === 0) {
+    if (!candidate) continue;
+    if (/^[a-fA-F0-9]+$/.test(candidate) && candidate.length % 2 === 0) {
       try {
-        const candidateHex = Buffer.from(value.toLowerCase(), 'hex');
+        const candidateHex = Buffer.from(candidate.toLowerCase(), 'hex');
         if (
           candidateHex.length === expectedHex.length &&
           timingSafeEqual(expectedHex, candidateHex)
@@ -173,18 +171,6 @@ function signatureMatches(
       }
     }
 
-    try {
-      const expectedUtf8 = Buffer.from(expected, 'utf8');
-      const candidateUtf8 = Buffer.from(value, 'utf8');
-      if (
-        candidateUtf8.length === expectedUtf8.length &&
-        timingSafeEqual(expectedUtf8, candidateUtf8)
-      ) {
-        return true;
-      }
-    } catch {
-      // continue with next candidate
-    }
   }
 
   return false;
