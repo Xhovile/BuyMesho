@@ -33,68 +33,41 @@ function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: s
   console.log('[notification] order_paid', JSON.stringify(payload));
 }
 
-function normalizedStatus(verification: PaymentVerificationResult): string {
-  return String(verification.status ?? '').trim().toLowerCase();
-}
-
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-    isPaychanguSuccessStatus(String(verification.status ?? ''))
+      isPaychanguSuccessStatus(String(verification.status ?? '')),
   );
-}
-
-function isFailed(verification: PaymentVerificationResult): boolean {
-  return FAILED_STATUSES.has(normalizedStatus(verification));
-}
-
-function isReversed(verification: PaymentVerificationResult): boolean {
-  return REVERSAL_STATUSES.has(normalizedStatus(verification));
-}
-
-function isPending(verification: PaymentVerificationResult): boolean {
-  return PENDING_STATUSES.has(normalizedStatus(verification));
 }
 
 function resolveOrderByReference(reference: string) {
-  return (
-    orderRepository.findByPaymentReference(reference) ??
-    undefined
-  );
+  return orderRepository.findByPaymentReference(reference) ?? undefined;
 }
 
 export function applyVerifiedPayChanguPayment(
-  verification: PaymentVerificationResult
+  verification: PaymentVerificationResult,
 ): ApplyPayChanguResult {
   const reference = resolveReference(verification);
   if (!reference) {
     throw new Error('Missing PayChangu reference');
   }
 
-  const shouldCapture = isCaptured(verification);
-  const shouldFail = isFailed(verification);
-  const shouldReverse = isReversed(verification);
-  const shouldRemainPending = isPending(verification);
+  if (!isCaptured(verification)) {
+    throw new Error(
+      `applyVerifiedPayChanguPayment only accepts verified paid/captured statuses for ${reference}`,
+    );
+  }
 
   const payment = paymentRepository.updateByReference(reference, (current) => ({
     ...current,
-    verified: verification.verified,
+    verified: true,
     verification,
-    status: shouldCapture
-      ? 'captured'
-      : shouldFail
-        ? 'failed'
-        : shouldReverse
-          ? 'refunded'
-          : shouldRemainPending
-            ? 'pending'
-            : current.status,
-    paidAt: shouldCapture ? new Date().toISOString() : current.paidAt,
+    status: 'captured',
+    paidAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   }));
 
   let order = resolveOrderByReference(reference);
-
   if (!order && payment) {
     order = orderRepository.findById(payment.orderId);
   }
@@ -106,43 +79,12 @@ export function applyVerifiedPayChanguPayment(
     };
   }
 
-  if (!shouldCapture) {
-    if (shouldReverse) {
-      const existingEscrow = escrowRepository.findByOrderId(order.id);
-      const shouldRefundOrder =
-        Boolean(existingEscrow) ||
-        order.status === 'paid' ||
-        order.status === 'in_escrow';
-
-      if (existingEscrow) {
-        escrowRepository.updateState(order.id, 'refunded');
-      }
-
-      const reversedOrder = shouldRefundOrder
-        ? serverOrderService.setStatus(order.id, 'refunded') ?? order
-        : order;
-
-      return {
-        payment,
-        order: reversedOrder,
-        verification,
-      };
-    }
-
-    return {
-      payment,
-      order,
-      verification,
-    };
-  }
-
   const confirmedOrder =
     serverOrderService.confirmByPaymentReference(reference) ??
     serverOrderService.setStatus(order.id, 'paid') ??
     order;
 
   const activeOrder = confirmedOrder ?? order;
-
   const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
   const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
 
@@ -150,18 +92,13 @@ export function applyVerifiedPayChanguPayment(
     escrowRepository.create(activeOrder.id, currency, escrowAmount);
   }
 
-  const escrowedOrder =
-    serverOrderService.setStatus(activeOrder.id, 'in_escrow') ??
-    activeOrder;
+  const escrowedOrder = serverOrderService.setStatus(activeOrder.id, 'in_escrow') ?? activeOrder;
 
-  if (
-    escrowedOrder.status === 'in_escrow' &&
-    order.status !== 'in_escrow'
-  ) {
+  if (escrowedOrder.status === 'in_escrow' && order.status !== 'in_escrow') {
     emitOrderPaidNotification(
       escrowedOrder.buyerId,
       escrowedOrder.sellerId,
-      escrowedOrder.id
+      escrowedOrder.id,
     );
   }
 
@@ -173,7 +110,7 @@ export function applyVerifiedPayChanguPayment(
 }
 
 export function seedDemoPayChanguPayment(
-  payment: PaymentResult
+  payment: PaymentResult,
 ): ReturnType<typeof paymentRepository.save> {
   return paymentRepository.save({
     ...payment,
