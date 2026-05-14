@@ -19,6 +19,27 @@ const CAPTURED_STATUSES = new Set([
   'paid',
 ]);
 
+const FAILED_STATUSES = new Set([
+  'failed',
+  'cancelled',
+  'canceled',
+  'declined',
+  'expired',
+]);
+
+const REVERSAL_STATUSES = new Set([
+  'reversed',
+  'refunded',
+  'chargeback',
+]);
+
+const PENDING_STATUSES = new Set([
+  'pending',
+  'processing',
+  'initiated',
+  'queued',
+]);
+
 function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '')
     .trim()
@@ -41,11 +62,27 @@ function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: s
   console.log('[notification] order_paid', JSON.stringify(payload));
 }
 
+function normalizedStatus(verification: PaymentVerificationResult): string {
+  return String(verification.status ?? '').trim().toLowerCase();
+}
+
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase())
+    CAPTURED_STATUSES.has(normalizedStatus(verification))
   );
+}
+
+function isFailed(verification: PaymentVerificationResult): boolean {
+  return FAILED_STATUSES.has(normalizedStatus(verification));
+}
+
+function isReversed(verification: PaymentVerificationResult): boolean {
+  return REVERSAL_STATUSES.has(normalizedStatus(verification));
+}
+
+function isPending(verification: PaymentVerificationResult): boolean {
+  return PENDING_STATUSES.has(normalizedStatus(verification));
 }
 
 function resolveOrderByReference(reference: string) {
@@ -64,12 +101,23 @@ export function applyVerifiedPayChanguPayment(
   }
 
   const shouldCapture = isCaptured(verification);
+  const shouldFail = isFailed(verification);
+  const shouldReverse = isReversed(verification);
+  const shouldRemainPending = isPending(verification);
 
   const payment = paymentRepository.updateByReference(reference, (current) => ({
     ...current,
     verified: verification.verified,
     verification,
-    status: shouldCapture ? 'captured' : current.status,
+    status: shouldCapture
+      ? 'captured'
+      : shouldFail
+        ? 'failed'
+        : shouldReverse
+          ? 'refunded'
+          : shouldRemainPending
+            ? 'pending'
+            : current.status,
     paidAt: shouldCapture ? new Date().toISOString() : current.paidAt,
     updatedAt: new Date().toISOString(),
   }));
@@ -88,6 +136,28 @@ export function applyVerifiedPayChanguPayment(
   }
 
   if (!shouldCapture) {
+    if (shouldReverse) {
+      const existingEscrow = escrowRepository.findByOrderId(order.id);
+      const shouldRefundOrder =
+        Boolean(existingEscrow) ||
+        order.status === 'paid' ||
+        order.status === 'in_escrow';
+
+      if (existingEscrow) {
+        escrowRepository.updateState(order.id, 'refunded');
+      }
+
+      const reversedOrder = shouldRefundOrder
+        ? serverOrderService.setStatus(order.id, 'refunded') ?? order
+        : order;
+
+      return {
+        payment,
+        order: reversedOrder,
+        verification,
+      };
+    }
+
     return {
       payment,
       order,

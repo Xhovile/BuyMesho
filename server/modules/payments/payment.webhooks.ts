@@ -137,6 +137,27 @@ function hashPayload(rawPayload: string): string {
   return createHash("sha256").update(rawPayload).digest("hex");
 }
 
+const PAYCHANGU_ACTIONABLE_NON_SUCCESS_STATUSES = new Set([
+  "pending",
+  "processing",
+  "initiated",
+  "queued",
+  "failed",
+  "cancelled",
+  "canceled",
+  "declined",
+  "expired",
+  "reversed",
+  "refunded",
+  "chargeback",
+]);
+
+function isActionablePayChanguVerificationStatus(status: string | undefined): boolean {
+  return PAYCHANGU_ACTIONABLE_NON_SUCCESS_STATUSES.has(
+    String(status ?? "").trim().toLowerCase(),
+  );
+}
+
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(
     signature: string | undefined,
@@ -225,7 +246,10 @@ export class PaymentWebhookHandler {
       const verification =
         await serverPaymentService.verifyPaychanguPayment(txRef);
 
-      if (!verification.verified) {
+      if (
+        !verification.verified &&
+        !isActionablePayChanguVerificationStatus(verification.status)
+      ) {
         updatePaymentWebhookEventStatus(eventId, "ignored", {
           processedAt: new Date().toISOString(),
           error: verification.status
