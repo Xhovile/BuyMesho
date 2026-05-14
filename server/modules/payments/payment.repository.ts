@@ -102,6 +102,7 @@ export class SqlitePaymentRepository {
   }
 
   clear(): void {
+    this.db.prepare('DELETE FROM payment_webhook_events').run();
     this.db.prepare('DELETE FROM payments').run();
   }
 
