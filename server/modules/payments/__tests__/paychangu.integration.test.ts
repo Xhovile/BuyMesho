@@ -45,10 +45,22 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
 
   // Seed a test listing so the /checkout endpoint can find it
   const db = getPaymentDb();
+  db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_1');
   db.prepare('DELETE FROM listings WHERE id = 999').run();
   db.prepare(
-    `INSERT OR IGNORE INTO listings (id, seller_uid, name, price, status, quantity, sold_quantity)
-     VALUES (999, 'seller_1', 'Test Item', 1000, 'available', 5, 0)`,
+    `INSERT OR REPLACE INTO sellers (uid, email)
+     VALUES ('seller_1', 'seller@example.com')`,
+  ).run();
+  db.prepare(
+    `INSERT OR REPLACE INTO listings (
+       id, seller_uid, name, price, category, university, whatsapp_number,
+       status, condition, views_count, whatsapp_clicks, is_hidden,
+       quantity, sold_quantity
+     ) VALUES (
+       999, 'seller_1', 'Test Item', 1000, 'test', 'Test University', '+265999111000',
+       'available', 'used', 0, 0, 0,
+       5, 0
+     )`,
   ).run();
 
   const app = express();
@@ -132,6 +144,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     orderRepository.clear();
     paymentRepository.clear();
     db.prepare('DELETE FROM listings WHERE id = 999').run();
+    db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_1');
   }
 });
 
