@@ -1,12 +1,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
-import { createHmac } from 'crypto';
+import { createHash, createHmac } from 'crypto';
 import { mountPayChanguRoutes } from '../payment.routes.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
+import { escrowRepository } from '../../escrow/escrow.repository.js';
 import { getPaymentDb } from '../../../sqlite.js';
+
+const WEBHOOK_SECRET = 'integration-secret';
+
+type WebhookAuditRow = {
+  provider_event_id: string | null;
+  tx_ref: string | null;
+  payload_hash: string | null;
+  processing_status: string;
+  processed_at: string | null;
+  error: string | null;
+};
 
 const requireAuth: express.RequestHandler = (req, _res, next) => {
   (req as express.Request & { user?: unknown }).user = { uid: 'buyer_1', email: 'buyer@example.com' };
@@ -14,22 +26,30 @@ const requireAuth: express.RequestHandler = (req, _res, next) => {
 };
 
 function mockFetch(originalFetch: typeof fetch): typeof fetch {
+  return mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful');
+}
+
+function mockPayChanguFetch(
+  originalFetch: typeof fetch,
+  reference: string,
+  status: string,
+): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
       return new Response(JSON.stringify({
         data: {
           checkout_url: 'https://checkout.paychangu.test/session',
-          tx_ref: 'txref-integration-1',
-          id: 'pch_001',
+          tx_ref: reference,
+          id: `pch_${reference}`,
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
-    if (/^https:\/\/[^/]*paychangu\.com\/verify-payment\//.test(target)) {
+    if (new RegExp(`^https:\\/\\/[^/]*paychangu\\.com\\/verify-payment\\/${reference}`).test(target)) {
       return new Response(JSON.stringify({
         data: {
-          tx_ref: 'txref-integration-1',
-          status: 'successful',
+          tx_ref: reference,
+          status,
           amount: 1000,
           currency: 'MWK',
         },
@@ -39,9 +59,93 @@ function mockFetch(originalFetch: typeof fetch): typeof fetch {
   }) as typeof fetch;
 }
 
-test('integration: atomic checkout → paychangu payment → webhook persists state', async () => {
+function createApp(): express.Express {
+  const app = express();
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
+  app.use(express.json());
+  mountPayChanguRoutes(app, requireAuth);
+  return app;
+}
+
+function signWebhook(rawWebhook: string): string {
+  return createHmac('sha256', WEBHOOK_SECRET).update(rawWebhook).digest('hex');
+}
+
+function hashPayload(rawWebhook: string): string {
+  return createHash('sha256').update(rawWebhook).digest('hex');
+}
+
+function clearPaymentState(): void {
+  const db = getPaymentDb();
+  db.prepare('DELETE FROM escrows').run();
+  db.prepare('DELETE FROM payment_webhook_events').run();
   orderRepository.clear();
   paymentRepository.clear();
+}
+
+function seedOrder(orderId: string, reference: string, status: 'pending_payment' | 'paid' | 'in_escrow' = 'pending_payment'): void {
+  const now = new Date().toISOString();
+  serverOrderService.create({
+    id: orderId,
+    buyerId: 'buyer_1',
+    sellerId: 'seller_1',
+    source: 'listing',
+    status,
+    currency: 'MWK',
+    subtotal: { amount: 1000, currency: 'MWK' },
+    total: { amount: 1000, currency: 'MWK' },
+    items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }],
+    createdAt: now,
+    updatedAt: now,
+    paymentProvider: 'paychangu',
+    paymentReference: reference,
+  });
+}
+
+async function initializePayment(base: string, orderId: string): Promise<Response> {
+  return fetch(`${base}/api/payments/paychangu/initialize`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer fake' },
+    body: JSON.stringify({
+      orderId,
+      provider: 'paychangu',
+      method: 'mobile_money',
+      amount: { amount: 1000, currency: 'MWK' },
+      customer: { id: 'buyer_1', name: 'Buyer One', email: 'buyer@example.com', phoneNumber: '+265999111000' },
+      returnUrl: 'https://example.com/return',
+      cancelUrl: 'https://example.com/cancel',
+    }),
+  });
+}
+
+async function postPayChanguWebhook(base: string, rawWebhook: string, signature = signWebhook(rawWebhook)): Promise<Response> {
+  return fetch(`${base}/api/payments/paychangu/webhook`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
+    body: rawWebhook,
+  });
+}
+
+function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
+  return getPaymentDb()
+    .prepare(
+      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+       FROM payment_webhook_events
+       WHERE reference = ? OR tx_ref = ?
+       ORDER BY id ASC`,
+    )
+    .all(txRef, txRef) as WebhookAuditRow[];
+}
+
+function countEscrowsForOrder(orderId: string): number {
+  const row = getPaymentDb()
+    .prepare('SELECT COUNT(*) AS count FROM escrows WHERE order_id = ?')
+    .get(orderId) as { count: number };
+  return row.count;
+}
+
+test('integration: atomic checkout → paychangu payment → webhook persists state and classifies duplicate delivery', async () => {
+  clearPaymentState();
 
   // Seed a test listing so the /checkout endpoint can find it
   const db = getPaymentDb();
@@ -63,14 +167,16 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
      )`,
   ).run();
 
-  const app = express();
-  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
-  app.use(express.json());
-  mountPayChanguRoutes(app, requireAuth);
-
+  const app = createApp();
   const originalFetch = global.fetch;
+  const originalConsoleLog = console.log;
+  const notificationLogs: unknown[][] = [];
   global.fetch = mockFetch(originalFetch);
-  process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
+  console.log = (...args: unknown[]) => {
+    if (args[0] === '[notification] order_paid') notificationLogs.push(args);
+    originalConsoleLog(...args);
+  };
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -112,168 +218,223 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
 
     // Step 3: Webhook marks order as paid
     const rawWebhook = JSON.stringify({
-      event_type: 'api.charge.payment', tx_ref: checkoutResult.reference,
+      event_type: 'api.charge.payment',
+      event_id: 'evt_success_1',
+      tx_ref: checkoutResult.reference,
       data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' },
     });
-    const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
+    const signature = signWebhook(rawWebhook);
 
-    const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
-      body: rawWebhook,
-    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook, signature);
     assert.equal(webhookRes.status, 200, 'webhook should return 200');
 
-    const duplicateWebhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
-      body: rawWebhook,
-    });
+    const duplicateWebhookRes = await postPayChanguWebhook(base, rawWebhook, signature);
     assert.equal(duplicateWebhookRes.status, 200, 'duplicate webhook should also return 200');
 
-    // Step 4: Assert final state
+    // Step 4: Assert final state and idempotency side effects
     const savedOrder = orderRepository.findById(checkoutResult.orderId!);
     const savedPayment = paymentRepository.findByReference(checkoutResult.reference!);
+    const auditRows = fetchWebhookAuditRows(checkoutResult.reference!);
+    const processedAuditRows = auditRows.filter((row) => row.processing_status === 'processed');
+    const duplicateAuditRows = auditRows.filter((row) => row.processing_status === 'duplicate');
 
     assert.equal(savedOrder?.status, 'in_escrow', 'order should be in escrow after successful payment');
     assert.equal(savedPayment?.verified, true, 'payment should be verified');
     assert.equal(savedPayment?.status, 'captured', 'payment status should be captured');
+    assert.equal(countEscrowsForOrder(checkoutResult.orderId!), 1, 'only one escrow should be created for the order');
+    assert.equal(processedAuditRows.length, 1, 'only one successful webhook state transition should be processed');
+    assert.equal(duplicateAuditRows.length, 1, 'second delivery should be recorded as duplicate');
+    assert.equal(notificationLogs.length, 1, 'duplicate success delivery should not emit duplicate notifications');
+
+    const processedAudit = processedAuditRows[0];
+    assert.equal(processedAudit.provider_event_id, 'evt_success_1', 'provider_event_id should be stored when present');
+    assert.equal(processedAudit.tx_ref, checkoutResult.reference, 'tx_ref should be stored');
+    assert.equal(processedAudit.payload_hash, hashPayload(rawWebhook), 'payload_hash should be stored');
+    assert.equal(processedAudit.processing_status, 'processed', 'valid success webhook should be processed');
+    assert.ok(processedAudit.processed_at, 'processed_at should be non-null');
+    assert.equal(processedAudit.error, null, 'processed success webhook should not have an error');
   } finally {
     global.fetch = originalFetch;
+    console.log = originalConsoleLog;
     server.close();
-    orderRepository.clear();
-    paymentRepository.clear();
+    clearPaymentState();
     db.prepare('DELETE FROM listings WHERE id = 999').run();
     db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_1');
   }
 });
 
 test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
-  orderRepository.clear();
-  paymentRepository.clear();
+  clearPaymentState();
 
-  const app = express();
-  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
-  app.use(express.json());
-  mountPayChanguRoutes(app, requireAuth);
-
+  const app = createApp();
   const originalFetch = global.fetch;
   global.fetch = mockFetch(originalFetch);
-  process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
 
   try {
-    const now = new Date().toISOString();
-    serverOrderService.create({
-      id: 'order_it_1', buyerId: 'buyer_1', sellerId: 'seller_1', source: 'listing', status: 'draft',
-      currency: 'MWK', subtotal: { amount: 1000, currency: 'MWK' }, total: { amount: 1000, currency: 'MWK' },
-      items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }],
-      createdAt: now, updatedAt: now, paymentReference: 'txref-integration-1', escrowId: 'escrow_1',
-    });
+    seedOrder('order_it_1', 'txref-integration-1');
 
-    // Step 1: Initialize payment
-    const createPaymentRes = await fetch(`${base}/api/payments/paychangu/initialize`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer fake' },
-      body: JSON.stringify({
-        orderId: 'order_it_1', provider: 'paychangu', method: 'mobile_money',
-        amount: { amount: 1000, currency: 'MWK' },
-        customer: { id: 'buyer_1', name: 'Buyer One', email: 'buyer@example.com', phoneNumber: '+265999111000' },
-        returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel',
-      }),
-    });
-
+    const createPaymentRes = await initializePayment(base, 'order_it_1');
     assert.equal(createPaymentRes.status, 201, 'initialize should return 201');
     const paymentResult = await createPaymentRes.json() as { reference?: string };
     assert.ok(paymentResult.reference, 'initialize should return a reference');
 
-    // Step 2: Verify payment
-    const verifyRes = await fetch(
-      `${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`,
-      { headers: { authorization: 'Bearer fake' } },
-    );
-    assert.equal(verifyRes.status, 200, 'verify should return 200');
-    const verifyResult = await verifyRes.json() as { verified?: boolean };
-    assert.ok(verifyResult.verified, 'verify should return verified=true');
-
-    // Step 3: Webhook marks order as paid
     const rawWebhook = JSON.stringify({
       event_type: 'charge.success', tx_ref: 'txref-integration-1',
       data: { tx_ref: 'txref-integration-1', status: 'successful', amount: 1000, currency: 'MWK' },
     });
-    const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
-
-    const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
-      body: rawWebhook,
-    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
 
     assert.equal(webhookRes.status, 200, 'webhook should return 200');
 
-    // Step 4: Verify final state
     const savedOrder = orderRepository.findById('order_it_1');
     const savedPayment = paymentRepository.findByReference('txref-integration-1');
 
     assert.equal(savedOrder?.status, 'in_escrow', 'order should be in escrow after successful payment');
     assert.equal(savedPayment?.verified, true, 'payment should be verified');
     assert.equal(savedPayment?.status, 'captured', 'payment status should be captured');
+    assert.equal(countEscrowsForOrder('order_it_1'), 1, 'successful webhook should call the escrow path');
   } finally {
     global.fetch = originalFetch;
     server.close();
-    orderRepository.clear();
-    paymentRepository.clear();
+    clearPaymentState();
   }
 });
 
+test('integration: invalid paychangu webhook signature is audited as rejected', async () => {
+  clearPaymentState();
 
-test('integration: pending webhook updates payment only and does not create escrow transition', async () => {
-  orderRepository.clear();
-  paymentRepository.clear();
-  const app = express();
-  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
-  app.use(express.json());
-  mountPayChanguRoutes(app, requireAuth);
-  const originalFetch = global.fetch;
-  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
-    const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
-    if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
-      return new Response(JSON.stringify({
-        data: {
-          checkout_url: 'https://checkout.paychangu.test/session',
-          tx_ref: 'txref-pending-1',
-          id: 'pch_001',
-        },
-      }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-    if (/^https:\/\/[^/]*paychangu\.com\/verify-payment\/txref-pending-1/.test(target)) {
-      return new Response(JSON.stringify({
-        data: {
-          tx_ref: 'txref-pending-1',
-          status: 'processing',
-          amount: 1000,
-          currency: 'MWK',
-        },
-      }), { status: 200, headers: { 'content-type': 'application/json' } });
-    }
-    return mockFetch(originalFetch)(input, init);
-  }) as typeof fetch;
-  process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
+  const app = createApp();
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
+
   try {
-    const now = new Date().toISOString();
-    serverOrderService.create({ id: 'order_pending_1', buyerId: 'buyer_1', sellerId: 'seller_1', source: 'listing', status: 'pending_payment', currency: 'MWK', subtotal: { amount: 1000, currency: 'MWK' }, total: { amount: 1000, currency: 'MWK' }, items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }], createdAt: now, updatedAt: now, paymentReference: 'txref-pending-1', escrowId: 'escrow_1' });
-    await fetch(`${base}/api/payments/paychangu/initialize`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer fake' }, body: JSON.stringify({ orderId: 'order_pending_1', provider: 'paychangu', method: 'mobile_money', amount: { amount: 1000, currency: 'MWK' }, customer: { id: 'buyer_1', name: 'Buyer One', email: 'buyer@example.com' }, returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel' }) });
-    const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-pending-1', data: { tx_ref: 'txref-pending-1', status: 'processing', amount: 1000, currency: 'MWK' } });
-    const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
-    const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature }, body: rawWebhook });
-    assert.equal(webhookRes.status, 200);
-    assert.equal(orderRepository.findById('order_pending_1')?.status, 'pending_payment');
-    assert.equal(paymentRepository.findByReference('txref-pending-1')?.status, 'pending');
-  } finally { global.fetch = originalFetch; server.close(); orderRepository.clear(); paymentRepository.clear(); }
+    const rawWebhook = JSON.stringify({
+      event_type: 'api.charge.payment',
+      event_id: 'evt_bad_sig_1',
+      tx_ref: 'txref-invalid-signature-1',
+      data: { tx_ref: 'txref-invalid-signature-1', status: 'paid', amount: 1000, currency: 'MWK' },
+    });
+
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook, 'not-a-valid-signature');
+    assert.equal(webhookRes.status, 400, 'invalid signature webhook should be rejected by the route');
+
+    const auditRows = fetchWebhookAuditRows('txref-invalid-signature-1');
+    assert.equal(auditRows.length, 1, 'invalid signature should still create an audit row');
+    assert.equal(auditRows[0].processing_status, 'rejected', 'webhook audit should end rejected');
+    assert.match(auditRows[0].error ?? '', /Invalid PayChangu webhook signature/, 'audit error should contain concise signature failure message');
+  } finally {
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: pending webhook keeps payment and order pending without escrow', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-pending-1', 'processing');
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_pending_1', 'txref-pending-1');
+    const createPaymentRes = await initializePayment(base, 'order_pending_1');
+    assert.equal(createPaymentRes.status, 201, 'initialize should return 201');
+
+    const rawWebhook = JSON.stringify({
+      event_type: 'api.charge.payment',
+      tx_ref: 'txref-pending-1',
+      data: { tx_ref: 'txref-pending-1', status: 'processing', amount: 1000, currency: 'MWK' },
+    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
+
+    assert.equal(webhookRes.status, 200, 'pending webhook should return 200');
+    assert.equal(paymentRepository.findByReference('txref-pending-1')?.status, 'pending', 'payment should remain pending');
+    assert.equal(orderRepository.findById('order_pending_1')?.status, 'pending_payment', 'order should remain pending_payment');
+    assert.equal(countEscrowsForOrder('order_pending_1'), 0, 'pending webhook should not create escrow');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: failed webhook fails payment without paying order or creating escrow', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-failed-1', 'failed');
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_failed_1', 'txref-failed-1');
+    const createPaymentRes = await initializePayment(base, 'order_failed_1');
+    assert.equal(createPaymentRes.status, 201, 'initialize should return 201');
+
+    const rawWebhook = JSON.stringify({
+      event_type: 'api.charge.payment',
+      tx_ref: 'txref-failed-1',
+      data: { tx_ref: 'txref-failed-1', status: 'failed', amount: 1000, currency: 'MWK' },
+    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
+
+    assert.equal(webhookRes.status, 200, 'failed webhook should return 200');
+    assert.equal(paymentRepository.findByReference('txref-failed-1')?.status, 'failed', 'payment status should become failed');
+    assert.equal(orderRepository.findById('order_failed_1')?.status, 'pending_payment', 'failed payment should leave order unpaid');
+    assert.equal(countEscrowsForOrder('order_failed_1'), 0, 'failed webhook should not create escrow');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: reversed webhook refunds captured escrow according to domain policy', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-reversed-1', 'reversed');
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_reversed_1', 'txref-reversed-1', 'in_escrow');
+    const createPaymentRes = await initializePayment(base, 'order_reversed_1');
+    assert.equal(createPaymentRes.status, 201, 'initialize should return 201');
+    escrowRepository.create('order_reversed_1', 'MWK', 1000);
+
+    const rawWebhook = JSON.stringify({
+      event_type: 'api.charge.payment',
+      tx_ref: 'txref-reversed-1',
+      data: { tx_ref: 'txref-reversed-1', status: 'reversed', amount: 1000, currency: 'MWK' },
+    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
+
+    assert.equal(webhookRes.status, 200, 'reversed webhook should return 200');
+    assert.equal(paymentRepository.findByReference('txref-reversed-1')?.status, 'refunded', 'payment status should reflect reversal/refund');
+    assert.equal(orderRepository.findById('order_reversed_1')?.status, 'refunded', 'reversed captured payment should refund the order');
+    assert.equal(escrowRepository.findByOrderId('order_reversed_1')?.state, 'refunded', 'reversed captured payment should refund escrow');
+    assert.equal(countEscrowsForOrder('order_reversed_1'), 1, 'reversal should update existing escrow, not create another escrow');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
 });
