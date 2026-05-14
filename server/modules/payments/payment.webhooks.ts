@@ -174,7 +174,7 @@ export class PaymentWebhookHandler {
     let parsedPayload: unknown;
     let details: ReturnType<typeof getPayChanguEventDetails> | null = null;
     let eventType: string | undefined;
-    let txRef = "";
+    let txRef: string | undefined;
 
     try {
       parsedPayload = parseRawWebhookPayload(rawPayload);
