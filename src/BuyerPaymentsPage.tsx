@@ -1,17 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft, Trash2 } from "lucide-react";
 import { formatMoney } from "./shared/utils/formatMoney";
 import {
-  CART_PATH,
   PAYMENTS_HUB_PATH,
   navigateBackOrPath,
   navigateToOrderTracking,
-  navigateToPath,
 } from "./lib/appNavigation";
-import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
+import {
+  clearBuyerPaymentRecords,
+  readBuyerPayments,
+  type BuyerPaymentRecord,
+} from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
+
+type PaymentFilter = "all" | "pending" | "paid" | "rejected" | "error";
 
 function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
   if (status === "paid") return "border border-emerald-200 bg-emerald-50 text-emerald-700";
@@ -19,6 +23,13 @@ function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
   if (status === "error") return "border border-red-200 bg-red-50 text-red-700";
   return "border border-zinc-200 bg-zinc-100 text-zinc-700";
 }
+
+const FILTERS: Array<{ key: Exclude<PaymentFilter, "all">; label: string }> = [
+  { key: "pending", label: "Pending" },
+  { key: "paid", label: "Paid" },
+  { key: "rejected", label: "Rejected" },
+  { key: "error", label: "Error" },
+];
 
 export default function BuyerPaymentsPage() {
   const ready = useRequireVerifiedUser();
@@ -31,6 +42,7 @@ function BuyerPaymentsPageContent() {
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<PaymentFilter>("all");
 
   useEffect(() => {
     let mounted = true;
@@ -65,6 +77,28 @@ function BuyerPaymentsPageContent() {
 
   const summary = useMemo(() => summarizePayments(orders, paymentRecords), [orders, paymentRecords]);
 
+  const visibleRecords = useMemo(() => {
+    if (activeFilter === "all") return summary.records;
+    return summary.records.filter((record) => record.status === activeFilter);
+  }, [activeFilter, summary.records]);
+
+  const handleClearLogs = () => {
+    const confirmed = window.confirm(
+      "Clear the buyer payment logs on this device? This only resets the local view.",
+    );
+    if (!confirmed) return;
+
+    clearBuyerPaymentRecords();
+    setOrders([]);
+    setPaymentRecords([]);
+    setActiveFilter("all");
+    setError(null);
+  };
+
+  const toggleFilter = (filter: PaymentFilter) => {
+    setActiveFilter((current) => (current === filter ? "all" : filter));
+  };
+
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
@@ -83,8 +117,8 @@ function BuyerPaymentsPageContent() {
             onClick={() => navigateToPath(CART_PATH)}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
           >
-            <ShoppingCart className="h-4 w-4" />
-            Cart
+            <Trash2 className="h-4 w-4" />
+            Clear logs
           </button>
         </div>
 
@@ -124,6 +158,23 @@ function BuyerPaymentsPageContent() {
           </div>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-500">
+          <p>
+            Showing <span className="font-bold text-zinc-800">{visibleRecords.length}</span> of{" "}
+            <span className="font-bold text-zinc-800">{summary.records.length}</span> records
+            {activeFilter === "all" ? "" : ` filtered by ${activeFilter}.`}
+          </p>
+          {activeFilter !== "all" ? (
+            <button
+              type="button"
+              onClick={() => setActiveFilter("all")}
+              className="font-bold text-zinc-800 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+            >
+              Show all
+            </button>
+          ) : null}
+        </div>
+
         {error ? (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {error}
@@ -135,8 +186,8 @@ function BuyerPaymentsPageContent() {
             <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
               Loading payment activity…
             </p>
-          ) : summary.records.length ? (
-            summary.records.map((record) => (
+          ) : visibleRecords.length ? (
+            visibleRecords.map((record) => (
               <button
                 key={record.key}
                 type="button"

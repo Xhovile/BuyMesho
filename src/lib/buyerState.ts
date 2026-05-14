@@ -8,6 +8,7 @@ export type BuyerCartItem = {
   listingId: string;
   listingTitle: string;
   listingImage?: string | null;
+  listingDescription?: string | null;
   university?: string | null;
   quantity: number;
   unitPrice: number;

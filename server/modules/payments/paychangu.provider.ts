@@ -108,6 +108,31 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function sortDeep(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((item) => sortDeep(item));
+  }
+
+  if (!isPlainRecord(value)) {
+    return value;
+  }
+
+  return Object.keys(value)
+    .sort()
+    .reduce<Record<string, unknown>>((acc, key) => {
+      acc[key] = sortDeep(value[key]);
+      return acc;
+    }, {});
+}
+
+function stringifyStable(value: unknown): string {
+  try {
+    return JSON.stringify(sortDeep(value));
+  } catch {
+    return '';
+  }
+}
+
 function parseWebhookPayload(
   payload: unknown,
 ): { rawPayload: string; parsedPayload: Record<string, unknown> | null } {
@@ -126,54 +151,180 @@ function parseWebhookPayload(
     }
   }
 
+  if (Buffer.isBuffer(payload)) {
+    const rawPayload = payload.toString('utf8');
+    try {
+      const parsed = JSON.parse(rawPayload) as unknown;
+      return {
+        rawPayload,
+        parsedPayload: isPlainRecord(parsed) ? parsed : null,
+      };
+    } catch {
+      return {
+        rawPayload,
+        parsedPayload: null,
+      };
+    }
+  }
+
   if (isPlainRecord(payload)) {
     return {
-      rawPayload: JSON.stringify(payload),
+      rawPayload: stringifyStable(payload),
       parsedPayload: payload,
     };
   }
 
   return {
-    rawPayload: JSON.stringify(payload),
+    rawPayload: stringifyStable(payload),
     parsedPayload: null,
   };
 }
 
 function signatureMatches(
   secret: string | undefined,
-  payload: string,
+  payloads: string[],
   signature: string | undefined,
 ): boolean {
   if (!secret || !signature) return false;
 
-  const expected = createHmac('sha256', secret).update(payload).digest('hex');
   const normalizedSignature = signature.trim();
   const candidateSignatures = [
     normalizedSignature,
     normalizedSignature.replace(/^sha256=/i, ''),
   ];
 
-  const expectedHex = Buffer.from(expected, 'hex');
+  for (const payload of payloads) {
+    const expected = createHmac('sha256', secret).update(payload).digest('hex');
+    const expectedHex = Buffer.from(expected, 'hex');
 
-  for (const candidate of candidateSignatures) {
-    if (!candidate) continue;
-    if (/^[a-fA-F0-9]+$/.test(candidate) && candidate.length % 2 === 0) {
-      try {
-        const candidateHex = Buffer.from(candidate.toLowerCase(), 'hex');
-        if (
-          candidateHex.length === expectedHex.length &&
-          timingSafeEqual(expectedHex, candidateHex)
-        ) {
-          return true;
+    for (const candidate of candidateSignatures) {
+      if (!candidate) continue;
+      if (/^[a-fA-F0-9]+$/.test(candidate) && candidate.length % 2 === 0) {
+        try {
+          const candidateHex = Buffer.from(candidate.toLowerCase(), 'hex');
+          if (
+            candidateHex.length === expectedHex.length &&
+            timingSafeEqual(expectedHex, candidateHex)
+          ) {
+            return true;
+          }
+        } catch {
+          // continue with next candidate
         }
-      } catch {
-        // continue with next candidate
       }
     }
-
   }
 
   return false;
+}
+
+function buildWebhookPayloadCandidates(payload: unknown, parsedPayload: Record<string, unknown> | null): string[] {
+  const candidates = new Set<string>();
+
+  if (typeof payload === 'string') {
+    candidates.add(payload);
+  } else if (Buffer.isBuffer(payload)) {
+    candidates.add(payload.toString('utf8'));
+  }
+
+  if (parsedPayload) {
+    candidates.add(JSON.stringify(parsedPayload));
+    candidates.add(stringifyStable(parsedPayload));
+  }
+
+  if (isPlainRecord(payload)) {
+    candidates.add(JSON.stringify(payload));
+    candidates.add(stringifyStable(payload));
+  }
+
+  return [...candidates].filter((candidate) => candidate.length > 0);
+}
+
+function getPayChanguEventDetails(payload: unknown): {
+  eventType?: string;
+  status?: string;
+  txRef?: string;
+  data?: PlainRecord;
+  raw: PlainRecord;
+} {
+  const raw = asRecord(payload);
+  const data = asOptionalRecord(raw.data) ?? raw;
+
+  return {
+    eventType: asTrimmedString(raw.event_type ?? raw.event),
+    status: asTrimmedString(data.status ?? raw.status),
+    txRef: asTrimmedString(
+      data.tx_ref ??
+        data.txRef ??
+        data.reference ??
+        raw.tx_ref ??
+        raw.txRef ??
+        raw.reference
+    ),
+    data,
+    raw,
+  };
+}
+
+function extractTxRef(payload: unknown, fallback?: string): string {
+  const details = getPayChanguEventDetails(payload);
+  return (details.txRef ?? fallback ?? '').trim();
+}
+
+function logWebhookEvent(params: {
+  signatureValid: boolean;
+  eventType?: string;
+  reference?: string;
+  payload: unknown;
+}): void {
+  try {
+    const db = getPaymentDb();
+    const rawPayload =
+      typeof params.payload === 'string'
+        ? params.payload
+        : Buffer.isBuffer(params.payload)
+          ? params.payload.toString('utf8')
+          : JSON.stringify(params.payload ?? {});
+
+    db.prepare(
+      `
+      INSERT INTO payment_webhook_events
+        (provider, reference, event_type, signature_valid, payload, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      `
+    ).run(
+      'paychangu',
+      params.reference ?? null,
+      params.eventType ?? null,
+      params.signatureValid ? 1 : 0,
+      rawPayload,
+      new Date().toISOString()
+    );
+  } catch (error) {
+    console.warn('[webhook] failed to store PayChangu webhook event', error);
+  }
+}
+
+function shouldProcessWebhook(payload: unknown): boolean {
+  const { status } = getPayChanguEventDetails(payload);
+
+  // The important gate is the provider status, not the exact event name.
+  // If the webhook is signed and the provider status is successful, the order
+  // should move forward.
+  return Boolean(status && isPaychanguSuccessStatus(status));
+}
+
+function isDuplicateCapture(txRef: string): boolean {
+  const payment = paymentRepository.findByReference(txRef);
+  if (!payment || payment.status !== 'captured') {
+    return false;
+  }
+
+  const order =
+    orderRepository.findByPaymentReference(txRef) ??
+    orderRepository.findById(payment.orderId);
+
+  return Boolean(order && order.status === 'in_escrow');
 }
 
 export const paychanguProvider = {
@@ -311,9 +462,12 @@ export const paychanguProvider = {
     config: PayChanguConfig = {},
   ): Promise<WebhookVerificationResult> {
     const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
+    const payloadCandidates = buildWebhookPayloadCandidates(payload, parsedPayload);
 
     return {
-      valid: parsedPayload !== null && signatureMatches(config.paychanguWebhookSecret, rawPayload, signature),
+      valid:
+        parsedPayload !== null &&
+        signatureMatches(config.paychanguWebhookSecret, [rawPayload, ...payloadCandidates], signature),
       provider: 'paychangu',
       eventType: parsedPayload
         ? String(parsedPayload.event_type ?? parsedPayload.event ?? '')
