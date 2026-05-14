@@ -355,6 +355,7 @@ test('integration: malformed paychangu webhook JSON is audited as failed', async
   const base = `http://127.0.0.1:${port}`;
 
   try {
+    // Incomplete JSON: missing closing brace.
     const rawWebhook = '{"event_type":"api.charge.payment","tx_ref":"txref-malformed-1",';
     const webhookRes = await postPayChanguWebhook(base, rawWebhook);
 

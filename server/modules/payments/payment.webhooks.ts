@@ -171,7 +171,7 @@ export class PaymentWebhookHandler {
 
     const payloadHash = hashPayload(rawPayload);
     const createdAt = new Date().toISOString();
-    let parsedPayload: unknown = {};
+    let parsedPayload: unknown;
     let details: ReturnType<typeof getPayChanguEventDetails> | null = null;
     let eventType: string | undefined;
     let txRef = "";
