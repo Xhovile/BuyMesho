@@ -6,6 +6,7 @@ import { paystackProvider } from '../../../src/modules/payments/providers/paysta
 import { paychanguProvider } from './paychangu.provider.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -110,45 +111,63 @@ export class ServerPaymentService {
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
-    const payment = paymentRepository.findByReference(verification.reference ?? txRef);
+  const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
+  const payment = paymentRepository.findByReference(verification.reference ?? txRef);
 
-    let strictVerified = verification.verified;
-    let failureReason = verification.failureReason;
+  let strictVerified = verification.verified;
+  let failureReason = verification.failureReason;
 
-    if (!payment) {
+  if (!payment) {
+    strictVerified = false;
+    failureReason = failureReason ?? 'Stored payment record not found for this reference';
+  } else {
+    const order = orderRepository.findById(payment.orderId);
+    if (!order) {
       strictVerified = false;
-      failureReason = failureReason ?? 'Stored payment record not found for this reference';
+      failureReason = failureReason ?? 'Associated order not found';
     } else {
-      const order = orderRepository.findById(payment.orderId);
-      if (!order) {
+      const amountMatches = moneyMatches(order.total, verification.amount);
+      if (!amountMatches) {
         strictVerified = false;
-        failureReason = failureReason ?? 'Associated order not found';
-      } else {
-        const amountMatches = moneyMatches(order.total, verification.amount);
-        if (!amountMatches) {
-          strictVerified = false;
-          failureReason = failureReason ?? `Payment amount or currency does not match order total for ${order.id}`;
-        }
+        failureReason =
+          failureReason ?? `Payment amount or currency does not match order total for ${order.id}`;
       }
     }
+  }
 
-    const strictVerification: PaymentVerificationResult = {
-      ...verification,
-      verified: strictVerified,
-      orderId: payment?.orderId,
-      failureReason,
-    };
+  const strictVerification: PaymentVerificationResult = {
+    ...verification,
+    verified: strictVerified,
+    orderId: payment?.orderId,
+    failureReason,
+  };
 
-    if (payment) {
-      await paymentRepository.updateByReference(payment.reference, (current) => ({
-        ...current,
-        verified: strictVerification.verified,
-        verification: strictVerification,
-      }));
+  if (payment) {
+    await paymentRepository.updateByReference(payment.reference, (current) => ({
+      ...current,
+      verified: strictVerification.verified,
+      verification: strictVerification,
+    }));
+  }
+
+  if (strictVerification.verified && payment) {
+    const currentOrder = orderRepository.findById(payment.orderId);
+
+    if (
+      currentOrder &&
+      !['in_escrow', 'fulfilled', 'refunded', 'closed', 'disputed'].includes(currentOrder.status)
+    ) {
+      applyVerifiedPayChanguPayment({
+        ...strictVerification,
+        provider: 'paychangu',
+        reference: strictVerification.reference ?? txRef,
+        txRef,
+        status: strictVerification.status ?? 'captured',
+      });
     }
+  }
 
-    return strictVerification;
+  return strictVerification;
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
