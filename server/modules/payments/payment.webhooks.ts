@@ -145,14 +145,21 @@ function hashPayload(rawPayload: string): string {
 
 function resolvePaychanguWebhookStatus(
   payloadStatus: string | undefined,
-  verification: PaymentVerificationResult,
+  verification?: PaymentVerificationResult,
 ): PayChanguPaymentStatus {
-  const verifiedStatus = normalizePaychanguPaymentStatus(verification.status);
+  const verifiedStatus = verification
+    ? normalizePaychanguPaymentStatus(verification.status)
+    : "unknown";
+
   if (verifiedStatus !== "unknown") {
     return verifiedStatus;
   }
 
   return normalizePaychanguPaymentStatus(payloadStatus);
+}
+
+function shouldVerifyPaychanguWebhook(status: PayChanguPaymentStatus): boolean {
+  return status === "paid" || status === "unknown";
 }
 
 function isPaymentVerificationResult(
@@ -375,15 +382,17 @@ export class PaymentWebhookHandler {
         throw new Error("Missing PayChangu tx_ref in webhook payload");
       }
 
-      const verification =
-        await serverPaymentService.verifyPaychanguPayment(txRef);
+      const payloadStatus = normalizePaychanguPaymentStatus(details.status);
+      const verification = shouldVerifyPaychanguWebhook(payloadStatus)
+        ? await serverPaymentService.verifyPaychanguPayment(txRef)
+        : undefined;
       const normalizedStatus = resolvePaychanguWebhookStatus(
         details.status,
         verification,
       );
 
       if (normalizedStatus === "pending") {
-        markPaymentPending(txRef, verification);
+        markPaymentPending(txRef, verification ?? asRecord(parsedPayload));
         updatePaymentWebhookEventStatus(eventId, "processed", {
           processedAt: new Date().toISOString(),
           signatureValid: true,
@@ -392,7 +401,7 @@ export class PaymentWebhookHandler {
       }
 
       if (normalizedStatus === "failed") {
-        markPaymentFailed(txRef, verification);
+        markPaymentFailed(txRef, verification ?? asRecord(parsedPayload));
         updatePaymentWebhookEventStatus(eventId, "processed", {
           processedAt: new Date().toISOString(),
           signatureValid: true,
@@ -401,7 +410,7 @@ export class PaymentWebhookHandler {
       }
 
       if (normalizedStatus === "reversed") {
-        markPaymentReversed(txRef, verification);
+        markPaymentReversed(txRef, verification ?? asRecord(parsedPayload));
         updatePaymentWebhookEventStatus(eventId, "processed", {
           processedAt: new Date().toISOString(),
           signatureValid: true,
@@ -412,17 +421,19 @@ export class PaymentWebhookHandler {
       if (normalizedStatus === "unknown") {
         updatePaymentWebhookEventStatus(eventId, "processed", {
           processedAt: new Date().toISOString(),
-          error: verification.status
+          error: verification?.status
             ? `Unrecognized PayChangu payment status: ${verification.status}`
-            : "Unrecognized PayChangu payment status",
+            : details.status
+              ? `Unrecognized PayChangu payment status: ${details.status}`
+              : "Unrecognized PayChangu payment status",
           signatureValid: true,
         });
         return result;
       }
 
-      if (!verification.verified) {
+      if (!verification?.verified) {
         throw new Error(
-          verification.failureReason ??
+          verification?.failureReason ??
             `PayChangu reported a paid status that could not be verified for ${txRef}`,
         );
       }
