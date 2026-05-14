@@ -12,13 +12,33 @@ export interface ApplyPayChanguResult {
 }
 
 function normalizeReference(value: string | undefined | null): string {
-  return String(value ?? '')
-    .trim()
-    .replace(/^PAYCHANGU-/i, '');
+  return String(value ?? '').trim();
 }
 
-function resolveReference(verification: PaymentVerificationResult): string {
-  return normalizeReference(verification.reference ?? verification.txRef);
+function stripPayChanguPrefix(value: string): string {
+  return value.replace(/^PAYCHANGU-/i, '');
+}
+
+function uniqueReferences(values: Array<string | undefined | null>): string[] {
+  const seen = new Set<string>();
+  const references: string[] = [];
+
+  for (const value of values) {
+    const reference = normalizeReference(value);
+    if (!reference || seen.has(reference)) continue;
+    seen.add(reference);
+    references.push(reference);
+  }
+
+  return references;
+}
+
+function resolveReferenceCandidates(verification: PaymentVerificationResult): string[] {
+  const exactReferences = uniqueReferences([verification.reference, verification.txRef]);
+  return uniqueReferences([
+    ...exactReferences,
+    ...exactReferences.map(stripPayChanguPrefix),
+  ]);
 }
 
 function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
@@ -40,14 +60,41 @@ function isCaptured(verification: PaymentVerificationResult): boolean {
   );
 }
 
-function resolveOrderByReference(reference: string) {
-  return orderRepository.findByPaymentReference(reference) ?? undefined;
+function resolveOrderByReferences(references: string[]) {
+  for (const reference of references) {
+    const order = orderRepository.findByPaymentReference(reference);
+    if (order) return order;
+  }
+
+  return undefined;
+}
+
+function updatePaymentByReferences(
+  references: string[],
+  updater: Parameters<typeof paymentRepository.updateByReference>[1],
+) {
+  for (const reference of references) {
+    const payment = paymentRepository.updateByReference(reference, updater);
+    if (payment) return payment;
+  }
+
+  return undefined;
+}
+
+function confirmOrderByReferences(references: string[]) {
+  for (const reference of references) {
+    const order = serverOrderService.confirmByPaymentReference(reference);
+    if (order) return order;
+  }
+
+  return undefined;
 }
 
 export function applyVerifiedPayChanguPayment(
   verification: PaymentVerificationResult,
 ): ApplyPayChanguResult {
-  const reference = resolveReference(verification);
+  const referenceCandidates = resolveReferenceCandidates(verification);
+  const reference = referenceCandidates[0];
   if (!reference) {
     throw new Error('Missing PayChangu reference');
   }
@@ -58,7 +105,7 @@ export function applyVerifiedPayChanguPayment(
     );
   }
 
-  const payment = paymentRepository.updateByReference(reference, (current) => ({
+  const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
     ...current,
     verified: true,
     verification,
@@ -67,7 +114,7 @@ export function applyVerifiedPayChanguPayment(
     updatedAt: new Date().toISOString(),
   }));
 
-  let order = resolveOrderByReference(reference);
+  let order = resolveOrderByReferences(referenceCandidates);
   if (!order && payment) {
     order = orderRepository.findById(payment.orderId);
   }
@@ -80,7 +127,7 @@ export function applyVerifiedPayChanguPayment(
   }
 
   const confirmedOrder =
-    serverOrderService.confirmByPaymentReference(reference) ??
+    confirmOrderByReferences(referenceCandidates) ??
     serverOrderService.setStatus(order.id, 'paid') ??
     order;
 
