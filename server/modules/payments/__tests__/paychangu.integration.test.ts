@@ -238,20 +238,42 @@ test('integration: pending webhook updates payment only and does not create escr
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
   const originalFetch = global.fetch;
-  global.fetch = mockFetch(originalFetch);
+  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
+      return new Response(JSON.stringify({
+        data: {
+          checkout_url: 'https://checkout.paychangu.test/session',
+          tx_ref: 'txref-pending-1',
+          id: 'pch_001',
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (/^https:\/\/[^/]*paychangu\.com\/verify-payment\/txref-pending-1/.test(target)) {
+      return new Response(JSON.stringify({
+        data: {
+          tx_ref: 'txref-pending-1',
+          status: 'processing',
+          amount: 1000,
+          currency: 'MWK',
+        },
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    return mockFetch(originalFetch)(input, init);
+  }) as typeof fetch;
   process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
   try {
     const now = new Date().toISOString();
-    serverOrderService.create({ id: 'order_pending_1', buyerId: 'buyer_1', sellerId: 'seller_1', source: 'listing', status: 'pending_payment', currency: 'MWK', subtotal: { amount: 1000, currency: 'MWK' }, total: { amount: 1000, currency: 'MWK' }, items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }], createdAt: now, updatedAt: now, paymentReference: 'txref-integration-1', escrowId: 'escrow_1' });
+    serverOrderService.create({ id: 'order_pending_1', buyerId: 'buyer_1', sellerId: 'seller_1', source: 'listing', status: 'pending_payment', currency: 'MWK', subtotal: { amount: 1000, currency: 'MWK' }, total: { amount: 1000, currency: 'MWK' }, items: [{ listingId: 'listing_1', title: 'Item', quantity: 1, unitPrice: { amount: 1000, currency: 'MWK' } }], createdAt: now, updatedAt: now, paymentReference: 'txref-pending-1', escrowId: 'escrow_1' });
     await fetch(`${base}/api/payments/paychangu/initialize`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer fake' }, body: JSON.stringify({ orderId: 'order_pending_1', provider: 'paychangu', method: 'mobile_money', amount: { amount: 1000, currency: 'MWK' }, customer: { id: 'buyer_1', name: 'Buyer One', email: 'buyer@example.com' }, returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel' }) });
-    const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-integration-1', data: { tx_ref: 'txref-integration-1', status: 'processing', amount: 1000, currency: 'MWK' } });
+    const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-pending-1', data: { tx_ref: 'txref-pending-1', status: 'processing', amount: 1000, currency: 'MWK' } });
     const signature = createHmac('sha256', 'integration-secret').update(rawWebhook).digest('hex');
     const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature }, body: rawWebhook });
     assert.equal(webhookRes.status, 200);
     assert.equal(orderRepository.findById('order_pending_1')?.status, 'pending_payment');
-    assert.equal(paymentRepository.findByReference('txref-integration-1')?.status, 'pending');
+    assert.equal(paymentRepository.findByReference('txref-pending-1')?.status, 'pending');
   } finally { global.fetch = originalFetch; server.close(); orderRepository.clear(); paymentRepository.clear(); }
 });

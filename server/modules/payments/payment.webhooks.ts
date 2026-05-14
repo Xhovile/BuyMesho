@@ -5,7 +5,6 @@ import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import {
   isAcceptedPaychanguEventType,
-  isPaychanguSuccessStatus,
 } from './paychangu.provider.js';
 import { getPaymentDb } from '../../sqlite.js';
 
@@ -37,19 +36,6 @@ function asOptionalRecord(value: unknown): PlainRecord | undefined {
 function asTrimmedString(value: unknown): string | undefined {
   const text = String(value ?? '').trim();
   return text ? text : undefined;
-}
-
-function asAmount(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    const parsed = Number(value.trim());
-    return Number.isFinite(parsed) ? parsed : undefined;
-  }
-
-  return undefined;
 }
 
 function normalizeRawPayload(payload: unknown): string {
@@ -129,28 +115,6 @@ function logWebhookEvent(params: {
   }
 }
 
-function shouldProcessWebhook(payload: unknown): boolean {
-  const { status } = getPayChanguEventDetails(payload);
-
-  // The important gate is the provider status, not the exact event name.
-  // If the webhook is signed and the provider status is successful, the order
-  // should move forward.
-  return Boolean(status && isPaychanguSuccessStatus(status));
-}
-
-function isDuplicateCapture(txRef: string): boolean {
-  const payment = paymentRepository.findByReference(txRef);
-  if (!payment || payment.status !== 'captured') {
-    return false;
-  }
-
-  const order =
-    orderRepository.findByPaymentReference(txRef) ??
-    orderRepository.findById(payment.orderId);
-
-  return Boolean(order && order.status === 'in_escrow');
-}
-
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(
     signature: string | undefined,
@@ -182,32 +146,6 @@ export class PaymentWebhookHandler {
       throw new Error('Invalid PayChangu webhook signature');
     }
 
-    if (!details.status || !isPaychanguSuccessStatus(details.status)) {
-      if (eventType && !isAcceptedPaychanguEventType(eventType)) {
-        console.info(
-          '[webhook] ignoring non-success PayChangu event',
-          {
-            eventType,
-            status: details.status ?? 'unknown',
-            reference: reference ?? result.reference ?? 'unknown',
-          }
-        );
-      }
-
-      return result;
-    }
-
-    if (eventType && !isAcceptedPaychanguEventType(eventType)) {
-      console.info(
-        '[webhook] proceeding with successful PayChangu event that uses an unrecognized event type',
-        {
-          eventType,
-          status: details.status,
-          reference: reference ?? result.reference ?? 'unknown',
-        }
-      );
-    }
-
     const parsedPayload =
       typeof payload === 'string'
         ? (() => {
@@ -219,18 +157,15 @@ export class PaymentWebhookHandler {
           })()
         : payload;
 
-    // Do not block progression on event name.
-    // The success status is enough.
-    if (!shouldProcessWebhook(parsedPayload)) {
+    if (eventType && !isAcceptedPaychanguEventType(eventType)) {
       console.info(
-        '[webhook] ignoring PayChangu webhook that does not have a successful status',
+        '[webhook] proceeding with PayChangu event that uses an unrecognized event type',
         {
           eventType,
           status: details.status ?? 'unknown',
           reference: reference ?? result.reference ?? 'unknown',
         }
       );
-      return result;
     }
 
     const txRef = extractTxRef(parsedPayload, result.reference);
@@ -238,12 +173,9 @@ export class PaymentWebhookHandler {
       throw new Error('Missing PayChangu tx_ref in webhook payload');
     }
 
-    if (isDuplicateCapture(txRef)) {
-      console.info('[webhook] skipping duplicate PayChangu capture replay', {
-        txRef,
-        eventType: eventType ?? 'unknown',
-        status: details.status ?? 'unknown',
-      });
+    const verification = await serverPaymentService.verifyPaychanguPayment(txRef);
+
+    if (!verification.verified) {
       return result;
     }
 
@@ -266,37 +198,19 @@ export class PaymentWebhookHandler {
       );
     }
 
-    const data =
-      asOptionalRecord((parsedPayload as PlainRecord).data) ??
-      asOptionalRecord(parsedPayload) ??
-      undefined;
-
-    const webhookCurrency = String(data?.currency ?? order.currency ?? 'MWK');
-    const rawAmount = data?.amount;
-    const parsedAmount = asAmount(rawAmount);
-
-    const amount =
-      typeof parsedAmount === 'number'
-        ? { amount: parsedAmount, currency: webhookCurrency }
-        : undefined;
-
-    if (
-      amount &&
-      (amount.amount !== order.total.amount ||
-        amount.currency.toUpperCase() !== order.total.currency.toUpperCase())
-    ) {
-      throw new Error(`Webhook amount does not match order total for order ${order.id}`);
-    }
-
     applyVerifiedPayChanguPayment({
+      ...verification,
       verified: true,
       provider: 'paychangu',
       txRef,
       reference: txRef,
-      status: String(data?.status ?? details.status ?? 'captured'),
-      currency: webhookCurrency,
-      amount,
-      rawResponse: asRecord(parsedPayload),
+      status: verification.status ?? 'captured',
+      currency: verification.currency ?? order.currency ?? 'MWK',
+      amount: verification.amount ?? {
+        amount: order.total.amount,
+        currency: order.total.currency,
+      },
+      rawResponse: asRecord(payload),
     });
 
     return result;
