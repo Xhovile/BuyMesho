@@ -177,17 +177,25 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "payments", "amount", "REAL NOT NULL DEFAULT 0");
 
   db.exec(`
+    DROP INDEX IF EXISTS idx_payment_webhook_events_provider_event_id;
+    DROP INDEX IF EXISTS idx_payment_webhook_events_dedupe;
+
     CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_reference
     ON payment_webhook_events(reference);
 
     CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_created_at
     ON payment_webhook_events(created_at DESC);
 
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_event_id
-    ON payment_webhook_events(provider, provider_event_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_event_id_active
+    ON payment_webhook_events(provider, provider_event_id)
+    WHERE provider_event_id IS NOT NULL AND processing_status <> 'duplicate';
 
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_dedupe
-    ON payment_webhook_events(provider, tx_ref, event_type, payload_hash);
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_dedupe_active
+    ON payment_webhook_events(provider, tx_ref, event_type, payload_hash)
+    WHERE tx_ref IS NOT NULL
+      AND event_type IS NOT NULL
+      AND payload_hash IS NOT NULL
+      AND processing_status <> 'duplicate';
   `);
 }
 
@@ -253,7 +261,9 @@ function isPaymentWebhookUniqueConstraintFailure(error: unknown): boolean {
   const message = String(err.message ?? "");
   return (
     message.includes("idx_payment_webhook_events_provider_event_id") ||
+    message.includes("idx_payment_webhook_events_provider_event_id_active") ||
     message.includes("idx_payment_webhook_events_dedupe") ||
+    message.includes("idx_payment_webhook_events_dedupe_active") ||
     message.includes("payment_webhook_events.provider") ||
     message.includes("payment_webhook_events.tx_ref")
   );
@@ -380,11 +390,13 @@ export function recordPaymentWebhookDuplicateAttempt(
         `INSERT INTO payment_webhook_events (
            provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
            processing_status, processed_at, error, signature_valid, payload, created_at
-         ) VALUES (?, NULL, ?, NULL, ?, ?, 'duplicate', ?, ?, 0, ?, ?)`,
+         ) VALUES (?, ?, ?, ?, ?, ?, 'duplicate', ?, ?, 0, ?, ?)`,
       )
       .run(
         provider,
+        normalizeOptionalText(input.providerEventId),
         normalizeOptionalText(input.reference ?? input.txRef),
+        normalizeOptionalText(input.txRef),
         normalizeOptionalText(input.eventType),
         normalizeOptionalText(input.payloadHash),
         new Date().toISOString(),

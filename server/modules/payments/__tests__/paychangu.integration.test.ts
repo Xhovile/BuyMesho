@@ -258,12 +258,19 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.equal(notificationLogs.length, 1, 'duplicate success delivery should not emit duplicate notifications');
 
     const processedAudit = processedAuditRows[0];
+    const duplicateAudit = duplicateAuditRows[0];
     assert.equal(processedAudit.provider_event_id, 'evt_success_1', 'provider_event_id should be stored when present');
     assert.equal(processedAudit.tx_ref, checkoutResult.reference, 'tx_ref should be stored');
     assert.equal(processedAudit.payload_hash, hashPayload(rawWebhook), 'payload_hash should be stored');
     assert.equal(processedAudit.processing_status, 'processed', 'valid success webhook should be processed');
     assert.ok(processedAudit.processed_at, 'processed_at should be non-null');
     assert.equal(processedAudit.error, null, 'processed success webhook should not have an error');
+    assert.equal(duplicateAudit.provider_event_id, 'evt_success_1', 'duplicate webhook should preserve provider_event_id');
+    assert.equal(duplicateAudit.tx_ref, checkoutResult.reference, 'duplicate webhook should preserve tx_ref');
+    assert.equal(duplicateAudit.payload_hash, hashPayload(rawWebhook), 'duplicate webhook should preserve payload_hash');
+    assert.equal(duplicateAudit.processing_status, 'duplicate', 'duplicate webhook should be marked duplicate');
+    assert.ok(duplicateAudit.processed_at, 'duplicate webhook should set processed_at');
+    assert.match(duplicateAudit.error ?? '', /^Duplicate PayChangu webhook event/, 'duplicate webhook should store duplicate error');
   } finally {
     global.fetch = originalFetch;
     console.log = originalConsoleLog;
