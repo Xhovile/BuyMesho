@@ -1,10 +1,16 @@
 import { createHash } from "crypto";
-import type { WebhookVerificationResult } from "../../../src/modules/payments/types.js";
+import type { PaymentVerificationResult, WebhookVerificationResult } from "../../../src/modules/payments/types.js";
 import { serverPaymentService } from "./payment.service.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import { paymentRepository } from "./payment.repository.js";
 import { orderRepository } from "../orders/order.repository.js";
-import { isAcceptedPaychanguEventType } from "./paychangu.provider.js";
+import { serverOrderService } from "../orders/order.service.js";
+import { escrowRepository } from "../escrow/escrow.repository.js";
+import {
+  isAcceptedPaychanguEventType,
+  normalizePaychanguPaymentStatus,
+  type PayChanguPaymentStatus,
+} from "./paychangu.provider.js";
 import {
   insertPaymentWebhookEvent,
   recordPaymentWebhookDuplicateAttempt,
@@ -137,6 +143,120 @@ function hashPayload(rawPayload: string): string {
   return createHash("sha256").update(rawPayload).digest("hex");
 }
 
+function resolvePaychanguWebhookStatus(
+  payloadStatus: string | undefined,
+  verification: PaymentVerificationResult,
+): PayChanguPaymentStatus {
+  const verifiedStatus = normalizePaychanguPaymentStatus(verification.status);
+  if (verifiedStatus !== "unknown") {
+    return verifiedStatus;
+  }
+
+  return normalizePaychanguPaymentStatus(payloadStatus);
+}
+
+function isPaymentVerificationResult(
+  value: PaymentVerificationResult | PlainRecord,
+): value is PaymentVerificationResult {
+  return "verified" in value && "provider" in value && "txRef" in value;
+}
+
+function mergePaymentRawResponse(
+  verificationOrPayload: PaymentVerificationResult | PlainRecord,
+): PlainRecord {
+  if (isPaymentVerificationResult(verificationOrPayload)) {
+    return verificationOrPayload.rawResponse ?? {};
+  }
+
+  return verificationOrPayload;
+}
+
+function markOrderPendingPaymentIfUnpaid(orderId: string): void {
+  const order = orderRepository.findById(orderId);
+  if (!order) return;
+
+  if (order.status === "draft" || order.status === "pending_payment") {
+    serverOrderService.setStatus(order.id, "pending_payment");
+  }
+}
+
+function markPaymentPending(
+  txRef: string,
+  verificationOrPayload: PaymentVerificationResult | PlainRecord,
+): void {
+  paymentRepository.updateByReference(txRef, (current) => ({
+    ...current,
+    status: "pending",
+    verified: false,
+    verification: isPaymentVerificationResult(verificationOrPayload)
+      ? verificationOrPayload
+      : current.verification,
+    rawResponse: mergePaymentRawResponse(verificationOrPayload),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  const payment = paymentRepository.findByReference(txRef);
+  if (payment) {
+    markOrderPendingPaymentIfUnpaid(payment.orderId);
+  }
+}
+
+function markPaymentFailed(
+  txRef: string,
+  verificationOrPayload: PaymentVerificationResult | PlainRecord,
+): void {
+  paymentRepository.updateByReference(txRef, (current) => ({
+    ...current,
+    status: "failed",
+    verified: false,
+    verification: isPaymentVerificationResult(verificationOrPayload)
+      ? verificationOrPayload
+      : current.verification,
+    rawResponse: mergePaymentRawResponse(verificationOrPayload),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  const payment = paymentRepository.findByReference(txRef);
+  if (payment) {
+    markOrderPendingPaymentIfUnpaid(payment.orderId);
+  }
+}
+
+function markPaymentReversed(
+  txRef: string,
+  verificationOrPayload: PaymentVerificationResult | PlainRecord,
+): void {
+  const payment = paymentRepository.updateByReference(txRef, (current) => ({
+    ...current,
+    status: "refunded",
+    verified: false,
+    verification: isPaymentVerificationResult(verificationOrPayload)
+      ? verificationOrPayload
+      : current.verification,
+    rawResponse: mergePaymentRawResponse(verificationOrPayload),
+    updatedAt: new Date().toISOString(),
+  }));
+
+  if (!payment) return;
+
+  const order =
+    orderRepository.findByPaymentReference(txRef) ??
+    orderRepository.findById(payment.orderId);
+
+  if (!order) return;
+
+  if (["paid", "in_escrow", "fulfilled", "disputed"].includes(order.status)) {
+    serverOrderService.setStatus(order.id, "refunded");
+  } else if (order.status === "draft" || order.status === "pending_payment") {
+    serverOrderService.setStatus(order.id, "pending_payment");
+  }
+
+  const escrow = escrowRepository.findByOrderId(order.id);
+  if (escrow && escrow.state !== "released" && escrow.state !== "closed") {
+    escrowRepository.updateState(order.id, "refunded");
+  }
+}
+
 export class PaymentWebhookHandler {
   async handlePaychanguWebhook(
     signature: string | undefined,
@@ -224,16 +344,54 @@ export class PaymentWebhookHandler {
 
       const verification =
         await serverPaymentService.verifyPaychanguPayment(txRef);
+      const normalizedStatus = resolvePaychanguWebhookStatus(
+        details.status,
+        verification,
+      );
 
-      if (!verification.verified) {
-        updatePaymentWebhookEventStatus(eventId, "ignored", {
+      if (normalizedStatus === "pending") {
+        markPaymentPending(txRef, verification);
+        updatePaymentWebhookEventStatus(eventId, "processed", {
           processedAt: new Date().toISOString(),
-          error: verification.status
-            ? `Payment verification status: ${verification.status}`
-            : null,
           signatureValid: true,
         });
         return result;
+      }
+
+      if (normalizedStatus === "failed") {
+        markPaymentFailed(txRef, verification);
+        updatePaymentWebhookEventStatus(eventId, "processed", {
+          processedAt: new Date().toISOString(),
+          signatureValid: true,
+        });
+        return result;
+      }
+
+      if (normalizedStatus === "reversed") {
+        markPaymentReversed(txRef, verification);
+        updatePaymentWebhookEventStatus(eventId, "processed", {
+          processedAt: new Date().toISOString(),
+          signatureValid: true,
+        });
+        return result;
+      }
+
+      if (normalizedStatus === "unknown") {
+        updatePaymentWebhookEventStatus(eventId, "processed", {
+          processedAt: new Date().toISOString(),
+          error: verification.status
+            ? `Unrecognized PayChangu payment status: ${verification.status}`
+            : "Unrecognized PayChangu payment status",
+          signatureValid: true,
+        });
+        return result;
+      }
+
+      if (!verification.verified) {
+        throw new Error(
+          verification.failureReason ??
+            `PayChangu reported a paid status that could not be verified for ${txRef}`,
+        );
       }
 
       const payment = paymentRepository.findByReference(txRef);

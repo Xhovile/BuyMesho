@@ -64,43 +64,55 @@ function toISODate(): string {
   return new Date().toISOString();
 }
 
-type VerificationState = 'paid' | 'pending' | 'failed' | 'reversed' | 'unknown';
+export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
 
-const PAYCHANGU_STATUS_MAP: Record<string, VerificationState> = {
-  success: 'paid',
-  successful: 'paid',
-  succeeded: 'paid',
-  paid: 'paid',
-  captured: 'paid',
-  completed: 'paid',
-  processed: 'paid',
-  approved: 'paid',
-  pending: 'pending',
-  processing: 'pending',
-  initiated: 'pending',
-  queued: 'pending',
-  failed: 'failed',
-  cancelled: 'failed',
-  canceled: 'failed',
-  declined: 'failed',
-  expired: 'failed',
-  reversed: 'reversed',
-  refunded: 'reversed',
-  chargeback: 'reversed',
-};
+const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'initiated', 'processing']);
+const PAYCHANGU_FAILED_STATUSES = new Set([
+  'failed',
+  'cancelled',
+  'canceled',
+  'declined',
+  'expired',
+]);
+const PAYCHANGU_REVERSED_STATUSES = new Set([
+  'reversed',
+  'refunded',
+  'chargeback',
+  'charged_back',
+]);
 
 function normalizeProviderStatus(rawStatus: unknown): {
-  normalized: VerificationState;
+  normalized: PayChanguPaymentStatus;
   providerStatus: string;
 } {
   const providerStatus = String(rawStatus ?? '').trim().toLowerCase();
-  return {
-    normalized: PAYCHANGU_STATUS_MAP[providerStatus] ?? 'unknown',
-    providerStatus,
-  };
+
+  if (PAYCHANGU_PENDING_STATUSES.has(providerStatus)) {
+    return { normalized: 'pending', providerStatus };
+  }
+
+  if (PAYCHANGU_SUCCESS_STATUSES.has(providerStatus)) {
+    return { normalized: 'paid', providerStatus };
+  }
+
+  if (PAYCHANGU_FAILED_STATUSES.has(providerStatus)) {
+    return { normalized: 'failed', providerStatus };
+  }
+
+  if (PAYCHANGU_REVERSED_STATUSES.has(providerStatus)) {
+    return { normalized: 'reversed', providerStatus };
+  }
+
+  return { normalized: 'unknown', providerStatus };
 }
 
-export function normalizePaychanguStatus(rawStatus: unknown): VerificationState {
+export function normalizePaychanguPaymentStatus(
+  status: string | undefined,
+): PayChanguPaymentStatus {
+  return normalizeProviderStatus(status).normalized;
+}
+
+export function normalizePaychanguStatus(rawStatus: unknown): PayChanguPaymentStatus {
   return normalizeProviderStatus(rawStatus).normalized;
 }
 
@@ -428,6 +440,5 @@ export function isAcceptedPaychanguEventType(eventType: string | undefined): boo
 }
 
 export function isPaychanguSuccessStatus(status: string | undefined): boolean {
-  if (!status) return false;
-  return PAYCHANGU_SUCCESS_STATUSES.has(status.trim().toLowerCase());
+  return normalizePaychanguPaymentStatus(status) === 'paid';
 }

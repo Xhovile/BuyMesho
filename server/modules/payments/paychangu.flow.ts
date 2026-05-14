@@ -3,21 +3,13 @@ import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
+import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
   order?: ReturnType<typeof orderRepository.findByPaymentReference>;
   verification: PaymentVerificationResult;
 }
-
-const CAPTURED_STATUSES = new Set([
-  'successful',
-  'success',
-  'succeeded',
-  'completed',
-  'captured',
-  'paid',
-]);
 
 function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '')
@@ -44,7 +36,7 @@ function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: s
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-    CAPTURED_STATUSES.has(String(verification.status ?? '').toLowerCase())
+    isPaychanguSuccessStatus(String(verification.status ?? ''))
   );
 }
 
