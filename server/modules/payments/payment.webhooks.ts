@@ -169,12 +169,45 @@ export class PaymentWebhookHandler {
       throw new Error("Missing raw webhook body");
     }
 
-    const parsedPayload = parseRawWebhookPayload(rawPayload);
-    const details = getPayChanguEventDetails(parsedPayload);
-    const eventType = normalizeEventType(details.eventType);
     const payloadHash = hashPayload(rawPayload);
-    const txRef = extractTxRef(parsedPayload);
     const createdAt = new Date().toISOString();
+    let parsedPayload: unknown = {};
+    let details: ReturnType<typeof getPayChanguEventDetails> | null = null;
+    let eventType: string | undefined;
+    let txRef = "";
+
+    try {
+      parsedPayload = parseRawWebhookPayload(rawPayload);
+      details = getPayChanguEventDetails(parsedPayload);
+      eventType = normalizeEventType(details.eventType);
+      txRef = extractTxRef(parsedPayload);
+    } catch {
+      const malformedAuditEvent = {
+        provider: "paychangu",
+        providerEventId: null,
+        reference: null,
+        txRef: null,
+        eventType: null,
+        payloadHash,
+        processingStatus: "received",
+        signatureValid: false,
+        payload: rawPayload,
+        error: null,
+        createdAt,
+      };
+      const malformedInsertResult = insertPaymentWebhookEvent(malformedAuditEvent);
+
+      if ("inserted" in malformedInsertResult && malformedInsertResult.inserted) {
+        updatePaymentWebhookEventStatus(malformedInsertResult.id, "failed", {
+          processedAt: new Date().toISOString(),
+          error: "Malformed webhook payload: invalid JSON",
+          signatureValid: false,
+        });
+      }
+
+      throw new Error("Malformed webhook payload: invalid JSON");
+    }
+
     const auditEvent = {
       provider: "paychangu",
       providerEventId: details.providerEventId,

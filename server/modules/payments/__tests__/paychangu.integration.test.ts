@@ -137,6 +137,17 @@ function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
     .all(txRef, txRef) as WebhookAuditRow[];
 }
 
+function fetchWebhookAuditRowsByPayloadHash(payloadHash: string): WebhookAuditRow[] {
+  return getPaymentDb()
+    .prepare(
+      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+       FROM payment_webhook_events
+       WHERE payload_hash = ?
+       ORDER BY id ASC`,
+    )
+    .all(payloadHash) as WebhookAuditRow[];
+}
+
 function countEscrowsForOrder(orderId: string): number {
   const row = getPaymentDb()
     .prepare('SELECT COUNT(*) AS count FROM escrows WHERE order_id = ?')
@@ -329,6 +340,34 @@ test('integration: invalid paychangu webhook signature is audited as rejected', 
     assert.equal(auditRows.length, 1, 'invalid signature should still create an audit row');
     assert.equal(auditRows[0].processing_status, 'rejected', 'webhook audit should end rejected');
     assert.match(auditRows[0].error ?? '', /Invalid PayChangu webhook signature/, 'audit error should contain concise signature failure message');
+  } finally {
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: malformed paychangu webhook JSON is audited as failed', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    const rawWebhook = '{"event_type":"api.charge.payment","tx_ref":"txref-malformed-1",';
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
+
+    assert.equal(webhookRes.status, 400, 'malformed webhook should be rejected by the route');
+
+    const auditRows = fetchWebhookAuditRowsByPayloadHash(hashPayload(rawWebhook));
+    assert.equal(auditRows.length, 1, 'malformed webhook should still create one audit row');
+    assert.equal(auditRows[0].provider_event_id, null, 'malformed webhook audit should not include provider_event_id');
+    assert.equal(auditRows[0].tx_ref, null, 'malformed webhook audit should not include tx_ref');
+    assert.equal(auditRows[0].payload_hash, hashPayload(rawWebhook), 'malformed webhook audit should store payload hash');
+    assert.equal(auditRows[0].processing_status, 'failed', 'malformed webhook audit should end failed');
+    assert.ok(auditRows[0].processed_at, 'malformed webhook audit should set processed_at');
+    assert.equal(auditRows[0].error, 'Malformed webhook payload: invalid JSON', 'malformed webhook audit should store parse error');
   } finally {
     server.close();
     clearPaymentState();
