@@ -193,11 +193,11 @@ function initPaymentSchema(db: Database.Database): void {
 
 export type PaymentWebhookProcessingStatus =
   | "received"
-  | "processing"
   | "processed"
   | "ignored"
   | "failed"
-  | "signature_invalid";
+  | "rejected"
+  | "duplicate";
 
 export interface InsertPaymentWebhookEventInput {
   provider: string;
@@ -228,6 +228,7 @@ export interface FindPaymentWebhookDuplicateInput {
 export interface UpdatePaymentWebhookEventStatusOptions {
   processedAt?: string | null;
   error?: string | null;
+  signatureValid?: boolean | null;
 }
 
 function normalizeOptionalText(
@@ -362,6 +363,48 @@ export function insertPaymentWebhookEvent(
   }
 }
 
+export function recordPaymentWebhookDuplicateAttempt(
+  input: InsertPaymentWebhookEventInput,
+  existingId?: number,
+): number | null {
+  const db = getPaymentDb();
+  const provider = normalizeOptionalText(input.provider);
+
+  if (!provider) {
+    throw new Error("payment webhook provider is required");
+  }
+
+  try {
+    const result = db
+      .prepare(
+        `INSERT INTO payment_webhook_events (
+           provider, provider_event_id, reference, tx_ref, event_type, payload_hash,
+           processing_status, processed_at, error, signature_valid, payload, created_at
+         ) VALUES (?, NULL, ?, NULL, ?, ?, 'duplicate', ?, ?, 0, ?, ?)`,
+      )
+      .run(
+        provider,
+        normalizeOptionalText(input.reference ?? input.txRef),
+        normalizeOptionalText(input.eventType),
+        normalizeOptionalText(input.payloadHash),
+        new Date().toISOString(),
+        existingId
+          ? `Duplicate PayChangu webhook event; existing event id ${existingId}`
+          : "Duplicate PayChangu webhook event",
+        input.payload ?? null,
+        input.createdAt,
+      );
+
+    return Number(result.lastInsertRowid);
+  } catch (error) {
+    if (!isPaymentWebhookUniqueConstraintFailure(error)) {
+      throw error;
+    }
+
+    return null;
+  }
+}
+
 export function updatePaymentWebhookEventStatus(
   id: number,
   status: PaymentWebhookProcessingStatus | string,
@@ -372,12 +415,18 @@ export function updatePaymentWebhookEventStatus(
     `UPDATE payment_webhook_events
      SET processing_status = ?,
          processed_at = COALESCE(?, processed_at),
-         error = ?
+         error = ?,
+         signature_valid = COALESCE(?, signature_valid)
      WHERE id = ?`,
   ).run(
     normalizeOptionalText(status) ?? "received",
     options.processedAt ?? null,
     normalizeOptionalText(options.error),
+    options.signatureValid === undefined || options.signatureValid === null
+      ? null
+      : options.signatureValid
+        ? 1
+        : 0,
     id,
   );
 }

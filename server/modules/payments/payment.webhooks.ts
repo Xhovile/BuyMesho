@@ -7,6 +7,7 @@ import { orderRepository } from "../orders/order.repository.js";
 import { isAcceptedPaychanguEventType } from "./paychangu.provider.js";
 import {
   insertPaymentWebhookEvent,
+  recordPaymentWebhookDuplicateAttempt,
   updatePaymentWebhookEventStatus,
 } from "../../sqlite.js";
 
@@ -40,6 +41,15 @@ function asTrimmedString(value: unknown): string | undefined {
   return text ? text : undefined;
 }
 
+function normalizeEventType(value: unknown): string | undefined {
+  return asTrimmedString(value)?.toLowerCase();
+}
+
+function conciseErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.length > 500 ? `${message.slice(0, 497)}...` : message;
+}
+
 function normalizeRawPayload(payload: unknown): string {
   if (typeof payload === "string") {
     return payload;
@@ -64,7 +74,18 @@ function getPayChanguEventDetails(payload: unknown): {
   const data = asOptionalRecord(raw.data) ?? raw;
 
   return {
-    eventType: asTrimmedString(raw.event_type ?? raw.event),
+    eventType: asTrimmedString(
+      raw.event_type ??
+        raw.eventType ??
+        raw.event ??
+        raw.type ??
+        raw.name ??
+        data.event_type ??
+        data.eventType ??
+        data.event ??
+        data.type ??
+        data.name,
+    ),
     status: asTrimmedString(data.status ?? raw.status),
     txRef: asTrimmedString(
       data.tx_ref ??
@@ -79,9 +100,19 @@ function getPayChanguEventDetails(payload: unknown): {
         raw.eventId ??
         raw.provider_event_id ??
         raw.providerEventId ??
+        raw.webhook_id ??
+        raw.webhookId ??
+        raw.notification_id ??
+        raw.notificationId ??
         raw.id ??
         data.event_id ??
         data.eventId ??
+        data.provider_event_id ??
+        data.providerEventId ??
+        data.webhook_id ??
+        data.webhookId ??
+        data.notification_id ??
+        data.notificationId ??
         data.id,
     ),
     data,
@@ -117,57 +148,63 @@ export class PaymentWebhookHandler {
       throw new Error("Missing raw webhook body");
     }
 
-    const result = await serverPaymentService.verifyWebhook(
-      "paychangu",
-      signature,
-      rawPayload,
-    );
-
     const parsedPayload = parseRawWebhookPayload(rawPayload);
     const details = getPayChanguEventDetails(parsedPayload);
-    const eventType =
-      details.eventType?.toLowerCase() ||
-      result.eventType?.toLowerCase() ||
-      undefined;
+    const eventType = normalizeEventType(details.eventType);
     const payloadHash = hashPayload(rawPayload);
-    const reference = details.txRef ?? result.reference ?? undefined;
-    const txRef = extractTxRef(parsedPayload, result.reference);
-
-    const insertResult = insertPaymentWebhookEvent({
+    const txRef = extractTxRef(parsedPayload);
+    const createdAt = new Date().toISOString();
+    const auditEvent = {
       provider: "paychangu",
       providerEventId: details.providerEventId,
-      reference,
-      txRef,
+      reference: txRef || undefined,
+      txRef: txRef || undefined,
       eventType,
       payloadHash,
-      processingStatus: result.valid ? "processing" : "signature_invalid",
-      signatureValid: result.valid,
+      processingStatus: "received",
+      signatureValid: false,
       payload: rawPayload,
-      error: result.valid ? null : "Invalid PayChangu webhook signature",
-      createdAt: new Date().toISOString(),
-    });
+      error: null,
+      createdAt,
+    };
 
-    if (!result.valid) {
-      if (insertResult.inserted) {
-        updatePaymentWebhookEventStatus(insertResult.id, "signature_invalid", {
-          processedAt: new Date().toISOString(),
-          error: "Invalid PayChangu webhook signature",
-        });
-      }
-      throw new Error("Invalid PayChangu webhook signature");
-    }
+    const insertResult = insertPaymentWebhookEvent(auditEvent);
 
     if ("duplicate" in insertResult) {
+      recordPaymentWebhookDuplicateAttempt(auditEvent, insertResult.existingId);
       console.info("[webhook] ignoring duplicate PayChangu webhook event", {
         existingId: insertResult.existingId,
         providerEventId: details.providerEventId,
         txRef,
         eventType,
       });
-      return result;
+      return {
+        valid: true,
+        provider: "paychangu",
+        eventType,
+        reference: txRef || undefined,
+        signature,
+        payload: parsedPayload,
+      };
     }
 
     const eventId = insertResult.id;
+    const result = await serverPaymentService.verifyWebhook(
+      "paychangu",
+      signature,
+      rawPayload,
+    );
+
+    if (!result.valid) {
+      updatePaymentWebhookEventStatus(eventId, "rejected", {
+        processedAt: new Date().toISOString(),
+        error: "Invalid PayChangu webhook signature",
+        signatureValid: false,
+      });
+      throw new Error("Invalid PayChangu webhook signature");
+    }
+
+    const reference = txRef || result.reference || undefined;
 
     try {
       if (eventType && !isAcceptedPaychanguEventType(eventType)) {
@@ -194,6 +231,7 @@ export class PaymentWebhookHandler {
           error: verification.status
             ? `Payment verification status: ${verification.status}`
             : null,
+          signatureValid: true,
         });
         return result;
       }
@@ -238,13 +276,15 @@ export class PaymentWebhookHandler {
 
       updatePaymentWebhookEventStatus(eventId, "processed", {
         processedAt: new Date().toISOString(),
+        signatureValid: true,
       });
 
       return result;
     } catch (error) {
       updatePaymentWebhookEventStatus(eventId, "failed", {
         processedAt: new Date().toISOString(),
-        error: error instanceof Error ? error.message : String(error),
+        error: conciseErrorMessage(error),
+        signatureValid: true,
       });
       throw error;
     }
