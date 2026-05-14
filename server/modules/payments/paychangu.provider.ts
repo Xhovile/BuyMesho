@@ -66,7 +66,7 @@ function toISODate(): string {
 
 export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
 
-const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'initiated', 'processing']);
+const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'queued', 'initiated', 'processing']);
 const PAYCHANGU_FAILED_STATUSES = new Set([
   'failed',
   'cancelled',
