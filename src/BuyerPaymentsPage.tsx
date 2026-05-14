@@ -18,10 +18,10 @@ import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 type PaymentFilter = "all" | "pending" | "paid" | "rejected" | "error";
 
 function statusPillClass(status: "pending" | "paid" | "rejected" | "error") {
-  if (status === "paid") return "bg-emerald-100 text-emerald-700";
-  if (status === "rejected") return "bg-amber-100 text-amber-800";
-  if (status === "error") return "bg-red-100 text-red-700";
-  return "bg-zinc-200 text-zinc-700";
+  if (status === "paid") return "border border-emerald-200 bg-emerald-50 text-emerald-700";
+  if (status === "rejected") return "border border-amber-200 bg-amber-50 text-amber-800";
+  if (status === "error") return "border border-red-200 bg-red-50 text-red-700";
+  return "border border-zinc-200 bg-zinc-100 text-zinc-700";
 }
 
 const FILTERS: Array<{ key: Exclude<PaymentFilter, "all">; label: string }> = [
@@ -100,77 +100,61 @@ function BuyerPaymentsPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Payments page
           </button>
+
           <button
             type="button"
-            onClick={handleClearLogs}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+            onClick={() => navigateToPath(CART_PATH)}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
           >
             <Trash2 className="h-4 w-4" />
             Clear logs
           </button>
         </div>
 
-        <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-2xl font-black tracking-tight text-zinc-800 sm:text-3xl">
-              BUYER ANALYTICS
-            </p>
-            <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
-              Pending, paid, rejected, and failed payment activity.
-            </p>
-          </div>
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-zinc-500">
-            Click to sort
+        <div className="mt-8 border-b border-zinc-200 pb-6">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
+            Buyer analytics
+          </p>
+
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
+            Buyer payments and order flow
+          </h1>
+
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
+            Review payment outcomes, open order tracking, and monitor escrow-related activity from one continuous page.
           </p>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-[2rem] border border-zinc-200 bg-zinc-200 p-px shadow-sm">
-          <div className="grid grid-cols-2 gap-px md:grid-cols-4">
-            {FILTERS.map(({ key, label }) => {
-              const active = activeFilter === key;
-              const count = summary.statusCounts[key];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleFilter(key)}
-                  className={`flex aspect-square flex-col justify-between p-4 text-left transition-colors md:p-5 ${
-                    active ? "bg-zinc-950 text-white" : "bg-white text-zinc-900 hover:bg-zinc-50"
-                  }`}
-                  aria-pressed={active}
-                  aria-label={`${label} payments`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <p className={`text-xs font-black uppercase tracking-[0.18em] ${active ? "text-zinc-300" : "text-zinc-400"}`}>
-                      {label}
-                    </p>
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
-                        active ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-500"
-                      }`}
-                    >
-                      Tap
-                    </span>
-                  </div>
-                  <div className="flex flex-1 items-end">
-                    <p className="text-4xl font-black leading-none tracking-tight md:text-5xl">
-                      {count}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
+        <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Pending</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.pending}</p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Paid</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.paid}</p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Rejected</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.rejected}</p>
+          </div>
+
+          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-4">
+            <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">Error</p>
+            <p className="mt-3 text-3xl font-black text-zinc-950">{summary.statusCounts.error}</p>
           </div>
         </div>
 
@@ -192,14 +176,14 @@ function BuyerPaymentsPageContent() {
         </div>
 
         {error ? (
-          <div className="mt-6 rounded-[1.75rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             {error}
           </div>
         ) : null}
 
-        <div className="mt-6 space-y-3">
+        <div className="mt-8 space-y-3">
           {loading ? (
-            <p className="rounded-[1.75rem] border border-zinc-200 bg-white p-6 text-sm text-zinc-600 shadow-sm">
+            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
               Loading payment activity…
             </p>
           ) : visibleRecords.length ? (
@@ -208,30 +192,33 @@ function BuyerPaymentsPageContent() {
                 key={record.key}
                 type="button"
                 onClick={() => navigateToOrderTracking(record.reference)}
-                className="w-full rounded-[1.75rem] border border-zinc-200 bg-white p-5 text-left shadow-sm hover:bg-zinc-50"
+                className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left transition hover:border-zinc-300 hover:bg-zinc-100/40"
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="space-y-1">
                     <p className="font-black text-zinc-950">{record.title}</p>
-                    <p className="mt-1 text-sm text-zinc-500">{record.reference}</p>
+                    <p className="text-sm text-zinc-500">{record.reference}</p>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusPillClass(
-                      record.status,
-                    )}`}
-                  >
+
+                  <span className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${statusPillClass(record.status)}`}>
                     {record.status}
                   </span>
                 </div>
-                <p className="mt-3 text-sm font-bold text-zinc-950">
-                  {formatMoney(record.amount, record.currency)}
-                </p>
-                <p className="mt-1 text-sm leading-6 text-zinc-600">{record.detail}</p>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4">
+                  <p className="text-base font-black text-zinc-950">
+                    {formatMoney(record.amount, record.currency)}
+                  </p>
+
+                  <p className="text-sm leading-6 text-zinc-600">
+                    {record.detail}
+                  </p>
+                </div>
               </button>
             ))
           ) : (
-            <p className="rounded-[1.75rem] border border-dashed border-zinc-200 bg-white p-6 text-sm text-zinc-600 shadow-sm">
-              No buyer payments match the selected filter.
+            <p className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
+              No buyer payments have been recorded yet.
             </p>
           )}
         </div>

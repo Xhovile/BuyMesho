@@ -179,13 +179,13 @@ function OrderTrackingPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:py-10">
-        <div className="flex items-center justify-between gap-3">
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
             onClick={handleBackToListing}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to listing
@@ -194,40 +194,46 @@ function OrderTrackingPageContent() {
           <button
             type="button"
             onClick={() => navigateToPath(PAYMENTS_HUB_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white shadow-sm hover:bg-zinc-800"
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
           >
             <CreditCard className="h-4 w-4" />
             Payments
           </button>
         </div>
 
-        <section className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-900 text-white">
+        <div className="mt-8 border-b border-zinc-200 pb-6">
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-900">
               <Truck className="h-5 w-5" />
             </div>
 
-            <div>
+            <div className="max-w-3xl space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
                 Buyer order tracking
               </p>
 
-              <h1 className="text-3xl font-black tracking-tight text-zinc-950">
+              <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
                 Track the order without admin noise
               </h1>
+
+              <p className="text-sm leading-7 text-zinc-600 sm:text-base">
+                Follow payment, escrow, and delivery state in one place without the page feeling boxed in.
+              </p>
             </div>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-6 text-sm leading-6 text-zinc-600">
-              Loading order details…
-            </div>
-          ) : error ? (
-            <div className="mt-6 rounded-[2rem] border border-red-200 bg-red-50 p-6 text-sm leading-6 text-red-700">
-              {error}
-            </div>
-          ) : order ? (
-            <div className="mt-6 space-y-4">
+        {loading ? (
+          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">
+            Loading order details…
+          </div>
+        ) : error ? (
+          <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+            {error}
+          </div>
+        ) : order ? (
+          <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="space-y-6">
               <EscrowProtectionCard
                 state={{
                   orderStatus: order.status,
@@ -238,51 +244,44 @@ function OrderTrackingPageContent() {
                 escrowUpdatedAt={escrowUpdatedAt}
               />
 
-              <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-                <OrderProgressTracker
-                  stages={stages}
-                  activeIndex={activeIndex}
-                />
-
-                <div className="space-y-4">
-                  <OrderDetailsCard
-                    reference={reference}
-                    firstItemTitle={firstItemTitle}
-                    paymentStatus={paymentStatus}
-                    orderStatus={order.status}
-                    escrowState={escrowState}
-                    orderId={order.id}
-                    totalCurrency={totalCurrency}
-                    totalAmount={totalAmount}
-                  />
-
-                  <DisputeActionsCard
-                    disputeReason={disputeReason}
-                    submitting={submitting}
-                    canConfirmDelivery={canConfirmDelivery}
-                    onChangeReason={setDisputeReason}
-                    onConfirmDelivery={() => void handleConfirmDelivery()}
-                    onOpenDispute={() => void handleOpenDispute()}
-                  />
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      reference && navigateToOrderDispute(reference)
-                    }
-                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
-                  >
-                    Go to dispute form
-                  </button>
-                </div>
-              </div>
+              <OrderProgressTracker stages={stages} activeIndex={activeIndex} />
             </div>
-          ) : (
-            <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-zinc-50 p-6 text-sm leading-6 text-zinc-600">
-              No tracking record yet. Start from the cart or checkout flow and the latest order will appear here.
+
+            <div className="space-y-6">
+              <OrderDetailsCard
+                reference={reference}
+                firstItemTitle={firstItemTitle}
+                paymentStatus={paymentStatus}
+                orderStatus={order.status}
+                escrowState={escrowState}
+                orderId={order.id}
+                totalCurrency={totalCurrency}
+                totalAmount={totalAmount}
+              />
+
+              <DisputeActionsCard
+                disputeReason={disputeReason}
+                submitting={submitting}
+                canConfirmDelivery={canConfirmDelivery}
+                onChangeReason={setDisputeReason}
+                onConfirmDelivery={() => void handleConfirmDelivery()}
+                onOpenDispute={() => void handleOpenDispute()}
+              />
+
+              <button
+                type="button"
+                onClick={() => reference && navigateToOrderDispute(reference)}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+              >
+                Go to dispute form
+              </button>
             </div>
-          )}
-        </section>
+          </div>
+        ) : (
+          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">
+            No tracking record yet. Start from the cart or checkout flow and the latest order will appear here.
+          </div>
+        )}
       </div>
     </div>
   );
