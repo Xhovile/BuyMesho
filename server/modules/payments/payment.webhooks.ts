@@ -255,7 +255,7 @@ function markPaymentReversed(
   if (["paid", "in_escrow", "fulfilled", "disputed"].includes(order.status)) {
     serverOrderService.setStatus(order.id, "refunded");
   } else if (order.status === "draft" || order.status === "pending_payment") {
-    serverOrderService.setStatus(order.id, "pending_payment");
+    serverOrderService.setStatus(order.id, "refunded");
   }
 
   const escrow = escrowRepository.findByOrderId(order.id);
