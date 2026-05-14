@@ -380,7 +380,7 @@ test('integration: pending webhook keeps payment and order pending without escro
 
   const app = createApp();
   const originalFetch = global.fetch;
-  global.fetch = mockPayChanguFetch(originalFetch, 'txref-pending-1', 'processing');
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-pending-1', 'queued');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -394,7 +394,7 @@ test('integration: pending webhook keeps payment and order pending without escro
     const rawWebhook = JSON.stringify({
       event_type: 'api.charge.payment',
       tx_ref: 'txref-pending-1',
-      data: { tx_ref: 'txref-pending-1', status: 'processing', amount: 1000, currency: 'MWK' },
+      data: { tx_ref: 'txref-pending-1', status: 'queued', amount: 1000, currency: 'MWK' },
     });
     const webhookRes = await postPayChanguWebhook(base, rawWebhook);
 
