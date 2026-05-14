@@ -3,42 +3,13 @@ import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
+import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
   order?: ReturnType<typeof orderRepository.findByPaymentReference>;
   verification: PaymentVerificationResult;
 }
-
-const CAPTURED_STATUSES = new Set([
-  'successful',
-  'success',
-  'succeeded',
-  'completed',
-  'captured',
-  'paid',
-]);
-
-const FAILED_STATUSES = new Set([
-  'failed',
-  'cancelled',
-  'canceled',
-  'declined',
-  'expired',
-]);
-
-const REVERSAL_STATUSES = new Set([
-  'reversed',
-  'refunded',
-  'chargeback',
-]);
-
-const PENDING_STATUSES = new Set([
-  'pending',
-  'processing',
-  'initiated',
-  'queued',
-]);
 
 function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '')
@@ -69,7 +40,7 @@ function normalizedStatus(verification: PaymentVerificationResult): string {
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-    CAPTURED_STATUSES.has(normalizedStatus(verification))
+    isPaychanguSuccessStatus(String(verification.status ?? ''))
   );
 }
 
