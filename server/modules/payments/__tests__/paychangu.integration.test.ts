@@ -323,6 +323,50 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   }
 });
 
+test('integration: PayChangu-prefixed references activate escrow after verification', async () => {
+  clearPaymentState();
+
+  const prefixedReference = 'PAYCHANGU-ord_prefixed_1-1778797822347';
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, prefixedReference, 'successful');
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_prefixed_1', prefixedReference);
+
+    const createPaymentRes = await initializePayment(base, 'order_prefixed_1');
+    assert.equal(createPaymentRes.status, 201, 'initialize should return 201');
+    const paymentResult = await createPaymentRes.json() as { reference?: string };
+    assert.equal(paymentResult.reference, prefixedReference, 'initialize should keep the full PayChangu tx_ref');
+
+    const verifyRes = await fetch(
+      `${base}/api/payments/paychangu/verify/${encodeURIComponent(prefixedReference)}`,
+      { headers: { authorization: 'Bearer test' } },
+    );
+
+    assert.equal(verifyRes.status, 200, 'verify should return 200');
+    const verifyResult = await verifyRes.json() as { verified?: boolean };
+    assert.equal(verifyResult.verified, true, 'verify should return verified=true');
+
+    const savedOrder = orderRepository.findById('order_prefixed_1');
+    const savedPayment = paymentRepository.findByReference(prefixedReference);
+
+    assert.equal(savedOrder?.status, 'in_escrow', 'prefixed PayChangu reference should move the order into escrow');
+    assert.equal(savedPayment?.verified, true, 'prefixed PayChangu reference should mark payment verified');
+    assert.equal(savedPayment?.status, 'captured', 'prefixed PayChangu reference should mark payment captured');
+    assert.equal(countEscrowsForOrder('order_prefixed_1'), 1, 'prefixed PayChangu reference should create escrow');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
 test('integration: invalid paychangu webhook signature is audited as rejected', async () => {
   clearPaymentState();
 
