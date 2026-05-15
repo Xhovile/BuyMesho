@@ -32,7 +32,7 @@ Before merging a production payout implementation, resolve these product and saf
 | --- | --- | --- |
 | **Resolved for local payout candidates** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
 | **Resolved for local payout candidates** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry and one local payout candidate per escrow. Before provider submission, replace the temporary gross released-balance amount with the approved seller-net formula below. |
-| **Partially resolved** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level, but add provider-attempt history before calling PayChangu. Generate a fresh PayChangu `charge_id` for each retry attempt instead of reusing the payout row identity. |
+| **Partially resolved** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level. Payout candidates must not reserve a PayChangu `charge_id`; add provider-attempt history before calling PayChangu and generate a fresh `charge_id` for each retry attempt. |
 | **Open product decision** | Define the money formula before launch. | Decide whether payout amount is gross order total, subtotal, or net of BuyMesho commission, PayChangu fees, refund adjustments, delivery fees, and dispute adjustments. Document the exact formula and add tests before enabling real payout submission. |
 | **Open workflow decision** | Plan for payout failure after escrow release. | Add a seller/admin remediation state where destination details can be corrected and payout can be retried with a new provider attempt while preserving audit history. Do not silently reopen buyer escrow after provider failure. |
 | **Open operations decision** | Plan for provider reversals/chargebacks. | Choose an operational policy for reversals after payout, such as reserve balance, negative seller balance, seller account hold, manual recovery, or some combination. |
@@ -118,7 +118,7 @@ Suggested additional fields:
 
 - `destination_account_id`
 - `provider`
-- `provider_charge_id`
+- `current_provider_attempt_id` or `last_provider_attempt_id`
 - `provider_ref_id`
 - `provider_transaction_id`
 - `provider_status`
@@ -128,7 +128,7 @@ Suggested additional fields:
 - `requested_at`, `sent_at`, `paid_at`, `failed_at`
 - `raw_response`
 
-To support retries cleanly, also track provider attempts (either in a `payout_attempts` table or equivalent attempt columns/history) so each retry stores its own `provider_charge_id`, request payload, response, status, and timestamps.
+To support retries cleanly, track provider attempts in a `payout_attempts` table or equivalent attempt history. Each attempt, not the payout candidate, should store its own `provider_charge_id`, request payload, response, status, and timestamps.
 
 ### 4. Release escrow should create a payable payout, not just flip state
 

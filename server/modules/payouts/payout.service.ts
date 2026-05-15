@@ -68,7 +68,6 @@ export class PayoutRepository {
 
     const now = input.requestedAt ?? new Date().toISOString();
     const id = randomUUID();
-    const providerChargeId = `BM-PO-${id}`;
 
     this.db.prepare(
       `INSERT OR IGNORE INTO payouts (
@@ -86,7 +85,7 @@ export class PayoutRepository {
         requested_at,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'eligible', 'paychangu', ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'eligible', 'paychangu', NULL, ?, ?, ?, ?)`,
     ).run(
       id,
       input.sellerId,
@@ -95,7 +94,6 @@ export class PayoutRepository {
       input.releaseEntryId,
       input.amount,
       input.currency,
-      providerChargeId,
       input.requestedBy,
       now,
       now,

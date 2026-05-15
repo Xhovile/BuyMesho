@@ -81,7 +81,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
         currency?: string;
         status?: string;
         provider?: string;
-        providerChargeId?: string;
+        providerChargeId?: string | null;
         requestedBy?: string;
       };
     };
@@ -99,7 +99,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
     assert.equal(body.payout?.status, 'eligible', 'payout should start eligible without calling PayChangu');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');
-    assert.equal(body.payout?.providerChargeId, `BM-PO-${body.payout?.id}`, 'payout should prepare a future PayChangu charge id');
+    assert.equal(body.payout?.providerChargeId, null, 'payout candidates should not reserve a PayChangu charge id before a provider attempt');
     assert.equal(body.payout?.requestedBy, 'buyer-release-payout-1', 'payout should record the releasing buyer as requester');
 
     assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout candidate');
@@ -107,6 +107,48 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     assert.equal(savedPayout?.id, body.payout?.id, 'payout should be persisted for the escrow');
     assert.equal(savedPayout?.releaseEntryId, releaseEntry?.id, 'stored payout should link to release ledger entry');
     assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'fulfilled', 'release should fulfill the order');
+  } finally {
+    server.close();
+    clearReleasePayoutState();
+  }
+});
+
+test('release endpoint rejects sellers without releasing escrow or creating payouts', async () => {
+  clearReleasePayoutState();
+
+  const now = new Date().toISOString();
+  serverOrderService.create({
+    id: releasePayoutOrderId,
+    buyerId: 'buyer-release-payout-1',
+    sellerId: 'seller-release-payout-1',
+    source: 'listing',
+    status: 'pending_payment',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [{ listingId: 'listing-release-payout-1', title: 'Release Item', quantity: 1, unitPrice: { amount: 1500, currency: 'MWK' } }],
+    createdAt: now,
+    updatedAt: now,
+  });
+  escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
+
+  const app = createReleaseApp('seller-release-payout-1');
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/escrow/${releasePayoutOrderId}/release`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ reference: 'seller-should-not-release' }),
+    });
+
+    assert.equal(response.status, 403, 'seller should not be allowed to release escrow for their own order');
+    const body = await response.json() as { error?: string };
+    assert.equal(body.error, 'Only the buyer or an admin can release escrow for this order');
+    assert.equal(escrowRepository.findByOrderId(releasePayoutOrderId)?.state, 'funded', 'escrow should remain funded');
+    assert.equal(countPayoutsForOrder(releasePayoutOrderId), 0, 'seller release attempt should not create a payout candidate');
+    assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'pending_payment', 'seller release attempt should not fulfill the order');
   } finally {
     server.close();
     clearReleasePayoutState();
