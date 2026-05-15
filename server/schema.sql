@@ -239,3 +239,35 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE INDEX IF NOT EXISTS idx_orders_payment_reference
 ON orders (payment_reference);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL,
+  order_id TEXT,
+  escrow_id TEXT,
+  release_entry_id TEXT,
+  amount DOUBLE PRECISION NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'processing',
+  provider TEXT,
+  provider_charge_id TEXT,
+  requested_by TEXT,
+  requested_at TIMESTAMPTZ,
+  processed_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payouts_seller_id
+ON payouts (seller_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_release_escrow
+ON payouts (escrow_id)
+WHERE escrow_id IS NOT NULL AND release_entry_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_provider_charge_id
+ON payouts (provider_charge_id)
+WHERE provider_charge_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_payouts_status
+ON payouts (status, created_at DESC);
