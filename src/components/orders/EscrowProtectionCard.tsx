@@ -64,7 +64,7 @@ export default function EscrowProtectionCard({
 
         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
           <span className="text-xs font-bold uppercase tracking-wide text-zinc-500">
-            Escrow updated
+            LAST ESCROW UPDATE
           </span>
 
           <p className="mt-1 text-sm font-semibold text-zinc-900">
@@ -74,7 +74,7 @@ export default function EscrowProtectionCard({
 
         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 sm:col-span-2">
           <span className="text-xs font-bold uppercase tracking-wide text-zinc-500">
-            Payment verified
+            PAYMENT VERIFIED TIME
           </span>
 
           <p className="mt-1 text-sm font-semibold text-zinc-900">
