@@ -18,10 +18,13 @@ import {
   readBuyerCart,
   readBuyerPayments,
   removeBuyerCartItem,
+  touchBuyerPaymentFromCheckout,
   type BuyerCartItem,
   type BuyerPaymentRecord,
 } from "./lib/buyerState";
 import { formatMoney } from "./shared/utils/formatMoney";
+import { apiFetch } from "./lib/api";
+import { ENDPOINTS } from "./shared/api/endpoints";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function CartPage() {
@@ -34,6 +37,8 @@ export default function CartPage() {
 function CartPageContent() {
   const [items, setItems] = useState<BuyerCartItem[]>([]);
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -80,13 +85,68 @@ function CartPageContent() {
     );
   };
 
-  const handlePay = () => {
-    if (latestPendingCheckoutUrl) {
-      window.location.href = latestPendingCheckoutUrl;
-      return;
-    }
+  const handlePay = async () => {
+    if (!items.length || checkoutLoading) return;
 
-    navigateToPath(PAYMENTS_HUB_PATH);
+    setCheckoutLoading(true);
+    setCheckoutError(null);
+
+    try {
+      const listingIds = items.map((item) => String(item.listingId));
+      const listingIdQuery = encodeURIComponent(listingIds.join(","));
+      const returnUrl = `${window.location.origin}/payment/return?listingIds=${listingIdQuery}`;
+      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingIds=${listingIdQuery}`;
+      const idempotencyKey = crypto.randomUUID();
+
+      const result = (await apiFetch(ENDPOINTS.payments.checkout, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": idempotencyKey,
+        },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            listingId: item.listingId,
+            quantity: item.quantity,
+          })),
+          method: "mobile_money",
+          returnUrl,
+          cancelUrl,
+        }),
+      })) as {
+        orderId: string;
+        paymentId: string;
+        reference: string;
+        checkoutUrl: string | null;
+      };
+
+      touchBuyerPaymentFromCheckout({
+        reference: result.reference,
+        orderId: result.orderId,
+        paymentId: result.paymentId,
+        listingId: listingIds[0] ?? "",
+        listingIds,
+        listingTitle:
+          items.length === 1
+            ? items[0].listingTitle
+            : `${items[0].listingTitle} + ${items.length - 1} more`,
+        quantity: itemCount,
+        totalPrice: subtotal,
+        checkoutUrl: result.checkoutUrl,
+        txRef: result.reference,
+      });
+
+      if (result.checkoutUrl) {
+        window.location.href = result.checkoutUrl;
+        return;
+      }
+
+      navigateToPath(PAYMENTS_HUB_PATH);
+    } catch (err: unknown) {
+      setCheckoutError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+    } finally {
+      setCheckoutLoading(false);
+    }
   };
 
   return (
@@ -267,14 +327,20 @@ function CartPageContent() {
                   </div>
                 </div>
 
+                {checkoutError ? (
+                  <div className="border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-700">
+                    {checkoutError}
+                  </div>
+                ) : null}
+
                 <div className="border border-zinc-200 bg-white p-5">
                   <h2 className="text-lg font-black text-zinc-950">
                     Payment status
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-500">
                     {latestPendingCheckoutUrl
-                      ? "A pending checkout exists. Continue payment from here."
-                      : "No pending checkout is available. You will be taken to the payments hub."}
+                      ? "A previous checkout attempt is still pending. Buying again starts a fresh secure checkout; your cart is only cleared after verified payment."
+                      : "Buying starts a secure checkout. If you leave the gateway before paying, these cart items stay here."}
                   </p>
                 </div>
               </div>
@@ -287,11 +353,12 @@ function CartPageContent() {
         <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <button
             type="button"
-            onClick={handlePay}
+            onClick={() => void handlePay()}
+            disabled={!items.length || checkoutLoading}
             className="inline-flex w-full items-center justify-between rounded-2xl bg-zinc-950 px-5 py-4 text-white shadow-lg shadow-zinc-950/10 hover:bg-zinc-800"
           >
             <span className="text-sm font-black uppercase tracking-[0.18em]">
-              Buy Now
+              {checkoutLoading ? "Starting checkout…" : "Buy Now"}
             </span>
             <span className="text-base font-black">
               {formatMoney(subtotal)}

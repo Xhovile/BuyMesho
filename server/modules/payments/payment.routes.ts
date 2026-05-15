@@ -190,11 +190,14 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         total += unitPrice * safeQty;
         sellerIds.add(listing.seller_uid);
         listingIds.push(String(numericListingId));
+        const itemReference = `${orderId}-ITEM-${String(orderItems.length + 1).padStart(2, '0')}`;
+
         orderItems.push({
           listingId: String(numericListingId),
           title: listing.name,
           quantity: safeQty,
           unitPrice: { amount: unitPrice, currency },
+          reference: itemReference,
         });
       }
 
@@ -236,6 +239,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         metadata: {
           listingId: listingIds[0],
           listingIds,
+          orderItemReferences: orderItems.map((item) => item.reference),
           sellerId: primarySellerId,
           sellerIds: Array.from(sellerIds),
         },
@@ -257,6 +261,12 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         reference: payment.reference,
         checkoutUrl: payment.checkoutUrl,
         status: payment.status,
+        items: orderItems.map((item) => ({
+          listingId: item.listingId,
+          title: item.title,
+          quantity: item.quantity,
+          reference: item.reference,
+        })),
       };
 
       if (idempotencyKey) {

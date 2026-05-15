@@ -11,6 +11,7 @@ export type OrderBundle = {
       title?: string;
       quantity?: number;
       unitPrice?: { amount?: number; currency?: string };
+      reference?: string;
     }>;
     [key: string]: unknown;
   };
