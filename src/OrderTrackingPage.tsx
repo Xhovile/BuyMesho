@@ -253,6 +253,7 @@ const escrowUpdatedAt =
               <OrderDetailsCard
                 reference={reference}
                 firstItemTitle={firstItemTitle}
+                items={order.items}
                 paymentStatus={paymentStatus}
                 orderStatus={order.status}
                 escrowState={escrowState}

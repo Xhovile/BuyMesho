@@ -36,17 +36,6 @@ interface BuyerPaymentRecord {
   orderId?: string | null;
 }
 
-const SUCCESS_PAYMENT_STATUSES = new Set([
-  "success",
-  "successful",
-  "succeeded",
-  "completed",
-  "paid",
-  "captured",
-  "processed",
-  "approved",
-]);
-
 const buildListingDetailsPath = (listingId: string | null) =>
   listingId
     ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0`
@@ -68,11 +57,6 @@ export default function PaymentReturnPage() {
 
     setFallbackListingId(listingIdFromReturn);
 
-    if (cancelled === "1") {
-      setStatus("cancelled");
-      return;
-    }
-
     const rawPayments = readBuyerPayments();
     const buyerPayments = Array.isArray(rawPayments)
       ? (rawPayments as BuyerPaymentRecord[])
@@ -91,6 +75,17 @@ export default function PaymentReturnPage() {
       latestPendingPayment?.txRef ??
       latestPendingPayment?.reference ??
       null;
+
+    if (cancelled === "1") {
+      if (txRef) {
+        updateBuyerPaymentStatus(txRef, {
+          status: "cancelled",
+          txRef,
+        });
+      }
+      setStatus("cancelled");
+      return;
+    }
 
     if (!txRef) {
       setStatus("failed");
@@ -113,10 +108,13 @@ export default function PaymentReturnPage() {
           .trim()
           .toLowerCase();
 
-        const isSuccessful =
-          result.verified || SUCCESS_PAYMENT_STATUSES.has(normalizedStatus);
+        const isSuccessful = result.verified;
 
         if (!isSuccessful) {
+          updateBuyerPaymentStatus(txRef, {
+            status: normalizedStatus === "cancelled" || normalizedStatus === "canceled" ? "cancelled" : "failed",
+            txRef,
+          });
           setErrorMessage(
             result.status
               ? `Payment status: ${result.status}`
@@ -167,6 +165,10 @@ export default function PaymentReturnPage() {
         }, 900);
       } catch (err: unknown) {
         if (!mounted) return;
+        updateBuyerPaymentStatus(txRef, {
+          status: "failed",
+          txRef,
+        });
         setErrorMessage(
           err instanceof Error ? err.message : "Verification failed.",
         );

@@ -1,6 +1,14 @@
+type OrderDetailsCardItem = {
+  listingId?: string;
+  title?: string;
+  quantity?: number;
+  reference?: string;
+};
+
 type OrderDetailsCardProps = {
   reference: string | null;
   firstItemTitle: string;
+  items?: OrderDetailsCardItem[];
   paymentStatus: string;
   orderStatus: string;
   escrowState: string;
@@ -16,6 +24,7 @@ function formatLabel(value: string): string {
 export default function OrderDetailsCard({
   reference,
   firstItemTitle,
+  items = [],
   paymentStatus,
   orderStatus,
   escrowState,
@@ -41,6 +50,25 @@ export default function OrderDetailsCard({
             {firstItemTitle}
           </p>
         </div>
+
+        {items.length ? (
+          <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+            <span className="text-zinc-500">Item references</span>
+            <div className="mt-2 space-y-2">
+              {items.map((item, index) => (
+                <div key={`${item.reference ?? item.listingId ?? index}`} className="rounded-xl bg-zinc-50 px-3 py-2">
+                  <p className="font-semibold text-zinc-900">
+                    {item.title || `Item ${index + 1}`}
+                    {item.quantity ? ` × ${item.quantity}` : ''}
+                  </p>
+                  <p className="mt-1 break-all font-mono text-xs text-zinc-500">
+                    {item.reference || 'Reference pending'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
           <span className="text-zinc-500">Payment status</span>
