@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CreditCard, Truck } from "lucide-react";
 import {
+  PAYMENTS_HUB_PATH,
   navigateToOrderDispute,
   navigateToPath,
   navigateToListingDetails,
