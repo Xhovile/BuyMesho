@@ -117,9 +117,20 @@ function OrderTrackingPageContent() {
     return 0;
   }, [escrowState, order]);
 
-  const paidAt = typeof bundle?.payment?.paid_at === "string" ? bundle.payment.paid_at : null;
-  const escrowUpdatedAt = typeof bundle?.escrow?.updated_at === "string" ? bundle.escrow.updated_at : null;
+  const paidAt =
+  typeof bundle?.payment?.paidAt === "string"
+    ? bundle.payment.paidAt
+    : typeof bundle?.payment?.paid_at === "string"
+      ? bundle.payment.paid_at
+      : null;
 
+const escrowUpdatedAt =
+  typeof bundle?.escrow?.updatedAt === "string"
+    ? bundle.escrow.updatedAt
+    : typeof bundle?.escrow?.updated_at === "string"
+      ? bundle.escrow.updated_at
+      : null;
+  
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
   const firstItemTitle = order?.items?.[0]?.title ?? "—";
