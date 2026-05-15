@@ -39,7 +39,6 @@ function CartPageContent() {
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const idempotencyKeyRef = useRef<string>(crypto.randomUUID());
 
   useEffect(() => {
     let mounted = true;
@@ -97,12 +96,13 @@ function CartPageContent() {
       const listingIdQuery = encodeURIComponent(listingIds.join(","));
       const returnUrl = `${window.location.origin}/payment/return?listingIds=${listingIdQuery}`;
       const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingIds=${listingIdQuery}`;
+      const idempotencyKey = crypto.randomUUID();
 
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Idempotency-Key": idempotencyKeyRef.current,
+          "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify({
           items: items.map((item) => ({
@@ -144,7 +144,6 @@ function CartPageContent() {
       navigateToPath(PAYMENTS_HUB_PATH);
     } catch (err: unknown) {
       setCheckoutError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
-      idempotencyKeyRef.current = crypto.randomUUID();
     } finally {
       setCheckoutLoading(false);
     }
