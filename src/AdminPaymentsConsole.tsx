@@ -277,7 +277,7 @@ function PaymentDrawer({ payment, hooks, onClose }: { payment: PaymentRow; hooks
             <h4 className="text-base font-black">Core fields</h4>
             <div className="mt-4 grid gap-3">
               <Row label="BuyMesho reference" value={toText(payment.reference)} />
-              <Row label="PayChangu reference" value={toText(payment.provider_reference)} />
+              <Row label="Gateway reference" value={toText(payment.provider_reference) || "Not returned by provider"} />
               <Row label="Payment status" value={<StatusPill label={normalizeStatusLabel(payment.payment_status)} tone={paymentTone(payment.payment_status)} />} />
               <Row label="Order status" value={<StatusPill label={normalizeStatusLabel(payment.order_status)} tone={orderTone(payment.order_status)} />} />
               <Row label="Escrow status" value={<StatusPill label={normalizeStatusLabel(payment.escrow_state)} tone={escrowTone(payment.escrow_state)} />} />
