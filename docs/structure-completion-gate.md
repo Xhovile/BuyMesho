@@ -1,34 +1,25 @@
 # BuyMesho Structure Completion Gate
 
-This document defines the exact point at which the BuyMesho payout structure is considered complete enough for implementation.
+This document defines the exact point at which the BuyMesho payout structure is complete enough for implementation.
 
-It exists to prevent vague decisions, repeated redesign, and unsafe payment logic.
+Its purpose is to stop vague decisions, repeated redesign, and unsafe payment logic from leaking into code.
 
-## Why this file exists
-
-BuyMesho is being built as a campus-first marketplace with trust-first growth, free core participation, and phased monetization. The strategy documents make it clear that the platform should stay lightweight at first, improve trust before complexity, and only add transaction-linked features when the market proves ready. 0 1
-
-The payout system must follow the same rule.
-
-This file is the final checkpoint before coding the seller payout layer.
-
----
-
-## 1. Locked decisions
+## 1) Locked decisions
 
 These decisions must be frozen before implementation starts.
 
 ### 1.1 Payout formula
-The payout formula is:
 
 `Seller Net Payout = Gross Collected Amount - Platform Fee - Payment Processing Fee - Refund Reserve - Chargeback Reserve - Manual Adjustments`
 
 ### 1.2 Platform fee
+
 The platform fee is fixed at:
 
 `2% of Gross Collected Amount`
 
 ### 1.3 Reserve cap
+
 The reserve and adjustment protection layer is capped at:
 
 `6% of Gross Collected Amount`
@@ -36,6 +27,7 @@ The reserve and adjustment protection layer is capped at:
 This cap may be split internally into refund reserve, chargeback reserve, and operational/manual hold logic.
 
 ### 1.4 Manual adjustments
+
 Manual adjustments must never be silent.
 
 They require:
@@ -46,84 +38,102 @@ They require:
 - an audit trail
 
 ### 1.5 Eligibility rule
+
 A payout may only be released when the payout eligibility gate is true.
 
-If the gate is false, the amount stays held, even if the math is correct.
+If the gate is false, the amount stays held even if the calculation is correct.
 
 ---
 
-## 2. What must be built before the payout system is called complete
+## 2) Seller backend requirements that must exist before this can be called complete
 
-### 2.1 Money calculation
-The backend must be able to:
-- read the gross amount
-- apply platform fee
-- apply payment gateway fee
-- apply reserve logic
-- apply manual adjustments
-- produce the final seller net payout
+### 2.1 Seller payout destination lifecycle
 
-### 2.2 Permission control
-The system must clearly define:
-- who can view payout data
-- who can request payout
-- who can approve payout
-- who can freeze payout
-- who can override a payout after review
+The system must support:
+- adding a payout destination
+- editing a payout destination
+- replacing a payout destination
+- re-verification after changes
+- keeping destination history for audit purposes
 
-### 2.3 State machine
-The payout state flow must exist and be enforced.
+### 2.2 Seller-side authorization rules
 
-Required states:
-- `created`
-- `paid`
-- `escrowed`
-- `payout_pending`
-- `payout_processing`
-- `payout_sent`
-- `payout_success`
-- `payout_failed`
-- `retry_pending`
-- `manual_review`
-- `held`
-- `cancelled`
+The permission model must clearly define who can:
+- view payout settings
+- edit payout settings
+- request withdrawal
+- see payout history
+- request or trigger payout retry
+- approve override after review
 
-### 2.4 Retry logic
-The system must define:
-- retry limit
-- retry delay/backoff
-- idempotency handling
-- when retry is allowed
-- when retry must stop
-- when the flow escalates to manual review
+### 2.3 Failure recovery flow
 
-### 2.5 Audit logging
-Every payout-related action must be logged.
+The seller experience and backend must show what happens when payout fails:
+- whether the destination must be corrected
+- whether the payout is pending admin review
+- whether a retry is allowed
+- whether funds are still safe and held
+- whether the payout is permanently blocked
 
-Required logs:
-- payout calculation created
-- payout eligibility changed
-- payout requested
+### 2.4 Validation and normalization
+
+Before saving a payout destination, the backend must validate and normalize:
+- country format
+- mobile money operator or bank selection
+- account or phone number format
+- account-name matching rules, if any
+- duplicate destination protection
+- currency constraints
+
+### 2.5 Balance and eligibility checks
+
+The system must define the exact rule for:
+- when a payout becomes eligible
+- whether funds must already be available in the provider balance
+- what happens when balance is insufficient at release time
+
+### 2.6 Audit trail
+
+Every payout-related action must be logged for admins and support.
+
+Required events:
+- destination added
+- destination updated
+- destination replaced
+- payout queued
 - payout sent
-- payout success
-- payout failure
-- retry attempt
+- payout failed
+- payout retried
+- payout paid
+- payout held
+- payout released
 - admin override
-- payout hold
-- payout release
 
-### 2.6 Backend authority
-The backend must be the source of truth.
+### 2.7 Automated failure tests
 
-The frontend must never:
-- calculate final payout on its own
-- approve its own payout
-- override payout state
-- decide eligibility alone
+The payout flow is not complete until the following cases are tested:
+- duplicate release clicks
+- duplicate webhook callbacks
+- payout retry with a fresh provider charge ID
+- seller cannot trigger own release
+- payout failure after escrow release
+- partial provider downtime
+
+### 2.8 Commission and fee lock-in
+
+The money formula must be locked before launch.
+
+It must explicitly define:
+- gross vs net payout
+- commission deduction
+- payment fee handling
+- refunds
+- delivery adjustments
+- dispute deductions
 
 ---
 
-## 3. Completion checklist
+## 3) Completion checklist
 
 The structure is complete only when every item below is checked.
 
@@ -142,13 +152,22 @@ The structure is complete only when every item below is checked.
 - [ ] Payment provider responsibilities are defined
 - [ ] No frontend-only payout authority exists
 
-### Eligibility
+### Destination management
+- [ ] Payout destination can be added
+- [ ] Payout destination can be edited
+- [ ] Payout destination can be replaced
+- [ ] Re-verification after destination change is defined
+- [ ] Duplicate destination protection exists
+- [ ] Destination history is retained
+
+### Eligibility and recovery
 - [ ] Payment confirmation is required
 - [ ] Order completion is required
 - [ ] Dispute window is enforced
 - [ ] Seller verification is required
 - [ ] Admin holds block payout
 - [ ] Fraud flags block payout
+- [ ] Failure recovery flow is defined
 
 ### State machine
 - [ ] Normal payout path is defined
@@ -171,9 +190,17 @@ The structure is complete only when every item below is checked.
 - [ ] All status transitions are logged
 - [ ] Admin actions are logged
 
+### Testing
+- [ ] Duplicate release is tested
+- [ ] Duplicate webhook callback is tested
+- [ ] Retry with fresh provider charge ID is tested
+- [ ] Seller self-trigger is blocked in tests
+- [ ] Escrow-release failure is tested
+- [ ] Provider downtime handling is tested
+
 ---
 
-## 4. Open questions that must be answered before coding
+## 4) Open questions that must be answered before coding
 
 If any of these are unresolved, the structure is not complete.
 
@@ -187,10 +214,11 @@ If any of these are unresolved, the structure is not complete.
 - What is the max retry count?
 - What error types are retryable?
 - What error types are manual-review only?
+- Must provider balance already be funded before payout submission?
 
 ---
 
-## 5. Acceptance rule
+## 5) Acceptance rule
 
 The payout structure is complete only when:
 
@@ -199,15 +227,17 @@ The payout structure is complete only when:
 3. The state machine is frozen.
 4. Retry logic is frozen.
 5. Eligibility rules are frozen.
-6. Database fields are defined.
-7. Audit logging is defined.
-8. Admin review rules are defined.
+6. Destination management rules are frozen.
+7. Validation and audit rules are frozen.
+8. Automated failure tests are defined.
+9. Database fields are defined.
+10. Admin review rules are defined.
 
 If any of those items are still moving, the structure is not complete.
 
 ---
 
-## 6. Practical rule for the team
+## 6) Practical rule for the team
 
 Do not start implementation while key payout rules are still being debated.
 
@@ -217,8 +247,8 @@ Decide first, then build.
 
 ---
 
-## 7. Final note
+## 7) Final note
 
-BuyMesho is being built as a trust-first marketplace. Core participation stays open, monetization follows proof, and transaction-linked features only make sense when the system is operationally mature. This payout structure must reflect that discipline. 2 3
+BuyMesho is being built as a trust-first marketplace. Core participation stays open, monetization follows proof, and transaction-linked features only make sense when the system is operationally mature. This payout structure must reflect that discipline.
 
 When this file is fully satisfied, the seller payout structure is ready for implementation.
