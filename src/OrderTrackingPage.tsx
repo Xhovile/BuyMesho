@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CreditCard, Truck } from "lucide-react";
 import {
   navigateToOrderDispute,
-  PAYMENTS_HUB_PATH,
   navigateToPath,
   navigateToListingDetails,
 } from "./lib/appNavigation";
@@ -199,16 +198,7 @@ const escrowUpdatedAt =
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to listing
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigateToPath(PAYMENTS_HUB_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            <CreditCard className="h-4 w-4" />
-            Payments
+            Back
           </button>
         </div>
 
@@ -220,15 +210,15 @@ const escrowUpdatedAt =
 
             <div className="max-w-3xl space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-                Buyer order tracking
+                BUYER ORDER TACKING
               </p>
 
               <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-                Track the order without admin noise
+                ORDER STATUS OVERVIEW 
               </h1>
 
               <p className="text-sm leading-7 text-zinc-600 sm:text-base">
-                Follow payment, escrow, and delivery state in one place without the page feeling boxed in.
+                Monitor payment, escrow, and delivery progress in one place.
               </p>
             </div>
           </div>
