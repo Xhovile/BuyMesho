@@ -14,6 +14,16 @@ Buyer payments are already represented in the local payment and escrow flow:
 The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only inserts a local `payouts` row with status `processing`; it does not call PayChangu, store seller payout destinations, verify payout webhooks, or reconcile PayChangu payout status.
 
 
+## PayChangu source links
+
+These PayChangu docs should stay linked in this plan because they define the payout capabilities and operational constraints that the backend implementation depends on:
+
+- [Disbursements introduction](https://developer.paychangu.com/docs/introduction-2): PayChangu describes transfers/payouts from the available balance to bank accounts and mobile money wallets, including core fields such as `amount`, `currency`, destination identifiers, recipient account details, and a unique `charge_id`.
+- [Mobile Money Payout API](https://developer.paychangu.com/reference/mobile-money-payout): documents the mobile money payout endpoint (`POST /mobile-money/payouts/initialize`) and required fields such as `mobile`, `mobile_money_operator_ref_id`, `amount`, and unique `charge_id`.
+- [Bank Account payout guide](https://developer.paychangu.com/docs/bank-account): documents bank payout setup, KYC/feature activation prerequisites, sample `POST /direct-charge/payouts/initialize` payloads, and transfer status verification through the status endpoint or webhooks.
+- [Wallet balance guide](https://developer.paychangu.com/docs/balance): documents `GET /wallet-balance?currency=MWK` and the distinction between `collection_balance` and `main_balance`, which matters because payouts are made from funds available to transfer out.
+
+
 ## Important pre-merge notes
 
 Before implementing payouts from this plan, resolve these product and safety details:
@@ -42,7 +52,7 @@ This matches the current BuyMesho architecture.
 - After buyer release/admin resolution, BuyMesho creates a payout from the PayChangu available/main balance to the seller's registered destination.
 - The seller receives the money in a mobile money wallet or bank account.
 
-PayChangu supports transfers/payouts from the merchant available balance to bank accounts and mobile money wallets. Payout initiation generally needs amount, currency, bank/mobile-money identifier, account/mobile number, recipient account name, and a unique `charge_id`. PayChangu's wallet balance documentation distinguishes collection balance from main balance; payouts can be made from the main balance, so BuyMesho should verify operationally whether collected checkout funds are available for payout immediately, after settlement, or after internal transfer by PayChangu.
+[PayChangu supports transfers/payouts](https://developer.paychangu.com/docs/introduction-2) from the merchant available balance to bank accounts and mobile money wallets. Payout initiation generally needs amount, currency, bank/mobile-money identifier, account/mobile number, recipient account name, and a unique `charge_id`, with specific endpoint details for [mobile money payouts](https://developer.paychangu.com/reference/mobile-money-payout) and [bank account payouts](https://developer.paychangu.com/docs/bank-account). [PayChangu's wallet balance documentation](https://developer.paychangu.com/docs/balance) distinguishes collection balance from main balance; payouts can be made from the main balance, so BuyMesho should verify operationally whether collected checkout funds are available for payout immediately, after settlement, or after internal transfer by PayChangu.
 
 Recommended for the current codebase: **Option A first**, because the order/escrow data model already assumes BuyMesho controls release timing.
 
