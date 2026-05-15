@@ -213,10 +213,12 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
       orderId?: string;
       reference?: string;
       checkoutUrl?: string;
+      items?: Array<{ reference?: string }>;
     };
     assert.ok(checkoutResult.orderId, 'checkout should return orderId');
     assert.ok(checkoutResult.reference, 'checkout should return a payment reference');
     assert.ok(checkoutResult.checkoutUrl, 'checkout should return checkoutUrl');
+    assert.equal(checkoutResult.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`, 'checkout should return a per-item reference');
 
     // Step 2: Verify payment (as the return page would)
     const verifyRes = await fetch(
@@ -250,6 +252,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     const duplicateAuditRows = auditRows.filter((row) => row.processing_status === 'duplicate');
 
     assert.equal(savedOrder?.status, 'in_escrow', 'order should be in escrow after successful payment');
+    assert.equal(savedOrder?.items[0]?.reference, `${checkoutResult.orderId}-ITEM-01`, 'order item reference should persist for disputes');
     assert.equal(savedPayment?.verified, true, 'payment should be verified');
     assert.equal(savedPayment?.status, 'captured', 'payment status should be captured');
     assert.equal(countEscrowsForOrder(checkoutResult.orderId!), 1, 'only one escrow should be created for the order');
