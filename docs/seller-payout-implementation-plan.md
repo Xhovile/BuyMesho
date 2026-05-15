@@ -9,9 +9,9 @@ Buyer payments are already represented in the local payment and escrow flow:
 1. PayChangu checkout/webhook verification updates the payment row to `captured`.
 2. The matching order is confirmed and moved into `in_escrow`.
 3. An escrow record is created with state `funded` and a credit ledger entry for the paid amount.
-4. Buyer release currently changes the escrow state to `released` and the order status to `fulfilled`.
+4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local `eligible` payout candidate for the released escrow, and moves the order status to `fulfilled`.
 
-The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only inserts a local `payouts` row with status `processing`; it does not call PayChangu, store seller payout destinations, verify payout webhooks, or reconcile PayChangu payout status.
+The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only creates the local payout candidate; it does not call PayChangu, store seller payout destinations, create provider-attempt history, verify payout webhooks, or reconcile PayChangu payout status.
 
 
 ## PayChangu source links
@@ -26,18 +26,20 @@ These PayChangu docs should stay linked in this plan because they define the pay
 
 ## Important pre-merge notes
 
-Before implementing payouts from this plan, resolve these product and safety details:
+Before merging a production payout implementation, resolve these product and safety details. Items marked **Resolved for local payout candidates** are covered by the current escrow-release path, but still need to be preserved when real PayChangu payout submission is added.
 
-1. **Escrow release authorization must be tightened.** The current release route uses general order access, which allows either the buyer, seller, or an admin to access an order. Escrow release should be limited to the buyer or an admin/resolution workflow, not the seller who will receive the payout.
-2. **Escrow release must be an accounting event, not just a status flip.** A payout-safe release should append a ledger entry, compute the seller net amount, and create exactly one payout candidate for the escrow. The existing repository method only updates escrow state.
-3. **Separate escrow idempotency from provider-attempt idempotency.** Keep one payout candidate per escrow release (for example unique on `escrow_id`), but generate a new PayChangu `charge_id` for every provider retry attempt so retries after destination-detail corrections (like fixing a wrong account/mobile) are not deduplicated.
-4. **Define the money formula before launch.** Decide whether seller payout amount is gross order total, subtotal, or net of BuyMesho commission, PayChangu fees, refund adjustments, delivery fees, and dispute adjustments.
-5. **Plan for payout failure after escrow release.** A failed bank/mobile-money transfer should not silently reopen buyer escrow. It should create a seller/admin remediation state where the destination can be corrected and the payout retried with a new provider attempt while retaining audit history.
-6. **Plan for provider reversals/chargebacks.** If PayChangu later reverses a payment after payout, BuyMesho needs an operational policy: reserve balance, negative seller balance, account hold, or manual recovery.
-7. **Keep payout details private and encrypted.** Seller payout destinations should not be stored on the public `sellers` profile record and should not be returned from normal seller/profile APIs. Store only masked values for display.
-8. **Confirm PayChangu balance settlement timing.** PayChangu documents collection and main balances separately, so verify whether collected checkout money becomes payout-eligible automatically, after a delay, or only after a PayChangu-side/internal transfer.
-9. **Decide whether orders can span multiple sellers.** The current order model has a single `seller_id`; if a cart can contain items from multiple sellers, checkout must split into seller-specific orders/escrows/payouts before seller payouts are safe.
-10. **Add audit and notifications.** Every payout status transition should have an audit trail, and sellers should receive clear UI/email/in-app messages for setup required, payout queued, payout sent, payout paid, and payout failed.
+| Status | Note | Required pre-merge edit |
+| --- | --- | --- |
+| **Resolved for local payout candidates** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
+| **Resolved for local payout candidates** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry and one local payout candidate per escrow. Before provider submission, replace the temporary gross released-balance amount with the approved seller-net formula below. |
+| **Partially resolved** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level, but add provider-attempt history before calling PayChangu. Generate a fresh PayChangu `charge_id` for each retry attempt instead of reusing the payout row identity. |
+| **Open product decision** | Define the money formula before launch. | Decide whether payout amount is gross order total, subtotal, or net of BuyMesho commission, PayChangu fees, refund adjustments, delivery fees, and dispute adjustments. Document the exact formula and add tests before enabling real payout submission. |
+| **Open workflow decision** | Plan for payout failure after escrow release. | Add a seller/admin remediation state where destination details can be corrected and payout can be retried with a new provider attempt while preserving audit history. Do not silently reopen buyer escrow after provider failure. |
+| **Open operations decision** | Plan for provider reversals/chargebacks. | Choose an operational policy for reversals after payout, such as reserve balance, negative seller balance, seller account hold, manual recovery, or some combination. |
+| **Open security requirement** | Keep payout details private and encrypted. | Store seller payout destinations outside public seller profile data, encrypt full account/mobile values at rest, and expose only masked values through seller/admin APIs that need them. |
+| **Open provider validation** | Confirm PayChangu balance settlement timing. | Verify whether checkout collections become payout-eligible automatically, after a delay, or only after a PayChangu-side/internal transfer from collection balance to main balance. |
+| **Open data-model validation** | Decide whether orders can span multiple sellers. | If checkout can include multiple sellers, split checkout into seller-specific orders/escrows/payout candidates before enabling payouts. If the one-seller-per-order model is permanent, enforce it at checkout and document the invariant. |
+| **Open platform requirement** | Add audit and notifications. | Add an audit trail for every payout status/provider-attempt transition, plus seller UI/email/in-app messages for setup required, payout queued, payout sent, payout paid, and payout failed. |
 
 ## How the seller should receive money
 
