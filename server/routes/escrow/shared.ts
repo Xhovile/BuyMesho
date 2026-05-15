@@ -41,6 +41,13 @@ export function canAccessOrder(req: Request, order: { buyerId: string; sellerId:
   return user.uid === order.buyerId || user.uid === order.sellerId;
 }
 
+export function canReleaseEscrow(req: Request, order: { buyerId: string; sellerId: string }): boolean {
+  const user = getRequestUser(req);
+  if (!user) return false;
+  if (user.is_admin) return true;
+  return user.uid === order.buyerId;
+}
+
 type OrderAccessOrder = { buyerId: string; sellerId: string };
 
 type OrderAccessDenied = {
@@ -74,6 +81,29 @@ export function assertOrderAccess<TOrder extends OrderAccessOrder>(
       error: {
         status: 403,
         body: { error: 'You are not allowed to access this order' },
+      },
+    };
+  }
+
+  return { order };
+}
+
+export function assertEscrowReleaseAccess<TOrder extends OrderAccessOrder>(
+  req: Request,
+  orderId: string,
+  orderRepository: { findById: (id: string) => TOrder | undefined },
+): OrderAccessResult<TOrder> {
+  const order = orderRepository.findById(orderId);
+
+  if (!order) {
+    return { error: { status: 404, body: { error: 'Order not found' } } };
+  }
+
+  if (!canReleaseEscrow(req, order)) {
+    return {
+      error: {
+        status: 403,
+        body: { error: 'Only the buyer or an admin can release escrow for this order' },
       },
     };
   }

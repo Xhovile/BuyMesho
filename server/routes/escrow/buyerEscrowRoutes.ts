@@ -3,6 +3,7 @@ import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import {
+  assertEscrowReleaseAccess,
   assertOrderAccess,
   escrowActionLimiter,
   jsonError,
@@ -33,7 +34,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
   router.post('/:orderId/release', escrowActionLimiter, requireAuth, (req, res) => {
     try {
-      const access = assertOrderAccess(req, req.params.orderId, orderRepository);
+      const access = assertEscrowReleaseAccess(req, req.params.orderId, orderRepository);
 
       if ('error' in access) {
         return res.status(access.error.status).json(access.error.body);
