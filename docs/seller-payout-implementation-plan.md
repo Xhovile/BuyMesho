@@ -30,7 +30,7 @@ Before implementing payouts from this plan, resolve these product and safety det
 
 1. **Escrow release authorization must be tightened.** The current release route uses general order access, which allows either the buyer, seller, or an admin to access an order. Escrow release should be limited to the buyer or an admin/resolution workflow, not the seller who will receive the payout.
 2. **Escrow release must be an accounting event, not just a status flip.** A payout-safe release should append a ledger entry, compute the seller net amount, and create exactly one payout candidate for the escrow. The existing repository method only updates escrow state.
-3. **Separate escrow idempotency from provider-attempt idempotency.** Keep one payout candidate per escrow release (for example unique on `escrow_id`), but generate a new PayChangu `charge_id` for every provider retry attempt so corrected destinations can be paid without being deduplicated.
+3. **Separate escrow idempotency from provider-attempt idempotency.** Keep one payout candidate per escrow release (for example unique on `escrow_id`), but generate a new PayChangu `charge_id` for every provider retry attempt so retries after destination-detail corrections (like fixing a wrong account/mobile) are not deduplicated.
 4. **Define the money formula before launch.** Decide whether seller payout amount is gross order total, subtotal, or net of BuyMesho commission, PayChangu fees, refund adjustments, delivery fees, and dispute adjustments.
 5. **Plan for payout failure after escrow release.** A failed bank/mobile-money transfer should not silently reopen buyer escrow. It should create a seller/admin remediation state where the destination can be corrected and the payout retried with a new provider attempt while retaining audit history.
 6. **Plan for provider reversals/chargebacks.** If PayChangu later reverses a payment after payout, BuyMesho needs an operational policy: reserve balance, negative seller balance, account hold, or manual recovery.
@@ -96,7 +96,7 @@ Add a server-only PayChangu payout client that can:
 - fetch payout/transfer status,
 - parse and verify payout webhooks if PayChangu sends payout status events.
 
-The provider should generate a unique idempotent `charge_id` per provider attempt, not per payout row. Keep payout-level idempotency inside BuyMesho (one payout per escrow release), and create a new provider attempt identity for each retry (for example `BM-PO-{payoutId}-A{attemptNo}` or a dedicated `payout_attempt_id`).
+BuyMesho's server-side PayChangu integration should generate a unique idempotent `charge_id` per provider attempt, not per payout row. Keep payout-level idempotency inside BuyMesho (one payout per escrow release), and create a new provider attempt identity for each retry (for example `BM-PO-{payoutId}-A{attemptNo}` or a dedicated `payout_attempt_id`).
 
 ### 3. Real payout lifecycle table
 
