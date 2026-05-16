@@ -63,6 +63,33 @@ function initPaymentSchema(db: Database.Database): void {
       is_verified INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS seller_payout_accounts (
+      id TEXT PRIMARY KEY,
+      seller_uid TEXT NOT NULL,
+      destination_type TEXT NOT NULL,
+      provider_name TEXT NOT NULL,
+      provider_ref_id TEXT,
+      currency TEXT NOT NULL DEFAULT 'MWK',
+      account_name TEXT NOT NULL,
+      account_number_encrypted TEXT,
+      mobile_encrypted TEXT,
+      masked_account TEXT NOT NULL,
+      destination_fingerprint TEXT NOT NULL,
+      is_default INTEGER NOT NULL DEFAULT 0,
+      verification_status TEXT NOT NULL DEFAULT 'pending',
+      verification_attempts INTEGER NOT NULL DEFAULT 0,
+      last_error TEXT,
+      verified_at TEXT,
+      replaced_from_id TEXT,
+      replaced_by_id TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE,
+      FOREIGN KEY (replaced_from_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL,
+      FOREIGN KEY (replaced_by_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL
+    );
+
     CREATE TABLE IF NOT EXISTS orders (
       id TEXT PRIMARY KEY,
       buyer_id TEXT NOT NULL,
@@ -157,6 +184,15 @@ function initPaymentSchema(db: Database.Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_payouts_seller_id ON payouts(seller_id);
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_seller_payout_accounts_destination_fingerprint
+    ON seller_payout_accounts(seller_uid, destination_fingerprint);
+
+    CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_seller_uid
+    ON seller_payout_accounts(seller_uid, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_verification_status
+    ON seller_payout_accounts(seller_uid, verification_status, is_active);
   `);
 
   ensureColumn(db, "payment_webhook_events", "provider_event_id", "TEXT");

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Loader2, RefreshCw, ShieldCheck, TriangleAlert, CircleCheckBig } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, RefreshCw, ShieldCheck, TriangleAlert, Clock3, CircleCheckBig } from "lucide-react";
 import { apiFetch } from "./lib/api";
 
 type PayoutRow = {
@@ -50,9 +50,9 @@ type PayoutSummary = {
 
 function tone(status: string) {
   const s = status.toLowerCase();
-  if (s === "paid") return "emerald";
-  if (s === "failed" || s === "cancelled") return "rose";
-  if (s === "pending" || s === "queued" || s === "processing" || s === "eligible") return "amber";
+  if (["paid"].includes(s)) return "emerald";
+  if (["failed", "cancelled"].includes(s)) return "rose";
+  if (["pending", "queued", "processing", "eligible"].includes(s)) return "amber";
   return "zinc";
 }
 
@@ -67,52 +67,6 @@ function pillClass(t: string) {
     default:
       return "bg-zinc-100 text-zinc-700 border-zinc-200";
   }
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
-    </div>
-  );
-}
-
-function ActionButton({
-  icon,
-  label,
-  busy,
-  danger,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  busy: boolean;
-  danger?: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold disabled:opacity-60 ${
-        danger ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-zinc-900 text-white hover:bg-zinc-800"
-      }`}
-    >
-      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
-      {label}
-    </button>
-  );
 }
 
 export default function AdminPayoutQueue() {
@@ -157,11 +111,7 @@ export default function AdminPayoutQueue() {
     [rows, summary]
   );
 
-  const runAction = async (
-    id: string,
-    action: "retry" | "mark-paid" | "mark-failed" | "hold",
-    payload?: Record<string, unknown>,
-  ) => {
+  const runAction = async (id: string, action: "retry" | "mark-paid" | "mark-failed" | "hold", payload?: Record<string, unknown>) => {
     setActionBusyId(id);
     setError(null);
     try {
@@ -277,10 +227,31 @@ export default function AdminPayoutQueue() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 lg:w-[320px] lg:justify-end">
-                    <ActionButton icon={<RefreshCw className="h-4 w-4" />} label="Retry" busy={busy} onClick={() => runAction(row.id, "retry")} />
-                    <ActionButton icon={<CircleCheckBig className="h-4 w-4" />} label="Mark paid" busy={busy} onClick={() => runAction(row.id, "mark-paid")} />
-                    <ActionButton icon={<ShieldCheck className="h-4 w-4" />} label="Hold" busy={busy} onClick={() => runAction(row.id, "hold", { reason: "Manual admin hold" })} />
-                    <ActionButton icon={<TriangleAlert className="h-4 w-4" />} label="Mark failed" busy={busy} danger onClick={() => runAction(row.id, "mark-failed", { reason: "Manual admin failure" })} />
+                    <ActionButton
+                      icon={<RefreshCw className="h-4 w-4" />}
+                      label="Retry"
+                      busy={busy}
+                      onClick={() => runAction(row.id, "retry", { destinationReference: row.destinationMaskedAccount ?? row.id })}
+                    />
+                    <ActionButton
+                      icon={<CircleCheckBig className="h-4 w-4" />}
+                      label="Mark paid"
+                      busy={busy}
+                      onClick={() => runAction(row.id, "mark-paid")}
+                    />
+                    <ActionButton
+                      icon={<ShieldCheck className="h-4 w-4" />}
+                      label="Hold"
+                      busy={busy}
+                      onClick={() => runAction(row.id, "hold", { reason: "Manual admin hold" })}
+                    />
+                    <ActionButton
+                      icon={<TriangleAlert className="h-4 w-4" />}
+                      label="Mark failed"
+                      busy={busy}
+                      danger
+                      onClick={() => runAction(row.id, "mark-failed", { reason: "Manual admin failure" })}
+                    />
                   </div>
                 </div>
               </div>
@@ -289,5 +260,51 @@ export default function AdminPayoutQueue() {
         )}
       </div>
     </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
+    </div>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
+    </div>
+  );
+}
+
+function ActionButton({
+  icon,
+  label,
+  busy,
+  danger,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  busy: boolean;
+  danger?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      onClick={onClick}
+      className={`inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-bold disabled:opacity-60 ${
+        danger ? "bg-rose-600 text-white hover:bg-rose-700" : "bg-zinc-900 text-white hover:bg-zinc-800"
+      }`}
+    >
+      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+      {label}
+    </button>
   );
 }

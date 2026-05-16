@@ -3,6 +3,7 @@ import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { payoutService } from '../../modules/payouts/payout.service.js';
+import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../sqlite.js';
 import {
   assertEscrowReleaseAccess,
@@ -49,12 +50,19 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      if (
-        escrow.state === 'released' ||
-        escrow.state === 'refunded' ||
-        escrow.state === 'closed'
-      ) {
-        return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
+      const releaseReadiness = assertEscrowReleaseReadiness({
+        orderStatus: access.order.status,
+        escrowState: escrow.state,
+        balanceAmount: escrow.balanceAmount,
+        paymentCaptured:
+          access.order.status === 'paid' ||
+          access.order.status === 'in_escrow' ||
+          access.order.status === 'fulfilled',
+        disputeOpened: access.order.status === 'disputed',
+      });
+
+      if (!releaseReadiness.releasable) {
+        return res.status(400).json({ error: releaseReadiness.reason });
       }
 
       const requesterId = req.user?.uid;
@@ -66,6 +74,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         typeof req.body?.reference === 'string' && req.body.reference.trim()
           ? req.body.reference.trim()
           : `escrow-release:${orderId}`;
+
       const result = getPaymentDb().transaction(() => {
         const released = escrowRepository.releaseToSellerEarnings({
           orderId,
@@ -75,6 +84,10 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
         if (!released) {
           return undefined;
+        }
+
+        if (!releaseReadiness.payoutEligible) {
+          throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
         const payout = payoutService.createEligiblePayoutCandidate({
@@ -96,7 +109,14 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           );
         }
 
-        return { escrow: released.escrow, payout };
+        return {
+          escrow: released.escrow,
+          payout,
+          payoutEligibility: {
+            eligible: true,
+            reason: releaseReadiness.reason,
+          },
+        };
       })();
 
       if (!result) {
@@ -109,7 +129,9 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
       if (
         message.startsWith('Escrow is already') ||
         message.startsWith('Escrow cannot') ||
-        message.startsWith('Escrow has no')
+        message.startsWith('Escrow has no') ||
+        message.includes('not ready') ||
+        message.includes('under dispute')
       ) {
         return res.status(400).json({ error: message });
       }
