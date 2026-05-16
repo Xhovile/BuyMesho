@@ -165,20 +165,25 @@ function StatusPill({ label, tone = "zinc" }: { label: string; tone?: Tone }) {
   return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${TONE_CLASSES[tone]}`}>{label}</span>;
 }
 
-function StatButton({ label, value, active, onClick }: { label: string; value: number; active: boolean; onClick: () => void; }) {
+function StatButton({ label, value, active, onClick, badge = "Sort" }: { label: string; value: number; active: boolean; onClick: () => void; badge?: string; }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`flex aspect-square flex-col justify-between p-4 text-left transition-colors md:p-5 ${active ? "bg-zinc-950 text-white" : "bg-white text-zinc-900 hover:bg-zinc-50"}`}
+      className={`group flex min-h-[5.75rem] flex-col justify-between rounded-2xl border px-3.5 py-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md sm:px-4 ${
+        active
+          ? "border-zinc-950 bg-zinc-950 text-white shadow-zinc-950/15"
+          : "border-zinc-200 bg-white text-zinc-900 hover:border-zinc-300 hover:bg-white"
+      }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className={`text-xs font-black uppercase tracking-[0.18em] ${active ? "text-zinc-300" : "text-zinc-400"}`}>{label}</p>
-        <span className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${active ? "bg-white/10 text-white" : "bg-zinc-100 text-zinc-500"}`}>Sort</span>
+      <div className="flex items-center justify-between gap-3">
+        <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-zinc-500"}`}>{label}</p>
+        <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200/70"}`}>{badge}</span>
       </div>
-      <div className="flex flex-1 items-end">
-        <p className="text-4xl font-black leading-none tracking-tight md:text-5xl">{value}</p>
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{value}</p>
+        <span className={`h-1.5 w-8 rounded-full ${active ? "bg-white/60" : "bg-zinc-200 group-hover:bg-zinc-300"}`} />
       </div>
     </button>
   );
@@ -443,18 +448,9 @@ export default function AdminPaymentsConsole() {
             <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">Admin monitoring only. Buyer order status belongs elsewhere.</p>
           </div>
 
-          <div className="flex overflow-hidden rounded-2xl border border-zinc-200">
-            <button type="button" onClick={() => setActiveTab("payments")} className={`px-5 py-3 text-left ${activeTab === "payments" ? "bg-zinc-700 text-white" : "bg-zinc-100 text-zinc-500"}`}>
-              Payments
-              <br />
-              <span className="text-lg font-black">{stats.totalPayments}</span>
-            </button>
-            <div className="w-px bg-zinc-200" />
-            <button type="button" onClick={() => setActiveTab("webhooks")} className={`px-5 py-3 text-left ${activeTab === "webhooks" ? "bg-zinc-700 text-white" : "bg-zinc-100 text-zinc-500"}`}>
-              Webhooks
-              <br />
-              <span className="text-lg font-black">{stats.totalWebhooks}</span>
-            </button>
+          <div className="grid w-full grid-cols-2 gap-3 sm:w-80">
+            <StatButton label="Payments" value={stats.totalPayments} active={activeTab === "payments"} onClick={() => setActiveTab("payments")} badge="View" />
+            <StatButton label="Webhooks" value={stats.totalWebhooks} active={activeTab === "webhooks"} onClick={() => setActiveTab("webhooks")} badge="View" />
           </div>
         </section>
 
@@ -491,13 +487,13 @@ export default function AdminPaymentsConsole() {
           </div>
 
           {activeTab === "payments" ? (
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[2rem] border border-zinc-200 bg-zinc-200 p-px shadow-sm md:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {PAYMENT_SORTS.map((item) => (
                 <StatButton key={item.key} label={item.label} value={item.key === "recent" ? stats.totalPayments : item.key === "verified" ? stats.verifiedPayments : item.key === "paid" ? stats.paidPayments : stats.pendingPayments} active={paymentSortMode === item.key} onClick={() => setPaymentSortMode(item.key)} />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[2rem] border border-zinc-200 bg-zinc-200 p-px shadow-sm md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {WEBHOOK_SORTS.map((item) => (
                 <StatButton key={item.key} label={item.label} value={item.key === "recent" ? stats.totalWebhooks : item.key === "valid" ? stats.validWebhooks : stats.invalidWebhooks} active={webhookSortMode === item.key} onClick={() => setWebhookSortMode(item.key)} />
               ))}

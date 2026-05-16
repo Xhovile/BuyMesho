@@ -13,7 +13,6 @@ Buyer payments are already represented in the local payment and escrow flow:
 
 The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only creates the local payout candidate; it does not call PayChangu, store seller payout destinations, create provider-attempt history, verify payout webhooks, or reconcile PayChangu payout status.
 
-
 ## PayChangu source links
 
 These PayChangu docs should stay linked in this plan because they define the payout capabilities and operational constraints that the backend implementation depends on:
@@ -22,7 +21,6 @@ These PayChangu docs should stay linked in this plan because they define the pay
 - [Mobile Money Payout API](https://developer.paychangu.com/reference/mobile-money-payout): documents the mobile money payout endpoint (`POST /mobile-money/payouts/initialize`) and required fields such as `mobile`, `mobile_money_operator_ref_id`, `amount`, and unique `charge_id`.
 - [Bank Account payout guide](https://developer.paychangu.com/docs/bank-account): documents bank payout setup, KYC/feature activation prerequisites, sample `POST /direct-charge/payouts/initialize` payloads, and transfer status verification through the status endpoint or webhooks.
 - [Wallet balance guide](https://developer.paychangu.com/docs/balance): documents `GET /wallet-balance?currency=MWK` and the distinction between `collection_balance` and `main_balance`, which matters because payouts are made from funds available to transfer out.
-
 
 ## Important pre-merge notes
 
