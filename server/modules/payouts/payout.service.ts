@@ -44,6 +44,56 @@ export interface PayoutRequest {
   amount: MoneyValue;
 }
 
+export type PayoutPermissionActor = {
+  uid: string;
+  is_admin?: boolean;
+};
+
+export type PayoutPermissionContext = {
+  sellerId: string;
+  actor: PayoutPermissionActor | null;
+};
+
+function isAdminActor(actor: PayoutPermissionActor | null): boolean {
+  return actor?.is_admin === true;
+}
+
+function isSameSeller(actor: PayoutPermissionActor | null, sellerId: string): boolean {
+  return !!actor?.uid && actor.uid === sellerId;
+}
+
+export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
+}
+
+export function canEditPayoutSettings(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
+}
+
+export function canRequestWithdrawal(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
+}
+
+export function canViewPayoutHistory(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
+}
+
+export function canRequestPayoutRetry(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
+}
+
+export function canApprovePayoutOverride(context: PayoutPermissionContext): boolean {
+  return isAdminActor(context.actor);
+}
+
+export function canManageSellerPayoutDestination(context: PayoutPermissionContext): boolean {
+  return canEditPayoutSettings(context);
+}
+
+export function canAccessSellerPayoutData(context: PayoutPermissionContext): boolean {
+  return canViewPayoutSettings(context);
+}
+
 export class PayoutRepository {
   private get db() {
     return getPaymentDb();
