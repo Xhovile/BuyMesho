@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import { navigateToAdmin } from "./lib/appNavigation";
+import AdminPayoutQueue from "./AdminPayoutQueue";
 
 type PaymentRow = {
   id: string;
