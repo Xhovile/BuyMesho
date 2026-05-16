@@ -1,6 +1,11 @@
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
 import type { MoneyValue } from '../../../src/shared/types/common.js';
+import {
+  executePayChanguPayout,
+  getPayChanguPayoutBalance,
+  type PayChanguPayoutExecutionResult,
+} from './paychangu.payout.js';
 
 export type PayoutStatus =
   | 'eligible'
@@ -28,6 +33,18 @@ export interface PayoutRecord {
   updatedAt: string;
 }
 
+export interface PayoutAttemptRecord {
+  id: string;
+  payoutId: string;
+  provider: string;
+  providerChargeId: string;
+  providerReference: string;
+  status: PayoutStatus;
+  attemptNo: number;
+  rawResponse: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface CreateEligiblePayoutInput {
   sellerId: string;
   orderId: string;
@@ -42,6 +59,15 @@ export interface CreateEligiblePayoutInput {
 export interface PayoutRequest {
   sellerId: string;
   amount: MoneyValue;
+}
+
+export interface ExecutePayoutInput {
+  payoutId: string;
+  sellerId: string;
+  amount: number;
+  currency: string;
+  providerName: string;
+  destinationReference: string;
 }
 
 export type PayoutPermissionActor = {
@@ -112,6 +138,15 @@ export class PayoutRepository {
     return this.rowToPayout(row);
   }
 
+  findById(id: string): PayoutRecord | undefined {
+    const row = this.db
+      .prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`)
+      .get(id) as Record<string, unknown> | undefined;
+
+    if (!row) return undefined;
+    return this.rowToPayout(row);
+  }
+
   createEligibleForRelease(input: CreateEligiblePayoutInput): PayoutRecord {
     const existing = this.findByEscrowId(input.escrowId);
     if (existing) return existing;
@@ -157,6 +192,86 @@ export class PayoutRepository {
     return created;
   }
 
+  updateExecutionState(
+    payoutId: string,
+    execution: PayChanguPayoutExecutionResult,
+  ): PayoutRecord | undefined {
+    const now = new Date().toISOString();
+
+    this.db.prepare(
+      `UPDATE payouts
+       SET status = ?,
+           provider = ?,
+           provider_charge_id = ?,
+           updated_at = ?
+       WHERE id = ?`,
+    ).run(
+      execution.status,
+      execution.provider,
+      execution.providerChargeId,
+      now,
+      payoutId,
+    );
+
+    return this.findById(payoutId);
+  }
+
+  nextAttemptNo(payoutId: string): number {
+    const row = this.db
+      .prepare(
+        `SELECT COALESCE(MAX(attempt_no), 0) AS max_attempt_no
+         FROM payout_attempts
+         WHERE payout_id = ?`,
+      )
+      .get(payoutId) as { max_attempt_no?: number } | undefined;
+
+    return Number(row?.max_attempt_no ?? 0) + 1;
+  }
+
+  recordAttempt(
+    payoutId: string,
+    execution: PayChanguPayoutExecutionResult,
+  ): PayoutAttemptRecord {
+    const id = randomUUID();
+    const createdAt = new Date().toISOString();
+
+    this.db.prepare(
+      `INSERT INTO payout_attempts (
+        id,
+        payout_id,
+        provider,
+        provider_charge_id,
+        provider_reference,
+        status,
+        attempt_no,
+        raw_response,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      id,
+      payoutId,
+      execution.provider,
+      execution.providerChargeId,
+      execution.providerReference,
+      execution.status,
+      execution.attemptNo,
+      JSON.stringify(execution.rawResponse ?? {}),
+      createdAt,
+    );
+
+    return {
+      id,
+      payoutId,
+      provider: execution.provider,
+      providerChargeId: execution.providerChargeId,
+      providerReference: execution.providerReference,
+      status: execution.status,
+      attemptNo: execution.attemptNo,
+      rawResponse: execution.rawResponse,
+      createdAt,
+    };
+  }
+
   private rowToPayout(row: Record<string, unknown>): PayoutRecord {
     return {
       id: row.id as string,
@@ -182,6 +297,33 @@ export class PayoutService {
 
   createEligiblePayoutCandidate(input: CreateEligiblePayoutInput): PayoutRecord {
     return this.repository.createEligibleForRelease(input);
+  }
+
+  async executePayout(input: ExecutePayoutInput) {
+    const attemptNo = this.repository.nextAttemptNo(input.payoutId);
+
+    const execution = await executePayChanguPayout({
+      payoutId: input.payoutId,
+      sellerId: input.sellerId,
+      amount: input.amount,
+      currency: input.currency,
+      providerName: input.providerName,
+      destinationReference: input.destinationReference,
+      attemptNo,
+    });
+
+    const payout = this.repository.updateExecutionState(input.payoutId, execution);
+    const attempt = this.repository.recordAttempt(input.payoutId, execution);
+
+    return {
+      payout,
+      attempt,
+      execution,
+    };
+  }
+
+  async getProviderBalance(currency = 'MWK') {
+    return getPayChanguPayoutBalance(currency);
   }
 
   processPayout(request: PayoutRequest) {
