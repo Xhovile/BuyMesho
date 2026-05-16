@@ -90,6 +90,30 @@ function buildStoredPaymentDetail(record: BuyerPaymentRecord): string {
   return 'Payment is still pending confirmation.';
 }
 
+function getStringField(source: Record<string, unknown> | null | undefined, field: string): string | null {
+  const value = source?.[field];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function getOrderActivityTimestamp(bundle: OrderBundle): string | null {
+  return (
+    getStringField(bundle.escrow, 'updatedAt') ??
+    getStringField(bundle.escrow, 'updated_at') ??
+    getStringField(bundle.payment, 'updatedAt') ??
+    getStringField(bundle.payment, 'updated_at') ??
+    getStringField(bundle.payment, 'paidAt') ??
+    getStringField(bundle.payment, 'paid_at') ??
+    getStringField(bundle.order, 'updatedAt') ??
+    getStringField(bundle.order, 'updated_at') ??
+    getStringField(bundle.order, 'paidAt') ??
+    getStringField(bundle.order, 'paid_at') ??
+    getStringField(bundle.order, 'placedAt') ??
+    getStringField(bundle.order, 'placed_at') ??
+    getStringField(bundle.order, 'createdAt') ??
+    getStringField(bundle.order, 'created_at')
+  );
+}
+
 export function summarizePayments(
   orders: OrderBundle[],
   buyerPayments: BuyerPaymentRecord[],
@@ -142,12 +166,7 @@ export function summarizePayments(
       currency,
       status,
       detail: buildOrderDetail(bundle),
-      updatedAt:
-        typeof bundle.escrow?.updated_at === 'string'
-          ? bundle.escrow.updated_at
-          : typeof bundle.payment?.paid_at === 'string'
-            ? bundle.payment.paid_at
-            : null,
+      updatedAt: getOrderActivityTimestamp(bundle),
     });
 
     seenReferences.add(reference);
