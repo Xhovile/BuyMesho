@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   DISPUTES_PATH,
   getAppRouteFromLocation,
+  HOME_PATH,
   navigateToPath,
   PAYMENT_METHOD_PATH,
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
-  PROFILE_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
 } from "./lib/appNavigation";
@@ -161,7 +161,7 @@ export default function RootRouter() {
       return;
     }
 
-    if (route === "verify_email") navigateToPath(PROFILE_PATH);
+    if (route === "verify_email") navigateToPath(HOME_PATH);
   }, [authLoading, firebaseUser, route, locationPath]);
 
   return (
