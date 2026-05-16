@@ -12,6 +12,7 @@ import {
   LOGIN_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
+  navigateToLoginWithReturnPath,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import loaderImage from "../photos/LoaderPic.png";
@@ -152,7 +153,9 @@ export default function RootRouter() {
 
     if (!firebaseUser) {
       if (route === "verify_email") navigateToPath(LOGIN_PATH);
-      if (protectedRoutes.includes(route) || requiresAuth) navigateToPath(LOGIN_PATH);
+      if (protectedRoutes.includes(route) || requiresAuth) {
+        navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
+      }
       return;
     }
 
@@ -162,7 +165,7 @@ export default function RootRouter() {
     }
 
     if (route === "verify_email") navigateToPath(HOME_PATH);
-  }, [authLoading, firebaseUser, route, locationPath]);
+  }, [authLoading, firebaseUser, route, locationPath, locationSearch]);
 
   return (
     <>

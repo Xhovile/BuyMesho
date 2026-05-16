@@ -23,6 +23,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
+  CREATE_PATH,
   EXPLORE_PATH,
   PAYMENTS_HUB_PATH,
   LOGIN_PATH,
@@ -34,6 +35,7 @@ import {
   SETTINGS_PATH,
   SIGNUP_PATH,
   TERMS_PATH,
+  navigateToLoginWithReturnPath,
   navigateToCreateListing,
   navigateToListingDetails,
   navigateToPath
@@ -217,6 +219,7 @@ export default function HomePage() {
   const isSellerProfileLoading = isLoggedIn && profileLoading;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
     readHiddenSellerUids()
@@ -283,9 +286,15 @@ export default function HomePage() {
     return next;
   }, [sectionListings, filterHiddenListings]);
 
+  const openAuthGuard = (returnPath: string, afterClose?: () => void) => {
+    afterClose?.();
+    setAuthReturnPath(returnPath);
+    setAuthGuardOpen(true);
+  };
+
   const handleStartSelling = () => {
     if (!firebaseUser) {
-      setAuthGuardOpen(true);
+      openAuthGuard(CREATE_PATH);
       return;
     }
 
@@ -311,8 +320,7 @@ export default function HomePage() {
 
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(SETTINGS_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -321,8 +329,7 @@ export default function HomePage() {
 
   const handleProfileClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(PROFILE_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -331,8 +338,7 @@ export default function HomePage() {
   
   const handleMessagesClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(MESSAGES_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -341,8 +347,7 @@ export default function HomePage() {
 
   const handleBuyerPaymentsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(PAYMENTS_HUB_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -707,18 +712,25 @@ export default function HomePage() {
         type="error"
         title="Login required"
         message="You need to be logged in to access this page. Sign in or create an account to continue."
-        onClose={() => setAuthGuardOpen(false)}
+        onClose={() => {
+          setAuthGuardOpen(false);
+          setAuthReturnPath(null);
+        }}
         actions={[
           {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(LOGIN_PATH);
+              navigateToLoginWithReturnPath(authReturnPath ?? undefined);
+              setAuthReturnPath(null);
             },
           },
           {
             label: "Cancel",
-            onClick: () => setAuthGuardOpen(false),
+            onClick: () => {
+              setAuthGuardOpen(false);
+              setAuthReturnPath(null);
+            },
             variant: "secondary",
           },
         ]}

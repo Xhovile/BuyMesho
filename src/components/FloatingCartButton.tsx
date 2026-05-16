@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
-import { navigateToCart, navigateToLogin } from "../lib/appNavigation";
+import { navigateToCart, navigateToLoginWithReturnPath } from "../lib/appNavigation";
 import { readBuyerCart, subscribeToBuyerCartChanges } from "../lib/buyerState";
 
 type FloatingCartButtonProps = {
@@ -115,7 +115,7 @@ export default function FloatingCartButton({
         onCancel={() => setLoginPromptOpen(false)}
         onConfirm={() => {
           setLoginPromptOpen(false);
-          navigateToLogin();
+          navigateToLoginWithReturnPath();
         }}
       />
     </>
