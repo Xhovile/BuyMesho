@@ -4,6 +4,8 @@ This document defines the exact point at which the BuyMesho payout structure is 
 
 Its purpose is to stop vague decisions, repeated redesign, and unsafe payment logic from leaking into code.
 
+**Hard rule:** if any item in this file is still moving, implementation does not start.
+
 ## 1) Locked decisions
 
 These decisions must be frozen before implementation starts.
@@ -37,11 +39,77 @@ They require:
 - a logged amount
 - an audit trail
 
-### 1.5 Eligibility rule
+### 1.5 Seller and admin permissions
+
+The permission model must be frozen before coding.
+
+The system must explicitly define who can:
+- view payout settings
+- edit payout settings
+- request withdrawal
+- see payout history
+- request or trigger payout retry
+- approve override after review
+
+Frontend visibility does **not** grant payout authority.
+
+### 1.6 Failure and retry rules
+
+The failure path must be deterministic.
+
+The system must define:
+- whether a failed payout is fixable by the seller
+- whether a failed payout moves into admin review
+- whether a retry is allowed
+- whether retry requires a fresh provider charge ID
+- whether fraud, disputes, or holds block automatic retry
+- whether funds remain held after payout failure
+
+Retry is for technical failure only. Fraud and dispute states do not auto-retry.
+
+### 1.7 Eligibility gate
 
 A payout may only be released when the payout eligibility gate is true.
 
+At minimum, the gate must confirm:
+- payment has been captured
+- the order is eligible for release
+- the seller has a verified payout destination
+- the seller is not blocked by admin hold, fraud flag, or dispute state
+- provider/balance conditions required for submission are satisfied
+
 If the gate is false, the amount stays held even if the calculation is correct.
+
+### 1.8 Validation rules
+
+Before saving a payout destination, the backend must validate and normalize:
+- country format
+- mobile money operator or bank selection
+- account or phone number format
+- account-name matching rules, if any
+- duplicate destination protection
+- currency constraints
+
+Validation must happen server-side. The frontend is only a convenience layer.
+
+### 1.9 Audit requirements
+
+Every payout-related action must be logged for admins and support.
+
+Required events:
+- destination added
+- destination updated
+- destination replaced
+- payout queued
+- payout sent
+- payout failed
+- payout retried
+- payout paid
+- payout held
+- payout released
+- admin override
+
+Audit records must include the actor, timestamp, and the relevant state change.
 
 ---
 
