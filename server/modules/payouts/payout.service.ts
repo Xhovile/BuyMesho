@@ -192,6 +192,20 @@ export class PayoutRepository {
     return created;
   }
 
+  updateStatus(id: string, status: PayoutStatus, extra: Partial<PayoutRecord> = {}): PayoutRecord | undefined {
+    const now = new Date().toISOString();
+    this.db.prepare(
+      `UPDATE payouts
+       SET status = ?,
+           provider = COALESCE(?, provider),
+           provider_charge_id = COALESCE(?, provider_charge_id),
+           updated_at = ?
+       WHERE id = ?`,
+    ).run(status, extra.provider ?? null, extra.providerChargeId ?? null, now, id);
+
+    return this.findById(id);
+  }
+
   updateExecutionState(
     payoutId: string,
     execution: PayChanguPayoutExecutionResult,
@@ -272,6 +286,38 @@ export class PayoutRepository {
     };
   }
 
+  addEvent(input: {
+    payoutId: string;
+    sellerId: string;
+    eventType: string;
+    actorType: string;
+    actorId?: string | null;
+    note?: string | null;
+    payload?: Record<string, unknown> | null;
+  }): void {
+    this.db.prepare(
+      `INSERT INTO payout_events (
+        payout_id,
+        seller_id,
+        event_type,
+        actor_type,
+        actor_id,
+        note,
+        payload,
+        created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      input.payoutId,
+      input.sellerId,
+      input.eventType,
+      input.actorType,
+      input.actorId ?? null,
+      input.note ?? null,
+      input.payload ? JSON.stringify(input.payload) : null,
+      new Date().toISOString(),
+    );
+  }
+
   private rowToPayout(row: Record<string, unknown>): PayoutRecord {
     return {
       id: row.id as string,
@@ -315,6 +361,15 @@ export class PayoutService {
     const payout = this.repository.updateExecutionState(input.payoutId, execution);
     const attempt = this.repository.recordAttempt(input.payoutId, execution);
 
+    this.repository.addEvent({
+      payoutId: input.payoutId,
+      sellerId: input.sellerId,
+      eventType: 'provider_attempt_created',
+      actorType: 'system',
+      note: `Provider attempt ${attemptNo} created`,
+      payload: execution.rawResponse,
+    });
+
     return {
       payout,
       attempt,
@@ -324,6 +379,62 @@ export class PayoutService {
 
   async getProviderBalance(currency = 'MWK') {
     return getPayChanguPayoutBalance(currency);
+  }
+
+  markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
+    const payout = this.repository.updateStatus(payoutId, 'paid', {
+      paidAt: new Date().toISOString(),
+      provider: 'paychangu',
+      providerStatus: 'paid',
+    });
+    if (payout) {
+      this.repository.addEvent({
+        payoutId,
+        sellerId: payout.sellerId,
+        eventType: 'admin_mark_paid',
+        actorType: 'admin',
+        actorId,
+        note: note ?? 'Admin marked payout as paid',
+      });
+    }
+    return payout;
+  }
+
+  markFailed(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
+    const payout = this.repository.updateStatus(payoutId, 'failed', {
+      failureReason: reason,
+      failedAt: new Date().toISOString(),
+      provider: 'paychangu',
+      providerStatus: 'failed',
+    });
+    if (payout) {
+      this.repository.addEvent({
+        payoutId,
+        sellerId: payout.sellerId,
+        eventType: 'admin_mark_failed',
+        actorType: 'admin',
+        actorId,
+        note: reason,
+      });
+    }
+    return payout;
+  }
+
+  markHeld(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
+    const payout = this.repository.updateStatus(payoutId, 'pending', {
+      manualReviewReason: reason,
+    });
+    if (payout) {
+      this.repository.addEvent({
+        payoutId,
+        sellerId: payout.sellerId,
+        eventType: 'admin_hold',
+        actorType: 'admin',
+        actorId,
+        note: reason,
+      });
+    }
+    return payout;
   }
 
   processPayout(request: PayoutRequest) {
