@@ -35,6 +35,9 @@ export const ENDPOINTS = {
   },
   payouts: {
     create: `${API_BASE_PATH}/payouts`,
+    destinations: `${API_BASE_PATH}/payouts/destinations`,
+    destination: (id: string) => `${API_BASE_PATH}/payouts/destinations/${id}`,
+    replaceDestination: (id: string) => `${API_BASE_PATH}/payouts/destinations/${id}/replace`,
   },
   listings: {
     all: `${API_BASE_PATH}/listings`,
