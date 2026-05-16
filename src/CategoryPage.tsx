@@ -14,7 +14,9 @@ import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
 import {
   BECOME_SELLER_PATH,
+  CREATE_PATH,
   LOGIN_PATH,
+  navigateToLoginWithReturnPath,
   navigateToCreateListing,
   navigateToExplore,
   navigateToListingDetails,
@@ -270,9 +272,9 @@ export default function CategoryPage() {
   }, [items, sortBy, campus, subcategory, hiddenListingSet, hiddenSellerSet]);
 
   const handleSellClick = () => {
-    if (!firebaseUser) {
-      setAuthGuardOpen(true);
-      return;
+      if (!firebaseUser) {
+        setAuthGuardOpen(true);
+        return;
     }
 
     if (profileLoading) return;
@@ -507,7 +509,7 @@ export default function CategoryPage() {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(LOGIN_PATH);
+              navigateToLoginWithReturnPath(CREATE_PATH);
             },
           },
           {

@@ -4,14 +4,15 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   DISPUTES_PATH,
   getAppRouteFromLocation,
+  HOME_PATH,
   navigateToPath,
   PAYMENT_METHOD_PATH,
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
-  PROFILE_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
+  navigateToLoginWithReturnPath,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import loaderImage from "../photos/LoaderPic.png";
@@ -152,7 +153,9 @@ export default function RootRouter() {
 
     if (!firebaseUser) {
       if (route === "verify_email") navigateToPath(LOGIN_PATH);
-      if (protectedRoutes.includes(route) || requiresAuth) navigateToPath(LOGIN_PATH);
+      if (protectedRoutes.includes(route) || requiresAuth) {
+        navigateToLoginWithReturnPath(`${locationPath}${locationSearch}`);
+      }
       return;
     }
 
@@ -161,8 +164,8 @@ export default function RootRouter() {
       return;
     }
 
-    if (route === "verify_email") navigateToPath(PROFILE_PATH);
-  }, [authLoading, firebaseUser, route, locationPath]);
+    if (route === "verify_email") navigateToPath(HOME_PATH);
+  }, [authLoading, firebaseUser, route, locationPath, locationSearch]);
 
   return (
     <>

@@ -7,6 +7,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import {
   consumeAuthReturnPath,
+  HOME_PATH,
   navigateToLogin,
   navigateToPath,
   navigateToSignup,
@@ -46,7 +47,7 @@ export default function LoginPage() {
 
   const closeFeedback = () => setFeedback(null);
 
-  const getPostAuthPath = () => consumeAuthReturnPath("/profile");
+  const getPostAuthPath = () => consumeAuthReturnPath(HOME_PATH);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();

@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToLogin, navigateToPath } from "./lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  REPORT_PATH,
+  navigateBackOrPath,
+  navigateToEditListing,
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "./lib/listingUrl";
 import { getListingItemConfig } from "./listingSchemas";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -290,7 +297,7 @@ export default function ListingDetailsPage() {
 
   const continueToAuth = () => {
     closeAuthPrompt();
-    navigateToLogin();
+    navigateToLoginWithReturnPath();
   };
 
   const handleShare = async () => {

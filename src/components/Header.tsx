@@ -8,12 +8,15 @@ import { getAvatarUrl } from "../lib/avatar";
 import {
   ADMIN_PATH,
   BECOME_SELLER_PATH,
+  CREATE_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
   PAYMENTS_HUB_PATH,
   SETTINGS_PATH,
+  PROFILE_PATH,
+  navigateToLoginWithReturnPath,
   navigateToPath,
 } from "../lib/appNavigation";
 import { QUICK_CHIPS } from "../constants";
@@ -49,6 +52,7 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
@@ -64,10 +68,15 @@ export default function Header({
 
   const closeMenu = () => setMobileMenuOpen(false);
 
+  const openAuthGuard = (returnPath: string, afterClose?: () => void) => {
+    afterClose?.();
+    setAuthReturnPath(returnPath);
+    setAuthGuardOpen(true);
+  };
+
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(SETTINGS_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -76,8 +85,7 @@ export default function Header({
 
   const handleMessagesClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(MESSAGES_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -86,8 +94,7 @@ export default function Header({
 
   const handleSellClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(CREATE_PATH, afterClose);
       return;
     }
 
@@ -102,8 +109,7 @@ export default function Header({
 
   const handlePaymentsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(PAYMENTS_HUB_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -249,7 +255,7 @@ export default function Header({
                   <button
                     onClick={() => {
                       if (!firebaseUser) {
-                        setAuthGuardOpen(true);
+                        openAuthGuard(PROFILE_PATH);
                         return;
                       }
                       onProfileClick();
@@ -482,18 +488,25 @@ export default function Header({
         type="error"
         title="Login required"
         message="You need to be logged in to access this page. Sign in or create an account to continue."
-        onClose={() => setAuthGuardOpen(false)}
+        onClose={() => {
+          setAuthGuardOpen(false);
+          setAuthReturnPath(null);
+        }}
         actions={[
           {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(LOGIN_PATH);
+              navigateToLoginWithReturnPath(authReturnPath ?? undefined);
+              setAuthReturnPath(null);
             },
           },
           {
             label: "Cancel",
-            onClick: () => setAuthGuardOpen(false),
+            onClick: () => {
+              setAuthGuardOpen(false);
+              setAuthReturnPath(null);
+            },
             variant: "secondary",
           },
         ]}

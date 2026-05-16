@@ -1,5 +1,9 @@
 import { useEffect } from "react";
-import { LOGIN_PATH, VERIFY_EMAIL_PATH, navigateToPath } from "../lib/appNavigation";
+import {
+  VERIFY_EMAIL_PATH,
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+} from "../lib/appNavigation";
 import { useAuthUser } from "./useAuthUser";
 
 export function useRequireVerifiedUser() {
@@ -9,7 +13,7 @@ export function useRequireVerifiedUser() {
     if (loading) return;
 
     if (!user) {
-      navigateToPath(LOGIN_PATH);
+      navigateToLoginWithReturnPath();
       return;
     }
 
