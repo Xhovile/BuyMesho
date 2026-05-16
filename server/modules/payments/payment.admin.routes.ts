@@ -189,15 +189,21 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       if (!requireAdmin(req, res)) return;
 
       const payoutId = String(req.params.payoutId || '').trim();
-      const destinationReference = String(req.body?.destinationReference || '').trim();
-      if (!payoutId || !destinationReference) {
-        return res.status(400).json({ error: 'payoutId and destinationReference are required' });
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
       }
 
-      const payout = getPaymentDb().prepare('SELECT * FROM payouts WHERE id = ?').get(payoutId) as { id: string; seller_id: string; amount: number; currency: string; provider: string | null } | undefined;
+      const db = getPaymentDb();
+      const payout = db.prepare('SELECT * FROM payouts WHERE id = ?').get(payoutId) as { id: string; seller_id: string; amount: number; currency: string; provider: string | null; destination_account_id: string | null; } | undefined;
       if (!payout) {
         return res.status(404).json({ error: 'Payout not found' });
       }
+
+      const destination = payout.destination_account_id
+        ? (db.prepare('SELECT id, masked_account FROM seller_payout_accounts WHERE id = ? LIMIT 1').get(payout.destination_account_id) as { id: string; masked_account: string } | undefined)
+        : undefined;
+
+      const destinationReference = destination?.masked_account || payout.destination_account_id || payout.id;
 
       const result = await payoutService.executePayout({
         payoutId,
