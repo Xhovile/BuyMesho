@@ -2,6 +2,15 @@ import express, { type RequestHandler } from 'express';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
+import {
+  canApprovePayoutOverride,
+  canEditPayoutSettings,
+  canRequestPayoutRetry,
+  canRequestWithdrawal,
+  canViewPayoutHistory,
+  canViewPayoutSettings,
+  type PayoutPermissionActor,
+} from '../../modules/payouts/payout.service.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 
 const DEFAULT_CURRENCY = 'MWK';
@@ -52,6 +61,15 @@ type SellerPayoutDestinationRecord = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+};
+
+type SellerPayoutPermissions = {
+  viewPayoutSettings: boolean;
+  editPayoutSettings: boolean;
+  requestWithdrawal: boolean;
+  viewPayoutHistory: boolean;
+  requestPayoutRetry: boolean;
+  approveOverride: boolean;
 };
 
 function normalizeText(value: unknown): string | null {
@@ -215,26 +233,56 @@ function rowToSellerPayoutDestination(row: SellerPayoutDestinationRow): SellerPa
   };
 }
 
-function getTargetSellerId(req: Express.Request, requestedSellerId?: string | null): string {
+function getActor(req: express.Request): PayoutPermissionActor | null {
   const user = getRequestUser(req);
-  if (!user) {
-    throw new Error('Unauthorized');
-  }
-  if (user.is_admin && requestedSellerId) {
-    return requestedSellerId;
-  }
-  return user.uid;
+  return user ? { uid: user.uid, is_admin: user.is_admin } : null;
 }
 
-function assertDestinationOwnership(req: Express.Request, row: SellerPayoutDestinationRow): void {
-  const user = getRequestUser(req);
-  if (!user) {
-    throw new Error('Unauthorized');
+function buildPermissions(sellerId: string, actor: PayoutPermissionActor | null): SellerPayoutPermissions {
+  const context = { sellerId, actor };
+  return {
+    viewPayoutSettings: canViewPayoutSettings(context),
+    editPayoutSettings: canEditPayoutSettings(context),
+    requestWithdrawal: canRequestWithdrawal(context),
+    viewPayoutHistory: canViewPayoutHistory(context),
+    requestPayoutRetry: canRequestPayoutRetry(context),
+    approveOverride: canApprovePayoutOverride(context),
+  };
+}
+
+function assertAllowed(req: express.Request, allowed: boolean, message: string): void {
+  if (!allowed) {
+    const user = getRequestUser(req);
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+    throw new Error(message);
   }
-  if (user.is_admin) return;
-  if (row.seller_uid !== user.uid) {
-    throw new Error('You are not allowed to modify this payout destination');
-  }
+}
+
+function assertViewSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canViewPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout setting');
+}
+
+function assertEditSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canEditPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to edit this payout setting');
+}
+
+function assertWithdrawalAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canRequestWithdrawal({ actor: getActor(req), sellerId }), 'You are not allowed to request withdrawal for this seller');
+}
+
+function assertHistoryAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canViewPayoutHistory({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout history');
+}
+
+function assertRetryAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canRequestPayoutRetry({ actor: getActor(req), sellerId }), 'You are not allowed to trigger payout retry');
+}
+
+function assertOverrideAccess(req: express.Request): void {
+  const actor = getActor(req);
+  assertAllowed(req, canApprovePayoutOverride({ actor, sellerId: actor?.uid ?? '' }), 'Admin approval required');
 }
 
 function findDestinationById(destinationId: string): SellerPayoutDestinationRow | undefined {
@@ -499,12 +547,26 @@ function getRequestSellerId(req: express.Request, sellerUid?: unknown): string {
 export function createPayoutRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
+  router.get('/permissions/:sellerId', requireAuth, (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      const permissions = buildPermissions(sellerId, getActor(req));
+      return res.json({ sellerId, permissions });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout permissions';
+      const status = /Unauthorized/i.test(message) ? 401 : 400;
+      return res.status(status).json({ error: message });
+    }
+  });
+
   router.get('/destinations', requireAuth, (req, res) => {
     try {
       const sellerId = getRequestSellerId(req, req.query.sellerUid);
+      assertViewSettingsAccess(req, sellerId);
       return res.json({ destinations: listSellerDestinations(sellerId) });
     } catch (error) {
-      const status = String(error instanceof Error ? error.message : '') === 'Unauthorized' ? 401 : 500;
+      const message = error instanceof Error ? error.message : 'Failed to load payout destinations';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
       return res.status(status).json(jsonError(error, 'Failed to load payout destinations'));
     }
   });
@@ -512,6 +574,8 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
   router.post('/destinations', payoutLimiter, requireAuth, (req, res) => {
     try {
       const sellerId = getRequestSellerId(req, req.body.sellerUid);
+      assertEditSettingsAccess(req, sellerId);
+
       const destinationType = normalizeDestinationType(req.body.destinationType);
       const providerName = normalizeProviderName(req.body.providerName);
       const providerRefId = normalizeProviderRefId(req.body.providerRefId);
@@ -548,7 +612,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       return res.status(201).json({ destination: created });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create payout destination';
-      const status = /already exists/i.test(message) ? 409 : /Unauthorized/i.test(message) ? 401 : 400;
+      const status = /already exists/i.test(message) ? 409 : /Unauthorized/i.test(message) ? 401 : 403;
       return res.status(status).json({ error: message });
     }
   });
@@ -560,7 +624,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       if (!existing) {
         return res.status(404).json({ error: 'Payout destination not found' });
       }
-      assertDestinationOwnership(req, existing);
+      assertEditSettingsAccess(req, existing.seller_uid);
 
       const destinationType = req.body.destinationType
         ? normalizeDestinationType(req.body.destinationType)
@@ -623,7 +687,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       if (!existing) {
         return res.status(404).json({ error: 'Payout destination not found' });
       }
-      assertDestinationOwnership(req, existing);
+      assertEditSettingsAccess(req, existing.seller_uid);
 
       const destinationType = req.body.destinationType
         ? normalizeDestinationType(req.body.destinationType)
@@ -713,6 +777,61 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
           : /not allowed/i.test(message)
             ? 403
             : 400;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.post('/withdrawals', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const sellerId = getRequestSellerId(req, req.body.sellerUid);
+      assertWithdrawalAccess(req, sellerId);
+      return res.status(501).json({ error: 'Withdrawal request flow is not enabled yet' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to request withdrawal';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/history/:sellerId', requireAuth, (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      assertHistoryAccess(req, sellerId);
+      const db = getPaymentDb();
+      const rows = db
+        .prepare(
+          `SELECT * FROM payouts
+           WHERE seller_id = ?
+           ORDER BY created_at DESC`,
+        )
+        .all(sellerId);
+      return res.json({ payouts: rows });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout history';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.post('/payouts/:sellerId/retry', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      assertRetryAccess(req, sellerId);
+      return res.status(501).json({ error: 'Payout retry flow is not enabled yet' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to request payout retry';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.post('/payouts/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      assertOverrideAccess(req);
+      return res.status(501).json({ error: 'Payout override flow is not enabled yet' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to approve payout override';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
       return res.status(status).json({ error: message });
     }
   });
