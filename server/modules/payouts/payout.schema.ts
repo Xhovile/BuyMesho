@@ -74,6 +74,7 @@ function ensurePayoutLifecycleSchema(): void {
   ensureColumn('payouts', 'raw_request', 'TEXT');
   ensureColumn('payouts', 'raw_response', 'TEXT');
   ensureColumn('payouts', 'processed_by', 'TEXT');
+  ensureColumn('sellers', 'is_suspended', 'INTEGER NOT NULL DEFAULT 0');
 
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_attempts_payout_id ON payout_attempts (payout_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_attempts_status ON payout_attempts (status, created_at DESC)`);

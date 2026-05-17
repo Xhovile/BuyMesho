@@ -28,9 +28,13 @@ type PayoutRow = {
   failedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  retryCount: number | null;
   latestAttemptNo: number | null;
   latestAttemptStatus: string | null;
   latestAttemptAt: string | null;
+  latestAttemptFailureReason: string | null;
+  latestWebhookEventType: string | null;
+  latestWebhookEventNote: string | null;
 };
 
 type PayoutSummary = {
@@ -67,6 +71,26 @@ function pillClass(t: string) {
     default:
       return "bg-zinc-100 text-zinc-700 border-zinc-200";
   }
+}
+
+function specialBadges(row: PayoutRow) {
+  const badges: Array<{ label: string; className: string }> = [];
+  if (["provider_unavailable", "provider_timeout", "provider_rate_limited"].includes((row.failureReason ?? "").toLowerCase())) {
+    badges.push({ label: "provider outage", className: "border-amber-200 bg-amber-50 text-amber-700" });
+  }
+  if (row.status === "held") {
+    badges.push({ label: "manual review", className: "border-sky-200 bg-sky-50 text-sky-700" });
+  }
+  if (row.status === "held" && (row.failureReason ?? "").startsWith("provider_")) {
+    badges.push({ label: "retry blocked", className: "border-rose-200 bg-rose-50 text-rose-700" });
+  }
+  if (row.latestWebhookEventType === "payout_webhook_duplicate") {
+    badges.push({ label: "duplicate webhook ignored", className: "border-zinc-200 bg-white text-zinc-700" });
+  }
+  if (row.latestWebhookEventType === "payout_reconciled") {
+    badges.push({ label: "reconciled from provider callback", className: "border-emerald-200 bg-emerald-50 text-emerald-700" });
+  }
+  return badges;
 }
 
 export default function AdminPayoutQueue() {
@@ -181,6 +205,7 @@ export default function AdminPayoutQueue() {
           rows.map((row) => {
             const busy = actionBusyId === row.id;
             const rowTone = tone(row.status);
+            const badges = specialBadges(row);
             return (
               <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -199,6 +224,11 @@ export default function AdminPayoutQueue() {
                           destination {row.destinationVerificationStatus}
                         </span>
                       ) : null}
+                      {badges.map((badge) => (
+                        <span key={badge.label} className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${badge.className}`}>
+                          {badge.label}
+                        </span>
+                      ))}
                     </div>
 
                     <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-3">
@@ -209,19 +239,27 @@ export default function AdminPayoutQueue() {
                       <Info label="Amount" value={`${row.currency} ${Number(row.amount).toLocaleString()}`} />
                       <Info label="Provider charge" value={row.providerChargeId ?? "—"} />
                       <Info label="Destination" value={row.destinationMaskedAccount ?? "—"} />
-                      <Info label="Latest attempt" value={row.latestAttemptNo ? `#${row.latestAttemptNo} (${row.latestAttemptStatus ?? "—"})` : "—"} />
+                      <Info label="Retry count" value={String(row.retryCount ?? 0)} />
+                      <Info label="Last retry outcome" value={row.latestAttemptNo ? `#${row.latestAttemptNo} (${row.latestAttemptStatus ?? "—"})` : "—"} />
+                      <Info label="Time of last retry" value={row.latestAttemptAt ? new Date(row.latestAttemptAt).toLocaleString() : "—"} />
                       <Info label="Requested" value={row.requestedAt ? new Date(row.requestedAt).toLocaleString() : "—"} />
                     </div>
 
-                    {row.failureReason ? (
+                    {(row.latestAttemptFailureReason ?? row.failureReason) ? (
                       <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                        <strong>Failure:</strong> {row.failureReason}
+                        <strong>Last error:</strong> {row.latestAttemptFailureReason ?? row.failureReason}
                       </p>
                     ) : null}
 
                     {row.manualReviewReason ? (
                       <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
                         <strong>Review:</strong> {row.manualReviewReason}
+                      </p>
+                    ) : null}
+
+                    {row.latestWebhookEventNote ? (
+                      <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+                        <strong>Webhook:</strong> {row.latestWebhookEventNote}
                       </p>
                     ) : null}
                   </div>

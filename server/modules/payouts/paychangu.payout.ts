@@ -330,6 +330,7 @@ function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPa
   return 'provider_unavailable';
 }
 
+function buildPayoutReference(payoutId: string): string {
   return `PAYCHANGU-PAYOUT-${payoutId}-${randomUUID().slice(0, 8)}`;
 }
 
