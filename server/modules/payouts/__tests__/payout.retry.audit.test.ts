@@ -51,9 +51,11 @@ function seedRetryPayout(prefix: string) {
     createdAt: now,
     updatedAt: now,
   });
+  db.prepare(`UPDATE orders SET status = 'fulfilled' WHERE id = ?`).run(orderId);
 
   escrowRepository.create(orderId, 'MWK', 1500);
   escrowRepository.updateState(orderId, 'released');
+  const escrow = escrowRepository.findByOrderId(orderId);
 
   db.prepare(`INSERT INTO payouts (
     id, seller_id, order_id, escrow_id, release_entry_id,
@@ -63,7 +65,7 @@ function seedRetryPayout(prefix: string) {
     payoutId,
     sellerId,
     orderId,
-    `${prefix}-escrow`,
+    escrow?.id ?? `${prefix}-escrow`,
     `${prefix}-release`,
     destinationId,
     1470,
