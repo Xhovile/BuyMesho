@@ -381,7 +381,11 @@ function listSellerPayoutOperationalView(sellerId: string) {
 
     if (destinationStatus === 'missing') {
       verificationBlockers.push('Update destination to continue');
-    } else if (destinationStatus !== 'verified' || Number(row.destination_is_active ?? 0) !== 1) {
+    } else if (destinationStatus === 'failed') {
+      verificationBlockers.push('Destination verification failed');
+    } else if (destinationStatus === 'disabled' || Number(row.destination_is_active ?? 0) !== 1) {
+      verificationBlockers.push('Destination is disabled');
+    } else if (destinationStatus !== 'verified') {
       verificationBlockers.push('Destination pending verification');
     }
 

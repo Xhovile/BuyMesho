@@ -49,6 +49,8 @@ function getPayoutWebhookDetails(payload: unknown): {
   status?: string;
   payoutId?: string;
   chargeId?: string;
+  providerReference?: string;
+  transactionId?: string;
   providerEventId?: string;
   raw: PlainRecord;
 } {
@@ -73,6 +75,16 @@ function getPayoutWebhookDetails(payload: unknown): {
       transaction.charge_id ?? transaction.chargeId ?? transaction.tx_ref ?? transaction.txRef ?? transaction.reference ??
       data.charge_id ?? data.chargeId ?? data.tx_ref ?? data.txRef ?? data.reference ??
       raw.charge_id ?? raw.chargeId ?? raw.tx_ref ?? raw.txRef ?? raw.reference,
+    ),
+    providerReference: asTrimmedString(
+      transaction.reference ?? transaction.ref_id ?? transaction.refId ??
+      data.reference ?? data.ref_id ?? data.refId ??
+      raw.reference ?? raw.ref_id ?? raw.refId,
+    ),
+    transactionId: asTrimmedString(
+      transaction.transaction_id ?? transaction.transactionId ?? transaction.id ??
+      data.transaction_id ?? data.transactionId ?? data.id ??
+      raw.transaction_id ?? raw.transactionId,
     ),
     providerEventId: asTrimmedString(
       raw.event_id ?? raw.eventId ?? raw.provider_event_id ?? raw.providerEventId ??
@@ -190,6 +202,11 @@ export class PayoutWebhookHandler {
     const verification = await verifyPayChanguPayoutWebhook(signature, rawPayload);
 
     if (!verification.valid) {
+      addPayoutEventIfFound(payout, 'payout_webhook_rejected', 'Rejected webhook due to invalid signature', {
+        chargeId: details.chargeId ?? null,
+        providerEventId: details.providerEventId ?? null,
+        eventType: details.eventType ?? null,
+      });
       updatePaymentWebhookEventStatus(eventId, 'rejected', {
         processedAt: new Date().toISOString(),
         error: 'Invalid PayChangu payout webhook signature',
@@ -214,6 +231,8 @@ export class PayoutWebhookHandler {
       payoutService.markPaid(payout.id, 'provider-webhook', 'Reconciled from provider callback');
       addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
         chargeId: details.chargeId ?? null,
+        providerReference: details.providerReference ?? null,
+        providerTransactionId: details.transactionId ?? null,
         providerEventId: details.providerEventId ?? null,
         status: normalizedStatus,
       });
@@ -221,12 +240,16 @@ export class PayoutWebhookHandler {
       payoutService.markFailed(payout.id, 'provider-webhook', 'Provider callback reported payout failure');
       addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
         chargeId: details.chargeId ?? null,
+        providerReference: details.providerReference ?? null,
+        providerTransactionId: details.transactionId ?? null,
         providerEventId: details.providerEventId ?? null,
         status: normalizedStatus,
       });
     } else {
       addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
         chargeId: details.chargeId ?? null,
+        providerReference: details.providerReference ?? null,
+        providerTransactionId: details.transactionId ?? null,
         providerEventId: details.providerEventId ?? null,
         status: normalizedStatus,
       });
@@ -235,11 +258,15 @@ export class PayoutWebhookHandler {
     getPaymentDb().prepare(
       `UPDATE payouts
        SET provider_status = COALESCE(?, provider_status),
-           raw_response = COALESCE(?, raw_response),
-           updated_at = ?
-       WHERE id = ?`,
+           provider_ref_id = COALESCE(?, provider_ref_id),
+           provider_transaction_id = COALESCE(?, provider_transaction_id),
+            raw_response = COALESCE(?, raw_response),
+            updated_at = ?
+        WHERE id = ?`,
     ).run(
       normalizedStatus,
+      details.providerReference ?? null,
+      details.transactionId ?? null,
       JSON.stringify(asRecord(parsedPayload)),
       now,
       payout.id,

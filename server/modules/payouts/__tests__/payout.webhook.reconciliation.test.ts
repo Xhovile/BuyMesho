@@ -94,3 +94,35 @@ test('same charge reference twice is deduplicated even with a different provider
   const duplicates = db.prepare(`SELECT COUNT(*) AS count FROM payout_events WHERE payout_id = ? AND event_type = 'payout_webhook_duplicate'`).get(payoutId) as { count: number };
   assert.equal(duplicates.count, 1);
 });
+
+test('invalid payout webhook signature is rejected and audited on the payout timeline', async () => {
+  const secret = `secret-${randomUUID()}`;
+  process.env.PAYCHANGU_PAYOUT_WEBHOOK_SECRET = secret;
+
+  const { payoutId, chargeId } = seedWebhookPayout('payout-webhook-invalid');
+  const payload = JSON.stringify({
+    event_type: 'charge.success',
+    event_id: 'evt-payout-invalid-1',
+    data: {
+      transaction: {
+        status: 'successful',
+        charge_id: chargeId,
+        payout_reference: payoutId,
+      },
+    },
+  });
+
+  await assert.rejects(
+    payoutWebhookHandler.handlePaychanguWebhook('bad-signature', payload),
+    /Invalid PayChangu payout webhook signature/,
+  );
+
+  const db = getPaymentDb();
+  const rejected = db.prepare(
+    `SELECT COUNT(*) AS count
+     FROM payout_events
+     WHERE payout_id = ?
+       AND event_type = 'payout_webhook_rejected'`,
+  ).get(payoutId) as { count: number };
+  assert.equal(rejected.count, 1);
+});

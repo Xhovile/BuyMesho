@@ -640,6 +640,7 @@ async function startServer() {
 
   // Ensure PayChangu webhook receives raw JSON bytes for signature verification.
   app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
+  app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
 
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));

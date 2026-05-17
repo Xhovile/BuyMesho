@@ -27,11 +27,11 @@ function seedPayout(prefix: string, status: 'eligible' | 'failed' = 'eligible') 
 
   db.prepare(`INSERT INTO seller_payout_accounts (
     id, seller_uid, destination_type, provider_name, provider_ref_id,
-    currency, account_name, masked_account, destination_fingerprint,
+    currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
     is_default, verification_status, verification_attempts,
     is_active, created_at, updated_at
   ) VALUES (?, ?, 'mobile_money', 'Airtel Money', 'airtel-money',
-    'MWK', 'Downtime Seller', '****1234', ?,
+    'MWK', 'Downtime Seller', '265999111444', '****1444', ?,
     1, 'verified', 1,
     1, ?, ?)
   `).run(destinationId, sellerId, randomUUID(), now, now);

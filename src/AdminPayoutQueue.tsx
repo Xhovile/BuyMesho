@@ -17,11 +17,14 @@ type PayoutRow = {
   provider: string | null;
   providerChargeId: string | null;
   providerReference: string | null;
+  providerTransactionId?: string | null;
   providerStatus: string | null;
   destinationAccountId: string | null;
   destinationMaskedAccount: string | null;
   destinationType: string | null;
   destinationVerificationStatus: string | null;
+  sellerSuspended?: boolean;
+  verificationBlockers?: string[];
   failureReason: string | null;
   manualReviewReason: string | null;
   requestedBy: string | null;
@@ -35,6 +38,9 @@ type PayoutRow = {
   latestAttemptNo: number | null;
   latestAttemptStatus: string | null;
   latestAttemptAt: string | null;
+  latestAttemptFailureReason?: string | null;
+  latestWebhookEventType?: string | null;
+  latestWebhookEventAt?: string | null;
   attemptCount?: number;
   currentState?: string;
   lastError?: string | null;

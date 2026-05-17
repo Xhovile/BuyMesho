@@ -41,6 +41,7 @@ export interface PayChanguPayoutExecutionResult {
   provider: 'paychangu';
   providerChargeId: string;
   providerReference: string;
+  providerTransactionId: string | null;
   status: PayChanguPayoutExecutionStatus;
   amount: number;
   currency: string;
@@ -62,6 +63,7 @@ export interface PayChanguPayoutStatusResult {
   provider: 'paychangu';
   chargeId: string;
   reference: string | null;
+  transactionId: string | null;
   status: PayChanguPayoutExecutionStatus;
   amount: number | null;
   currency: string | null;
@@ -238,6 +240,31 @@ function extractString(payload: unknown, keys: string[]): string | null {
   if (typeof value === 'string' && value.trim()) return value.trim();
   if (typeof value === 'number' && Number.isFinite(value)) return String(value);
   return null;
+}
+
+function extractProviderReference(payload: unknown): string | null {
+  return (
+    extractString(payload, ['data', 'transaction', 'reference']) ??
+    extractString(payload, ['data', 'transaction', 'ref_id']) ??
+    extractString(payload, ['data', 'reference']) ??
+    extractString(payload, ['data', 'ref_id']) ??
+    extractString(payload, ['reference']) ??
+    extractString(payload, ['ref_id'])
+  );
+}
+
+function extractProviderTransactionId(payload: unknown): string | null {
+  return (
+    extractString(payload, ['data', 'transaction', 'transaction_id']) ??
+    extractString(payload, ['data', 'transaction', 'transactionId']) ??
+    extractString(payload, ['data', 'transaction', 'id']) ??
+    extractString(payload, ['data', 'transaction_id']) ??
+    extractString(payload, ['data', 'transactionId']) ??
+    extractString(payload, ['data', 'id']) ??
+    extractString(payload, ['transaction_id']) ??
+    extractString(payload, ['transactionId']) ??
+    extractString(payload, ['id'])
+  );
 }
 
 function normalizeProviderStatus(rawStatus: unknown): PayChanguPayoutExecutionStatus {
@@ -427,12 +454,15 @@ async function executeStructuredPayChanguPayout(
       const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
       const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
       const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
+      const responseReference = extractProviderReference(payload);
+      const providerTransactionId = extractProviderTransactionId(payload);
 
       return {
         payoutId: input.payoutId,
         provider: 'paychangu',
         providerChargeId,
-        providerReference,
+        providerReference: responseReference ?? providerReference,
+        providerTransactionId,
         status: executionStatus,
         amount: input.amount,
         currency: input.currency,
@@ -454,6 +484,7 @@ async function executeStructuredPayChanguPayout(
         provider: 'paychangu',
         providerChargeId,
         providerReference,
+        providerTransactionId: null,
         status: 'failed',
         amount: input.amount,
         currency: input.currency,
@@ -482,12 +513,15 @@ async function executeStructuredPayChanguPayout(
     const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
     const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
     const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
+    const responseReference = extractProviderReference(payload);
+    const providerTransactionId = extractProviderTransactionId(payload);
 
     return {
       payoutId: input.payoutId,
       provider: 'paychangu',
       providerChargeId,
-      providerReference,
+      providerReference: responseReference ?? providerReference,
+      providerTransactionId,
       status: executionStatus,
       amount: input.amount,
       currency: input.currency,
@@ -509,6 +543,7 @@ async function executeStructuredPayChanguPayout(
       provider: 'paychangu',
       providerChargeId,
       providerReference,
+      providerTransactionId: null,
       status: 'failed',
       amount: input.amount,
       currency: input.currency,
@@ -542,12 +577,15 @@ async function executeCompatibilityPayChanguPayout(
     const responseStatus = extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
     const normalizedStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
     const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
+    const responseReference = extractProviderReference(payload);
+    const providerTransactionId = extractProviderTransactionId(payload);
 
     return {
       payoutId: input.payoutId,
       provider: 'paychangu',
       providerChargeId,
-      providerReference,
+      providerReference: responseReference ?? providerReference,
+      providerTransactionId,
       status: normalizedStatus,
       amount: input.amount,
       currency: input.currency,
@@ -569,6 +607,7 @@ async function executeCompatibilityPayChanguPayout(
       provider: 'paychangu',
       providerChargeId,
       providerReference,
+      providerTransactionId: null,
       status: 'failed',
       amount: input.amount,
       currency: input.currency,
@@ -692,11 +731,13 @@ export async function getPayChanguPayoutStatus(
   const amountValue = extractNumber(transaction, ['amount']) ?? extractNumber(payload, ['amount']);
   const currencyValue = extractString(transaction, ['currency']) ?? extractString(payload, ['currency']);
   const reference = extractString(transaction, ['ref_id']) ?? extractString(transaction, ['reference']) ?? extractString(payload, ['reference']) ?? null;
+  const transactionId = extractProviderTransactionId(payload);
 
   return {
     provider: 'paychangu',
     chargeId,
     reference,
+    transactionId,
     status: normalizeProviderStatus(responseStatus),
     amount: amountValue,
     currency: currencyValue,

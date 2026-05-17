@@ -64,6 +64,17 @@ function initPaymentSchema(db: Database.Database): void {
       is_suspended INTEGER NOT NULL DEFAULT 0
     );
 
+    CREATE TABLE IF NOT EXISTS admin_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      admin_uid TEXT,
+      admin_email TEXT,
+      action_type TEXT NOT NULL,
+      target_type TEXT NOT NULL,
+      target_id TEXT,
+      details TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS seller_payout_accounts (
       id TEXT PRIMARY KEY,
       seller_uid TEXT NOT NULL,

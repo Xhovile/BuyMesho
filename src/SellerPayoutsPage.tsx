@@ -341,7 +341,7 @@ export default function SellerPayoutsPage() {
         <div className="max-w-4xl mx-auto px-4 py-10">
           <button
             type="button"
-            onClick={() => navigateToPath()}
+            onClick={() => navigateToPath(SETTINGS_PATH)}
             className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900"
           >
             <ArrowLeft className="w-4 h-4" />
