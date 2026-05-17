@@ -618,8 +618,9 @@ export default function SellerPayoutsPage() {
               <Wallet className="w-5 h-5 text-zinc-400" />
             </div>
 
-            <div className="mt-5 overflow-hidden rounded-2xl border border-zinc-200">
-              <div className="max-h-[520px] overflow-auto">
+            <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200">
+              <div className="min-w-[760px] max-h-[520px] overflow-auto">
+                <table className="w-full divide-y divide-zinc-200 text-left text-sm">
                 <table className="min-w-full divide-y divide-zinc-200 text-left text-sm">
                   <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
                     <tr>
