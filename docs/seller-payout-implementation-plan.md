@@ -22,6 +22,10 @@ The launch scope covers:
 - seller net payout formula,
 - 2% platform fee,
 - 6% reserve cap,
+- provider-fee ingestion into payout calculations,
+- manual adjustment APIs,
+- payout financial snapshot persistence,
+- payout recalculation audit history,
 - eligibility gating,
 - technical-failure-only retries,
 - admin override normalization,
@@ -31,8 +35,6 @@ The launch scope covers:
 
 The intentionally deferred Phase 2 items are:
 
-- provider-fee ingestion into payout calculations,
-- manual adjustment APIs,
 - signed/manual adjustment approval workflows,
 - fraud-engine integration,
 - dynamic risk scoring,
@@ -62,7 +64,7 @@ Before merging a production payout implementation, resolve these product and saf
 | **Resolved for local payout candidates** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
 | **Resolved for local payout candidates** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry and one local payout candidate per escrow. Before provider submission, replace the temporary gross released-balance amount with the approved seller-net formula below. |
 | **Partially resolved** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level. Payout candidates must not reserve a PayChangu `charge_id`; add provider-attempt history before calling PayChangu and generate a fresh `charge_id` for each retry attempt. |
-| **Open product decision** | Define the money formula before launch. | Decide whether payout amount is gross order total, subtotal, or net of BuyMesho commission, PayChangu fees, refund adjustments, delivery fees, and dispute adjustments. Document the exact formula and add tests before enabling real payout submission. |
+| **Resolved for launch scope** | Define the money formula before launch. | The formula is now implemented in code; keep the formula frozen and keep `signed/manual adjustment approval workflows` deferred until Phase 2 hardening. |
 | **Open workflow decision** | Plan for payout failure after escrow release. | Add a seller/admin remediation state where destination details can be corrected and payout can be retried with a new provider attempt while preserving audit history. Do not silently reopen buyer escrow after provider failure. |
 | **Open operations decision** | Plan for provider reversals/chargebacks. | Choose an operational policy for reversals after payout, such as reserve balance, negative seller balance, seller account hold, manual recovery, or some combination. |
 | **Open security requirement** | Keep payout details private and encrypted. | Store seller payout destinations outside public seller profile data, encrypt full account/mobile values at rest, and expose only masked values through seller/admin APIs that need them. |
