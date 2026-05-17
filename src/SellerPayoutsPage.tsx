@@ -558,54 +558,56 @@ export default function SellerPayoutsPage() {
               <Building2 className="w-5 h-5 text-zinc-400" />
             </div>
 
-            <div className="mt-5 space-y-3">
-              {destinations.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
-                  No payout destination yet.
-                </div>
-              ) : (
-                destinations.map((destination) => (
-                  <div key={destination.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${destinationTone(destination.verificationStatus)}`}>
-                            {destination.verificationStatus}
-                          </span>
-                          {destination.isDefault ? (
-                            <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">
-                              Default
-                            </span>
-                          ) : null}
-                        </div>
+ <div className="mt-5 overflow-x-auto">
+  <div className="flex min-w-max gap-3 pb-2">
+    {destinations.length === 0 ? (
+      <div className="min-w-[320px] rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
+        No payout destination yet.
+      </div>
+    ) : (
+      destinations.map((destination) => (
+        <div key={destination.id} className="min-w-[360px] max-w-[360px] rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${destinationTone(destination.verificationStatus)}`}>
+                  {destination.verificationStatus}
+                </span>
+                {destination.isDefault ? (
+                  <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">
+                    Default
+                  </span>
+                ) : null}
+              </div>
 
-                        <h3 className="mt-3 text-base font-black tracking-tight">{destination.accountName}</h3>
-                        <p className="mt-1 inline-flex items-center gap-2 text-sm text-zinc-600">
-                          {destination.destinationType === "bank" ? <Building2 className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
-                          {destination.providerName} · {destination.maskedAccount}
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => startEdit(destination)}
-                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
-                        disabled={!canEditSettings}
-                      >
-                        Edit
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-zinc-500">
-                      <MetaBox label="Updated" value={formatDate(destination.updatedAt)} />
-                      <MetaBox label="Verified" value={formatDate(destination.verifiedAt)} />
-                    </div>
-                  </div>
-                ))
-              )}
+              <h3 className="mt-3 text-base font-black tracking-tight">{destination.accountName}</h3>
+              <p className="mt-1 flex items-center gap-2 text-sm text-zinc-600">
+                {destination.destinationType === "bank" ? <Building2 className="w-4 h-4 shrink-0" /> : <Phone className="w-4 h-4 shrink-0" />}
+                <span className="truncate">{destination.providerName} · {destination.maskedAccount}</span>
+              </p>
             </div>
+
+            <button
+              type="button"
+              onClick={() => startEdit(destination)}
+              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
+              disabled={!canEditSettings}
+            >
+              Edit
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
+
+          <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-zinc-500">
+            <MetaBox label="Updated" value={formatDate(destination.updatedAt)} />
+            <MetaBox label="Verified" value={formatDate(destination.verifiedAt)} />
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+</div>
+</div>
 
           <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
