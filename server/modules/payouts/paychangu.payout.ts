@@ -30,6 +30,12 @@ export interface ExecutePayChanguPayoutInput {
   lastName?: string;
 }
 
+export type PayChanguPayoutFailureClass =
+  | 'provider_unavailable'
+  | 'provider_timeout'
+  | 'provider_rate_limited'
+  | null;
+
 export interface PayChanguPayoutExecutionResult {
   payoutId: string;
   provider: 'paychangu';
@@ -41,6 +47,7 @@ export interface PayChanguPayoutExecutionResult {
   attemptNo: number;
   rawResponse: Record<string, unknown>;
   processedAt: string;
+  failureClass: PayChanguPayoutFailureClass;
 }
 
 export interface PayChanguPayoutBalanceResult {
@@ -298,6 +305,31 @@ export function normalizePaychanguPayoutStatus(status: string | undefined): PayC
   return normalizeProviderStatus(status);
 }
 
+function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {
+  if (httpStatus !== undefined) {
+    if (httpStatus === 429) return 'provider_rate_limited';
+    if (httpStatus >= 500 && httpStatus < 600) return 'provider_unavailable';
+  }
+
+  if (error instanceof Error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('timeout') || msg.includes('timed out') || msg.includes('etimedout')) {
+      return 'provider_timeout';
+    }
+    if (
+      msg.includes('network') ||
+      msg.includes('econnrefused') ||
+      msg.includes('enotfound') ||
+      msg.includes('unavailable') ||
+      msg.includes('fetch failed')
+    ) {
+      return 'provider_unavailable';
+    }
+  }
+
+  return 'provider_unavailable';
+}
+
 function buildPayoutReference(payoutId: string): string {
   return `PAYCHANGU-PAYOUT-${payoutId}-${randomUUID().slice(0, 8)}`;
 }
@@ -383,6 +415,63 @@ async function executeStructuredPayChanguPayout(
   if (destinationType === 'mobile_money') {
     const url = buildUrl(resolved.paychanguBaseUrl, resolved.paychanguMobileMoneyPayoutPath);
     const requestBody = buildMobileMoneyBody(input, providerChargeId);
+
+    try {
+      const { payload, rawText, ok, status } = await postJson(
+        url,
+        requestBody,
+        resolved.paychanguSecretKey,
+      );
+
+      const responseRecord = toPlainObject(payload);
+      const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
+      const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
+      const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
+
+      return {
+        payoutId: input.payoutId,
+        provider: 'paychangu',
+        providerChargeId,
+        providerReference,
+        status: executionStatus,
+        amount: input.amount,
+        currency: input.currency,
+        attemptNo: input.attemptNo,
+        processedAt: nowIso(),
+        failureClass,
+        rawResponse: {
+          httpStatus: status,
+          ok,
+          request: requestBody,
+          response: responseRecord,
+          rawText,
+        },
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'PayChangu mobile money payout request failed';
+      return {
+        payoutId: input.payoutId,
+        provider: 'paychangu',
+        providerChargeId,
+        providerReference,
+        status: 'failed',
+        amount: input.amount,
+        currency: input.currency,
+        attemptNo: input.attemptNo,
+        processedAt: nowIso(),
+        failureClass: classifyProviderError(error),
+        rawResponse: {
+          error: message,
+          request: requestBody,
+        },
+      };
+    }
+  }
+
+  const url = buildUrl(resolved.paychanguBaseUrl, resolved.paychanguBankPayoutPath);
+  const requestBody = buildBankBody(input, providerChargeId);
+
+  try {
     const { payload, rawText, ok, status } = await postJson(
       url,
       requestBody,
@@ -391,17 +480,20 @@ async function executeStructuredPayChanguPayout(
 
     const responseRecord = toPlainObject(payload);
     const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
+    const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
+    const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
 
     return {
       payoutId: input.payoutId,
       provider: 'paychangu',
       providerChargeId,
       providerReference,
-      status: ok ? normalizeProviderStatus(responseStatus) : 'failed',
+      status: executionStatus,
       amount: input.amount,
       currency: input.currency,
       attemptNo: input.attemptNo,
       processedAt: nowIso(),
+      failureClass,
       rawResponse: {
         httpStatus: status,
         ok,
@@ -410,37 +502,25 @@ async function executeStructuredPayChanguPayout(
         rawText,
       },
     };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'PayChangu bank payout request failed';
+    return {
+      payoutId: input.payoutId,
+      provider: 'paychangu',
+      providerChargeId,
+      providerReference,
+      status: 'failed',
+      amount: input.amount,
+      currency: input.currency,
+      attemptNo: input.attemptNo,
+      processedAt: nowIso(),
+      failureClass: classifyProviderError(error),
+      rawResponse: {
+        error: message,
+        request: requestBody,
+      },
+    };
   }
-
-  const url = buildUrl(resolved.paychanguBaseUrl, resolved.paychanguBankPayoutPath);
-  const requestBody = buildBankBody(input, providerChargeId);
-  const { payload, rawText, ok, status } = await postJson(
-    url,
-    requestBody,
-    resolved.paychanguSecretKey,
-  );
-
-  const responseRecord = toPlainObject(payload);
-  const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
-
-  return {
-    payoutId: input.payoutId,
-    provider: 'paychangu',
-    providerChargeId,
-    providerReference,
-    status: ok ? normalizeProviderStatus(responseStatus) : 'failed',
-    amount: input.amount,
-    currency: input.currency,
-    attemptNo: input.attemptNo,
-    processedAt: nowIso(),
-    rawResponse: {
-      httpStatus: status,
-      ok,
-      request: requestBody,
-      response: responseRecord,
-      rawText,
-    },
-  };
 }
 
 async function executeCompatibilityPayChanguPayout(
@@ -461,6 +541,7 @@ async function executeCompatibilityPayChanguPayout(
     const responseRecord = toPlainObject(payload);
     const responseStatus = extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
     const normalizedStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
+    const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
 
     return {
       payoutId: input.payoutId,
@@ -472,6 +553,7 @@ async function executeCompatibilityPayChanguPayout(
       currency: input.currency,
       attemptNo: input.attemptNo,
       processedAt: nowIso(),
+      failureClass,
       rawResponse: {
         httpStatus: status,
         ok,
@@ -492,6 +574,7 @@ async function executeCompatibilityPayChanguPayout(
       currency: input.currency,
       attemptNo: input.attemptNo,
       processedAt: nowIso(),
+      failureClass: classifyProviderError(error),
       rawResponse: {
         error: message,
         request: requestBody,
@@ -682,3 +765,5 @@ export function isPaychanguSuccessStatus(status: string | undefined): boolean {
 export function buildPayChanguPayoutReference(payoutId: string): string {
   return `PAYCHANGU-PAYOUT-${payoutId}-${randomUUID().slice(0, 8)}`;
 }
+
+export { buildPayChanguPayoutChargeId } from '../payments/paychangu.flow.js';

@@ -5,7 +5,9 @@ import type { MoneyValue } from '../../../src/shared/types/common.js';
 import {
   executePayChanguPayout,
   getPayChanguPayoutBalance,
+  buildPayChanguPayoutChargeId,
   type PayChanguPayoutExecutionResult,
+  type PayChanguPayoutFailureClass,
 } from './paychangu.payout.js';
 import {
   PAYOUT_POLICY,
@@ -91,6 +93,54 @@ export type PayoutPermissionContext = {
   sellerId: string;
   actor: PayoutPermissionActor | null;
 };
+
+type PayoutNextAction =
+  | 'manual_review'
+  | 'retry_blocked'
+  | 'awaiting_provider'
+  | 'none';
+
+function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailureClass {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    if (
+      message.includes('429') ||
+      message.includes('rate limit') ||
+      message.includes('rate-limit') ||
+      message.includes('too many requests')
+    ) {
+      return 'provider_rate_limited';
+    }
+    if (
+      message.includes('timeout') ||
+      message.includes('timed out') ||
+      message.includes('etimedout')
+    ) {
+      return 'provider_timeout';
+    }
+  }
+  return 'provider_unavailable';
+}
+
+function providerFailureReason(reasonCode: PayChanguPayoutFailureClass): string {
+  switch (reasonCode) {
+    case 'provider_timeout':
+      return 'Provider timeout; payout held for manual review.';
+    case 'provider_rate_limited':
+      return 'Provider rate-limited payout submission; retry is blocked pending manual review.';
+    case 'provider_unavailable':
+    default:
+      return 'Provider outage detected; payout held for manual review.';
+  }
+}
+
+function isProviderHoldFailure(reasonCode: string | null | undefined): reasonCode is NonNullable<PayChanguPayoutFailureClass> {
+  return (
+    reasonCode === 'provider_unavailable' ||
+    reasonCode === 'provider_timeout' ||
+    reasonCode === 'provider_rate_limited'
+  );
+}
 
 function isAdminActor(actor: PayoutPermissionActor | null): boolean {
   return actor?.is_admin === true;
@@ -272,8 +322,10 @@ export class PayoutRepository {
 
     if (execution.status === 'failed') {
       statusExtras.failedAt = new Date().toISOString();
-      statusExtras.failureReason = 'Provider payout execution failed';
-      statusExtras.manualReviewReason = 'Provider reported payout failure';
+      statusExtras.failureReason = execution.failureClass ?? 'provider_execution_failed';
+      statusExtras.manualReviewReason = execution.failureClass
+        ? providerFailureReason(execution.failureClass)
+        : 'Provider reported payout failure';
     }
 
     return this.updateStatus(payoutId, execution.status, statusExtras);
@@ -297,7 +349,10 @@ export class PayoutRepository {
   ): PayoutAttemptRecord {
     const id = randomUUID();
     const createdAt = new Date().toISOString();
-    const failedReason = execution.status === 'failed' ? 'provider_execution_failed' : null;
+    const failedReason =
+      execution.status === 'failed'
+        ? execution.failureClass ?? 'provider_execution_failed'
+        : null;
 
     this.db.prepare(
       `INSERT INTO payout_attempts (
@@ -323,6 +378,7 @@ export class PayoutRepository {
       JSON.stringify({
         payoutId: execution.payoutId,
         providerReference: execution.providerReference,
+        providerChargeId: execution.providerChargeId,
         attemptNo: execution.attemptNo,
       }),
       JSON.stringify(execution.rawResponse ?? {}),
@@ -417,6 +473,7 @@ export class PayoutService {
     destinationValue?: string | null;
     destinationProviderRefId?: string | null;
     destinationAccountName?: string | null;
+    currentFailureReason?: string | null;
   } {
     const row = getPaymentDb()
       .prepare(
@@ -557,11 +614,19 @@ export class PayoutService {
       destinationValue: (row.destination_masked_account as string | null) ?? null,
       destinationProviderRefId: (row.destination_provider_ref_id as string | null) ?? null,
       destinationAccountName: (row.destination_account_name as string | null) ?? null,
+      currentFailureReason: (row.failure_reason as string | null) ?? null,
     };
   }
 
   private holdForReview(
-    input: { payoutId: string; sellerId: string; reasonCode: string; reason: string },
+    input: {
+      payoutId: string;
+      sellerId: string;
+      reasonCode: string;
+      reason: string;
+      payload?: Record<string, unknown> | null;
+      statusExtras?: Record<string, unknown>;
+    },
     actor: { actorType: 'admin' | 'system'; actorId?: string | null },
   ): PayoutRecord | undefined {
     const payout = this.repository.updateStatus(input.payoutId, 'held', {
@@ -569,6 +634,7 @@ export class PayoutService {
       providerStatus: 'held',
       failureReason: input.reasonCode,
       manualReviewReason: input.reason,
+      ...(input.statusExtras ?? {}),
     });
     this.repository.addEvent({
       payoutId: input.payoutId,
@@ -579,6 +645,7 @@ export class PayoutService {
       note: input.reason,
       payload: {
         reasonCode: input.reasonCode,
+        ...(input.payload ?? {}),
       },
     });
     return payout;
@@ -604,6 +671,9 @@ export class PayoutService {
         payout,
         attempt: null,
         execution: null,
+        reasonCode: gate.reasonCode ?? 'manual_review_required',
+        reason: gate.reason ?? 'Payout failed eligibility gate',
+        nextAction: (payout ? 'manual_review' : 'none') as PayoutNextAction,
       };
     }
 
@@ -620,7 +690,48 @@ export class PayoutService {
       note: 'Payout queued for provider submission',
     });
 
-    const balance = await this.getProviderBalance(gate.currency);
+    let balance: Awaited<ReturnType<typeof getPayChanguPayoutBalance>>;
+    try {
+      balance = await this.getProviderBalance(gate.currency);
+    } catch (error) {
+      const failureReason = classifyProviderFailureFromError(error);
+      const reason = providerFailureReason(failureReason);
+      const payout = this.holdForReview(
+        {
+          payoutId: input.payoutId,
+          sellerId: gate.sellerId,
+          reasonCode: failureReason,
+          reason,
+          payload: {
+            stage: 'balance_check',
+            error: error instanceof Error ? error.message : String(error),
+          },
+        },
+        actor,
+      );
+
+      this.repository.addEvent({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        eventType: 'balance_check_failed',
+        actorType: actor.actorType,
+        actorId: actor.actorId ?? null,
+        note: reason,
+        payload: {
+          reasonCode: failureReason,
+          error: error instanceof Error ? error.message : String(error),
+        },
+      });
+
+      return {
+        payout,
+        attempt: null,
+        execution: null,
+        reasonCode: failureReason,
+        reason,
+        nextAction: 'manual_review' as PayoutNextAction,
+      };
+    }
 
     if (balance.availableBalance < gate.amount) {
       const payout = this.holdForReview(
@@ -651,12 +762,40 @@ export class PayoutService {
         payout,
         attempt: null,
         execution: null,
+        reasonCode: 'balance_insufficient',
+        reason: 'Insufficient provider payout balance',
+        nextAction: 'manual_review' as PayoutNextAction,
       };
     }
 
     const attemptNo = this.repository.nextAttemptNo(input.payoutId);
+    const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, attemptNo);
+
+    if (attemptNo > 1 || gate.currentFailureReason) {
+      this.repository.addEvent({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        eventType: 'payout_retried',
+        actorType: actor.actorType,
+        actorId: actor.actorId ?? null,
+        note: `Retry accepted for attempt ${attemptNo}`,
+        payload: {
+          payoutId: input.payoutId,
+          sellerId: gate.sellerId,
+          actorType: actor.actorType,
+          actorId: actor.actorId ?? null,
+          attemptNo,
+          previousFailureReason: gate.currentFailureReason ?? null,
+          retryReason: actor.actorType === 'admin' ? 'admin_requested_retry' : 'system_requested_retry',
+          providerChargeId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
     this.repository.updateStatus(input.payoutId, 'processing', {
       provider: gate.provider,
+      providerChargeId,
       providerStatus: 'processing',
       sentAt: new Date().toISOString(),
     });
@@ -676,11 +815,64 @@ export class PayoutService {
     });
 
     const attempt = this.repository.recordAttempt(input.payoutId, execution);
+    if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
+      const reason = providerFailureReason(execution.failureClass);
+      const payout = this.holdForReview(
+        {
+          payoutId: input.payoutId,
+          sellerId: gate.sellerId,
+          reasonCode: execution.failureClass,
+          reason,
+          payload: {
+            attemptNo,
+            providerChargeId: execution.providerChargeId,
+            providerStatus: execution.status,
+          },
+          statusExtras: {
+            provider: execution.provider,
+            providerChargeId: execution.providerChargeId,
+            providerReference: execution.providerReference,
+            lastAttemptId: attempt.id,
+            rawResponse: execution.rawResponse,
+            sentAt: execution.processedAt,
+            failedAt: execution.processedAt,
+          },
+        },
+        actor,
+      );
+
+      this.repository.addEvent({
+        payoutId: input.payoutId,
+        sellerId: gate.sellerId,
+        eventType: 'payout_retry_blocked',
+        actorType: actor.actorType,
+        actorId: actor.actorId ?? null,
+        note: reason,
+        payload: {
+          attemptNo,
+          providerChargeId: execution.providerChargeId,
+          reasonCode: execution.failureClass,
+        },
+      });
+
+      return {
+        payout,
+        attempt,
+        execution,
+        reasonCode: execution.failureClass,
+        reason,
+        nextAction: 'retry_blocked' as PayoutNextAction,
+      };
+    }
+
     const payout = this.repository.updateExecutionState(input.payoutId, execution);
     this.repository.updateStatus(input.payoutId, execution.status, {
       lastAttemptId: attempt.id,
       rawResponse: execution.rawResponse,
-      failureReason: execution.status === 'failed' ? 'provider_unavailable' : null,
+      failureReason: execution.status === 'failed'
+        ? execution.failureClass ?? 'provider_execution_failed'
+        : null,
+      sentAt: execution.processedAt,
     });
 
     this.repository.addEvent({
@@ -702,6 +894,19 @@ export class PayoutService {
       payout,
       attempt,
       execution,
+      reasonCode: execution.status === 'failed' ? execution.failureClass ?? 'provider_execution_failed' : null,
+      reason: execution.status === 'failed'
+        ? execution.failureClass
+          ? providerFailureReason(execution.failureClass)
+          : 'Provider reported payout failure.'
+        : execution.status === 'paid'
+          ? 'Payout paid successfully.'
+          : 'Payout submitted to provider.',
+      nextAction: execution.status === 'paid'
+        ? 'none'
+        : execution.status === 'failed'
+          ? 'manual_review'
+          : 'awaiting_provider',
     };
   }
 

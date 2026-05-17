@@ -26,8 +26,8 @@ function seedPayout(): void {
   const db = getPaymentDb();
   const now = new Date().toISOString();
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified)
-    VALUES (?, ?, 1)`).run(sellerId, 'retry@example.com');
+  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended)
+    VALUES (?, ?, 1, 0)`).run(sellerId, 'retry@example.com');
 
   db.prepare(`INSERT INTO seller_payout_accounts (
     id, seller_uid, destination_type, provider_name, provider_ref_id,
@@ -53,10 +53,12 @@ function seedPayout(): void {
     createdAt: now,
     updatedAt: now,
   });
+  db.prepare(`UPDATE orders SET status = 'fulfilled' WHERE id = ?`).run(orderId);
 
   serverOrderService.setStatus(orderId, 'fulfilled');
   escrowRepository.create(orderId, 'MWK', 1500);
   escrowRepository.updateState(orderId, 'released');
+  const escrow = escrowRepository.findByOrderId(orderId);
 
   db.prepare(`INSERT INTO payouts (
     id, seller_id, order_id, escrow_id, release_entry_id,
@@ -67,7 +69,7 @@ function seedPayout(): void {
     payoutId,
     sellerId,
     orderId,
-    'retry-escrow-id',
+    escrow?.id ?? 'retry-escrow-id',
     'retry-release-entry',
     destinationId,
     1470,

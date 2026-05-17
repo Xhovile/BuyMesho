@@ -245,6 +245,12 @@ function initPaymentSchema(db: Database.Database): void {
       AND payload_hash IS NOT NULL
       AND processing_status <> 'duplicate';
 
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_reference_event_active
+    ON payment_webhook_events(provider, reference, event_type)
+    WHERE reference IS NOT NULL
+      AND event_type IS NOT NULL
+      AND processing_status <> 'duplicate';
+
     CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_release_escrow
     ON payouts(escrow_id)
     WHERE escrow_id IS NOT NULL AND release_entry_id IS NOT NULL;
@@ -287,6 +293,7 @@ export type InsertPaymentWebhookEventResult =
 export interface FindPaymentWebhookDuplicateInput {
   provider: string;
   providerEventId?: string | null;
+  reference?: string | null;
   txRef?: string | null;
   eventType?: string | null;
   payloadHash?: string | null;
@@ -323,6 +330,7 @@ function isPaymentWebhookUniqueConstraintFailure(error: unknown): boolean {
     message.includes("idx_payment_webhook_events_provider_event_id_active") ||
     message.includes("idx_payment_webhook_events_dedupe") ||
     message.includes("idx_payment_webhook_events_dedupe_active") ||
+    message.includes("idx_payment_webhook_events_reference_event_active") ||
     message.includes("payment_webhook_events.provider") ||
     message.includes("payment_webhook_events.tx_ref")
   );
@@ -334,6 +342,7 @@ export function findPaymentWebhookDuplicate(
   const db = getPaymentDb();
   const provider = normalizeOptionalText(input.provider);
   const providerEventId = normalizeOptionalText(input.providerEventId);
+  const reference = normalizeOptionalText(input.reference);
   const txRef = normalizeOptionalText(input.txRef);
   const eventType = normalizeOptionalText(input.eventType);
   const payloadHash = normalizeOptionalText(input.payloadHash);
@@ -348,6 +357,17 @@ export function findPaymentWebhookDuplicate(
          LIMIT 1`,
       )
       .get(provider, providerEventId) as { id: number } | undefined;
+    if (row) return row;
+  }
+
+  if (reference && eventType) {
+    const row = db
+      .prepare(
+        `SELECT id FROM payment_webhook_events
+         WHERE provider = ? AND reference = ? AND event_type = ?
+         LIMIT 1`,
+      )
+      .get(provider, reference, eventType) as { id: number } | undefined;
     if (row) return row;
   }
 
@@ -419,6 +439,7 @@ export function insertPaymentWebhookEvent(
     const existing = findPaymentWebhookDuplicate({
       provider: normalized.provider,
       providerEventId: normalized.providerEventId,
+      reference: normalized.reference,
       txRef: normalized.txRef,
       eventType: normalized.eventType,
       payloadHash: normalized.payloadHash,
