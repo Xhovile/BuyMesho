@@ -1,0 +1,48 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {
+  PAYOUT_POLICY,
+  calculatePayoutFormula,
+  isNonRetryableFailureCode,
+  isRetryableFailureCode,
+} from '../payout.policy.js';
+
+test('payout policy freezes the seller-net formula and hard caps reserves', () => {
+  const formula = calculatePayoutFormula({
+    grossAmount: 1500,
+    processingFeeAmount: 10,
+    reserveAmount: 200,
+    manualAdjustmentAmount: 20,
+    currency: 'mwk',
+  });
+
+  assert.equal(PAYOUT_POLICY.platformFeeBps, 200);
+  assert.equal(PAYOUT_POLICY.reserveCapBps, 600);
+  assert.equal(PAYOUT_POLICY.disputeWindowHours, 72);
+  assert.equal(PAYOUT_POLICY.minimumPayoutAmount, 1000);
+  assert.equal(PAYOUT_POLICY.maxRetryCount, 3);
+  assert.equal(PAYOUT_POLICY.launchMode, 'admin_approved');
+
+  assert.equal(formula.grossAmount, 1500);
+  assert.equal(formula.platformFeeAmount, 30);
+  assert.equal(formula.processingFeeAmount, 10);
+  assert.equal(formula.reserveCapAmount, 90);
+  assert.equal(formula.reserveAmount, 90, 'reserve must be capped at 6% of gross');
+  assert.equal(formula.manualAdjustmentAmount, 20);
+  assert.equal(formula.netAmount, 1350, 'seller net payout must be formula-driven');
+  assert.equal(formula.currency, 'MWK');
+});
+
+test('payout policy separates retryable and non-retryable failure codes', () => {
+  assert.equal(isRetryableFailureCode('provider_timeout'), true);
+  assert.equal(isRetryableFailureCode('provider_unavailable'), true);
+  assert.equal(isRetryableFailureCode('provider_network_error'), true);
+  assert.equal(isRetryableFailureCode('provider_rate_limited'), true);
+  assert.equal(isRetryableFailureCode('balance_insufficient'), true);
+
+  assert.equal(isRetryableFailureCode('order_disputed'), false);
+  assert.equal(isNonRetryableFailureCode('order_disputed'), true);
+  assert.equal(isNonRetryableFailureCode('destination_inactive'), true);
+  assert.equal(isNonRetryableFailureCode('payment_not_captured'), true);
+  assert.equal(isNonRetryableFailureCode('provider_unavailable'), false);
+});
