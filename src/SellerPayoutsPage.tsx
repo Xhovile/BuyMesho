@@ -281,7 +281,7 @@ export default function SellerPayoutsPage() {
 
   if (profileLoading || loading) {
     return (
-      <div className="min-h-screen bg-zinc-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#f4f5f7] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
           <span className="font-semibold text-zinc-700">Loading seller payouts...</span>
@@ -292,13 +292,13 @@ export default function SellerPayoutsPage() {
 
   if (!isSeller) {
     return (
-      <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
         <div className="max-w-4xl mx-auto px-4 py-10">
           <button type="button" onClick={() => navigateToPath(SETTINGS_PATH)} className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900">
             <ArrowLeft className="w-4 h-4" />
             Back to settings
           </button>
-          <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-8 shadow-sm">
+          <div className="mt-6 rounded-[28px] border border-zinc-200/80 bg-white p-8 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <h1 className="text-3xl font-black tracking-tight">Seller payouts</h1>
             <p className="mt-3 text-sm text-zinc-600">You are not marked as a seller yet. Seller payout tools appear here after the account is approved as a seller.</p>
           </div>
@@ -310,8 +310,8 @@ export default function SellerPayoutsPage() {
   const activeDestinations = destinations.filter((item) => item.isActive);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
+    <div className="min-h-screen overflow-x-hidden bg-[#f4f5f7] text-zinc-900">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -328,21 +328,25 @@ export default function SellerPayoutsPage() {
       </header>
 
       <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <section className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)] sm:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Seller payouts</p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight">Payout control center.</h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
+              <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Payout control center.</h1>
+              <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
                 Set up your payout destination, track payout status, and keep a clean view of what is pending, paid, or failed.
               </p>
+              <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-zinc-600">
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">Active destinations: {summary.activeDestinations}</span>
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">Default: {summary.defaultDestination ? summary.defaultDestination.maskedAccount : "Not set"}</span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:min-w-[340px]">
-              <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} />
-              <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} />
-              <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} />
-              <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} />
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:min-w-[360px]">
+              <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} accent="from-zinc-100 to-white" />
+              <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} accent="from-emerald-50 to-white" />
+              <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} accent="from-amber-50 to-white" />
+              <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} accent="from-red-50 to-white" />
             </div>
           </div>
         </section>
@@ -354,7 +358,7 @@ export default function SellerPayoutsPage() {
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout setup</p>
@@ -370,37 +374,37 @@ export default function SellerPayoutsPage() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Destination type</span>
-                <select value={form.destinationType} onChange={(e) => setForm((current) => ({ ...current, destinationType: e.target.value as DestinationType }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900">
+                <select value={form.destinationType} onChange={(e) => setForm((current) => ({ ...current, destinationType: e.target.value as DestinationType }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900">
                   <option value="mobile_money">Mobile money</option>
                   <option value="bank">Bank</option>
                 </select>
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider / operator</span>
-                <input value={form.providerName} onChange={(e) => setForm((current) => ({ ...current, providerName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="e.g. TNM, Airtel, NBS" />
+                <input value={form.providerName} onChange={(e) => setForm((current) => ({ ...current, providerName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="e.g. TNM, Airtel, NBS" />
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider ref ID</span>
-                <input value={form.providerRefId} onChange={(e) => setForm((current) => ({ ...current, providerRefId: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="Optional provider reference" />
+                <input value={form.providerRefId} onChange={(e) => setForm((current) => ({ ...current, providerRefId: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Optional provider reference" />
               </label>
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account holder name</span>
-                <input value={form.accountName} onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="Name on bank account or wallet" />
+                <input value={form.accountName} onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Name on bank account or wallet" />
               </label>
               {form.destinationType === "bank" ? (
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account number</span>
-                  <input value={form.accountNumber} onChange={(e) => setForm((current) => ({ ...current, accountNumber: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="Bank account number" />
+                  <input value={form.accountNumber} onChange={(e) => setForm((current) => ({ ...current, accountNumber: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Bank account number" />
                 </label>
               ) : (
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Mobile number</span>
-                  <input value={form.mobile} onChange={(e) => setForm((current) => ({ ...current, mobile: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="Mobile wallet number" />
+                  <input value={form.mobile} onChange={(e) => setForm((current) => ({ ...current, mobile: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Mobile wallet number" />
                 </label>
               )}
               <label className="space-y-2 sm:col-span-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Currency</span>
-                <input value={form.currency} onChange={(e) => setForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-zinc-900" placeholder="MWK" />
+                <input value={form.currency} onChange={(e) => setForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="MWK" />
               </label>
             </div>
 
@@ -424,7 +428,7 @@ export default function SellerPayoutsPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Status snapshot</p>
@@ -446,7 +450,7 @@ export default function SellerPayoutsPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout destinations</p>
@@ -472,7 +476,7 @@ export default function SellerPayoutsPage() {
                           {destination.isDefault ? <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">Default</span> : null}
                         </div>
                         <h3 className="mt-3 text-base font-black tracking-tight">{destination.accountName}</h3>
-                        <p className="mt-1 text-sm text-zinc-600 inline-flex items-center gap-2">
+                        <p className="mt-1 inline-flex items-center gap-2 text-sm text-zinc-600">
                           {destination.destinationType === "bank" ? <Building2 className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
                           {destination.providerName} · {destination.maskedAccount}
                         </p>
@@ -493,7 +497,7 @@ export default function SellerPayoutsPage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout history</p>
@@ -507,10 +511,10 @@ export default function SellerPayoutsPage() {
                 <table className="min-w-full divide-y divide-zinc-200 text-left text-sm">
                   <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
                     <tr>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Status</th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Amount</th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Order</th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Updated</th>
+                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Status</th>
+                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Amount</th>
+                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Order</th>
+                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Updated</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 bg-white">
@@ -539,14 +543,13 @@ export default function SellerPayoutsPage() {
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
+function StatCard({ label, value, icon, accent }: { label: string; value: string; icon: ReactNode; accent: string }) {
   return (
-    <div className="flex h-full min-h-[120px] flex-col rounded-[1.5rem] border border-zinc-200 bg-zinc-50 px-4 py-4">
+    <div className={`flex min-h-[108px] flex-col overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br ${accent} px-4 py-4 shadow-sm`}>
       <div className="flex items-center justify-between gap-3">
-        <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700">{icon}</div>
-        <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Dashboard</span>
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-2 text-zinc-700 shadow-sm">{icon}</div>
       </div>
-      <p className="mt-3 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">{label}</p>
+      <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
       <p className="mt-1 text-lg font-black tracking-tight text-zinc-900">{value}</p>
     </div>
   );
