@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
@@ -272,18 +273,6 @@ export default function SellerPayoutsPage() {
     }
   };
 
-  const handleRetryPayout = async (payoutId: string) => {
-    setRefreshing(true);
-    try {
-      await apiFetch(`/api/admin/payouts/${payoutId}/retry`, { method: "POST" });
-      setNotice({ type: "success", message: "Retry sent to payout queue." });
-      await loadData();
-    } catch (error) {
-      setNotice({ type: "error", message: error instanceof Error ? error.message : "Retry failed" });
-      setRefreshing(false);
-    }
-  };
-
   const handleRefresh = async () => {
     setRefreshing(true);
     await loadData();
@@ -521,13 +510,12 @@ export default function SellerPayoutsPage() {
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Amount</th>
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Order</th>
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Updated</th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 bg-white">
                     {payouts.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
+                        <td colSpan={4} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
                       </tr>
                     ) : (
                       payouts.map((payout) => (
@@ -536,13 +524,6 @@ export default function SellerPayoutsPage() {
                           <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
                           <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
                           <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
-                          <td className="px-4 py-4 text-right">
-                            {payout.status === "failed" ? (
-                              <button type="button" onClick={() => void handleRetryPayout(payout.id)} className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white hover:bg-zinc-800">
-                                Retry
-                              </button>
-                            ) : null}
-                          </td>
                         </tr>
                       ))
                     )}
@@ -557,7 +538,7 @@ export default function SellerPayoutsPage() {
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
       <div className="flex items-center justify-between gap-3">
@@ -570,7 +551,7 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
   );
 }
 
-function MiniStatus({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
+function MiniStatus({ icon, title, text }: { icon: ReactNode; title: string; text: string }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex items-center gap-3">
