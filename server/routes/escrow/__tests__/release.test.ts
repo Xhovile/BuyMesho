@@ -55,6 +55,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     createdAt: now,
     updatedAt: now,
   });
+  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
   escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
 
   const app = createReleaseApp('buyer-release-payout-1');
