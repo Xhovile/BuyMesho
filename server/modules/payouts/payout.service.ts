@@ -461,6 +461,10 @@ export class PayoutService {
     return this.repository.createEligibleForRelease(input);
   }
 
+  addEvent(input: Parameters<PayoutRepository['addEvent']>[0]): void {
+    this.repository.addEvent(input);
+  }
+
   private gateForSubmission(payoutId: string): {
     allowed: boolean;
     reasonCode?: string;
