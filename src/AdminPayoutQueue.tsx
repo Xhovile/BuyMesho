@@ -3,6 +3,7 @@ import { Loader2, RefreshCw, ShieldCheck, TriangleAlert, Clock3, CircleCheckBig 
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
+import { getVisibleAdminActions } from "./modules/payouts/uiModel";
 
 type PayoutRow = {
   id: string;
@@ -80,11 +81,6 @@ function pillClass(t: string) {
     default:
       return "bg-zinc-100 text-zinc-700 border-zinc-200";
   }
-}
-
-export function getVisibleAdminActions(isAdmin: boolean): Array<"retry" | "hold" | "mark_paid" | "mark_failed"> {
-  if (!isAdmin) return [];
-  return ["retry", "mark_paid", "hold", "mark_failed"];
 }
 
 export default function AdminPayoutQueue() {
@@ -266,7 +262,7 @@ export default function AdminPayoutQueue() {
                     </div>
                   </div>
 
-                  {isAdmin ? (
+                  {getVisibleAdminActions(isAdmin).length > 0 ? (
                     <div className="flex flex-wrap gap-2 lg:w-[320px] lg:justify-end">
                       <ActionButton
                         icon={<RefreshCw className="h-4 w-4" />}

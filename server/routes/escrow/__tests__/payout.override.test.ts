@@ -31,7 +31,7 @@ function clearOverrideState(): void {
 
 function seedSeller(): void {
   getPaymentDb()
-    .prepare('INSERT OR IGNORE INTO sellers (uid, email, is_seller) VALUES (?, ?, 1)')
+    .prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
     .run(sellerId, `${sellerId}@example.com`);
 }
 

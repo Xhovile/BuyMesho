@@ -20,6 +20,7 @@ import BrandMark from "./components/BrandMark";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
+import { sellerOperationalSignals } from "./modules/payouts/uiModel";
 
 type DestinationType = "mobile_money" | "bank";
 
@@ -128,32 +129,6 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
-}
-
-export function sellerOperationalSignals(payout: PayoutRecord): string[] {
-  const messages: string[] = [];
-  const destinationStatus = String(payout.destinationStatus ?? "").toLowerCase();
-
-  if (destinationStatus && destinationStatus !== "verified") {
-    messages.push("Destination pending verification");
-  }
-  if (payout.status === "held") {
-    messages.push("Payout held");
-  }
-  if (payout.retryAllowed === false && payout.status === "failed") {
-    messages.push("Retry unavailable");
-  }
-  if (payout.manualReviewPending) {
-    messages.push("Awaiting admin review");
-  }
-  if (payout.status === "failed") {
-    messages.push("Failed due to provider issue");
-  }
-  if (Array.isArray(payout.verificationBlockers) && payout.verificationBlockers.length > 0) {
-    messages.push(...payout.verificationBlockers);
-  }
-
-  return Array.from(new Set(messages));
 }
 
 export default function SellerPayoutsPage() {
@@ -556,7 +531,13 @@ export default function SellerPayoutsPage() {
                         </tr>
                       ) : (
                       payouts.map((payout) => {
-                        const operationalSignals = sellerOperationalSignals(payout);
+                        const operationalSignals = sellerOperationalSignals({
+                          status: payout.status,
+                          destinationStatus: payout.destinationStatus,
+                          retryAllowed: payout.retryAllowed,
+                          manualReviewPending: payout.manualReviewPending,
+                          verificationBlockers: payout.verificationBlockers,
+                        });
                         return (
                         <tr key={payout.id} className="align-top">
                           <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>{payout.status}</span></td>

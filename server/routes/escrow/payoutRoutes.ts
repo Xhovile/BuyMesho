@@ -971,7 +971,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
-  router.post('/payouts/:sellerId/retry', payoutLimiter, requireAuth, async (req, res) => {
+  router.post('/:sellerId/retry', payoutLimiter, requireAuth, async (req, res) => {
     try {
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertRetryAccess(req, sellerId);
@@ -994,7 +994,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
-  router.post('/payouts/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
+  router.post('/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
     try {
       assertOverrideAccess(req);
       const sellerId = normalizeDestinationId(req.params.sellerId);
