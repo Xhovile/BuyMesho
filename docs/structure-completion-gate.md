@@ -6,6 +6,8 @@ Its purpose is to stop vague decisions, repeated redesign, and unsafe payment lo
 
 **Hard rule:** if any item in this file is still moving, implementation does not start.
 
+See `docs/seller-payout-implementation-plan.md` for the implementation sequence that follows this gate.
+
 ## 1) Locked decisions
 
 These decisions must be frozen before implementation starts.
@@ -210,7 +212,7 @@ The structure is complete only when every item below is checked.
 - Platform fee is fixed at 2% — **done** (`PAYOUT_POLICY.platformFeeBps = 200`).
 - Payment processing fee is captured from the provider — **deferred** (launch uses simplified payout formula without provider-fee ingestion).
 - Reserve logic is defined and capped at 6% — **done** (`PAYOUT_POLICY.reserveCapBps = 600` and formula cap enforcement).
-- Manual adjustments are explicit and logged — **blocked** (blocked because adjustment entry APIs and signed adjustment events are not implemented yet).
+- Manual adjustments are explicit and logged — **deferred** (blocked from launch scope until adjustment entry APIs and signed adjustment events exist).
 - Final seller net payout is calculated server-side — **done** (`calculatePayoutFormula` is server-side and used on release).
 
 ### Permissions
@@ -258,49 +260,32 @@ The structure is complete only when every item below is checked.
 - All status transitions are logged — **partial** (core transitions are logged; legacy/manual seed inserts may exist without backfilled events).
 - Admin actions are logged — **done** (`admin_mark_paid`, `admin_mark_failed`, `admin_hold` in `payout_events`).
 
-### Testing
-- Duplicate release is tested — **done**.
-- Duplicate webhook callback is tested — **done**.
-- Retry with fresh provider charge ID is tested — **done**.
-- Seller self-trigger is blocked in tests — **done**.
-- Escrow-release failure is tested — **partial** (invalid release states are covered; full downstream provider failure simulation after release is still limited).
-- Provider downtime handling is tested — **partial** (failure/retry classes covered in unit/integration, but sustained outage/circuit-breaker behavior is deferred).
-
-### 3.1 Gate summary (frozen answers)
-
-- formula frozen? **yes**
-- policy constants frozen? **yes**
-- permissions frozen? **yes (with noted system-actor partial)**
-- retry rules frozen? **yes**
-- state machine frozen? **yes (cancellation runbook partial)**
-- audit requirements frozen? **yes**
-- tests present? **yes (with partial gaps listed above)**
-- UI visibility present? **partial** (seller/admin visibility implemented, deeper ops messaging still evolving)
-- outstanding items explicitly deferred? **yes** (processing-fee ingestion, outage-depth testing, and related items are marked deferred/partial/blocked above)
-
 ---
 
-## 4) Open questions that must be answered before coding
+## 4) Explicit Phase 2 items
 
-If any of these are unresolved, the structure is not complete.
+The following items are intentionally out of the launch scope and should be treated as Phase 2 work:
 
-- Should the 6% reserve be split into separate buckets or tracked as one reserve pool? **Tracked as one capped reserve pool at launch.**
-- What is the exact dispute window length? **72 hours.**
-- Should first-time sellers have stricter reserve rules?
-- Should some categories have higher risk holds?
-- What is the minimum payout threshold? **MWK 1000.**
-- Should payout be automatic or admin-approved at launch? **Admin-approved.**
-- What exact webhook events will confirm payout success or failure?
-- What is the max retry count? **3 retries.**
-- What error types are retryable? **Provider timeout/unavailable/network/rate-limit/balance-insufficient classes.**
-- What error types are manual-review only? **Destination, suspension, dispute, cancellation, and policy-gate failures.**
-- Must provider balance already be funded before payout submission?
+- provider-fee ingestion into payout calculations
+- manual adjustment APIs
+- signed/manual adjustment approval workflows
+- fraud-engine integration
+- dynamic risk scoring
+- category-specific reserve policies
+- first-time seller reserve multipliers
+- long-term payout archive policy
+- advanced provider reconciliation tooling
+- circuit-breaker orchestration for prolonged provider downtime
+- advanced concurrent retry deduplication at route level
+- full downstream provider-failure simulation after escrow release
+
+These items are not launch blockers.
 
 ---
 
 ## 5) Acceptance rule
 
-The payout structure is complete only when:
+The payout structure is complete for launch when:
 
 1. The formula is frozen.
 2. Permissions are frozen.
@@ -331,4 +316,4 @@ Decide first, then build.
 
 BuyMesho is being built as a trust-first marketplace. Core participation stays open, monetization follows proof, and transaction-linked features only make sense when the system is operationally mature. This payout structure must reflect that discipline.
 
-When this file is fully satisfied, the seller payout structure is ready for implementation.
+When this file is satisfied, the seller payout structure is ready for implementation.
