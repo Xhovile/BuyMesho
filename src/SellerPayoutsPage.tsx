@@ -52,7 +52,7 @@ type PayoutRecord = {
   releaseEntryId: string | null;
   amount: number;
   currency: string;
-  status: "eligible" | "queued" | "processing" | "pending" | "paid" | "failed" | "cancelled";
+  status: "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
   provider: string | null;
   providerChargeId: string | null;
   requestedBy: string | null;
@@ -103,7 +103,7 @@ function money(amount: number, currency = "MWK") {
 function statusTone(status: string) {
   if (["paid"].includes(status)) return "bg-emerald-50 text-emerald-700 border-emerald-200";
   if (["failed"].includes(status)) return "bg-red-50 text-red-700 border-red-200";
-  if (["pending", "queued", "processing", "eligible"].includes(status)) return "bg-amber-50 text-amber-700 border-amber-200";
+  if (["pending", "queued", "processing", "eligible", "held"].includes(status)) return "bg-amber-50 text-amber-700 border-amber-200";
   return "bg-zinc-100 text-zinc-700 border-zinc-200";
 }
 
@@ -182,6 +182,7 @@ export default function SellerPayoutsPage() {
       queued: 0,
       processing: 0,
       pending: 0,
+      held: 0,
       paid: 0,
       failed: 0,
       cancelled: 0,
@@ -194,7 +195,7 @@ export default function SellerPayoutsPage() {
     return {
       total: payouts.reduce((sum, item) => sum + Number(item.amount || 0), 0),
       paid: amounts.paid,
-      pending: amounts.eligible + amounts.queued + amounts.processing + amounts.pending,
+      pending: amounts.eligible + amounts.queued + amounts.processing + amounts.pending + amounts.held,
       failed: amounts.failed,
       activeDestinations: destinations.filter((item) => item.isActive).length,
       defaultDestination: destinations.find((item) => item.isDefault && item.isActive) || null,

@@ -52,7 +52,7 @@ function tone(status: string) {
   const s = status.toLowerCase();
   if (["paid"].includes(s)) return "emerald";
   if (["failed", "cancelled"].includes(s)) return "rose";
-  if (["pending", "queued", "processing", "eligible"].includes(s)) return "amber";
+  if (["pending", "queued", "processing", "eligible", "held"].includes(s)) return "amber";
   return "zinc";
 }
 
@@ -103,7 +103,7 @@ export default function AdminPayoutQueue() {
   const stats = useMemo(
     () => ({
       total: summary.summary?.totalPayouts ?? rows.length,
-      pending: summary.summary?.pendingPayouts ?? rows.filter((r) => ["eligible", "queued", "processing", "pending"].includes(r.status)).length,
+      pending: summary.summary?.pendingPayouts ?? rows.filter((r) => ["eligible", "queued", "processing", "pending", "held"].includes(r.status)).length,
       paid: summary.summary?.paidPayouts ?? rows.filter((r) => r.status === "paid").length,
       failed: summary.summary?.failedPayouts ?? rows.filter((r) => r.status === "failed").length,
       attempts: summary.attempts?.totalAttempts ?? 0,

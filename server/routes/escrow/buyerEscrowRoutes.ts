@@ -3,6 +3,7 @@ import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { payoutService } from '../../modules/payouts/payout.service.js';
+import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../sqlite.js';
 import {
@@ -90,15 +91,37 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
+        const db = getPaymentDb();
+        const destination = db.prepare(
+          `SELECT id
+           FROM seller_payout_accounts
+           WHERE seller_uid = ?
+             AND is_active = 1
+             AND verification_status = 'verified'
+           ORDER BY is_default DESC, updated_at DESC
+           LIMIT 1`,
+        ).get(access.order.sellerId) as { id: string } | undefined;
+
+        const payoutFormula = calculatePayoutFormula({
+          grossAmount: released.releaseEntry.amount,
+          currency: released.releaseEntry.currency,
+        });
+
         const payout = payoutService.createEligiblePayoutCandidate({
           sellerId: access.order.sellerId,
           orderId,
           escrowId: released.escrow.id,
           releaseEntryId: released.releaseEntry.id,
-          amount: released.releaseEntry.amount,
+          amount: payoutFormula.netAmount,
           currency: released.releaseEntry.currency,
           requestedBy: requesterId,
           requestedAt: released.releaseEntry.createdAt,
+          destinationAccountId: destination?.id ?? null,
+          snapshot: {
+            payoutFormula,
+            releaseAmount: released.releaseEntry.amount,
+            releaseEntryId: released.releaseEntry.id,
+          },
         });
 
         const orderUpdated = serverOrderService.setStatus(orderId, 'fulfilled');

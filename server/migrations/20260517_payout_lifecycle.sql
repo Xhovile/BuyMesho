@@ -54,8 +54,25 @@ CREATE TABLE IF NOT EXISTS payout_events (
   FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS seller_payout_account_events (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  seller_uid TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  actor_type TEXT NOT NULL,
+  actor_id TEXT,
+  note TEXT,
+  payload TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES seller_payout_accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_payout_events_payout_id
 ON payout_events (payout_id, created_at DESC);
 
 CREATE INDEX IF NOT EXISTS idx_payout_events_seller_id
 ON payout_events (seller_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid
+ON seller_payout_account_events (seller_uid, created_at DESC);

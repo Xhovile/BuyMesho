@@ -123,10 +123,10 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.release_entry_id AS releaseEntryId,
           p.amount,
           p.currency,
-          p.status,
-          p.provider,
-          p.provider_charge_id AS providerChargeId,
-          p.provider_reference AS providerReference,
+           p.status,
+           p.provider,
+           p.provider_charge_id AS providerChargeId,
+           p.provider_ref_id AS providerReference,
           p.provider_status AS providerStatus,
           p.destination_account_id AS destinationAccountId,
           spa.masked_account AS destinationMaskedAccount,
@@ -163,7 +163,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       const summary = db.prepare(`
         SELECT
           COUNT(*) AS totalPayouts,
-          SUM(CASE WHEN status IN ('eligible', 'queued', 'processing', 'pending') THEN 1 ELSE 0 END) AS pendingPayouts,
+          SUM(CASE WHEN status IN ('eligible', 'queued', 'processing', 'pending', 'held') THEN 1 ELSE 0 END) AS pendingPayouts,
           SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paidPayouts,
           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failedPayouts,
           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelledPayouts
@@ -193,25 +193,12 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
         return res.status(400).json({ error: 'payoutId is required' });
       }
 
-      const db = getPaymentDb();
-      const payout = db.prepare('SELECT * FROM payouts WHERE id = ?').get(payoutId) as { id: string; seller_id: string; amount: number; currency: string; provider: string | null; destination_account_id: string | null; } | undefined;
-      if (!payout) {
-        return res.status(404).json({ error: 'Payout not found' });
-      }
-
-      const destination = payout.destination_account_id
-        ? (db.prepare('SELECT id, masked_account FROM seller_payout_accounts WHERE id = ? LIMIT 1').get(payout.destination_account_id) as { id: string; masked_account: string } | undefined)
-        : undefined;
-
-      const destinationReference = destination?.masked_account || payout.destination_account_id || payout.id;
+      const actorId = String(req.user?.uid || 'admin').trim();
 
       const result = await payoutService.executePayout({
         payoutId,
-        sellerId: payout.seller_id,
-        amount: payout.amount,
-        currency: payout.currency,
-        providerName: payout.provider ?? 'paychangu',
-        destinationReference,
+        actorType: 'admin',
+        actorId,
       });
 
       return res.status(200).json(result);

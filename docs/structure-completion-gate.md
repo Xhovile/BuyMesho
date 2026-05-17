@@ -272,16 +272,16 @@ The structure is complete only when every item below is checked.
 
 If any of these are unresolved, the structure is not complete.
 
-- Should the 6% reserve be split into separate buckets or tracked as one reserve pool?
-- What is the exact dispute window length?
+- Should the 6% reserve be split into separate buckets or tracked as one reserve pool? **Tracked as one capped reserve pool at launch.**
+- What is the exact dispute window length? **72 hours.**
 - Should first-time sellers have stricter reserve rules?
 - Should some categories have higher risk holds?
-- What is the minimum payout threshold?
-- Should payout be automatic or admin-approved at launch?
+- What is the minimum payout threshold? **MWK 1,000.**
+- Should payout be automatic or admin-approved at launch? **Admin-approved.**
 - What exact webhook events will confirm payout success or failure?
-- What is the max retry count?
-- What error types are retryable?
-- What error types are manual-review only?
+- What is the max retry count? **3 retries.**
+- What error types are retryable? **Provider timeout/unavailable/network/rate-limit/balance-insufficient classes.**
+- What error types are manual-review only? **Destination, suspension, dispute, cancellation, and policy-gate failures.**
 - Must provider balance already be funded before payout submission?
 
 ---
