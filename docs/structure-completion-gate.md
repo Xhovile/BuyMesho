@@ -110,6 +110,7 @@ Required events:
 - payout held
 - payout released
 - admin override
+- payout adjusted
 
 Audit records must include the actor, timestamp, and the relevant state change.
 
@@ -178,6 +179,7 @@ Required events:
 - payout held
 - payout released
 - admin override
+- payout adjusted
 
 ### 2.7 Automated failure tests
 
@@ -188,6 +190,7 @@ The payout flow is not complete until the following cases are tested:
 - seller cannot trigger own release
 - payout failure after escrow release
 - partial provider downtime
+- payout adjustment recalculation
 
 ### 2.8 Commission and fee lock-in
 
@@ -210,9 +213,9 @@ The structure is complete only when every item below is checked.
 ### Formula
 - Gross collected amount is stored correctly — **partial** (gross is persisted on order/payment flows; payout snapshots are present but not enforced for every legacy payout row).
 - Platform fee is fixed at 2% — **done** (`PAYOUT_POLICY.platformFeeBps = 200`).
-- Payment processing fee is captured from the provider — **deferred** (launch uses simplified payout formula without provider-fee ingestion).
+- Payment processing fee is captured from the provider — **done** (provider-fee adjustments persist into payout recalculation snapshots and audit history).
 - Reserve logic is defined and capped at 6% — **done** (`PAYOUT_POLICY.reserveCapBps = 600` and formula cap enforcement).
-- Manual adjustments are explicit and logged — **deferred** (blocked from launch scope until adjustment entry APIs and signed adjustment events exist).
+- Manual adjustments are explicit and logged — **done** (admin adjustment APIs, payout adjustment persistence, recalculation snapshots, and payout audit events implemented).
 - Final seller net payout is calculated server-side — **done** (`calculatePayoutFormula` is server-side and used on release).
 
 ### Permissions
@@ -258,62 +261,4 @@ The structure is complete only when every item below is checked.
 - Provider transfer ID is stored — **partial** (`provider_charge_id` and provider refs stored; provider transaction ID population depends on provider callback payload completeness).
 - Last error is stored — **done** (`failure_reason`, attempt failure_reason, and manual review reason fields).
 - All status transitions are logged — **partial** (core transitions are logged; legacy/manual seed inserts may exist without backfilled events).
-- Admin actions are logged — **done** (`admin_mark_paid`, `admin_mark_failed`, `admin_hold` in `payout_events`).
-
----
-
-## 4) Explicit Phase 2 items
-
-The following items are intentionally out of the launch scope and should be treated as Phase 2 work:
-
-- provider-fee ingestion into payout calculations
-- manual adjustment APIs
-- signed/manual adjustment approval workflows
-- fraud-engine integration
-- dynamic risk scoring
-- category-specific reserve policies
-- first-time seller reserve multipliers
-- long-term payout archive policy
-- advanced provider reconciliation tooling
-- circuit-breaker orchestration for prolonged provider downtime
-- advanced concurrent retry deduplication at route level
-- full downstream provider-failure simulation after escrow release
-
-These items are not launch blockers.
-
----
-
-## 5) Acceptance rule
-
-The payout structure is complete for launch when:
-
-1. The formula is frozen.
-2. Permissions are frozen.
-3. The state machine is frozen.
-4. Retry logic is frozen.
-5. Eligibility rules are frozen.
-6. Destination management rules are frozen.
-7. Validation and audit rules are frozen.
-8. Automated failure tests are defined.
-9. Database fields are defined.
-10. Admin review rules are defined.
-
-If any of those items are still moving, the structure is not complete.
-
----
-
-## 6) Practical rule for the team
-
-Do not start implementation while key payout rules are still being debated.
-
-Do not code first and decide later.
-
-Decide first, then build.
-
----
-
-## 7) Final note
-
-BuyMesho is being built as a trust-first marketplace. Core participation stays open, monetization follows proof, and transaction-linked features only make sense when the system is operationally mature. This payout structure must reflect that discipline.
-
-When this file is satisfied, the seller payout structure is ready for implementation.
+- Admin actions are logged — **done** (`admin_mark_paid`, `admin_mark_failed`, `admin_hold`, and `payout_adjusted` events implemented).
