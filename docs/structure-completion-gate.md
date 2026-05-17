@@ -288,7 +288,7 @@ If any of these are unresolved, the structure is not complete.
 - What is the exact dispute window length? **72 hours.**
 - Should first-time sellers have stricter reserve rules?
 - Should some categories have higher risk holds?
-- What is the minimum payout threshold? **MWK 1,000.**
+- What is the minimum payout threshold? **MWK 1000.**
 - Should payout be automatic or admin-approved at launch? **Admin-approved.**
 - What exact webhook events will confirm payout success or failure?
 - What is the max retry count? **3 retries.**

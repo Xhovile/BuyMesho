@@ -54,6 +54,7 @@ function seedPayout(): void {
     updatedAt: now,
   });
 
+  serverOrderService.setStatus(orderId, 'fulfilled');
   escrowRepository.create(orderId, 'MWK', 1500);
   escrowRepository.updateState(orderId, 'released');
 

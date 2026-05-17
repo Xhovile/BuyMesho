@@ -60,7 +60,8 @@ function initPaymentSchema(db: Database.Database): void {
       email TEXT,
       business_name TEXT,
       business_logo TEXT,
-      is_verified INTEGER NOT NULL DEFAULT 0
+      is_verified INTEGER NOT NULL DEFAULT 0,
+      is_suspended INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS seller_payout_accounts (
@@ -216,6 +217,7 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "listings", "photos", "TEXT");
   ensureColumn(db, "payments", "currency", "TEXT NOT NULL DEFAULT 'MWK'");
   ensureColumn(db, "payments", "amount", "REAL NOT NULL DEFAULT 0");
+  ensureColumn(db, "sellers", "is_suspended", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "payouts", "release_entry_id", "TEXT");
   ensureColumn(db, "payouts", "provider", "TEXT");
   ensureColumn(db, "payouts", "provider_charge_id", "TEXT");
