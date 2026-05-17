@@ -55,6 +55,9 @@ type PayoutRecord = {
   status: "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
   provider: string | null;
   providerChargeId: string | null;
+  providerStatus?: string | null;
+  failure_reason?: string | null;
+  manual_review_reason?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;
   createdAt: string;
@@ -119,6 +122,41 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+function sellerFacingPayoutSummary(payout: PayoutRecord) {
+  if (payout.status === "held") {
+    return {
+      title: "Payout held for review",
+      detail: "Awaiting admin action",
+    };
+  }
+
+  if (payout.status === "paid") {
+    return {
+      title: "Paid",
+      detail: "Provider confirmed the payout.",
+    };
+  }
+
+  if (["queued", "processing", "pending", "eligible"].includes(payout.status)) {
+    return {
+      title: "In progress",
+      detail: "Awaiting provider processing.",
+    };
+  }
+
+  if (payout.status === "failed") {
+    return {
+      title: "Payout failed",
+      detail: "Awaiting admin review.",
+    };
+  }
+
+  return {
+    title: payout.status,
+    detail: "Awaiting payout update.",
+  };
 }
 
 export default function SellerPayoutsPage() {
@@ -542,6 +580,7 @@ export default function SellerPayoutsPage() {
             <div className="mt-6 space-y-3">
               <MiniStatus icon={<Banknote className="w-4 h-4" />} title="Setup required" text="Add a payout destination before release can move money out." />
               <MiniStatus icon={<ClipboardList className="w-4 h-4" />} title="Queued" text="Escrow release created a payout candidate and is waiting on provider action." />
+              <MiniStatus icon={<ShieldCheck className="w-4 h-4" />} title="Held for review" text="Payout held for review and awaiting admin action." />
               <MiniStatus icon={<BadgeCheck className="w-4 h-4" />} title="Paid" text="The provider confirmed the seller payout has been completed." />
               <MiniStatus icon={<AlertTriangle className="w-4 h-4" />} title="Failed" text="A failed payout stays visible and retryable from the admin side." />
             </div>
@@ -646,12 +685,22 @@ export default function SellerPayoutsPage() {
                       payouts.map((payout) => (
                         <tr key={payout.id} className="align-top">
                           <td className="px-4 py-4">
-                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>
-                              {payout.status}
-                            </span>
+                            <div className="space-y-2">
+                              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>{payout.status}</span>
+                              {payout.status === "held" ? (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                                  <div>Payout held for review</div>
+                                  <div>Awaiting admin action</div>
+                                </div>
+                              ) : null}
+                            </div>
                           </td>
                           <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
-                          <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
+                          <td className="px-4 py-4 text-zinc-600">
+                            <div>{payout.orderId || payout.escrowId || "—"}</div>
+                            <div className="mt-1 text-xs font-semibold text-zinc-700">{sellerFacingPayoutSummary(payout).title}</div>
+                            <div className="mt-1 text-xs text-zinc-500">{sellerFacingPayoutSummary(payout).detail}</div>
+                          </td>
                           <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
                         </tr>
                       ))

@@ -13,7 +13,7 @@
     "test": "npm run test:integration",
     "lint": "node -e \"try { require('typescript'); } catch (e) { console.error('Dependencies are missing. Run npm ci before npm run lint.'); process.exit(1); }\" && tsc --noEmit",
     "smoke:paychangu": "tsx scripts/paychangu-smoke.ts",
-    "test:integration": "node --import tsx --test --test-concurrency=1 server/modules/payments/__tests__/paychangu.integration.test.ts server/routes/escrow/__tests__/shared.test.ts server/modules/escrow/__tests__/escrow.repository.test.ts server/routes/escrow/__tests__/release.test.ts server/modules/payouts/__tests__/payout.policy.test.ts server/modules/payouts/__tests__/payout.retry.test.ts",
+    "test:integration": "node --import tsx --test --test-concurrency=1 server/modules/payments/__tests__/paychangu.integration.test.ts server/routes/escrow/__tests__/shared.test.ts server/modules/escrow/__tests__/escrow.repository.test.ts server/routes/escrow/__tests__/release.test.ts server/modules/payouts/__tests__/payout.policy.test.ts server/modules/payouts/__tests__/payout.retry.test.ts server/modules/payouts/__tests__/payout.downtime.test.ts server/modules/payouts/__tests__/payout.retry.audit.test.ts server/modules/payouts/__tests__/payout.webhook.reconciliation.test.ts",
     "check:payments": "npm run test:integration"
   },
   "dependencies": {

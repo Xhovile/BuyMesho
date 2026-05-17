@@ -138,12 +138,16 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.requested_at AS requestedAt,
           p.sent_at AS sentAt,
           p.paid_at AS paidAt,
-          p.failed_at AS failedAt,
-          p.created_at AS createdAt,
-          p.updated_at AS updatedAt,
-          (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
-          (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
-          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt
+           p.failed_at AS failedAt,
+           p.created_at AS createdAt,
+           p.updated_at AS updatedAt,
+           (SELECT COUNT(*) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS retryCount,
+           (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
+           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
+           (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
+           (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_webhook_duplicate', 'payout_reconciled') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
+           (SELECT note FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_webhook_duplicate', 'payout_reconciled') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventNote
         FROM payouts p
         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
         ORDER BY p.created_at DESC
