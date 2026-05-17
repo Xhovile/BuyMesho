@@ -9,8 +9,10 @@ import {
   canRequestWithdrawal,
   canViewPayoutHistory,
   canViewPayoutSettings,
+  payoutService,
   type PayoutPermissionActor,
 } from '../../modules/payouts/payout.service.js';
+import { PAYOUT_POLICY } from '../../modules/payouts/payout.policy.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 
 const DEFAULT_CURRENCY = 'MWK';
@@ -326,6 +328,39 @@ function listSellerDestinations(sellerId: string): SellerPayoutDestinationRecord
   return rows.map(rowToSellerPayoutDestination);
 }
 
+function addDestinationEvent(input: {
+  sellerId: string;
+  accountId: string;
+  eventType: string;
+  actorType: 'seller' | 'admin' | 'system';
+  actorId?: string | null;
+  note?: string | null;
+  payload?: Record<string, unknown> | null;
+}): void {
+  const db = getPaymentDb();
+  db.prepare(
+    `INSERT INTO seller_payout_account_events (
+      seller_uid,
+      account_id,
+      event_type,
+      actor_type,
+      actor_id,
+      note,
+      payload,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    input.sellerId,
+    input.accountId,
+    input.eventType,
+    input.actorType,
+    input.actorId ?? null,
+    input.note ?? null,
+    input.payload ? JSON.stringify(input.payload) : null,
+    new Date().toISOString(),
+  );
+}
+
 function createDestinationRecord(input: {
   sellerId: string;
   destinationType: DestinationType;
@@ -595,6 +630,14 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
           accountNumber,
           isDefault,
         });
+        addDestinationEvent({
+          sellerId,
+          accountId: created.id,
+          eventType: 'destination_added',
+          actorType: req.user?.is_admin ? 'admin' : 'seller',
+          actorId: req.user?.uid ?? null,
+          payload: { destinationType: created.destinationType, providerName: created.providerName },
+        });
         return res.status(201).json({ destination: created });
       }
 
@@ -608,6 +651,14 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
         accountName,
         mobile,
         isDefault,
+      });
+      addDestinationEvent({
+        sellerId,
+        accountId: created.id,
+        eventType: 'destination_added',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { destinationType: created.destinationType, providerName: created.providerName },
       });
       return res.status(201).json({ destination: created });
     } catch (error) {
@@ -664,6 +715,14 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
         accountNumber,
         mobile,
         isDefault,
+      });
+      addDestinationEvent({
+        sellerId: existing.seller_uid,
+        accountId: updated.id,
+        eventType: 'destination_updated',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { destinationType: updated.destinationType, providerName: updated.providerName },
       });
 
       return res.json({ destination: updated });
@@ -764,6 +823,14 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       ).run(existing.id, now, created.id);
 
       const latest = findDestinationById(created.id);
+      addDestinationEvent({
+        sellerId: existing.seller_uid,
+        accountId: created.id,
+        eventType: 'destination_replaced',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { replacedFromId: existing.id, replacedById: created.id },
+      });
       return res.status(201).json({
         destination: latest ? rowToSellerPayoutDestination(latest) : created,
         replacedDestinationId: existing.id,
@@ -785,7 +852,15 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     try {
       const sellerId = getRequestSellerId(req, req.body.sellerUid);
       assertWithdrawalAccess(req, sellerId);
-      return res.status(501).json({ error: 'Withdrawal request flow is not enabled yet' });
+      if (PAYOUT_POLICY.launchMode === 'admin_approved' && !req.user?.is_admin) {
+        return res.status(403).json({
+          error: 'Seller withdrawal requests are disabled while launch mode is admin-approved',
+        });
+      }
+      return res.status(202).json({
+        status: 'queued_for_admin_review',
+        sellerId,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to request withdrawal';
       const status = /Unauthorized/i.test(message) ? 401 : 403;
@@ -813,11 +888,22 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
-  router.post('/payouts/:sellerId/retry', payoutLimiter, requireAuth, (req, res) => {
+  router.post('/payouts/:sellerId/retry', payoutLimiter, requireAuth, async (req, res) => {
     try {
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertRetryAccess(req, sellerId);
-      return res.status(501).json({ error: 'Payout retry flow is not enabled yet' });
+      const payoutId = normalizeDestinationId(req.body?.payoutId);
+      if (PAYOUT_POLICY.launchMode === 'admin_approved' && !req.user?.is_admin) {
+        return res.status(403).json({
+          error: 'Seller retry is disabled while launch mode is admin-approved',
+        });
+      }
+      const result = await payoutService.executePayout({
+        payoutId,
+        actorType: req.user?.is_admin ? 'admin' : 'system',
+        actorId: req.user?.uid ?? null,
+      });
+      return res.status(200).json(result);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to request payout retry';
       const status = /Unauthorized/i.test(message) ? 401 : 403;
@@ -828,7 +914,24 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
   router.post('/payouts/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
     try {
       assertOverrideAccess(req);
-      return res.status(501).json({ error: 'Payout override flow is not enabled yet' });
+      const payoutId = normalizeDestinationId(req.body?.payoutId);
+      const reason = normalizeText(req.body?.reason) ?? 'Manual override';
+      const action = normalizeText(req.body?.action) ?? 'hold';
+      const actorId = req.user?.uid ?? 'admin';
+
+      if (action === 'mark_paid') {
+        const payout = payoutService.markPaid(payoutId, actorId, reason);
+        if (!payout) return res.status(404).json({ error: 'Payout not found' });
+        return res.status(200).json({ payout });
+      }
+      if (action === 'mark_failed') {
+        const payout = payoutService.markFailed(payoutId, actorId, reason);
+        if (!payout) return res.status(404).json({ error: 'Payout not found' });
+        return res.status(200).json({ payout });
+      }
+      const payout = payoutService.markHeld(payoutId, actorId, reason);
+      if (!payout) return res.status(404).json({ error: 'Payout not found' });
+      return res.status(200).json({ payout });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to approve payout override';
       const status = /Unauthorized/i.test(message) ? 401 : 403;

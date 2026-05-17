@@ -47,7 +47,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     buyerId: 'buyer-release-payout-1',
     sellerId: 'seller-release-payout-1',
     source: 'listing',
-    status: 'pending_payment',
+    status: 'in_escrow',
     currency: 'MWK',
     subtotal: { amount: 1500, currency: 'MWK' },
     total: { amount: 1500, currency: 'MWK' },
@@ -55,6 +55,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     createdAt: now,
     updatedAt: now,
   });
+  serverOrderService.setStatus(releasePayoutOrderId, 'in_escrow');
   escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
 
   const app = createReleaseApp('buyer-release-payout-1');
@@ -95,7 +96,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     assert.equal(body.payout?.orderId, releasePayoutOrderId, 'payout should link to the order');
     assert.equal(body.payout?.escrowId, body.escrow?.id, 'payout should link to the escrow');
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
-    assert.equal(body.payout?.amount, 1500, 'payout should use the released escrow amount');
+    assert.equal(body.payout?.amount, 1470, 'payout should use the server-side net payout formula');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
     assert.equal(body.payout?.status, 'eligible', 'payout should start eligible without calling PayChangu');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');
