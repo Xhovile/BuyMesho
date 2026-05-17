@@ -368,11 +368,19 @@ export default function SellerPayoutsPage() {
             </div>
 
             <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-3 shadow-sm lg:min-w-[420px]">
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-zinc-200">
-                <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} />
-                <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} />
-                <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} />
-                <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} />
+              <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-[1.35rem] border border-zinc-200 bg-white sm:grid-cols-4">
+                <div className="border-b border-zinc-200 sm:border-b-0 sm:border-r">
+                  <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} />
+                </div>
+                <div className="border-b border-zinc-200 sm:border-b-0 sm:border-r">
+                  <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} />
+                </div>
+                <div className="border-b border-zinc-200 sm:border-b-0 sm:border-r">
+                  <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} />
+                </div>
+                <div>
+                  <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} />
+                </div>
               </div>
             </div>
           </div>
