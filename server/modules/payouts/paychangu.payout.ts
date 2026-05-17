@@ -273,7 +273,7 @@ export async function getPayChanguPayoutBalance(
 
   const { payload, rawText } = await readResponseBody(response);
   if (!response.ok) {
-    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText || 'PayChangu balance lookup failed';
+    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText ?? 'PayChangu balance lookup failed';
     throw new Error(message);
   }
 
