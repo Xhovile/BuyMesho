@@ -31,11 +31,11 @@ function seedPayout(): void {
 
   db.prepare(`INSERT INTO seller_payout_accounts (
     id, seller_uid, destination_type, provider_name, provider_ref_id,
-    currency, account_name, masked_account, destination_fingerprint,
+    currency, account_name, mobile_encrypted, masked_account, destination_fingerprint,
     is_default, verification_status, verification_attempts,
     is_active, created_at, updated_at
   ) VALUES (?, ?, 'mobile_money', 'Airtel Money', 'airtel-money',
-    'MWK', 'Retry Seller', '****1234', ?,
+    'MWK', 'Retry Seller', '265999111222', '****1222', ?,
     1, 'verified', 1,
     1, ?, ?)
   `).run(destinationId, sellerId, randomUUID(), now, now);
@@ -88,8 +88,9 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
 
   const originalFetch = global.fetch;
   let requestCount = 0;
+  const requestBodies: Array<Record<string, unknown>> = [];
 
-  global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
 
     if (url.includes('/wallet-balance')) {
@@ -100,6 +101,7 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
     }
 
     requestCount += 1;
+    requestBodies.push(JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>);
 
     return new Response(JSON.stringify({
       status: requestCount === 1 ? 'failed' : 'successful',
@@ -124,6 +126,8 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
     assert.ok(first.attempt);
     assert.equal(first.attempt?.attemptNo, 1);
     assert.match(first.attempt?.providerChargeId ?? '', /-A01$/);
+    assert.equal(requestBodies[0]?.mobile, '265999111222');
+    assert.equal(requestBodies[0]?.mobile_money_operator_ref_id, 'airtel-money');
 
     const db = getPaymentDb();
     db.prepare(`UPDATE payouts SET failure_reason = 'provider_timeout', status = 'failed' WHERE id = ?`).run(payoutId);

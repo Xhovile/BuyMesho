@@ -1,10 +1,11 @@
 import './payout.schema.js';
-import { randomUUID } from 'crypto';
+import { createDecipheriv, randomUUID, scryptSync } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
 import type { MoneyValue } from '../../../src/shared/types/common.js';
 import {
   executePayChanguPayout,
   getPayChanguPayoutBalance,
+  getPayChanguPayoutStatus,
   buildPayChanguPayoutChargeId,
   type PayChanguPayoutExecutionResult,
   type PayChanguPayoutFailureClass,
@@ -47,6 +48,7 @@ export interface PayoutAttemptRecord {
   provider: string;
   providerChargeId: string;
   providerReference: string;
+  providerTransactionId: string | null;
   status: PayoutStatus;
   attemptNo: number;
   rawResponse: Record<string, unknown>;
@@ -93,6 +95,8 @@ export type PayoutPermissionContext = {
   sellerId: string;
   actor: PayoutPermissionActor | null;
 };
+
+const PAYOUT_ENCRYPTION_SECRET = process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 
 type PayoutNextAction =
   | 'manual_review'
@@ -148,6 +152,37 @@ function isAdminActor(actor: PayoutPermissionActor | null): boolean {
 
 function isSameSeller(actor: PayoutPermissionActor | null, sellerId: string): boolean {
   return !!actor?.uid && actor.uid === sellerId;
+}
+
+function requirePayoutEncryptionSecret(): string {
+  if (!PAYOUT_ENCRYPTION_SECRET) {
+    throw new Error('SELLER_PAYOUT_ENCRYPTION_KEY is not configured');
+  }
+  return PAYOUT_ENCRYPTION_SECRET;
+}
+
+function getDerivedEncryptionKey(): Buffer {
+  return scryptSync(requirePayoutEncryptionSecret(), 'BuyMesho seller payout', 32);
+}
+
+function decryptSensitiveValue(value: string | null): string | null {
+  if (!value) return null;
+  const parts = value.split(':');
+  if (parts.length !== 3) {
+    return value;
+  }
+
+  try {
+    const key = getDerivedEncryptionKey();
+    const iv = Buffer.from(parts[0], 'base64');
+    const tag = Buffer.from(parts[1], 'base64');
+    const encrypted = Buffer.from(parts[2], 'base64');
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(tag);
+    return `${decipher.update(encrypted, undefined, 'utf8')}${decipher.final('utf8')}`;
+  } catch {
+    return null;
+  }
 }
 
 export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
@@ -269,16 +304,18 @@ export class PayoutRepository {
 
     this.db.prepare(
       `UPDATE payouts
-       SET status = ?,
-            provider = COALESCE(?, provider),
-            provider_charge_id = COALESCE(?, provider_charge_id),
-            provider_ref_id = COALESCE(?, provider_ref_id),
-            provider_status = COALESCE(?, provider_status),
-            failure_reason = COALESCE(?, failure_reason),
-             manual_review_reason = COALESCE(?, manual_review_reason),
-            processed_by = COALESCE(?, processed_by),
-             last_attempt_id = COALESCE(?, last_attempt_id),
-            raw_response = COALESCE(?, raw_response),
+        SET status = ?,
+             provider = COALESCE(?, provider),
+             provider_charge_id = COALESCE(?, provider_charge_id),
+             provider_ref_id = COALESCE(?, provider_ref_id),
+             provider_status = COALESCE(?, provider_status),
+             provider_transaction_id = COALESCE(?, provider_transaction_id),
+             failure_reason = COALESCE(?, failure_reason),
+              manual_review_reason = COALESCE(?, manual_review_reason),
+             processed_by = COALESCE(?, processed_by),
+             approved_by = COALESCE(?, approved_by),
+              last_attempt_id = COALESCE(?, last_attempt_id),
+             raw_response = COALESCE(?, raw_response),
             sent_at = COALESCE(?, sent_at),
             paid_at = COALESCE(?, paid_at),
             failed_at = COALESCE(?, failed_at),
@@ -290,9 +327,11 @@ export class PayoutRepository {
       extra.providerChargeId ?? null,
       extra.providerReference ?? null,
       extra.providerStatus ?? null,
+      extra.providerTransactionId ?? null,
       extra.failureReason ?? null,
       extra.manualReviewReason ?? null,
       extra.processedBy ?? null,
+      extra.approvedBy ?? null,
       extra.lastAttemptId ?? null,
       extra.rawResponse ? JSON.stringify(extra.rawResponse) : null,
       extra.sentAt ?? null,
@@ -313,6 +352,7 @@ export class PayoutRepository {
       provider: execution.provider,
       providerChargeId: execution.providerChargeId,
       providerReference: execution.providerReference,
+      providerTransactionId: execution.providerTransactionId,
       providerStatus: execution.status,
     };
 
@@ -378,8 +418,10 @@ export class PayoutRepository {
       JSON.stringify({
         payoutId: execution.payoutId,
         providerReference: execution.providerReference,
+        providerTransactionId: execution.providerTransactionId,
         providerChargeId: execution.providerChargeId,
         attemptNo: execution.attemptNo,
+        request: execution.rawResponse?.request ?? null,
       }),
       JSON.stringify(execution.rawResponse ?? {}),
       execution.status,
@@ -395,6 +437,7 @@ export class PayoutRepository {
       provider: execution.provider,
       providerChargeId: execution.providerChargeId,
       providerReference: execution.providerReference,
+      providerTransactionId: execution.providerTransactionId,
       status: execution.status,
       attemptNo: execution.attemptNo,
       rawResponse: execution.rawResponse,
@@ -472,12 +515,14 @@ export class PayoutService {
     sellerId?: string;
     amount?: number;
     currency?: string;
-    provider?: string;
-    destinationType?: 'bank' | 'mobile_money';
-    destinationValue?: string | null;
-    destinationProviderRefId?: string | null;
-    destinationAccountName?: string | null;
-    currentFailureReason?: string | null;
+      provider?: string;
+      destinationType?: 'bank' | 'mobile_money';
+      destinationValue?: string | null;
+      destinationProviderRefId?: string | null;
+      destinationProviderName?: string | null;
+      destinationAccountName?: string | null;
+      currentFailureReason?: string | null;
+      currentProviderChargeId?: string | null;
   } {
     const row = getPaymentDb()
       .prepare(
@@ -494,8 +539,11 @@ export class PayoutService {
            s.is_suspended AS seller_suspended,
            spa.destination_type AS destination_type,
            spa.provider_ref_id AS destination_provider_ref_id,
+           spa.provider_name AS destination_provider_name,
            spa.account_name AS destination_account_name,
            spa.masked_account AS destination_masked_account,
+           spa.account_number_encrypted AS destination_account_number_encrypted,
+           spa.mobile_encrypted AS destination_mobile_encrypted,
            spa.verification_status AS destination_verification_status,
            spa.is_active AS destination_active,
            (
@@ -596,15 +644,44 @@ export class PayoutService {
     if (Number(row.destination_active ?? 0) !== 1) {
       return {
         allowed: false,
-        reasonCode: 'destination_inactive',
-        reason: 'Destination is inactive',
+        reasonCode: 'destination_disabled',
+        reason: 'Destination is disabled',
       };
     }
-    if (String(row.destination_verification_status ?? '').toLowerCase() !== 'verified') {
+    const destinationVerificationStatus = String(row.destination_verification_status ?? '').toLowerCase();
+    if (destinationVerificationStatus === 'failed') {
+      return {
+        allowed: false,
+        reasonCode: 'destination_failed',
+        reason: 'Destination verification failed',
+      };
+    }
+    if (destinationVerificationStatus === 'disabled') {
+      return {
+        allowed: false,
+        reasonCode: 'destination_disabled',
+        reason: 'Destination is disabled',
+      };
+    }
+    if (destinationVerificationStatus !== 'verified') {
       return {
         allowed: false,
         reasonCode: 'destination_not_verified',
-        reason: 'Destination is not verified',
+        reason: 'Destination is pending verification',
+      };
+    }
+
+    const destinationValue = (
+      row.destination_type === 'bank'
+        ? decryptSensitiveValue((row.destination_account_number_encrypted as string | null) ?? null)
+        : decryptSensitiveValue((row.destination_mobile_encrypted as string | null) ?? null)
+    ) ?? null;
+
+    if (!destinationValue) {
+      return {
+        allowed: false,
+        reasonCode: 'destination_incomplete',
+        reason: 'Destination details are incomplete',
       };
     }
 
@@ -615,10 +692,12 @@ export class PayoutService {
       currency: (row.currency as string) ?? 'MWK',
       provider: (row.provider as string | null) ?? 'paychangu',
       destinationType: row.destination_type as 'bank' | 'mobile_money',
-      destinationValue: (row.destination_masked_account as string | null) ?? null,
+      destinationValue,
       destinationProviderRefId: (row.destination_provider_ref_id as string | null) ?? null,
+      destinationProviderName: (row.destination_provider_name as string | null) ?? null,
       destinationAccountName: (row.destination_account_name as string | null) ?? null,
       currentFailureReason: (row.failure_reason as string | null) ?? null,
+      currentProviderChargeId: (row.provider_charge_id as string | null) ?? null,
     };
   }
 
@@ -684,6 +763,7 @@ export class PayoutService {
     this.repository.updateStatus(input.payoutId, 'queued', {
       provider: gate.provider,
       providerStatus: 'queued',
+      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
     });
     this.repository.addEvent({
       payoutId: input.payoutId,
@@ -801,6 +881,7 @@ export class PayoutService {
       provider: gate.provider,
       providerChargeId,
       providerStatus: 'processing',
+      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
       sentAt: new Date().toISOString(),
     });
 
@@ -809,10 +890,12 @@ export class PayoutService {
       sellerId: gate.sellerId,
       amount: gate.amount,
       currency: gate.currency,
-      providerName: gate.provider,
+      providerName: gate.destinationProviderName ?? gate.provider,
       destinationReference: gate.destinationValue ?? input.destinationReference ?? input.payoutId,
       attemptNo,
       destinationType: gate.destinationType,
+      mobile: gate.destinationType === 'mobile_money' ? gate.destinationValue ?? undefined : undefined,
+      bankAccountNumber: gate.destinationType === 'bank' ? gate.destinationValue ?? undefined : undefined,
       mobileMoneyOperatorRefId: gate.destinationProviderRefId ?? undefined,
       bankUuid: gate.destinationProviderRefId ?? undefined,
       bankAccountName: gate.destinationAccountName ?? undefined,
@@ -836,6 +919,7 @@ export class PayoutService {
             provider: execution.provider,
             providerChargeId: execution.providerChargeId,
             providerReference: execution.providerReference,
+            providerTransactionId: execution.providerTransactionId,
             lastAttemptId: attempt.id,
             rawResponse: execution.rawResponse,
             sentAt: execution.processedAt,
@@ -876,6 +960,8 @@ export class PayoutService {
       failureReason: execution.status === 'failed'
         ? execution.failureClass ?? 'provider_execution_failed'
         : null,
+      providerTransactionId: execution.providerTransactionId,
+      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
       sentAt: execution.processedAt,
     });
 
@@ -916,6 +1002,123 @@ export class PayoutService {
 
   async getProviderBalance(currency = 'MWK') {
     return getPayChanguPayoutBalance(currency);
+  }
+
+  async reconcilePayoutStatus(input: {
+    payoutId: string;
+    actorType?: 'admin' | 'system';
+    actorId?: string | null;
+  }) {
+    const db = getPaymentDb();
+    const row = db.prepare(
+      `SELECT
+         p.id,
+         p.seller_id,
+         p.provider_charge_id,
+         p.last_attempt_id,
+         (
+           SELECT provider_charge_id
+           FROM payout_attempts pa
+           WHERE pa.payout_id = p.id
+           ORDER BY pa.attempt_no DESC
+           LIMIT 1
+         ) AS latest_attempt_charge_id
+       FROM payouts p
+       WHERE p.id = ?
+       LIMIT 1`,
+    ).get(input.payoutId) as Record<string, unknown> | undefined;
+
+    if (!row) {
+      throw new Error('Payout not found');
+    }
+
+    const chargeId = (row.provider_charge_id as string | null) ?? (row.latest_attempt_charge_id as string | null) ?? null;
+    if (!chargeId) {
+      throw new Error('Payout has no provider attempt to reconcile');
+    }
+
+    const status = await getPayChanguPayoutStatus(chargeId);
+    const now = new Date().toISOString();
+    const nextStatus = status.status;
+
+    this.repository.updateStatus(input.payoutId, nextStatus, {
+      provider: 'paychangu',
+      providerChargeId: chargeId,
+      providerReference: status.reference,
+      providerTransactionId: status.transactionId,
+      providerStatus: status.status,
+      rawResponse: status.rawResponse,
+      paidAt: nextStatus === 'paid' ? now : null,
+      failedAt: nextStatus === 'failed' ? now : null,
+      failureReason: nextStatus === 'failed' ? 'provider_status_failed' : null,
+      manualReviewReason: nextStatus === 'failed' ? 'Provider status sync reported payout failure' : null,
+    });
+
+    if (row.last_attempt_id) {
+      db.prepare(
+        `UPDATE payout_attempts
+         SET status = ?,
+             response_payload = ?,
+             completed_at = ?,
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        nextStatus,
+        JSON.stringify(status.rawResponse ?? {}),
+        now,
+        now,
+        row.last_attempt_id as string,
+      );
+    }
+
+    this.repository.addEvent({
+      payoutId: input.payoutId,
+      sellerId: row.seller_id as string,
+      eventType: 'payout_status_synced',
+      actorType: input.actorType ?? 'admin',
+      actorId: input.actorId ?? null,
+      note: `Provider status sync recorded ${nextStatus}`,
+      payload: {
+        chargeId,
+        providerReference: status.reference,
+        providerTransactionId: status.transactionId,
+        status: status.status,
+        checkedAt: status.checkedAt,
+      },
+    });
+
+    return {
+      payout: this.repository.findById(input.payoutId),
+      status,
+    };
+  }
+
+  async reconcilePendingPayoutStatuses(input: {
+    actorType?: 'admin' | 'system';
+    actorId?: string | null;
+    limit?: number;
+  } = {}) {
+    const limit = Math.max(1, Math.min(50, Number(input.limit ?? 25) || 25));
+    const rows = getPaymentDb().prepare(
+      `SELECT id
+       FROM payouts
+       WHERE provider = 'paychangu'
+         AND provider_charge_id IS NOT NULL
+         AND status IN ('queued', 'processing', 'pending', 'held', 'failed')
+       ORDER BY updated_at ASC
+       LIMIT ?`,
+    ).all(limit) as Array<{ id: string }>;
+
+    const results = [];
+    for (const row of rows) {
+      results.push(await this.reconcilePayoutStatus({
+        payoutId: row.id,
+        actorType: input.actorType,
+        actorId: input.actorId,
+      }));
+    }
+
+    return results;
   }
 
   markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
@@ -983,6 +1186,7 @@ export class PayoutService {
         provider: 'paychangu',
         providerStatus: 'paid',
         processedBy: input.actorId,
+        approvedBy: input.actorId,
         failureReason: null,
       });
     } else if (input.action === 'mark_failed') {
@@ -992,12 +1196,14 @@ export class PayoutService {
         provider: 'paychangu',
         providerStatus: 'failed',
         processedBy: input.actorId,
+        approvedBy: input.actorId,
       });
     } else {
       payout = this.repository.updateStatus(input.payoutId, 'held', {
         manualReviewReason: reason,
         providerStatus: 'held',
         processedBy: input.actorId,
+        approvedBy: input.actorId,
       });
     }
     if (payout) {

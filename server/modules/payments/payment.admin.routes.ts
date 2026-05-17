@@ -32,6 +32,24 @@ function normalizeAmount(value: unknown): number {
   return Math.round(parsed);
 }
 
+function normalizeBoolean(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === 'true') return true;
+    if (normalized === 'false') return false;
+  }
+  throw new Error('suspended must be a boolean');
+}
+
+function normalizeVerificationStatus(value: unknown): 'pending' | 'verified' | 'failed' | 'disabled' {
+  const status = normalizeText(value)?.toLowerCase();
+  if (status === 'pending' || status === 'verified' || status === 'failed' || status === 'disabled') {
+    return status;
+  }
+  throw new Error('status must be one of: pending, verified, failed, disabled');
+}
+
 function parseJsonObject(value: string | null | undefined): Record<string, unknown> | null {
   if (!value) return null;
   try {
@@ -133,6 +151,36 @@ function recalculatePayoutFinancials(row: Record<string, unknown>, next: {
     manualAdjustmentAmount,
     currency: String(row.currency ?? 'MWK'),
   });
+}
+
+function addSellerPayoutAccountEvent(input: {
+  sellerId: string;
+  accountId: string;
+  eventType: string;
+  actorId: string | null;
+  note?: string | null;
+  payload?: Record<string, unknown> | null;
+}) {
+  getPaymentDb().prepare(
+    `INSERT INTO seller_payout_account_events (
+      seller_uid,
+      account_id,
+      event_type,
+      actor_type,
+      actor_id,
+      note,
+      payload,
+      created_at
+    ) VALUES (?, ?, ?, 'admin', ?, ?, ?, ?)`,
+  ).run(
+    input.sellerId,
+    input.accountId,
+    input.eventType,
+    input.actorId,
+    input.note ?? null,
+    input.payload ? JSON.stringify(input.payload) : null,
+    new Date().toISOString(),
+  );
 }
 
 export function createPaymentAdminRouter(requireAuth: RequestHandler): express.Router {
@@ -245,15 +293,19 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
            p.provider,
            p.provider_charge_id AS providerChargeId,
            p.provider_ref_id AS providerReference,
-          p.provider_status AS providerStatus,
-          p.processed_by AS processedBy,
-          p.destination_account_id AS destinationAccountId,
-          spa.masked_account AS destinationMaskedAccount,
-          spa.destination_type AS destinationType,
-          spa.verification_status AS destinationVerificationStatus,
-          spa.is_active AS destinationIsActive,
-          p.failure_reason AS failureReason,
-          p.manual_review_reason AS manualReviewReason,
+           p.provider_transaction_id AS providerTransactionId,
+           p.provider_status AS providerStatus,
+            p.processed_by AS processedBy,
+           p.approved_by AS approvedBy,
+           p.destination_account_id AS destinationAccountId,
+           spa.masked_account AS destinationMaskedAccount,
+           spa.destination_type AS destinationType,
+           spa.verification_status AS destinationVerificationStatus,
+           spa.is_active AS destinationIsActive,
+           spa.last_error AS destinationLastError,
+           s.is_suspended AS sellerSuspended,
+           p.failure_reason AS failureReason,
+           p.manual_review_reason AS manualReviewReason,
           p.requested_by AS requestedBy,
           p.requested_at AS requestedAt,
           p.sent_at AS sentAt,
@@ -272,15 +324,27 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.last_adjustment_id AS lastAdjustmentId,
           (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attemptCount,
           (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
-          (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
-          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
-          (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
-          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
-          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
-          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
-          (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
+           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
+           (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
+           (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
+           (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventAt,
+           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
+           (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
+           (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
+           (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount,
+           (
+             SELECT details
+             FROM admin_actions aa
+             WHERE aa.target_type = 'seller'
+               AND aa.target_id = p.seller_id
+               AND aa.action_type IN ('suspend_payouts', 'unsuspend_payouts')
+             ORDER BY aa.created_at DESC, aa.id DESC
+             LIMIT 1
+           ) AS latestSellerPayoutControlDetails
         FROM payouts p
         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+        LEFT JOIN sellers s ON s.uid = p.seller_id
         ORDER BY p.created_at DESC
         LIMIT 200
       `).all();
@@ -290,10 +354,27 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
         const attemptCount = Number(row.attemptCount ?? 0);
         const destinationVerificationStatus = String(row.destinationVerificationStatus ?? 'missing').toLowerCase();
         const destinationActive = Number(row.destinationIsActive ?? 0) === 1;
+        const sellerSuspended = Number(row.sellerSuspended ?? 0) === 1;
+        const verificationBlockers = [];
+        if (sellerSuspended) {
+          verificationBlockers.push('Seller payouts are suspended');
+        }
+        if (destinationVerificationStatus !== 'verified' || !destinationActive) {
+          verificationBlockers.push(
+            destinationVerificationStatus === 'failed'
+              ? 'Destination verification failed'
+              : destinationVerificationStatus === 'disabled' || !destinationActive
+                ? 'Destination is disabled'
+                : 'Destination pending verification',
+          );
+        }
         const retryEligible =
           status === 'failed' &&
           attemptCount < PAYOUT_POLICY.maxRetryCount &&
-          isRetryableFailureCode(failureReason);
+          isRetryableFailureCode(failureReason) &&
+          !sellerSuspended &&
+          destinationVerificationStatus === 'verified' &&
+          destinationActive;
         const holdReason = status === 'held' ? (row.manualReviewReason as string | null) ?? null : null;
         const auditSummary = {
           totalEvents: Number(row.auditEventCount ?? 0),
@@ -306,6 +387,8 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           attemptCount,
           destinationVerificationStatus,
           destinationActive,
+          sellerSuspended,
+          verificationBlockers,
           lastError: failureReason ?? (row.latestAttemptFailureReason as string | null) ?? null,
           holdReason,
           retryEligible,
@@ -323,6 +406,182 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       return res.status(200).json(shapedRows);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to load payout queue'));
+    }
+  });
+
+  router.post('/payouts/destinations/:destinationId/verification', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const destinationId = String(req.params.destinationId || '').trim();
+      if (!destinationId) {
+        return res.status(400).json({ error: 'destinationId is required' });
+      }
+
+      const status = normalizeVerificationStatus(req.body?.status);
+      const reason = normalizeText(req.body?.reason);
+      const actorId = String(req.user?.uid || 'admin').trim();
+      const now = new Date().toISOString();
+      const db = getPaymentDb();
+      const destination = db.prepare(
+        `SELECT id, seller_uid, verification_status, is_active
+         FROM seller_payout_accounts
+         WHERE id = ?
+         LIMIT 1`,
+      ).get(destinationId) as { id: string; seller_uid: string; verification_status: string; is_active: number } | undefined;
+
+      if (!destination) {
+        return res.status(404).json({ error: 'Payout destination not found' });
+      }
+
+      const nextActive = status === 'disabled' ? 0 : 1;
+      const nextVerifiedAt = status === 'verified' ? now : null;
+      const nextLastError = status === 'failed' || status === 'disabled' ? reason : null;
+      const nextAttempts = status === 'failed'
+        ? Number(
+            (db.prepare(`SELECT verification_attempts FROM seller_payout_accounts WHERE id = ?`).get(destinationId) as { verification_attempts?: number } | undefined)?.verification_attempts ?? 0,
+          ) + 1
+        : 0;
+
+      db.prepare(
+        `UPDATE seller_payout_accounts
+         SET verification_status = ?,
+             is_active = ?,
+             verification_attempts = ?,
+             last_error = ?,
+             verified_at = ?,
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        status,
+        nextActive,
+        nextAttempts,
+        nextLastError,
+        nextVerifiedAt,
+        now,
+        destinationId,
+      );
+
+      addSellerPayoutAccountEvent({
+        sellerId: destination.seller_uid,
+        accountId: destinationId,
+        eventType: `destination_${status}`,
+        actorId,
+        note: reason,
+        payload: {
+          previousStatus: destination.verification_status,
+          nextStatus: status,
+          active: nextActive === 1,
+        },
+      });
+
+      const updated = db.prepare(
+        `SELECT
+           id,
+           seller_uid AS sellerId,
+           verification_status AS verificationStatus,
+           verification_attempts AS verificationAttempts,
+           last_error AS lastError,
+           verified_at AS verifiedAt,
+           is_active AS isActive,
+           updated_at AS updatedAt
+         FROM seller_payout_accounts
+         WHERE id = ?
+         LIMIT 1`,
+      ).get(destinationId);
+
+      return res.status(200).json({ destination: updated });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to update payout destination verification'));
+    }
+  });
+
+  router.post('/payouts/sellers/:sellerId/suspension', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const sellerId = String(req.params.sellerId || '').trim();
+      if (!sellerId) {
+        return res.status(400).json({ error: 'sellerId is required' });
+      }
+
+      const suspended = normalizeBoolean(req.body?.suspended);
+      const reason = normalizeText(req.body?.reason);
+      if (!reason) {
+        return res.status(400).json({ error: 'reason is required' });
+      }
+
+      const actorId = String(req.user?.uid || 'admin').trim();
+      const db = getPaymentDb();
+      const seller = db.prepare(
+        `SELECT uid, is_suspended AS isSuspended
+         FROM sellers
+         WHERE uid = ?
+         LIMIT 1`,
+      ).get(sellerId) as { uid: string; isSuspended: number } | undefined;
+
+      if (!seller) {
+        return res.status(404).json({ error: 'Seller not found' });
+      }
+
+      db.prepare(`UPDATE sellers SET is_suspended = ? WHERE uid = ?`).run(suspended ? 1 : 0, sellerId);
+      db.prepare(
+        `INSERT INTO admin_actions (
+          admin_uid,
+          admin_email,
+          action_type,
+          target_type,
+          target_id,
+          details,
+          created_at
+        ) VALUES (?, ?, ?, 'seller', ?, ?, ?)`,
+      ).run(
+        actorId,
+        req.user?.email ?? null,
+        suspended ? 'suspend_payouts' : 'unsuspend_payouts',
+        sellerId,
+        JSON.stringify({ reason }),
+        new Date().toISOString(),
+      );
+
+      const activePayouts = db.prepare(
+        `SELECT id
+         FROM payouts
+         WHERE seller_id = ?
+           AND status IN ('eligible', 'queued', 'processing', 'pending', 'failed', 'held')`,
+      ).all(sellerId) as Array<{ id: string }>;
+
+      for (const payout of activePayouts) {
+        payoutService.addEvent({
+          payoutId: payout.id,
+          sellerId,
+          eventType: suspended ? 'seller_payouts_suspended' : 'seller_payouts_unsuspended',
+          actorType: 'admin',
+          actorId,
+          note: reason,
+          payload: { suspended },
+        });
+        if (suspended) {
+          db.prepare(
+            `UPDATE payouts
+             SET status = 'held',
+                 failure_reason = 'seller_suspended',
+                 manual_review_reason = ?,
+                 updated_at = ?
+             WHERE id = ?
+               AND status <> 'paid'
+               AND status <> 'cancelled'`,
+          ).run(reason, new Date().toISOString(), payout.id);
+        }
+      }
+
+      return res.status(200).json({
+        sellerId,
+        suspended,
+        reason,
+      });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to update seller payout suspension'));
     }
   });
 
@@ -498,6 +757,49 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to create payout adjustment'));
+    }
+  });
+
+  router.post('/payouts/:payoutId/reconcile', requireAuth, async (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const payoutId = String(req.params.payoutId || '').trim();
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
+      }
+
+      const actorId = String(req.user?.uid || 'admin').trim();
+      const result = await payoutService.reconcilePayoutStatus({
+        payoutId,
+        actorType: 'admin',
+        actorId,
+      });
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to reconcile payout status'));
+    }
+  });
+
+  router.post('/payouts/reconcile-pending', requireAuth, async (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const actorId = String(req.user?.uid || 'admin').trim();
+      const limit = req.body?.limit;
+      const results = await payoutService.reconcilePendingPayoutStatuses({
+        actorType: 'admin',
+        actorId,
+        limit: typeof limit === 'number' ? limit : Number(limit),
+      });
+
+      return res.status(200).json({
+        count: results.length,
+        results,
+      });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to reconcile pending payouts'));
     }
   });
 
