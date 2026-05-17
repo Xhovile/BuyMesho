@@ -33,7 +33,7 @@ function ensurePayoutLifecycleSchema(): void {
     );
 
     CREATE TABLE IF NOT EXISTS payout_events (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
       payout_id TEXT NOT NULL,
       seller_id TEXT NOT NULL,
       event_type TEXT NOT NULL,

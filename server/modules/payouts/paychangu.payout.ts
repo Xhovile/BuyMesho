@@ -376,7 +376,6 @@ async function executeStructuredPayChanguPayout(
   input: ExecutePayChanguPayoutInput,
   resolved: ResolvedPayChanguPayoutConfig,
 ): Promise<PayChanguPayoutExecutionResult> {
-  const resolved = resolveConfig(config);
   const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, input.attemptNo);
   const providerReference = buildPayoutReference(input.payoutId);
   const destinationType = input.destinationType ?? 'bank';
@@ -524,7 +523,9 @@ export async function listPayChanguMobileMoneyOperators(
   );
 
   if (!ok) {
-    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText || `PayChangu mobile money operator lookup failed (${status})`;
+    const message =
+      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+      `PayChangu mobile money operator lookup failed (${status})`;
     throw new Error(message);
   }
 
@@ -542,7 +543,9 @@ export async function listPayChanguPayoutBanks(
   );
 
   if (!ok) {
-    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText || `PayChangu bank lookup failed (${status})`;
+    const message =
+      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+      `PayChangu bank lookup failed (${status})`;
     throw new Error(message);
   }
 
@@ -594,7 +597,9 @@ export async function getPayChanguPayoutStatus(
   const { payload, ok, rawText, status } = await getJson(url, resolved.paychanguSecretKey);
 
   if (!ok) {
-    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText || `PayChangu payout status lookup failed (${status})`;
+    const message =
+      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+      `PayChangu payout status lookup failed (${status})`;
     throw new Error(message);
   }
 
@@ -641,7 +646,9 @@ export async function getPayChanguPayoutBalance(
   );
 
   if (!ok) {
-    const message = extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText || `PayChangu balance lookup failed (${status})`;
+    const message =
+      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+      `PayChangu balance lookup failed (${status})`;
     throw new Error(message);
   }
 
