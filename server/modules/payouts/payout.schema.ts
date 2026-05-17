@@ -45,6 +45,22 @@ function ensurePayoutLifecycleSchema(): void {
       FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS payout_adjustments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      payout_id TEXT NOT NULL,
+      seller_id TEXT NOT NULL,
+      adjustment_type TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      currency TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      actor_type TEXT NOT NULL,
+      actor_id TEXT,
+      provider_reference TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE,
+      FOREIGN KEY (seller_id) REFERENCES sellers(uid) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS seller_payout_account_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       seller_uid TEXT NOT NULL,
@@ -74,12 +90,23 @@ function ensurePayoutLifecycleSchema(): void {
   ensureColumn('payouts', 'raw_request', 'TEXT');
   ensureColumn('payouts', 'raw_response', 'TEXT');
   ensureColumn('payouts', 'processed_by', 'TEXT');
+  ensureColumn('payouts', 'gross_amount', 'INTEGER');
+  ensureColumn('payouts', 'platform_fee_amount', 'INTEGER');
+  ensureColumn('payouts', 'processing_fee_amount', 'INTEGER');
+  ensureColumn('payouts', 'reserve_amount', 'INTEGER');
+  ensureColumn('payouts', 'reserve_cap_amount', 'INTEGER');
+  ensureColumn('payouts', 'manual_adjustment_amount', 'INTEGER');
+  ensureColumn('payouts', 'net_amount', 'INTEGER');
+  ensureColumn('payouts', 'formula_snapshot', 'TEXT');
+  ensureColumn('payouts', 'last_adjustment_id', 'TEXT');
   ensureColumn('sellers', 'is_suspended', 'INTEGER NOT NULL DEFAULT 0');
 
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_attempts_payout_id ON payout_attempts (payout_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_attempts_status ON payout_attempts (status, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_events_payout_id ON payout_events (payout_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_events_seller_id ON payout_events (seller_id, created_at DESC)`);
+  ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_adjustments_payout_id ON payout_adjustments (payout_id, created_at DESC)`);
+  ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_adjustments_seller_id ON payout_adjustments (seller_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid ON seller_payout_account_events (seller_uid, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id ON payouts (destination_account_id)`);
 }
