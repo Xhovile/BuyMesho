@@ -1,6 +1,6 @@
 # Seller payout implementation plan
 
-_Last reviewed: 2026-05-15_
+_Last reviewed: 2026-05-17_
 
 ## Current state in BuyMesho
 
@@ -12,6 +12,37 @@ Buyer payments are already represented in the local payment and escrow flow:
 4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local `eligible` payout candidate for the released escrow, and moves the order status to `fulfilled`.
 
 The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only creates the local payout candidate; it does not call PayChangu, store seller payout destinations, create provider-attempt history, verify payout webhooks, or reconcile PayChangu payout status.
+
+## Scope alignment
+
+This plan follows the frozen decisions in `docs/structure-completion-gate.md` and the launch interpretation in `docs/payout-launch-contract-summary.md`.
+
+The launch scope covers:
+
+- seller net payout formula,
+- 2% platform fee,
+- 6% reserve cap,
+- eligibility gating,
+- technical-failure-only retries,
+- admin override normalization,
+- audit coverage,
+- seller/admin visibility,
+- and regression-tested payout behavior.
+
+The intentionally deferred Phase 2 items are:
+
+- provider-fee ingestion into payout calculations,
+- manual adjustment APIs,
+- signed/manual adjustment approval workflows,
+- fraud-engine integration,
+- dynamic risk scoring,
+- category-specific reserve policies,
+- first-time seller reserve multipliers,
+- long-term payout archive policy,
+- advanced provider reconciliation tooling,
+- circuit-breaker orchestration for prolonged provider downtime,
+- advanced concurrent retry deduplication at route level,
+- and full downstream provider-failure simulation after escrow release.
 
 ## PayChangu source links
 
