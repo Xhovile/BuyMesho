@@ -2,7 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { hasAdminAccess } from '../../auth/adminAccess.js';
 import { getPaymentDb } from '../../sqlite.js';
 import { payoutService } from '../payouts/payout.service.js';
-import { PAYOUT_POLICY, isRetryableFailureCode } from '../payouts/payout.policy.js';
+import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return {
@@ -16,6 +16,123 @@ function requireAdmin(req: express.Request, res: express.Response): boolean {
     return false;
   }
   return true;
+}
+
+function normalizeText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function normalizeAmount(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw new Error('amount must be a non-negative number');
+  }
+  return Math.round(parsed);
+}
+
+function parseJsonObject(value: string | null | undefined): Record<string, unknown> | null {
+  if (!value) return null;
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+function getGrossAmount(row: Record<string, unknown>): number {
+  const fromColumn = Number(row.gross_amount ?? 0);
+  if (Number.isFinite(fromColumn) && fromColumn > 0) {
+    return Math.round(fromColumn);
+  }
+
+  const snapshot = parseJsonObject((row.raw_request as string | null | undefined) ?? null);
+  const payoutFormula = snapshot?.payoutFormula && typeof snapshot.payoutFormula === 'object' ? snapshot.payoutFormula as Record<string, unknown> : null;
+  const grossFromSnapshot = Number(payoutFormula?.grossAmount ?? snapshot?.releaseAmount ?? row.amount ?? 0);
+  if (Number.isFinite(grossFromSnapshot) && grossFromSnapshot > 0) {
+    return Math.round(grossFromSnapshot);
+  }
+
+  return Math.round(Number(row.amount ?? 0));
+}
+
+function getCurrentFormulaSnapshot(row: Record<string, unknown>): Record<string, unknown> {
+  const existingSnapshot = parseJsonObject((row.formula_snapshot as string | null | undefined) ?? null);
+  if (existingSnapshot) {
+    return existingSnapshot;
+  }
+
+  const rawRequest = parseJsonObject((row.raw_request as string | null | undefined) ?? null);
+  const payoutFormula = rawRequest?.payoutFormula && typeof rawRequest.payoutFormula === 'object'
+    ? rawRequest.payoutFormula as Record<string, unknown>
+    : null;
+
+  return payoutFormula ?? {};
+}
+
+function insertPayoutAdjustment(params: {
+  payoutId: string;
+  sellerId: string;
+  adjustmentType: string;
+  amount: number;
+  currency: string;
+  reason: string;
+  actorType: 'admin';
+  actorId: string | null;
+  providerReference?: string | null;
+}): number {
+  const db = getPaymentDb();
+  const result = db.prepare(
+    `INSERT INTO payout_adjustments (
+      payout_id,
+      seller_id,
+      adjustment_type,
+      amount,
+      currency,
+      reason,
+      actor_type,
+      actor_id,
+      provider_reference,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    params.payoutId,
+    params.sellerId,
+    params.adjustmentType,
+    params.amount,
+    params.currency,
+    params.reason,
+    params.actorType,
+    params.actorId,
+    params.providerReference ?? null,
+    new Date().toISOString(),
+  );
+  return Number(result.lastInsertRowid);
+}
+
+function recalculatePayoutFinancials(row: Record<string, unknown>, next: {
+  processingFeeAmount?: number;
+  manualAdjustmentAmount?: number;
+  reserveAmount?: number;
+}): ReturnType<typeof calculatePayoutFormula> {
+  const grossAmount = getGrossAmount(row);
+  const currentSnapshot = getCurrentFormulaSnapshot(row);
+  const processingFeeAmount = normalizeAmount(next.processingFeeAmount ?? row.processing_fee_amount ?? currentSnapshot.processingFeeAmount ?? 0);
+  const manualAdjustmentAmount = normalizeAmount(next.manualAdjustmentAmount ?? row.manual_adjustment_amount ?? currentSnapshot.manualAdjustmentAmount ?? 0);
+  const reserveAmount = normalizeAmount(next.reserveAmount ?? row.reserve_amount ?? currentSnapshot.reserveAmount ?? 0);
+
+  return calculatePayoutFormula({
+    grossAmount,
+    processingFeeAmount,
+    reserveAmount,
+    manualAdjustmentAmount,
+    currency: String(row.currency ?? 'MWK'),
+  });
 }
 
 export function createPaymentAdminRouter(requireAuth: RequestHandler): express.Router {
@@ -144,6 +261,15 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.failed_at AS failedAt,
           p.created_at AS createdAt,
           p.updated_at AS updatedAt,
+          p.gross_amount AS grossAmount,
+          p.platform_fee_amount AS platformFeeAmount,
+          p.processing_fee_amount AS processingFeeAmount,
+          p.reserve_amount AS reserveAmount,
+          p.reserve_cap_amount AS reserveCapAmount,
+          p.manual_adjustment_amount AS manualAdjustmentAmount,
+          p.net_amount AS netAmount,
+          p.formula_snapshot AS formulaSnapshot,
+          p.last_adjustment_id AS lastAdjustmentId,
           (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attemptCount,
           (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
@@ -151,7 +277,8 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
           (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
           (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
-          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount
+          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
+          (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
         FROM payouts p
         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
         ORDER BY p.created_at DESC
@@ -224,6 +351,153 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       return res.status(200).json({ summary, attempts });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to load payout summary'));
+    }
+  });
+
+  router.get('/payouts/:payoutId/adjustments', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const payoutId = String(req.params.payoutId || '').trim();
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
+      }
+      const db = getPaymentDb();
+      const rows = db.prepare(
+        `SELECT id, payout_id AS payoutId, seller_id AS sellerId, adjustment_type AS adjustmentType, amount, currency, reason, actor_type AS actorType, actor_id AS actorId, provider_reference AS providerReference, created_at AS createdAt
+         FROM payout_adjustments
+         WHERE payout_id = ?
+         ORDER BY created_at DESC, id DESC`,
+      ).all(payoutId);
+      return res.status(200).json({ adjustments: rows });
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to load payout adjustments'));
+    }
+  });
+
+  router.post('/payouts/:payoutId/adjustments', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const payoutId = String(req.params.payoutId || '').trim();
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
+      }
+
+      const adjustmentType = normalizeText(req.body?.adjustmentType)?.toLowerCase();
+      if (adjustmentType !== 'processing_fee' && adjustmentType !== 'manual_adjustment') {
+        return res.status(400).json({ error: 'adjustmentType must be processing_fee or manual_adjustment' });
+      }
+
+      const reason = normalizeText(req.body?.reason);
+      if (!reason) {
+        return res.status(400).json({ error: 'reason is required' });
+      }
+
+      const amount = normalizeAmount(req.body?.amount);
+      const providerReference = normalizeText(req.body?.providerReference);
+      const actorId = String(req.user?.uid || 'admin').trim();
+      const db = getPaymentDb();
+      const payoutRow = db.prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`).get(payoutId) as Record<string, unknown> | undefined;
+      if (!payoutRow) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+
+      const currentStatus = String(payoutRow.status ?? '').toLowerCase();
+      if (currentStatus === 'paid' || currentStatus === 'cancelled') {
+        return res.status(400).json({ error: `Cannot adjust a payout that is ${currentStatus}` });
+      }
+      if (currentStatus === 'processing') {
+        return res.status(400).json({ error: 'Cannot adjust a payout while processing' });
+      }
+
+      const currentProcessingFeeAmount = Number(payoutRow.processing_fee_amount ?? 0);
+      const currentManualAdjustmentAmount = Number(payoutRow.manual_adjustment_amount ?? 0);
+      const nextProcessingFeeAmount = adjustmentType === 'processing_fee'
+        ? currentProcessingFeeAmount + amount
+        : currentProcessingFeeAmount;
+      const nextManualAdjustmentAmount = adjustmentType === 'manual_adjustment'
+        ? currentManualAdjustmentAmount + amount
+        : currentManualAdjustmentAmount;
+
+      const recalculated = recalculatePayoutFinancials(payoutRow, {
+        processingFeeAmount: nextProcessingFeeAmount,
+        manualAdjustmentAmount: nextManualAdjustmentAmount,
+      });
+      const adjustmentId = insertPayoutAdjustment({
+        payoutId,
+        sellerId: String(payoutRow.seller_id ?? ''),
+        adjustmentType,
+        amount,
+        currency: String(payoutRow.currency ?? 'MWK'),
+        reason,
+        actorType: 'admin',
+        actorId,
+        providerReference,
+      });
+
+      db.prepare(
+        `UPDATE payouts
+         SET gross_amount = ?,
+             platform_fee_amount = ?,
+             processing_fee_amount = ?,
+             reserve_amount = ?,
+             reserve_cap_amount = ?,
+             manual_adjustment_amount = ?,
+             net_amount = ?,
+             amount = ?,
+             formula_snapshot = ?,
+             last_adjustment_id = ?,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = ?`,
+      ).run(
+        recalculated.grossAmount,
+        recalculated.platformFeeAmount,
+        recalculated.processingFeeAmount,
+        recalculated.reserveAmount,
+        recalculated.reserveCapAmount,
+        recalculated.manualAdjustmentAmount,
+        recalculated.netAmount,
+        recalculated.netAmount,
+        JSON.stringify(recalculated),
+        adjustmentId,
+        payoutId,
+      );
+
+      payoutService.addEvent({
+        payoutId,
+        sellerId: String(payoutRow.seller_id ?? ''),
+        eventType: 'payout_adjusted',
+        actorType: 'admin',
+        actorId,
+        note: reason,
+        payload: {
+          adjustmentId,
+          adjustmentType,
+          amount,
+          providerReference,
+          recalculated,
+        },
+      });
+
+      const updated = db.prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`).get(payoutId) as Record<string, unknown> | undefined;
+      return res.status(200).json({
+        payout: updated,
+        adjustment: {
+          id: adjustmentId,
+          payoutId,
+          sellerId: String(payoutRow.seller_id ?? ''),
+          adjustmentType,
+          amount,
+          currency: String(payoutRow.currency ?? 'MWK'),
+          reason,
+          actorType: 'admin',
+          actorId,
+          providerReference,
+          createdAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to create payout adjustment'));
     }
   });
 
