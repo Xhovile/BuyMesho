@@ -9,6 +9,8 @@ It exists to separate:
 
 The payout structure on the `copilot/normalize-admin-override-behavior` branch is considered operationally launch-ready within the frozen scope below.
 
+See `docs/structure-completion-gate.md` for the full frozen checklist and the item-by-item launch gate status.
+
 ---
 
 # Launch-complete areas
@@ -18,6 +20,10 @@ The following areas are considered complete for the current payout launch scope:
 - Seller net payout formula
 - 2% platform fee enforcement
 - 6% reserve cap enforcement
+- Provider-fee ingestion into payout calculations
+- Manual adjustment APIs
+- Payout financial snapshot persistence
+- Payout recalculation audit history
 - Eligibility gating
 - Retry policy enforcement
 - Technical-failure-only retry rules
@@ -37,6 +43,7 @@ The following areas are considered complete for the current payout launch scope:
 - Duplicate release protection
 - Seller self-trigger protection
 - Retry tests and payout regression coverage
+- Adjustment recalculation regression coverage
 
 ---
 
@@ -45,12 +52,6 @@ The following areas are considered complete for the current payout launch scope:
 The following items are intentionally deferred from the launch contract.
 
 These are future operational improvements and do not block the current payout implementation.
-
-## Deferred financial infrastructure
-
-- Provider-fee ingestion into payout calculations
-- Advanced manual adjustment APIs
-- Signed/manual adjustment approval workflows
 
 ## Deferred risk infrastructure
 
@@ -66,6 +67,7 @@ These are future operational improvements and do not block the current payout im
 - Circuit-breaker orchestration for prolonged provider downtime
 - Advanced concurrent retry deduplication at route level
 - Full downstream provider-failure simulation after escrow release
+- Signed/manual adjustment approval workflows
 
 ---
 
@@ -116,6 +118,8 @@ The admin payout experience must expose:
 - hold reasons,
 - manual-review reasons,
 - destination verification blockers,
+- adjustment history,
+- payout recalculation visibility,
 - and escalation state.
 
 ---
@@ -128,6 +132,7 @@ The payout system should now be treated as:
 - policy-frozen for launch,
 - audit-capable,
 - retry-governed,
+- financially traceable,
 - and administratively controllable.
 
 Remaining deferred items are phase-2 maturity improvements, not launch blockers.
