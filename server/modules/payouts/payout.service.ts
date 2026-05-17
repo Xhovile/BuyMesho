@@ -1,3 +1,4 @@
+import './payout.schema.js';
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
 import type { MoneyValue } from '../../../src/shared/types/common.js';

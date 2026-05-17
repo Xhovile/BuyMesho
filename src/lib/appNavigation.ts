@@ -12,6 +12,7 @@ export type AppRoute =
   | "safety"
   | "report"
   | "seller"
+  | "seller_payouts"
   | "listing_details"
   | "messages"
   | "create"
@@ -44,6 +45,7 @@ export const TERMS_PATH = "/terms";
 export const SAFETY_PATH = "/safety";
 export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
+export const SELLER_PAYOUTS_PATH = "/seller/payouts";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
 export const CREATE_PATH = "/create";
@@ -331,6 +333,10 @@ export const getAppRouteFromLocation = (
     return "my_listings";
   }
 
+  if (location.pathname === SELLER_PAYOUTS_PATH) {
+    return "seller_payouts";
+  }
+
   if (location.pathname === ADMIN_PATH) {
     return "admin";
   }
@@ -373,22 +379,6 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === SETTINGS_PATH) {
     return "settings";
-  }
-
-  if (location.pathname === PRIVACY_PATH) {
-    return "privacy";
-  }
-
-  if (location.pathname === TERMS_PATH) {
-    return "terms";
-  }
-
-  if (location.pathname === SAFETY_PATH) {
-    return "safety";
-  }
-
-  if (location.pathname === REPORT_PATH) {
-    return "report";
   }
 
   if (location.pathname === SAVED_PATH) {
@@ -551,6 +541,8 @@ export const navigateToSellerProfile = (uid: string) => {
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
+
+export const navigateToSellerPayouts = () => navigateToPath(SELLER_PAYOUTS_PATH);
 
 export const navigateToCreateListing = () => {
   const url = new URL(window.location.href);
