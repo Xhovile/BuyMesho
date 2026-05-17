@@ -193,16 +193,35 @@ export class PayoutRepository {
     return created;
   }
 
-  updateStatus(id: string, status: PayoutStatus, extra: Partial<PayoutRecord> = {}): PayoutRecord | undefined {
+  updateStatus(id: string, status: PayoutStatus, extra: Record<string, unknown> = {}): PayoutRecord | undefined {
     const now = new Date().toISOString();
+
     this.db.prepare(
       `UPDATE payouts
        SET status = ?,
            provider = COALESCE(?, provider),
            provider_charge_id = COALESCE(?, provider_charge_id),
+           provider_reference = COALESCE(?, provider_reference),
+           provider_status = COALESCE(?, provider_status),
+           failure_reason = COALESCE(?, failure_reason),
+           manual_review_reason = COALESCE(?, manual_review_reason),
+           paid_at = COALESCE(?, paid_at),
+           failed_at = COALESCE(?, failed_at),
            updated_at = ?
        WHERE id = ?`,
-    ).run(status, extra.provider ?? null, extra.providerChargeId ?? null, now, id);
+    ).run(
+      status,
+      extra.provider ?? null,
+      extra.providerChargeId ?? null,
+      extra.providerReference ?? null,
+      extra.providerStatus ?? null,
+      extra.failureReason ?? null,
+      extra.manualReviewReason ?? null,
+      extra.paidAt ?? null,
+      extra.failedAt ?? null,
+      now,
+      id,
+    );
 
     return this.findById(id);
   }
@@ -211,24 +230,24 @@ export class PayoutRepository {
     payoutId: string,
     execution: PayChanguPayoutExecutionResult,
   ): PayoutRecord | undefined {
-    const now = new Date().toISOString();
+    const statusExtras: Record<string, unknown> = {
+      provider: execution.provider,
+      providerChargeId: execution.providerChargeId,
+      providerReference: execution.providerReference,
+      providerStatus: execution.status,
+    };
 
-    this.db.prepare(
-      `UPDATE payouts
-       SET status = ?,
-           provider = ?,
-           provider_charge_id = ?,
-           updated_at = ?
-       WHERE id = ?`,
-    ).run(
-      execution.status,
-      execution.provider,
-      execution.providerChargeId,
-      now,
-      payoutId,
-    );
+    if (execution.status === 'paid') {
+      statusExtras.paidAt = new Date().toISOString();
+    }
 
-    return this.findById(payoutId);
+    if (execution.status === 'failed') {
+      statusExtras.failedAt = new Date().toISOString();
+      statusExtras.failureReason = 'Provider payout execution failed';
+      statusExtras.manualReviewReason = 'Provider reported payout failure';
+    }
+
+    return this.updateStatus(payoutId, execution.status, statusExtras);
   }
 
   nextAttemptNo(payoutId: string): number {
@@ -347,6 +366,35 @@ export class PayoutService {
   }
 
   async executePayout(input: ExecutePayoutInput) {
+    const balance = await this.getProviderBalance(input.currency);
+
+    if (balance.availableBalance < input.amount) {
+      const payout = this.repository.updateStatus(input.payoutId, 'pending', {
+        manualReviewReason: 'Insufficient provider payout balance',
+        provider: 'paychangu',
+        providerStatus: 'balance_insufficient',
+      });
+
+      this.repository.addEvent({
+        payoutId: input.payoutId,
+        sellerId: input.sellerId,
+        eventType: 'balance_check_failed',
+        actorType: 'system',
+        note: 'Insufficient provider payout balance',
+        payload: {
+          availableBalance: balance.availableBalance,
+          requestedAmount: input.amount,
+          currency: input.currency,
+        },
+      });
+
+      return {
+        payout,
+        attempt: null,
+        execution: null,
+      };
+    }
+
     const attemptNo = this.repository.nextAttemptNo(input.payoutId);
 
     const execution = await executePayChanguPayout({
@@ -365,9 +413,12 @@ export class PayoutService {
     this.repository.addEvent({
       payoutId: input.payoutId,
       sellerId: input.sellerId,
-      eventType: 'provider_attempt_created',
+      eventType: execution.status === 'failed' ? 'provider_attempt_failed' : 'provider_attempt_created',
       actorType: 'system',
-      note: `Provider attempt ${attemptNo} created`,
+      note:
+        execution.status === 'failed'
+          ? `Provider attempt ${attemptNo} failed`
+          : `Provider attempt ${attemptNo} created`,
       payload: execution.rawResponse,
     });
 

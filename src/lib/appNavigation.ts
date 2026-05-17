@@ -440,6 +440,26 @@ export const consumeAuthReturnPath = (fallbackPath: string = PROFILE_PATH) => {
   return storedReturnPath ?? fallbackPath;
 };
 
+const getCurrentAppPath = () =>
+  `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+export const storeAuthReturnPath = (path?: string) => {
+  if (typeof window === "undefined") return;
+  const sanitized = sanitizeInternalReturnPath(path ?? getCurrentAppPath());
+  if (!sanitized) return;
+  sessionStorage.setItem(AUTH_RETURN_PATH_STORAGE_KEY, sanitized);
+};
+
+export const navigateToLoginWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(LOGIN_PATH);
+};
+
+export const navigateToSignupWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(SIGNUP_PATH);
+};
+
 export type SettingsSection = "privacy" | "terms" | "safety" | "report";
 
 export const navigateToSettingsSection = (section: SettingsSection) => {

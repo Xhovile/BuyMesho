@@ -101,6 +101,22 @@ interface ResolvedPayChanguPayoutConfig {
   paychanguTimeoutMs: number;
 }
 
+export interface PayChanguPayoutConfig {
+  paychanguSecretKey?: string;
+  paychanguBaseUrl?: string;
+  paychanguPayoutCreatePath?: string;
+  paychanguPayoutBalancePath?: string;
+  paychanguTimeoutMs?: number;
+}
+
+interface ResolvedPayChanguPayoutConfig {
+  paychanguSecretKey: string;
+  paychanguBaseUrl: string;
+  paychanguPayoutCreatePath: string;
+  paychanguPayoutBalancePath: string;
+  paychanguTimeoutMs: number;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -360,6 +376,7 @@ async function executeStructuredPayChanguPayout(
   input: ExecutePayChanguPayoutInput,
   resolved: ResolvedPayChanguPayoutConfig,
 ): Promise<PayChanguPayoutExecutionResult> {
+  const resolved = resolveConfig(config);
   const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, input.attemptNo);
   const providerReference = buildPayoutReference(input.payoutId);
   const destinationType = input.destinationType ?? 'bank';

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import { navigateToAdmin } from "./lib/appNavigation";
+import AdminPayoutQueue from "./AdminPayoutQueue";
 
 type PaymentRow = {
   id: string;
@@ -468,7 +469,8 @@ export default function AdminPaymentsPage() {
             </div>
           </section>
         ) : null}
-
+       <AdminPayoutQueue />
+        
         <section className="space-y-3">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-500">
