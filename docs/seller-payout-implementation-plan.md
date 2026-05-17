@@ -33,7 +33,7 @@ The launch scope covers:
 - seller/admin visibility,
 - and regression-tested payout behavior.
 
-The intentionally deferred Phase 2 items are:
+The intentionally deferred Phase 2 items (//The payout rules are no longer changing, Seller payout path is live and working end-to-end) are:
 
 - signed/manual adjustment approval workflows,
 - fraud-engine integration,
