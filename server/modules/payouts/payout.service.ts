@@ -5,7 +5,9 @@ import type { MoneyValue } from '../../../src/shared/types/common.js';
 import {
   executePayChanguPayout,
   getPayChanguPayoutBalance,
+  buildPayChanguPayoutChargeId,
   type PayChanguPayoutExecutionResult,
+  type PayChanguPayoutFailureClass,
 } from './paychangu.payout.js';
 import {
   PAYOUT_POLICY,
@@ -413,6 +415,7 @@ export class PayoutService {
     destinationValue?: string | null;
     destinationProviderRefId?: string | null;
     destinationAccountName?: string | null;
+    currentFailureReason?: string | null;
   } {
     const row = getPaymentDb()
       .prepare(
