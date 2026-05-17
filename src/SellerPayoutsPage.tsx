@@ -101,8 +101,8 @@ function money(amount: number, currency = "MWK") {
 }
 
 function statusTone(status: string) {
-  if (["paid"].includes(status)) return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (["failed"].includes(status)) return "bg-red-50 text-red-700 border-red-200";
+  if (status === "paid") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (status === "failed") return "bg-red-50 text-red-700 border-red-200";
   if (["pending", "queued", "processing", "eligible", "held"].includes(status)) return "bg-amber-50 text-amber-700 border-amber-200";
   return "bg-zinc-100 text-zinc-700 border-zinc-200";
 }
@@ -294,13 +294,20 @@ export default function SellerPayoutsPage() {
     return (
       <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
         <div className="max-w-4xl mx-auto px-4 py-10">
-          <button type="button" onClick={() => navigateToPath(SETTINGS_PATH)} className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900">
+          <button
+            type="button"
+            onClick={() => navigateToPath(SETTINGS_PATH)}
+            className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900"
+          >
             <ArrowLeft className="w-4 h-4" />
-            Back to settings
+            Back
           </button>
+
           <div className="mt-6 rounded-[28px] border border-zinc-200/80 bg-white p-8 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <h1 className="text-3xl font-black tracking-tight">Seller payouts</h1>
-            <p className="mt-3 text-sm text-zinc-600">You are not marked as a seller yet. Seller payout tools appear here after the account is approved as a seller.</p>
+            <p className="mt-3 text-sm text-zinc-600">
+              You are not marked as a seller yet. Seller payout tools appear here after the account is approved as a seller.
+            </p>
           </div>
         </div>
       </div>
@@ -308,6 +315,8 @@ export default function SellerPayoutsPage() {
   }
 
   const activeDestinations = destinations.filter((item) => item.isActive);
+  const canEditSettings = permissions?.editPayoutSettings !== false;
+  const canViewHistory = permissions?.viewPayoutHistory !== false;
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-[#f4f5f7] text-zinc-900">
@@ -315,11 +324,19 @@ export default function SellerPayoutsPage() {
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">
-            <button type="button" onClick={() => navigateToPath(SETTINGS_PATH)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none">
+            <button
+              type="button"
+              onClick={() => navigateToPath(SETTINGS_PATH)}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none"
+            >
               <ArrowLeft className="w-4 h-4" />
-              Settings
+              Back
             </button>
-            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none">
+            <button
+              type="button"
+              onClick={() => void handleRefresh()}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none"
+            >
               {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </button>
@@ -336,23 +353,41 @@ export default function SellerPayoutsPage() {
               <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
                 Set up your payout destination, track payout status, and keep a clean view of what is pending, paid, or failed.
               </p>
+
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-zinc-600">
-                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">Active destinations: {summary.activeDestinations}</span>
-                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">Default: {summary.defaultDestination ? summary.defaultDestination.maskedAccount : "Not set"}</span>
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
+                  Active destinations: {summary.activeDestinations}
+                </span>
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
+                  Default: {summary.defaultDestination ? summary.defaultDestination.maskedAccount : "Not set"}
+                </span>
+                <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
+                  Permissions: {canEditSettings ? "Edit enabled" : "View only"}
+                </span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:min-w-[360px]">
-              <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} accent="from-zinc-100 to-white" />
-              <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} accent="from-emerald-50 to-white" />
-              <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} accent="from-amber-50 to-white" />
-              <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} accent="from-red-50 to-white" />
+            <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-3 shadow-sm lg:min-w-[420px]">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-zinc-200">
+                <StatCard label="Total payout volume" value={money(summary.total)} icon={<Wallet className="w-4 h-4" />} />
+                <StatCard label="Paid out" value={money(summary.paid)} icon={<BadgeCheck className="w-4 h-4" />} />
+                <StatCard label="Pending" value={money(summary.pending)} icon={<ClipboardList className="w-4 h-4" />} />
+                <StatCard label="Failed" value={money(summary.failed)} icon={<AlertTriangle className="w-4 h-4" />} />
+              </div>
             </div>
           </div>
         </section>
 
         {notice ? (
-          <div className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${notice.type === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : notice.type === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-amber-200 bg-amber-50 text-amber-800"}`}>
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
+              notice.type === "success"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : notice.type === "error"
+                  ? "border-red-200 bg-red-50 text-red-800"
+                  : "border-amber-200 bg-amber-50 text-amber-800"
+            }`}
+          >
             {notice.message}
           </div>
         ) : null}
@@ -363,7 +398,9 @@ export default function SellerPayoutsPage() {
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout setup</p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight">Add or update your payout destination.</h2>
-                <p className="mt-2 text-sm text-zinc-600">Choose mobile money or bank, then store the payout destination securely on the server.</p>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Choose mobile money or bank, then store the payout destination securely on the server.
+                </p>
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-right">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Active destinations</p>
@@ -374,53 +411,107 @@ export default function SellerPayoutsPage() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Destination type</span>
-                <select value={form.destinationType} onChange={(e) => setForm((current) => ({ ...current, destinationType: e.target.value as DestinationType }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900">
+                <select
+                  value={form.destinationType}
+                  onChange={(e) => setForm((current) => ({ ...current, destinationType: e.target.value as DestinationType }))}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                >
                   <option value="mobile_money">Mobile money</option>
                   <option value="bank">Bank</option>
                 </select>
               </label>
+
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider / operator</span>
-                <input value={form.providerName} onChange={(e) => setForm((current) => ({ ...current, providerName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="e.g. TNM, Airtel, NBS" />
+                <input
+                  value={form.providerName}
+                  onChange={(e) => setForm((current) => ({ ...current, providerName: e.target.value }))}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                  placeholder="e.g. TNM, Airtel, NBS"
+                />
               </label>
+
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider ref ID</span>
-                <input value={form.providerRefId} onChange={(e) => setForm((current) => ({ ...current, providerRefId: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Optional provider reference" />
+                <input
+                  value={form.providerRefId}
+                  onChange={(e) => setForm((current) => ({ ...current, providerRefId: e.target.value }))}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                  placeholder="Optional provider reference"
+                />
               </label>
+
               <label className="space-y-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account holder name</span>
-                <input value={form.accountName} onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Name on bank account or wallet" />
+                <input
+                  value={form.accountName}
+                  onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                  placeholder="Name on bank account or wallet"
+                />
               </label>
+
               {form.destinationType === "bank" ? (
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account number</span>
-                  <input value={form.accountNumber} onChange={(e) => setForm((current) => ({ ...current, accountNumber: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Bank account number" />
+                  <input
+                    value={form.accountNumber}
+                    onChange={(e) => setForm((current) => ({ ...current, accountNumber: e.target.value }))}
+                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                    placeholder="Bank account number"
+                  />
                 </label>
               ) : (
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Mobile number</span>
-                  <input value={form.mobile} onChange={(e) => setForm((current) => ({ ...current, mobile: e.target.value }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="Mobile wallet number" />
+                  <input
+                    value={form.mobile}
+                    onChange={(e) => setForm((current) => ({ ...current, mobile: e.target.value }))}
+                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                    placeholder="Mobile wallet number"
+                  />
                 </label>
               )}
+
               <label className="space-y-2 sm:col-span-2">
                 <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Currency</span>
-                <input value={form.currency} onChange={(e) => setForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))} className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900" placeholder="MWK" />
+                <input
+                  value={form.currency}
+                  onChange={(e) => setForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))}
+                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
+                  placeholder="MWK"
+                />
               </label>
             </div>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button type="button" onClick={() => setForm((current) => ({ ...current, isDefault: !current.isDefault }))} className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold ${form.isDefault ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"}`}>
+              <button
+                type="button"
+                onClick={() => setForm((current) => ({ ...current, isDefault: !current.isDefault }))}
+                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold ${
+                  form.isDefault ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
+                }`}
+              >
                 <ShieldCheck className="w-4 h-4" />
                 {form.isDefault ? "Default destination" : "Make default"}
               </button>
 
-              <button type="button" onClick={handleSaveDestination} disabled={savingDestination} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60">
+              <button
+                type="button"
+                onClick={handleSaveDestination}
+                disabled={savingDestination || !canEditSettings}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
+              >
                 {savingDestination ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {selectedDestinationId ? "Update destination" : "Save destination"}
               </button>
 
               {selectedDestinationId ? (
-                <button type="button" onClick={resetForm} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+                >
                   <Trash2 className="w-4 h-4" />
                   Cancel edit
                 </button>
@@ -473,15 +564,26 @@ export default function SellerPayoutsPage() {
                           <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${destinationTone(destination.verificationStatus)}`}>
                             {destination.verificationStatus}
                           </span>
-                          {destination.isDefault ? <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">Default</span> : null}
+                          {destination.isDefault ? (
+                            <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">
+                              Default
+                            </span>
+                          ) : null}
                         </div>
+
                         <h3 className="mt-3 text-base font-black tracking-tight">{destination.accountName}</h3>
                         <p className="mt-1 inline-flex items-center gap-2 text-sm text-zinc-600">
                           {destination.destinationType === "bank" ? <Building2 className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
                           {destination.providerName} · {destination.maskedAccount}
                         </p>
                       </div>
-                      <button type="button" onClick={() => startEdit(destination)} className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50">
+
+                      <button
+                        type="button"
+                        onClick={() => startEdit(destination)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
+                        disabled={!canEditSettings}
+                      >
                         Edit
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
@@ -518,14 +620,26 @@ export default function SellerPayoutsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 bg-white">
-                    {payouts.length === 0 ? (
+                    {!canViewHistory ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
+                        <td colSpan={4} className="px-4 py-6 text-zinc-500">
+                          You do not have permission to view payout history.
+                        </td>
+                      </tr>
+                    ) : payouts.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-4 py-6 text-zinc-500">
+                          No payout activity yet.
+                        </td>
                       </tr>
                     ) : (
                       payouts.map((payout) => (
                         <tr key={payout.id} className="align-top">
-                          <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>{payout.status}</span></td>
+                          <td className="px-4 py-4">
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>
+                              {payout.status}
+                            </span>
+                          </td>
                           <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
                           <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
                           <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
@@ -543,14 +657,17 @@ export default function SellerPayoutsPage() {
   );
 }
 
-function StatCard({ label, value, icon, accent }: { label: string; value: string; icon: ReactNode; accent: string }) {
+function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className={`flex min-h-[108px] flex-col overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-gradient-to-br ${accent} px-4 py-4 shadow-sm`}>
+    <div className="flex min-h-[104px] flex-col justify-between px-4 py-4 sm:px-5 sm:py-5">
       <div className="flex items-center justify-between gap-3">
-        <div className="rounded-xl border border-zinc-200/80 bg-white p-2 text-zinc-700 shadow-sm">{icon}</div>
+        <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700 shadow-sm">{icon}</div>
       </div>
-      <p className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
-      <p className="mt-1 text-lg font-black tracking-tight text-zinc-900">{value}</p>
+
+      <div className="mt-4">
+        <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
+        <p className="mt-1 text-lg font-black tracking-tight text-zinc-900">{value}</p>
+      </div>
     </div>
   );
 }
