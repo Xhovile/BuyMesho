@@ -19,7 +19,7 @@ import {
 import BrandMark from "./components/BrandMark";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
-import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
+import { navigateToPath} from "./lib/appNavigation";
 
 type DestinationType = "mobile_money" | "bank";
 
@@ -296,7 +296,7 @@ export default function SellerPayoutsPage() {
         <div className="max-w-4xl mx-auto px-4 py-10">
           <button
             type="button"
-            onClick={() => navigateToPath(SETTINGS_PATH)}
+            onClick={() => navigateToPath()}
             className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900"
           >
             <ArrowLeft className="w-4 h-4" />
