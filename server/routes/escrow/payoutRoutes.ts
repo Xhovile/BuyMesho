@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, 
 import { getPaymentDb } from '../../sqlite.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import {
+  type AdminOverrideAction,
   canApprovePayoutOverride,
   canEditPayoutSettings,
   canRequestPayoutRetry,
@@ -12,7 +13,7 @@ import {
   payoutService,
   type PayoutPermissionActor,
 } from '../../modules/payouts/payout.service.js';
-import { PAYOUT_POLICY } from '../../modules/payouts/payout.policy.js';
+import { PAYOUT_POLICY, isRetryableFailureCode } from '../../modules/payouts/payout.policy.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 
 const DEFAULT_CURRENCY = 'MWK';
@@ -78,6 +79,14 @@ function normalizeText(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const text = String(value).trim();
   return text ? text : null;
+}
+
+function normalizeOverrideAction(value: unknown): AdminOverrideAction {
+  const action = normalizeText(value)?.toLowerCase();
+  if (action === 'hold' || action === 'mark_paid' || action === 'mark_failed') {
+    return action;
+  }
+  throw new Error('action must be one of: hold, mark_paid, mark_failed');
 }
 
 function normalizeCurrency(value: unknown): string {
@@ -326,6 +335,87 @@ function listSellerDestinations(sellerId: string): SellerPayoutDestinationRecord
     )
     .all(sellerId) as SellerPayoutDestinationRow[];
   return rows.map(rowToSellerPayoutDestination);
+}
+
+function listSellerPayoutOperationalView(sellerId: string) {
+  const db = getPaymentDb();
+  const rows = db.prepare(
+    `SELECT
+       p.id,
+       p.seller_id,
+       p.order_id,
+       p.escrow_id,
+       p.release_entry_id,
+       p.amount,
+       p.currency,
+       p.status,
+       p.provider,
+       p.provider_charge_id,
+       p.provider_status,
+       p.failure_reason,
+       p.manual_review_reason,
+       p.requested_by,
+       p.requested_at,
+       p.created_at,
+       p.updated_at,
+       spa.verification_status AS destination_verification_status,
+       spa.is_active AS destination_is_active,
+       (
+         SELECT COALESCE(MAX(attempt_no), 0)
+         FROM payout_attempts pa
+         WHERE pa.payout_id = p.id
+       ) AS retry_count
+     FROM payouts p
+     LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+     WHERE p.seller_id = ?
+     ORDER BY p.created_at DESC`,
+  ).all(sellerId) as Array<Record<string, unknown>>;
+
+  return rows.map((row) => {
+    const status = String(row.status ?? 'pending').toLowerCase();
+    const destinationStatus = String(row.destination_verification_status ?? 'missing').toLowerCase();
+    const failureReason = (row.failure_reason as string | null) ?? null;
+    const manualReviewReason = (row.manual_review_reason as string | null) ?? null;
+    const retryCount = Number(row.retry_count ?? 0);
+    const verificationBlockers: string[] = [];
+
+    if (destinationStatus === 'missing') {
+      verificationBlockers.push('Update destination to continue');
+    } else if (destinationStatus !== 'verified' || Number(row.destination_is_active ?? 0) !== 1) {
+      verificationBlockers.push('Destination pending verification');
+    }
+
+    const retryAllowed =
+      status === 'failed' &&
+      retryCount < PAYOUT_POLICY.maxRetryCount &&
+      isRetryableFailureCode(failureReason);
+
+    return {
+      id: row.id,
+      sellerId: row.seller_id,
+      orderId: row.order_id,
+      escrowId: row.escrow_id,
+      releaseEntryId: row.release_entry_id,
+      amount: row.amount,
+      currency: row.currency,
+      status,
+      provider: row.provider,
+      providerChargeId: row.provider_charge_id,
+      providerStatus: row.provider_status,
+      requestedBy: row.requested_by,
+      requestedAt: row.requested_at,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      destinationStatus,
+      holdReason: status === 'held' ? manualReviewReason : null,
+      lastFailureReason: failureReason,
+      retryAllowed,
+      retryCount,
+      manualReviewPending: status === 'held' || !!manualReviewReason,
+      verificationBlockers,
+      lastUpdatedTimestamp: row.updated_at,
+    };
+  });
 }
 
 function addDestinationEvent(input: {
@@ -872,14 +962,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     try {
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertHistoryAccess(req, sellerId);
-      const db = getPaymentDb();
-      const rows = db
-        .prepare(
-          `SELECT * FROM payouts
-           WHERE seller_id = ?
-           ORDER BY created_at DESC`,
-        )
-        .all(sellerId);
+      const rows = listSellerPayoutOperationalView(sellerId);
       return res.json({ payouts: rows });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load payout history';
@@ -888,7 +971,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
-  router.post('/payouts/:sellerId/retry', payoutLimiter, requireAuth, async (req, res) => {
+  router.post('/:sellerId/retry', payoutLimiter, requireAuth, async (req, res) => {
     try {
       const sellerId = normalizeDestinationId(req.params.sellerId);
       assertRetryAccess(req, sellerId);
@@ -911,30 +994,33 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
-  router.post('/payouts/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
+  router.post('/:sellerId/override', payoutLimiter, requireAuth, (req, res) => {
     try {
       assertOverrideAccess(req);
+      const sellerId = normalizeDestinationId(req.params.sellerId);
       const payoutId = normalizeDestinationId(req.body?.payoutId);
-      const reason = normalizeText(req.body?.reason) ?? 'Manual override';
-      const action = normalizeText(req.body?.action) ?? 'hold';
+      const reason = normalizeText(req.body?.reason);
+      if (!reason) {
+        return res.status(400).json({ error: 'reason is required' });
+      }
+      const action = normalizeOverrideAction(req.body?.action);
       const actorId = req.user?.uid ?? 'admin';
-
-      if (action === 'mark_paid') {
-        const payout = payoutService.markPaid(payoutId, actorId, reason);
-        if (!payout) return res.status(404).json({ error: 'Payout not found' });
-        return res.status(200).json({ payout });
-      }
-      if (action === 'mark_failed') {
-        const payout = payoutService.markFailed(payoutId, actorId, reason);
-        if (!payout) return res.status(404).json({ error: 'Payout not found' });
-        return res.status(200).json({ payout });
-      }
-      const payout = payoutService.markHeld(payoutId, actorId, reason);
+      const payout = payoutService.applyAdminOverride({
+        payoutId,
+        sellerId,
+        action,
+        actorId,
+        reason,
+      });
       if (!payout) return res.status(404).json({ error: 'Payout not found' });
       return res.status(200).json({ payout });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to approve payout override';
-      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      const status = /Unauthorized/i.test(message)
+        ? 401
+        : /action must be one of|reason is required|Invalid admin override transition|does not belong to the provided seller/i.test(message)
+          ? 400
+          : 403;
       return res.status(status).json({ error: message });
     }
   });

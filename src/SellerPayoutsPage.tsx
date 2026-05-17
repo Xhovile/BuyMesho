@@ -19,7 +19,8 @@ import {
 import BrandMark from "./components/BrandMark";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
-import { navigateToPath} from "./lib/appNavigation";
+import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
+import { sellerOperationalSignals } from "./modules/payouts/uiModel";
 
 type DestinationType = "mobile_money" | "bank";
 
@@ -56,8 +57,14 @@ type PayoutRecord = {
   provider: string | null;
   providerChargeId: string | null;
   providerStatus?: string | null;
-  failure_reason?: string | null;
-  manual_review_reason?: string | null;
+  destinationStatus?: string;
+  holdReason?: string | null;
+  lastFailureReason?: string | null;
+  retryAllowed?: boolean;
+  retryCount?: number;
+  manualReviewPending?: boolean;
+  verificationBlockers?: string[];
+  lastUpdatedTimestamp?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;
   createdAt: string;
@@ -662,10 +669,11 @@ export default function SellerPayoutsPage() {
                 <table className="w-full divide-y divide-zinc-200 text-left text-sm">
                   <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
                     <tr>
-                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Status</th>
-                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Amount</th>
-                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Order</th>
-                      <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Updated</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Status</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Amount</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Order</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Operational view</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Updated</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 bg-white">
@@ -677,12 +685,18 @@ export default function SellerPayoutsPage() {
                       </tr>
                     ) : payouts.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-zinc-500">
-                          No payout activity yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      payouts.map((payout) => (
+                          <td colSpan={5} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
+                        </tr>
+                      ) : (
+                      payouts.map((payout) => {
+                        const operationalSignals = sellerOperationalSignals({
+                          status: payout.status,
+                          destinationStatus: payout.destinationStatus,
+                          retryAllowed: payout.retryAllowed,
+                          manualReviewPending: payout.manualReviewPending,
+                          verificationBlockers: payout.verificationBlockers,
+                        });
+                        return (
                         <tr key={payout.id} className="align-top">
                           <td className="px-4 py-4">
                             <div className="space-y-2">
@@ -696,14 +710,23 @@ export default function SellerPayoutsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
+                          <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
                           <td className="px-4 py-4 text-zinc-600">
-                            <div>{payout.orderId || payout.escrowId || "—"}</div>
-                            <div className="mt-1 text-xs font-semibold text-zinc-700">{sellerFacingPayoutSummary(payout).title}</div>
-                            <div className="mt-1 text-xs text-zinc-500">{sellerFacingPayoutSummary(payout).detail}</div>
+                            <div className="space-y-1">
+                              {operationalSignals.length === 0 ? (
+                                <span>—</span>
+                              ) : (
+                                operationalSignals.map((message) => (
+                                  <div key={`${payout.id}-${message}`} className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
+                                    {message}
+                                  </div>
+                                ))
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
                         </tr>
-                      ))
+                      )})
                     )}
                   </tbody>
                 </table>

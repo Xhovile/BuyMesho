@@ -82,6 +82,8 @@ export interface ExecutePayoutInput {
   actorId?: string | null;
 }
 
+export type AdminOverrideAction = 'hold' | 'mark_paid' | 'mark_failed';
+
 export type PayoutPermissionActor = {
   uid: string;
   is_admin?: boolean;
@@ -273,8 +275,9 @@ export class PayoutRepository {
             provider_ref_id = COALESCE(?, provider_ref_id),
             provider_status = COALESCE(?, provider_status),
             failure_reason = COALESCE(?, failure_reason),
-            manual_review_reason = COALESCE(?, manual_review_reason),
-            last_attempt_id = COALESCE(?, last_attempt_id),
+             manual_review_reason = COALESCE(?, manual_review_reason),
+            processed_by = COALESCE(?, processed_by),
+             last_attempt_id = COALESCE(?, last_attempt_id),
             raw_response = COALESCE(?, raw_response),
             sent_at = COALESCE(?, sent_at),
             paid_at = COALESCE(?, paid_at),
@@ -289,6 +292,7 @@ export class PayoutRepository {
       extra.providerStatus ?? null,
       extra.failureReason ?? null,
       extra.manualReviewReason ?? null,
+      extra.processedBy ?? null,
       extra.lastAttemptId ?? null,
       extra.rawResponse ? JSON.stringify(extra.rawResponse) : null,
       extra.sentAt ?? null,
@@ -911,55 +915,100 @@ export class PayoutService {
   }
 
   markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
-    const payout = this.repository.updateStatus(payoutId, 'paid', {
-      paidAt: new Date().toISOString(),
-      provider: 'paychangu',
-      providerStatus: 'paid',
+    return this.applyAdminOverride({
+      payoutId,
+      action: 'mark_paid',
+      actorId,
+      reason: note,
     });
-    if (payout) {
-      this.repository.addEvent({
-        payoutId,
-        sellerId: payout.sellerId,
-        eventType: 'admin_mark_paid',
-        actorType: 'admin',
-        actorId,
-        note: note ?? 'Admin marked payout as paid',
-      });
-    }
-    return payout;
   }
 
   markFailed(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
-    const payout = this.repository.updateStatus(payoutId, 'failed', {
-      failureReason: reason,
-      failedAt: new Date().toISOString(),
-      provider: 'paychangu',
-      providerStatus: 'failed',
+    return this.applyAdminOverride({
+      payoutId,
+      action: 'mark_failed',
+      actorId,
+      reason,
     });
-    if (payout) {
-      this.repository.addEvent({
-        payoutId,
-        sellerId: payout.sellerId,
-        eventType: 'admin_mark_failed',
-        actorType: 'admin',
-        actorId,
-        note: reason,
-      });
-    }
-    return payout;
   }
 
   markHeld(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
-    const payout = this.repository.updateStatus(payoutId, 'held', {
-      manualReviewReason: reason,
+    return this.applyAdminOverride({
+      payoutId,
+      action: 'hold',
+      actorId,
+      reason,
     });
+  }
+
+  applyAdminOverride(input: {
+    payoutId: string;
+    action: AdminOverrideAction;
+    actorId: string;
+    reason?: string | null;
+    sellerId?: string | null;
+  }): PayoutRecord | undefined {
+    const reason = String(input.reason ?? '').trim();
+    if (!reason) {
+      throw new Error('reason is required');
+    }
+
+    const existing = this.repository.findById(input.payoutId);
+    if (!existing) {
+      return undefined;
+    }
+
+    if (input.sellerId && existing.sellerId !== input.sellerId) {
+      throw new Error('Payout does not belong to the provided seller');
+    }
+
+    const from = existing.status;
+    const allowedTransitions: Record<AdminOverrideAction, ReadonlySet<PayoutStatus>> = {
+      hold: new Set(['eligible', 'queued', 'processing', 'pending', 'failed']),
+      mark_paid: new Set(['eligible', 'queued', 'processing', 'pending', 'failed', 'held']),
+      mark_failed: new Set(['eligible', 'queued', 'processing', 'pending', 'held']),
+    };
+    if (!allowedTransitions[input.action].has(from)) {
+      throw new Error(`Invalid admin override transition from ${from} via ${input.action}`);
+    }
+
+    let payout: PayoutRecord | undefined;
+    if (input.action === 'mark_paid') {
+      payout = this.repository.updateStatus(input.payoutId, 'paid', {
+        paidAt: new Date().toISOString(),
+        provider: 'paychangu',
+        providerStatus: 'paid',
+        processedBy: input.actorId,
+        failureReason: null,
+      });
+    } else if (input.action === 'mark_failed') {
+      payout = this.repository.updateStatus(input.payoutId, 'failed', {
+        failureReason: reason,
+        failedAt: new Date().toISOString(),
+        provider: 'paychangu',
+        providerStatus: 'failed',
+        processedBy: input.actorId,
+      });
+    } else {
+      payout = this.repository.updateStatus(input.payoutId, 'held', {
+        manualReviewReason: reason,
+        providerStatus: 'held',
+        processedBy: input.actorId,
+      });
+    }
     if (payout) {
+      const eventType =
+        input.action === 'mark_paid'
+          ? 'admin_mark_paid'
+          : input.action === 'mark_failed'
+            ? 'admin_mark_failed'
+            : 'admin_hold';
       this.repository.addEvent({
-        payoutId,
+        payoutId: input.payoutId,
         sellerId: payout.sellerId,
-        eventType: 'admin_hold',
+        eventType,
         actorType: 'admin',
-        actorId,
+        actorId: input.actorId,
         note: reason,
       });
     }

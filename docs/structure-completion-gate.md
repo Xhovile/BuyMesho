@@ -206,65 +206,77 @@ It must explicitly define:
 The structure is complete only when every item below is checked.
 
 ### Formula
-- [ ] Gross collected amount is stored correctly
-- [ ] Platform fee is fixed at 2%
-- [ ] Payment processing fee is captured from the provider
-- [ ] Reserve logic is defined and capped at 6%
-- [ ] Manual adjustments are explicit and logged
-- [ ] Final seller net payout is calculated server-side
+- Gross collected amount is stored correctly — **partial** (gross is persisted on order/payment flows; payout snapshots are present but not enforced for every legacy payout row).
+- Platform fee is fixed at 2% — **done** (`PAYOUT_POLICY.platformFeeBps = 200`).
+- Payment processing fee is captured from the provider — **deferred** (launch uses simplified payout formula without provider-fee ingestion).
+- Reserve logic is defined and capped at 6% — **done** (`PAYOUT_POLICY.reserveCapBps = 600` and formula cap enforcement).
+- Manual adjustments are explicit and logged — **blocked** (blocked because adjustment entry APIs and signed adjustment events are not implemented yet).
+- Final seller net payout is calculated server-side — **done** (`calculatePayoutFormula` is server-side and used on release).
 
 ### Permissions
-- [ ] Seller permissions are defined
-- [ ] Admin permissions are defined
-- [ ] System permissions are defined
-- [ ] Payment provider responsibilities are defined
-- [ ] No frontend-only payout authority exists
+- Seller permissions are defined — **done** (`canViewPayoutSettings`, `canEditPayoutSettings`, `canRequestWithdrawal`, `canRequestPayoutRetry`).
+- Admin permissions are defined — **done** (`canApprovePayoutOverride` and admin-gated routes).
+- System permissions are defined — **partial** (system actor is represented in payout events, but not yet formalized as a separate policy contract).
+- Payment provider responsibilities are defined — **partial** (provider execution and status mapping exist, but provider SLA/error taxonomy ownership is not yet documented in-code).
+- No frontend-only payout authority exists — **done** (all payout mutations are backend-authorized).
 
 ### Destination management
-- [ ] Payout destination can be added
-- [ ] Payout destination can be edited
-- [ ] Payout destination can be replaced
-- [ ] Re-verification after destination change is defined
-- [ ] Duplicate destination protection exists
-- [ ] Destination history is retained
+- Payout destination can be added — **done**.
+- Payout destination can be edited — **done**.
+- Payout destination can be replaced — **done**.
+- Re-verification after destination change is defined — **done** (status resets to `pending` and verification attempts reset).
+- Duplicate destination protection exists — **done** (destination fingerprint uniqueness checks).
+- Destination history is retained — **partial** (events exist; long-term archival/retention policy is not yet defined).
 
 ### Eligibility and recovery
-- [ ] Payment confirmation is required
-- [ ] Order completion is required
-- [ ] Dispute window is enforced
-- [ ] Seller verification is required
-- [ ] Admin holds block payout
-- [ ] Fraud flags block payout
-- [ ] Failure recovery flow is defined
+- Payment confirmation is required — **done** (eligibility gate checks order/payment-releasable state).
+- Order completion is required — **partial** (release + payout flow enforces state checks, but legacy orders may bypass full lifecycle tags).
+- Dispute window is enforced — **partial** (72-hour policy frozen; automatic elapsed-time enforcement is not fully wired in release automation).
+- Seller verification is required — **done** (verified active payout destination required).
+- Admin holds block payout — **done** (held/manual-review state blocks execution).
+- Fraud flags block payout — **blocked** (blocked because no fraud-flag data source is currently connected to payout gating).
+- Failure recovery flow is defined — **done** (retry eligibility, max retry count, and manual-review paths are implemented).
 
 ### State machine
-- [ ] Normal payout path is defined
-- [ ] Failure path is defined
-- [ ] Retry path is defined
-- [ ] Manual review path is defined
-- [ ] Hold and cancellation paths are defined
+- Normal payout path is defined — **done**.
+- Failure path is defined — **done**.
+- Retry path is defined — **done**.
+- Manual review path is defined — **done**.
+- Hold and cancellation paths are defined — **partial** (hold path complete; cancellation exists but explicit admin cancellation runbook is not finalized).
 
 ### Retry and safety
-- [ ] Retry count is limited
-- [ ] Retry is idempotent
-- [ ] Retry is only for technical failure
-- [ ] Fraud and disputes do not auto-retry
-- [ ] Final failure escalates to manual review
+- Retry count is limited — **done** (`maxRetryCount = 3`).
+- Retry is idempotent — **partial** (attempt sequencing and unique provider charge IDs exist; concurrent duplicate retry requests are not yet fully deduplicated at route level).
+- Retry is only for technical failure — **done** (retryable failure code list enforced).
+- Fraud and disputes do not auto-retry — **done** (non-retryable codes and dispute gate block execution).
+- Final failure escalates to manual review — **done** (manual-review hold path used when gates fail or retries exhaust).
 
 ### Storage and audit
-- [ ] Payout snapshot is stored
-- [ ] Provider transfer ID is stored
-- [ ] Last error is stored
-- [ ] All status transitions are logged
-- [ ] Admin actions are logged
+- Payout snapshot is stored — **done** (`raw_request` snapshot at payout creation/release).
+- Provider transfer ID is stored — **partial** (`provider_charge_id` and provider refs stored; provider transaction ID population depends on provider callback payload completeness).
+- Last error is stored — **done** (`failure_reason`, attempt failure_reason, and manual review reason fields).
+- All status transitions are logged — **partial** (core transitions are logged; legacy/manual seed inserts may exist without backfilled events).
+- Admin actions are logged — **done** (`admin_mark_paid`, `admin_mark_failed`, `admin_hold` in `payout_events`).
 
 ### Testing
-- [ ] Duplicate release is tested
-- [ ] Duplicate webhook callback is tested
-- [ ] Retry with fresh provider charge ID is tested
-- [ ] Seller self-trigger is blocked in tests
-- [ ] Escrow-release failure is tested
-- [ ] Provider downtime handling is tested
+- Duplicate release is tested — **done**.
+- Duplicate webhook callback is tested — **done**.
+- Retry with fresh provider charge ID is tested — **done**.
+- Seller self-trigger is blocked in tests — **done**.
+- Escrow-release failure is tested — **partial** (invalid release states are covered; full downstream provider failure simulation after release is still limited).
+- Provider downtime handling is tested — **partial** (failure/retry classes covered in unit/integration, but sustained outage/circuit-breaker behavior is deferred).
+
+### 3.1 Gate summary (frozen answers)
+
+- formula frozen? **yes**
+- policy constants frozen? **yes**
+- permissions frozen? **yes (with noted system-actor partial)**
+- retry rules frozen? **yes**
+- state machine frozen? **yes (cancellation runbook partial)**
+- audit requirements frozen? **yes**
+- tests present? **yes (with partial gaps listed above)**
+- UI visibility present? **partial** (seller/admin visibility implemented, deeper ops messaging still evolving)
+- outstanding items explicitly deferred? **yes** (processing-fee ingestion, outage-depth testing, and related items are marked deferred/partial/blocked above)
 
 ---
 
@@ -276,7 +288,7 @@ If any of these are unresolved, the structure is not complete.
 - What is the exact dispute window length? **72 hours.**
 - Should first-time sellers have stricter reserve rules?
 - Should some categories have higher risk holds?
-- What is the minimum payout threshold? **MWK 1,000.**
+- What is the minimum payout threshold? **MWK 1000.**
 - Should payout be automatic or admin-approved at launch? **Admin-approved.**
 - What exact webhook events will confirm payout success or failure?
 - What is the max retry count? **3 retries.**

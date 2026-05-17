@@ -55,6 +55,7 @@ function seedPayout(): void {
   });
   db.prepare(`UPDATE orders SET status = 'fulfilled' WHERE id = ?`).run(orderId);
 
+  serverOrderService.setStatus(orderId, 'fulfilled');
   escrowRepository.create(orderId, 'MWK', 1500);
   escrowRepository.updateState(orderId, 'released');
   const escrow = escrowRepository.findByOrderId(orderId);

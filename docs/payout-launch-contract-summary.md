@@ -9,8 +9,6 @@ It exists to separate:
 
 The payout structure on the `copilot/normalize-admin-override-behavior` branch is considered operationally launch-ready within the frozen scope below.
 
-See `docs/structure-completion-gate.md` for the full frozen checklist and the item-by-item launch gate status.
-
 ---
 
 # Launch-complete areas
