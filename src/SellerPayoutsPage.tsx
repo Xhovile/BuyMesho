@@ -674,9 +674,9 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
         <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700 shadow-sm">{icon}</div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 min-w-0">
         <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-zinc-500">{label}</p>
-        <p className="mt-1 text-lg font-black tracking-tight text-zinc-900">{value}</p>
+        <p className="mt-1 truncate text-lg font-black tracking-tight text-zinc-900">{value}</p>
       </div>
     </div>
   );
