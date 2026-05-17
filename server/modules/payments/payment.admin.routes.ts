@@ -2,6 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { hasAdminAccess } from '../../auth/adminAccess.js';
 import { getPaymentDb } from '../../sqlite.js';
 import { payoutService } from '../payouts/payout.service.js';
+import { PAYOUT_POLICY, isRetryableFailureCode } from '../payouts/payout.policy.js';
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return {
@@ -128,10 +129,12 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
            p.provider_charge_id AS providerChargeId,
            p.provider_ref_id AS providerReference,
           p.provider_status AS providerStatus,
+          p.processed_by AS processedBy,
           p.destination_account_id AS destinationAccountId,
           spa.masked_account AS destinationMaskedAccount,
           spa.destination_type AS destinationType,
           spa.verification_status AS destinationVerificationStatus,
+          spa.is_active AS destinationIsActive,
           p.failure_reason AS failureReason,
           p.manual_review_reason AS manualReviewReason,
           p.requested_by AS requestedBy,
@@ -141,16 +144,56 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.failed_at AS failedAt,
           p.created_at AS createdAt,
           p.updated_at AS updatedAt,
+          (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attemptCount,
           (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
           (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
-          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt
+          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
+          (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
+          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
+          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount
         FROM payouts p
         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
         ORDER BY p.created_at DESC
         LIMIT 200
       `).all();
+      const shapedRows = (rows as Array<Record<string, unknown>>).map((row) => {
+        const status = String(row.status ?? '').toLowerCase();
+        const failureReason = (row.failureReason as string | null) ?? null;
+        const attemptCount = Number(row.attemptCount ?? 0);
+        const destinationVerificationStatus = String(row.destinationVerificationStatus ?? 'missing').toLowerCase();
+        const destinationActive = Number(row.destinationIsActive ?? 0) === 1;
+        const retryEligible =
+          status === 'failed' &&
+          attemptCount < PAYOUT_POLICY.maxRetryCount &&
+          isRetryableFailureCode(failureReason);
+        const holdReason = status === 'held' ? (row.manualReviewReason as string | null) ?? null : null;
+        const auditSummary = {
+          totalEvents: Number(row.auditEventCount ?? 0),
+          latestEventType: (row.latestAuditEventType as string | null) ?? null,
+          latestEventAt: (row.latestAuditEventAt as string | null) ?? null,
+        };
+        return {
+          ...row,
+          currentState: status,
+          attemptCount,
+          destinationVerificationStatus,
+          destinationActive,
+          lastError: failureReason ?? (row.latestAttemptFailureReason as string | null) ?? null,
+          holdReason,
+          retryEligible,
+          retryBlockedReason: retryEligible
+            ? null
+            : destinationVerificationStatus !== 'verified' || !destinationActive
+              ? 'Destination pending verification'
+              : status !== 'failed'
+                ? `Retry unavailable while payout is ${status}`
+                : 'Retry unavailable due to policy gate',
+          auditSummary,
+        };
+      });
 
-      return res.status(200).json(rows);
+      return res.status(200).json(shapedRows);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to load payout queue'));
     }
@@ -204,49 +247,6 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       return res.status(200).json(result);
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to retry payout'));
-    }
-  });
-
-  router.post('/payouts/:payoutId/mark-paid', requireAuth, (req, res) => {
-    try {
-      if (!requireAdmin(req, res)) return;
-      const payoutId = String(req.params.payoutId || '').trim();
-      const actorId = String(req.user?.uid || 'admin').trim();
-      const payout = payoutService.markPaid(payoutId, actorId, String(req.body?.note || '').trim() || undefined);
-      if (!payout) return res.status(404).json({ error: 'Payout not found' });
-      return res.status(200).json({ payout });
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to mark payout paid'));
-    }
-  });
-
-  router.post('/payouts/:payoutId/mark-failed', requireAuth, (req, res) => {
-    try {
-      if (!requireAdmin(req, res)) return;
-      const payoutId = String(req.params.payoutId || '').trim();
-      const reason = String(req.body?.reason || '').trim();
-      if (!reason) return res.status(400).json({ error: 'reason is required' });
-      const actorId = String(req.user?.uid || 'admin').trim();
-      const payout = payoutService.markFailed(payoutId, actorId, reason);
-      if (!payout) return res.status(404).json({ error: 'Payout not found' });
-      return res.status(200).json({ payout });
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to mark payout failed'));
-    }
-  });
-
-  router.post('/payouts/:payoutId/hold', requireAuth, (req, res) => {
-    try {
-      if (!requireAdmin(req, res)) return;
-      const payoutId = String(req.params.payoutId || '').trim();
-      const reason = String(req.body?.reason || '').trim();
-      if (!reason) return res.status(400).json({ error: 'reason is required' });
-      const actorId = String(req.user?.uid || 'admin').trim();
-      const payout = payoutService.markHeld(payoutId, actorId, reason);
-      if (!payout) return res.status(404).json({ error: 'Payout not found' });
-      return res.status(200).json({ payout });
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to hold payout'));
     }
   });
 

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, RefreshCw, ShieldCheck, TriangleAlert, Clock3, CircleCheckBig } from "lucide-react";
 import { apiFetch } from "./lib/api";
+import { useAuthUser } from "./hooks/useAuthUser";
+import { useIsAdmin } from "./hooks/useIsAdmin";
 
 type PayoutRow = {
   id: string;
@@ -31,6 +33,17 @@ type PayoutRow = {
   latestAttemptNo: number | null;
   latestAttemptStatus: string | null;
   latestAttemptAt: string | null;
+  attemptCount?: number;
+  currentState?: string;
+  lastError?: string | null;
+  holdReason?: string | null;
+  retryEligible?: boolean;
+  retryBlockedReason?: string | null;
+  auditSummary?: {
+    totalEvents?: number;
+    latestEventType?: string | null;
+    latestEventAt?: string | null;
+  };
 };
 
 type PayoutSummary = {
@@ -69,7 +82,14 @@ function pillClass(t: string) {
   }
 }
 
+export function getVisibleAdminActions(isAdmin: boolean): Array<"retry" | "hold" | "mark_paid" | "mark_failed"> {
+  if (!isAdmin) return [];
+  return ["retry", "mark_paid", "hold", "mark_failed"];
+}
+
 export default function AdminPayoutQueue() {
+  const { user } = useAuthUser();
+  const { isAdmin } = useIsAdmin(user);
   const [rows, setRows] = useState<PayoutRow[]>([]);
   const [summary, setSummary] = useState<PayoutSummary>({});
   const [loading, setLoading] = useState(true);
@@ -111,14 +131,28 @@ export default function AdminPayoutQueue() {
     [rows, summary]
   );
 
-  const runAction = async (id: string, action: "retry" | "mark-paid" | "mark-failed" | "hold", payload?: Record<string, unknown>) => {
-    setActionBusyId(id);
+  const runAction = async (row: PayoutRow, action: "retry" | "hold" | "mark_paid" | "mark_failed", payload?: Record<string, unknown>) => {
+    setActionBusyId(row.id);
     setError(null);
     try {
-      await apiFetch(`/api/admin/payouts/${encodeURIComponent(id)}/${action}`, {
-        method: "POST",
-        body: payload ? JSON.stringify(payload) : undefined,
-      });
+      if (action === "retry") {
+        await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/retry`, {
+          method: "POST",
+          body: JSON.stringify({
+            payoutId: row.id,
+            ...(payload ?? {}),
+          }),
+        });
+      } else {
+        await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/override`, {
+          method: "POST",
+          body: JSON.stringify({
+            payoutId: row.id,
+            action,
+            ...(payload ?? {}),
+          }),
+        });
+      }
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed.");
@@ -224,35 +258,59 @@ export default function AdminPayoutQueue() {
                         <strong>Review:</strong> {row.manualReviewReason}
                       </p>
                     ) : null}
+                    <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2">
+                      <Info label="Attempts used" value={String(row.attemptCount ?? row.latestAttemptNo ?? 0)} />
+                      <Info label="Retry eligibility" value={row.retryEligible ? "Can retry safely" : row.retryBlockedReason ?? "Retry unavailable"} />
+                      <Info label="Last provider response" value={row.lastError ?? "No provider error captured"} />
+                      <Info label="Audit trail" value={row.auditSummary?.latestEventType ? `${row.auditSummary.latestEventType} (${row.auditSummary.totalEvents ?? 0})` : "No audit events"} />
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 lg:w-[320px] lg:justify-end">
-                    <ActionButton
-                      icon={<RefreshCw className="h-4 w-4" />}
-                      label="Retry"
-                      busy={busy}
-                      onClick={() => runAction(row.id, "retry", { destinationReference: row.destinationMaskedAccount ?? row.id })}
-                    />
-                    <ActionButton
-                      icon={<CircleCheckBig className="h-4 w-4" />}
-                      label="Mark paid"
-                      busy={busy}
-                      onClick={() => runAction(row.id, "mark-paid")}
-                    />
-                    <ActionButton
-                      icon={<ShieldCheck className="h-4 w-4" />}
-                      label="Hold"
-                      busy={busy}
-                      onClick={() => runAction(row.id, "hold", { reason: "Manual admin hold" })}
-                    />
-                    <ActionButton
-                      icon={<TriangleAlert className="h-4 w-4" />}
-                      label="Mark failed"
-                      busy={busy}
-                      danger
-                      onClick={() => runAction(row.id, "mark-failed", { reason: "Manual admin failure" })}
-                    />
-                  </div>
+                  {isAdmin ? (
+                    <div className="flex flex-wrap gap-2 lg:w-[320px] lg:justify-end">
+                      <ActionButton
+                        icon={<RefreshCw className="h-4 w-4" />}
+                        label="Retry"
+                        busy={busy}
+                        onClick={() => runAction(row, "retry", { destinationReference: row.destinationMaskedAccount ?? row.id })}
+                      />
+                      <ActionButton
+                        icon={<CircleCheckBig className="h-4 w-4" />}
+                        label="Mark paid"
+                        busy={busy}
+                        onClick={() => {
+                          const reason = window.prompt("Reason for marking paid");
+                          if (!reason?.trim()) return;
+                          void runAction(row, "mark_paid", { reason: reason.trim() });
+                        }}
+                      />
+                      <ActionButton
+                        icon={<ShieldCheck className="h-4 w-4" />}
+                        label="Hold"
+                        busy={busy}
+                        onClick={() => {
+                          const reason = window.prompt("Reason for hold");
+                          if (!reason?.trim()) return;
+                          void runAction(row, "hold", { reason: reason.trim() });
+                        }}
+                      />
+                      <ActionButton
+                        icon={<TriangleAlert className="h-4 w-4" />}
+                        label="Mark failed"
+                        busy={busy}
+                        danger
+                        onClick={() => {
+                          const reason = window.prompt("Reason for marking failed");
+                          if (!reason?.trim()) return;
+                          void runAction(row, "mark_failed", { reason: reason.trim() });
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold text-zinc-500">
+                      Admin actions hidden
+                    </div>
+                  )}
                 </div>
               </div>
             );

@@ -55,6 +55,15 @@ type PayoutRecord = {
   status: "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
   provider: string | null;
   providerChargeId: string | null;
+  providerStatus?: string | null;
+  destinationStatus?: string;
+  holdReason?: string | null;
+  lastFailureReason?: string | null;
+  retryAllowed?: boolean;
+  retryCount?: number;
+  manualReviewPending?: boolean;
+  verificationBlockers?: string[];
+  lastUpdatedTimestamp?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;
   createdAt: string;
@@ -119,6 +128,32 @@ function formatDate(value: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
+}
+
+export function sellerOperationalSignals(payout: PayoutRecord): string[] {
+  const messages: string[] = [];
+  const destinationStatus = String(payout.destinationStatus ?? "").toLowerCase();
+
+  if (destinationStatus && destinationStatus !== "verified") {
+    messages.push("Destination pending verification");
+  }
+  if (payout.status === "held") {
+    messages.push("Payout held");
+  }
+  if (payout.retryAllowed === false && payout.status === "failed") {
+    messages.push("Retry unavailable");
+  }
+  if (payout.manualReviewPending) {
+    messages.push("Awaiting admin review");
+  }
+  if (payout.status === "failed") {
+    messages.push("Failed due to provider issue");
+  }
+  if (Array.isArray(payout.verificationBlockers) && payout.verificationBlockers.length > 0) {
+    messages.push(...payout.verificationBlockers);
+  }
+
+  return Array.from(new Set(messages));
 }
 
 export default function SellerPayoutsPage() {
@@ -510,23 +545,39 @@ export default function SellerPayoutsPage() {
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Status</th>
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Amount</th>
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Order</th>
+                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Operational view</th>
                       <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Updated</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-100 bg-white">
                     {payouts.length === 0 ? (
                       <tr>
-                        <td colSpan={4} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
-                      </tr>
-                    ) : (
-                      payouts.map((payout) => (
+                          <td colSpan={5} className="px-4 py-6 text-zinc-500">No payout activity yet.</td>
+                        </tr>
+                      ) : (
+                      payouts.map((payout) => {
+                        const operationalSignals = sellerOperationalSignals(payout);
+                        return (
                         <tr key={payout.id} className="align-top">
                           <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>{payout.status}</span></td>
                           <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
                           <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
+                          <td className="px-4 py-4 text-zinc-600">
+                            <div className="space-y-1">
+                              {operationalSignals.length === 0 ? (
+                                <span>—</span>
+                              ) : (
+                                operationalSignals.map((message) => (
+                                  <div key={`${payout.id}-${message}`} className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
+                                    {message}
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </td>
                           <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
                         </tr>
-                      ))
+                      )})
                     )}
                   </tbody>
                 </table>
