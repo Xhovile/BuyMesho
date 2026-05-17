@@ -94,6 +94,10 @@ Before saving a payout destination, the backend must validate and normalize:
 
 Validation must happen server-side. The frontend is only a convenience layer.
 
+### 1.8.1 Launch payout floor
+
+The minimum payout amount for launch is `1000` MWK.
+
 ### 1.9 Audit requirements
 
 Every payout-related action must be logged for admins and support.
@@ -251,6 +255,7 @@ The structure is complete only when every item below is checked.
 
 ### Retry and safety
 - Retry count is limited — **done** (`maxRetryCount = 3`).
+- Launch mode is fixed to **Admin-approved** during beta rollout.
 - Retry is idempotent — **partial** (attempt sequencing and unique provider charge IDs exist; concurrent duplicate retry requests are not yet fully deduplicated at route level).
 - Retry is only for technical failure — **done** (retryable failure code list enforced).
 - Fraud and disputes do not auto-retry — **done** (non-retryable codes and dispute gate block execution).

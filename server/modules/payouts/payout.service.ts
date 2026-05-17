@@ -778,7 +778,7 @@ export class PayoutService {
     try {
       balance = await this.getProviderBalance(gate.currency);
     } catch (error) {
-      const failureReason = classifyProviderFailureFromError(error);
+      const failureReason = classifyProviderFailureFromError(error) ?? 'provider_unavailable';
       const reason = providerFailureReason(failureReason);
       const payout = this.holdForReview(
         {
