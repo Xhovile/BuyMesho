@@ -3,6 +3,7 @@ import { hasAdminAccess } from '../../auth/adminAccess.js';
 import { getPaymentDb } from '../../sqlite.js';
 import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
+import { payoutLimiter } from '../../routes/escrow/shared.js';
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return {
@@ -409,7 +410,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
-  router.post('/payouts/destinations/:destinationId/verification', requireAuth, (req, res) => {
+  router.post('/payouts/destinations/:destinationId/verification', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;
 
@@ -496,7 +497,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
-  router.post('/payouts/sellers/:sellerId/suspension', requireAuth, (req, res) => {
+  router.post('/payouts/sellers/:sellerId/suspension', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;
 
