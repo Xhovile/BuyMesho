@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, Wallet } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -14,6 +14,7 @@ import {
   LOGIN_PATH,
   MESSAGES_PATH,
   PAYMENTS_HUB_PATH,
+  SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
   PROFILE_PATH,
   navigateToLoginWithReturnPath,
@@ -114,6 +115,15 @@ export default function Header({
     }
     afterClose?.();
     navigateToPath(PAYMENTS_HUB_PATH);
+  };
+
+  const handleSellerPayoutsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SELLER_PAYOUTS_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SELLER_PAYOUTS_PATH);
   };
 
   const handleLogout = async (afterClose?: () => void) => {
@@ -412,6 +422,16 @@ export default function Header({
                     <CreditCard className="w-4 h-4 text-white" />
                   </span>
                   Payments
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-white" />
+                  </span>
+                  Seller Payouts
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>

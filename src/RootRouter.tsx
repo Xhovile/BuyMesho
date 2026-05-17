@@ -10,6 +10,7 @@ import {
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
+  SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
   navigateToLoginWithReturnPath,
@@ -52,6 +53,7 @@ const SafetyTipsPage = lazy(() => import("./components/SafetyTipsPage"));
 const SavedPage = lazy(() => import("./SavedPage"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
 const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
+const SellerPayoutsPage = lazy(() => import("./SellerPayoutsPage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
@@ -124,6 +126,7 @@ export default function RootRouter() {
       import("./AdminPaymentsConsole"),
       import("./OrderTrackingPage"),
       import("./OrderDisputePage"),
+      import("./SellerPayoutsPage"),
     ]);
   }, []);
 
@@ -139,6 +142,7 @@ export default function RootRouter() {
       "change_password",
       "change_email",
       "my_listings",
+      "seller_payouts",
       "messages",
       "admin",
       "admin_payments",
@@ -188,6 +192,8 @@ export default function RootRouter() {
           <PaymentsHubPage />
         ) : locationPath === "/buyer-payments" ? (
           <BuyerPaymentsPage />
+        ) : locationPath === SELLER_PAYOUTS_PATH ? (
+          <SellerPayoutsPage />
         ) : locationPath === "/cart" ? (
           <CartPage />
         ) : route === "category" ? (
