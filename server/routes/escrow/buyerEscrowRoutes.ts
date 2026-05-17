@@ -2,7 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
-import { payoutService } from '../../modules/payouts/payout.service.js';
+import { payoutRepository, payoutService } from '../../modules/payouts/payout.service.js';
 import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
 import { getPaymentDb } from '../../sqlite.js';
@@ -121,6 +121,22 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             payoutFormula,
             releaseAmount: released.releaseEntry.amount,
             releaseEntryId: released.releaseEntry.id,
+          },
+        });
+
+        payoutRepository.addEvent({
+          payoutId: payout.id,
+          sellerId: access.order.sellerId,
+          eventType: 'payout_released',
+          actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
+          actorId: requesterId,
+          note: 'Escrow release created payout candidate',
+          payload: {
+            escrowId: released.escrow.id,
+            releaseEntryId: released.releaseEntry.id,
+            payoutStatus: payout.status,
+            payoutAmount: payout.amount,
+            payoutFormula,
           },
         });
 
