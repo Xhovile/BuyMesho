@@ -17,6 +17,7 @@ import {
   Sparkles,
   UserRound,
   UtensilsCrossed,
+  Wallet,
   X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
@@ -26,6 +27,7 @@ import {
   CREATE_PATH,
   EXPLORE_PATH,
   PAYMENTS_HUB_PATH,
+  SELLER_PAYOUTS_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
   PRIVACY_PATH,
@@ -354,6 +356,15 @@ export default function HomePage() {
     navigateToPath(PAYMENTS_HUB_PATH);
   };
 
+  const handleSellerPayoutsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SELLER_PAYOUTS_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SELLER_PAYOUTS_PATH);
+  };
+
   useEffect(() => {
     if (!firebaseUser) {
       setUnreadCount(0);
@@ -425,6 +436,14 @@ export default function HomePage() {
               >
                 <CreditCard className={marketDesktopIconClass.payments} />
                 Payments
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSellerPayoutsClick()}
+                className={marketDesktopNavButtonClass}
+              >
+                <Wallet className="w-4 h-4 text-emerald-600" />
+                Seller Payouts
               </button>
               <button
                 type="button"
@@ -586,6 +605,20 @@ export default function HomePage() {
                       <CreditCard className="w-4 h-4 text-white" />
                     </span>
                     Payments
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSellerPayoutsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <Wallet className="w-4 h-4 text-white" />
+                    </span>
+                    Seller Payouts
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>

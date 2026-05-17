@@ -309,16 +309,16 @@ export default function SellerPayoutsPage() {
   const activeDestinations = destinations.filter((item) => item.isActive);
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
-          <div className="flex items-center gap-3">
-            <button type="button" onClick={() => navigateToPath(SETTINGS_PATH)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <button type="button" onClick={() => navigateToPath(SETTINGS_PATH)} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none">
               <ArrowLeft className="w-4 h-4" />
               Settings
             </button>
-            <button type="button" onClick={() => void handleRefresh()} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
+            <button type="button" onClick={() => void handleRefresh()} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none">
               {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </button>
@@ -326,7 +326,7 @@ export default function SellerPayoutsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
         <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
             <div>
@@ -540,7 +540,7 @@ export default function SellerPayoutsPage() {
 
 function StatCard({ label, value, icon }: { label: string; value: string; icon: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+    <div className="flex h-full min-h-[120px] flex-col rounded-[1.5rem] border border-zinc-200 bg-zinc-50 px-4 py-4">
       <div className="flex items-center justify-between gap-3">
         <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700">{icon}</div>
         <span className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Dashboard</span>

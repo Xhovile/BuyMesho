@@ -235,6 +235,10 @@ export default function Header({
                     <CreditCard className="w-4 h-4 text-amber-500" />
                     Payments
                   </button>
+                  <button type="button" onClick={() => handleSellerPayoutsClick()} className={desktopNavButtonClass}>
+                    <Wallet className="w-4 h-4 text-emerald-600" />
+                    Seller Payouts
+                  </button>
                   <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
                     <MessageSquareText className="w-4 h-4 text-teal-500" />
                     <div className="flex items-center gap-2">
