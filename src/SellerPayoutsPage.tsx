@@ -5,24 +5,24 @@ import {
   Banknote,
   BadgeCheck,
   Building2,
-  ChevronRight,
   ClipboardList,
   Loader2,
-  Phone,
   RefreshCw,
   ShieldCheck,
   Wallet,
   AlertTriangle,
-  Trash2,
-  Save,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
+import PayoutDestinationCard from "./components/payouts/PayoutDestinationCard";
+import PayoutDestinationForm from "./components/payouts/PayoutDestinationForm";
+import type { PayoutDestinationFormValue, PayoutDestinationType } from "./components/payouts/PayoutDestinationForm";
+import PayoutStatusBadge from "./components/payouts/PayoutStatusBadge";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
 import { sellerOperationalSignals } from "./modules/payouts/uiModel";
 
-type DestinationType = "mobile_money" | "bank";
+type DestinationType = PayoutDestinationType;
 
 type PayoutDestination = {
   id: string;
@@ -85,16 +85,7 @@ type PayoutPermissions = {
   approveOverride: boolean;
 };
 
-type FormState = {
-  destinationType: DestinationType;
-  providerName: string;
-  providerRefId: string;
-  currency: string;
-  accountName: string;
-  accountNumber: string;
-  mobile: string;
-  isDefault: boolean;
-};
+type FormState = PayoutDestinationFormValue;
 
 const INITIAL_FORM: FormState = {
   destinationType: "mobile_money",
@@ -115,60 +106,11 @@ function money(amount: number, currency = "MWK") {
   }).format(amount || 0);
 }
 
-function statusTone(status: string) {
-  if (status === "paid") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "failed") return "bg-red-50 text-red-700 border-red-200";
-  if (["pending", "queued", "processing", "eligible", "held"].includes(status)) return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-zinc-100 text-zinc-700 border-zinc-200";
-}
-
-function destinationTone(status: string) {
-  if (status === "verified") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "pending") return "bg-amber-50 text-amber-700 border-amber-200";
-  if (status === "failed") return "bg-red-50 text-red-700 border-red-200";
-  return "bg-zinc-100 text-zinc-700 border-zinc-200";
-}
-
 function formatDate(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
-}
-
-function sellerFacingPayoutSummary(payout: PayoutRecord) {
-  if (payout.status === "held") {
-    return {
-      title: "Payout held for review",
-      detail: "Awaiting admin action",
-    };
-  }
-
-  if (payout.status === "paid") {
-    return {
-      title: "Paid",
-      detail: "Provider confirmed the payout.",
-    };
-  }
-
-  if (["queued", "processing", "pending", "eligible"].includes(payout.status)) {
-    return {
-      title: "In progress",
-      detail: "Awaiting payout provider update.",
-    };
-  }
-
-  if (payout.status === "failed") {
-    return {
-      title: "Payout failed",
-      detail: "Awaiting admin review.",
-    };
-  }
-
-  return {
-    title: payout.status,
-    detail: "Awaiting payout update.",
-  };
 }
 
 export default function SellerPayoutsPage() {
@@ -180,6 +122,7 @@ export default function SellerPayoutsPage() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [loading, setLoading] = useState(true);
   const [savingDestination, setSavingDestination] = useState(false);
+  const [destinationFormError, setDestinationFormError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [notice, setNotice] = useState<{ type: "success" | "error" | "info"; message: string } | null>(null);
 
@@ -253,6 +196,7 @@ export default function SellerPayoutsPage() {
   }, [payouts, destinations]);
 
   const startEdit = (destination: PayoutDestination) => {
+    setDestinationFormError(null);
     setSelectedDestinationId(destination.id);
     setForm({
       destinationType: destination.destinationType,
@@ -268,26 +212,34 @@ export default function SellerPayoutsPage() {
 
   const resetForm = () => {
     setSelectedDestinationId(null);
+    setDestinationFormError(null);
     setForm(INITIAL_FORM);
   };
 
   const handleSaveDestination = async () => {
     if (!sellerId) return;
     if (!form.providerName.trim() || !form.accountName.trim()) {
-      setNotice({ type: "info", message: "Provider and account name are required." });
+      const message = "Provider and account name are required.";
+      setDestinationFormError(message);
+      setNotice({ type: "info", message });
       return;
     }
 
     if (form.destinationType === "bank" && !form.accountNumber.trim()) {
-      setNotice({ type: "info", message: "Bank account number is required." });
+      const message = "Bank account number is required.";
+      setDestinationFormError(message);
+      setNotice({ type: "info", message });
       return;
     }
 
     if (form.destinationType === "mobile_money" && !form.mobile.trim()) {
-      setNotice({ type: "info", message: "Mobile number is required." });
+      const message = "Mobile number is required.";
+      setDestinationFormError(message);
+      setNotice({ type: "info", message });
       return;
     }
 
+    setDestinationFormError(null);
     setSavingDestination(true);
     try {
       const payload = {
@@ -303,8 +255,8 @@ export default function SellerPayoutsPage() {
       };
 
       if (selectedDestinationId) {
-        await apiFetch(`/api/payouts/destinations/${selectedDestinationId}`, {
-          method: "PATCH",
+        await apiFetch(`/api/payouts/destinations/${selectedDestinationId}/replace`, {
+          method: "POST",
           body: JSON.stringify(payload),
         });
       } else {
@@ -314,14 +266,40 @@ export default function SellerPayoutsPage() {
         });
       }
 
-      setNotice({ type: "success", message: selectedDestinationId ? "Payout destination updated." : "Payout destination saved." });
+      setNotice({ type: "success", message: selectedDestinationId ? "Payout destination replaced safely." : "Payout destination saved." });
       resetForm();
       await loadData();
     } catch (error) {
-      setNotice({ type: "error", message: error instanceof Error ? error.message : "Failed to save destination" });
+      const message = error instanceof Error ? error.message : "Failed to save destination";
+      setDestinationFormError(message);
+      setNotice({ type: "error", message });
     } finally {
       setSavingDestination(false);
     }
+  };
+
+  const handleMakeDefault = async (destination: PayoutDestination) => {
+    if (!destination.isActive || destination.isDefault) return;
+    setSavingDestination(true);
+    try {
+      await apiFetch(`/api/payouts/destinations/${destination.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isDefault: true }),
+      });
+      setNotice({ type: "success", message: `${destination.providerName} is now your default payout destination.` });
+      await loadData();
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Failed to update default destination" });
+    } finally {
+      setSavingDestination(false);
+    }
+  };
+
+  const handleRemoveDestination = (destination: PayoutDestination) => {
+    setNotice({
+      type: "info",
+      message: `${destination.providerName} cannot be removed directly yet. Replace it with a new destination to deactivate the old details safely.`,
+    });
   };
 
   const handleRefresh = async () => {
@@ -451,132 +429,17 @@ export default function SellerPayoutsPage() {
         ) : null}
 
         <section className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout setup</p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight">Add or update your payout destination.</h2>
-                <p className="mt-2 text-sm text-zinc-600">
-                  Choose mobile money or bank, then store the payout destination securely on the server.
-                </p>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-right">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Active destinations</p>
-                <p className="mt-1 text-2xl font-black">{activeDestinations.length}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <label className="space-y-2">
-                <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Destination type</span>
-                <select
-                  value={form.destinationType}
-                  onChange={(e) => setForm((current) => ({ ...current, destinationType: e.target.value as DestinationType }))}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                >
-                  <option value="mobile_money">Mobile money</option>
-                  <option value="bank">Bank</option>
-                </select>
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider / operator</span>
-                <input
-                  value={form.providerName}
-                  onChange={(e) => setForm((current) => ({ ...current, providerName: e.target.value }))}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                  placeholder="e.g. TNM, Airtel, NBS"
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider ref ID</span>
-                <input
-                  value={form.providerRefId}
-                  onChange={(e) => setForm((current) => ({ ...current, providerRefId: e.target.value }))}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                  placeholder="Optional provider reference"
-                />
-              </label>
-
-              <label className="space-y-2">
-                <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account holder name</span>
-                <input
-                  value={form.accountName}
-                  onChange={(e) => setForm((current) => ({ ...current, accountName: e.target.value }))}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                  placeholder="Name on bank account or wallet"
-                />
-              </label>
-
-              {form.destinationType === "bank" ? (
-                <label className="space-y-2 sm:col-span-2">
-                  <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Account number</span>
-                  <input
-                    value={form.accountNumber}
-                    onChange={(e) => setForm((current) => ({ ...current, accountNumber: e.target.value }))}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                    placeholder="Bank account number"
-                  />
-                </label>
-              ) : (
-                <label className="space-y-2 sm:col-span-2">
-                  <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Mobile number</span>
-                  <input
-                    value={form.mobile}
-                    onChange={(e) => setForm((current) => ({ ...current, mobile: e.target.value }))}
-                    className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                    placeholder="Mobile wallet number"
-                  />
-                </label>
-              )}
-
-              <label className="space-y-2 sm:col-span-2">
-                <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Currency</span>
-                <input
-                  value={form.currency}
-                  onChange={(e) => setForm((current) => ({ ...current, currency: e.target.value.toUpperCase() }))}
-                  className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900"
-                  placeholder="MWK"
-                />
-              </label>
-            </div>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setForm((current) => ({ ...current, isDefault: !current.isDefault }))}
-                className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-bold ${
-                  form.isDefault ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
-                }`}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                {form.isDefault ? "Default destination" : "Make default"}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSaveDestination}
-                disabled={savingDestination || !canEditSettings}
-                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
-              >
-                {savingDestination ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {selectedDestinationId ? "Update destination" : "Save destination"}
-              </button>
-
-              {selectedDestinationId ? (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Cancel edit
-                </button>
-              ) : null}
-            </div>
-          </div>
-
+          <PayoutDestinationForm
+            value={form}
+            onChange={setForm}
+            onSave={handleSaveDestination}
+            onCancel={resetForm}
+            loading={savingDestination}
+            error={destinationFormError}
+            disabled={!canEditSettings}
+            isEditing={Boolean(selectedDestinationId)}
+            activeDestinationCount={activeDestinations.length}
+          />
           <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -609,56 +472,28 @@ export default function SellerPayoutsPage() {
               <Building2 className="w-5 h-5 text-zinc-400" />
             </div>
 
- <div className="mt-5 overflow-x-auto">
-  <div className="flex min-w-max gap-3 pb-2">
-    {destinations.length === 0 ? (
-      <div className="min-w-[320px] rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
-        No payout destination yet.
-      </div>
-    ) : (
-      destinations.map((destination) => (
-        <div key={destination.id} className="min-w-[360px] max-w-[360px] rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${destinationTone(destination.verificationStatus)}`}>
-                  {destination.verificationStatus}
-                </span>
-                {destination.isDefault ? (
-                  <span className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] text-sky-700">
-                    Default
-                  </span>
-                ) : null}
+            <div className="mt-5 overflow-x-auto">
+              <div className="flex min-w-max gap-3 pb-2">
+                {destinations.length === 0 ? (
+                  <div className="min-w-[320px] rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
+                    No payout destination yet.
+                  </div>
+                ) : (
+                  destinations.map((destination) => (
+                    <PayoutDestinationCard
+                      key={destination.id}
+                      destination={destination}
+                      onReplace={startEdit}
+                      onRemove={handleRemoveDestination}
+                      onMakeDefault={(item) => void handleMakeDefault(item)}
+                      formatDate={formatDate}
+                      actionsDisabled={!canEditSettings || savingDestination}
+                    />
+                  ))
+                )}
               </div>
-
-              <h3 className="mt-3 text-base font-black tracking-tight">{destination.accountName}</h3>
-              <p className="mt-1 flex items-center gap-2 text-sm text-zinc-600">
-                {destination.destinationType === "bank" ? <Building2 className="w-4 h-4 shrink-0" /> : <Phone className="w-4 h-4 shrink-0" />}
-                <span className="truncate">{destination.providerName} · {destination.maskedAccount}</span>
-              </p>
             </div>
-
-            <button
-              type="button"
-              onClick={() => startEdit(destination)}
-              className="inline-flex shrink-0 items-center gap-2 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-50"
-              disabled={!canEditSettings}
-            >
-              Edit
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
           </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-zinc-500">
-            <MetaBox label="Updated" value={formatDate(destination.updatedAt)} />
-            <MetaBox label="Verified" value={formatDate(destination.verifiedAt)} />
-          </div>
-        </div>
-      ))
-    )}
-  </div>
-</div>
-</div>
 
           <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
@@ -705,7 +540,7 @@ export default function SellerPayoutsPage() {
                         <tr key={payout.id} className="align-top">
                           <td className="px-4 py-4">
                             <div className="space-y-2">
-                              <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${statusTone(payout.status)}`}>{payout.status}</span>
+                              <PayoutStatusBadge status={payout.status} />
                               {payout.status === "held" ? (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
                                   <div>Payout held for review</div>
@@ -779,15 +614,6 @@ function MiniStatus({ icon, title, text }: { icon: ReactNode; title: string; tex
           <p className="mt-0.5 text-xs font-semibold leading-5 text-zinc-500">{text}</p>
         </div>
       </div>
-    </div>
-  );
-}
-
-function MetaBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-sm font-bold text-zinc-700">{value}</p>
     </div>
   );
 }
