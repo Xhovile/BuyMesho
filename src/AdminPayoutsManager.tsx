@@ -197,7 +197,7 @@ function AdminPayoutsManagerContent() {
   const [retryEligibleOnly, setRetryEligibleOnly] = useState(false);
   const [query, setQuery] = useState("");
 
-  const [selected, setSelected] = useState<PayoutRow | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adjustments, setAdjustments] = useState<PayoutAdjustment[]>([]);
   const [adjustmentsLoading, setAdjustmentsLoading] = useState(false);
 
@@ -249,14 +249,16 @@ function AdminPayoutsManagerContent() {
     void load();
   }, []);
 
-  useEffect(() => {
-    if (!selected) return;
-    const next = rows.find((row) => row.id === selected.id) ?? null;
-    setSelected(next);
-  }, [rows, selected]);
+  const selected = useMemo(
+    () => (selectedId ? rows.find((row) => row.id === selectedId) ?? null : null),
+    [rows, selectedId]
+  );
 
   useEffect(() => {
-    if (!selected) return;
+    if (!selected) {
+      setAdjustments([]);
+      return;
+    }
     setDestinationStatus((selected.destinationVerificationStatus ?? "verified").toLowerCase());
     setDestinationReason("");
     setSellerControlReason("");
@@ -265,7 +267,7 @@ function AdminPayoutsManagerContent() {
     setAdjustmentProviderRef("");
     setAdjustmentType("processing_fee");
     void loadAdjustments(selected.id);
-  }, [selected]);
+  }, [selected?.id]);
 
   const stats = useMemo(() => {
     const pending = rows.filter((r) => PENDING_STATES.includes(String(r.status || "").toLowerCase())).length;
@@ -303,6 +305,7 @@ function AdminPayoutsManagerContent() {
       );
     });
   }, [rows, query, statusFilter, retryEligibleOnly]);
+  const visibleActions = useMemo(() => getVisibleAdminActions(isAdmin), [isAdmin]);
 
   const runAction = async (row: PayoutRow, action: RowAction, reason?: string) => {
     setActionBusyId(row.id);
@@ -613,7 +616,6 @@ function AdminPayoutsManagerContent() {
           ) : (
             filteredRows.map((row) => {
               const busy = actionBusyId === row.id;
-              const visibleActions = getVisibleAdminActions(isAdmin);
 
               return (
                 <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
@@ -671,7 +673,7 @@ function AdminPayoutsManagerContent() {
                     <div className="flex flex-wrap gap-2 lg:w-[340px] lg:justify-end">
                       <button
                         type="button"
-                        onClick={() => setSelected(row)}
+                        onClick={() => setSelectedId(row.id)}
                         className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
                       >
                         <BadgeInfo className="h-4 w-4" />
@@ -765,7 +767,7 @@ function AdminPayoutsManagerContent() {
       </main>
 
       {selected ? (
-        <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={() => setSelectedId(null)}>
           <aside className="ml-auto h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-4">
               <div>
@@ -774,7 +776,7 @@ function AdminPayoutsManagerContent() {
               </div>
               <button
                 type="button"
-                onClick={() => setSelected(null)}
+                onClick={() => setSelectedId(null)}
                 className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50"
               >
                 <X className="h-5 w-5 text-zinc-500" />
