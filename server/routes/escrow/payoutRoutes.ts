@@ -698,6 +698,15 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
+  router.get('/metadata', requireAuth, (_req, res) => {
+    return res.json({
+      mobileMoneyOperators: [],
+      banks: [],
+      currencies: [DEFAULT_CURRENCY],
+      launchPolicy: PAYOUT_POLICY.launchMode,
+    });
+  });
+
   router.get('/destinations', requireAuth, (req, res) => {
     try {
       const sellerId = getRequestSellerId(req, req.query.sellerUid);

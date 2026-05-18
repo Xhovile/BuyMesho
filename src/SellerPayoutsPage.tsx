@@ -19,13 +19,13 @@ import PayoutDestinationForm from "./components/payouts/PayoutDestinationForm";
 import PayoutStatusBadge from "./components/payouts/PayoutStatusBadge";
 import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { apiFetch } from "./lib/api";
 import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
 import {
   createPayoutDestination,
   getPayoutDestinations,
   getPayoutHistory,
   getPayoutPermissions,
+  replacePayoutDestination,
   updatePayoutDestination,
 } from "./modules/payouts/api";
 import { buildSellerEarningsSummary } from "./modules/payouts/summary";
@@ -219,7 +219,7 @@ export default function SellerPayoutsPage() {
       };
 
       if (selectedDestinationId) {
-        await updatePayoutDestination(selectedDestinationId, payload);
+        await replacePayoutDestination(selectedDestinationId, payload);
       } else {
         await createPayoutDestination(payload);
       }
@@ -246,10 +246,7 @@ export default function SellerPayoutsPage() {
     if (!destination.isActive || destination.isDefault) return;
     setSavingDestination(true);
     try {
-      await apiFetch(`/api/payouts/destinations/${destination.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ isDefault: true }),
-      });
+      await updatePayoutDestination(destination.id, { isDefault: true });
       setNotice({
         type: "success",
         message: `${destination.providerName} is now your default payout destination.`,
@@ -460,13 +457,13 @@ export default function SellerPayoutsPage() {
               />
               <MiniStatus
                 icon={<ClipboardList className="w-4 h-4" />}
-                title="Queued"
-                text="Escrow release created a payout candidate and is waiting on provider action."
+                title="Queued for admin review"
+                text="Escrow release created a payout candidate that waits for admin review before PayChangu submission."
               />
               <MiniStatus
                 icon={<ShieldCheck className="w-4 h-4" />}
-                title="Held for review"
-                text="Payout held for review and awaiting admin action."
+                title="Held"
+                text="Payout held while the admin team reviews the release."
               />
               <MiniStatus
                 icon={<BadgeCheck className="w-4 h-4" />}
@@ -475,8 +472,8 @@ export default function SellerPayoutsPage() {
               />
               <MiniStatus
                 icon={<AlertTriangle className="w-4 h-4" />}
-                title="Failed"
-                text="A failed payout stays visible and retryable from the admin side."
+                title="Needs destination update"
+                text="Failed payouts stay visible while destination details are updated or admins retry safely."
               />
             </div>
           </div>

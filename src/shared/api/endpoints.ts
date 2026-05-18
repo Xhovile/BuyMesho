@@ -37,6 +37,7 @@ export const ENDPOINTS = {
     create: `${API_BASE_PATH}/payouts`,
     permissions: (sellerId: string) => `${API_BASE_PATH}/payouts/permissions/${encodeURIComponent(sellerId)}`,
     destinations: `${API_BASE_PATH}/payouts/destinations`,
+    metadata: `${API_BASE_PATH}/payouts/metadata`,
     destination: (id: string) => `${API_BASE_PATH}/payouts/destinations/${id}`,
     replaceDestination: (id: string) => `${API_BASE_PATH}/payouts/destinations/${id}/replace`,
     withdrawals: `${API_BASE_PATH}/payouts/withdrawals`,
