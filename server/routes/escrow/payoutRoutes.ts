@@ -1,6 +1,10 @@
 import express, { type RequestHandler } from 'express';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
+import {
+  listPayChanguMobileMoneyOperators,
+  listPayChanguPayoutBanks,
+} from '../../modules/payouts/paychangu.payout.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import {
   type AdminOverrideAction,
@@ -75,6 +79,16 @@ type SellerPayoutPermissions = {
   approveOverride: boolean;
 };
 
+type NormalizedMobileMoneyOperator = {
+  refId: string;
+  name: string;
+};
+
+type NormalizedPayoutBank = {
+  uuid: string;
+  name: string;
+};
+
 function normalizeText(value: unknown): string | null {
   if (value === null || value === undefined) return null;
   const text = String(value).trim();
@@ -93,6 +107,14 @@ function normalizeCurrency(value: unknown): string {
   const currency = normalizeText(value)?.toUpperCase() ?? DEFAULT_CURRENCY;
   if (currency !== DEFAULT_CURRENCY) {
     throw new Error('Only MWK payout destinations are supported right now');
+  }
+  return currency;
+}
+
+function normalizeProviderCurrency(value: unknown): string {
+  const currency = normalizeText(value)?.toUpperCase() ?? DEFAULT_CURRENCY;
+  if (currency !== DEFAULT_CURRENCY) {
+    throw new Error('Only MWK payout provider lookups are supported right now');
   }
   return currency;
 }
@@ -273,6 +295,26 @@ function assertAllowed(req: express.Request, allowed: boolean, message: string):
 
 function assertViewSettingsAccess(req: express.Request, sellerId: string): void {
   assertAllowed(req, canViewPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout setting');
+}
+
+function assertProviderLookupAccess(req: express.Request): string {
+  const sellerId = getRequestSellerId(req, req.query.sellerUid);
+  assertViewSettingsAccess(req, sellerId);
+  return sellerId;
+}
+
+function normalizeMobileMoneyProviderRecords(records: Array<{ refId: string; name: string }>): NormalizedMobileMoneyOperator[] {
+  return records.map((record) => ({
+    refId: record.refId,
+    name: record.name,
+  }));
+}
+
+function normalizeBankProviderRecords(records: Array<{ uuid: string; name: string }>): NormalizedPayoutBank[] {
+  return records.map((record) => ({
+    uuid: record.uuid,
+    name: record.name,
+  }));
 }
 
 function assertEditSettingsAccess(req: express.Request, sellerId: string): void {
@@ -705,6 +747,37 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       currencies: [DEFAULT_CURRENCY],
       launchPolicy: PAYOUT_POLICY.launchMode,
     });
+  });
+
+  router.get('/provider/mobile-money-operators', requireAuth, async (req, res) => {
+    try {
+      assertProviderLookupAccess(req);
+      const operators = await listPayChanguMobileMoneyOperators();
+      return res.json({ operators: normalizeMobileMoneyProviderRecords(operators) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load mobile money operators';
+      const status = /Unauthorized/i.test(message) ? 401 : /not allowed/i.test(message) ? 403 : 502;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/provider/banks', requireAuth, async (req, res) => {
+    try {
+      assertProviderLookupAccess(req);
+      const currency = normalizeProviderCurrency(req.query.currency);
+      const banks = await listPayChanguPayoutBanks(currency);
+      return res.json({ banks: normalizeBankProviderRecords(banks), currency });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout banks';
+      const status = /Unauthorized/i.test(message)
+        ? 401
+        : /not allowed/i.test(message)
+          ? 403
+          : /Only MWK payout provider lookups/i.test(message)
+            ? 400
+            : 502;
+      return res.status(status).json({ error: message });
+    }
   });
 
   router.get('/destinations', requireAuth, (req, res) => {
