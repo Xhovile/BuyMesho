@@ -25,11 +25,16 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
 
   assert.equal(formula.grossAmount, 1500);
   assert.equal(formula.platformFeeAmount, 30);
-  assert.equal(formula.processingFeeAmount, 10);
+
+  // Customer-paid transaction fees are excluded from seller payout math.
+  assert.equal(formula.processingFeeAmount, 0);
+
   assert.equal(formula.reserveCapAmount, 90);
   assert.equal(formula.reserveAmount, 90, 'reserve must be capped at 6% of gross');
   assert.equal(formula.manualAdjustmentAmount, 20);
-  assert.equal(formula.netAmount, 1350, 'seller net payout must be formula-driven');
+
+  // 1500 - 30 - 90 - 20 = 1360
+  assert.equal(formula.netAmount, 1360, 'seller net payout must be formula-driven');
   assert.equal(formula.currency, 'MWK');
 });
 
