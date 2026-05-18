@@ -16,6 +16,7 @@ import { getConfiguredAdminEmails, hasAdminAccess } from "./server/auth/adminAcc
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
+import { startPayoutReconciliationScheduler } from "./server/modules/payouts/payout.reconciliation.scheduler.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
 import { getPaymentDb } from "./server/sqlite.js";
 import { CATEGORIES } from "./src/constants.js";
@@ -655,6 +656,7 @@ async function startServer() {
   app.use('/api/escrow', createEscrowRouter(requireFirebaseUser));
   app.use('/api/disputes', createDisputeRouter(requireFirebaseUser));
   app.use('/api/payouts', createPayoutRouter(requireFirebaseUser));
+  startPayoutReconciliationScheduler();
   
   // Logging middleware
   app.use((req, res, next) => {
