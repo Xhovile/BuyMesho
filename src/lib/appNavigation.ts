@@ -34,6 +34,9 @@ export type AppRoute =
   | "admin_payouts"
   | "admin_reports"
   | "admin_seller_applications"
+  | "admin_moderation_queue"
+  | "admin_audit"
+  | "admin_setup"
   | "payment_return";
 
 export const HOME_PATH = "/";
@@ -68,6 +71,9 @@ export const ADMIN_PAYMENTS_PATH = "/admin/payments";
 export const ADMIN_PAYOUTS_PATH = "/admin/payouts";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
+export const ADMIN_MODERATION_QUEUE_PATH = "/admin/moderation-queue";
+export const ADMIN_AUDIT_PATH = "/admin/audit";
+export const ADMIN_SETUP_PATH = "/admin/setup";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
 export const PAYMENT_METHOD_PATH = "/payments/payment-method";
@@ -359,6 +365,18 @@ export const getAppRouteFromLocation = (
     return "admin_seller_applications";
   }
 
+  if (location.pathname === ADMIN_MODERATION_QUEUE_PATH) {
+    return "admin_moderation_queue";
+  }
+
+  if (location.pathname === ADMIN_AUDIT_PATH) {
+    return "admin_audit";
+  }
+
+  if (location.pathname === ADMIN_SETUP_PATH) {
+    return "admin_setup";
+  }
+
   if (location.pathname === PAYMENT_RETURN_PATH) {
     return "payment_return";
   }
@@ -590,6 +608,9 @@ export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH)
 export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
+export const navigateToAdminModerationQueue = () => navigateToPath(ADMIN_MODERATION_QUEUE_PATH);
+export const navigateToAdminAudit = () => navigateToPath(ADMIN_AUDIT_PATH);
+export const navigateToAdminSetup = () => navigateToPath(ADMIN_SETUP_PATH);
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
 export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
 export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
