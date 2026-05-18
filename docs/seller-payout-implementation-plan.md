@@ -1,6 +1,6 @@
 # Seller payout implementation plan
 
-_Last reviewed: 2026-05-17_
+_Last reviewed: 2026-05-18_
 
 ## Current state in BuyMesho
 
@@ -206,6 +206,19 @@ Add a seller payout setup screen/modal under seller settings or My Listings:
 - Show masked destination after saving.
 - Show verification status and last updated date.
 
+Implementation file plan:
+
+- **Update `src/SellerPayoutsPage.tsx`** to keep the current full-page seller payout destination flow as the canonical launch surface, including destination form state, masked saved destinations, verification state badges, and payout history loading.
+- **Update `src/SettingsPage.tsx`** to add a seller-only payout settings card/deep link so onboarding can be reached from account settings without duplicating sensitive payout forms in the settings page.
+- **Update `src/MyListingsPage.tsx`** to add a seller dashboard CTA for missing/unverified payout destinations, because sellers already use My Listings as their operating dashboard.
+- **Update `src/lib/appNavigation.ts` and `src/RootRouter.tsx`** only if route labels, redirects, or guard behavior need adjustment; the `/seller/payouts` route should remain the single destination for payout setup.
+- **Create `src/modules/payouts/types.ts`** for shared seller-facing destination, payout, permission, and summary types now embedded in `SellerPayoutsPage.tsx`.
+- **Create `src/modules/payouts/api.ts`** to centralize `apiFetch` calls for destination CRUD, payout history, provider/bank/operator metadata, permissions, and future withdrawal actions.
+- **Create `src/components/payouts/PayoutDestinationForm.tsx`** for the mobile-money/bank form, validation messages, and save button state.
+- **Create `src/components/payouts/PayoutDestinationCard.tsx`** for masked destination display, default/active labels, verification status, last updated date, and safe replace/remove actions.
+- **Create `src/components/payouts/PayoutStatusBadge.tsx`** for consistent seller/admin payout and destination status language.
+- **Create `src/components/payouts/__tests__/PayoutDestinationForm.test.tsx`** to cover method-specific required fields, masking-only display expectations, and disabled submit states.
+
 ### 2. Seller earnings dashboard
 
 Extend the seller dashboard to include money states:
@@ -216,6 +229,16 @@ Extend the seller dashboard to include money states:
 - pending payout,
 - paid out,
 - failed payout requiring action.
+
+Implementation file plan:
+
+- **Update `src/MyListingsPage.tsx`** to add an earnings summary panel near the existing seller stock/listing metrics, using server-derived payout/escrow totals instead of recalculating financial truth in the browser.
+- **Update `src/SellerPayoutsPage.tsx`** to reuse the same summary model for the payout page hero cards so the numbers match My Listings.
+- **Update `src/types.ts`** if the existing seller dashboard response shape is extended with payout/escrow totals from the server.
+- **Create `src/modules/payouts/summary.ts`** for formatting and grouping seller payout states into `lifetimeSales`, `inEscrow`, `availableForPayout`, `pendingPayout`, `paidOut`, and `failedActionRequired` buckets.
+- **Create `src/components/payouts/SellerEarningsSummary.tsx`** as a reusable card grid for My Listings and Seller Payouts.
+- **Create `src/components/payouts/PayoutActionRequiredBanner.tsx`** for failed payout or unverified destination warnings that need seller action.
+- **Create `src/modules/payouts/__tests__/summary.test.ts`** to lock the state-to-money-bucket mapping, especially `eligible`/`queued`/`processing`/`pending`/`held`/`paid`/`failed` handling.
 
 ### 3. Order-level seller view
 
@@ -228,6 +251,17 @@ Sellers should see each paid order with:
 - estimated payout date,
 - payout destination mask.
 
+Implementation file plan:
+
+- **Update `src/TrackOrderPage.tsx` and/or `src/OrderTrackingPage.tsx`** after confirming which route is seller-facing for order detail access; buyer-only copy must not leak into the seller order view.
+- **Update `src/components/orders/EscrowProtectionCard.tsx`** to show seller-facing payout status copy when the viewer is the seller, while keeping buyer protection copy for buyers.
+- **Update `src/components/orders/OrderDetailsCard.tsx`** to include seller payout fields when present: payout status, estimated payout date, destination mask, and any release eligibility label.
+- **Update `src/lib/orderApi.ts`** so the order detail fetch/normalizer carries seller payout metadata returned by the backend.
+- **Update `src/shared/types/payment.ts` and/or `src/types.ts`** with the order-level payout metadata contract.
+- **Create `src/components/orders/SellerOrderPayoutPanel.tsx`** for seller-only order payout state, release eligibility, destination mask, and failed/held guidance.
+- **Create `src/modules/payouts/orderPayoutViewModel.ts`** to convert raw payout/escrow/order fields into seller-safe labels and estimated-date text.
+- **Create `src/modules/payouts/__tests__/orderPayoutViewModel.test.ts`** to verify that seller order labels do not expose raw provider errors, full account details, or admin-only notes.
+
 ### 4. Withdraw or automatic payout UX
 
 Choose one product policy:
@@ -237,6 +271,16 @@ Choose one product policy:
 - Admin-approved payout: safest during beta, slower for sellers.
 
 For launch, a practical approach is **admin-approved automatic queue**: release creates a queued payout, admins send it to PayChangu, and sellers can see status.
+
+Implementation file plan for the launch policy:
+
+- **Update `src/SellerPayoutsPage.tsx`** to make the seller UX status-first rather than withdrawal-first: sellers should see queued/admin-approved automatic payout status and clear guidance when no action is available.
+- **Update `src/modules/payouts/uiModel.ts`** to include launch-policy labels such as `Queued for admin review`, `Sent to PayChangu`, `Provider pending`, `Paid`, `Held`, and `Needs destination update`.
+- **Update `src/AdminPayoutsManager.tsx`, `src/AdminPayoutQueue.tsx`, and/or `src/AdminPaymentsConsole.tsx`** only for cross-link text and seller-visible status consistency; admin approval remains an admin surface, not a seller button.
+- **Create `src/components/payouts/PayoutTimeline.tsx`** for seller-facing payout lifecycle events from queued through paid/failed.
+- **Create `src/components/payouts/PayoutPolicyExplainer.tsx`** to explain the admin-approved automatic queue and set expectations about timing.
+- **Defer creating a seller withdrawal request component** until the product policy changes from admin-approved automatic queue to seller-requested withdrawals.
+- **Create `src/components/payouts/__tests__/PayoutPolicyExplainer.test.tsx`** to lock the launch copy so the UI does not imply sellers can manually withdraw during beta.
 
 ## Recommended launch sequence
 
