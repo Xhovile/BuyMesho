@@ -2,8 +2,11 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   BadgeInfo,
+  ChevronLeft,
+  ChevronRight,
   CircleAlert,
   Clock3,
+  Download,
   Loader2,
   RefreshCw,
   ShieldCheck,
@@ -16,6 +19,7 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getVisibleAdminActions } from "./modules/payouts/uiModel";
 import AdminRouteGuard from "./components/AdminRouteGuard";
+import ActionModal from "./components/ActionModal";
 
 type PayoutRow = {
   id: string;
@@ -114,6 +118,36 @@ type RowAction = "retry" | OverrideAction;
 type StatusFilter = "all" | "pending" | "failed" | "held" | "paid" | "cancelled";
 
 const PENDING_STATES = ["eligible", "queued", "processing", "pending", "held"];
+const PAGE_SIZE = 50;
+
+type PayoutsListResponse = {
+  rows?: PayoutRow[];
+  pagination?: {
+    limit?: number;
+    offset?: number;
+    total?: number;
+    hasMore?: boolean;
+  };
+};
+
+type PendingDialog =
+  | {
+      kind: "retry" | "reconcile";
+      row: PayoutRow;
+      title: string;
+      message: string;
+      confirmLabel: string;
+      danger?: boolean;
+    }
+  | {
+      kind: "override";
+      row: PayoutRow;
+      action: OverrideAction;
+      title: string;
+      message: string;
+      confirmLabel: string;
+      danger?: boolean;
+    };
 
 function toDate(value: string | null | undefined) {
   if (!value) return "—";
@@ -134,6 +168,12 @@ function statusTone(status: string) {
 
 function formatStatus(value: string | null | undefined) {
   return value ? value.replace(/_/g, " ") : "—";
+}
+
+function csvCell(value: unknown) {
+  const text = String(value ?? "");
+  const escaped = text.replace(/"/g, '""');
+  return `"${escaped}"`;
 }
 
 function canAction(row: PayoutRow, action: RowAction) {
@@ -196,6 +236,9 @@ function AdminPayoutsManagerContent() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [retryEligibleOnly, setRetryEligibleOnly] = useState(false);
   const [query, setQuery] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
+  const [totalRows, setTotalRows] = useState(0);
+  const [hasMoreRows, setHasMoreRows] = useState(false);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [adjustments, setAdjustments] = useState<PayoutAdjustment[]>([]);
@@ -209,18 +252,32 @@ function AdminPayoutsManagerContent() {
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
   const [adjustmentProviderRef, setAdjustmentProviderRef] = useState("");
+  const [pendingDialog, setPendingDialog] = useState<PendingDialog | null>(null);
+  const [overrideReason, setOverrideReason] = useState("");
 
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
-  const load = async () => {
+  const closeActionDialog = () => {
+    setPendingDialog(null);
+    setOverrideReason("");
+  };
+
+  const load = async (nextPageIndex = pageIndex) => {
     setError(null);
     setRefreshing(true);
     try {
       const [payoutsData, summaryData] = await Promise.all([
-        apiFetch("/api/admin/payouts"),
+        apiFetch(`/api/admin/payouts?limit=${PAGE_SIZE}&offset=${nextPageIndex * PAGE_SIZE}`),
         apiFetch("/api/admin/payouts/summary"),
       ]);
-      setRows(Array.isArray(payoutsData) ? (payoutsData as PayoutRow[]) : []);
+      const payouts = payoutsData as PayoutsListResponse;
+      const nextRows = Array.isArray(payouts.rows) ? payouts.rows : [];
+      const nextTotal = Number(payouts.pagination?.total ?? nextRows.length);
+      const nextHasMore = Boolean(payouts.pagination?.hasMore);
+      setRows(nextRows);
+      setTotalRows(nextTotal);
+      setHasMoreRows(nextHasMore);
+      setPageIndex(nextPageIndex);
       setSummary((summaryData ?? {}) as PayoutSummary);
       setLastRefreshAt(new Date().toISOString());
     } catch (err) {
@@ -246,7 +303,7 @@ function AdminPayoutsManagerContent() {
   };
 
   useEffect(() => {
-    void load();
+    void load(0);
   }, []);
 
   const selected = useMemo(
@@ -306,6 +363,7 @@ function AdminPayoutsManagerContent() {
     });
   }, [rows, query, statusFilter, retryEligibleOnly]);
   const visibleActions = useMemo(() => getVisibleAdminActions(isAdmin), [isAdmin]);
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(Math.max(totalRows, 0) / PAGE_SIZE)), [totalRows]);
 
   const runAction = async (row: PayoutRow, action: RowAction, reason?: string) => {
     setActionBusyId(row.id);
@@ -326,7 +384,7 @@ function AdminPayoutsManagerContent() {
       }
 
       setNotice({ type: "success", message: `Action ${action} completed for ${row.id}.` });
-      await load();
+      await load(pageIndex);
       if (selected?.id === row.id) {
         await loadAdjustments(row.id);
       }
@@ -346,7 +404,7 @@ function AdminPayoutsManagerContent() {
         body: JSON.stringify({}),
       });
       setNotice({ type: "success", message: `Reconciled payout ${row.id}.` });
-      await load();
+      await load(pageIndex);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reconcile payout.");
     } finally {
@@ -366,7 +424,7 @@ function AdminPayoutsManagerContent() {
         type: "success",
         message: `Reconcile-pending completed. Processed ${Number(result?.count ?? 0)} payout(s).`,
       });
-      await load();
+      await load(pageIndex);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reconcile pending payouts.");
     } finally {
@@ -397,7 +455,7 @@ function AdminPayoutsManagerContent() {
       });
       setNotice({ type: "success", message: `Destination verification updated for ${selected.destinationAccountId}.` });
       setDestinationReason("");
-      await load();
+      await load(pageIndex);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update destination verification.");
     } finally {
@@ -431,7 +489,7 @@ function AdminPayoutsManagerContent() {
           : `Seller ${selected.sellerId} payouts unsuspended.`,
       });
       setSellerControlReason("");
-      await load();
+      await load(pageIndex);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update seller suspension.");
     } finally {
@@ -470,7 +528,7 @@ function AdminPayoutsManagerContent() {
       setAdjustmentAmount("");
       setAdjustmentReason("");
       setAdjustmentProviderRef("");
-      await Promise.all([load(), loadAdjustments(selected.id)]);
+      await Promise.all([load(pageIndex), loadAdjustments(selected.id)]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create adjustment.");
     } finally {
@@ -478,13 +536,110 @@ function AdminPayoutsManagerContent() {
     }
   };
 
-  const handleOverride = (row: PayoutRow, action: OverrideAction, confirmLabel: string) => {
+  const openReconcileDialog = (row: PayoutRow) => {
+    setPendingDialog({
+      kind: "reconcile",
+      row,
+      title: "Reconcile payout",
+      message: `Reconcile payout ${row.id} with provider status?`,
+      confirmLabel: "Reconcile",
+    });
+  };
+
+  const openRetryDialog = (row: PayoutRow) => {
+    if (!canAction(row, "retry")) return;
+    setPendingDialog({
+      kind: "retry",
+      row,
+      title: "Retry payout",
+      message: `Retry payout ${row.id}?`,
+      confirmLabel: "Retry",
+    });
+  };
+
+  const openOverrideDialog = (row: PayoutRow, action: OverrideAction, confirmLabel: string) => {
     if (!canAction(row, action)) return;
-    const confirmed = window.confirm(`Confirm ${confirmLabel} for payout ${row.id}?`);
-    if (!confirmed) return;
-    const reason = window.prompt(`Reason for ${confirmLabel}`)?.trim();
-    if (!reason) return;
-    void runAction(row, action, reason);
+    setPendingDialog({
+      kind: "override",
+      row,
+      action,
+      title: `Confirm ${confirmLabel}`,
+      message: `Provide a reason to ${confirmLabel} for payout ${row.id}.`,
+      confirmLabel: confirmLabel,
+      danger: action === "mark_failed" || action === "cancel",
+    });
+    setOverrideReason("");
+  };
+
+  const runPendingDialogAction = async () => {
+    if (!pendingDialog) return;
+    if (pendingDialog.kind === "reconcile") {
+      await reconcileSingle(pendingDialog.row);
+      closeActionDialog();
+      return;
+    }
+    if (pendingDialog.kind === "retry") {
+      await runAction(pendingDialog.row, "retry");
+      closeActionDialog();
+      return;
+    }
+    const reason = overrideReason.trim();
+    if (!reason) {
+      setError("Reason is required for payout override actions.");
+      return;
+    }
+    await runAction(pendingDialog.row, pendingDialog.action, reason);
+    closeActionDialog();
+  };
+
+  const exportFilteredRows = () => {
+    const headers = [
+      "payoutId",
+      "sellerId",
+      "orderId",
+      "status",
+      "amount",
+      "currency",
+      "retryEligible",
+      "retryBlockedReason",
+      "destinationVerificationStatus",
+      "destinationType",
+      "destinationActive",
+      "providerStatus",
+      "updatedAt",
+    ];
+    const lines = [headers.map(csvCell).join(",")];
+    for (const row of filteredRows) {
+      lines.push(
+        [
+          row.id,
+          row.sellerId,
+          row.orderId ?? "",
+          row.status,
+          row.amount,
+          row.currency,
+          row.retryEligible ? "yes" : "no",
+          row.retryBlockedReason ?? "",
+          row.destinationVerificationStatus ?? "",
+          row.destinationType ?? "",
+          row.destinationActive ? "active" : "inactive",
+          row.providerStatus ?? "",
+          row.updatedAt,
+        ]
+          .map(csvCell)
+          .join(","),
+      );
+    }
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `admin-payouts-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -502,7 +657,7 @@ function AdminPayoutsManagerContent() {
 
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void load(pageIndex)}
             disabled={refreshing}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
           >
@@ -568,38 +723,77 @@ function AdminPayoutsManagerContent() {
         </section>
 
         <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search by payout ID, seller ID, or order ID"
-              className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm outline-none ring-zinc-300 focus:ring"
-            />
+          <div className="flex flex-col gap-3">
+            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search by payout ID, seller ID, or order ID"
+                className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm outline-none ring-zinc-300 focus:ring"
+              />
 
-            <select
-              value={statusFilter}
-              onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-              className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700"
-            >
-              <option value="all">All statuses</option>
-              <option value="pending">Pending states</option>
-              <option value="failed">Failed</option>
-              <option value="held">Held</option>
-              <option value="paid">Paid</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              <select
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
+                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700"
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending states</option>
+                <option value="failed">Failed</option>
+                <option value="held">Held</option>
+                <option value="paid">Paid</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
 
-            <button
-              type="button"
-              onClick={() => setRetryEligibleOnly((prev) => !prev)}
-              className={`rounded-2xl border px-3 py-2.5 text-sm font-semibold ${
-                retryEligibleOnly
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-200 bg-white text-zinc-700"
-              }`}
-            >
-              Retry-eligible only
-            </button>
+              <button
+                type="button"
+                onClick={() => setRetryEligibleOnly((prev) => !prev)}
+                className={`rounded-2xl border px-3 py-2.5 text-sm font-semibold ${
+                  retryEligibleOnly
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-200 bg-white text-zinc-700"
+                }`}
+              >
+                Retry-eligible only
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs font-semibold text-zinc-500">
+                Showing page <span className="text-zinc-900">{pageIndex + 1}</span> of <span className="text-zinc-900">{totalPages}</span> •
+                loaded <span className="text-zinc-900">{rows.length}</span> / <span className="text-zinc-900">{totalRows}</span> rows •
+                filtered view <span className="text-zinc-900">{filteredRows.length}</span> rows
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={exportFilteredRows}
+                  disabled={filteredRows.length === 0}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export filtered CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void load(Math.max(0, pageIndex - 1))}
+                  disabled={pageIndex === 0 || refreshing}
+                  className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  Prev
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void load(pageIndex + 1)}
+                  disabled={!hasMoreRows || refreshing}
+                  className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
+                >
+                  Next
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -683,11 +877,7 @@ function AdminPayoutsManagerContent() {
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={() => {
-                          const confirmed = window.confirm(`Reconcile payout ${row.id}?`);
-                          if (!confirmed) return;
-                          void reconcileSingle(row);
-                        }}
+                        onClick={() => openReconcileDialog(row)}
                         className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
                       >
                         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -698,11 +888,7 @@ function AdminPayoutsManagerContent() {
                         <button
                           type="button"
                           disabled={busy || !canAction(row, "retry")}
-                          onClick={() => {
-                            const confirmed = window.confirm(`Retry payout ${row.id}?`);
-                            if (!confirmed) return;
-                            void runAction(row, "retry");
-                          }}
+                          onClick={() => openRetryDialog(row)}
                           className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
                         >
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -714,7 +900,7 @@ function AdminPayoutsManagerContent() {
                         <button
                           type="button"
                           disabled={busy || !canAction(row, "hold")}
-                          onClick={() => handleOverride(row, "hold", "hold")}
+                          onClick={() => openOverrideDialog(row, "hold", "hold")}
                           className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
                         >
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
@@ -726,7 +912,7 @@ function AdminPayoutsManagerContent() {
                         <button
                           type="button"
                           disabled={busy || !canAction(row, "mark_paid")}
-                          onClick={() => handleOverride(row, "mark_paid", "mark paid")}
+                          onClick={() => openOverrideDialog(row, "mark_paid", "mark paid")}
                           className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
                         >
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
@@ -738,7 +924,7 @@ function AdminPayoutsManagerContent() {
                         <button
                           type="button"
                           disabled={busy || !canAction(row, "mark_failed")}
-                          onClick={() => handleOverride(row, "mark_failed", "mark failed")}
+                          onClick={() => openOverrideDialog(row, "mark_failed", "mark failed")}
                           className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
                         >
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleAlert className="h-4 w-4" />}
@@ -750,7 +936,7 @@ function AdminPayoutsManagerContent() {
                         <button
                           type="button"
                           disabled={busy || !canAction(row, "cancel")}
-                          onClick={() => handleOverride(row, "cancel", "cancel")}
+                          onClick={() => openOverrideDialog(row, "cancel", "cancel")}
                           className="inline-flex items-center gap-2 rounded-2xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
                         >
                           {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
@@ -791,14 +977,107 @@ function AdminPayoutsManagerContent() {
                   <Info label="Seller ID" value={selected.sellerId} />
                   <Info label="Order ID" value={selected.orderId ?? "—"} />
                   <Info label="Escrow ID" value={selected.escrowId ?? "—"} />
+                  <Info label="Release entry ID" value={selected.releaseEntryId ?? "—"} />
                   <Info label="Status" value={formatStatus(selected.status)} />
+                  <Info label="Current state" value={formatStatus(selected.currentState ?? selected.status)} />
                   <Info label="Amount" value={`${selected.currency} ${Number(selected.amount).toLocaleString()}`} />
+                  <Info label="Requested by" value={selected.requestedBy ?? "—"} />
                   <Info label="Provider charge" value={selected.providerChargeId ?? "—"} />
                   <Info label="Provider ref" value={selected.providerReference ?? "—"} />
                   <Info label="Provider tx" value={selected.providerTransactionId ?? "—"} />
+                  <Info label="Provider status" value={formatStatus(selected.providerStatus)} />
                   <Info label="Destination" value={selected.destinationMaskedAccount ?? "—"} />
+                  <Info label="Destination type" value={formatStatus(selected.destinationType)} />
+                  <Info label="Destination active" value={selected.destinationActive ? "Yes" : "No"} />
+                  <Info
+                    label="Retry eligibility"
+                    value={selected.retryEligible ? "Can retry safely" : selected.retryBlockedReason ?? "Retry unavailable"}
+                  />
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <h4 className="text-base font-black">Payout lifecycle timeline</h4>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <Info label="Created at" value={toDate(selected.createdAt)} />
                   <Info label="Requested at" value={toDate(selected.requestedAt)} />
+                  <Info label="Sent at" value={toDate(selected.sentAt)} />
+                  <Info label="Paid at" value={toDate(selected.paidAt)} />
+                  <Info label="Failed at" value={toDate(selected.failedAt)} />
                   <Info label="Updated at" value={toDate(selected.updatedAt)} />
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <h4 className="text-base font-black">Payout actions</h4>
+                <p className="mt-2 text-sm text-zinc-600">
+                  Run payout actions without leaving this detail panel. Availability follows admin visibility and policy guards.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {visibleActions.includes("retry") ? (
+                    <button
+                      type="button"
+                      disabled={actionBusyId === selected.id || !canAction(selected, "retry")}
+                      onClick={() => openRetryDialog(selected)}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                      Retry
+                    </button>
+                  ) : null}
+                  {visibleActions.includes("hold") ? (
+                    <button
+                      type="button"
+                      disabled={actionBusyId === selected.id || !canAction(selected, "hold")}
+                      onClick={() => openOverrideDialog(selected, "hold", "hold")}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                      Hold
+                    </button>
+                  ) : null}
+                  {visibleActions.includes("mark_paid") ? (
+                    <button
+                      type="button"
+                      disabled={actionBusyId === selected.id || !canAction(selected, "mark_paid")}
+                      onClick={() => openOverrideDialog(selected, "mark_paid", "mark paid")}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+                    >
+                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
+                      Mark paid
+                    </button>
+                  ) : null}
+                  {visibleActions.includes("mark_failed") ? (
+                    <button
+                      type="button"
+                      disabled={actionBusyId === selected.id || !canAction(selected, "mark_failed")}
+                      onClick={() => openOverrideDialog(selected, "mark_failed", "mark failed")}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
+                    >
+                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleAlert className="h-4 w-4" />}
+                      Mark failed
+                    </button>
+                  ) : null}
+                  {visibleActions.includes("cancel") ? (
+                    <button
+                      type="button"
+                      disabled={actionBusyId === selected.id || !canAction(selected, "cancel")}
+                      onClick={() => openOverrideDialog(selected, "cancel", "cancel")}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+                    >
+                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+                      Cancel
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    disabled={actionBusyId === selected.id}
+                    onClick={() => openReconcileDialog(selected)}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
+                  >
+                    {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                    Reconcile
+                  </button>
                 </div>
               </section>
 
@@ -915,6 +1194,10 @@ function AdminPayoutsManagerContent() {
                   <Info label="Gross" value={`${selected.currency} ${Number(selected.grossAmount ?? 0).toLocaleString()}`} />
                   <Info label="Net" value={`${selected.currency} ${Number(selected.netAmount ?? selected.amount).toLocaleString()}`} />
                   <Info label="Processing fee" value={`${selected.currency} ${Number(selected.processingFeeAmount ?? 0).toLocaleString()}`} />
+                  <Info label="Platform fee" value={`${selected.currency} ${Number(selected.platformFeeAmount ?? 0).toLocaleString()}`} />
+                  <Info label="Reserve amount" value={`${selected.currency} ${Number(selected.reserveAmount ?? 0).toLocaleString()}`} />
+                  <Info label="Reserve cap" value={`${selected.currency} ${Number(selected.reserveCapAmount ?? 0).toLocaleString()}`} />
+                  <Info label="Manual adjustment" value={`${selected.currency} ${Number(selected.manualAdjustmentAmount ?? 0).toLocaleString()}`} />
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr]">
@@ -992,6 +1275,23 @@ function AdminPayoutsManagerContent() {
           </aside>
         </div>
       ) : null}
+
+      <ActionModal
+        open={Boolean(pendingDialog)}
+        title={pendingDialog?.title ?? "Confirm action"}
+        message={pendingDialog?.message ?? ""}
+        confirmLabel={pendingDialog?.confirmLabel ?? "Confirm"}
+        cancelLabel="Cancel"
+        loading={Boolean(actionBusyId)}
+        danger={pendingDialog?.danger}
+        inputType={pendingDialog?.kind === "override" ? "textarea" : undefined}
+        inputLabel={pendingDialog?.kind === "override" ? "Reason" : undefined}
+        inputValue={pendingDialog?.kind === "override" ? overrideReason : undefined}
+        inputPlaceholder={pendingDialog?.kind === "override" ? "Enter reason" : undefined}
+        onInputChange={(value) => setOverrideReason(value)}
+        onConfirm={() => void runPendingDialogAction()}
+        onCancel={closeActionDialog}
+      />
     </div>
   );
 }

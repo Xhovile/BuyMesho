@@ -12,6 +12,7 @@ type ActionModalProps = {
   inputLabel?: string;
   inputValue?: string;
   inputPlaceholder?: string;
+  inputType?: "number" | "text" | "textarea";
   onInputChange?: (value: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
@@ -28,6 +29,7 @@ export default function ActionModal({
   inputLabel,
   inputValue,
   inputPlaceholder,
+  inputType = "number",
   onInputChange,
   onConfirm,
   onCancel,
@@ -79,15 +81,25 @@ export default function ActionModal({
                   <span className="mb-2 block text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">
                     {inputLabel}
                   </span>
-                  <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={inputValue ?? ""}
-                    onChange={(e) => onInputChange?.(e.target.value)}
-                    placeholder={inputPlaceholder}
-                    className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-900 focus:bg-white"
-                  />
+                  {inputType === "textarea" ? (
+                    <textarea
+                      value={inputValue ?? ""}
+                      onChange={(e) => onInputChange?.(e.target.value)}
+                      placeholder={inputPlaceholder}
+                      rows={4}
+                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-900 focus:bg-white"
+                    />
+                  ) : (
+                    <input
+                      type={inputType}
+                      min={inputType === "number" ? "1" : undefined}
+                      step={inputType === "number" ? "1" : undefined}
+                      value={inputValue ?? ""}
+                      onChange={(e) => onInputChange?.(e.target.value)}
+                      placeholder={inputPlaceholder}
+                      className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-900 focus:bg-white"
+                    />
+                  )}
                 </label>
               ) : null}
             </div>
