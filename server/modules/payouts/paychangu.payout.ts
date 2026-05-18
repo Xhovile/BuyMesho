@@ -110,22 +110,6 @@ interface ResolvedPayChanguPayoutConfig {
   paychanguTimeoutMs: number;
 }
 
-export interface PayChanguPayoutConfig {
-  paychanguSecretKey?: string;
-  paychanguBaseUrl?: string;
-  paychanguPayoutCreatePath?: string;
-  paychanguPayoutBalancePath?: string;
-  paychanguTimeoutMs?: number;
-}
-
-interface ResolvedPayChanguPayoutConfig {
-  paychanguSecretKey: string;
-  paychanguBaseUrl: string;
-  paychanguPayoutCreatePath: string;
-  paychanguPayoutBalancePath: string;
-  paychanguTimeoutMs: number;
-}
-
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -168,10 +152,10 @@ function resolveConfig(config: PayChanguPayoutConfig = {}): ResolvedPayChanguPay
       config.paychanguBanksPath ?? process.env.PAYCHANGU_BANKS_PATH ?? '/direct-charge/payouts/supported-banks',
     ),
     paychanguMobileMoneyPayoutPath: trimPath(
-      config.paychanguMobileMoneyPayoutPath ?? process.env.PAYCHANGU_MOBILE_MONEY_PAYOUT_PATH ?? '/mobile-money/payouts/initialize',
+      config.paychanguMobileMoneyPayoutPath ?? process.env.PAYCHANGU_MOBILE_MONEY_PAYOUT_PATH ?? process.env.PAYCHANGU_PAYOUT_MOBILE_MONEY_PATH ?? '/mobile-money/payouts/initialize',
     ),
     paychanguBankPayoutPath: trimPath(
-      config.paychanguBankPayoutPath ?? process.env.PAYCHANGU_BANK_PAYOUT_PATH ?? '/direct-charge/payouts/initialize',
+      config.paychanguBankPayoutPath ?? process.env.PAYCHANGU_BANK_PAYOUT_PATH ?? process.env.PAYCHANGU_PAYOUT_BANK_PATH ?? '/direct-charge/payouts/initialize',
     ),
     paychanguTimeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 20000,
   };
@@ -403,7 +387,6 @@ function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerCharge
     email: input.email,
     first_name: input.firstName,
     last_name: input.lastName,
-    transaction_status: 'successful',
   };
 }
 
