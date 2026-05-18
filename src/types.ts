@@ -126,6 +126,19 @@ export interface Listing {
   single_item_price?: number | null;
 }
 
+export interface SellerDashboardPayoutTotals {
+  currency?: string | null;
+  lifetimeSales?: number | string | null;
+  inEscrow?: number | string | null;
+  availableForPayout?: number | string | null;
+  pendingPayout?: number | string | null;
+  paidOut?: number | string | null;
+  failedActionRequired?: number | string | null;
+  total?: number | string | null;
+  totalSales?: number | string | null;
+  totalPayoutVolume?: number | string | null;
+}
+
 export interface SellerDashboardData {
   seller: {
     uid: string;
@@ -150,6 +163,9 @@ export interface SellerDashboardData {
     status: string;
     created_at: string;
   } | null;
+  payouts?: SellerDashboardPayoutTotals | null;
+  payoutSummary?: SellerDashboardPayoutTotals | null;
+  earnings?: SellerDashboardPayoutTotals | null;
 }
 
 export interface RatingSummary {

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, BarChart3, Loader2, Wallet } from "lucide-react";
+import { BarChart3, Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
+import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequiredBanner";
+import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import {
@@ -11,6 +13,7 @@ import {
   navigateToSellerPayouts,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
+import { buildSellerEarningsSummary } from "./modules/payouts/summary";
 import type { Listing, SellerDashboardData } from "./types";
 
 type ListingActionResponse = {
@@ -27,76 +30,61 @@ type PayoutDestination = {
 };
 
 const getListingQuantity = (listing: Listing) => Number(listing.quantity ?? 1);
-const getListingSoldQuantity = (listing: Listing) => Number(listing.sold_quantity ?? 0);
+const getListingSoldQuantity = (listing: Listing) =>
+  Number(listing.sold_quantity ?? 0);
 const getRemainingQuantity = (listing: Listing) =>
   Math.max(0, getListingQuantity(listing) - getListingSoldQuantity(listing));
 
 export default function MyListingsPage() {
-  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading } =
+    useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
   const [dashboardOpen, setDashboardOpen] = useState(false);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
-  const [payoutDestinations, setPayoutDestinations] = useState<PayoutDestination[] | null>(null);
+  const [payoutDestinations, setPayoutDestinations] = useState<
+    PayoutDestination[] | null
+  >(null);
   const [payoutDestinationError, setPayoutDestinationError] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
-
-  const payoutSetupPrompt = useMemo(() => {
-    if (payoutDestinationError || payoutDestinations === null) return null;
-
-    const activeDestinations = payoutDestinations.filter((destination) => destination.isActive);
-    const failedDestination = activeDestinations.find(
-      (destination) => destination.verificationStatus.toLowerCase() === "failed"
-    );
-    const pendingDestination = activeDestinations.find(
-      (destination) => destination.verificationStatus.toLowerCase() === "pending"
-    );
-    const verifiedDestination = activeDestinations.find(
-      (destination) => destination.verificationStatus.toLowerCase() === "verified"
-    );
-
-    if (failedDestination) {
-      return {
-        tone: "red",
-        title: "Payout destination needs attention",
-        message: "Your payout destination failed verification. Update it so eligible releases can be paid out.",
-        actionLabel: "Fix payout settings",
-      };
-    }
-
-    if (pendingDestination) {
-      return {
-        tone: "amber",
-        title: "Payout verification is pending",
-        message: `We are verifying ${pendingDestination.maskedAccount || "your payout destination"}. Check your payout settings for status updates.`,
-        actionLabel: "Review payout settings",
-      };
-    }
-
-    if (!verifiedDestination) {
-      return {
-        tone: "emerald",
-        title: "Set up payouts before your next sale",
-        message: "Add an active payout destination so released escrow funds can move to your mobile money or bank account.",
-        actionLabel: "Set up payouts",
-      };
-    }
-
-    return null;
-  }, [payoutDestinationError, payoutDestinations]);
+  const dashboardEarningsSummary = useMemo(() => {
+    const payoutTotals =
+      dashboard?.payouts ??
+      dashboard?.payoutSummary ??
+      dashboard?.earnings ??
+      null;
+    return buildSellerEarningsSummary({
+      ...(payoutTotals ?? {}),
+      destinations: payoutDestinations ?? undefined,
+    });
+  }, [dashboard, payoutDestinations]);
 
   const stockSnapshot = useMemo(() => {
     const totalListed = listings.length;
-    const totalStock = listings.reduce((sum, listing) => sum + getListingQuantity(listing), 0);
-    const soldUnits = listings.reduce((sum, listing) => sum + getListingSoldQuantity(listing), 0);
-    const remainingStock = listings.reduce((sum, listing) => sum + getRemainingQuantity(listing), 0);
-    const activeListings = listings.filter((listing) => getRemainingQuantity(listing) > 0).length;
-    const soldOutListings = listings.filter((listing) => getRemainingQuantity(listing) === 0).length;
+    const totalStock = listings.reduce(
+      (sum, listing) => sum + getListingQuantity(listing),
+      0,
+    );
+    const soldUnits = listings.reduce(
+      (sum, listing) => sum + getListingSoldQuantity(listing),
+      0,
+    );
+    const remainingStock = listings.reduce(
+      (sum, listing) => sum + getRemainingQuantity(listing),
+      0,
+    );
+    const activeListings = listings.filter(
+      (listing) => getRemainingQuantity(listing) > 0,
+    ).length;
+    const soldOutListings = listings.filter(
+      (listing) => getRemainingQuantity(listing) === 0,
+    ).length;
     const lowStockListings = listings.filter(
-      (listing) => getRemainingQuantity(listing) > 0 && getRemainingQuantity(listing) <= 2
+      (listing) =>
+        getRemainingQuantity(listing) > 0 && getRemainingQuantity(listing) <= 2,
     ).length;
 
     return {
@@ -121,7 +109,9 @@ export default function MyListingsPage() {
       setPayoutDestinationError(false);
       try {
         const data = await apiFetch("/api/payouts/destinations");
-        const destinations = Array.isArray(data?.destinations) ? data.destinations : [];
+        const destinations = Array.isArray(data?.destinations)
+          ? data.destinations
+          : [];
         setPayoutDestinations(destinations);
       } catch (error) {
         console.error("Failed to load payout destinations", error);
@@ -181,11 +171,22 @@ export default function MyListingsPage() {
   };
 
   const applyListingResponse = (updated: Listing) => {
-    setListings((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+    setListings((prev) =>
+      prev.map((item) =>
+        item.id === updated.id ? { ...item, ...updated } : item,
+      ),
+    );
   };
 
-  const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
-    setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
+  const applyListingUpdate = (
+    listingId: number,
+    updater: (listing: Listing) => Listing,
+  ) => {
+    setListings((prev) =>
+      prev.map((listing) =>
+        listing.id === listingId ? updater(listing) : listing,
+      ),
+    );
   };
 
   const handleRecordSale = async (listing: Listing, quantity: number) => {
@@ -194,10 +195,13 @@ export default function MyListingsPage() {
 
     setActionLoadingId(listing.id);
     try {
-      const result = (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
-        method: "POST",
-        body: JSON.stringify({ quantity }),
-      })) as ListingActionResponse;
+      const result = (await apiFetch(
+        `/api/listings/${listing.id}/record-sale`,
+        {
+          method: "POST",
+          body: JSON.stringify({ quantity }),
+        },
+      )) as ListingActionResponse;
 
       if (result?.listing) {
         applyListingResponse(result.listing);
@@ -243,18 +247,27 @@ export default function MyListingsPage() {
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      applyListingUpdate(listing.id, (current) => ({ ...current, status: nextStatus }));
+      applyListingUpdate(listing.id, (current) => ({
+        ...current,
+        status: nextStatus,
+      }));
       setDashboard((prev) =>
         prev
           ? {
               ...prev,
               stats: {
                 ...prev.stats,
-                sold_listings: Math.max(0, prev.stats.sold_listings + (nextStatus === "sold" ? 1 : -1)),
-                active_listings: Math.max(0, prev.stats.active_listings + (nextStatus === "sold" ? -1 : 1)),
+                sold_listings: Math.max(
+                  0,
+                  prev.stats.sold_listings + (nextStatus === "sold" ? 1 : -1),
+                ),
+                active_listings: Math.max(
+                  0,
+                  prev.stats.active_listings + (nextStatus === "sold" ? -1 : 1),
+                ),
               },
             }
-          : null
+          : null,
       );
     } catch (error) {
       console.error("Failed to toggle listing status", error);
@@ -291,7 +304,7 @@ export default function MyListingsPage() {
                     : prev.stats.sold_listings,
               },
             }
-          : null
+          : null,
       );
     } catch (error) {
       console.error("Failed to delete listing", error);
@@ -317,8 +330,12 @@ export default function MyListingsPage() {
         </div>
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening your listings page.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+            Login required
+          </h2>
+          <p className="mt-3 text-sm text-zinc-500">
+            You need to log in before opening your listings page.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
@@ -329,8 +346,12 @@ export default function MyListingsPage() {
         </div>
       ) : !profile?.is_seller ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h2>
-          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access My Listings.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+            Seller access required
+          </h2>
+          <p className="mt-3 text-sm text-zinc-500">
+            Only seller accounts can access My Listings.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
@@ -341,8 +362,12 @@ export default function MyListingsPage() {
         </div>
       ) : listings.length === 0 ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">No listings yet</h2>
-          <p className="mt-3 text-sm text-zinc-500">You have not posted any listings yet.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+            No listings yet
+          </h2>
+          <p className="mt-3 text-sm text-zinc-500">
+            You have not posted any listings yet.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/create")}
@@ -359,7 +384,9 @@ export default function MyListingsPage() {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                   Seller performance
                 </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">
+                  Dashboard
+                </h2>
               </div>
 
               <button
@@ -376,44 +403,20 @@ export default function MyListingsPage() {
               </button>
             </div>
 
-            {payoutSetupPrompt ? (
-              <div
-                className={`mt-4 rounded-[1.5rem] border p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 ${
-                  payoutSetupPrompt.tone === "red"
-                    ? "border-red-200 bg-red-50 text-red-900"
-                    : payoutSetupPrompt.tone === "amber"
-                      ? "border-amber-200 bg-amber-50 text-amber-900"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-900"
-                }`}
-              >
-                <div className="flex gap-3">
-                  <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/75">
-                    {payoutSetupPrompt.tone === "red" ? (
-                      <AlertTriangle className="h-5 w-5" />
-                    ) : (
-                      <Wallet className="h-5 w-5" />
-                    )}
-                  </span>
-                  <div>
-                    <p className="text-sm font-black">{payoutSetupPrompt.title}</p>
-                    <p className="mt-1 text-xs font-semibold opacity-80 sm:text-sm">{payoutSetupPrompt.message}</p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => navigateToSellerPayouts()}
-                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800 sm:mt-0 sm:w-auto"
-                >
-                  {payoutSetupPrompt.actionLabel}
-                  <Wallet className="h-4 w-4" />
-                </button>
-              </div>
+            {!payoutDestinationError ? (
+              <PayoutActionRequiredBanner
+                summary={dashboardEarningsSummary}
+                destinations={payoutDestinations}
+                onAction={() => navigateToSellerPayouts()}
+                className="mt-4"
+              />
             ) : null}
 
             <div
               className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${
-                dashboardOpen ? "max-h-[1200px] p-4 sm:p-5" : "max-h-0 p-0 border-transparent"
+                dashboardOpen
+                  ? "max-h-[1200px] p-4 sm:p-5"
+                  : "max-h-0 p-0 border-transparent"
               }`}
             >
               {dashboardOpen ? (
@@ -427,55 +430,109 @@ export default function MyListingsPage() {
                     <p className="text-sm text-red-600">{dashboardError}</p>
                   ) : dashboard ? (
                     <>
+                      <SellerEarningsSummary
+                        summary={dashboardEarningsSummary}
+                        compact
+                      />
+
                       <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Storage stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.remainingStock}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Units still available</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Storage stock
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.remainingStock}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Units still available
+                          </p>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold units</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldUnits}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Units already sold</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Sold units
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.soldUnits}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Units already sold
+                          </p>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listed stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.totalStock}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">All stock listed</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Total listed stock
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.totalStock}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            All stock listed
+                          </p>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Active listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.activeListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings still available</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Active listings
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.activeListings}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Listings still available
+                          </p>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold out listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldOutListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings with zero stock</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Sold out listings
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.soldOutListings}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Listings with zero stock
+                          </p>
                         </div>
 
                         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Low stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.lowStockListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings with 1–2 left</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Low stock
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {stockSnapshot.lowStockListings}
+                          </p>
+                          <p className="mt-1 text-[11px] text-zinc-500">
+                            Listings with 1–2 left
+                          </p>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
                         <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Total listings
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {dashboard.stats.total_listings}
+                          </p>
                         </div>
                         <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total views</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                        </div>                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Profile views</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Total views
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {dashboard.stats.total_views}
+                          </p>
+                        </div>{" "}
+                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
+                          <p className="text-[10px] font-bold uppercase text-zinc-400">
+                            Profile views
+                          </p>
+                          <p className="mt-1 text-lg font-black text-zinc-900">
+                            {dashboard.seller.profile_views}
+                          </p>
                         </div>
                       </div>
 
@@ -491,7 +548,9 @@ export default function MyListingsPage() {
                           </div>
                           <div className="text-right text-[11px] text-zinc-500">
                             <p className="font-semibold text-zinc-900">
-                              {dashboard.stats.repeat_seller_activity ? "Returning seller" : "New seller activity"}
+                              {dashboard.stats.repeat_seller_activity
+                                ? "Returning seller"
+                                : "New seller activity"}
                             </p>
                             <p>Dashboard refreshed from your live listings</p>
                           </div>
@@ -500,7 +559,9 @@ export default function MyListingsPage() {
 
                       {dashboard.byCampus?.length ? (
                         <div className="rounded-2xl border border-zinc-200 bg-white p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">By campus</p>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
+                            By campus
+                          </p>
                           <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
                             {dashboard.byCampus.map((campusItem) => (
                               <div
@@ -511,7 +572,8 @@ export default function MyListingsPage() {
                                   {campusItem.university}
                                 </p>
                                 <p className="text-xs text-zinc-500">
-                                  {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
+                                  {campusItem.count} listing
+                                  {campusItem.count === 1 ? "" : "s"}
                                 </p>
                               </div>
                             ))}
@@ -538,8 +600,12 @@ export default function MyListingsPage() {
                 onEdit={(item) => navigateToEditListing(item.id)}
                 onDelete={(id) => void handleDeleteListing(id)}
                 onToggleStatus={(item) => void handleToggleStatus(item)}
-                onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
-                onRestock={(item, quantity) => void handleRestock(item, quantity)}
+                onRecordSale={(item, quantity) =>
+                  void handleRecordSale(item, quantity)
+                }
+                onRestock={(item, quantity) =>
+                  void handleRestock(item, quantity)
+                }
                 onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                 onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
               />
