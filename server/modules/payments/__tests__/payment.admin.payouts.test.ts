@@ -205,6 +205,29 @@ test('admin payout suspension holds seller payouts and records control note', as
   assert.match(action.details ?? '', /Manual fraud review/);
 });
 
+test('admin payouts list supports paginated response with metadata', async () => {
+  seedAdminPayout('admin-page-1', 'failed');
+  seedAdminPayout('admin-page-2', 'eligible');
+
+  const result = await callAdmin('/api/admin/payouts?limit=1&offset=0');
+  assert.equal(result.status, 200);
+
+  const rows = Array.isArray(result.body.rows) ? result.body.rows : [];
+  assert.equal(rows.length, 1);
+  assert.ok(rows[0] && typeof rows[0] === 'object');
+
+  const pagination = (result.body.pagination ?? {}) as {
+    limit?: number;
+    offset?: number;
+    total?: number;
+    hasMore?: boolean;
+  };
+  assert.equal(pagination.limit, 1);
+  assert.equal(pagination.offset, 0);
+  assert.ok(Number(pagination.total ?? 0) >= 2);
+  assert.equal(typeof pagination.hasMore, 'boolean');
+});
+
 test('admin reconcile endpoint syncs provider status and terminal payout fields', async () => {
   const { payoutId } = seedAdminPayout('admin-reconcile');
   const originalFetch = global.fetch;
