@@ -628,11 +628,18 @@ export async function executePayChanguPayout(
 ): Promise<PayChanguPayoutExecutionResult> {
   const resolved = resolveConfig(config);
 
-  if (input.destinationType === 'mobile_money' || input.destinationType === 'bank') {
-    return executeStructuredPayChanguPayout(input, resolved);
+  if (!input.destinationType) {
+    throw new Error('PayChangu payout destinationType is required');
   }
 
-  return executeCompatibilityPayChanguPayout(input, resolved);
+  if (
+    input.destinationType !== 'mobile_money' &&
+    input.destinationType !== 'bank'
+  ) {
+    throw new Error(`Unsupported payout destination type: ${input.destinationType}`);
+  }
+
+  return executeStructuredPayChanguPayout(input, resolved);
 }
 
 export async function listPayChanguMobileMoneyOperators(
