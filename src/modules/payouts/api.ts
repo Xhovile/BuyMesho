@@ -3,6 +3,7 @@ import type {
   PayoutDestination,
   PayoutDestinationPayload,
   PayoutPermissions,
+  PayoutProviderMetadata,
   PayoutRecord,
 } from "./types";
 
@@ -31,13 +32,34 @@ export async function createPayoutDestination(payload: PayoutDestinationPayload)
 
 export async function updatePayoutDestination(
   destinationId: string,
-  payload: PayoutDestinationPayload
+  payload: Partial<PayoutDestinationPayload>
 ): Promise<PayoutDestination> {
   const response = await apiFetch(`/api/payouts/destinations/${encodeURIComponent(destinationId)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
   return response?.destination ?? response;
+}
+
+
+export async function replacePayoutDestination(
+  destinationId: string,
+  payload: PayoutDestinationPayload
+): Promise<PayoutDestination> {
+  const response = await apiFetch(`/api/payouts/destinations/${encodeURIComponent(destinationId)}/replace`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response?.destination ?? response;
+}
+
+export async function getPayoutProviderMetadata(): Promise<PayoutProviderMetadata> {
+  const response = await apiFetch("/api/payouts/metadata");
+  return {
+    mobileMoneyOperators: Array.isArray(response?.mobileMoneyOperators) ? response.mobileMoneyOperators : [],
+    banks: Array.isArray(response?.banks) ? response.banks : [],
+    currencies: Array.isArray(response?.currencies) ? response.currencies : ["MWK"],
+  };
 }
 
 export async function deletePayoutDestination(destinationId: string): Promise<void> {

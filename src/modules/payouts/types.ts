@@ -99,3 +99,18 @@ export type SellerFacingPayoutSummary = {
   title: string;
   detail: string;
 };
+
+
+export type PayoutProviderOption = {
+  id: string;
+  name: string;
+  destinationType: DestinationType;
+  providerRefId?: string | null;
+  currency?: string | null;
+};
+
+export type PayoutProviderMetadata = {
+  mobileMoneyOperators: PayoutProviderOption[];
+  banks: PayoutProviderOption[];
+  currencies: string[];
+};
