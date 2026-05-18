@@ -17,7 +17,7 @@ import { apiFetch } from "./lib/api";
 import { navigateToAdmin } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
-import { getVisibleAdminActions } from "./modules/payouts/uiModel";
+import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
 import AdminRouteGuard from "./components/AdminRouteGuard";
 import ActionModal from "./components/ActionModal";
 
@@ -175,7 +175,16 @@ function statusTone(status: string) {
 }
 
 function formatStatus(value: string | null | undefined) {
-  return value ? value.replace(/_/g, " ") : "—";
+  if (!value) return "—";
+  const normalized = String(value || "").toLowerCase();
+  if (
+    ["eligible", "queued", "processing", "pending", "held", "paid", "failed", "cancelled"].includes(
+      normalized,
+    )
+  ) {
+    return getSellerPayoutStatusLabel(normalized);
+  }
+  return value.replace(/_/g, " ");
 }
 
 function csvCell(value: unknown) {

@@ -18,6 +18,8 @@ import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequire
 import PayoutDestinationForm from "./components/payouts/PayoutDestinationForm";
 import PayoutStatusBadge from "./components/payouts/PayoutStatusBadge";
 import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
+import PayoutTimeline from "./components/payouts/PayoutTimeline";
+import PayoutPolicyExplainer from "./components/payouts/PayoutPolicyExplainer";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
 import {
@@ -36,7 +38,11 @@ import type {
   PayoutRecord,
   PayoutSummary,
 } from "./modules/payouts/types";
-import { sellerOperationalSignals } from "./modules/payouts/uiModel";
+import {
+  getSellerPayoutStatusDetail,
+  getSellerPayoutStatusLabel,
+  sellerOperationalSignals,
+} from "./modules/payouts/uiModel";
 
 const INITIAL_FORM: PayoutDestinationFormState = {
   destinationType: "mobile_money",
@@ -386,6 +392,11 @@ export default function SellerPayoutsPage() {
               <SellerEarningsSummary summary={earningsSummary} compact />
             </div>
           </div>
+
+          <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <PayoutTimeline payouts={payouts} />
+            <PayoutPolicyExplainer />
+          </div>
         </section>
 
         {notice ? (
@@ -578,6 +589,9 @@ export default function SellerPayoutsPage() {
                             <td className="px-4 py-4">
                               <div className="space-y-2">
                                 <PayoutStatusBadge status={payout.status} />
+                                <div className="text-xs font-semibold text-zinc-600">
+                                  {getSellerPayoutStatusLabel(payout.status)}
+                                </div>
                                 {payout.status === "held" ? (
                                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
                                     <div>Payout held for review</div>
@@ -659,6 +673,9 @@ export default function SellerPayoutsPage() {
                                     </div>
                                   ))
                                 )}
+                                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
+                                  {getSellerPayoutStatusDetail(payout.status)}
+                                </div>
                               </div>
                             </td>
                             <td className="px-4 py-4 text-zinc-500">

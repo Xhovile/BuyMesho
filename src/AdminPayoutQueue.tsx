@@ -3,7 +3,7 @@ import { Loader2, RefreshCw, ShieldCheck, TriangleAlert, Clock3, CircleCheckBig 
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
-import { getVisibleAdminActions } from "./modules/payouts/uiModel";
+import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
 
 type PayoutRow = {
   id: string;
@@ -245,7 +245,7 @@ export default function AdminPayoutQueue() {
                   <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${pillClass(rowTone)}`}>
-                        {row.status}
+                        {getSellerPayoutStatusLabel(row.status)}
                       </span>
                       {row.provider ? (
                         <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">

@@ -15,6 +15,14 @@ type OrderDetailsCardProps = {
   orderId: string;
   totalCurrency: string;
   totalAmount: number;
+  sellerPayout?: {
+    paymentCaptured: boolean;
+    escrowState: string;
+    releaseEligibility: string;
+    payoutStatus: string;
+    estimatedPayoutDate?: string | null;
+    payoutDestinationMask?: string | null;
+  } | null;
 };
 
 function formatLabel(value: string): string {
@@ -31,6 +39,7 @@ export default function OrderDetailsCard({
   orderId,
   totalCurrency,
   totalAmount,
+  sellerPayout = null,
 }: OrderDetailsCardProps) {
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
@@ -104,6 +113,45 @@ export default function OrderDetailsCard({
             {totalCurrency} {totalAmount.toLocaleString()}
           </p>
         </div>
+
+        {sellerPayout ? (
+          <>
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="text-zinc-500">Payment captured</span>
+              <p className="mt-1 font-semibold text-zinc-900">
+                {sellerPayout.paymentCaptured ? 'Yes' : 'No'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="text-zinc-500">Release eligibility</span>
+              <p className="mt-1 font-semibold capitalize text-zinc-900">
+                {formatLabel(sellerPayout.releaseEligibility)}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="text-zinc-500">Payout status</span>
+              <p className="mt-1 font-semibold capitalize text-zinc-900">
+                {formatLabel(sellerPayout.payoutStatus)}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="text-zinc-500">Estimated payout date</span>
+              <p className="mt-1 font-semibold text-zinc-900">
+                {sellerPayout.estimatedPayoutDate || '—'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
+              <span className="text-zinc-500">Payout destination</span>
+              <p className="mt-1 font-semibold text-zinc-900">
+                {sellerPayout.payoutDestinationMask || 'Not configured'}
+              </p>
+            </div>
+          </>
+        ) : null}
       </div>
     </div>
   );

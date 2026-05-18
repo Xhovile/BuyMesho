@@ -14,6 +14,7 @@ import {
   navigateToSellerProfile,
 } from "./lib/appNavigation";
 import { buildSellerEarningsSummary } from "./modules/payouts/summary";
+import type { PayoutRecord } from "./modules/payouts/types";
 import type { Listing, SellerDashboardData } from "./types";
 
 type ListingActionResponse = {
@@ -48,19 +49,24 @@ export default function MyListingsPage() {
     PayoutDestination[] | null
   >(null);
   const [payoutDestinationError, setPayoutDestinationError] = useState(false);
+  const [payoutHistory, setPayoutHistory] = useState<PayoutRecord[]>([]);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   const dashboardEarningsSummary = useMemo(() => {
     const payoutTotals =
       dashboard?.payouts ??
+      dashboard?.payouts_summary ??
       dashboard?.payoutSummary ??
+      dashboard?.payout_summary ??
       dashboard?.earnings ??
+      dashboard?.earnings_summary ??
       null;
     return buildSellerEarningsSummary({
       ...(payoutTotals ?? {}),
+      payouts: payoutHistory,
       destinations: payoutDestinations ?? undefined,
     });
-  }, [dashboard, payoutDestinations]);
+  }, [dashboard, payoutDestinations, payoutHistory]);
 
   const stockSnapshot = useMemo(() => {
     const totalListed = listings.length;
@@ -121,6 +127,28 @@ export default function MyListingsPage() {
     };
 
     void loadPayoutDestinations();
+  }, [firebaseUser, profile?.is_seller]);
+
+  useEffect(() => {
+    const loadPayoutHistory = async () => {
+      if (!firebaseUser || !profile?.is_seller) {
+        setPayoutHistory([]);
+        return;
+      }
+
+      try {
+        const data = await apiFetch(
+          `/api/payouts/history/${encodeURIComponent(firebaseUser.uid)}`,
+        );
+        const payouts = Array.isArray(data?.payouts) ? data.payouts : [];
+        setPayoutHistory(payouts);
+      } catch (error) {
+        console.error("Failed to load payout history", error);
+        setPayoutHistory([]);
+      }
+    };
+
+    void loadPayoutHistory();
   }, [firebaseUser, profile?.is_seller]);
 
   useEffect(() => {

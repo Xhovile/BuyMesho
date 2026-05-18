@@ -593,6 +593,7 @@ export default function AdminPaymentsConsole() {
             <div className="space-y-2">
               <p className="text-sm font-black text-zinc-900">How to read this page</p>
               <p className="text-sm leading-relaxed text-zinc-600">Pending means the payment has been created, but the webhook or verification step has not completed yet. Once confirmed, the order should move through paid and into escrow, and later to released or refunded.</p>
+              <p className="text-sm leading-relaxed text-zinc-600">Seller-facing payout wording remains: Queued for admin review → Sent to PayChangu → Provider pending → Paid (or Needs destination update).</p>
               <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"><CircleAlert className="h-3.5 w-3.5" />Escrow control should stay in the order flow, not the admin page.</p>
             </div>
           </div>

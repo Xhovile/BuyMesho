@@ -22,9 +22,17 @@ export type EscrowSummaryRecord = {
 export type SellerEarningsSummaryTotals = Partial<
   Record<SellerEarningsBucketKey, number | string | null>
 > & {
+  lifetime_sales?: number | string | null;
+  in_escrow?: number | string | null;
+  available_for_payout?: number | string | null;
+  pending_payout?: number | string | null;
+  paid_out?: number | string | null;
+  failed_action_required?: number | string | null;
   total?: number | string | null;
   totalSales?: number | string | null;
+  total_sales?: number | string | null;
   totalPayoutVolume?: number | string | null;
+  total_payout_volume?: number | string | null;
   currency?: string | null;
 };
 
@@ -134,14 +142,29 @@ function applyExplicitTotals(
   summary: SellerEarningsBuckets,
   input: SellerEarningsSummaryTotals,
 ) {
+  const aliasValues: Partial<Record<SellerEarningsBucketKey, unknown>> = {
+    lifetimeSales: input.lifetime_sales,
+    inEscrow: input.in_escrow,
+    availableForPayout: input.available_for_payout,
+    pendingPayout: input.pending_payout,
+    paidOut: input.paid_out,
+    failedActionRequired: input.failed_action_required,
+  };
+
   for (const key of Object.keys(EMPTY_BUCKETS) as SellerEarningsBucketKey[]) {
-    if (input[key] !== undefined && input[key] !== null) {
-      summary[key] = amount(input[key]);
+    const value = input[key] ?? aliasValues[key];
+    if (value !== undefined && value !== null) {
+      summary[key] = amount(value);
     }
   }
 
   if (input.lifetimeSales === undefined || input.lifetimeSales === null) {
-    const total = input.totalSales ?? input.total ?? input.totalPayoutVolume;
+    const total =
+      input.totalSales ??
+      input.total_sales ??
+      input.total ??
+      input.totalPayoutVolume ??
+      input.total_payout_volume;
     if (total !== undefined && total !== null) {
       summary.lifetimeSales = amount(total);
     }

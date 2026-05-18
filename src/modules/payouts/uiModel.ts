@@ -78,6 +78,19 @@ export function getSellerPayoutLaunchStatusMeta(input: SellerPayoutSignalInput):
   return LAUNCH_STATUS_META[getSellerPayoutLaunchStatus(input)];
 }
 
+export function getSellerPayoutStatusLabel(status: string): string {
+  const normalized = String(status ?? "").toLowerCase();
+  if (normalized === "queued") return "Queued for admin review";
+  if (normalized === "processing") return "Sent to PayChangu";
+  if (normalized === "pending") return "Provider pending";
+  if (normalized === "failed") return "Needs destination update";
+  return getSellerPayoutLaunchStatusMeta({ status: normalized || "eligible" }).label;
+}
+
+export function getSellerPayoutStatusDetail(status: string): string {
+  return getSellerPayoutLaunchStatusMeta({ status }).detail;
+}
+
 export function sellerOperationalSignals(input: SellerPayoutSignalInput): string[] {
   const messages: string[] = [];
   const destinationStatus = String(input.destinationStatus ?? '').toLowerCase();

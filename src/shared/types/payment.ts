@@ -54,3 +54,33 @@ export interface PayoutInstruction extends Timestamped {
     maskedAccount?: string;
   };
 }
+
+export type SellerOrderPayoutStatus =
+  | 'eligible'
+  | 'queued'
+  | 'processing'
+  | 'pending'
+  | 'held'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'unknown';
+
+export type SellerOrderReleaseEligibility =
+  | 'eligible'
+  | 'awaiting_release'
+  | 'blocked'
+  | 'not_applicable';
+
+export interface SellerOrderPayoutMetadata {
+  paymentCaptured: boolean;
+  escrowState: string;
+  releaseEligibility: SellerOrderReleaseEligibility;
+  payoutStatus: SellerOrderPayoutStatus;
+  estimatedPayoutDate?: ISODateString | null;
+  payoutDestinationMask?: string | null;
+  destinationStatus?: string | null;
+  manualReviewPending?: boolean | null;
+  retryAllowed?: boolean | null;
+  verificationBlockers?: string[] | null;
+}
