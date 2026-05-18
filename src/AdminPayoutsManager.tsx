@@ -635,7 +635,8 @@ function AdminPayoutsManagerContent() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `admin-payouts-${new Date().toISOString().replace(/[:.]/g, "-")}.csv`;
+    const exportTimestamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/T/, "_").replace(/Z$/, "");
+    link.download = `admin-payouts-${exportTimestamp}.csv`;
     document.body.appendChild(link);
     link.click();
     link.remove();

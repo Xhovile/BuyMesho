@@ -5,6 +5,9 @@ import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
 
+const DEFAULT_PAYOUT_PAGE_SIZE = 200;
+const MAX_PAYOUT_PAGE_SIZE = 500;
+
 function jsonError(error: unknown, fallback: string): { error: string } {
   return {
     error: error instanceof Error ? error.message : fallback,
@@ -276,7 +279,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
-  router.get('/payouts', requireAuth, (req, res) => {
+  router.get('/payouts', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;
 
@@ -285,7 +288,9 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       const parsedLimit = Number(rawLimit);
       const parsedOffset = Number(rawOffset);
       const hasPaginationQuery = rawLimit != null || rawOffset != null;
-      const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 500) : 200;
+      const limit = Number.isFinite(parsedLimit)
+        ? Math.min(Math.max(Math.trunc(parsedLimit), 1), MAX_PAYOUT_PAGE_SIZE)
+        : DEFAULT_PAYOUT_PAGE_SIZE;
       const offset = Number.isFinite(parsedOffset) ? Math.max(Math.trunc(parsedOffset), 0) : 0;
 
       const db = getPaymentDb();
