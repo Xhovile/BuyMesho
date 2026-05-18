@@ -227,50 +227,15 @@ export class PayoutWebhookHandler {
     const normalizedStatus = normalizePaychanguPayoutStatus(details.status);
     const now = new Date().toISOString();
 
-    if (normalizedStatus === 'paid') {
-      payoutService.markPaid(payout.id, 'provider-webhook', 'Reconciled from provider callback');
-      addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
-        chargeId: details.chargeId ?? null,
-        providerReference: details.providerReference ?? null,
-        providerTransactionId: details.transactionId ?? null,
-        providerEventId: details.providerEventId ?? null,
-        status: normalizedStatus,
-      });
-    } else if (normalizedStatus === 'failed') {
-      payoutService.markFailed(payout.id, 'provider-webhook', 'Provider callback reported payout failure');
-      addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
-        chargeId: details.chargeId ?? null,
-        providerReference: details.providerReference ?? null,
-        providerTransactionId: details.transactionId ?? null,
-        providerEventId: details.providerEventId ?? null,
-        status: normalizedStatus,
-      });
-    } else {
-      addPayoutEventIfFound(payout, 'payout_reconciled', 'Reconciled from provider callback', {
-        chargeId: details.chargeId ?? null,
-        providerReference: details.providerReference ?? null,
-        providerTransactionId: details.transactionId ?? null,
-        providerEventId: details.providerEventId ?? null,
-        status: normalizedStatus,
-      });
-    }
-
-    getPaymentDb().prepare(
-      `UPDATE payouts
-       SET provider_status = COALESCE(?, provider_status),
-           provider_ref_id = COALESCE(?, provider_ref_id),
-           provider_transaction_id = COALESCE(?, provider_transaction_id),
-            raw_response = COALESCE(?, raw_response),
-            updated_at = ?
-        WHERE id = ?`,
-    ).run(
-      normalizedStatus,
-      details.providerReference ?? null,
-      details.transactionId ?? null,
-      JSON.stringify(asRecord(parsedPayload)),
-      now,
-      payout.id,
-    );
+    payoutService.reconcileProviderCallback({
+      payoutId: payout.id,
+      status: normalizedStatus,
+      providerChargeId: details.chargeId ?? null,
+      providerReference: details.providerReference ?? null,
+      providerTransactionId: details.transactionId ?? null,
+      rawPayload: parsedPayload,
+      eventId: details.providerEventId ?? eventId,
+    });
 
     updatePaymentWebhookEventStatus(eventId, 'processed', {
       processedAt: now,
