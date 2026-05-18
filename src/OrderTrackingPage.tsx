@@ -8,6 +8,7 @@ import {
 } from "./lib/appNavigation";
 import {
   fetchOrderByReference,
+  getOrderPayoutMetadata,
   openOrderDispute,
   releaseOrderEscrow,
   type OrderBundle,
@@ -16,7 +17,10 @@ import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
 import OrderProgressTracker from "./components/orders/OrderProgressTracker";
 import OrderDetailsCard from "./components/orders/OrderDetailsCard";
 import DisputeActionsCard from "./components/orders/DisputeActionsCard";
+import SellerOrderPayoutPanel from "./components/orders/SellerOrderPayoutPanel";
+import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
+import { buildSellerOrderPayoutViewModel } from "./modules/payouts/orderPayoutViewModel";
 
 const stages = [
   "Order placed",
@@ -34,6 +38,7 @@ export default function OrderTrackingPage() {
 }
 
 function OrderTrackingPageContent() {
+  const { firebaseUser, profile } = useAccountProfile();
   const [bundle, setBundle] = useState<OrderBundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -71,6 +76,20 @@ function OrderTrackingPageContent() {
   }, [reload]);
 
   const order = bundle?.order ?? null;
+  const viewerUid = firebaseUser?.uid ?? profile?.uid ?? null;
+  const orderSellerUid =
+    typeof order?.sellerId === "string"
+      ? order.sellerId
+      : typeof order?.seller_id === "string"
+        ? order.seller_id
+        : null;
+  const isSellerViewer = !!viewerUid && !!orderSellerUid && viewerUid === orderSellerUid;
+  const sellerPayoutMetadata = bundle ? getOrderPayoutMetadata(bundle) : null;
+  const showSellerPayout = isSellerViewer && !!sellerPayoutMetadata?.paymentCaptured;
+  const sellerPayoutModel =
+    showSellerPayout && sellerPayoutMetadata
+      ? buildSellerOrderPayoutViewModel({ metadata: sellerPayoutMetadata })
+      : null;
 
   const paymentStatus =
     typeof bundle?.payment?.status === "string"
@@ -244,12 +263,15 @@ const escrowUpdatedAt =
                 }}
                 paidAt={paidAt}
                 escrowUpdatedAt={escrowUpdatedAt}
+                viewer={isSellerViewer ? "seller" : "buyer"}
               />
 
               <OrderProgressTracker stages={stages} activeIndex={activeIndex} />
             </div>
 
             <div className="space-y-6">
+              {sellerPayoutModel ? <SellerOrderPayoutPanel model={sellerPayoutModel} /> : null}
+
               <OrderDetailsCard
                 reference={reference}
                 firstItemTitle={firstItemTitle}
@@ -260,6 +282,18 @@ const escrowUpdatedAt =
                 orderId={order.id}
                 totalCurrency={totalCurrency}
                 totalAmount={totalAmount}
+                sellerPayout={
+                  sellerPayoutMetadata && showSellerPayout
+                    ? {
+                        paymentCaptured: sellerPayoutMetadata.paymentCaptured,
+                        escrowState: sellerPayoutMetadata.escrowState,
+                        releaseEligibility: sellerPayoutMetadata.releaseEligibility,
+                        payoutStatus: sellerPayoutMetadata.payoutStatus,
+                        estimatedPayoutDate: sellerPayoutModel?.estimatedPayoutDate,
+                        payoutDestinationMask: sellerPayoutModel?.payoutDestinationMask,
+                      }
+                    : null
+                }
               />
 
               <DisputeActionsCard

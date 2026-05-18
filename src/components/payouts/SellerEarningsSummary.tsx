@@ -65,7 +65,7 @@ const CARDS: SummaryCard[] = [
   },
   {
     key: "failedActionRequired",
-    label: "Action required",
+    label: "Failed payout - action required",
     helper: "Failed payouts needing review or retry",
     tone: "bg-red-50 text-red-700 border-red-100",
     icon: AlertTriangle,

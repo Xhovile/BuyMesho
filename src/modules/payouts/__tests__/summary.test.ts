@@ -41,6 +41,13 @@ test("buildSellerEarningsSummary maps payout statuses into seller buckets", () =
   assert.equal(summary.paidOut, 600);
   assert.equal(summary.failedActionRequired, 700);
   assert.equal(summary.lifetimeSales, 2800);
+  assert.equal(
+    summary.availableForPayout +
+      summary.pendingPayout +
+      summary.paidOut +
+      summary.failedActionRequired,
+    summary.lifetimeSales,
+  );
   assert.equal(summary.hasFailedPayout, true);
   assert.equal(summary.hasHeldPayout, true);
 });
@@ -70,4 +77,17 @@ test("buildSellerEarningsSummary flags missing and unverified destinations safel
     buildSellerEarningsSummary({ destinations: [{ isActive: true, verificationStatus: "verified" }] }).hasUnverifiedDestination,
     false,
   );
+});
+
+test("buildSellerEarningsSummary supports snake_case backend totals as authoritative", () => {
+  const summary = buildSellerEarningsSummary({
+    payouts: [payout("paid", 100)],
+    lifetime_sales: "5000",
+    pending_payout: "300",
+    paid_out: "4700",
+  });
+
+  assert.equal(summary.lifetimeSales, 5000);
+  assert.equal(summary.pendingPayout, 300);
+  assert.equal(summary.paidOut, 4700);
 });
