@@ -151,3 +151,55 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
     resetState();
   }
 });
+
+test('concurrent retry calls do not reuse the same attempt_no', async () => {
+  resetState();
+  seedPayout();
+
+  const originalFetch = global.fetch;
+  let payoutRequestCount = 0;
+
+  global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (url.includes('/wallet-balance')) {
+      return new Response(JSON.stringify({ data: { main_balance: 100000, currency: 'MWK' } }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+
+    payoutRequestCount += 1;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    return new Response(JSON.stringify({
+      status: 'successful',
+      data: { transaction: { status: 'successful' } },
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const [first, second] = await Promise.all([
+      payoutService.executePayout({ payoutId, actorType: 'admin', actorId: 'admin-concurrent-1' }),
+      payoutService.executePayout({ payoutId, actorType: 'admin', actorId: 'admin-concurrent-2' }),
+    ]);
+
+    assert.ok(first.attempt);
+    assert.ok(second.attempt);
+    const db = getPaymentDb();
+    const attempts = db.prepare(
+      `SELECT attempt_no
+       FROM payout_attempts
+       WHERE payout_id = ?
+       ORDER BY attempt_no ASC`,
+    ).all(payoutId) as Array<{ attempt_no: number }>;
+
+    assert.equal(payoutRequestCount, 2);
+    assert.equal(attempts.length, 2);
+    assert.deepEqual(attempts.map((row) => row.attempt_no), [1, 2]);
+  } finally {
+    global.fetch = originalFetch;
+    resetState();
+  }
+});
