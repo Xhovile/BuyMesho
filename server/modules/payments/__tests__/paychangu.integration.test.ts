@@ -183,7 +183,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   const originalFetch = global.fetch;
   const originalConsoleLog = console.log;
   const notificationLogs: unknown[][] = [];
-  global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1030);
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1000);
   console.log = (...args: unknown[]) => {
     if (args[0] === '[notification] order_paid') notificationLogs.push(args);
     originalConsoleLog(...args);
@@ -235,7 +235,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
       event_type: 'api.charge.payment',
       event_id: 'evt_success_1',
       tx_ref: checkoutResult.reference,
-      data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1030, currency: 'MWK' },
+      data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' },
     });
     const signature = signWebhook(rawWebhook);
 
