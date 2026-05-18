@@ -53,6 +53,11 @@ type PayoutRecord = {
   releaseEntryId: string | null;
   amount: number;
   currency: string;
+  grossAmount?: number | null;
+  platformFeeAmount?: number | null;
+  reserveAmount?: number | null;
+  manualAdjustmentAmount?: number | null;
+  netAmount?: number | null;
   status: "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
   provider: string | null;
   providerChargeId: string | null;
@@ -149,7 +154,7 @@ function sellerFacingPayoutSummary(payout: PayoutRecord) {
   if (["queued", "processing", "pending", "eligible"].includes(payout.status)) {
     return {
       title: "In progress",
-      detail: "Awaiting provider processing.",
+      detail: "Awaiting payout provider update.",
     };
   }
 
@@ -709,7 +714,17 @@ export default function SellerPayoutsPage() {
                               ) : null}
                             </div>
                           </td>
-                          <td className="px-4 py-4 font-bold text-zinc-900">{money(Number(payout.amount || 0), payout.currency)}</td>
+                          <td className="px-4 py-4 text-zinc-700">
+                            <div className="font-bold text-zinc-900">{money(Number(payout.netAmount ?? payout.amount ?? 0), payout.currency)}</div>
+                            {payout.grossAmount !== null && payout.grossAmount !== undefined ? (
+                              <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
+                                <div className="flex justify-between gap-3"><span>Gross</span><span>{money(Number(payout.grossAmount || 0), payout.currency)}</span></div>
+                                <div className="flex justify-between gap-3"><span>Platform commission</span><span>-{money(Number(payout.platformFeeAmount || 0), payout.currency)}</span></div>
+                                <div className="flex justify-between gap-3"><span>Reserve</span><span>-{money(Number(payout.reserveAmount || 0), payout.currency)}</span></div>
+                                <div className="flex justify-between gap-3"><span>Adjustments</span><span>-{money(Number(payout.manualAdjustmentAmount || 0), payout.currency)}</span></div>
+                              </div>
+                            ) : null}
+                          </td>
                           <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
                           <td className="px-4 py-4 text-zinc-600">
                             <div className="space-y-1">
@@ -758,3 +773,21 @@ function MiniStatus({ icon, title, text }: { icon: ReactNode; title: string; tex
   return (
     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex items-center gap-3">
+        <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700 shadow-sm">{icon}</div>
+        <div>
+          <p className="text-sm font-black text-zinc-900">{title}</p>
+          <p className="mt-0.5 text-xs font-semibold leading-5 text-zinc-500">{text}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetaBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+      <p className="text-[10px] font-black uppercase tracking-[0.16em] text-zinc-400">{label}</p>
+      <p className="mt-1 text-sm font-bold text-zinc-700">{value}</p>
+    </div>
+  );
+}

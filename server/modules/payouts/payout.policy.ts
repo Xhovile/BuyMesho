@@ -1,5 +1,7 @@
 export const PAYOUT_POLICY = {
   platformFeeBps: 200,
+  buyerFeeBps: 0,
+  payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
   minimumPayoutAmount: 1000,
@@ -35,6 +37,19 @@ export type PayoutFormulaInput = {
   currency?: string;
 };
 
+export type CustomerCheckoutFeeInput = {
+  itemTotalAmount: number;
+  currency?: string;
+};
+
+export type CustomerCheckoutFeeBreakdown = {
+  itemTotalAmount: number;
+  buyerFeeAmount: number;
+  payChanguTransactionFeeAmount: number;
+  finalTotalAmount: number;
+  currency: string;
+};
+
 export type PayoutFormulaResult = {
   grossAmount: number;
   platformFeeAmount: number;
@@ -49,6 +64,21 @@ export type PayoutFormulaResult = {
 export function toFixedMoney(amount: number): number {
   if (!Number.isFinite(amount)) return 0;
   return Math.max(0, Math.round(amount));
+}
+
+export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): CustomerCheckoutFeeBreakdown {
+  const itemTotalAmount = toFixedMoney(input.itemTotalAmount);
+  const buyerFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.buyerFeeBps) / 10_000);
+  const payChanguTransactionFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.payChanguCustomerFeeBps) / 10_000);
+  const finalTotalAmount = toFixedMoney(itemTotalAmount + buyerFeeAmount + payChanguTransactionFeeAmount);
+
+  return {
+    itemTotalAmount,
+    buyerFeeAmount,
+    payChanguTransactionFeeAmount,
+    finalTotalAmount,
+    currency: (input.currency ?? 'MWK').toUpperCase(),
+  };
 }
 
 export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormulaResult {

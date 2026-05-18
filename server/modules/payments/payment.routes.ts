@@ -14,6 +14,7 @@ import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import { calculateCustomerCheckoutFees } from '../payouts/payout.policy.js';
 
 const checkoutLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -203,6 +204,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       }
 
       const primarySellerId = sellerIds.values().next().value ?? 'multiple-sellers';
+      const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
 
       const order: OrderState = {
         id: orderId,
@@ -212,7 +214,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         status: 'pending_payment',
         currency,
         subtotal: { amount: total, currency },
-        total: { amount: total, currency },
+        total: { amount: feeBreakdown.finalTotalAmount, currency },
         paymentProvider: 'paychangu',
         items: orderItems,
         placedAt: now,
@@ -228,7 +230,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         orderId,
         provider: 'paychangu',
         method: method as CreatePaymentRequest['method'],
-        amount: { amount: total, currency },
+        amount: { amount: feeBreakdown.finalTotalAmount, currency },
         customer: {
           id: buyerUid,
           name: buyerName || buyerEmail || buyerUid,
@@ -243,6 +245,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           orderItemReferences: orderItems.map((item) => item.reference),
           sellerId: primarySellerId,
           sellerIds: Array.from(sellerIds),
+          feeBreakdown,
         },
       };
 
@@ -262,6 +265,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         reference: payment.reference,
         checkoutUrl: payment.checkoutUrl,
         status: payment.status,
+        feeBreakdown,
         items: orderItems.map((item) => ({
           listingId: item.listingId,
           title: item.title,
