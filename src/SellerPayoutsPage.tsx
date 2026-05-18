@@ -364,7 +364,7 @@ export default function SellerPayoutsPage() {
   const canViewHistory = permissions?.viewPayoutHistory !== false;
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#f4f5f7] text-zinc-900">
+    <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
@@ -595,7 +595,7 @@ export default function SellerPayoutsPage() {
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+          <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout destinations</p>
@@ -655,7 +655,7 @@ export default function SellerPayoutsPage() {
 </div>
 </div>
 
-          <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+          <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout history</p>
@@ -758,21 +758,3 @@ function MiniStatus({ icon, title, text }: { icon: ReactNode; title: string; tex
   return (
     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700">{icon}</div>
-        <div>
-          <p className="font-black text-zinc-900">{title}</p>
-          <p className="text-sm text-zinc-600">{text}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MetaBox({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">{label}</p>
-      <p className="mt-1 text-sm font-semibold text-zinc-900">{value}</p>
-    </div>
-  );
-}
