@@ -18,7 +18,7 @@ See `docs/structure-completion-gate.md` for the full frozen checklist and the it
 The following areas are considered complete for the current payout launch scope:
 
 - Seller net payout formula
-- 2% platform fee enforcement
+- 3% platform fee enforcement
 - 6% reserve cap enforcement
 - Provider-fee ingestion into payout calculations
 - Manual adjustment APIs

@@ -20,7 +20,7 @@ This plan follows the frozen decisions in `docs/structure-completion-gate.md` an
 The launch scope covers:
 
 - seller net payout formula,
-- 2% platform fee,
+- 3% platform fee,
 - 6% reserve cap,
 - provider-fee ingestion into payout calculations,
 - manual adjustment APIs,
