@@ -132,7 +132,15 @@ type PayoutsListResponse = {
 
 type PendingDialog =
   | {
-      kind: "retry" | "reconcile";
+      kind: "retry";
+      row: PayoutRow;
+      title: string;
+      message: string;
+      confirmLabel: string;
+      danger?: boolean;
+    }
+  | {
+      kind: "reconcile";
       row: PayoutRow;
       title: string;
       message: string;

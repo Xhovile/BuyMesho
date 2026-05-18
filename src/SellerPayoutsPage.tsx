@@ -18,85 +18,26 @@ import {
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { apiFetch } from "./lib/api";
 import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
+import {
+  createPayoutDestination,
+  getPayoutDestinations,
+  getPayoutHistory,
+  getPayoutPermissions,
+  updatePayoutDestination,
+} from "./modules/payouts/api";
+import type {
+  DestinationType,
+  PayoutDestination,
+  PayoutDestinationFormState,
+  PayoutPermissions,
+  PayoutRecord,
+  PayoutSummary,
+  SellerFacingPayoutSummary,
+} from "./modules/payouts/types";
 import { sellerOperationalSignals } from "./modules/payouts/uiModel";
 
-type DestinationType = "mobile_money" | "bank";
-
-type PayoutDestination = {
-  id: string;
-  sellerId: string;
-  destinationType: DestinationType;
-  providerName: string;
-  providerRefId: string | null;
-  currency: string;
-  accountName: string;
-  maskedAccount: string;
-  isDefault: boolean;
-  verificationStatus: string;
-  verificationAttempts: number;
-  lastError: string | null;
-  verifiedAt: string | null;
-  replacedFromId: string | null;
-  replacedById: string | null;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PayoutRecord = {
-  id: string;
-  sellerId: string;
-  orderId: string | null;
-  escrowId: string | null;
-  releaseEntryId: string | null;
-  amount: number;
-  currency: string;
-  grossAmount?: number | null;
-  platformFeeAmount?: number | null;
-  reserveAmount?: number | null;
-  manualAdjustmentAmount?: number | null;
-  netAmount?: number | null;
-  status: "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
-  provider: string | null;
-  providerChargeId: string | null;
-  providerStatus?: string | null;
-  destinationStatus?: string;
-  holdReason?: string | null;
-  lastFailureReason?: string | null;
-  retryAllowed?: boolean;
-  retryCount?: number;
-  manualReviewPending?: boolean;
-  verificationBlockers?: string[];
-  lastUpdatedTimestamp?: string | null;
-  requestedBy: string | null;
-  requestedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-type PayoutPermissions = {
-  viewPayoutSettings: boolean;
-  editPayoutSettings: boolean;
-  requestWithdrawal: boolean;
-  viewPayoutHistory: boolean;
-  requestPayoutRetry: boolean;
-  approveOverride: boolean;
-};
-
-type FormState = {
-  destinationType: DestinationType;
-  providerName: string;
-  providerRefId: string;
-  currency: string;
-  accountName: string;
-  accountNumber: string;
-  mobile: string;
-  isDefault: boolean;
-};
-
-const INITIAL_FORM: FormState = {
+const INITIAL_FORM: PayoutDestinationFormState = {
   destinationType: "mobile_money",
   providerName: "",
   providerRefId: "",
@@ -136,7 +77,7 @@ function formatDate(value: string | null) {
   return date.toLocaleString();
 }
 
-function sellerFacingPayoutSummary(payout: PayoutRecord) {
+function sellerFacingPayoutSummary(payout: PayoutRecord): SellerFacingPayoutSummary {
   if (payout.status === "held") {
     return {
       title: "Payout held for review",
@@ -177,7 +118,7 @@ export default function SellerPayoutsPage() {
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(null);
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
+  const [form, setForm] = useState<PayoutDestinationFormState>(INITIAL_FORM);
   const [loading, setLoading] = useState(true);
   const [savingDestination, setSavingDestination] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -191,25 +132,25 @@ export default function SellerPayoutsPage() {
     setLoading(true);
     try {
       const [permissionsRes, destinationsRes, payoutsRes] = await Promise.allSettled([
-        apiFetch(`/api/payouts/permissions/${encodeURIComponent(sellerId)}`),
-        apiFetch(`/api/payouts/destinations?sellerUid=${encodeURIComponent(sellerId)}`),
-        apiFetch(`/api/payouts/history/${encodeURIComponent(sellerId)}`),
+        getPayoutPermissions(sellerId),
+        getPayoutDestinations(sellerId),
+        getPayoutHistory(sellerId),
       ]);
 
       if (permissionsRes.status === "fulfilled") {
-        setPermissions(permissionsRes.value.permissions ?? permissionsRes.value);
+        setPermissions(permissionsRes.value);
       } else {
         setPermissions(null);
       }
 
       if (destinationsRes.status === "fulfilled") {
-        setDestinations(Array.isArray(destinationsRes.value.destinations) ? destinationsRes.value.destinations : []);
+        setDestinations(destinationsRes.value);
       } else {
         setDestinations([]);
       }
 
       if (payoutsRes.status === "fulfilled") {
-        setPayouts(Array.isArray(payoutsRes.value.payouts) ? payoutsRes.value.payouts : []);
+        setPayouts(payoutsRes.value);
       } else {
         setPayouts([]);
       }
@@ -226,7 +167,7 @@ export default function SellerPayoutsPage() {
     void loadData();
   }, [sellerId, loadData]);
 
-  const summary = useMemo(() => {
+  const summary = useMemo<PayoutSummary>(() => {
     const amounts = {
       eligible: 0,
       queued: 0,
@@ -303,15 +244,9 @@ export default function SellerPayoutsPage() {
       };
 
       if (selectedDestinationId) {
-        await apiFetch(`/api/payouts/destinations/${selectedDestinationId}`, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
+        await updatePayoutDestination(selectedDestinationId, payload);
       } else {
-        await apiFetch(`/api/payouts/destinations`, {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
+        await createPayoutDestination(payload);
       }
 
       setNotice({ type: "success", message: selectedDestinationId ? "Payout destination updated." : "Payout destination saved." });
