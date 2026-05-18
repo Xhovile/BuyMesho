@@ -1,5 +1,5 @@
 import { ArrowLeft, ClipboardList, ShieldCheck, Webhook, Wallet } from "lucide-react";
-import { navigateToAdminPayments, navigateToAdminReports, navigateToAdminSellerApplications, navigateToPath } from "./lib/appNavigation";
+import { navigateToAdminPayments, navigateToAdminPayouts, navigateToAdminReports, navigateToAdminSellerApplications, navigateToPath } from "./lib/appNavigation";
 import AdminRouteGuard from "./components/AdminRouteGuard";
 
 function AdminHubButton({
@@ -61,7 +61,7 @@ function AdminHubContent() {
             <AdminHubButton title="Payments & Webhooks" icon={Webhook} onClick={() => navigateToAdminPayments()} />
           </div>
           <div className="mt-px bg-zinc-200">
-            <AdminHubButton title="Payouts" icon={Wallet} onClick={() => navigateToPath("/admin/payouts")} />
+            <AdminHubButton title="Payouts" icon={Wallet} onClick={() => navigateToAdminPayouts()} />
           </div>
         </section>
       </main>

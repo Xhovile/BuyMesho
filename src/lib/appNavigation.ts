@@ -31,6 +31,7 @@ export type AppRoute =
   | "my_listings"
   | "admin"
   | "admin_payments"
+  | "admin_payouts"
   | "admin_reports"
   | "admin_seller_applications"
   | "payment_return";
@@ -64,6 +65,7 @@ export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_PATH = "/admin";
 export const ADMIN_PAYMENTS_PATH = "/admin/payments";
+export const ADMIN_PAYOUTS_PATH = "/admin/payouts";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const PAYMENT_RETURN_PATH = "/payment/return";
@@ -345,6 +347,10 @@ export const getAppRouteFromLocation = (
     return "admin_payments";
   }
 
+  if (location.pathname === ADMIN_PAYOUTS_PATH) {
+    return "admin_payouts";
+  }
+
   if (location.pathname === ADMIN_REPORTS_PATH) {
     return "admin_reports";
   }
@@ -581,6 +587,7 @@ export const navigateToChangePassword = () => navigateToPath(CHANGE_PASSWORD_PAT
 export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
 export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
 export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
+export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
