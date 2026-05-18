@@ -36,9 +36,9 @@ test('processing fee and manual adjustments recalculate payout formula and emit 
   const db = getPaymentDb();
 
   db.prepare(
-    `INSERT INTO sellers (uid, email, display_name)
-     VALUES (?, ?, ?)`
-  ).run(sellerId, 'seller@test.local', 'Seller Adjustment');
+    `INSERT INTO sellers (uid, email)
+     VALUES (?, ?)`
+  ).run(sellerId, 'seller@test.local');
 
   db.prepare(
     `INSERT INTO payouts (

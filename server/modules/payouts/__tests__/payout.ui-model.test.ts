@@ -29,5 +29,5 @@ test('seller operational signals include provider failure and retry unavailable'
 
 test('admin action visibility is restricted to admins', () => {
   assert.deepEqual(getVisibleAdminActions(false), []);
-  assert.deepEqual(getVisibleAdminActions(true), ['retry', 'mark_paid', 'hold', 'mark_failed']);
+  assert.deepEqual(getVisibleAdminActions(true), ['retry', 'mark_paid', 'hold', 'mark_failed', 'cancel']);
 });

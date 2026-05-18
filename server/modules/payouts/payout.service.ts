@@ -84,7 +84,7 @@ export interface ExecutePayoutInput {
   actorId?: string | null;
 }
 
-export type AdminOverrideAction = 'hold' | 'mark_paid' | 'mark_failed';
+export type AdminOverrideAction = 'hold' | 'mark_paid' | 'mark_failed' | 'cancel';
 
 export type PayoutPermissionActor = {
   uid: string;
@@ -221,6 +221,16 @@ export function canManageSellerPayoutDestination(context: PayoutPermissionContex
 
 export function canAccessSellerPayoutData(context: PayoutPermissionContext): boolean {
   return canViewPayoutSettings(context);
+}
+
+/**
+ * System actor permission gate.
+ * The system actor (e.g. scheduled reconciliation, automated release) may always
+ * execute internal payout operations. System actions bypass human approval gates
+ * but still emit audit events with actorType='system'.
+ */
+export function canExecuteSystemAction(_operation: string): boolean {
+  return true;
 }
 
 export class PayoutRepository {
@@ -1174,6 +1184,7 @@ export class PayoutService {
       hold: new Set(['eligible', 'queued', 'processing', 'pending', 'failed']),
       mark_paid: new Set(['eligible', 'queued', 'processing', 'pending', 'failed', 'held']),
       mark_failed: new Set(['eligible', 'queued', 'processing', 'pending', 'held']),
+      cancel: new Set(['eligible', 'queued', 'failed', 'held']),
     };
     if (!allowedTransitions[input.action].has(from)) {
       throw new Error(`Invalid admin override transition from ${from} via ${input.action}`);
@@ -1198,6 +1209,14 @@ export class PayoutService {
         processedBy: input.actorId,
         approvedBy: input.actorId,
       });
+    } else if (input.action === 'cancel') {
+      payout = this.repository.updateStatus(input.payoutId, 'cancelled', {
+        failureReason: 'payout_cancelled',
+        failedAt: new Date().toISOString(),
+        manualReviewReason: reason,
+        processedBy: input.actorId,
+        approvedBy: input.actorId,
+      });
     } else {
       payout = this.repository.updateStatus(input.payoutId, 'held', {
         manualReviewReason: reason,
@@ -1212,7 +1231,9 @@ export class PayoutService {
           ? 'admin_mark_paid'
           : input.action === 'mark_failed'
             ? 'admin_mark_failed'
-            : 'admin_hold';
+            : input.action === 'cancel'
+              ? 'admin_cancel'
+              : 'admin_hold';
       this.repository.addEvent({
         payoutId: input.payoutId,
         sellerId: payout.sellerId,

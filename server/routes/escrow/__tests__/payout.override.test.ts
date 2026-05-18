@@ -98,7 +98,7 @@ test('override requires reason and rejects invalid action', async () => {
     reason: 'invalid test',
   });
   assert.equal(invalidAction.status, 400);
-  assert.equal(invalidAction.body.error, 'action must be one of: hold, mark_paid, mark_failed');
+  assert.equal(invalidAction.body.error, 'action must be one of: hold, mark_paid, mark_failed, cancel');
 });
 
 test('each override action updates state and emits one audit event with actor', async () => {
@@ -109,6 +109,7 @@ test('each override action updates state and emits one audit event with actor', 
     { payoutId: 'payout-override-hold', start: 'queued', action: 'hold', expected: 'held', reason: 'Awaiting admin review', eventType: 'admin_hold' },
     { payoutId: 'payout-override-paid', start: 'held', action: 'mark_paid', expected: 'paid', reason: 'Provider settled externally', eventType: 'admin_mark_paid' },
     { payoutId: 'payout-override-failed', start: 'processing', action: 'mark_failed', expected: 'failed', reason: 'Provider rejected destination', eventType: 'admin_mark_failed' },
+    { payoutId: 'payout-override-cancel', start: 'held', action: 'cancel', expected: 'cancelled', reason: 'Payout permanently withdrawn', eventType: 'admin_cancel' },
   ] as const;
 
   for (const testCase of cases) {
