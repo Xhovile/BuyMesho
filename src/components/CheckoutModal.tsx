@@ -232,12 +232,14 @@ export default function CheckoutModal({
                           {formatPrice(feeBreakdown.itemTotalAmount)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-4 text-zinc-600">
-                        <span className="font-bold">BuyMesho fee</span>
-                        <span className="font-extrabold text-zinc-900">
-                          {formatPrice(feeBreakdown.buyerFeeAmount)}
-                        </span>
-                      </div>
+                      {feeBreakdown.buyerFeeAmount > 0 && (
+                        <div className="flex items-center justify-between gap-4 text-zinc-600">
+                          <span className="font-bold">BuyMesho fee</span>
+                          <span className="font-extrabold text-zinc-900">
+                            {formatPrice(feeBreakdown.buyerFeeAmount)}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center justify-between gap-4 text-zinc-600">
                         <span className="font-bold">PayChangu transaction fee</span>
                         <span className="font-extrabold text-zinc-900">
