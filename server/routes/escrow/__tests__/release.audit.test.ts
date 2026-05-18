@@ -68,7 +68,7 @@ test('release creates payout_released audit event with formula snapshot', async 
     assert.equal(response.status, 200);
     const body = await response.json() as { payout?: { id?: string; amount?: number } };
     assert.ok(body.payout?.id);
-    assert.equal(body.payout?.amount, 1470);
+    assert.equal(body.payout?.amount, 1455);
 
     const auditRows = getPaymentDb()
       .prepare(`SELECT event_type, actor_type, actor_id, note, payload

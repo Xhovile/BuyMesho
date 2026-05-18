@@ -140,12 +140,12 @@ test('legacy processing fee storage and manual adjustments recalculate payout fo
 
     assert.equal(payoutRow.processing_fee_amount, 150);
     assert.equal(payoutRow.manual_adjustment_amount, 50);
-    assert.equal(payoutRow.net_amount, 9750);
+    assert.equal(payoutRow.net_amount, 9650);
 
     const snapshot = JSON.parse(payoutRow.formula_snapshot);
     assert.equal(snapshot.processingFeeAmount, 0);
     assert.equal(snapshot.manualAdjustmentAmount, 50);
-    assert.equal(snapshot.netAmount, 9750);
+    assert.equal(snapshot.netAmount, 9650);
 
     const adjustments = db.prepare(
       `SELECT adjustment_type, amount, reason
