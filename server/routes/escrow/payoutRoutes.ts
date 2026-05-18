@@ -83,10 +83,10 @@ function normalizeText(value: unknown): string | null {
 
 function normalizeOverrideAction(value: unknown): AdminOverrideAction {
   const action = normalizeText(value)?.toLowerCase();
-  if (action === 'hold' || action === 'mark_paid' || action === 'mark_failed') {
+  if (action === 'hold' || action === 'mark_paid' || action === 'mark_failed' || action === 'cancel') {
     return action;
   }
-  throw new Error('action must be one of: hold, mark_paid, mark_failed');
+  throw new Error('action must be one of: hold, mark_paid, mark_failed, cancel');
 }
 
 function normalizeCurrency(value: unknown): string {

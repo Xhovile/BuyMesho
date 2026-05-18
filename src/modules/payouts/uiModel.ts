@@ -32,7 +32,7 @@ export function sellerOperationalSignals(input: SellerPayoutSignalInput): string
   return Array.from(new Set(messages));
 }
 
-export function getVisibleAdminActions(isAdmin: boolean): Array<'retry' | 'hold' | 'mark_paid' | 'mark_failed'> {
+export function getVisibleAdminActions(isAdmin: boolean): Array<'retry' | 'hold' | 'mark_paid' | 'mark_failed' | 'cancel'> {
   if (!isAdmin) return [];
-  return ['retry', 'mark_paid', 'hold', 'mark_failed'];
+  return ['retry', 'mark_paid', 'hold', 'mark_failed', 'cancel'];
 }

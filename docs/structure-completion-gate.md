@@ -225,7 +225,7 @@ The structure is complete only when every item below is checked.
 ### Permissions
 - Seller permissions are defined — **done** (`canViewPayoutSettings`, `canEditPayoutSettings`, `canRequestWithdrawal`, `canRequestPayoutRetry`).
 - Admin permissions are defined — **done** (`canApprovePayoutOverride` and admin-gated routes).
-- System permissions are defined — **partial** (system actor is represented in payout events, but not yet formalized as a separate policy contract).
+- System permissions are defined — **done** (system actor is represented in payout events and formalized via `canExecuteSystemAction` policy function).
 - Payment provider responsibilities are defined — **partial** (provider execution and status mapping exist, but provider SLA/error taxonomy ownership is not yet documented in-code).
 - No frontend-only payout authority exists — **done** (all payout mutations are backend-authorized).
 
@@ -251,7 +251,7 @@ The structure is complete only when every item below is checked.
 - Failure path is defined — **done**.
 - Retry path is defined — **done**.
 - Manual review path is defined — **done**.
-- Hold and cancellation paths are defined — **partial** (hold path complete; cancellation exists but explicit admin cancellation runbook is not finalized).
+- Hold and cancellation paths are defined — **done** (hold path complete; admin `cancel` override action implemented with `admin_cancel` audit event; cancels from `eligible`, `queued`, `failed`, or `held` states).
 
 ### Retry and safety
 - Retry count is limited — **done** (`maxRetryCount = 3`).

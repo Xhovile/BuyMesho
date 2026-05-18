@@ -79,6 +79,7 @@ The canonical admin payout actions are:
 - retry
 - mark_paid
 - mark_failed
+- cancel
 
 All payout override actions must:
 - require admin authorization,
