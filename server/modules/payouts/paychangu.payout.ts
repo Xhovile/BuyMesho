@@ -394,19 +394,6 @@ async function getJson(
   return { payload, rawText, ok: response.ok, status: response.status };
 }
 
-function buildLegacyPayoutBody(input: ExecutePayChanguPayoutInput, providerChargeId: string, providerReference: string): Record<string, unknown> {
-  return {
-    amount: input.amount,
-    currency: input.currency,
-    tx_ref: providerChargeId,
-    reference: providerReference,
-    payout_reference: input.payoutId,
-    seller_id: input.sellerId,
-    provider_name: input.providerName,
-    destination_reference: input.destinationReference,
-  };
-}
-
 function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerChargeId: string): Record<string, unknown> {
   return {
     mobile: input.mobile ?? input.destinationReference,
