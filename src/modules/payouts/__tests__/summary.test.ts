@@ -41,7 +41,13 @@ test("buildSellerEarningsSummary maps payout statuses into seller buckets", () =
   assert.equal(summary.paidOut, 600);
   assert.equal(summary.failedActionRequired, 700);
   assert.equal(summary.lifetimeSales, 2800);
-  assert.equal(summary.lifetimeSales + 800, 3600);
+  assert.equal(
+    summary.availableForPayout +
+      summary.pendingPayout +
+      summary.paidOut +
+      summary.failedActionRequired,
+    summary.lifetimeSales,
+  );
   assert.equal(summary.hasFailedPayout, true);
   assert.equal(summary.hasHeldPayout, true);
 });

@@ -54,4 +54,3 @@ test("order payout view model gives seller-safe guidance for held and destinatio
   });
   assert.match(updateModel.nextStepGuidance, /update or verify/i);
 });
-

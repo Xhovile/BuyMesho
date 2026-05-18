@@ -4,6 +4,7 @@ import {
   type SellerPayoutSignalInput,
 } from "./uiModel";
 import type { SellerOrderPayoutMetadata } from "../../shared/types/payment";
+import { maskAccountLast4 } from "./masking";
 
 export type SellerOrderPayoutViewModelInput = {
   metadata: SellerOrderPayoutMetadata;
@@ -30,10 +31,7 @@ function formatDate(value?: string | null): string {
 }
 
 function normalizeMaskedDestination(mask?: string | null): string {
-  if (!mask) return "Not configured";
-  const digits = String(mask).replace(/\D/g, "");
-  if (digits.length < 4) return "Not configured";
-  return `•••• ${digits.slice(-4)}`;
+  return maskAccountLast4(mask) ?? "Not configured";
 }
 
 function releaseEligibilityCopy(eligibility: SellerOrderPayoutMetadata["releaseEligibility"]) {
@@ -90,4 +88,3 @@ export function buildSellerOrderPayoutViewModel(
           : "Payouts are automatically queued after escrow release and admin review.",
   };
 }
-

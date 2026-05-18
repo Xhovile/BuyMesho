@@ -1,5 +1,6 @@
 import { apiFetch } from "./api";
 import type { SellerOrderPayoutMetadata, SellerOrderPayoutStatus } from "../shared/types/payment";
+import { maskAccountLast4 } from "../modules/payouts/masking";
 
 export type OrderBundle = {
   order: {
@@ -77,9 +78,7 @@ function normalizeDestinationMask(bundle: OrderBundle): string | null {
       ?.maskedAccount,
   );
   if (!raw) return null;
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length < 4) return null;
-  return `•••• ${digits.slice(-4)}`;
+  return maskAccountLast4(raw);
 }
 
 export function getOrderPayoutMetadata(bundle: OrderBundle): SellerOrderPayoutMetadata {

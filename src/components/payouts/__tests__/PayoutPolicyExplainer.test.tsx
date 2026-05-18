@@ -12,4 +12,3 @@ test("PayoutPolicyExplainer describes automatic launch queue without manual with
   assert.match(html, /PayChangu/i);
   assert.doesNotMatch(html, /withdraw/i);
 });
-
