@@ -428,10 +428,10 @@ export class PayoutRepository {
   }
 
   recordAttempt(
+    id: string,
     payoutId: string,
     execution: PayChanguPayoutExecutionResult,
-  ): PayoutAttemptRecord {
-    const id = randomUUID();
+  ): void {
     const createdAt = new Date().toISOString();
     const failedReason =
       execution.status === 'failed'
@@ -439,24 +439,18 @@ export class PayoutRepository {
         : null;
 
     this.db.prepare(
-      `INSERT INTO payout_attempts (
-        id,
-        payout_id,
-        attempt_no,
-        provider,
-        provider_charge_id,
-        request_payload,
-        response_payload,
-        status,
-        failure_reason,
-        sent_at,
-        completed_at,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `UPDATE payout_attempts
+       SET provider = ?,
+           provider_charge_id = ?,
+           request_payload = ?,
+           response_payload = ?,
+           status = ?,
+           failure_reason = ?,
+           sent_at = ?,
+           completed_at = ?,
+           updated_at = ?
+       WHERE id = ?`,
     ).run(
-      id,
-      payoutId,
-      execution.attemptNo,
       execution.provider,
       execution.providerChargeId,
       JSON.stringify({
@@ -473,20 +467,64 @@ export class PayoutRepository {
       createdAt,
       createdAt,
       createdAt,
-    );
-
-    return {
       id,
-      payoutId,
-      provider: execution.provider,
-      providerChargeId: execution.providerChargeId,
-      providerReference: execution.providerReference,
-      providerTransactionId: execution.providerTransactionId,
-      status: execution.status,
-      attemptNo: execution.attemptNo,
-      rawResponse: execution.rawResponse,
-      createdAt,
-    };
+    );
+  }
+
+  reserveRetryAttempt(input: {
+    payoutId: string;
+    provider: string;
+    actorType: 'admin' | 'system';
+    actorId?: string | null;
+  }): { id: string; attemptNo: number; providerChargeId: string; createdAt: string } {
+    const transaction = this.db.transaction(() => {
+      const attemptNo = this.nextAttemptNo(input.payoutId);
+      const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, attemptNo);
+      const id = randomUUID();
+      const now = new Date().toISOString();
+
+      this.updateStatus(input.payoutId, 'processing', {
+        provider: input.provider,
+        providerChargeId,
+        providerStatus: 'processing',
+        approvedBy: input.actorType === 'admin' ? input.actorId ?? null : null,
+        sentAt: now,
+      });
+
+      this.db.prepare(
+        `INSERT INTO payout_attempts (
+          id,
+          payout_id,
+          attempt_no,
+          provider,
+          provider_charge_id,
+          request_payload,
+          response_payload,
+          status,
+          sent_at,
+          completed_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        id,
+        input.payoutId,
+        attemptNo,
+        input.provider,
+        providerChargeId,
+        JSON.stringify({ payoutId: input.payoutId, attemptNo }),
+        null,
+        'processing',
+        now,
+        null,
+        now,
+        now,
+      );
+
+      return { id, attemptNo, providerChargeId, createdAt: now };
+    });
+
+    return transaction();
   }
 
   addEvent(input: {
@@ -896,8 +934,14 @@ export class PayoutService {
       };
     }
 
-    const attemptNo = this.repository.nextAttemptNo(input.payoutId);
-    const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, attemptNo);
+    const reservedAttempt = this.repository.reserveRetryAttempt({
+      payoutId: input.payoutId,
+      provider: gate.provider,
+      actorType: actor.actorType,
+      actorId: actor.actorId ?? null,
+    });
+    const attemptNo = reservedAttempt.attemptNo;
+    const providerChargeId = reservedAttempt.providerChargeId;
 
     if (attemptNo > 1 || gate.currentFailureReason) {
       this.repository.addEvent({
@@ -921,14 +965,6 @@ export class PayoutService {
       });
     }
 
-    this.repository.updateStatus(input.payoutId, 'processing', {
-      provider: gate.provider,
-      providerChargeId,
-      providerStatus: 'processing',
-      approvedBy: actor.actorType === 'admin' ? actor.actorId ?? null : null,
-      sentAt: new Date().toISOString(),
-    });
-
     const execution = await executePayChanguPayout({
       payoutId: input.payoutId,
       sellerId: gate.sellerId,
@@ -945,7 +981,19 @@ export class PayoutService {
       bankAccountName: gate.destinationAccountName ?? undefined,
     });
 
-    const attempt = this.repository.recordAttempt(input.payoutId, execution);
+    this.repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
+    const attempt: PayoutAttemptRecord = {
+      id: reservedAttempt.id,
+      payoutId: input.payoutId,
+      provider: execution.provider,
+      providerChargeId: execution.providerChargeId,
+      providerReference: execution.providerReference,
+      providerTransactionId: execution.providerTransactionId,
+      status: execution.status,
+      attemptNo: execution.attemptNo,
+      rawResponse: execution.rawResponse,
+      createdAt: reservedAttempt.createdAt,
+    };
     if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
       const reason = providerFailureReason(execution.failureClass);
       const payout = this.holdForReview(
