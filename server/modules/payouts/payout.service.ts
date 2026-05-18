@@ -92,6 +92,16 @@ export interface ExecutePayoutInput {
   actorId?: string | null;
 }
 
+export interface ReconcileProviderCallbackInput {
+  payoutId: string;
+  status: PayoutStatus;
+  providerChargeId?: string | null;
+  providerReference?: string | null;
+  providerTransactionId?: string | null;
+  rawPayload?: unknown;
+  eventId?: string | number | null;
+}
+
 export type AdminOverrideAction = 'hold' | 'mark_paid' | 'mark_failed' | 'cancel';
 
 export type PayoutPermissionActor = {
@@ -1125,6 +1135,107 @@ export class PayoutService {
       payout: this.repository.findById(input.payoutId),
       status,
     };
+  }
+
+  reconcileProviderCallback(input: ReconcileProviderCallbackInput): PayoutRecord | undefined {
+    const db = getPaymentDb();
+    const now = new Date().toISOString();
+    const status = input.status;
+    const failureReason = status === 'failed' ? 'Provider callback reported payout failure' : null;
+    const rawResponse = JSON.stringify(input.rawPayload ?? {});
+
+    const row = db.prepare(
+      `SELECT id, seller_id
+       FROM payouts
+       WHERE id = ?
+       LIMIT 1`,
+    ).get(input.payoutId) as { id: string; seller_id: string } | undefined;
+
+    if (!row) {
+      return undefined;
+    }
+
+    const transaction = db.transaction(() => {
+      db.prepare(
+        `UPDATE payouts
+         SET status = ?,
+             provider = COALESCE(provider, 'paychangu'),
+             provider_charge_id = COALESCE(?, provider_charge_id),
+             provider_status = COALESCE(?, provider_status),
+             provider_ref_id = COALESCE(?, provider_ref_id),
+             provider_transaction_id = COALESCE(?, provider_transaction_id),
+             raw_response = ?,
+             paid_at = CASE WHEN ? = 'paid' THEN ? ELSE paid_at END,
+             failed_at = CASE WHEN ? = 'failed' THEN ? ELSE failed_at END,
+             failure_reason = CASE WHEN ? = 'failed' THEN ? ELSE failure_reason END,
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        status,
+        input.providerChargeId ?? null,
+        status,
+        input.providerReference ?? null,
+        input.providerTransactionId ?? null,
+        rawResponse,
+        status,
+        now,
+        status,
+        now,
+        status,
+        failureReason,
+        now,
+        input.payoutId,
+      );
+
+      const latestAttempt = db.prepare(
+        `SELECT id
+         FROM payout_attempts
+         WHERE payout_id = ?
+           AND (? IS NULL OR provider_charge_id = ?)
+         ORDER BY attempt_no DESC, created_at DESC
+         LIMIT 1`,
+      ).get(
+        input.payoutId,
+        input.providerChargeId ?? null,
+        input.providerChargeId ?? null,
+      ) as { id: string } | undefined;
+
+      if (latestAttempt) {
+        db.prepare(
+          `UPDATE payout_attempts
+           SET status = ?,
+               response_payload = ?,
+               completed_at = ?,
+               updated_at = ?
+           WHERE id = ?`,
+        ).run(
+          status,
+          rawResponse,
+          now,
+          now,
+          latestAttempt.id,
+        );
+      }
+
+      this.repository.addEvent({
+        payoutId: input.payoutId,
+        sellerId: row.seller_id,
+        eventType: 'payout_reconciled',
+        actorType: 'system',
+        actorId: null,
+        note: 'Reconciled from provider callback',
+        payload: {
+          chargeId: input.providerChargeId ?? null,
+          providerReference: input.providerReference ?? null,
+          providerTransactionId: input.providerTransactionId ?? null,
+          providerEventId: input.eventId ?? null,
+          status,
+        },
+      });
+    });
+
+    transaction();
+    return this.repository.findById(input.payoutId);
   }
 
   async reconcilePendingPayoutStatuses(input: {
