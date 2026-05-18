@@ -33,6 +33,7 @@ function mockPayChanguFetch(
   originalFetch: typeof fetch,
   reference: string,
   status: string,
+  amount = 1000,
 ): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -50,7 +51,7 @@ function mockPayChanguFetch(
         data: {
           tx_ref: reference,
           status,
-          amount: 1000,
+          amount,
           currency: 'MWK',
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -182,7 +183,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   const originalFetch = global.fetch;
   const originalConsoleLog = console.log;
   const notificationLogs: unknown[][] = [];
-  global.fetch = mockFetch(originalFetch);
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-integration-1', 'successful', 1030);
   console.log = (...args: unknown[]) => {
     if (args[0] === '[notification] order_paid') notificationLogs.push(args);
     originalConsoleLog(...args);
@@ -234,7 +235,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
       event_type: 'api.charge.payment',
       event_id: 'evt_success_1',
       tx_ref: checkoutResult.reference,
-      data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' },
+      data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1030, currency: 'MWK' },
     });
     const signature = signWebhook(rawWebhook);
 

@@ -96,7 +96,7 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     assert.equal(body.payout?.orderId, releasePayoutOrderId, 'payout should link to the order');
     assert.equal(body.payout?.escrowId, body.escrow?.id, 'payout should link to the escrow');
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
-    assert.equal(body.payout?.amount, 1470, 'payout should use the server-side net payout formula');
+    assert.equal(body.payout?.amount, 1455, 'payout should use the server-side net payout formula');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
     assert.equal(body.payout?.status, 'eligible', 'payout should start eligible without calling PayChangu');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');

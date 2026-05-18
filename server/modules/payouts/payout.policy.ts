@@ -1,7 +1,7 @@
 export const PAYOUT_POLICY = {
-  platformFeeBps: 200,
+  platformFeeBps: 300,
   buyerFeeBps: 0,
-  payChanguCustomerFeeBps: 0,
+  payChanguCustomerFeeBps: 300,
   reserveCapBps: 600,
   disputeWindowHours: 72,
   minimumPayoutAmount: 1000,
