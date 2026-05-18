@@ -324,3 +324,65 @@ Implementation file plan for the launch policy:
 5. Add seller earnings/payout status UI.
 6. Add PayChangu payout webhooks or scheduled polling.
 7. Later evaluate PayChangu Connect if BuyMesho wants seller-owned PayChangu wallets and automatic commission splitting.
+
+
+## Production policy decisions (launch baseline)
+
+The following policies convert the previously open workflow/operations questions into launch decisions. They are intended to be implemented as operational guardrails for the existing payout lifecycle (`eligible`/`queued`/`processing`/`pending`/`paid`/`failed`) without changing the escrow release invariant that buyer/admin release is final.
+
+### 1) Provider reversals and chargebacks after payout
+
+Policy objective: preserve platform solvency and auditability when funds are clawed back by the provider after the seller was already paid.
+
+- **Reserve balance first:** Any provider reversal/chargeback is covered from the seller's accumulated reserve balance before affecting withdrawable amounts.
+- **Seller negative balance next:** If reserve is insufficient, the remaining amount is posted as seller negative balance (ledger debt) and future eligible payouts are netted down automatically until the debt is cleared.
+- **Automatic account hold threshold:** Seller payout account is put on `hold` for new payout submissions while negative balance remains outstanding (or while repeated reversals exceed risk thresholds), but historical payouts and order records remain visible.
+- **Manual recovery escalation:** Admin finance/risk team can execute manual recovery (off-platform collection, negotiated repayment plan, or support-mediated resolution) and record mandatory audit notes.
+- **No escrow rewind:** Reversal events do not reopen completed buyer escrow release; they create separate post-release financial adjustment entries.
+
+Implementation follow-ups (if not already present in code):
+
+1. Add seller-balance ledger support for `reversal_debit`, `negative_balance_carry`, and `manual_recovery_credit` event types.
+2. Add seller payout hold flags/reasons and enforce hold checks before payout attempt creation.
+3. Add admin tooling to clear/reapply hold and capture recovery notes with immutable audit trail.
+
+### 2) PayChangu balance settlement assumptions
+
+Policy objective: avoid submitting payouts that PayChangu cannot settle from `main_balance`.
+
+- **Collection-to-main transition assumption:** Checkout captures may appear in `collection_balance` first and become payout-eligible only after they are reflected in `main_balance` (per PayChangu wallet behavior).
+- **Submission gate:** BuyMesho must verify available `main_balance` at payout submission time; do not assume escrow release means provider funds are instantly transferable.
+- **Wait behavior:** For auto-payout flows, queue and retry using backoff when `main_balance` is insufficient instead of immediate failure, unless a max-attempt window is exceeded.
+- **Insufficient main balance handling:** Mark payout as `queued`/`pending_funding` (or equivalent internal reason attached to `queued`) and avoid consuming a terminal `failed` state until funding checks or provider response confirm real failure.
+
+Implementation follow-ups (if not already present in code):
+
+1. Add pre-submit provider balance check (`wallet-balance`) in payout dispatcher.
+2. Persist funding-gate reason/metadata on payout attempts (for example `insufficient_main_balance`).
+3. Add scheduler logic for delayed resubmission once main balance is adequate.
+
+### 3) Correction workflow after destination failure
+
+Policy objective: allow safe retry after destination errors while preserving immutable history.
+
+- **Seller replaces destination:** Seller can submit a new payout destination when failure reason indicates invalid/closed account, wrong operator/bank mapping, or other destination-level error.
+- **Admin verifies destination:** New destination remains non-runnable until admin verification (or configured automated verification) marks it `verified`.
+- **Admin retries payout:** Retry creates a new provider attempt with a fresh `charge_id` bound to the replacement destination; original failed attempt remains untouched.
+- **Immutable attempt history:** Previous attempts, payload snapshots, provider responses, timestamps, and failure reasons are append-only and never overwritten.
+
+Implementation follow-ups (if not already present in code):
+
+1. Enforce append-only `payout_attempts` history and prohibit in-place mutation of historical attempt payload/response fields.
+2. Add destination-version linkage on each attempt so retries clearly show which destination record/version was used.
+3. Require verification-state check (`verified`) before admin retry endpoint can submit provider attempt.
+
+### 4) Cross-policy linkage to launch implementation tasks
+
+To keep these decisions actionable, tie them to concrete backlog items before payout go-live:
+
+- **Reversal/chargeback controls:** extend payout/ledger schema and admin controls in the backend payout module.
+- **Funding-gate controls:** implement PayChangu `main_balance` checks and queued retry orchestration in payout dispatcher/reconciliation jobs.
+- **Destination correction controls:** implement destination replacement + verification + admin retry flow with immutable attempt history in seller/admin payout APIs and UI.
+- **Audit/observability:** add explicit audit events and operator-visible status labels for `held`, `negative_balance`, `pending_funding`, and `recovery_in_progress` transitions.
+
+These follow-ups should be tracked as required launch blockers wherever payout provider submission, reconciliation jobs, and seller/admin payout management endpoints are implemented.
