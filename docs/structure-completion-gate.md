@@ -14,7 +14,9 @@ These decisions must be frozen before implementation starts.
 
 ### 1.1 Payout formula
 
-`Seller Net Payout = Gross Collected Amount - Platform Fee - Payment Processing Fee - Refund Reserve - Chargeback Reserve - Manual Adjustments`
+`Seller Net Payout = Gross Collected Amount - Platform Fee - Refund Reserve - Chargeback Reserve - Manual Adjustments`
+
+Customer transaction fees are handled separately at checkout and are **not** deducted from seller net payout. That matches the PayChangu settings where the customer pays the transaction fee.
 
 ### 1.2 Platform fee
 
@@ -203,7 +205,7 @@ The money formula must be locked before launch.
 It must explicitly define:
 - gross vs net payout
 - commission deduction
-- payment fee handling
+- customer-side transaction fee handling
 - refunds
 - delivery adjustments
 - dispute deductions
@@ -217,7 +219,7 @@ The structure is complete only when every item below is checked.
 ### Formula
 - Gross collected amount is stored correctly — **partial** (gross is persisted on order/payment flows; payout snapshots are present but not enforced for every legacy payout row).
 - Platform fee is fixed at 2% — **done** (`PAYOUT_POLICY.platformFeeBps = 200`).
-- Payment processing fee is captured from the provider — **done** (provider-fee adjustments persist into payout recalculation snapshots and audit history).
+- Customer transaction fee is charged at checkout and excluded from seller payout — **done** (PayChangu is set to customer-pays for transaction fees; seller net payout excludes gateway fees).
 - Reserve logic is defined and capped at 6% — **done** (`PAYOUT_POLICY.reserveCapBps = 600` and formula cap enforcement).
 - Manual adjustments are explicit and logged — **done** (admin adjustment APIs, payout adjustment persistence, recalculation snapshots, and payout audit events implemented).
 - Final seller net payout is calculated server-side — **done** (`calculatePayoutFormula` is server-side and used on release).
