@@ -544,6 +544,10 @@ export class PayoutRepository {
 export class PayoutService {
   constructor(private readonly repository = payoutRepository) {}
 
+  findById(id: string): PayoutRecord | undefined {
+    return this.repository.findById(id);
+  }
+
   createEligiblePayoutCandidate(input: CreateEligiblePayoutInput): PayoutRecord {
     return this.repository.createEligibleForRelease(input);
   }
