@@ -47,8 +47,8 @@ test('checkout fee breakdown does not charge BuyMesho platform fees to customers
 
   assert.equal(checkout.itemTotalAmount, 10000);
   assert.equal(checkout.buyerFeeAmount, 0);
-  assert.equal(checkout.payChanguTransactionFeeAmount, 300);
-  assert.equal(checkout.finalTotalAmount, 10300);
+  assert.equal(checkout.payChanguTransactionFeeAmount, 0);
+  assert.equal(checkout.finalTotalAmount, 10000);
   assert.equal(checkout.currency, 'MWK');
 });
 

@@ -1,7 +1,7 @@
 export const PAYOUT_POLICY = {
   platformFeeBps: 300,
   buyerFeeBps: 0,
-  payChanguCustomerFeeBps: 300,
+  payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
   minimumPayoutAmount: 1000,
@@ -69,8 +69,8 @@ export function toFixedMoney(amount: number): number {
 export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): CustomerCheckoutFeeBreakdown {
   const itemTotalAmount = toFixedMoney(input.itemTotalAmount);
   const buyerFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.buyerFeeBps) / 10_000);
-  const payChanguTransactionFeeAmount = toFixedMoney((itemTotalAmount * PAYOUT_POLICY.payChanguCustomerFeeBps) / 10_000);
-  const finalTotalAmount = toFixedMoney(itemTotalAmount + buyerFeeAmount + payChanguTransactionFeeAmount);
+  const payChanguTransactionFeeAmount = 0;
+  const finalTotalAmount = toFixedMoney(itemTotalAmount + buyerFeeAmount);
 
   return {
     itemTotalAmount,

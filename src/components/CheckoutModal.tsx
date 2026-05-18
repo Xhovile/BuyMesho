@@ -91,7 +91,7 @@ export default function CheckoutModal({
         listingIds: [String(listing.id)],
         listingTitle: listing.name,
         quantity,
-        totalPrice: feeBreakdown.finalTotalAmount,
+        totalPrice: feeBreakdown.itemTotalAmount,
         checkoutUrl: result.checkoutUrl,
         txRef: result.reference,
       });
@@ -240,18 +240,6 @@ export default function CheckoutModal({
                           </span>
                         </div>
                       )}
-                      <div className="flex items-center justify-between gap-4 text-zinc-600">
-                        <span className="font-bold">PayChangu transaction fee</span>
-                        <span className="font-extrabold text-zinc-900">
-                          {formatPrice(feeBreakdown.payChanguTransactionFeeAmount)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3">
-                      <span className="text-sm font-black text-zinc-700">Final total</span>
-                      <span className="text-lg font-black text-zinc-900">
-                        {formatPrice(feeBreakdown.finalTotalAmount)}
-                      </span>
                     </div>
                   </div>
 
