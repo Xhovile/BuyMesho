@@ -107,6 +107,39 @@ test('release endpoint creates an eligible payout candidate linked to the releas
     const savedPayout = payoutRepository.findByEscrowId(body.escrow.id);
     assert.equal(savedPayout?.id, body.payout?.id, 'payout should be persisted for the escrow');
     assert.equal(savedPayout?.releaseEntryId, releaseEntry?.id, 'stored payout should link to release ledger entry');
+
+    const formulaRow = getPaymentDb()
+      .prepare(`SELECT gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
+                       manual_adjustment_amount, net_amount, formula_snapshot
+                FROM payouts
+                WHERE id = ?`)
+      .get(body.payout?.id) as {
+        gross_amount: number | null;
+        platform_fee_amount: number | null;
+        processing_fee_amount: number | null;
+        reserve_amount: number | null;
+        reserve_cap_amount: number | null;
+        manual_adjustment_amount: number | null;
+        net_amount: number | null;
+        formula_snapshot: string | null;
+      };
+    assert.equal(formulaRow.gross_amount, 1500, 'payout should persist the gross formula amount');
+    assert.equal(formulaRow.platform_fee_amount, 45, 'payout should persist the platform fee formula amount');
+    assert.equal(formulaRow.processing_fee_amount, 0, 'payout should persist the processing fee formula amount');
+    assert.equal(formulaRow.reserve_amount, 0, 'payout should persist the reserve formula amount');
+    assert.equal(formulaRow.reserve_cap_amount, 90, 'payout should persist the reserve cap formula amount');
+    assert.equal(formulaRow.manual_adjustment_amount, 0, 'payout should persist the manual adjustment formula amount');
+    assert.equal(formulaRow.net_amount, 1455, 'payout should persist the net formula amount');
+    assert.deepEqual(JSON.parse(formulaRow.formula_snapshot ?? '{}'), {
+      grossAmount: 1500,
+      platformFeeAmount: 45,
+      processingFeeAmount: 0,
+      reserveAmount: 0,
+      reserveCapAmount: 90,
+      manualAdjustmentAmount: 0,
+      netAmount: 1455,
+      currency: 'MWK',
+    });
     assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'fulfilled', 'release should fulfill the order');
   } finally {
     server.close();

@@ -61,6 +61,14 @@ export interface CreateEligiblePayoutInput {
   escrowId: string;
   releaseEntryId: string;
   amount: number;
+  grossAmount: number;
+  platformFeeAmount: number;
+  processingFeeAmount: number;
+  reserveAmount: number;
+  reserveCapAmount: number;
+  manualAdjustmentAmount: number;
+  netAmount: number;
+  formulaSnapshot: Record<string, unknown>;
   currency: string;
   requestedBy: string;
   requestedAt?: string;
@@ -276,6 +284,14 @@ export class PayoutRepository {
          release_entry_id,
          destination_account_id,
          amount,
+         gross_amount,
+         platform_fee_amount,
+         processing_fee_amount,
+         reserve_amount,
+         reserve_cap_amount,
+         manual_adjustment_amount,
+         net_amount,
+         formula_snapshot,
          currency,
          status,
          provider,
@@ -285,7 +301,7 @@ export class PayoutRepository {
          raw_request,
          created_at,
          updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'eligible', 'paychangu', NULL, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'eligible', 'paychangu', NULL, ?, ?, ?, ?, ?)`,
      ).run(
        id,
        input.sellerId,
@@ -294,6 +310,14 @@ export class PayoutRepository {
        input.releaseEntryId,
        input.destinationAccountId ?? null,
        input.amount,
+       input.grossAmount,
+       input.platformFeeAmount,
+       input.processingFeeAmount,
+       input.reserveAmount,
+       input.reserveCapAmount,
+       input.manualAdjustmentAmount,
+       input.netAmount,
+       JSON.stringify(input.formulaSnapshot),
        input.currency,
        input.requestedBy,
        now,
