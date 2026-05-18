@@ -21,6 +21,7 @@ import loaderImage from "../photos/LoaderPic.png";
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
+const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManager"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
@@ -124,6 +125,7 @@ export default function RootRouter() {
       import("./DisputesPage"),
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
+      import("./AdminPayoutsManager"),
       import("./OrderTrackingPage"),
       import("./OrderDisputePage"),
       import("./SellerPayoutsPage"),
@@ -146,6 +148,7 @@ export default function RootRouter() {
       "messages",
       "admin",
       "admin_payments",
+      "admin_payouts",
     ];
 
     const requiresAuth =
@@ -252,6 +255,8 @@ export default function RootRouter() {
           <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
         ) : route === "admin_payments" ? (
           <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+        ) : route === "admin_payouts" ? (
+          <AdminRouteGuard><AdminPayoutsManager /></AdminRouteGuard>
         ) : route === "admin_reports" ? (
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) : route === "admin_seller_applications" ? (
