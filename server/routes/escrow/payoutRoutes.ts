@@ -161,6 +161,14 @@ function normalizeDestinationId(value: unknown): string {
   return id;
 }
 
+function normalizeManualPayoutAmount(value: unknown): number {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric) || numeric <= 0 || !Number.isInteger(numeric)) {
+    throw new Error('amount must be a positive integer');
+  }
+  return numeric;
+}
+
 function onlyDigits(value: string): string {
   return value.replace(/\D+/g, '');
 }
@@ -1122,7 +1130,8 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
   });
 
   router.post('/', payoutLimiter, requireAuth, (req, res) => {
-    try {
+    return (async () => {
+      try {
       if (!req.user?.is_admin) {
         return res.status(403).json({
           error: 'Admin access required',
@@ -1133,22 +1142,52 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
         sellerId,
         orderId,
         amount,
+        destinationAccountId,
+        grossAmount,
+        platformFeeAmount,
+        processingFeeAmount,
+        reserveAmount,
+        reserveCapAmount,
+        manualAdjustmentAmount,
+        netAmount,
+        formulaSnapshot,
+        reason,
         currency = 'MWK',
       } = req.body as {
         sellerId?: string;
         orderId?: string;
         amount?: number;
+        destinationAccountId?: string;
+        grossAmount?: number;
+        platformFeeAmount?: number;
+        processingFeeAmount?: number;
+        reserveAmount?: number;
+        reserveCapAmount?: number;
+        manualAdjustmentAmount?: number;
+        netAmount?: number;
+        formulaSnapshot?: Record<string, unknown>;
+        reason?: string;
         currency?: string;
       };
 
-      if (!sellerId || !amount) {
+      if (!sellerId || amount === undefined) {
         return res.status(400).json({
           error: 'sellerId and amount are required',
         });
       }
-
+      const adminReason = normalizeText(reason);
+      if (!adminReason) {
+        return res.status(400).json({ error: 'reason is required' });
+      }
+      const normalizedAmount = normalizeManualPayoutAmount(amount);
+      const normalizedCurrency = normalizeCurrency(currency);
       const now = new Date().toISOString();
       const id = randomUUID();
+      const normalizedSellerId = normalizeDestinationId(sellerId);
+      const normalizedDestinationAccountId = destinationAccountId === undefined
+        ? null
+        : normalizeDestinationId(destinationAccountId);
+
       const db = getPaymentDb();
       const escrow = orderId
         ? escrowRepository.findByOrderId(orderId)
@@ -1161,36 +1200,87 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
           order_id,
           escrow_id,
           amount,
+          gross_amount,
+          platform_fee_amount,
+          processing_fee_amount,
+          reserve_amount,
+          reserve_cap_amount,
+          manual_adjustment_amount,
+          net_amount,
+          formula_snapshot,
           currency,
           status,
-          processed_by,
+          destination_account_id,
+          requested_by,
+          requested_at,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'processing', ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'eligible', ?, ?, ?, ?, ?)`,
       ).run(
         id,
-        sellerId,
+        normalizedSellerId,
         orderId ?? null,
         escrow?.id ?? null,
-        amount,
-        currency,
+        normalizedAmount,
+        grossAmount ?? normalizedAmount,
+        platformFeeAmount ?? 0,
+        processingFeeAmount ?? 0,
+        reserveAmount ?? 0,
+        reserveCapAmount ?? 0,
+        manualAdjustmentAmount ?? 0,
+        netAmount ?? normalizedAmount,
+        JSON.stringify(formulaSnapshot ?? {}),
+        normalizedCurrency,
+        normalizedDestinationAccountId,
         req.user.uid,
         now,
         now,
+        now,
       );
+      payoutService.addEvent({
+        payoutId: id,
+        sellerId: normalizedSellerId,
+        eventType: 'manual_payout_created',
+        actorType: 'admin',
+        actorId: req.user.uid,
+        note: adminReason,
+        payload: {
+          reason: adminReason,
+          destinationAccountId: normalizedDestinationAccountId,
+          formulaSnapshot: formulaSnapshot ?? {},
+        },
+      });
+
+      const execution = await payoutService.executePayout({
+        payoutId: id,
+        actorType: 'admin',
+        actorId: req.user.uid,
+      });
+
+      const created = payoutService.findById(id);
 
       return res.status(201).json({
         id,
-        sellerId,
+        sellerId: normalizedSellerId,
         orderId,
-        amount,
-        currency,
-        status: 'processing',
+        amount: normalizedAmount,
+        currency: normalizedCurrency,
+        status: created?.status ?? 'eligible',
+        nextAction: execution.nextAction,
+        reasonCode: execution.reasonCode,
+        reason: execution.reason,
         createdAt: now,
       });
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to process payout'));
-    }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to process payout';
+        const status = /reason is required|amount must be a positive integer|Destination id is required|Only MWK/i.test(message)
+          ? 400
+          : /Unauthorized/i.test(message)
+            ? 401
+            : 500;
+        return res.status(status).json(jsonError(error, 'Failed to process payout'));
+      }
+    })();
   });
 
   return router;
