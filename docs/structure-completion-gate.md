@@ -22,7 +22,7 @@ Customer transaction fees are handled separately at checkout and are **not** ded
 
 The platform fee is fixed at:
 
-`2% of Gross Collected Amount`
+`3% of Gross Collected Amount`
 
 ### 1.3 Reserve cap
 
@@ -218,7 +218,7 @@ The structure is complete only when every item below is checked.
 
 ### Formula
 - Gross collected amount is stored correctly — **partial** (gross is persisted on order/payment flows; payout snapshots are present but not enforced for every legacy payout row).
-- Platform fee is fixed at 2% — **done** (`PAYOUT_POLICY.platformFeeBps = 200`).
+- Platform fee is fixed at 3% — **done** (`PAYOUT_POLICY.platformFeeBps = 300`).
 - Customer transaction fee is charged at checkout and excluded from seller payout — **done** (PayChangu is set to customer-pays for transaction fees; seller net payout excludes gateway fees).
 - Reserve logic is defined and capped at 6% — **done** (`PAYOUT_POLICY.reserveCapBps = 600` and formula cap enforcement).
 - Manual adjustments are explicit and logged — **done** (admin adjustment APIs, payout adjustment persistence, recalculation snapshots, and payout audit events implemented).
