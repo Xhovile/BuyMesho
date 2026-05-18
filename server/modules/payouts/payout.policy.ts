@@ -53,18 +53,21 @@ export function toFixedMoney(amount: number): number {
 
 export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormulaResult {
   const grossAmount = toFixedMoney(input.grossAmount);
-  const processingFeeAmount = toFixedMoney(input.processingFeeAmount ?? 0);
   const manualAdjustmentAmount = toFixedMoney(input.manualAdjustmentAmount ?? 0);
   const reserveCapAmount = toFixedMoney((grossAmount * PAYOUT_POLICY.reserveCapBps) / 10_000);
   const requestedReserveAmount = toFixedMoney(input.reserveAmount ?? 0);
   const reserveAmount = Math.min(requestedReserveAmount, reserveCapAmount);
   const platformFeeAmount = toFixedMoney((grossAmount * PAYOUT_POLICY.platformFeeBps) / 10_000);
+
+  // Customer-paid transaction fees are handled at checkout, not in seller payout math.
+  // Keep this field for compatibility, but it is no longer part of the payout formula.
+  const processingFeeAmount = 0;
+
   const netAmount = Math.max(
     0,
     toFixedMoney(
       grossAmount -
         platformFeeAmount -
-        processingFeeAmount -
         reserveAmount -
         manualAdjustmentAmount,
     ),
