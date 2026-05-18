@@ -118,6 +118,39 @@ Suggested fields:
 
 Do not store full mobile/bank details in plaintext if this will be used in production.
 
+#### Production operations: payout destination encryption
+
+`SELLER_PAYOUT_ENCRYPTION_KEY` protects full seller bank account and mobile money values stored in `seller_payout_accounts`. Production deployments must treat this as a required secret:
+
+- Set `SELLER_PAYOUT_ENCRYPTION_KEY` in every production environment before enabling payout destination create, update, replacement, retry, or provider-submission flows.
+- Generate it as a high-entropy secret, such as a randomly generated 32-byte-or-longer value from the deployment secret tooling; do not use a human-readable password or a value derived from application metadata.
+- Store and inject it only through the deployment secret manager used for production runtime configuration.
+- Never commit the value, sample production values, or rotation exports to the repository, logs, tickets, screenshots, or documentation.
+
+Current encryption format:
+
+- `server/routes/escrow/payoutRoutes.ts` encrypts seller payout destination account/mobile values before storage with `aes-256-gcm`.
+- The AES-256 key is derived at runtime with `scryptSync(SELLER_PAYOUT_ENCRYPTION_KEY, 'BuyMesho seller payout', 32)`.
+- Each encryption uses a fresh 12-byte random IV.
+- Stored ciphertext is a colon-delimited string of base64 values: `<iv>:<auth_tag>:<ciphertext>`.
+- There is currently no key id, algorithm id, or version prefix in the stored value.
+- `server/routes/escrow/payoutRoutes.ts` decrypts stored values for masked display, duplicate checks, updates, and replacements; `server/modules/payouts/payout.service.ts` decrypts them when building provider payout requests.
+
+Key rotation plan before changing the production key:
+
+1. Add key versioning first. New encrypted values should include a version/key id, and decrypt code should select the correct secret by that version while keeping compatibility with the current unversioned `<iv>:<auth_tag>:<ciphertext>` format.
+2. Configure both the old and new keys in the secret manager during the rotation window, with the old key allowed only for decrypting existing values.
+3. Run a controlled migration that decrypts each existing payout destination with the old key and immediately re-encrypts it with the new key/version.
+4. Audit the rotation by recording counts for scanned, rotated, skipped, failed, and already-current rows; investigate and resolve every failure before retiring the old key.
+5. After audit completion, remove the old key from production secrets and verify payout destination reads, updates, replacements, retries, and provider submissions still work with only the new key.
+
+Malformed and legacy plaintext handling:
+
+- `decryptSensitiveValue` currently treats any non-empty stored value that does not split into exactly three colon-delimited parts as legacy plaintext and returns it unchanged.
+- This fallback keeps older or manually seeded rows readable, but production operations should treat any such row as sensitive plaintext debt: do not log the raw value, do not expose it through APIs, and re-save or migrate it into the encrypted format as soon as it is detected.
+- Values that look like the expected three-part encrypted format but fail authentication/decryption return `null`; operators should handle these as malformed encrypted records that require investigation or seller destination re-entry, not as plaintext.
+- Before launch, add an audit or migration report for plaintext-format rows so the team can confirm no active payout destination remains stored outside the encrypted format.
+
 ### 2. PayChangu payout provider module
 
 Add a server-only PayChangu payout client that can:
