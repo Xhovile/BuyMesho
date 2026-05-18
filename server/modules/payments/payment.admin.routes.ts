@@ -5,6 +5,9 @@ import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
 
+const DEFAULT_PAYOUT_PAGE_SIZE = 200;
+const MAX_PAYOUT_PAGE_SIZE = 500;
+
 function jsonError(error: unknown, fallback: string): { error: string } {
   return {
     error: error instanceof Error ? error.message : fallback,
@@ -273,11 +276,29 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
-  router.get('/payouts', requireAuth, (req, res) => {
+  router.get('/payouts', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;
 
+      const rawLimit = Array.isArray(req.query?.limit) ? req.query.limit[0] : req.query?.limit;
+      const rawOffset = Array.isArray(req.query?.offset) ? req.query.offset[0] : req.query?.offset;
+      const parsedLimit = Number(rawLimit);
+      const parsedOffset = Number(rawOffset);
+      const hasPaginationQuery = rawLimit != null || rawOffset != null;
+      const limit = Number.isFinite(parsedLimit)
+        ? Math.min(Math.max(Math.trunc(parsedLimit), 1), MAX_PAYOUT_PAGE_SIZE)
+        : DEFAULT_PAYOUT_PAGE_SIZE;
+      const offset = Number.isFinite(parsedOffset) ? Math.max(Math.trunc(parsedOffset), 0) : 0;
+
       const db = getPaymentDb();
+      const total = Number(
+        (db
+          .prepare(`
+            SELECT COUNT(*) AS total
+            FROM payouts
+          `)
+          .get() as { total?: number } | undefined)?.total ?? 0,
+      );
       const rows = db.prepare(`
         SELECT
           p.id,
@@ -340,12 +361,13 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
              ORDER BY aa.created_at DESC, aa.id DESC
              LIMIT 1
            ) AS latestSellerPayoutControlDetails
-        FROM payouts p
-        LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
-        LEFT JOIN sellers s ON s.uid = p.seller_id
-        ORDER BY p.created_at DESC
-        LIMIT 200
-      `).all();
+         FROM payouts p
+         LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
+         LEFT JOIN sellers s ON s.uid = p.seller_id
+         ORDER BY p.created_at DESC
+         LIMIT ?
+         OFFSET ?
+      `).all(limit, offset);
       const shapedRows = (rows as Array<Record<string, unknown>>).map((row) => {
         const status = String(row.status ?? '').toLowerCase();
         const failureReason = (row.failureReason as string | null) ?? null;
@@ -400,6 +422,18 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           auditSummary,
         };
       });
+
+      if (hasPaginationQuery) {
+        return res.status(200).json({
+          rows: shapedRows,
+          pagination: {
+            limit,
+            offset,
+            total,
+            hasMore: offset + shapedRows.length < total,
+          },
+        });
+      }
 
       return res.status(200).json(shapedRows);
     } catch (error) {
