@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2 } from "lucide-react";
+import { AlertTriangle, BarChart3, Loader2, Wallet } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -8,6 +8,7 @@ import {
   navigateToEditListing,
   navigateToListingDetails,
   navigateToPath,
+  navigateToSellerPayouts,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
 import type { Listing, SellerDashboardData } from "./types";
@@ -16,6 +17,13 @@ type ListingActionResponse = {
   success: boolean;
   listing?: Listing;
   available_quantity?: number;
+};
+
+type PayoutDestination = {
+  id: string;
+  isActive: boolean;
+  verificationStatus: string;
+  maskedAccount?: string | null;
 };
 
 const getListingQuantity = (listing: Listing) => Number(listing.quantity ?? 1);
@@ -31,7 +39,54 @@ export default function MyListingsPage() {
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
+  const [payoutDestinations, setPayoutDestinations] = useState<PayoutDestination[] | null>(null);
+  const [payoutDestinationError, setPayoutDestinationError] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+
+
+  const payoutSetupPrompt = useMemo(() => {
+    if (payoutDestinationError || payoutDestinations === null) return null;
+
+    const activeDestinations = payoutDestinations.filter((destination) => destination.isActive);
+    const failedDestination = activeDestinations.find(
+      (destination) => destination.verificationStatus.toLowerCase() === "failed"
+    );
+    const pendingDestination = activeDestinations.find(
+      (destination) => destination.verificationStatus.toLowerCase() === "pending"
+    );
+    const verifiedDestination = activeDestinations.find(
+      (destination) => destination.verificationStatus.toLowerCase() === "verified"
+    );
+
+    if (failedDestination) {
+      return {
+        tone: "red",
+        title: "Payout destination needs attention",
+        message: "Your payout destination failed verification. Update it so eligible releases can be paid out.",
+        actionLabel: "Fix payout settings",
+      };
+    }
+
+    if (pendingDestination) {
+      return {
+        tone: "amber",
+        title: "Payout verification is pending",
+        message: `We are verifying ${pendingDestination.maskedAccount || "your payout destination"}. Check your payout settings for status updates.`,
+        actionLabel: "Review payout settings",
+      };
+    }
+
+    if (!verifiedDestination) {
+      return {
+        tone: "emerald",
+        title: "Set up payouts before your next sale",
+        message: "Add an active payout destination so released escrow funds can move to your mobile money or bank account.",
+        actionLabel: "Set up payouts",
+      };
+    }
+
+    return null;
+  }, [payoutDestinationError, payoutDestinations]);
 
   const stockSnapshot = useMemo(() => {
     const totalListed = listings.length;
@@ -54,6 +109,29 @@ export default function MyListingsPage() {
       lowStockListings,
     };
   }, [listings]);
+
+  useEffect(() => {
+    const loadPayoutDestinations = async () => {
+      if (!firebaseUser || !profile?.is_seller) {
+        setPayoutDestinations(null);
+        setPayoutDestinationError(false);
+        return;
+      }
+
+      setPayoutDestinationError(false);
+      try {
+        const data = await apiFetch("/api/payouts/destinations");
+        const destinations = Array.isArray(data?.destinations) ? data.destinations : [];
+        setPayoutDestinations(destinations);
+      } catch (error) {
+        console.error("Failed to load payout destinations", error);
+        setPayoutDestinations(null);
+        setPayoutDestinationError(true);
+      }
+    };
+
+    void loadPayoutDestinations();
+  }, [firebaseUser, profile?.is_seller]);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -297,6 +375,41 @@ export default function MyListingsPage() {
                 {dashboardOpen ? "Hide Stats" : "Show Stats"}
               </button>
             </div>
+
+            {payoutSetupPrompt ? (
+              <div
+                className={`mt-4 rounded-[1.5rem] border p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 ${
+                  payoutSetupPrompt.tone === "red"
+                    ? "border-red-200 bg-red-50 text-red-900"
+                    : payoutSetupPrompt.tone === "amber"
+                      ? "border-amber-200 bg-amber-50 text-amber-900"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-900"
+                }`}
+              >
+                <div className="flex gap-3">
+                  <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/75">
+                    {payoutSetupPrompt.tone === "red" ? (
+                      <AlertTriangle className="h-5 w-5" />
+                    ) : (
+                      <Wallet className="h-5 w-5" />
+                    )}
+                  </span>
+                  <div>
+                    <p className="text-sm font-black">{payoutSetupPrompt.title}</p>
+                    <p className="mt-1 text-xs font-semibold opacity-80 sm:text-sm">{payoutSetupPrompt.message}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToSellerPayouts()}
+                  className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800 sm:mt-0 sm:w-auto"
+                >
+                  {payoutSetupPrompt.actionLabel}
+                  <Wallet className="h-4 w-4" />
+                </button>
+              </div>
+            ) : null}
 
             <div
               className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${

@@ -16,6 +16,7 @@ import {
   KeyRound,
   ShieldAlert,
   Loader2,
+  Wallet,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
@@ -45,6 +46,7 @@ import {
   TERMS_PATH,
   navigateBackOrPath,
   navigateToPath,
+  navigateToSellerPayouts,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
@@ -610,15 +612,30 @@ export default function SettingsPage() {
                 </button>
 
                 {profile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
-                    disabled={verifiedAccountRequiredDisabled}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
-                  >
-                    <span className="font-bold text-zinc-900">Edit Seller Profile</span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
+                      disabled={verifiedAccountRequiredDisabled}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    >
+                      <span className="font-bold text-zinc-900">Edit Seller Profile</span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigateToSellerPayouts()}
+                      disabled={verifiedAccountRequiredDisabled}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-emerald-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    >
+                      <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-emerald-700" />
+                        Payout settings
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
