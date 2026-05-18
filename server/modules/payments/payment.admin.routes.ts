@@ -469,43 +469,44 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       const nextActive = status === 'disabled' ? 0 : 1;
       const nextVerifiedAt = status === 'verified' ? now : null;
       const nextLastError = status === 'failed' || status === 'disabled' ? reason : null;
-      const nextAttempts = status === 'failed'
-        ? Number(
-            (db.prepare(`SELECT verification_attempts FROM seller_payout_accounts WHERE id = ?`).get(destinationId) as { verification_attempts?: number } | undefined)?.verification_attempts ?? 0,
-          ) + 1
-        : 0;
+      const nextAttempts = Number(
+        (db.prepare(`SELECT verification_attempts FROM seller_payout_accounts WHERE id = ?`).get(destinationId) as { verification_attempts?: number } | undefined)?.verification_attempts ?? 0,
+      ) + 1;
 
-      db.prepare(
-        `UPDATE seller_payout_accounts
-         SET verification_status = ?,
-             is_active = ?,
-             verification_attempts = ?,
-             last_error = ?,
-             verified_at = ?,
-             updated_at = ?
-         WHERE id = ?`,
-      ).run(
-        status,
-        nextActive,
-        nextAttempts,
-        nextLastError,
-        nextVerifiedAt,
-        now,
-        destinationId,
-      );
+      db.transaction(() => {
+        db.prepare(
+          `UPDATE seller_payout_accounts
+           SET verification_status = ?,
+               is_active = ?,
+               verification_attempts = ?,
+               last_error = ?,
+               verified_at = ?,
+               updated_at = ?
+           WHERE id = ?`,
+        ).run(
+          status,
+          nextActive,
+          nextAttempts,
+          nextLastError,
+          nextVerifiedAt,
+          now,
+          destinationId,
+        );
 
-      addSellerPayoutAccountEvent({
-        sellerId: destination.seller_uid,
-        accountId: destinationId,
-        eventType: `destination_${status}`,
-        actorId,
-        note: reason,
-        payload: {
-          previousStatus: destination.verification_status,
-          nextStatus: status,
-          active: nextActive === 1,
-        },
-      });
+        addSellerPayoutAccountEvent({
+          sellerId: destination.seller_uid,
+          accountId: destinationId,
+          eventType: `destination_${status}`,
+          actorId,
+          note: reason,
+          payload: {
+            previousStatus: destination.verification_status,
+            nextStatus: status,
+            attempt: nextAttempts,
+            active: nextActive === 1,
+          },
+        });
+      })();
 
       const updated = db.prepare(
         `SELECT

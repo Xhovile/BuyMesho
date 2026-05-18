@@ -139,36 +139,63 @@ function seedAdminPayout(prefix: string, payoutStatus = 'processing') {
   return { sellerId, destinationId, payoutId };
 }
 
-test('admin can transition destination verification state with audit actor and reason', async () => {
-  const { sellerId, destinationId } = seedAdminPayout('admin-verify', 'eligible');
+test('admin verification attempts record verified, failed, pending, and disabled outcomes', async () => {
+  const cases = [
+    { status: 'verified', reason: 'Matches seller identity', expectedActive: 1, expectedLastError: null, expectVerifiedAt: true },
+    { status: 'failed', reason: 'KYC mismatch', expectedActive: 1, expectedLastError: 'KYC mismatch', expectVerifiedAt: false },
+    { status: 'pending', reason: 'Awaiting document review', expectedActive: 1, expectedLastError: null, expectVerifiedAt: false },
+    { status: 'disabled', reason: 'Seller requested removal', expectedActive: 0, expectedLastError: 'Seller requested removal', expectVerifiedAt: false },
+  ] as const;
 
-  const result = await callAdmin(`/api/admin/payouts/destinations/${destinationId}/verification`, {
-    method: 'POST',
-    body: JSON.stringify({ status: 'failed', reason: 'KYC mismatch' }),
-  });
+  for (const current of cases) {
+    const { sellerId, destinationId } = seedAdminPayout(`admin-verify-${current.status}`, 'eligible');
 
-  assert.equal(result.status, 200);
+    const result = await callAdmin(`/api/admin/payouts/destinations/${destinationId}/verification`, {
+      method: 'POST',
+      body: JSON.stringify({ status: current.status, reason: current.reason }),
+    });
 
-  const db = getPaymentDb();
-  const destination = db.prepare(
-    `SELECT verification_status, last_error, verification_attempts
-     FROM seller_payout_accounts
-     WHERE id = ?`,
-  ).get(destinationId) as { verification_status: string; last_error: string | null; verification_attempts: number };
-  assert.equal(destination.verification_status, 'failed');
-  assert.equal(destination.last_error, 'KYC mismatch');
-  assert.equal(destination.verification_attempts, 1);
+    assert.equal(result.status, 200);
 
-  const audit = db.prepare(
-    `SELECT event_type, actor_id, note
-     FROM seller_payout_account_events
-     WHERE seller_uid = ?
-     ORDER BY id DESC
-     LIMIT 1`,
-  ).get(sellerId) as { event_type: string; actor_id: string | null; note: string | null };
-  assert.equal(audit.event_type, 'destination_failed');
-  assert.equal(audit.actor_id, 'admin-user');
-  assert.equal(audit.note, 'KYC mismatch');
+    const db = getPaymentDb();
+    const destination = db.prepare(
+      `SELECT verification_status, last_error, verification_attempts, verified_at, is_active
+       FROM seller_payout_accounts
+       WHERE id = ?`,
+    ).get(destinationId) as {
+      verification_status: string;
+      last_error: string | null;
+      verification_attempts: number;
+      verified_at: string | null;
+      is_active: number;
+    };
+    assert.equal(destination.verification_status, current.status);
+    assert.equal(destination.last_error, current.expectedLastError);
+    assert.equal(destination.verification_attempts, 1);
+    assert.equal(destination.is_active, current.expectedActive);
+    if (current.expectVerifiedAt) {
+      assert.match(destination.verified_at ?? '', /^\d{4}-\d{2}-\d{2}T/);
+    } else {
+      assert.equal(destination.verified_at, null);
+    }
+
+    const audit = db.prepare(
+      `SELECT event_type, actor_id, note, payload
+       FROM seller_payout_account_events
+       WHERE seller_uid = ?
+       ORDER BY id DESC
+       LIMIT 1`,
+    ).get(sellerId) as { event_type: string; actor_id: string | null; note: string | null; payload: string };
+    assert.equal(audit.event_type, `destination_${current.status}`);
+    assert.equal(audit.actor_id, 'admin-user');
+    assert.equal(audit.note, current.reason);
+    assert.deepEqual(JSON.parse(audit.payload), {
+      previousStatus: 'pending',
+      nextStatus: current.status,
+      attempt: 1,
+      active: current.expectedActive === 1,
+    });
+  }
 });
 
 test('admin payout suspension holds seller payouts and records control note', async () => {

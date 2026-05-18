@@ -72,6 +72,22 @@ Before merging a production payout implementation, resolve these product and saf
 | **Open data-model validation** | Decide whether orders can span multiple sellers. | If checkout can include multiple sellers, split checkout into seller-specific orders/escrows/payout candidates before enabling payouts. If the one-seller-per-order model is permanent, enforce it at checkout and document the invariant. |
 | **Open platform requirement** | Add audit and notifications. | Add an audit trail for every payout status/provider-attempt transition, plus seller UI/email/in-app messages for setup required, payout queued, payout sent, payout paid, and payout failed. |
 
+## Launch verification mode
+
+Launch verification mode is **manual admin verification only**. BuyMesho should not treat PayChangu metadata lookup as account ownership validation at launch, because the current provider integration lists supported operators/banks and executes payouts but does not provide a reliable, documented pre-payout account-name verification response for every destination type. PayChangu-backed validation can be added later where a stable provider endpoint is confirmed and tested.
+
+Manual verification SOP for launch:
+
+1. Seller submits or replaces a payout destination from the seller payout settings UI. New and edited destinations start as `pending`, with `verification_attempts = 0`, `last_error = NULL`, and `verified_at = NULL`.
+2. Admin reviews the masked destination, account holder name, provider/bank/mobile-money operator, seller identity/KYC evidence, and any out-of-band confirmation required by operations. Admins must not ask sellers to send full bank/mobile values through chat or other plaintext support channels.
+3. Admin records the review through `POST /api/admin/payouts/destinations/:destinationId/verification` with one of these statuses:
+   - `verified`: the destination can receive payouts. The route increments `verification_attempts`, clears `last_error`, sets `verified_at`, keeps the destination active, and writes a `seller_payout_account_events` audit row.
+   - `failed`: the destination remains active for correction/replacement, but it must block payout submission. The route increments `verification_attempts`, stores the reason in `last_error`, clears `verified_at`, and writes an audit row.
+   - `pending`: the destination stays under review. The route increments `verification_attempts`, clears `last_error` and `verified_at`, keeps the destination active, and writes an audit row.
+   - `disabled`: the destination cannot be used. The route increments `verification_attempts`, stores the reason in `last_error`, clears `verified_at`, marks the destination inactive, and writes an audit row.
+4. Payout execution must continue to require `verification_status = 'verified'` and `is_active = 1` before sending money to PayChangu. Failed, pending, disabled, missing, or inactive destinations must remain visible as remediation states rather than silently retrying provider submission.
+5. Every manual review reason should be concise, operationally useful, and safe to show in admin/audit contexts. If a seller-facing explanation is needed, send a separate sanitized support message that does not expose sensitive payout details.
+
 ## How the seller should receive money
 
 There are two viable PayChangu-supported settlement models.
