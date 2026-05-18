@@ -30,7 +30,7 @@ function clearState(): void {
   db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
 }
 
-test('processing fee and manual adjustments recalculate payout formula and emit audit event', async () => {
+test('legacy processing fee storage and manual adjustments recalculate payout formula and emit audit event', async () => {
   clearState();
 
   const db = getPaymentDb();
@@ -105,7 +105,7 @@ test('processing fee and manual adjustments recalculate payout formula and emit 
       body: JSON.stringify({
         adjustmentType: 'processing_fee',
         amount: 150,
-        reason: 'Provider processing fee reconciliation',
+        reason: 'Legacy provider fee record',
         providerReference: 'paychangu-fee-ref',
       }),
     });
@@ -140,12 +140,12 @@ test('processing fee and manual adjustments recalculate payout formula and emit 
 
     assert.equal(payoutRow.processing_fee_amount, 150);
     assert.equal(payoutRow.manual_adjustment_amount, 50);
-    assert.equal(payoutRow.net_amount, 9600);
+    assert.equal(payoutRow.net_amount, 9750);
 
     const snapshot = JSON.parse(payoutRow.formula_snapshot);
-    assert.equal(snapshot.processingFeeAmount, 150);
+    assert.equal(snapshot.processingFeeAmount, 0);
     assert.equal(snapshot.manualAdjustmentAmount, 50);
-    assert.equal(snapshot.netAmount, 9600);
+    assert.equal(snapshot.netAmount, 9750);
 
     const adjustments = db.prepare(
       `SELECT adjustment_type, amount, reason

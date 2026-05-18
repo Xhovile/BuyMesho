@@ -71,7 +71,7 @@ type PayoutRow = {
   };
   grossAmount?: number;
   platformFeeAmount?: number;
-  processingFeeAmount?: number;
+  legacyProcessingFeeAmount?: number;
   reserveAmount?: number;
   reserveCapAmount?: number;
   manualAdjustmentAmount?: number;
@@ -248,7 +248,7 @@ function AdminPayoutsManagerContent() {
   const [destinationReason, setDestinationReason] = useState("");
   const [sellerControlReason, setSellerControlReason] = useState("");
 
-  const [adjustmentType, setAdjustmentType] = useState<"processing_fee" | "manual_adjustment">("processing_fee");
+  const [adjustmentType, setAdjustmentType] = useState<"processing_fee" | "manual_adjustment">("manual_adjustment");
   const [adjustmentAmount, setAdjustmentAmount] = useState("");
   const [adjustmentReason, setAdjustmentReason] = useState("");
   const [adjustmentProviderRef, setAdjustmentProviderRef] = useState("");
@@ -322,7 +322,7 @@ function AdminPayoutsManagerContent() {
     setAdjustmentAmount("");
     setAdjustmentReason("");
     setAdjustmentProviderRef("");
-    setAdjustmentType("processing_fee");
+    setAdjustmentType("manual_adjustment");
     void loadAdjustments(selected.id);
   }, [selected?.id]);
 
@@ -1194,11 +1194,6 @@ function AdminPayoutsManagerContent() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-3">
                   <Info label="Gross" value={`${selected.currency} ${Number(selected.grossAmount ?? 0).toLocaleString()}`} />
                   <Info label="Net" value={`${selected.currency} ${Number(selected.netAmount ?? selected.amount).toLocaleString()}`} />
-                  <Info label="Processing fee" value={`${selected.currency} ${Number(selected.processingFeeAmount ?? 0).toLocaleString()}`} />
-                  <Info label="Platform fee" value={`${selected.currency} ${Number(selected.platformFeeAmount ?? 0).toLocaleString()}`} />
-                  <Info label="Reserve amount" value={`${selected.currency} ${Number(selected.reserveAmount ?? 0).toLocaleString()}`} />
-                  <Info label="Reserve cap" value={`${selected.currency} ${Number(selected.reserveCapAmount ?? 0).toLocaleString()}`} />
-                  <Info label="Manual adjustment" value={`${selected.currency} ${Number(selected.manualAdjustmentAmount ?? 0).toLocaleString()}`} />
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr]">
@@ -1208,8 +1203,8 @@ function AdminPayoutsManagerContent() {
                     className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
                     disabled={actionBusyId === selected.id}
                   >
-                    <option value="processing_fee">processing_fee</option>
-                    <option value="manual_adjustment">manual_adjustment</option>
+                    <option value="manual_adjustment">Manual payout adjustment</option>
+                    <option value="processing_fee">Legacy compatibility amount (hidden)</option>
                   </select>
                   <input
                     value={adjustmentAmount}
@@ -1257,7 +1252,7 @@ function AdminPayoutsManagerContent() {
                     adjustments.map((item) => (
                       <div key={item.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-zinc-900">{item.adjustmentType}</p>
+                          <p className="text-sm font-bold text-zinc-900">{item.adjustmentType === "processing_fee" ? "Legacy compatibility amount" : "Manual payout adjustment"}</p>
                           <p className="text-sm font-bold text-zinc-900">
                             {item.currency} {Number(item.amount).toLocaleString()}
                           </p>

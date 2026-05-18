@@ -334,7 +334,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.updated_at AS updatedAt,
           p.gross_amount AS grossAmount,
           p.platform_fee_amount AS platformFeeAmount,
-          p.processing_fee_amount AS processingFeeAmount,
+          p.processing_fee_amount AS legacyProcessingFeeAmount,
           p.reserve_amount AS reserveAmount,
           p.reserve_cap_amount AS reserveCapAmount,
           p.manual_adjustment_amount AS manualAdjustmentAmount,
@@ -548,4 +548,222 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
       const seller = db.prepare(
         `SELECT uid, is_suspended AS isSuspended
          FROM sellers
-         WHERE uid = ?`
+         WHERE uid = ?
+         LIMIT 1`,
+      ).get(sellerId) as { uid: string; isSuspended: number } | undefined;
+
+      if (!seller) {
+        return res.status(404).json({ error: 'Seller not found' });
+      }
+
+      const now = new Date().toISOString();
+      db.prepare(`UPDATE sellers SET is_suspended = ? WHERE uid = ?`).run(suspended ? 1 : 0, sellerId);
+
+      if (suspended) {
+        db.prepare(
+          `UPDATE payouts
+           SET status = 'held',
+               failure_reason = 'seller_suspended',
+               manual_review_reason = ?,
+               updated_at = ?
+           WHERE seller_id = ?
+             AND status IN ('eligible', 'queued', 'processing', 'pending', 'failed')`,
+        ).run(reason, now, sellerId);
+      }
+
+      db.prepare(
+        `INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details, created_at)
+         VALUES (?, ?, ?, 'seller', ?, ?, ?)`,
+      ).run(
+        actorId,
+        req.user?.email ?? null,
+        suspended ? 'suspend_payouts' : 'unsuspend_payouts',
+        sellerId,
+        reason,
+        now,
+      );
+
+      return res.status(200).json({ sellerId, suspended, reason });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to update seller payout suspension'));
+    }
+  });
+
+  router.get('/payouts/summary', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const db = getPaymentDb();
+      const summary = db.prepare(
+        `SELECT
+           COUNT(*) AS totalPayouts,
+           SUM(CASE WHEN status IN ('eligible', 'queued', 'processing', 'pending', 'held') THEN 1 ELSE 0 END) AS pendingPayouts,
+           SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paidPayouts,
+           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failedPayouts,
+           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS cancelledPayouts
+         FROM payouts`,
+      ).get();
+      const attempts = db.prepare(
+        `SELECT
+           COUNT(*) AS totalAttempts,
+           SUM(CASE WHEN status IN ('paid', 'successful') THEN 1 ELSE 0 END) AS successfulAttempts,
+           SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failedAttempts
+         FROM payout_attempts`,
+      ).get();
+      return res.status(200).json({ summary, attempts });
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to load payout summary'));
+    }
+  });
+
+  router.post('/payouts/:payoutId/reconcile', payoutLimiter, requireAuth, async (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const result = await payoutService.reconcilePayoutStatus({
+        payoutId: String(req.params.payoutId),
+        actorType: 'admin',
+        actorId: String(req.user?.uid || 'admin'),
+      });
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to reconcile payout'));
+    }
+  });
+
+  router.post('/payouts/reconcile-pending', payoutLimiter, requireAuth, async (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const results = await payoutService.reconcilePendingPayoutStatuses({
+        actorType: 'admin',
+        actorId: String(req.user?.uid || 'admin'),
+        limit: Number(req.body?.limit ?? 25),
+      });
+      return res.status(200).json({ results });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to reconcile pending payouts'));
+    }
+  });
+
+  router.get('/payouts/:payoutId/adjustments', requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const adjustments = getPaymentDb().prepare(
+        `SELECT
+           id,
+           payout_id AS payoutId,
+           seller_id AS sellerId,
+           adjustment_type AS adjustmentType,
+           amount,
+           currency,
+           reason,
+           actor_type AS actorType,
+           actor_id AS actorId,
+           provider_reference AS providerReference,
+           created_at AS createdAt
+         FROM payout_adjustments
+         WHERE payout_id = ?
+         ORDER BY id DESC`,
+      ).all(String(req.params.payoutId));
+      return res.status(200).json({ adjustments });
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to load payout adjustments'));
+    }
+  });
+
+  router.post('/payouts/:payoutId/adjustments', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const payoutId = String(req.params.payoutId || '').trim();
+      const adjustmentType = normalizeText(req.body?.adjustmentType);
+      if (adjustmentType !== 'processing_fee' && adjustmentType !== 'manual_adjustment') {
+        return res.status(400).json({ error: 'adjustmentType must be processing_fee or manual_adjustment' });
+      }
+      const amount = normalizeAmount(req.body?.amount);
+      const reason = normalizeText(req.body?.reason);
+      if (!reason) {
+        return res.status(400).json({ error: 'reason is required' });
+      }
+
+      const db = getPaymentDb();
+      const row = db.prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`).get(payoutId) as Record<string, unknown> | undefined;
+      if (!row) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+
+      const sellerId = String(row.seller_id);
+      const actorId = String(req.user?.uid || 'admin');
+      const adjustmentId = insertPayoutAdjustment({
+        payoutId,
+        sellerId,
+        adjustmentType,
+        amount,
+        currency: String(row.currency ?? 'MWK'),
+        reason,
+        actorType: 'admin',
+        actorId,
+        providerReference: normalizeText(req.body?.providerReference),
+      });
+
+      const nextProcessingFeeAmount = adjustmentType === 'processing_fee'
+        ? amount
+        : normalizeAmount(row.processing_fee_amount ?? 0);
+      const nextManualAdjustmentAmount = adjustmentType === 'manual_adjustment'
+        ? amount
+        : normalizeAmount(row.manual_adjustment_amount ?? 0);
+      const formula = recalculatePayoutFinancials(row, {
+        manualAdjustmentAmount: nextManualAdjustmentAmount,
+      });
+      const now = new Date().toISOString();
+
+      db.prepare(
+        `UPDATE payouts
+         SET gross_amount = ?,
+             platform_fee_amount = ?,
+             processing_fee_amount = ?,
+             reserve_amount = ?,
+             reserve_cap_amount = ?,
+             manual_adjustment_amount = ?,
+             net_amount = ?,
+             amount = ?,
+             formula_snapshot = ?,
+             last_adjustment_id = ?,
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        formula.grossAmount,
+        formula.platformFeeAmount,
+        nextProcessingFeeAmount,
+        formula.reserveAmount,
+        formula.reserveCapAmount,
+        formula.manualAdjustmentAmount,
+        formula.netAmount,
+        formula.netAmount,
+        JSON.stringify(formula),
+        String(adjustmentId),
+        now,
+        payoutId,
+      );
+
+      payoutService.addEvent({
+        payoutId,
+        sellerId,
+        eventType: 'payout_adjusted',
+        actorType: 'admin',
+        actorId,
+        note: reason,
+        payload: {
+          adjustmentId,
+          adjustmentType,
+          amount,
+          legacyProcessingFeeAmount: nextProcessingFeeAmount,
+          payoutFormula: formula,
+        },
+      });
+
+      return res.status(200).json({ payoutId, adjustmentId, formula });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to create payout adjustment'));
+    }
+  });
+
+  return router;
+}

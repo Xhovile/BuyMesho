@@ -5,6 +5,7 @@ import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
 import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
+import { calculateCustomerCheckoutFees } from "../../server/modules/payouts/payout.policy";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 
@@ -45,6 +46,10 @@ export default function CheckoutModal({
   );
   const unitPrice = Number(listing.price);
   const total = unitPrice * quantity;
+  const feeBreakdown = calculateCustomerCheckoutFees({
+    itemTotalAmount: total,
+    currency: "MWK",
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -86,7 +91,7 @@ export default function CheckoutModal({
         listingIds: [String(listing.id)],
         listingTitle: listing.name,
         quantity,
-        totalPrice: total,
+        totalPrice: feeBreakdown.finalTotalAmount,
         checkoutUrl: result.checkoutUrl,
         txRef: result.reference,
       });
@@ -219,11 +224,33 @@ export default function CheckoutModal({
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4">
-                    <span className="text-sm font-bold text-zinc-600">Total</span>
-                    <span className="text-lg font-black text-zinc-900">
-                      {formatPrice(total)}
-                    </span>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-4 text-zinc-600">
+                        <span className="font-bold">Item total</span>
+                        <span className="font-extrabold text-zinc-900">
+                          {formatPrice(feeBreakdown.itemTotalAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 text-zinc-600">
+                        <span className="font-bold">BuyMesho fee</span>
+                        <span className="font-extrabold text-zinc-900">
+                          {formatPrice(feeBreakdown.buyerFeeAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 text-zinc-600">
+                        <span className="font-bold">PayChangu transaction fee</span>
+                        <span className="font-extrabold text-zinc-900">
+                          {formatPrice(feeBreakdown.payChanguTransactionFeeAmount)}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between border-t border-zinc-100 pt-3">
+                      <span className="text-sm font-black text-zinc-700">Final total</span>
+                      <span className="text-lg font-black text-zinc-900">
+                        {formatPrice(feeBreakdown.finalTotalAmount)}
+                      </span>
+                    </div>
                   </div>
 
                   <p className="text-xs text-zinc-400 leading-5">
