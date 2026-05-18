@@ -99,6 +99,7 @@ export interface PayChanguPayoutConfig {
 
 interface ResolvedPayChanguPayoutConfig {
   paychanguSecretKey: string;
+  paychanguWebhookSecret: string;
   paychanguBaseUrl: string;
   paychanguPayoutCreatePath: string;
   paychanguPayoutStatusPath: string;
@@ -135,6 +136,8 @@ function resolveConfig(config: PayChanguPayoutConfig = {}): ResolvedPayChanguPay
   return {
     paychanguSecretKey:
       config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY ?? '',
+    paychanguWebhookSecret:
+      config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET ?? '',
     paychanguBaseUrl: baseUrl,
     paychanguPayoutCreatePath: trimPath(
       config.paychanguPayoutCreatePath ?? process.env.PAYCHANGU_PAYOUT_CREATE_PATH ?? '/direct-charge/payouts/initialize',
