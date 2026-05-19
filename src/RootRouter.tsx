@@ -13,6 +13,7 @@ import {
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
+  SELLER_DASHBOARD_PATH,
   SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
@@ -60,6 +61,7 @@ const SafetyTipsPage = lazy(() => import("./components/SafetyTipsPage"));
 const SavedPage = lazy(() => import("./SavedPage"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
 const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
+const SellerDashboardPage = lazy(() => import("./SellerDashboardPage"));
 const SellerPayoutsPage = lazy(() => import("./SellerPayoutsPage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
@@ -153,6 +155,7 @@ export default function RootRouter() {
       "change_password",
       "change_email",
       "my_listings",
+      "seller_dashboard",
       "seller_payouts",
       "messages",
       "admin",
@@ -233,6 +236,8 @@ export default function RootRouter() {
           <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} />
         ) : route === "seller" ? (
           <SellerProfilePage />
+        ) : route === "seller_dashboard" || locationPath === SELLER_DASHBOARD_PATH ? (
+          <SellerDashboardPage />
         ) : route === "listing_details" ? (
           <ListingDetailsPage />
         ) : route === "messages" ? (
