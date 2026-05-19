@@ -287,6 +287,8 @@ export default function RootRouter() {
           <AdminRouteGuard><AdminAuditLogPage /></AdminRouteGuard>
         ) : route === "admin_setup" || locationPath === ADMIN_SETUP_PATH ? (
           <AdminRouteGuard><AdminSetupPage /></AdminRouteGuard>
+        ) : route === "admin_payout_destinations" ? (
+          <AdminRouteGuard><AdminPayoutDestinationRequestsPage /></AdminRouteGuard>
         ) : route === "payment_return" ? (
           <PaymentReturnPage />
         ) : (
