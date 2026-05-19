@@ -57,6 +57,14 @@ export type AdminActionLogFilters = {
   cursor?: string;
 };
 
+export type AdminActionLogPage = {
+  rows: AdminActionLog[];
+  total: number;
+  limit: number;
+  offset: number;
+  hasMore: boolean;
+};
+
 export type AdminQueueSummary = {
   contentOpen: number;
   messageOpen: number;
