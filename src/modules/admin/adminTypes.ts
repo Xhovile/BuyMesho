@@ -43,6 +43,18 @@ export type AdminActionLog = {
   created_at: string;
 };
 
+export type AdminActionLogFilters = {
+  action_type?: string;
+  target_type?: string;
+  admin?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+  cursor?: string;
+};
+
 export type AdminQueueSummary = {
   contentOpen: number;
   messageOpen: number;

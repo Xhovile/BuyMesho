@@ -2,6 +2,7 @@ import { apiFetch } from "../../lib/api";
 import { fetchMessageReports } from "../../lib/messageModeration";
 import type {
   AdminActionLog,
+  AdminActionLogFilters,
   AdminContentReport,
   AdminQueueSummary,
   AdminSellerApplication,
@@ -17,8 +18,29 @@ export async function fetchPendingSellerApplications() {
   return (Array.isArray(data) ? data : []) as AdminSellerApplication[];
 }
 
-export async function fetchAdminActionLogs() {
-  const data = await apiFetch("/api/admin/actions");
+export async function fetchAdminActionLogs(filters: AdminActionLogFilters = {}) {
+  const params = new URLSearchParams();
+
+  const setIfPresent = (key: string, value: string | number | undefined) => {
+    if (value === undefined || value === null || value === "") {
+      return;
+    }
+    params.set(key, String(value));
+  };
+
+  setIfPresent("action_type", filters.action_type);
+  setIfPresent("target_type", filters.target_type);
+  setIfPresent("admin", filters.admin);
+  setIfPresent("from", filters.from);
+  setIfPresent("to", filters.to);
+  setIfPresent("q", filters.q);
+  setIfPresent("limit", filters.limit);
+  setIfPresent("offset", filters.offset);
+  setIfPresent("cursor", filters.cursor);
+
+  const query = params.toString();
+  const path = query ? `/api/admin/actions?${query}` : "/api/admin/actions";
+  const data = await apiFetch(path);
   return (Array.isArray(data) ? data : []) as AdminActionLog[];
 }
 
