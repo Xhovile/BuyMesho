@@ -6,7 +6,7 @@ import { signOut } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
-  ADMIN_PATH,
+  navigateToAdminModerationQueue,
   BECOME_SELLER_PATH,
   CREATE_PATH,
   EXPLORE_PATH,
@@ -247,7 +247,7 @@ export default function Header({
                     </div>
                   </button>
                   {isAdmin ? (
-                    <button type="button" onClick={() => navigateToPath(ADMIN_PATH)} className={desktopNavButtonClass}>
+                    <button type="button" onClick={() => navigateToAdminModerationQueue()} className={desktopNavButtonClass}>
                       <ShieldCheck className="w-4 h-4 text-slate-700" />
                       ADMIN
                     </button>
@@ -454,7 +454,7 @@ export default function Header({
               </button>
 
               {isAdmin ? (
-                <button type="button" onClick={() => { closeMenu(); navigateToPath(ADMIN_PATH); }} className={navButtonClass}>
+                <button type="button" onClick={() => { closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
                   <span className="inline-flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
                       <ShieldCheck className="w-4 h-4 text-white" />

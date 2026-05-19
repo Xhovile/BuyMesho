@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  ADMIN_PATH,
+  navigateToAdminModerationQueue,
   BECOME_SELLER_PATH,
   CREATE_PATH,
   EXPLORE_PATH,
@@ -464,7 +464,7 @@ export default function HomePage() {
               {isAdmin ? (
                   <button
                     type="button"
-                    onClick={() => navigateToPath(ADMIN_PATH)}
+                    onClick={() => navigateToAdminModerationQueue()}
                     className={marketDesktopNavButtonClass}
                   >
                     <ShieldCheck className={marketDesktopIconClass.admin} />
@@ -650,7 +650,7 @@ export default function HomePage() {
                     type="button"
                     onClick={() => {
                       closeMenu();
-                      navigateToPath(ADMIN_PATH);
+                      navigateToAdminModerationQueue();
                     }}
                     className={navButtonClass}
                   >
