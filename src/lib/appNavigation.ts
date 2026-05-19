@@ -33,6 +33,7 @@ export type AppRoute =
   | "admin"
   | "admin_payments"
   | "admin_payouts"
+  | "admin_payout_destinations"
   | "admin_reports"
   | "admin_seller_applications"
   | "admin_moderation_queue"
@@ -40,6 +41,7 @@ export type AppRoute =
   | "admin_setup"
   | "payment_return";
 
+export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
@@ -421,6 +423,10 @@ export const getAppRouteFromLocation = (
 
   if (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`)) {
     return "explore";
+  }
+  
+  if (location.pathname === ADMIN_PAYOUT_DESTINATIONS_PATH) {
+    return "admin_payout_destinations";
   }
 
   return "home";
