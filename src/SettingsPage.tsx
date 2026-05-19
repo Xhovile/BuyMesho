@@ -179,6 +179,14 @@ export default function SettingsPage() {
     };
   }, []);
 
+  // Always open the Account accordion when the Settings page (menu view) is active.
+  // Users may still collapse it; this ensures it re-opens when returning to Settings.
+  useEffect(() => {
+    if (view === "menu") {
+      setExpandedSections((current) => ({ ...current, account: true }));
+    }
+  }, [view]);
+
   useEffect(() => {
     try {
       localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(expandedSections));
@@ -236,9 +244,9 @@ export default function SettingsPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
+    message?: string
   ) => {
-    setFeedback({ open: true, type, title, message });
+    setFeedback({ open: true, type, title, message: message ?? "" });
   };
 
   const totpQrImageUrl = useMemo(() => {
