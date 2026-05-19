@@ -13,7 +13,6 @@ import {
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
-  SELLER_DASHBOARD_PATH,
   SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
@@ -236,7 +235,7 @@ export default function RootRouter() {
           <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} />
         ) : route === "seller" ? (
           <SellerProfilePage />
-        ) : route === "seller_dashboard" || locationPath === SELLER_DASHBOARD_PATH ? (
+        ) : route === "seller_dashboard" ? (
           <SellerDashboardPage />
         ) : route === "listing_details" ? (
           <ListingDetailsPage />
