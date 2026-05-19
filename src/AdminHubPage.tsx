@@ -1,4 +1,5 @@
 import { ClipboardList, ListChecks, ShieldCheck, Webhook, Wallet, Wrench } from "lucide-react";
+import type { MouseEvent } from "react";
 import {
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PAYMENTS_PATH,
@@ -24,7 +25,7 @@ function AdminHubButton({
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
-  onClick: () => void;
+  onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
 }) {
   return (
     <a
@@ -48,14 +49,14 @@ export default function AdminHubPage() {
     >
       <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-zinc-200 p-px shadow-sm">
         <div className="grid gap-px bg-zinc-200 md:grid-cols-3">
-          <AdminHubButton title="Moderation Queue" icon={ListChecks} path={ADMIN_MODERATION_QUEUE_PATH} onClick={() => navigateToAdminModerationQueue()} />
-          <AdminHubButton title="Reports" icon={ClipboardList} path={ADMIN_REPORTS_PATH} onClick={() => navigateToAdminReports()} />
-          <AdminHubButton title="Seller Approvals" icon={ShieldCheck} path={ADMIN_SELLER_APPLICATIONS_PATH} onClick={() => navigateToAdminSellerApplications()} />
+          <AdminHubButton title="Moderation Queue" icon={ListChecks} path={ADMIN_MODERATION_QUEUE_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminModerationQueue(); }} />
+          <AdminHubButton title="Reports" icon={ClipboardList} path={ADMIN_REPORTS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminReports(); }} />
+          <AdminHubButton title="Seller Approvals" icon={ShieldCheck} path={ADMIN_SELLER_APPLICATIONS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminSellerApplications(); }} />
         </div>
         <div className="mt-px grid gap-px bg-zinc-200 md:grid-cols-3">
-          <AdminHubButton title="Payments & Webhooks" icon={Webhook} path={ADMIN_PAYMENTS_PATH} onClick={() => navigateToAdminPayments()} />
-          <AdminHubButton title="Payouts" icon={Wallet} path={ADMIN_PAYOUTS_PATH} onClick={() => navigateToAdminPayouts()} />
-          <AdminHubButton title="Admin Setup" icon={Wrench} path={ADMIN_SETUP_PATH} onClick={() => navigateToAdminSetup()} />
+          <AdminHubButton title="Payments & Webhooks" icon={Webhook} path={ADMIN_PAYMENTS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminPayments(); }} />
+          <AdminHubButton title="Payouts" icon={Wallet} path={ADMIN_PAYOUTS_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminPayouts(); }} />
+          <AdminHubButton title="Admin Setup" icon={Wrench} path={ADMIN_SETUP_PATH} onClick={(event) => { event.preventDefault(); navigateToAdminSetup(); }} />
         </div>
       </section>
     </AdminWorkspaceLayout>
