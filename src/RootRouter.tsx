@@ -165,6 +165,7 @@ export default function RootRouter() {
       "admin_moderation_queue",
       "admin_audit",
       "admin_setup",
+      "admin_payout_destinations",
     ];
 
     const requiresAuth =
