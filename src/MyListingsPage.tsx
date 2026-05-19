@@ -441,7 +441,7 @@ export default function MyListingsPage() {
             ) : null}
 
             <div
-              className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${
+              className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-[max-height,padding,opacity] duration-300 ${
                 dashboardOpen
                   ? "max-h-[1200px] p-4 sm:p-5"
                   : "max-h-0 p-0 border-transparent"
