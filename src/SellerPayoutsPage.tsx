@@ -21,7 +21,7 @@ import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "./components/payouts/PayoutTimeline";
 import PayoutPolicyExplainer from "./components/payouts/PayoutPolicyExplainer";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { navigateToPath, SETTINGS_PATH } from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import {
   createPayoutDestination,
   getPayoutDestinations,
@@ -302,7 +302,7 @@ export default function SellerPayoutsPage() {
         <div className="max-w-4xl mx-auto px-4 py-10">
           <button
             type="button"
-            onClick={() => navigateToPath(SETTINGS_PATH)}
+            onClick={() => navigateToPath(EXPLORE_PATH)}
             className="inline-flex items-center gap-2 text-sm font-bold text-zinc-600 hover:text-zinc-900"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -335,7 +335,7 @@ export default function SellerPayoutsPage() {
           <div className="flex w-full items-center gap-3 sm:w-auto">
             <button
               type="button"
-              onClick={() => navigateToPath(SETTINGS_PATH)}
+              onClick={() => navigateToPath(EXPLORE_PATH)}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:flex-none"
             >
               <ArrowLeft className="w-4 h-4" />
