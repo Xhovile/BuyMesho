@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { fetchAdminActionLogs } from "./modules/admin/adminApi";
@@ -6,20 +6,32 @@ import type { AdminActionLog } from "./modules/admin/adminTypes";
 import { ADMIN_ACTION_LABELS, ADMIN_TARGET_LABELS, isAdminActionType, isAdminTargetType } from "./modules/admin/shared/adminAuditTypes";
 
 export default function AdminAuditLogPage() {
+  const initialFilters = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return {
+      action_type: params.get("action_type") ?? "",
+      target_type: params.get("target_type") ?? "",
+      admin: params.get("admin") ?? "",
+      from: params.get("from") ?? "",
+      to: params.get("to") ?? "",
+      q: params.get("q") ?? "",
+    };
+  }, []);
   const [rows, setRows] = useState<AdminActionLog[]>([]);
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState(initialFilters);
 
   const toggleRow = (rowId: number) => {
     setExpandedRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
   };
 
-  const load = async () => {
+  const load = async (currentFilters = filters) => {
     setError(null);
     setLoading(true);
     try {
-      const data = await fetchAdminActionLogs();
+      const data = await fetchAdminActionLogs(currentFilters);
       setRows(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin actions.");
@@ -29,8 +41,40 @@ export default function AdminAuditLogPage() {
   };
 
   useEffect(() => {
-    void load();
-  }, []);
+    const params = new URLSearchParams(window.location.search);
+    const nextParams = new URLSearchParams();
+    const setIfPresent = (key: keyof typeof filters) => {
+      const value = filters[key];
+      if (value.trim()) {
+        nextParams.set(key, value.trim());
+      }
+    };
+    setIfPresent("action_type");
+    setIfPresent("target_type");
+    setIfPresent("admin");
+    setIfPresent("from");
+    setIfPresent("to");
+    setIfPresent("q");
+    const nextQuery = nextParams.toString();
+    if (nextQuery !== params.toString()) {
+      const nextPath = nextQuery ? `${window.location.pathname}?${nextQuery}` : window.location.pathname;
+      window.history.replaceState({}, "", nextPath);
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void load({
+        ...filters,
+        action_type: filters.action_type || undefined,
+        target_type: filters.target_type || undefined,
+        admin: filters.admin.trim() || undefined,
+        from: filters.from || undefined,
+        to: filters.to || undefined,
+        q: filters.q.trim() || undefined,
+      });
+    }, 300);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [filters]);
 
   const summaryKeys = ["reason", "notes", "old_value", "new_value", "report_id", "report_type", "status"];
 
@@ -68,6 +112,79 @@ export default function AdminAuditLogPage() {
       {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div> : null}
 
       <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+        <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              Action type
+              <select
+                value={filters.action_type}
+                onChange={(event) => setFilters((prev) => ({ ...prev, action_type: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+              >
+                <option value="">All actions</option>
+                {Object.entries(ADMIN_ACTION_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              Target type
+              <select
+                value={filters.target_type}
+                onChange={(event) => setFilters((prev) => ({ ...prev, target_type: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+              >
+                <option value="">All targets</option>
+                {Object.entries(ADMIN_TARGET_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </label>
+            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              Admin
+              <input
+                value={filters.admin}
+                onChange={(event) => setFilters((prev) => ({ ...prev, admin: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+                placeholder="UID or email"
+              />
+            </label>
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              From
+              <input
+                type="date"
+                value={filters.from}
+                onChange={(event) => setFilters((prev) => ({ ...prev, from: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+              />
+            </label>
+            <label className="flex min-w-[140px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              To
+              <input
+                type="date"
+                value={filters.to}
+                onChange={(event) => setFilters((prev) => ({ ...prev, to: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+              />
+            </label>
+            <label className="flex min-w-[220px] flex-[2] flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
+              Search
+              <input
+                value={filters.q}
+                onChange={(event) => setFilters((prev) => ({ ...prev, q: event.target.value }))}
+                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
+                placeholder="Listing ID / seller UID / admin email"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setFilters({ action_type: "", target_type: "", admin: "", from: "", to: "", q: "" })}
+              className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100"
+            >
+              Reset filters
+            </button>
+          </div>
+        </div>
         {loading ? (
           <div className="flex items-center justify-center p-10 text-zinc-500">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -109,8 +226,13 @@ export default function AdminAuditLogPage() {
                           )}
                         </td>
                         <td className="px-4 py-2 text-zinc-700">{new Date(row.created_at).toLocaleString()}</td>
-                        <td className="px-4 py-2 font-semibold text-zinc-900">{row.action_type}</td>
-                        <td className="px-4 py-2 text-zinc-700">{row.target_type}{row.target_id ? `:${row.target_id}` : ""}</td>
+                        <td className="px-4 py-2 font-semibold text-zinc-900">
+                          {isAdminActionType(row.action_type) ? ADMIN_ACTION_LABELS[row.action_type] : row.action_type}
+                        </td>
+                        <td className="px-4 py-2 text-zinc-700">
+                          {isAdminTargetType(row.target_type) ? ADMIN_TARGET_LABELS[row.target_type] : row.target_type}
+                          {row.target_id ? `:${row.target_id}` : ""}
+                        </td>
                         <td className="px-4 py-2 text-zinc-700 break-all">{row.admin_email || row.admin_uid || "—"}</td>
                       </tr>
                       {isExpanded ? (

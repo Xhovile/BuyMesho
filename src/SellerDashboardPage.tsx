@@ -164,17 +164,6 @@ export default function SellerDashboardPage() {
     void loadDashboard();
   };
 
-  const titleShell = (
-    <AccountPageShell
-      eyebrow="Seller"
-      title="Dashboard"
-      description="Review your seller performance, payouts, and listing traction."
-      backLabel="Back to Listings"
-      onBack={() => navigateToPath("/my-listings")}
-      childrenSectionClassName="w-full"
-    />
-  );
-
   if (authLoading || profileLoading) {
     return (
       <AccountPageShell
