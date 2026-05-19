@@ -60,6 +60,7 @@ const SafetyTipsPage = lazy(() => import("./components/SafetyTipsPage"));
 const SavedPage = lazy(() => import("./SavedPage"));
 const SettingsPage = lazy(() => import("./SettingsPage"));
 const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
+const SellerDashboardPage = lazy(() => import("./SellerDashboardPage"));
 const SellerPayoutsPage = lazy(() => import("./SellerPayoutsPage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
@@ -153,6 +154,7 @@ export default function RootRouter() {
       "change_password",
       "change_email",
       "my_listings",
+      "seller_dashboard",
       "seller_payouts",
       "messages",
       "admin",
@@ -233,6 +235,8 @@ export default function RootRouter() {
           <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} />
         ) : route === "seller" ? (
           <SellerProfilePage />
+        ) : route === "seller_dashboard" ? (
+          <SellerDashboardPage />
         ) : route === "listing_details" ? (
           <ListingDetailsPage />
         ) : route === "messages" ? (

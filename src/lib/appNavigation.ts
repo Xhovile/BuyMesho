@@ -12,6 +12,7 @@ export type AppRoute =
   | "safety"
   | "report"
   | "seller"
+  | "seller_dashboard"
   | "seller_payouts"
   | "listing_details"
   | "messages"
@@ -49,6 +50,7 @@ export const TERMS_PATH = "/terms";
 export const SAFETY_PATH = "/safety";
 export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
+export const SELLER_DASHBOARD_PATH = "/seller-dashboard";
 export const SELLER_PAYOUTS_PATH = "/seller/payouts";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
@@ -345,6 +347,10 @@ export const getAppRouteFromLocation = (
     return "seller_payouts";
   }
 
+  if (location.pathname === SELLER_DASHBOARD_PATH) {
+    return "seller_dashboard";
+  }
+
   if (location.pathname === ADMIN_PATH) {
     return "admin";
   }
@@ -483,6 +489,8 @@ export const navigateToSignupWithReturnPath = (returnPath?: string) => {
   storeAuthReturnPath(returnPath);
   navigateToPath(SIGNUP_PATH);
 };
+
+export const navigateToSellerDashboard = () => navigateToPath(SELLER_DASHBOARD_PATH);
 
 export type SettingsSection = "privacy" | "terms" | "safety" | "report";
 
