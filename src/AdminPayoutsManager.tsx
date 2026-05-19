@@ -702,6 +702,14 @@ function AdminPayoutsManagerContent() {
               Last refresh: <span className="font-semibold text-zinc-900">{toDate(lastRefreshAt)}</span>
             </div>
             <button
+                type="button"
+                onClick={() => navigateToAdminPayoutDestinations()}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <ShieldCheck className="h-4 w-4" />
+               Seller Destination Requests
+              </button>
+            <button
               type="button"
               onClick={() => void reconcilePending()}
               disabled={batchReconciling}
