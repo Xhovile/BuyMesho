@@ -18,6 +18,7 @@ import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
 import ActionModal from "./components/ActionModal";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
+import { navigateToAdminPayoutDestinations } from "./lib/appNavigation";
 
 type PayoutRow = {
   id: string;
