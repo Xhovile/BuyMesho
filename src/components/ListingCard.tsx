@@ -272,6 +272,6 @@ export default function ListingCard({
           ) : null}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
