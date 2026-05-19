@@ -110,26 +110,23 @@ export default function ListingCard({
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
 
   return (
-    <motion.article
-      layout
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: ultraCompact ? -1 : -3 }}
-      onClick={clickable ? handleOpenDetails : undefined}
-      onKeyDown={
-        clickable
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleOpenDetails();
-              }
-            }
-          : undefined
-      }
-      tabIndex={clickable ? 0 : undefined}
-      role={clickable ? "button" : undefined}
-      className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
-    >
+    <article
+  className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
+  onClick={clickable ? handleOpenDetails : undefined}
+  onKeyDown={
+    clickable
+      ? (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleOpenDetails();
+          }
+        }
+      : undefined
+  }
+  tabIndex={clickable ? 0 : undefined}
+  role={clickable ? "button" : undefined}
+>
+      
       <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 group-hover:opacity-100 transition pointer-events-none" />
 
       <div
