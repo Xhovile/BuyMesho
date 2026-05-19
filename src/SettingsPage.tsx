@@ -29,8 +29,8 @@ import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
 import TotpSetupModal from "./components/TotpSetupModal";
 import {
-  ADMIN_REPORTS_PATH,
-  ADMIN_SELLER_APPLICATIONS_PATH,
+  ADMIN_MODERATION_QUEUE_PATH,
+  ADMIN_SETUP_PATH,
   BECOME_SELLER_PATH,
   CHANGE_EMAIL_PATH,
   CHANGE_PASSWORD_PATH,
@@ -652,24 +652,24 @@ export default function SettingsPage() {
                   <>
                     <button
                       type="button"
-                      onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
+                      onClick={() => navigateToPath(ADMIN_MODERATION_QUEUE_PATH)}
                       className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <FileText className="w-4 h-4" />
-                        Admin Reports
+                        Moderation Queue
                       </span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
+                      onClick={() => navigateToPath(ADMIN_SETUP_PATH)}
                       className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <UserCheck className="w-4 h-4" />
-                        Seller Approvals
+                        Admin Setup Checklist
                       </span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </button>

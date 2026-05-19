@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowLeft,
   BadgeInfo,
   ChevronLeft,
   ChevronRight,
@@ -14,12 +13,11 @@ import {
   X,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
-import { navigateToAdmin } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { useIsAdmin } from "./hooks/useIsAdmin";
 import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/payouts/uiModel";
-import AdminRouteGuard from "./components/AdminRouteGuard";
 import ActionModal from "./components/ActionModal";
+import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type PayoutRow = {
   id: string;
@@ -661,38 +659,12 @@ function AdminPayoutsManagerContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigateToAdmin()}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Admin
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void load(pageIndex)}
-            disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
-          >
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Refresh
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl space-y-6 px-4 py-8">
-        <section>
-          <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">Payouts manager</h1>
-          <p className="mt-3 max-w-3xl text-sm font-medium text-zinc-600">
-            Manage seller payouts, retries, reconciliation, destination verification, suspension controls, and payout adjustments.
-          </p>
-        </section>
+    <AdminWorkspaceLayout
+      title="Payouts manager"
+      description="Manage seller payouts, retries, reconciliation, destination verification, suspension controls, and payout adjustments."
+      onRefresh={() => void load(pageIndex)}
+    >
+      <main className="space-y-6">
 
         {notice ? (
           <div
@@ -1305,14 +1277,10 @@ function AdminPayoutsManagerContent() {
         onConfirm={() => void runPendingDialogAction()}
         onCancel={closeActionDialog}
       />
-    </div>
+    </AdminWorkspaceLayout>
   );
 }
 
 export default function AdminPayoutsManager() {
-  return (
-    <AdminRouteGuard>
-      <AdminPayoutsManagerContent />
-    </AdminRouteGuard>
-  );
+  return <AdminPayoutsManagerContent />;
 }

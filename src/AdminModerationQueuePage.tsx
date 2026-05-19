@@ -1,4 +1,5 @@
 import { AlertCircle, MessageSquareWarning, ShieldCheck } from "lucide-react";
+import type { ComponentType } from "react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToAdminReports, navigateToAdminSellerApplications } from "./lib/appNavigation";
 import { useAdminWorkspaceData } from "./modules/admin/useAdminWorkspaceData";
@@ -14,7 +15,7 @@ function QueueCard({
   value: number;
   note: string;
   onOpen: () => void;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 }) {
   return (
     <button

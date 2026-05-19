@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  ArrowLeft,
   BadgeInfo,
   CircleAlert,
   CreditCard,
   Loader2,
-  RefreshCw,
   ShieldCheck,
   Webhook,
   X,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
-import { navigateToAdmin } from "./lib/appNavigation";
+import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type PaymentRow = {
   id: string;
@@ -426,32 +424,15 @@ export default function AdminPaymentsConsole() {
   const lifecycleSteps = useMemo(() => buildLifecycleSteps(selectedPayment ?? latestPayment, selectedPayment ? selectedHooks : latestPayment ? webhookEvents.filter((event) => event.reference === latestPayment.reference) : webhookEvents), [selectedPayment, latestPayment, webhookEvents, selectedHooks]);
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <button type="button" onClick={() => navigateToAdmin()} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Admin
-          </button>
-          <button type="button" onClick={() => window.location.reload()} disabled={refreshing} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60">
-            {refreshing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-            Refresh
-          </button>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-7xl px-4 py-8 space-y-8">
-        <section className="flex flex-col gap-5 px-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Admin</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">Payments & Webhooks</h1>
-            <p className="mt-3 max-w-3xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">Admin monitoring only. Buyer order status belongs elsewhere.</p>
-          </div>
-
-          <div className="grid w-full grid-cols-2 gap-3 sm:w-80">
-            <StatButton label="Payments" value={stats.totalPayments} active={activeTab === "payments"} onClick={() => setActiveTab("payments")} badge="View" />
-            <StatButton label="Webhooks" value={stats.totalWebhooks} active={activeTab === "webhooks"} onClick={() => setActiveTab("webhooks")} badge="View" />
-          </div>
+    <AdminWorkspaceLayout
+      title="Payments & Webhooks"
+      description="Admin monitoring only. Buyer order status belongs elsewhere."
+      onRefresh={() => window.location.reload()}
+    >
+      <main className="space-y-8">
+        <section className="grid w-full grid-cols-2 gap-3 sm:w-80">
+          <StatButton label="Payments" value={stats.totalPayments} active={activeTab === "payments"} onClick={() => setActiveTab("payments")} badge="View" />
+          <StatButton label="Webhooks" value={stats.totalWebhooks} active={activeTab === "webhooks"} onClick={() => setActiveTab("webhooks")} badge="View" />
         </section>
 
         {latestPayment ? (
@@ -611,6 +592,6 @@ export default function AdminPaymentsConsole() {
       </main>
 
       {selectedPayment ? <PaymentDrawer payment={selectedPayment} hooks={selectedHooks} onClose={() => setSelectedReference(null)} /> : null}
-    </div>
+    </AdminWorkspaceLayout>
   );
 }

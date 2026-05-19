@@ -1,4 +1,5 @@
 import { ClipboardList, Home, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
+import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
@@ -18,7 +19,7 @@ type AdminWorkspaceNavProps = {
 type NavItem = {
   label: string;
   path: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: ComponentType<{ className?: string }>;
 };
 
 const NAV_ITEMS: NavItem[] = [

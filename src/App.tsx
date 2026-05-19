@@ -88,13 +88,13 @@ import SafetyTipsPage from "./components/SafetyTipsPage";
 import ReportProblemPage from "./components/ReportProblemPage";
 import ChangePasswordModal from "./components/ChangePasswordModal";
 import ReportListingModal from "./components/ReportListingModal";
-import AdminReportsModal from "./components/AdminReportsModal";
-import AdminSellerApplicationsModal from "./components/AdminSellerApplicationsModal";
 import ListingActionsMenu from "./components/ListingActionsMenu";
 import { navigateToListingDetails,
         navigateToPath, 
         PROFILE_PATH, 
-        navigateToSellerProfile } from "./lib/appNavigation";
+        navigateToSellerProfile,
+        navigateToAdminModerationQueue,
+        navigateToAdminSellerApplications } from "./lib/appNavigation";
 import {
   hideListingId,
   hideSellerUid,
@@ -248,8 +248,6 @@ const [isImageFullscreenOpen, setIsImageFullscreenOpen] = useState(false);
 const [reportListingId, setReportListingId] = useState<number | null>(null);
 const [savedListingIds, setSavedListingIds] = useState<number[]>([]);
 const [showSavedModal, setShowSavedModal] = useState(false);
-const [showAdminReportsModal, setShowAdminReportsModal] = useState(false);
-const [showAdminSellerApplicationsModal, setShowAdminSellerApplicationsModal] = useState(false);
 const [passwordPromptOpen, setPasswordPromptOpen] = useState(false);
 const [reauthPassword, setReauthPassword] = useState("");
 const [pendingDeleteAfterReauth, setPendingDeleteAfterReauth] = useState(false);
@@ -4520,7 +4518,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
                       {isAdminUser && (
                         <button
-                          onClick={() => setShowAdminReportsModal(true)}
+                          onClick={() => navigateToAdminModerationQueue()}
                           className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                         >
                           <ShieldCheck className="w-4 h-4" /> Admin Reports
@@ -4529,7 +4527,7 @@ const scrollToCreateSpecField = (fieldKey: string) => {
 
                       {isAdminUser && (
                         <button
-                          onClick={() => setShowAdminSellerApplicationsModal(true)}
+                          onClick={() => navigateToAdminSellerApplications()}
                           className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-900 py-3 rounded-xl font-bold transition-colors flex items-center justify-center gap-2"
                         >
                           <ShieldCheck className="w-4 h-4" /> Seller Applications
@@ -5364,19 +5362,6 @@ const scrollToCreateSpecField = (fieldKey: string) => {
   />
 )}
 
- {showAdminReportsModal && isAdminUser && (
- <AdminReportsModal
-    onClose={() => setShowAdminReportsModal(false)}
-    onOpenUser={openPublicProfile}
-  />
-)}
-
-{showAdminSellerApplicationsModal && isAdminUser && (
-  <AdminSellerApplicationsModal
-    onClose={() => setShowAdminSellerApplicationsModal(false)}
-  />
-)}
-        
 {reportListingId !== null && (
   <ReportListingModal
     listingId={reportListingId}

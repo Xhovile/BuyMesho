@@ -23,6 +23,21 @@ export async function fetchAdminActionLogs() {
 }
 
 export async function fetchAdminQueueSummary(): Promise<AdminQueueSummary> {
+  try {
+    const summary = await apiFetch("/api/admin/summary");
+    if (
+      summary &&
+      typeof summary === "object" &&
+      typeof (summary as Record<string, unknown>).contentOpen === "number" &&
+      typeof (summary as Record<string, unknown>).messageOpen === "number" &&
+      typeof (summary as Record<string, unknown>).sellerPending === "number"
+    ) {
+      return summary as AdminQueueSummary;
+    }
+  } catch {
+    // fallback to existing APIs
+  }
+
   const [contentReports, messageReports, sellerApplications] = await Promise.all([
     fetchOpenContentReports(),
     fetchMessageReports("open"),

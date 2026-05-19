@@ -3,6 +3,9 @@ import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   DISPUTES_PATH,
+  ADMIN_AUDIT_PATH,
+  ADMIN_MODERATION_QUEUE_PATH,
+  ADMIN_SETUP_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
   navigateToPath,
@@ -24,6 +27,9 @@ const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
 const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManager"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
+const AdminModerationQueuePage = lazy(() => import("./AdminModerationQueuePage"));
+const AdminAuditLogPage = lazy(() => import("./AdminAuditLogPage"));
+const AdminSetupPage = lazy(() => import("./AdminSetupPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
 const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
 const BuyerPaymentsPage = lazy(() => import("./BuyerPaymentsPage"));
@@ -126,6 +132,9 @@ export default function RootRouter() {
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
       import("./AdminPayoutsManager"),
+      import("./AdminModerationQueuePage"),
+      import("./AdminAuditLogPage"),
+      import("./AdminSetupPage"),
       import("./OrderTrackingPage"),
       import("./OrderDisputePage"),
       import("./SellerPayoutsPage"),
@@ -149,6 +158,11 @@ export default function RootRouter() {
       "admin",
       "admin_payments",
       "admin_payouts",
+      "admin_reports",
+      "admin_seller_applications",
+      "admin_moderation_queue",
+      "admin_audit",
+      "admin_setup",
     ];
 
     const requiresAuth =
@@ -261,6 +275,12 @@ export default function RootRouter() {
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) : route === "admin_seller_applications" ? (
           <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
+        ) : route === "admin_moderation_queue" || locationPath === ADMIN_MODERATION_QUEUE_PATH ? (
+          <AdminRouteGuard><AdminModerationQueuePage /></AdminRouteGuard>
+        ) : route === "admin_audit" || locationPath === ADMIN_AUDIT_PATH ? (
+          <AdminRouteGuard><AdminAuditLogPage /></AdminRouteGuard>
+        ) : route === "admin_setup" || locationPath === ADMIN_SETUP_PATH ? (
+          <AdminRouteGuard><AdminSetupPage /></AdminRouteGuard>
         ) : route === "payment_return" ? (
           <PaymentReturnPage />
         ) : (
