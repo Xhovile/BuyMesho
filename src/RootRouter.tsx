@@ -30,6 +30,7 @@ const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplications
 const AdminModerationQueuePage = lazy(() => import("./AdminModerationQueuePage"));
 const AdminAuditLogPage = lazy(() => import("./AdminAuditLogPage"));
 const AdminSetupPage = lazy(() => import("./AdminSetupPage"));
+const AdminPayoutDestinationRequestsPage = lazy(() => import("./AdminPayoutDestinationRequestsPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
 const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
 const BuyerPaymentsPage = lazy(() => import("./BuyerPaymentsPage"));
