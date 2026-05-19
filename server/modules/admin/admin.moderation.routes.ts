@@ -2,6 +2,7 @@ import type Database from "better-sqlite3";
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from "express";
 import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
+import { adminApiLimiter } from "./admin.rateLimit.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -30,7 +31,7 @@ export function createAdminModerationRouter(params: {
   const router = express.Router();
   const { requireAuth, db, logAdminAction } = params;
 
-  router.get("/reports", requireAuth, (req, res) => {
+  router.get("/reports", adminApiLimiter, requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) {
       return res.status(403).json({ error: "Forbidden: admin access required" });
     }
@@ -85,7 +86,7 @@ export function createAdminModerationRouter(params: {
     }
   });
 
-  router.patch("/reports/:id/status", requireAuth, (req, res) => {
+  router.patch("/reports/:id/status", adminApiLimiter, requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) {
       return res.status(403).json({ error: "Forbidden: admin access required" });
     }
@@ -116,7 +117,7 @@ export function createAdminModerationRouter(params: {
     }
   });
 
-  router.get("/seller-applications", requireAuth, (req, res) => {
+  router.get("/seller-applications", adminApiLimiter, requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) {
       return res.status(403).json({ error: "Forbidden: admin access required" });
     }
@@ -172,6 +173,7 @@ export function createAdminModerationRouter(params: {
 
   router.patch(
     "/seller-applications/:id/status",
+    adminApiLimiter,
     requireAuth,
     withAsyncRoute(async (req, res) => {
       const requesterEmail = req.user?.email || null;
@@ -319,7 +321,7 @@ export function createAdminModerationRouter(params: {
     })
   );
 
-  router.post("/listings/:id/hide", requireAuth, (req, res) => {
+  router.post("/listings/:id/hide", adminApiLimiter, requireAuth, (req, res) => {
     const requesterEmail = req.user?.email || null;
     const requesterUid = req.user?.uid || null;
     const id = Number(req.params.id);
@@ -359,7 +361,7 @@ export function createAdminModerationRouter(params: {
     }
   });
 
-  router.post("/listings/:id/unhide", requireAuth, (req, res) => {
+  router.post("/listings/:id/unhide", adminApiLimiter, requireAuth, (req, res) => {
     const requesterEmail = req.user?.email || null;
     const requesterUid = req.user?.uid || null;
     const id = Number(req.params.id);
@@ -399,7 +401,7 @@ export function createAdminModerationRouter(params: {
     }
   });
 
-  router.post("/sellers/:uid/suspend", requireAuth, (req, res) => {
+  router.post("/sellers/:uid/suspend", adminApiLimiter, requireAuth, (req, res) => {
     const requesterEmail = req.user?.email || null;
     const requesterUid = req.user?.uid || null;
     const { uid } = req.params;
@@ -435,7 +437,7 @@ export function createAdminModerationRouter(params: {
     }
   });
 
-  router.post("/sellers/:uid/unsuspend", requireAuth, (req, res) => {
+  router.post("/sellers/:uid/unsuspend", adminApiLimiter, requireAuth, (req, res) => {
     const requesterEmail = req.user?.email || null;
     const requesterUid = req.user?.uid || null;
     const { uid } = req.params;

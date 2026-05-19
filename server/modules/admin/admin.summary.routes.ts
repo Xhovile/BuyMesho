@@ -1,6 +1,7 @@
 import type Database from "better-sqlite3";
 import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
+import { adminApiLimiter } from "./admin.rateLimit.js";
 
 export function createAdminSummaryRouter(params: {
   requireAuth: RequestHandler;
@@ -9,7 +10,7 @@ export function createAdminSummaryRouter(params: {
   const router = express.Router();
   const { requireAuth, db } = params;
 
-  router.get("/summary", requireAuth, (req, res) => {
+  router.get("/summary", adminApiLimiter, requireAuth, (req, res) => {
     if (!hasAdminAccess(req.user)) {
       return res.status(403).json({ error: "Forbidden: admin access required" });
     }
