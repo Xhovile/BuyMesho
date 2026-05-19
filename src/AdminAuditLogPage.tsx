@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { fetchAdminActionLogs } from "./modules/admin/adminApi";
 import type { AdminActionLog } from "./modules/admin/adminTypes";
+import { ADMIN_ACTION_LABELS, ADMIN_TARGET_LABELS, isAdminActionType, isAdminTargetType } from "./modules/admin/shared/adminAuditTypes";
 
 export default function AdminAuditLogPage() {
   const [rows, setRows] = useState<AdminActionLog[]>([]);
@@ -53,14 +54,26 @@ export default function AdminAuditLogPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {rows.map((row) => (
+                {rows.map((row) => {
+                  const actionLabel = isAdminActionType(row.action_type) ? ADMIN_ACTION_LABELS[row.action_type] : row.action_type;
+                  const targetLabel = isAdminTargetType(row.target_type) ? ADMIN_TARGET_LABELS[row.target_type] : row.target_type;
+
+                  return (
                   <tr key={row.id}>
                     <td className="px-4 py-3 text-zinc-700">{new Date(row.created_at).toLocaleString()}</td>
-                    <td className="px-4 py-3 font-semibold text-zinc-900">{row.action_type}</td>
-                    <td className="px-4 py-3 text-zinc-700">{row.target_type}{row.target_id ? `:${row.target_id}` : ""}</td>
+                    <td className="px-4 py-3 font-semibold text-zinc-900" title={row.action_type}>
+                      {actionLabel}
+                      {actionLabel !== row.action_type ? <span className="ml-2 text-xs font-normal text-zinc-500">({row.action_type})</span> : null}
+                    </td>
+                    <td className="px-4 py-3 text-zinc-700" title={row.target_type}>
+                      {targetLabel}
+                      {targetLabel !== row.target_type ? <span className="ml-2 text-xs text-zinc-500">({row.target_type})</span> : null}
+                      {row.target_id ? `:${row.target_id}` : ""}
+                    </td>
                     <td className="px-4 py-3 text-zinc-700 break-all">{row.admin_email || row.admin_uid || "—"}</td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>

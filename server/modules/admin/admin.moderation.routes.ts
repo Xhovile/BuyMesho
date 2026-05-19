@@ -3,6 +3,7 @@ import express, { type NextFunction, type Request, type RequestHandler, type Res
 import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
+import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES, type AdminActionType, type AdminTargetType } from "../../../src/modules/admin/shared/adminAuditTypes.js";
 
 type AsyncRouteHandler = (
   req: Request,
@@ -22,8 +23,8 @@ export function createAdminModerationRouter(params: {
   logAdminAction: (entry: {
     admin_uid?: string | null;
     admin_email?: string | null;
-    action_type: string;
-    target_type: string;
+    action_type: AdminActionType;
+    target_type: AdminTargetType;
     target_id?: string | null;
     details?: unknown;
   }) => void;
@@ -306,9 +307,9 @@ export function createAdminModerationRouter(params: {
         admin_email: requesterEmail,
         action_type:
           status === "approved"
-            ? "approve_seller_application"
-            : "reject_seller_application",
-        target_type: "seller_application",
+            ? ADMIN_ACTION_TYPES.APPROVE_SELLER_APPLICATION
+            : ADMIN_ACTION_TYPES.REJECT_SELLER_APPLICATION,
+        target_type: ADMIN_TARGET_TYPES.SELLER_APPLICATION,
         target_id: String(id),
         details: {
           applicant_uid: application.applicant_uid,
@@ -348,8 +349,8 @@ export function createAdminModerationRouter(params: {
       logAdminAction({
         admin_uid: requesterUid,
         admin_email: requesterEmail,
-        action_type: "hide_listing",
-        target_type: "listing",
+        action_type: ADMIN_ACTION_TYPES.HIDE_LISTING,
+        target_type: ADMIN_TARGET_TYPES.LISTING,
         target_id: String(id),
         details: { seller_uid: listing.seller_uid },
       });
@@ -388,8 +389,8 @@ export function createAdminModerationRouter(params: {
       logAdminAction({
         admin_uid: requesterUid,
         admin_email: requesterEmail,
-        action_type: "unhide_listing",
-        target_type: "listing",
+        action_type: ADMIN_ACTION_TYPES.UNHIDE_LISTING,
+        target_type: ADMIN_TARGET_TYPES.LISTING,
         target_id: String(id),
         details: { seller_uid: listing.seller_uid },
       });
@@ -424,8 +425,8 @@ export function createAdminModerationRouter(params: {
       logAdminAction({
         admin_uid: requesterUid,
         admin_email: requesterEmail,
-        action_type: "suspend_seller",
-        target_type: "seller",
+        action_type: ADMIN_ACTION_TYPES.SUSPEND_SELLER,
+        target_type: ADMIN_TARGET_TYPES.SELLER,
         target_id: uid,
         details: { business_name: seller.business_name },
       });
@@ -460,8 +461,8 @@ export function createAdminModerationRouter(params: {
       logAdminAction({
         admin_uid: requesterUid,
         admin_email: requesterEmail,
-        action_type: "unsuspend_seller",
-        target_type: "seller",
+        action_type: ADMIN_ACTION_TYPES.UNSUSPEND_SELLER,
+        target_type: ADMIN_TARGET_TYPES.SELLER,
         target_id: uid,
         details: { business_name: seller.business_name },
       });

@@ -4,6 +4,7 @@ import { getPaymentDb } from '../../sqlite.js';
 import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
+import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES } from '../../../src/modules/admin/shared/adminAuditTypes.js';
 
 const DEFAULT_PAYOUT_PAGE_SIZE = 200;
 const MAX_PAYOUT_PAGE_SIZE = 500;
@@ -355,9 +356,9 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
            (
              SELECT details
              FROM admin_actions aa
-             WHERE aa.target_type = 'seller'
+             WHERE aa.target_type = ?
                AND aa.target_id = p.seller_id
-               AND aa.action_type IN ('suspend_payouts', 'unsuspend_payouts')
+               AND aa.action_type IN (?, ?)
              ORDER BY aa.created_at DESC, aa.id DESC
              LIMIT 1
            ) AS latestSellerPayoutControlDetails
@@ -367,7 +368,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
          ORDER BY p.created_at DESC
          LIMIT ?
          OFFSET ?
-      `).all(limit, offset);
+      `).all(ADMIN_TARGET_TYPES.SELLER, ADMIN_ACTION_TYPES.SUSPEND_PAYOUTS, ADMIN_ACTION_TYPES.UNSUSPEND_PAYOUTS, limit, offset);
       const shapedRows = (rows as Array<Record<string, unknown>>).map((row) => {
         const status = String(row.status ?? '').toLowerCase();
         const failureReason = (row.failureReason as string | null) ?? null;
@@ -574,13 +575,14 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
 
       db.prepare(
         `INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details, created_at)
-         VALUES (?, ?, ?, 'seller', ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         actorId,
         req.user?.email ?? null,
-        suspended ? 'suspend_payouts' : 'unsuspend_payouts',
+        suspended ? ADMIN_ACTION_TYPES.SUSPEND_PAYOUTS : ADMIN_ACTION_TYPES.UNSUSPEND_PAYOUTS,
+        ADMIN_TARGET_TYPES.SELLER,
         sellerId,
-        reason,
+        JSON.stringify({ reason }),
         now,
       );
 
