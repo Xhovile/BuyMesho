@@ -20,6 +20,7 @@ import { registerReviewsRoutes } from "./server/routes/reviewsRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
 import { createAdminModerationRouter } from "./server/modules/admin/admin.moderation.routes.js";
+import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "./src/modules/admin/shared/adminAuditTypes.js";
 import { createAdminActionsRouter } from "./server/modules/admin/admin.actions.routes.js";
 import { createAdminAccessRouter } from "./server/modules/admin/admin.access.routes.js";
 import { createAdminSummaryRouter } from "./server/modules/admin/admin.summary.routes.js";
@@ -614,11 +615,16 @@ function logAdminAction({
 }: {
   admin_uid?: string | null;
   admin_email?: string | null;
-  action_type: string;
-  target_type: string;
+  action_type: AdminActionType;
+  target_type: AdminTargetType;
   target_id?: string | null;
   details?: any;
 }) {
+  if (!isAdminActionType(action_type) || !isAdminTargetType(target_type)) {
+    console.warn("Skipped invalid admin action log entry", { action_type, target_type });
+    return;
+  }
+
   try {
     db.prepare(`
       INSERT INTO admin_actions (
