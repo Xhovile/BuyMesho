@@ -632,6 +632,7 @@ export const navigateToDisputes = () => navigateToPath(DISPUTES_PATH);
 export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
 export const navigateToCart = () => navigateToPath(CART_PATH);
 export const ORDER_TRACKING_BASE_PATH = "/orders";
+export const navigateToAdminPayoutDestinations = () => navigateToPath(ADMIN_PAYOUT_DESTINATIONS_PATH);
 
 export const buildOrderTrackingPath = (reference: string) =>
   `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`;
