@@ -32,15 +32,29 @@ export type AdminSellerApplication = {
   created_at: string | null;
 };
 
+import type { AdminActionType, AdminTargetType } from "./shared/adminAuditTypes";
+
 export type AdminActionLog = {
   id: number;
   admin_uid: string | null;
   admin_email: string | null;
-  action_type: string;
-  target_type: string;
+  action_type: AdminActionType | string;
+  target_type: AdminTargetType | string;
   target_id: string | null;
   details: Record<string, unknown> | null;
   created_at: string;
+};
+
+export type AdminActionLogFilters = {
+  action_type?: string;
+  target_type?: string;
+  admin?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+  limit?: number;
+  offset?: number;
+  cursor?: string;
 };
 
 export type AdminQueueSummary = {

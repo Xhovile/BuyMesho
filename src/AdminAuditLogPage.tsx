@@ -3,6 +3,7 @@ import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { fetchAdminActionLogs } from "./modules/admin/adminApi";
 import type { AdminActionLog } from "./modules/admin/adminTypes";
+import { ADMIN_ACTION_LABELS, ADMIN_TARGET_LABELS, isAdminActionType, isAdminTargetType } from "./modules/admin/shared/adminAuditTypes";
 
 export default function AdminAuditLogPage() {
   const [rows, setRows] = useState<AdminActionLog[]>([]);
