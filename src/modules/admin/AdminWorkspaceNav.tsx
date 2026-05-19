@@ -5,6 +5,7 @@ import {
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PATH,
   ADMIN_PAYMENTS_PATH,
+  ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_PAYOUTS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
@@ -31,12 +32,13 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Payouts", path: ADMIN_PAYOUTS_PATH, icon: Wallet },
   { label: "Audit Log", path: ADMIN_AUDIT_PATH, icon: ClipboardList },
   { label: "Admin Setup", path: ADMIN_SETUP_PATH, icon: Wrench },
+  { label: "Destination Requests", path: ADMIN_PAYOUT_DESTINATIONS_PATH, icon: ShieldCheck },
 ];
 
 export default function AdminWorkspaceNav({ pathname }: AdminWorkspaceNavProps) {
   return (
     <nav className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm">
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.path;
