@@ -164,6 +164,17 @@ export default function SellerDashboardPage() {
     void loadDashboard();
   };
 
+  const titleShell = (
+    <AccountPageShell
+      eyebrow="Seller"
+      title="Dashboard"
+      description="Review your seller performance, payouts, and listing traction."
+      backLabel="Back to Listings"
+      onBack={() => navigateToPath("/my-listings")}
+      childrenSectionClassName="w-full"
+    />
+  );
+
   if (authLoading || profileLoading) {
     return (
       <AccountPageShell
@@ -259,14 +270,18 @@ export default function SellerDashboardPage() {
     >
       <div className="space-y-6">
         <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="max-w-2xl">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                 Seller performance
               </p>
               <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">
                 Live dashboard
               </h2>
+              <p className="mt-2 text-sm text-zinc-500">
+                A clean readout of reach, traction, and seller health. Keep the
+                management work in My Listings.
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -287,20 +302,6 @@ export default function SellerDashboardPage() {
                 My Listings
               </button>
             </div>
-          </div>
-
-          {!payoutDestinationError ? (
-            <PayoutActionRequiredBanner
-              summary={dashboardEarningsSummary}
-              destinations={payoutDestinations}
-              onAction={() => navigateToPath("/seller/payouts")}
-              actionLabel="Open Payouts"
-              className="mt-4"
-            />
-          ) : null}
-
-          <div className="mt-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4">
-            <SellerEarningsSummary summary={dashboardEarningsSummary} compact />
           </div>
         </div>
 
@@ -435,37 +436,68 @@ export default function SellerDashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                    By campus
-                  </p>
-                  <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
-                    Listing spread
-                  </h3>
+            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                      By campus
+                    </p>
+                    <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
+                      Listing spread
+                    </h3>
+                  </div>
+                  <MapPin className="h-5 w-5 text-zinc-400" />
                 </div>
-                <MapPin className="h-5 w-5 text-zinc-400" />
+
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  {dashboard.byCampus?.length ? (
+                    dashboard.byCampus.map((campusItem) => (
+                      <div
+                        key={campusItem.university}
+                        className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3"
+                      >
+                        <p className="line-clamp-1 text-sm font-bold text-zinc-900">
+                          {campusItem.university}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-zinc-500">No campus breakdown yet.</p>
+                  )}
+                </div>
               </div>
 
-              <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {dashboard.byCampus?.length ? (
-                  dashboard.byCampus.map((campusItem) => (
-                    <div
-                      key={campusItem.university}
-                      className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3"
-                    >
-                      <p className="line-clamp-1 text-sm font-bold text-zinc-900">
-                        {campusItem.university}
-                      </p>
-                      <p className="mt-1 text-xs text-zinc-500">
-                        {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-zinc-500">No campus breakdown yet.</p>
-                )}
+              <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 shadow-sm">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
+                      Payouts
+                    </p>
+                    <h3 className="mt-2 text-xl font-black tracking-tight text-zinc-900">
+                      Earnings and destination status
+                    </h3>
+                  </div>
+                  <Wallet className="h-5 w-5 text-zinc-400" />
+                </div>
+
+                <div className="mt-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+                  <SellerEarningsSummary summary={dashboardEarningsSummary} compact />
+                </div>
+
+                {!payoutDestinationError ? (
+                  <div className="mt-4">
+                    <PayoutActionRequiredBanner
+                      summary={dashboardEarningsSummary}
+                      destinations={payoutDestinations}
+                      onAction={() => navigateToPath("/seller/payouts")}
+                      actionLabel="Open Payouts"
+                    />
+                  </div>
+                ) : null}
               </div>
             </div>
           </>
