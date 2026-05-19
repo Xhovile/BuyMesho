@@ -41,9 +41,9 @@ export default function AdminWorkspaceNav({ pathname }: AdminWorkspaceNavProps) 
           const Icon = item.icon;
           const active = pathname === item.path;
           return (
-            <button
+            <a
               key={item.path}
-              type="button"
+              href={item.path}
               onClick={() => navigateToPath(item.path)}
               className={`inline-flex items-center gap-2 rounded-2xl px-3 py-2 text-sm font-bold transition-colors ${
                 active
@@ -53,7 +53,7 @@ export default function AdminWorkspaceNav({ pathname }: AdminWorkspaceNavProps) 
             >
               <Icon className="h-4 w-4" />
               {item.label}
-            </button>
+            </a>
           );
         })}
       </div>
