@@ -6,7 +6,7 @@ const docPath = resolve(process.cwd(), 'docs/structure-completion-gate.md');
 const doc = readFileSync(docPath, 'utf8');
 
 const expected = [
-  { label: 'platform fee 2%', token: '2%' },
+  { label: 'platform fee 3%', token: '3%' },
   { label: 'reserve cap 6%', token: '6%' },
   { label: `minimum payout ${PAYOUT_POLICY.minimumPayoutAmount}`, token: String(PAYOUT_POLICY.minimumPayoutAmount) },
   { label: `retry count ${PAYOUT_POLICY.maxRetryCount}`, token: `${PAYOUT_POLICY.maxRetryCount}` },
