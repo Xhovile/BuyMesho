@@ -96,7 +96,7 @@ export default function AdminPayoutDestinationRequestsPage() {
     setError(null);
     setRefreshing(true);
     try {
-      const data = (await apiFetch("/api/admin/payouts?limit=500&offset=0")) as PayoutsListResponse | DestinationRequestRow[];
+      const data = (await apiFetch("/api/admin/payout-destination-requests?limit=200&offset=0")) as PayoutsListResponse | DestinationRequestRow[];
       const fetchedRows = Array.isArray(data)
         ? data
         : Array.isArray(data?.rows)
