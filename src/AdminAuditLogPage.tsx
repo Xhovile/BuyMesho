@@ -6,6 +6,7 @@ import type { AdminActionLog } from "./modules/admin/adminTypes";
 import { ADMIN_ACTION_LABELS, ADMIN_TARGET_LABELS, isAdminActionType, isAdminTargetType } from "./modules/admin/shared/adminAuditTypes";
 
 export default function AdminAuditLogPage() {
+  const PAGE_SIZE = 100;
   const initialFilters = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -20,23 +21,63 @@ export default function AdminAuditLogPage() {
   const [rows, setRows] = useState<AdminActionLog[]>([]);
   const [expandedRows, setExpandedRows] = useState<Record<number, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState(initialFilters);
+  const [total, setTotal] = useState<number | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
 
   const toggleRow = (rowId: number) => {
     setExpandedRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
   };
 
+  const buildRequestFilters = (currentFilters = filters, nextOffset = 0) => ({
+    ...currentFilters,
+    action_type: currentFilters.action_type || undefined,
+    target_type: currentFilters.target_type || undefined,
+    admin: currentFilters.admin.trim() || undefined,
+    from: currentFilters.from || undefined,
+    to: currentFilters.to || undefined,
+    q: currentFilters.q.trim() || undefined,
+    limit: PAGE_SIZE,
+    offset: nextOffset,
+  });
+
   const load = async (currentFilters = filters) => {
     setError(null);
     setLoading(true);
     try {
-      const data = await fetchAdminActionLogs(currentFilters);
-      setRows(data);
+      const data = await fetchAdminActionLogs(buildRequestFilters(currentFilters, 0));
+      setRows(data.rows);
+      setTotal(data.total);
+      setOffset(data.offset);
+      setHasMore(data.hasMore);
+      setExpandedRows({});
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load admin actions.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) {
+      return;
+    }
+    setLoadingMore(true);
+    setError(null);
+    const nextOffset = rows.length;
+    try {
+      const data = await fetchAdminActionLogs(buildRequestFilters(filters, nextOffset));
+      setRows((prev) => [...prev, ...data.rows]);
+      setTotal(data.total);
+      setOffset(data.offset);
+      setHasMore(data.hasMore);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load more admin actions.");
+    } finally {
+      setLoadingMore(false);
     }
   };
 
@@ -62,15 +103,7 @@ export default function AdminAuditLogPage() {
     }
 
     const timeoutId = window.setTimeout(() => {
-      void load({
-        ...filters,
-        action_type: filters.action_type || undefined,
-        target_type: filters.target_type || undefined,
-        admin: filters.admin.trim() || undefined,
-        from: filters.from || undefined,
-        to: filters.to || undefined,
-        q: filters.q.trim() || undefined,
-      });
+      void load(filters);
     }, 300);
 
     return () => window.clearTimeout(timeoutId);
@@ -193,6 +226,9 @@ export default function AdminAuditLogPage() {
           <div className="p-10 text-center text-sm text-zinc-500">No admin actions logged yet.</div>
         ) : (
           <div className="overflow-x-auto">
+            <div className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              {total !== null ? `Showing ${rows.length} of ${total}` : `Showing ${rows.length} results`}
+            </div>
             <table className="min-w-full divide-y divide-zinc-200 text-sm">
               <thead className="bg-zinc-50">
                 <tr>
@@ -266,6 +302,16 @@ export default function AdminAuditLogPage() {
                 })}
               </tbody>
             </table>
+            <div className="flex justify-center border-t border-zinc-200 px-4 py-4">
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={!hasMore || loadingMore}
+                className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition enabled:hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingMore ? "Loading…" : hasMore ? "Load more" : "All results loaded"}
+              </button>
+            </div>
           </div>
         )}
       </section>

@@ -93,12 +93,31 @@ export function createAdminActionsRouter(params: {
                    ${paginationSql}`;
 
       const rows = db.prepare(sql).all(...queryParams, ...paginationParams);
+      const totalRow = db
+        .prepare(
+          `SELECT COUNT(*) AS total
+           FROM admin_actions
+           ${whereSql}`
+        )
+        .get(...queryParams) as { total: number } | undefined;
+      const total = Number(totalRow?.total ?? 0);
+
+      const normalizedRows = rows.map((row: any) => ({
+        ...row,
+        details: row.details ? JSON.parse(row.details) : null,
+      }));
+      const hasMore = typeof cursor === "string" && cursor.trim()
+        ? normalizedRows.length === limit
+        : offset + normalizedRows.length < total;
 
       return res.json(
-        rows.map((row: any) => ({
-          ...row,
-          details: row.details ? JSON.parse(row.details) : null,
-        }))
+        {
+          rows: normalizedRows,
+          total,
+          limit,
+          offset,
+          hasMore,
+        }
       );
     } catch (error) {
       console.error("Admin actions fetch error:", error);

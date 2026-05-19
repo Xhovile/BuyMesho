@@ -3,6 +3,7 @@ import { fetchMessageReports } from "../../lib/messageModeration";
 import type {
   AdminActionLog,
   AdminActionLogFilters,
+  AdminActionLogPage,
   AdminContentReport,
   AdminQueueSummary,
   AdminSellerApplication,
@@ -41,7 +42,22 @@ export async function fetchAdminActionLogs(filters: AdminActionLogFilters = {}) 
   const query = params.toString();
   const path = query ? `/api/admin/actions?${query}` : "/api/admin/actions";
   const data = await apiFetch(path);
-  return (Array.isArray(data) ? data : []) as AdminActionLog[];
+  if (
+    data &&
+    typeof data === "object" &&
+    Array.isArray((data as AdminActionLogPage).rows) &&
+    typeof (data as AdminActionLogPage).total === "number"
+  ) {
+    return data as AdminActionLogPage;
+  }
+
+  return {
+    rows: (Array.isArray(data) ? data : []) as AdminActionLog[],
+    total: Array.isArray(data) ? data.length : 0,
+    limit: typeof filters.limit === "number" ? filters.limit : 100,
+    offset: typeof filters.offset === "number" ? filters.offset : 0,
+    hasMore: false,
+  } satisfies AdminActionLogPage;
 }
 
 export async function fetchAdminQueueSummary(): Promise<AdminQueueSummary> {
