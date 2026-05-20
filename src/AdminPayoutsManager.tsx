@@ -128,10 +128,10 @@ const STATUS_FILTER_OPTIONS = [
   { value: "cancelled", label: "Cancelled" },
 ] as const;
 const DESTINATION_STATUS_OPTIONS = [
-  { value: "pending", label: "pending" },
-  { value: "verified", label: "verified" },
-  { value: "failed", label: "failed" },
-  { value: "disabled", label: "disabled" },
+  { value: "pending", label: "Pending" },
+  { value: "verified", label: "Verified" },
+  { value: "failed", label: "Failed" },
+  { value: "disabled", label: "Disabled" },
 ] as const;
 const ADJUSTMENT_TYPE_OPTIONS = [
   { value: "manual_adjustment", label: "Manual payout adjustment" },
