@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
-import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import {
@@ -12,6 +11,193 @@ import {
   navigateToSellerProfile,
 } from "./lib/appNavigation";
 import type { Listing } from "./types";
+
+function formatMWK(value: number): string {
+  const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
+  return `MWK ${safeValue.toLocaleString()}`;
+}
+
+function promptForQuantity(message: string): number | null {
+  const raw = window.prompt(message, "1");
+  if (raw === null) return null;
+
+  const quantity = Number(raw);
+  if (!Number.isInteger(quantity) || quantity <= 0) {
+    window.alert("Enter a valid quantity greater than zero.");
+    return null;
+  }
+
+  return quantity;
+}
+
+type ListingRowProps = {
+  listing: Listing;
+  currentUid?: string;
+  onEdit: (listing: Listing) => void;
+  onDelete: (id: number) => void;
+  onToggleStatus: (listing: Listing) => void;
+  onRecordSale: (listing: Listing, quantity: number) => void;
+  onRestock: (listing: Listing, quantity: number) => void;
+  onOpenDetails: (listing: Listing) => void;
+  onOpenSeller: (sellerUid: string) => void;
+};
+
+function ListingRow({
+  listing,
+  currentUid,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onRecordSale,
+  onRestock,
+  onOpenDetails,
+  onOpenSeller,
+}: ListingRowProps) {
+  const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
+  const sellerName =
+    typeof listing.business_name === "string" && listing.business_name.trim()
+      ? listing.business_name.trim()
+      : "Seller";
+  const campusLabel =
+    typeof listing.university === "string" && listing.university.trim()
+      ? listing.university.trim()
+      : "Unknown campus";
+  const titleLabel =
+    typeof listing.name === "string" && listing.name.trim()
+      ? listing.name.trim()
+      : "Untitled listing";
+
+  const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
+  const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
+    ? Number(listing.sold_quantity)
+    : 0;
+  const availableQuantity = Math.max(0, quantity - soldQuantity);
+  const isSoldOut = availableQuantity <= 0;
+  const firstPhoto =
+    Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
+      ? listing.photos[0]
+      : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/400/400`;
+
+  return (
+    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_8px_24px_rgba(24,24,27,0.05)]">
+      <div className="grid gap-4 p-4 sm:grid-cols-[120px_1fr_auto] sm:items-center">
+        <button
+          type="button"
+          onClick={() => onOpenDetails(listing)}
+          className="group relative aspect-square overflow-hidden rounded-2xl bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+          aria-label={`Open ${titleLabel}`}
+        >
+          <img
+            src={firstPhoto}
+            alt={titleLabel}
+            loading="lazy"
+            decoding="async"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            referrerPolicy="no-referrer"
+          />
+        </button>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => sellerUid && onOpenSeller(sellerUid)}
+              className="max-w-full truncate text-left text-sm font-extrabold text-red-900"
+            >
+              {sellerName}
+            </button>
+            <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">
+              {campusLabel}
+            </span>
+            <span
+              className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${
+                isSoldOut ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"
+              }`}
+            >
+              {isSoldOut ? "Sold out" : `${availableQuantity} left`}
+            </span>
+            {listing.is_verified ? (
+              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-blue-700">
+                Verified
+              </span>
+            ) : null}
+          </div>
+
+          <h3 className="mt-2 line-clamp-1 text-[18px] font-black tracking-tight text-zinc-900">
+            {titleLabel}
+          </h3>
+
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-zinc-600">
+            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-bold text-zinc-700">
+              {formatMWK(Number(listing.price) || 0)}
+            </span>
+            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-medium">
+              Stock: {quantity}
+            </span>
+            <span className="rounded-lg bg-zinc-100 px-2.5 py-1 font-medium">
+              Sold: {soldQuantity}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <button
+            type="button"
+            onClick={() => onOpenDetails(listing)}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Open
+          </button>
+          <button
+            type="button"
+            onClick={() => onEdit(listing)}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => onToggleStatus(listing)}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            {listing.status === "sold" ? "Mark available" : "Mark sold"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const quantityToSell = promptForQuantity(
+                `How many units of “${titleLabel}” were sold? Current stock: ${availableQuantity}.`,
+              );
+              if (quantityToSell !== null) onRecordSale(listing, quantityToSell);
+            }}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Sale
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const quantityToAdd = promptForQuantity(
+                `How many units do you want to restock for “${titleLabel}”? Current stock: ${availableQuantity}.`,
+              );
+              if (quantityToAdd !== null) onRestock(listing, quantityToAdd);
+            }}
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Restock
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(listing.id)}
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function MyListingsPage() {
   const { firebaseUser, authLoading, profile, profileLoading } =
@@ -249,23 +435,16 @@ export default function MyListingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+          <div className="space-y-4">
             {listings.map((listing) => (
-              <div key={listing.id} className="min-w-0 self-start">
-                <ListingCard
+              <div key={listing.id} className="min-w-0">
+                <ListingRow
                   listing={listing}
                   currentUid={firebaseUser?.uid}
-                  isLoggedIn={!!firebaseUser}
-                  showActionsMenu
-                  clickable
-                  performanceMode
-                  onReport={() => undefined}
                   onEdit={(item) => navigateToEditListing(item.id)}
                   onDelete={(id) => void handleDeleteListing(id)}
                   onToggleStatus={(item) => void handleToggleStatus(item)}
-                  onRecordSale={(item, quantity) =>
-                    void handleRecordSale(item, quantity)
-                  }
+                  onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
                   onRestock={(item, quantity) => void handleRestock(item, quantity)}
                   onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                   onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
