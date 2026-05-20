@@ -16,7 +16,7 @@ type PayoutQueueCardProps = {
 
 function Info({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
+    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
       <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
       <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
     </div>
@@ -36,7 +36,7 @@ export default function PayoutQueueCard({
   onOpenOverride,
 }: PayoutQueueCardProps) {
   return (
-    <div className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
+    <div className="rounded-[1.75rem] border border-zinc-300 bg-zinc-100/70 p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
