@@ -71,6 +71,7 @@ export function createAdminSummaryRouter(params: {
 
       const rows = db.prepare(`
         SELECT
+          spa.id AS destinationAccountId,
           spa.id,
           spa.seller_uid AS sellerId,
           s.email AS sellerEmail,
