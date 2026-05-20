@@ -1,9 +1,8 @@
-import { ClipboardList, Home, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
+import { ClipboardList, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
 import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
-  ADMIN_PATH,
   ADMIN_PAYMENTS_PATH,
   ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_PAYOUTS_PATH,
