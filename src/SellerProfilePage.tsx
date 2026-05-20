@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ChevronLeft, Loader2, ShieldCheck } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, Loader2, Search, ShieldCheck } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -41,6 +41,7 @@ export default function SellerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [listingSearch, setListingSearch] = useState("");
 
   useEffect(() => {
     const syncSellerUid = () => setSellerUid(getSellerUidFromUrl() || "");
@@ -118,6 +119,16 @@ export default function SellerProfilePage() {
   useEffect(() => {
     void refreshRatingSummary();
   }, [sellerUid, firebaseUser?.uid]);
+
+  const filteredListings = useMemo(() => {
+    const term = listingSearch.trim().toLowerCase();
+    if (!term) return listings;
+    return listings.filter((listing) =>
+      [listing.name, listing.description, listing.category]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term))
+    );
+  }, [listings, listingSearch]);
 
   const handleRateSeller = async (stars: number) => {
     if (!sellerUid || !firebaseUser) return;
@@ -290,19 +301,35 @@ export default function SellerProfilePage() {
               />
 
               <div className="p-0 sm:p-0">
+                <div className="mb-5 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+                    Search Seller Listings
+                  </p>
+                  <div className="relative mt-3">
+                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+                    <input
+                      type="text"
+                      value={listingSearch}
+                      onChange={(event) => setListingSearch(event.target.value)}
+                      placeholder="Search this seller's listings..."
+                      className="w-full rounded-2xl border border-zinc-300 bg-zinc-50 py-3 pl-11 pr-4 text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm outline-none transition-all focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md"
+                    />
+                  </div>
+                </div>
+
                 <div className="flex items-center justify-between gap-4 mb-5">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listings</p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">Items from this seller</h2>
                   </div>
                   <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                    {listings.length} item{listings.length === 1 ? "" : "s"}
+                    {filteredListings.length} item{filteredListings.length === 1 ? "" : "s"}
                   </div>
                 </div>
 
-                {listings.length > 0 ? (
+                {filteredListings.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {listings.map((listing) => {
+                    {filteredListings.map((listing) => {
                       const availableQuantity = Math.max(
                         0,
                         Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
@@ -348,6 +375,10 @@ export default function SellerProfilePage() {
                         </button>
                       );
                     })}
+                  </div>
+                ) : listings.length > 0 ? (
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
+                    No listings match your search. Try another keyword.
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
