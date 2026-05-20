@@ -36,7 +36,7 @@ export default function PayoutQueueCard({
   onOpenOverride,
 }: PayoutQueueCardProps) {
   return (
-    <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100/80 p-4 shadow-sm">
+    <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
