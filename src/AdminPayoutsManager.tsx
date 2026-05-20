@@ -1,16 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  BadgeInfo,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
   Clock3,
   Download,
   Loader2,
-  RefreshCw,
   ShieldCheck,
-  Wallet,
-  X,
 } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -20,8 +16,10 @@ import ActionModal from "./components/ActionModal";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToAdminPayoutDestinations } from "./lib/appNavigation";
 import FormDropdown from "./components/FormDropdown";
+import PayoutQueueCard from "./PayoutQueueCard";
+import PayoutDetailDrawer from "./PayoutDetailDrawer";
 
-type PayoutRow = {
+export type PayoutRow = {
   id: string;
   sellerId: string;
   orderId: string | null;
@@ -93,7 +91,7 @@ type PayoutSummary = {
   };
 };
 
-type PayoutAdjustment = {
+export type PayoutAdjustment = {
   id: string;
   payoutId: string;
   sellerId: string;
@@ -112,8 +110,8 @@ type Notice = {
   message: string;
 };
 
-type OverrideAction = "hold" | "mark_paid" | "mark_failed" | "cancel";
-type RowAction = "retry" | OverrideAction;
+export type OverrideAction = "hold" | "mark_paid" | "mark_failed" | "cancel";
+export type RowAction = "retry" | OverrideAction;
 
 type StatusFilter = "all" | "pending" | "failed" | "held" | "paid" | "cancelled";
 
@@ -242,15 +240,6 @@ function Stat({ label, value }: { label: string; value: number }) {
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
       <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
       <p className="mt-1 text-2xl font-black tracking-tight text-zinc-900">{value}</p>
-    </div>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-white px-3 py-2">
-      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 break-all font-medium text-zinc-900">{value}</p>
     </div>
   );
 }
@@ -828,140 +817,19 @@ function AdminPayoutsManagerContent() {
               const busy = actionBusyId === row.id;
 
               return (
-                <div key={row.id} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 flex-1 space-y-3">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>
-                          {formatStatus(row.status)}
-                        </span>
-                        {row.retryEligible ? (
-                          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                            retry eligible
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-600">
-                            {row.retryBlockedReason ?? "retry unavailable"}
-                          </span>
-                        )}
-                        {row.destinationVerificationStatus ? (
-                          <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
-                            destination {formatStatus(row.destinationVerificationStatus)}
-                          </span>
-                        ) : null}
-                        {row.sellerSuspended ? (
-                          <span className="inline-flex items-center rounded-full border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
-                            seller suspended
-                          </span>
-                        ) : null}
-                      </div>
-
-                      <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-4">
-                        <Info label="Payout ID" value={row.id} />
-                        <Info label="Seller ID" value={row.sellerId} />
-                        <Info label="Order ID" value={row.orderId ?? "—"} />
-                        <Info label="Amount" value={`${row.currency} ${Number(row.amount).toLocaleString()}`} />
-                        <Info label="Provider charge" value={row.providerChargeId ?? "—"} />
-                        <Info label="Destination" value={row.destinationMaskedAccount ?? "—"} />
-                        <Info label="Last attempt" value={row.latestAttemptNo ? `#${row.latestAttemptNo} (${row.latestAttemptStatus ?? "—"})` : "—"} />
-                        <Info label="Audit snapshot" value={row.auditSummary?.latestEventType ? `${row.auditSummary.latestEventType} (${row.auditSummary.totalEvents ?? 0})` : "No audit events"} />
-                      </div>
-
-                      {row.lastError ? (
-                        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                          <strong>Last error:</strong> {row.lastError}
-                        </p>
-                      ) : null}
-
-                      {Array.isArray(row.verificationBlockers) && row.verificationBlockers.length > 0 ? (
-                        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                          <strong>Verification blockers:</strong> {row.verificationBlockers.join(" • ")}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 lg:w-[340px] lg:justify-end">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(row.id)}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-                      >
-                        <BadgeInfo className="h-4 w-4" />
-                        Details
-                      </button>
-
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => openReconcileDialog(row)}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
-                      >
-                        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                        Reconcile
-                      </button>
-
-                      {visibleActions.includes("retry") ? (
-                        <button
-                          type="button"
-                          disabled={busy || !canAction(row, "retry")}
-                          onClick={() => openRetryDialog(row)}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                          Retry
-                        </button>
-                      ) : null}
-
-                      {visibleActions.includes("hold") ? (
-                        <button
-                          type="button"
-                          disabled={busy || !canAction(row, "hold")}
-                          onClick={() => openOverrideDialog(row, "hold", "hold")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                          Hold
-                        </button>
-                      ) : null}
-
-                      {visibleActions.includes("mark_paid") ? (
-                        <button
-                          type="button"
-                          disabled={busy || !canAction(row, "mark_paid")}
-                          onClick={() => openOverrideDialog(row, "mark_paid", "mark paid")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-                          Mark paid
-                        </button>
-                      ) : null}
-
-                      {visibleActions.includes("mark_failed") ? (
-                        <button
-                          type="button"
-                          disabled={busy || !canAction(row, "mark_failed")}
-                          onClick={() => openOverrideDialog(row, "mark_failed", "mark failed")}
-                          className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
-                        >
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleAlert className="h-4 w-4" />}
-                          Mark failed
-                        </button>
-                      ) : null}
-
-                      {visibleActions.includes("cancel") ? (
-                        <button
-                          type="button"
-                          disabled={busy || !canAction(row, "cancel")}
-                          onClick={() => openOverrideDialog(row, "cancel", "cancel")}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                        >
-                          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                          Cancel
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
+                <PayoutQueueCard
+                  key={row.id}
+                  row={row}
+                  busy={busy}
+                  visibleActions={visibleActions}
+                  canAction={canAction}
+                  statusTone={statusTone}
+                  formatStatus={formatStatus}
+                  onOpenDetails={() => setSelectedId(row.id)}
+                  onOpenReconcile={() => openReconcileDialog(row)}
+                  onOpenRetry={() => openRetryDialog(row)}
+                  onOpenOverride={(action, confirmLabel) => openOverrideDialog(row, action, confirmLabel)}
+                />
               );
             })
           )}
@@ -969,351 +837,41 @@ function AdminPayoutsManagerContent() {
       </main>
 
       {selected ? (
-        <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={() => setSelectedId(null)}>
-          <aside className="ml-auto h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white px-5 py-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payout detail</p>
-                  <h3 className="mt-1 text-lg font-black text-zinc-950">{selected.id}</h3>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(null)}
-                  className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50"
-                >
-                  <X className="h-5 w-5 text-zinc-500" />
-                </button>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(selected.status)}`}>
-                  {formatStatus(selected.status)}
-                </span>
-                {selected.retryEligible ? (
-                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                    retry eligible
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-600">
-                    {selected.retryBlockedReason ?? "retry unavailable"}
-                  </span>
-                )}
-                <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
-                  destination {formatStatus(selected.destinationVerificationStatus)}
-                </span>
-                <span
-                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${
-                    selected.sellerSuspended
-                      ? "border-rose-200 bg-rose-50 text-rose-700"
-                      : "border-zinc-200 bg-zinc-100 text-zinc-700"
-                  }`}
-                >
-                  {selected.sellerSuspended ? "seller suspended" : "seller active"}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-5 p-5">
-              <section className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5">
-                <h4 className="text-base font-black">Payout summary</h4>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <Info label="Payout ID" value={selected.id} />
-                  <Info label="Seller ID" value={selected.sellerId} />
-                  <Info label="Order ID" value={selected.orderId ?? "—"} />
-                  <Info label="Escrow ID" value={selected.escrowId ?? "—"} />
-                  <Info label="Release entry ID" value={selected.releaseEntryId ?? "—"} />
-                  <Info label="Amount" value={`${selected.currency} ${Number(selected.amount).toLocaleString()}`} />
-                  <Info label="Requested by" value={selected.requestedBy ?? "—"} />
-                  <Info label="Destination" value={selected.destinationMaskedAccount ?? "—"} />
-                  <Info label="Destination type" value={formatStatus(selected.destinationType)} />
-                  <Info label="Destination active" value={selected.destinationActive ? "Yes" : "No"} />
-                  <Info
-                    label="Retry eligibility"
-                    value={selected.retryEligible ? "Can retry safely" : selected.retryBlockedReason ?? "Retry unavailable"}
-                  />
-                </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Destination verification</h4>
-                <div className="mt-3 grid gap-2">
-                  <Info label="Destination ID" value={selected.destinationAccountId ?? "—"} />
-                  <Info label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />
-                  <Info label="Last destination error" value={selected.destinationLastError ?? "—"} />
-                </div>
-
-                <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <FormDropdown
-                    label="Destination status"
-                    value={destinationStatus}
-                    options={DESTINATION_STATUS_OPTIONS}
-                    onChange={setDestinationStatus}
-                    placeholder="Select destination status"
-                    searchPlaceholder="Search status..."
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                  />
-                  <input
-                    value={destinationReason}
-                    onChange={(event) => setDestinationReason(event.target.value)}
-                    placeholder="Reason (required for failed/disabled)"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void updateDestinationVerification()}
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                    className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                  >
-                    {actionBusyId === selected.id ? "Saving..." : "Update"}
-                  </button>
-                </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Payout lifecycle timeline</h4>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <Info label="Created at" value={toDate(selected.createdAt)} />
-                  <Info label="Requested at" value={toDate(selected.requestedAt)} />
-                  <Info label="Sent at" value={toDate(selected.sentAt)} />
-                  <Info label="Paid at" value={toDate(selected.paidAt)} />
-                  <Info label="Failed at" value={toDate(selected.failedAt)} />
-                  <Info label="Updated at" value={toDate(selected.updatedAt)} />
-                </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Payout actions</h4>
-                <p className="mt-2 text-sm text-zinc-600">
-                  Run payout actions without leaving this detail panel. Availability follows admin visibility and policy guards.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {visibleActions.includes("retry") ? (
-                    <button
-                      type="button"
-                      disabled={actionBusyId === selected.id || !canAction(selected, "retry")}
-                      onClick={() => openRetryDialog(selected)}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                    >
-                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                      Retry
-                    </button>
-                  ) : null}
-                  {visibleActions.includes("hold") ? (
-                    <button
-                      type="button"
-                      disabled={actionBusyId === selected.id || !canAction(selected, "hold")}
-                      onClick={() => openOverrideDialog(selected, "hold", "hold")}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                    >
-                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                      Hold
-                    </button>
-                  ) : null}
-                  {visibleActions.includes("mark_paid") ? (
-                    <button
-                      type="button"
-                      disabled={actionBusyId === selected.id || !canAction(selected, "mark_paid")}
-                      onClick={() => openOverrideDialog(selected, "mark_paid", "mark paid")}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
-                    >
-                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-                      Mark paid
-                    </button>
-                  ) : null}
-                  {visibleActions.includes("mark_failed") ? (
-                    <button
-                      type="button"
-                      disabled={actionBusyId === selected.id || !canAction(selected, "mark_failed")}
-                      onClick={() => openOverrideDialog(selected, "mark_failed", "mark failed")}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
-                    >
-                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleAlert className="h-4 w-4" />}
-                      Mark failed
-                    </button>
-                  ) : null}
-                  {visibleActions.includes("cancel") ? (
-                    <button
-                      type="button"
-                      disabled={actionBusyId === selected.id || !canAction(selected, "cancel")}
-                      onClick={() => openOverrideDialog(selected, "cancel", "cancel")}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-50 disabled:opacity-50"
-                    >
-                      {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-                      Cancel
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={actionBusyId === selected.id}
-                    onClick={() => openReconcileDialog(selected)}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60"
-                  >
-                    {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
-                    Reconcile
-                  </button>
-                </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Secondary admin controls</h4>
-                <p className="mt-2 text-sm text-zinc-600">Seller suspension and payout adjustments are available below.</p>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Seller payout suspension</h4>
-                <p className="mt-2 text-sm text-zinc-600">
-                  Current state: <span className="font-semibold text-zinc-900">{selected.sellerSuspended ? "Suspended" : "Active"}</span>
-                </p>
-                <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                  <input
-                    value={sellerControlReason}
-                    onChange={(event) => setSellerControlReason(event.target.value)}
-                    placeholder="Reason (required)"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={actionBusyId === selected.id}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void updateSellerSuspension(true)}
-                    disabled={actionBusyId === selected.id}
-                    className="rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                  >
-                    Suspend
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void updateSellerSuspension(false)}
-                    disabled={actionBusyId === selected.id}
-                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 disabled:opacity-50"
-                  >
-                    Unsuspend
-                  </button>
-                </div>
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <h4 className="text-base font-black">Payout adjustments</h4>
-                  <button
-                    type="button"
-                    onClick={() => void loadAdjustments(selected.id)}
-                    className="rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700"
-                  >
-                    Refresh adjustments
-                  </button>
-                </div>
-
-                <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                  <Info label="Gross" value={`${selected.currency} ${Number(selected.grossAmount ?? 0).toLocaleString()}`} />
-                  <Info label="Net" value={`${selected.currency} ${Number(selected.netAmount ?? selected.amount).toLocaleString()}`} />
-                </div>
-
-                <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr]">
-                  <FormDropdown
-                    label="Adjustment type"
-                    value={adjustmentType}
-                    options={ADJUSTMENT_TYPE_OPTIONS}
-                    onChange={(value) => setAdjustmentType(value as "processing_fee" | "manual_adjustment")}
-                    placeholder="Select adjustment type"
-                    searchPlaceholder="Search adjustment type..."
-                    disabled={actionBusyId === selected.id}
-                  />
-                  <input
-                    value={adjustmentAmount}
-                    onChange={(event) => setAdjustmentAmount(event.target.value)}
-                    placeholder="Amount"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={actionBusyId === selected.id}
-                  />
-                  <input
-                    value={adjustmentReason}
-                    onChange={(event) => setAdjustmentReason(event.target.value)}
-                    placeholder="Reason"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={actionBusyId === selected.id}
-                  />
-                  <input
-                    value={adjustmentProviderRef}
-                    onChange={(event) => setAdjustmentProviderRef(event.target.value)}
-                    placeholder="Provider reference (optional)"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={actionBusyId === selected.id}
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => void createAdjustment()}
-                  disabled={actionBusyId === selected.id}
-                  className="mt-3 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                >
-                  Save adjustment
-                </button>
-
-                <div className="mt-4 space-y-2">
-                  {adjustmentsLoading ? (
-                    <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading adjustments...
-                    </div>
-                  ) : adjustments.length === 0 ? (
-                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">
-                      No adjustments recorded for this payout.
-                    </div>
-                  ) : (
-                    adjustments.map((item) => (
-                      <div key={item.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <p className="text-sm font-bold text-zinc-900">{item.adjustmentType === "processing_fee" ? "Legacy compatibility amount" : "Manual payout adjustment"}</p>
-                          <p className="text-sm font-bold text-zinc-900">
-                            {item.currency} {Number(item.amount).toLocaleString()}
-                          </p>
-                        </div>
-                        <p className="mt-1 text-sm text-zinc-700">{item.reason}</p>
-                        <p className="mt-1 text-xs text-zinc-500">
-                          {toDate(item.createdAt)} • {item.actorType}:{item.actorId ?? "—"}
-                          {item.providerReference ? ` • ref: ${item.providerReference}` : ""}
-                        </p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
-
-              <details className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <summary className="cursor-pointer list-none text-base font-black text-zinc-900">Technical details</summary>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <Info label="Provider charge" value={selected.providerChargeId ?? "—"} />
-                  <Info label="Provider ref" value={selected.providerReference ?? "—"} />
-                  <Info label="Provider tx" value={selected.providerTransactionId ?? "—"} />
-                  <Info label="Provider status" value={formatStatus(selected.providerStatus)} />
-                  <Info
-                    label="Latest attempt"
-                    value={selected.latestAttemptNo ? `#${selected.latestAttemptNo} (${selected.latestAttemptStatus ?? "—"})` : "—"}
-                  />
-                  <Info label="Latest attempt time" value={toDate(selected.latestAttemptAt)} />
-                  <Info label="Latest attempt error" value={selected.latestAttemptFailureReason ?? selected.failureReason ?? "—"} />
-                  <Info label="Webhook snapshot" value={selected.latestWebhookEventType ? `${selected.latestWebhookEventType} @ ${toDate(selected.latestWebhookEventAt)}` : "—"} />
-                  <Info label="Audit latest event" value={selected.auditSummary?.latestEventType ?? "—"} />
-                  <Info label="Audit total events" value={String(selected.auditSummary?.totalEvents ?? 0)} />
-                </div>
-
-                {Array.isArray(selected.verificationBlockers) && selected.verificationBlockers.length > 0 ? (
-                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                    <strong>Verification blockers:</strong> {selected.verificationBlockers.join(" • ")}
-                  </p>
-                ) : null}
-
-                {selected.holdReason || selected.manualReviewReason ? (
-                  <p className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-                    <strong>Hold reason:</strong> {selected.holdReason ?? selected.manualReviewReason}
-                  </p>
-                ) : null}
-              </details>
-            </div>
-          </aside>
-        </div>
+        <PayoutDetailDrawer
+          selected={selected}
+          visibleActions={visibleActions}
+          actionBusyId={actionBusyId}
+          adjustments={adjustments}
+          adjustmentsLoading={adjustmentsLoading}
+          destinationStatus={destinationStatus}
+          destinationReason={destinationReason}
+          sellerControlReason={sellerControlReason}
+          adjustmentType={adjustmentType}
+          adjustmentAmount={adjustmentAmount}
+          adjustmentReason={adjustmentReason}
+          adjustmentProviderRef={adjustmentProviderRef}
+          destinationStatusOptions={DESTINATION_STATUS_OPTIONS}
+          adjustmentTypeOptions={ADJUSTMENT_TYPE_OPTIONS}
+          canAction={canAction}
+          statusTone={statusTone}
+          formatStatus={formatStatus}
+          toDate={toDate}
+          onClose={() => setSelectedId(null)}
+          onOpenRetryDialog={() => openRetryDialog(selected)}
+          onOpenOverrideDialog={(action, confirmLabel) => openOverrideDialog(selected, action, confirmLabel)}
+          onOpenReconcileDialog={() => openReconcileDialog(selected)}
+          onDestinationStatusChange={setDestinationStatus}
+          onDestinationReasonChange={setDestinationReason}
+          onUpdateDestinationVerification={() => void updateDestinationVerification()}
+          onSellerControlReasonChange={setSellerControlReason}
+          onUpdateSellerSuspension={(suspended) => void updateSellerSuspension(suspended)}
+          onReloadAdjustments={() => void loadAdjustments(selected.id)}
+          onAdjustmentTypeChange={setAdjustmentType}
+          onAdjustmentAmountChange={setAdjustmentAmount}
+          onAdjustmentReasonChange={setAdjustmentReason}
+          onAdjustmentProviderRefChange={setAdjustmentProviderRef}
+          onCreateAdjustment={() => void createAdjustment()}
+        />
       ) : null}
 
       <ActionModal

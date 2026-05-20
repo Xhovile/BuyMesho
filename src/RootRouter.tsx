@@ -24,7 +24,7 @@ import loaderImage from "../photos/LoaderPic.png";
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
-const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManagerDisplay"));
+const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManager"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
 const AdminModerationQueuePage = lazy(() => import("./AdminModerationQueuePage"));
