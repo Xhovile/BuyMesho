@@ -5,6 +5,7 @@ import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
 import {
+  SELLER_DASHBOARD_PATH,
   navigateToEditListing,
   navigateToListingDetails,
   navigateToPath,
@@ -193,7 +194,7 @@ export default function MyListingsPage() {
           <div className="flex flex-wrap items-center justify-center gap-3">
             <button
               type="button"
-              onClick={() => navigateToPath("/seller?uid=dashboard")}
+              onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
             >
               Open Dashboard
@@ -222,7 +223,7 @@ export default function MyListingsPage() {
 
               <button
                 type="button"
-                onClick={() => navigateToPath("/seller?uid=dashboard")}
+                onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
                 className="inline-flex items-center gap-2 rounded-2xl bg-indigo-700 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
               >
                 Open Dashboard
