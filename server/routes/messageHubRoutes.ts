@@ -1,6 +1,7 @@
 import type { Express, Request, Response } from "express";
 import Database from "better-sqlite3";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { hasAdminAccess } from "../auth/adminAccess.js";
 import { ensureMessageSchema, MESSAGE_BLOCK_SCOPES, MESSAGE_REPORT_REASONS, isMessageReportReason, type MessageBlockScope } from "../../src/server/messageSchema.js";
 const db = new Database("market.db");
 db.pragma("foreign_keys = ON");
@@ -189,28 +190,6 @@ function sendOk(res: Response, data?: unknown) {
 
 function sendError(res: Response, status: number, error: string) {
   return res.status(status).json({ ok: false, error });
-}
-
-function hasAdminAccess(user: VerifiedRequestUser | undefined): boolean {
-  if (!user) return false;
-  if (user.is_admin === true) return true;
-
- const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean);
-  const adminUids = (process.env.ADMIN_UIDS || process.env.VITE_ADMIN_UIDS || "")
-    .split(",")
-    .map((uid) => uid.trim())
-    .filter(Boolean);
-
-  const email = typeof user.email === "string" ? user.email.toLowerCase() : "";
-  if (email && adminEmails.includes(email)) return true;
-
-  const uid = typeof user.uid === "string" ? user.uid : "";
-  if (uid && adminUids.includes(uid)) return true;
-
-  return false;
 }
 
 function sanitizeText(value: unknown, maxLength = 1000) {

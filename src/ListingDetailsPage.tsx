@@ -2,7 +2,14 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, REPORT_PATH, navigateBackOrPath, navigateToEditListing, navigateToLogin, navigateToPath } from "./lib/appNavigation";
+import {
+  EXPLORE_PATH,
+  REPORT_PATH,
+  navigateBackOrPath,
+  navigateToEditListing,
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "./lib/listingUrl";
 import { getListingItemConfig } from "./listingSchemas";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -30,6 +37,8 @@ import ListingTrustBlock from "./components/listingDetails/ListingTrustBlock";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import ListingStatusPanel from "./components/listingDetails/ListingStatusPanel";
 import CheckoutModal from "./components/CheckoutModal";
+import FloatingCartButton from "./components/FloatingCartButton";
+import { readBuyerCart, setBuyerCartItem } from "./lib/buyerState";
 
 type SellerProfile = {
   uid?: string;
@@ -80,7 +89,7 @@ export default function ListingDetailsPage() {
   const [activeSection, setActiveSection] = useState<SectionKey>("details");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [authPromptOpen, setAuthPromptOpen] = useState(false);
-  const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | null>(null);
+  const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
     readHiddenSellerUids()
   );
@@ -276,7 +285,7 @@ export default function ListingDetailsPage() {
     setShareNoticeOpen(true);
   };
 
-  const openAuthPrompt = (action: "message" | "buy") => {
+  const openAuthPrompt = (action: "message" | "buy" | "cart") => {
     setAuthPromptAction(action);
     setAuthPromptOpen(true);
   };
@@ -288,7 +297,7 @@ export default function ListingDetailsPage() {
 
   const continueToAuth = () => {
     closeAuthPrompt();
-    navigateToLogin();
+    navigateToLoginWithReturnPath();
   };
 
   const handleShare = async () => {
@@ -414,6 +423,39 @@ export default function ListingDetailsPage() {
     setCheckoutOpen(true);
   };
 
+  const handleAddToCart = () => {
+    if (!listing) return;
+
+    if (!firebaseUser) {
+      openAuthPrompt("cart");
+      return;
+    }
+
+    const isOwner = firebaseUser.uid === listing.seller_uid;
+    const maxQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+    if (isOwner || listing.status === "sold" || maxQty <= 0) return;
+
+    const existingItem = readBuyerCart().find((item) => String(item.listingId) === String(listing.id));
+    const nextQuantity = Math.min(maxQty, (existingItem?.quantity ?? 0) + 1);
+    const unitPrice = Number(listing.price);
+
+    setBuyerCartItem({
+      listingId: String(listing.id),
+      listingTitle: listing.name,
+      listingImage: listing.photos?.[0] ?? null,
+      university: listing.university ?? null,
+      quantity: nextQuantity,
+      unitPrice,
+      totalPrice: unitPrice * nextQuantity,
+      addedAt: new Date().toISOString(),
+    });
+    openShareNotice(
+      nextQuantity === existingItem?.quantity
+        ? "This listing is already at the available cart quantity."
+        : "Added to cart.",
+    );
+  };
+
   const handleMessageSeller = async () => {
     if (!listing) return;
     if (!firebaseUser) {
@@ -476,6 +518,7 @@ export default function ListingDetailsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
       <ListingHeaderBar />
 
       <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-6 sm:pt-8">
@@ -536,6 +579,7 @@ export default function ListingDetailsPage() {
                   onMessageSeller={handleMessageSeller}
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
+                  onAddToCart={handleAddToCart}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
                 <ListingDetailsBlock
@@ -580,13 +624,21 @@ export default function ListingDetailsPage() {
 
       <ConfirmModal
         open={authPromptOpen}
-        title={authPromptAction === "buy" ? "Sign in to buy" : "Sign in to message"}
+        title={
+          authPromptAction === "buy"
+            ? "Sign in to buy"
+            : authPromptAction === "cart"
+              ? "Sign in to use cart"
+              : "Sign in to message"
+        }
         message={
           authPromptAction === "buy"
             ? "You need to sign in or create an account before you can buy this listing."
-            : "You need to sign in or create an account before you can message the seller."
+            : authPromptAction === "cart"
+              ? "You need to sign in or create an account before adding this listing to your cart."
+              : "You need to sign in or create an account before you can message the seller."
         }
-        confirmText="Continue"
+        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
         cancelText="Cancel"
         onCancel={closeAuthPrompt}
         onConfirm={continueToAuth}

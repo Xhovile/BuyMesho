@@ -3,15 +3,18 @@ import { randomUUID } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { paymentController } from './payment.controller.js';
 import { paymentWebhookHandler } from './payment.webhooks.js';
+import { payoutWebhookHandler } from '../payouts/payout.webhooks.js';
 import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
 import { paychanguProvider } from './paychangu.provider.js';
 import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { paymentRepository } from './payment.repository.js';
+import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
+import { calculateCustomerCheckoutFees } from '../payouts/payout.policy.js';
 
 const checkoutLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -29,6 +32,14 @@ const initializeLimiter = rateLimit({
   message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
 });
 
+const orderLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many order lookup requests. Please try again in a moment.' },
+});
+
 interface ListingRow {
   id: number;
   seller_uid: string;
@@ -41,6 +52,53 @@ interface ListingRow {
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
+}
+
+type AuthUser = {
+  uid: string;
+  is_admin?: boolean;
+};
+
+type OrderBundle = {
+  order: ReturnType<typeof orderRepository.findById>;
+  payment: ReturnType<typeof paymentRepository.findByReference> | null;
+  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
+  dispute: Record<string, unknown> | null;
+};
+
+type OrderLookupResult = OrderBundle | 'forbidden' | null;
+
+function findOrderByParam(param: string) {
+  const byId = orderRepository.findById(param);
+  if (byId) return byId;
+  return orderRepository.findByPaymentReference(param);
+}
+
+function buildOrderBundle(orderId: string): OrderBundle | null {
+  const order = orderRepository.findById(orderId);
+  if (!order) return null;
+
+  const db = getPaymentDb();
+  const paymentReference = order.paymentReference ?? null;
+  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
+  const escrow = escrowRepository.findByOrderId(order.id) ?? null;
+  const dispute = db
+    .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
+    .get(order.id) as Record<string, unknown> | undefined;
+
+  return {
+    order,
+    payment,
+    escrow,
+    dispute: dispute ?? null,
+  };
+}
+
+function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderLookupResult {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
+  return buildOrderBundle(order.id);
 }
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
@@ -60,14 +118,16 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const {
         listingId,
         quantity = 1,
+        items,
         method = 'mobile_money',
         returnUrl,
         cancelUrl,
         buyerName,
         buyerPhone,
       } = req.body as {
-        listingId?: number;
+        listingId?: number | string;
         quantity?: number;
+        items?: Array<{ listingId?: number | string; quantity?: number }>;
         method?: string;
         returnUrl?: string;
         cancelUrl?: string;
@@ -75,57 +135,88 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         buyerPhone?: string;
       };
 
-      if (!listingId) {
-        return res.status(400).json({ error: 'listingId is required' });
+      const requestedItems = Array.isArray(items) && items.length > 0
+        ? items.map((item) => ({ listingId: item.listingId, quantity: item.quantity ?? 1 }))
+        : listingId
+          ? [{ listingId, quantity }]
+          : [];
+
+      if (requestedItems.length === 0) {
+        return res.status(400).json({ error: 'listingId or items are required' });
       }
 
       const db = getPaymentDb();
-      const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(listingId) as ListingRow | undefined;
-      if (!listing) {
-        return res.status(404).json({ error: 'Listing not found' });
-      }
-
-      if (listing.status === 'sold') {
-        return res.status(400).json({ error: 'This listing is no longer available' });
-      }
-
-      const safeQty = Math.max(1, Number(quantity));
-      const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
-
-      if (availableQty === 0) {
-        return res.status(400).json({ error: 'This listing is out of stock' });
-      }
-
-      if (safeQty > availableQty) {
-        return res.status(400).json({ error: `Only ${availableQty} unit(s) available` });
-      }
-
-      const unitPrice = Number(listing.price);
-      const total = unitPrice * safeQty;
       const currency = 'MWK';
       const now = new Date().toISOString();
       const buyerUid = req.user!.uid;
       const buyerEmail = req.user!.email ?? '';
       const orderId = `ord_${randomUUID()}`;
 
+      const orderItems: OrderState['items'] = [];
+      const listingIds: string[] = [];
+      const sellerIds = new Set<string>();
+      let total = 0;
+
+      for (const item of requestedItems) {
+        const numericListingId = Number(item.listingId);
+        if (!Number.isInteger(numericListingId) || numericListingId <= 0) {
+          return res.status(400).json({ error: 'Each checkout item requires a valid listingId' });
+        }
+
+        const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(numericListingId) as ListingRow | undefined;
+        if (!listing) {
+          return res.status(404).json({ error: `Listing ${numericListingId} not found` });
+        }
+
+        if (listing.status === 'sold') {
+          return res.status(400).json({ error: `${listing.name} is no longer available` });
+        }
+
+        const parsedQty = Number(item.quantity ?? 1);
+        if (!Number.isFinite(parsedQty) || parsedQty <= 0) {
+          return res.status(400).json({ error: `Invalid quantity for ${listing.name}` });
+        }
+
+        const safeQty = Math.max(1, Math.floor(parsedQty));
+        const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+
+        if (availableQty === 0) {
+          return res.status(400).json({ error: `${listing.name} is out of stock` });
+        }
+
+        if (safeQty > availableQty) {
+          return res.status(400).json({ error: `Only ${availableQty} unit(s) available for ${listing.name}` });
+        }
+
+        const unitPrice = Number(listing.price);
+        total += unitPrice * safeQty;
+        sellerIds.add(listing.seller_uid);
+        listingIds.push(String(numericListingId));
+        const itemReference = `${orderId}-ITEM-${String(orderItems.length + 1).padStart(2, '0')}`;
+
+        orderItems.push({
+          listingId: String(numericListingId),
+          title: listing.name,
+          quantity: safeQty,
+          unitPrice: { amount: unitPrice, currency },
+          reference: itemReference,
+        });
+      }
+
+      const primarySellerId = sellerIds.values().next().value ?? 'multiple-sellers';
+      const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
+
       const order: OrderState = {
         id: orderId,
         buyerId: buyerUid,
-        sellerId: listing.seller_uid,
+        sellerId: primarySellerId,
         source: 'listing',
         status: 'pending_payment',
         currency,
         subtotal: { amount: total, currency },
-        total: { amount: total, currency },
+        total: { amount: feeBreakdown.finalTotalAmount, currency },
         paymentProvider: 'paychangu',
-        items: [
-          {
-            listingId: String(listingId),
-            title: listing.name,
-            quantity: safeQty,
-            unitPrice: { amount: unitPrice, currency },
-          },
-        ],
+        items: orderItems,
         placedAt: now,
         createdAt: now,
         updatedAt: now,
@@ -139,18 +230,22 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         orderId,
         provider: 'paychangu',
         method: method as CreatePaymentRequest['method'],
-        amount: { amount: total, currency },
+        amount: { amount: feeBreakdown.finalTotalAmount, currency },
         customer: {
           id: buyerUid,
           name: buyerName || buyerEmail || buyerUid,
           email: buyerEmail || undefined,
           phoneNumber: buyerPhone,
         },
-        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return`,
-        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1`,
+        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return?listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
+        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1&listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
         metadata: {
-          listingId: String(listingId),
-          sellerId: listing.seller_uid,
+          listingId: listingIds[0],
+          listingIds,
+          orderItemReferences: orderItems.map((item) => item.reference),
+          sellerId: primarySellerId,
+          sellerIds: Array.from(sellerIds),
+          feeBreakdown,
         },
       };
 
@@ -170,6 +265,13 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         reference: payment.reference,
         checkoutUrl: payment.checkoutUrl,
         status: payment.status,
+        feeBreakdown,
+        items: orderItems.map((item) => ({
+          listingId: item.listingId,
+          title: item.title,
+          quantity: item.quantity,
+          reference: item.reference,
+        })),
       };
 
       if (idempotencyKey) {
@@ -200,6 +302,45 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
+  router.get('/orders/me', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const db = getPaymentDb();
+      const orderIds = db
+        .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC')
+        .all(req.user!.uid) as Array<{ id: string }>;
+
+      const bundles = orderIds
+        .map((row) => buildOrderBundle(row.id))
+        .filter((bundle): bundle is OrderBundle => bundle !== null);
+
+      return res.status(200).json(bundles);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch buyer orders'));
+    }
+  });
+
+  router.get('/orders/by-reference/:reference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  router.get('/orders/:idOrReference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
   // Public verification route for payment_return redirects.
   // PayChangu redirects the browser back without the app Bearer token.
   router.get('/paychangu/verify/:txRef', async (req, res) => {
@@ -212,21 +353,47 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
+  router.post('/paychangu/webhook', async (req, res) => {
+  try {
+    const rawBody =
+      Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
+      typeof req.body === 'string' ? req.body :
+      req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
+      '';
+
+    if (!rawBody) {
+      return res.status(400).json({ error: 'Missing webhook body' });
+    }
+
+    const signature =
+      req.header('x-paychangu-signature') ?? req.header('Signature');
+
+    const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(400).json(jsonError(error, 'Failed to process webhook'));
+  }
+});
+
+  router.post('/paychangu-payout/webhook', async (req, res) => {
     try {
-      const rawBody = Buffer.isBuffer(req.body)
-        ? req.body.toString('utf8')
-        : typeof req.body === 'string'
-          ? req.body
-          : JSON.stringify(req.body ?? {});
+      const rawBody =
+        Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
+        typeof req.body === 'string' ? req.body :
+        req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
+        '';
 
-      const payload = rawBody ? JSON.parse(rawBody) : {};
-      const signature = req.header('x-paychangu-signature') ?? req.header('Signature');
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody || payload);
+      if (!rawBody) {
+        return res.status(400).json({ error: 'Missing webhook body' });
+      }
 
-      res.status(200).json(result);
+      const signature =
+        req.header('x-paychangu-signature') ?? req.header('Signature');
+
+      const result = await payoutWebhookHandler.handlePaychanguWebhook(signature, rawBody);
+      return res.status(200).json(result);
     } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to process webhook'));
+      return res.status(400).json(jsonError(error, 'Failed to process payout webhook'));
     }
   });
 

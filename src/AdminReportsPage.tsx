@@ -17,6 +17,7 @@ import {
 } from "./lib/appNavigation";
 import { fetchMessageReports, resolveMessageReport } from "./lib/messageModeration";
 import type { MessageReport } from "./types";
+import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type ReportRow = {
   id: number;
@@ -528,7 +529,22 @@ export default function AdminReportsPage() {
       : "Review seller complaints, suspend or unsuspend sellers, and keep the record clean.";
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <AdminWorkspaceLayout
+      title={mainTab === "content" ? currentContentTitle : "Chat reports queue"}
+      description={
+        mainTab === "content"
+          ? currentContentDescription
+          : "Review reported conversations, keep evidence, and resolve abuse without deleting the record."
+      }
+      onRefresh={() => {
+        if (mainTab === "content") {
+          void fetchContentReports();
+        } else {
+          void fetchChatReports();
+        }
+      }}
+    >
+      <div className="space-y-6">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
@@ -805,6 +821,7 @@ export default function AdminReportsPage() {
           </button>
         </div>
       </main>
-    </div>
+      </div>
+    </AdminWorkspaceLayout>
   );
 }

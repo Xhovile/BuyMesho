@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { BarChart3, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import ListingCard from "./components/ListingCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
@@ -10,50 +10,14 @@ import {
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
-import type { Listing, SellerDashboardData } from "./types";
-
-type ListingActionResponse = {
-  success: boolean;
-  listing?: Listing;
-  available_quantity?: number;
-};
-
-const getListingQuantity = (listing: Listing) => Number(listing.quantity ?? 1);
-const getListingSoldQuantity = (listing: Listing) => Number(listing.sold_quantity ?? 0);
-const getRemainingQuantity = (listing: Listing) =>
-  Math.max(0, getListingQuantity(listing) - getListingSoldQuantity(listing));
+import type { Listing } from "./types";
 
 export default function MyListingsPage() {
-  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading } =
+    useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
-  const [dashboardOpen, setDashboardOpen] = useState(false);
-  const [dashboardLoading, setDashboardLoading] = useState(false);
-  const [dashboardError, setDashboardError] = useState<string | null>(null);
-  const [dashboard, setDashboard] = useState<SellerDashboardData | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
-
-  const stockSnapshot = useMemo(() => {
-    const totalListed = listings.length;
-    const totalStock = listings.reduce((sum, listing) => sum + getListingQuantity(listing), 0);
-    const soldUnits = listings.reduce((sum, listing) => sum + getListingSoldQuantity(listing), 0);
-    const remainingStock = listings.reduce((sum, listing) => sum + getRemainingQuantity(listing), 0);
-    const activeListings = listings.filter((listing) => getRemainingQuantity(listing) > 0).length;
-    const soldOutListings = listings.filter((listing) => getRemainingQuantity(listing) === 0).length;
-    const lowStockListings = listings.filter(
-      (listing) => getRemainingQuantity(listing) > 0 && getRemainingQuantity(listing) <= 2
-    ).length;
-
-    return {
-      totalListed,
-      totalStock,
-      soldUnits,
-      remainingStock,
-      activeListings,
-      soldOutListings,
-      lowStockListings,
-    };
-  }, [listings]);
 
   useEffect(() => {
     const loadListings = async () => {
@@ -78,77 +42,16 @@ export default function MyListingsPage() {
     void loadListings();
   }, [firebaseUser, profile?.is_seller]);
 
-  const handleDashboardToggle = async () => {
-    if (!firebaseUser || !profile?.is_seller) return;
+  const handleDeleteListing = async (listingId: number) => {
+    if (actionLoadingId === listingId) return;
 
-    if (dashboardOpen) {
-      setDashboardOpen(false);
-      return;
-    }
-
-    setDashboardOpen(true);
-    if (dashboard || dashboardLoading) return;
-
-    setDashboardLoading(true);
-    setDashboardError(null);
+    setActionLoadingId(listingId);
     try {
-      const data = await apiFetch("/api/seller/dashboard");
-      setDashboard(data);
-    } catch (error: any) {
-      console.error("Failed to load seller dashboard", error);
-      setDashboardError(error?.message || "Failed to load dashboard.");
-    } finally {
-      setDashboardLoading(false);
-    }
-  };
-
-  const applyListingResponse = (updated: Listing) => {
-    setListings((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
-  };
-
-  const applyListingUpdate = (listingId: number, updater: (listing: Listing) => Listing) => {
-    setListings((prev) => prev.map((listing) => (listing.id === listingId ? updater(listing) : listing)));
-  };
-
-  const handleRecordSale = async (listing: Listing, quantity: number) => {
-    if (!quantity || quantity <= 0) return;
-    if (actionLoadingId === listing.id) return;
-
-    setActionLoadingId(listing.id);
-    try {
-      const result = (await apiFetch(`/api/listings/${listing.id}/record-sale`, {
-        method: "POST",
-        body: JSON.stringify({ quantity }),
-      })) as ListingActionResponse;
-
-      if (result?.listing) {
-        applyListingResponse(result.listing);
-      }
+      await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      setListings((prev) => prev.filter((item) => item.id !== listingId));
     } catch (error) {
-      console.error("Failed to record sale", error);
-      window.alert("Failed to record sale.");
-    } finally {
-      setActionLoadingId(null);
-    }
-  };
-
-  const handleRestock = async (listing: Listing, quantity: number) => {
-    if (!quantity || quantity <= 0) return;
-    if (actionLoadingId === listing.id) return;
-
-    setActionLoadingId(listing.id);
-    try {
-      const result = (await apiFetch(`/api/listings/${listing.id}/restock`, {
-        method: "POST",
-        body: JSON.stringify({ quantity }),
-      })) as ListingActionResponse;
-
-      if (result?.listing) {
-        applyListingResponse(result.listing);
-      }
-    } catch (error) {
-      console.error("Failed to restock listing", error);
-      window.alert("Failed to restock listing.");
+      console.error("Failed to delete listing", error);
+      window.alert("Failed to delete listing.");
     } finally {
       setActionLoadingId(null);
     }
@@ -165,18 +68,10 @@ export default function MyListingsPage() {
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      applyListingUpdate(listing.id, (current) => ({ ...current, status: nextStatus }));
-      setDashboard((prev) =>
-        prev
-          ? {
-              ...prev,
-              stats: {
-                ...prev.stats,
-                sold_listings: Math.max(0, prev.stats.sold_listings + (nextStatus === "sold" ? 1 : -1)),
-                active_listings: Math.max(0, prev.stats.active_listings + (nextStatus === "sold" ? -1 : 1)),
-              },
-            }
-          : null
+      setListings((prev) =>
+        prev.map((item) =>
+          item.id === listing.id ? { ...item, status: nextStatus } : item,
+        ),
       );
     } catch (error) {
       console.error("Failed to toggle listing status", error);
@@ -186,38 +81,53 @@ export default function MyListingsPage() {
     }
   };
 
-  const handleDeleteListing = async (listingId: number) => {
-    if (actionLoadingId === listingId) return;
+  const handleRecordSale = async (listing: Listing, quantity: number) => {
+    if (!quantity || quantity <= 0) return;
+    if (actionLoadingId === listing.id) return;
 
-    const target = listings.find((item) => item.id === listingId);
-    if (!target) return;
-
-    setActionLoadingId(listingId);
+    setActionLoadingId(listing.id);
     try {
-      await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
-      setListings((prev) => prev.filter((item) => item.id !== listingId));
-      setDashboard((prev) =>
-        prev
-          ? {
-              ...prev,
-              stats: {
-                ...prev.stats,
-                total_listings: Math.max(0, prev.stats.total_listings - 1),
-                active_listings:
-                  target.status === "sold"
-                    ? prev.stats.active_listings
-                    : Math.max(0, prev.stats.active_listings - 1),
-                sold_listings:
-                  target.status === "sold"
-                    ? Math.max(0, prev.stats.sold_listings - 1)
-                    : prev.stats.sold_listings,
-              },
-            }
-          : null
-      );
+      const result = await apiFetch(`/api/listings/${listing.id}/record-sale`, {
+        method: "POST",
+        body: JSON.stringify({ quantity }),
+      });
+
+      if (result?.listing) {
+        setListings((prev) =>
+          prev.map((item) =>
+            item.id === result.listing.id ? { ...item, ...result.listing } : item,
+          ),
+        );
+      }
     } catch (error) {
-      console.error("Failed to delete listing", error);
-      window.alert("Failed to delete listing.");
+      console.error("Failed to record sale", error);
+      window.alert("Failed to record sale.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const handleRestock = async (listing: Listing, quantity: number) => {
+    if (!quantity || quantity <= 0) return;
+    if (actionLoadingId === listing.id) return;
+
+    setActionLoadingId(listing.id);
+    try {
+      const result = await apiFetch(`/api/listings/${listing.id}/restock`, {
+        method: "POST",
+        body: JSON.stringify({ quantity }),
+      });
+
+      if (result?.listing) {
+        setListings((prev) =>
+          prev.map((item) =>
+            item.id === result.listing.id ? { ...item, ...result.listing } : item,
+          ),
+        );
+      }
+    } catch (error) {
+      console.error("Failed to restock listing", error);
+      window.alert("Failed to restock listing.");
     } finally {
       setActionLoadingId(null);
     }
@@ -226,8 +136,8 @@ export default function MyListingsPage() {
   return (
     <AccountPageShell
       eyebrow="Seller"
-      title="My Listings & Dashboard"
-      description="Manage your listings, update stock, and review seller performance from one place."
+      title="My Listings"
+      description="Manage your listings, update stock, and open your seller dashboard from one place."
       backLabel="Back to Profile"
       onBack={() => navigateToPath("/profile")}
       childrenSectionClassName="w-full"
@@ -239,8 +149,12 @@ export default function MyListingsPage() {
         </div>
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">You need to log in before opening your listings page.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+            Login required
+          </h2>
+          <p className="mt-3 text-sm text-zinc-500">
+            You need to log in before opening your listings page.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/login")}
@@ -251,8 +165,12 @@ export default function MyListingsPage() {
         </div>
       ) : !profile?.is_seller ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h2>
-          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access My Listings.</p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+            Seller access required
+          </h2>
+          <p className="mt-3 text-sm text-zinc-500">
+            Only seller accounts can access My Listings.
+          </p>
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
@@ -262,153 +180,53 @@ export default function MyListingsPage() {
           </button>
         </div>
       ) : listings.length === 0 ? (
-        <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">No listings yet</h2>
-          <p className="mt-3 text-sm text-zinc-500">You have not posted any listings yet.</p>
-          <button
-            type="button"
-            onClick={() => navigateToPath("/create")}
-            className="mt-5 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-          >
-            Create Listing
-          </button>
+        <div className="space-y-5 p-10 text-center">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900">
+              No listings yet
+            </h2>
+            <p className="mt-3 text-sm text-zinc-500">
+              You have not posted any listings yet.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigateToPath("/seller?uid=dashboard")}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+            >
+              Open Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={() => navigateToPath("/create")}
+              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+            >
+              Create Listing
+            </button>
+          </div>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
                   Seller performance
                 </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Dashboard</h2>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">
+                  My Listings
+                </h2>
               </div>
 
               <button
                 type="button"
-                onClick={() => void handleDashboardToggle()}
-                className={`inline-flex items-center gap-2 rounded-2xl px-5 py-2.5 text-sm font-extrabold shadow-sm transition-all active:scale-95 ${
-                  dashboardOpen
-                    ? "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-100"
-                    : "bg-indigo-700 text-white shadow-indigo-100 hover:bg-indigo-700"
-                }`}
+                onClick={() => navigateToPath("/seller?uid=dashboard")}
+                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-700 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
               >
-                <BarChart3 className="h-4 w-4" />
-                {dashboardOpen ? "Hide Stats" : "Show Stats"}
+                Open Dashboard
               </button>
-            </div>
-
-            <div
-              className={`mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white transition-all duration-300 ${
-                dashboardOpen ? "max-h-[1200px] p-4 sm:p-5" : "max-h-0 p-0 border-transparent"
-              }`}
-            >
-              {dashboardOpen ? (
-                <div className="space-y-5">
-                  {dashboardLoading ? (
-                    <div className="flex min-h-[220px] items-center justify-center gap-2 text-sm text-zinc-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Loading dashboard...
-                    </div>
-                  ) : dashboardError ? (
-                    <p className="text-sm text-red-600">{dashboardError}</p>
-                  ) : dashboard ? (
-                    <>
-                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Storage stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.remainingStock}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Units still available</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold units</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldUnits}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Units already sold</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listed stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.totalStock}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">All stock listed</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Active listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.activeListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings still available</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Sold out listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.soldOutListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings with zero stock</p>
-                        </div>
-
-                        <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Low stock</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{stockSnapshot.lowStockListings}</p>
-                          <p className="mt-1 text-[11px] text-zinc-500">Listings with 1–2 left</p>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 text-sm lg:grid-cols-3">
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total listings</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_listings}</p>
-                        </div>
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Total views</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.stats.total_views}</p>
-                        </div>                        <div className="rounded-2xl border border-zinc-200 bg-white p-3">
-                          <p className="text-[10px] font-bold uppercase text-zinc-400">Profile views</p>
-                          <p className="mt-1 text-lg font-black text-zinc-900">{dashboard.seller.profile_views}</p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-                              Top listing
-                            </p>
-                            <p className="mt-1 line-clamp-1 font-semibold text-zinc-900">
-                              {dashboard.top_listing?.name || "No data"}
-                            </p>
-                          </div>
-                          <div className="text-right text-[11px] text-zinc-500">
-                            <p className="font-semibold text-zinc-900">
-                              {dashboard.stats.repeat_seller_activity ? "Returning seller" : "New seller activity"}
-                            </p>
-                            <p>Dashboard refreshed from your live listings</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {dashboard.byCampus?.length ? (
-                        <div className="rounded-2xl border border-zinc-200 bg-white p-4">
-                          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">By campus</p>
-                          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                            {dashboard.byCampus.map((campusItem) => (
-                              <div
-                                key={campusItem.university}
-                                className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2"
-                              >
-                                <p className="line-clamp-1 text-sm font-semibold text-zinc-900">
-                                  {campusItem.university}
-                                </p>
-                                <p className="text-xs text-zinc-500">
-                                  {campusItem.count} listing{campusItem.count === 1 ? "" : "s"}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                    </>
-                  ) : null}
-                </div>
-              ) : null}
             </div>
           </div>
 
@@ -425,7 +243,9 @@ export default function MyListingsPage() {
                 onEdit={(item) => navigateToEditListing(item.id)}
                 onDelete={(id) => void handleDeleteListing(id)}
                 onToggleStatus={(item) => void handleToggleStatus(item)}
-                onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
+                onRecordSale={(item, quantity) =>
+                  void handleRecordSale(item, quantity)
+                }
                 onRestock={(item, quantity) => void handleRestock(item, quantity)}
                 onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
                 onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}

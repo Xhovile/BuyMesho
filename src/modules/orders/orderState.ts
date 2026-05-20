@@ -9,6 +9,7 @@ export interface OrderItem {
   title: string;
   quantity: number;
   unitPrice: MoneyValue;
+  reference?: string;
 }
 
 export interface OrderState extends Timestamped {

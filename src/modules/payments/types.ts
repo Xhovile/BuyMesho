@@ -46,6 +46,7 @@ export interface PaymentVerificationResult {
   provider: PaymentProviderKey;
   txRef: string;
   reference?: string;
+  orderId?: EntityId;
   status?: PaymentIntentStatus | SettlementStatus | string;
   failureReason?: string;
   currency?: string;

@@ -1,4 +1,4 @@
-import { MessageCircle, Share2, ShieldCheck, ShoppingBag } from "lucide-react";
+import { MessageCircle, Share2, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
 
@@ -17,6 +17,7 @@ export default function ListingSummary({
   onMessageSeller,
   onShare,
   onBuyNow,
+  onAddToCart,
 }: {
   listing: Listing;
   seller: SellerProfile | null;
@@ -26,10 +27,12 @@ export default function ListingSummary({
   onMessageSeller: () => void;
   onShare: () => void;
   onBuyNow?: () => void;
+  onAddToCart?: () => void;
 }) {
   const isOwner = !!currentUserUid && currentUserUid === listing.seller_uid;
   const listingMode = listing.listing_mode || "normal";
   const canBuy = !!onBuyNow && availableQuantity > 0 && listing.status !== "sold";
+  const canAddToCart = !!onAddToCart && availableQuantity > 0 && listing.status !== "sold";
 
   const modeLabel =
     listingMode === "deal"
@@ -71,7 +74,7 @@ export default function ListingSummary({
         </div>
 
         <div className="border-t border-zinc-200 pt-4">
-          <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
             <button
               type="button"
               onClick={isOwner ? undefined : onMessageSeller}
@@ -94,6 +97,18 @@ export default function ListingSummary({
             >
               <ShoppingBag className="h-4 w-4 shrink-0" />
               <span className="truncate">Buy</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={isOwner ? undefined : onAddToCart}
+              disabled={isOwner || !canAddToCart}
+              aria-disabled={isOwner || !canAddToCart}
+              className={`${actionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-45`}
+              title={isOwner ? "Adding your own listing to cart is disabled" : undefined}
+            >
+              <ShoppingCart className="h-4 w-4 shrink-0" />
+              <span className="truncate">Add to Cart</span>
             </button>
 
             <button

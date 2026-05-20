@@ -59,6 +59,10 @@ Trust and platform control are part of the core system.
 - Moderation and trust controls
 - Order and dispute handling support
 
+## Admin workspace setup
+
+- Admin setup and moderation guide: `docs/admin-setup-and-moderation.md`
+
 ## Tech stack
 
 ### Frontend

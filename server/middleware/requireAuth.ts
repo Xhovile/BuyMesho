@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyIdToken } from "../auth/firebaseAdmin.js";
+import { isConfiguredAdmin } from "../auth/adminAccess.js";
 import { getTotpEnrollment, verifyTotpVerifiedSession } from "../../src/server/totpStore.js";
 
 function getBearerToken(req: Request): string | null {
@@ -37,11 +38,16 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ error: "Two-factor verification required" });
     }
 
+    const uid = decoded.uid;
+    const email = decoded.email ?? undefined;
     req.user = {
-      uid: decoded.uid,
-      email: decoded.email ?? null,
+      uid,
+      email: email ?? null,
       email_verified: (decoded as any).email_verified === true,
-      is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
+      is_admin:
+        (decoded as any).admin === true ||
+        (decoded as any).role === "admin" ||
+        isConfiguredAdmin({ uid, email }),
     };
 
     next();
@@ -63,11 +69,16 @@ export async function attachOptionalAuth(req: Request, _res: Response, next: Nex
 
     if (!totpVerified) return next();
 
+    const uid = decoded.uid;
+    const email = decoded.email ?? undefined;
     req.user = {
-      uid: decoded.uid,
-      email: decoded.email ?? null,
+      uid,
+      email: email ?? null,
       email_verified: (decoded as any).email_verified === true,
-      is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
+      is_admin:
+        (decoded as any).admin === true ||
+        (decoded as any).role === "admin" ||
+        isConfiguredAdmin({ uid, email }),
     };
   } catch {
     // Ignore optional auth failures and continue unauthenticated.

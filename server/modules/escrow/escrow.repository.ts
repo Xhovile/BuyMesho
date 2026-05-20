@@ -10,7 +10,20 @@ export interface EscrowEntry {
   currency: string;
   balanceAfter: number;
   note?: string;
+  actorId?: string;
+  reference?: string;
   createdAt: string;
+}
+
+export interface ReleaseToSellerEarningsInput {
+  orderId: string;
+  releasedBy: string;
+  reference?: string;
+}
+
+export interface ReleaseToSellerEarningsResult {
+  escrow: StoredEscrow;
+  releaseEntry: EscrowEntry;
 }
 
 export interface StoredEscrow {
@@ -101,6 +114,64 @@ export class EscrowRepository {
       .prepare('UPDATE escrows SET state = @state, updated_at = @updated_at WHERE order_id = @order_id')
       .run({ state, updated_at: now, order_id: orderId });
     return this.findByOrderId(orderId);
+  }
+
+  releaseToSellerEarnings(input: ReleaseToSellerEarningsInput): ReleaseToSellerEarningsResult | undefined {
+    return this.db.transaction((releaseInput: ReleaseToSellerEarningsInput) => {
+      const current = this.findByOrderId(releaseInput.orderId);
+      if (!current) return undefined;
+
+      if (current.entries.some((entry) => entry.entryType === 'release')) {
+        throw new Error('Escrow is already released');
+      }
+
+      if (current.state === 'released' || current.state === 'refunded' || current.state === 'closed') {
+        throw new Error(`Escrow is already ${current.state}`);
+      }
+
+      if (current.state !== 'funded' && current.state !== 'held') {
+        throw new Error(`Escrow cannot be released from ${current.state} state`);
+      }
+
+      if (current.balanceAmount <= 0) {
+        throw new Error('Escrow has no held balance to release');
+      }
+
+      const now = new Date().toISOString();
+      const releaseEntry: EscrowEntry = {
+        id: randomUUID(),
+        escrowId: current.id,
+        entryType: 'release',
+        amount: current.balanceAmount,
+        currency: current.balanceCurrency,
+        balanceAfter: 0,
+        note: 'Escrow released to seller earnings',
+        actorId: releaseInput.releasedBy,
+        reference: releaseInput.reference,
+        createdAt: now,
+      };
+      const entries = [...current.entries, releaseEntry];
+
+      this.db.prepare(
+        `UPDATE escrows
+         SET state = 'released',
+             balance_amount = 0,
+             entries = @entries,
+             updated_at = @updated_at
+         WHERE order_id = @order_id`,
+      ).run({
+        entries: JSON.stringify(entries),
+        updated_at: now,
+        order_id: releaseInput.orderId,
+      });
+
+      const escrow = this.findByOrderId(releaseInput.orderId);
+      if (!escrow) {
+        throw new Error('Escrow not found after release');
+      }
+
+      return { escrow, releaseEntry };
+    })(input);
   }
 
   private rowToEscrow(row: Record<string, unknown>): StoredEscrow {

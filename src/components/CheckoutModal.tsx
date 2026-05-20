@@ -4,6 +4,8 @@ import { CheckCircle2, Loader2, ShoppingBag, X } from "lucide-react";
 import type { Listing } from "../types";
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
+import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
+import { calculateCustomerCheckoutFees } from "../../server/modules/payouts/payout.policy";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 
@@ -44,6 +46,10 @@ export default function CheckoutModal({
   );
   const unitPrice = Number(listing.price);
   const total = unitPrice * quantity;
+  const feeBreakdown = calculateCustomerCheckoutFees({
+    itemTotalAmount: total,
+    currency: "MWK",
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -58,8 +64,8 @@ export default function CheckoutModal({
     setStep("loading");
     setError(null);
     try {
-      const returnUrl = `${window.location.origin}/payment/return`;
-      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1`;
+      const returnUrl = `${window.location.origin}/payment/return?listingId=${encodeURIComponent(String(listing.id))}`;
+      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingId=${encodeURIComponent(String(listing.id))}`;
 
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
@@ -76,6 +82,19 @@ export default function CheckoutModal({
           buyerName: buyerName || buyerEmail || undefined,
         }),
       })) as CheckoutResult;
+
+      touchBuyerPaymentFromCheckout({
+        reference: result.reference,
+        orderId: result.orderId,
+        paymentId: result.paymentId,
+        listingId: String(listing.id),
+        listingIds: [String(listing.id)],
+        listingTitle: listing.name,
+        quantity,
+        totalPrice: feeBreakdown.itemTotalAmount,
+        checkoutUrl: result.checkoutUrl,
+        txRef: result.reference,
+      });
 
       setStep("success");
 
@@ -108,7 +127,6 @@ export default function CheckoutModal({
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
             className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-zinc-100 p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900">
@@ -136,7 +154,6 @@ export default function CheckoutModal({
               )}
             </div>
 
-            {/* Body */}
             <div className="p-6 space-y-5">
               {step === "loading" && (
                 <div className="flex flex-col items-center gap-4 py-6">
@@ -158,7 +175,6 @@ export default function CheckoutModal({
 
               {(step === "form" || step === "error") && (
                 <>
-                  {/* Listing preview */}
                   <div className="flex gap-4 rounded-2xl border border-zinc-100 bg-zinc-50 p-4">
                     {listing.photos?.[0] && (
                       <img
@@ -178,7 +194,6 @@ export default function CheckoutModal({
                     </div>
                   </div>
 
-                  {/* Quantity */}
                   {maxQty > 1 && (
                     <div>
                       <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
@@ -209,15 +224,25 @@ export default function CheckoutModal({
                     </div>
                   )}
 
-                  {/* Total */}
-                  <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4">
-                    <span className="text-sm font-bold text-zinc-600">Total</span>
-                    <span className="text-lg font-black text-zinc-900">
-                      {formatPrice(total)}
-                    </span>
+                  <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between gap-4 text-zinc-600">
+                        <span className="font-bold">Item total</span>
+                        <span className="font-extrabold text-zinc-900">
+                          {formatPrice(feeBreakdown.itemTotalAmount)}
+                        </span>
+                      </div>
+                      {feeBreakdown.buyerFeeAmount > 0 && (
+                        <div className="flex items-center justify-between gap-4 text-zinc-600">
+                          <span className="font-bold">BuyMesho fee</span>
+                          <span className="font-extrabold text-zinc-900">
+                            {formatPrice(feeBreakdown.buyerFeeAmount)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Payment info */}
                   <p className="text-xs text-zinc-400 leading-5">
                     You will be redirected to PayChangu's secure payment page to complete
                     your purchase. Your funds are held in escrow until delivery is confirmed.
@@ -232,7 +257,6 @@ export default function CheckoutModal({
               )}
             </div>
 
-            {/* Footer */}
             {(step === "form" || step === "error") && (
               <div className="flex gap-3 border-t border-zinc-100 px-6 pb-6 pt-4">
                 <button

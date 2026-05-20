@@ -1,7 +1,21 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, AlertTriangle, Loader2, ChevronLeft } from "lucide-react";
-import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ChevronLeft,
+  Loader2,
+} from "lucide-react";
+import {
+  EXPLORE_PATH,
+  LISTING_PATH,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import {
+  readBuyerPayments,
+  removeBuyerCartItem,
+  updateBuyerPaymentStatus,
+} from "./lib/buyerState";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -12,28 +26,76 @@ interface VerifyResult {
   orderId?: string;
 }
 
+interface BuyerPaymentRecord {
+  status?: string;
+  updatedAt?: string;
+  txRef?: string | null;
+  reference?: string | null;
+  listingId?: string | null;
+  listingIds?: string[];
+  orderId?: string | null;
+}
+
+const buildListingDetailsPath = (listingId: string | null) =>
+  listingId
+    ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0`
+    : EXPLORE_PATH;
+
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
   const [orderId, setOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fallbackListingId, setFallbackListingId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const txRef = params.get("tx_ref") ?? params.get("txRef");
+    const txRefFromUrl = params.get("tx_ref") ?? params.get("txRef");
     const cancelled = params.get("cancelled");
+    const listingIdFromReturn = params.get("listingId");
+
+    setFallbackListingId(listingIdFromReturn);
+
+    const rawPayments = readBuyerPayments();
+    const buyerPayments = Array.isArray(rawPayments)
+      ? (rawPayments as BuyerPaymentRecord[])
+      : [];
+
+    const latestPendingPayment = buyerPayments
+      .filter((payment) => payment.status === "pending")
+      .sort(
+        (a, b) =>
+          new Date(b.updatedAt ?? 0).getTime() -
+          new Date(a.updatedAt ?? 0).getTime(),
+      )[0];
+
+    const txRef =
+      txRefFromUrl ??
+      latestPendingPayment?.txRef ??
+      latestPendingPayment?.reference ??
+      null;
 
     if (cancelled === "1") {
+      if (txRef) {
+        updateBuyerPaymentStatus(txRef, {
+          status: "cancelled",
+          txRef,
+        });
+      }
       setStatus("cancelled");
       return;
     }
 
     if (!txRef) {
       setStatus("failed");
-      setErrorMessage("No payment reference found in the URL.");
+      setErrorMessage("No payment reference could be recovered for verification.");
       return;
     }
 
     let mounted = true;
+    let timer: number | undefined;
+
     void (async () => {
       try {
         const result = (await apiFetch(
@@ -42,110 +104,209 @@ export default function PaymentReturnPage() {
 
         if (!mounted) return;
 
-        if (result.verified) {
-          setOrderId(result.orderId ?? null);
-          setStatus("success");
-        } else {
+        const normalizedStatus = String(result.status ?? "")
+          .trim()
+          .toLowerCase();
+
+        const isSuccessful = result.verified;
+
+        if (!isSuccessful) {
+          updateBuyerPaymentStatus(txRef, {
+            status: normalizedStatus === "cancelled" || normalizedStatus === "canceled" ? "cancelled" : "failed",
+            txRef,
+          });
           setErrorMessage(
             result.status
               ? `Payment status: ${result.status}`
               : "The payment could not be verified.",
           );
           setStatus("failed");
+          return;
         }
+
+        const reference = result.reference ?? txRef;
+        const legacyOrderId = (result as unknown as Record<string, unknown>)
+          .order_id;
+        const resolvedOrderId =
+          result.orderId ??
+          (typeof legacyOrderId === "string" ? legacyOrderId : null);
+
+        const matchingPayment = buyerPayments.find(
+          (record) =>
+            record.reference === reference ||
+            record.txRef === reference ||
+            record.reference === txRef ||
+            record.txRef === txRef,
+        );
+
+        setFallbackListingId(matchingPayment?.listingId ?? listingIdFromReturn);
+
+        updateBuyerPaymentStatus(reference, {
+          status: "captured",
+          txRef: reference,
+          orderId: resolvedOrderId ?? matchingPayment?.orderId ?? null,
+        });
+
+        const purchasedListingIds = matchingPayment?.listingIds?.length
+          ? matchingPayment.listingIds
+          : matchingPayment?.listingId
+            ? [matchingPayment.listingId]
+            : [];
+
+        purchasedListingIds.forEach((listingId) => removeBuyerCartItem(listingId));
+
+        setOrderId(resolvedOrderId);
+        setStatus("success");
+
+        timer = window.setTimeout(() => {
+          navigateToPath(`/orders/${encodeURIComponent(reference)}`, {
+            replace: true,
+          });
+        }, 900);
       } catch (err: unknown) {
         if (!mounted) return;
-        setErrorMessage(err instanceof Error ? err.message : "Verification failed.");
+        updateBuyerPaymentStatus(txRef, {
+          status: "failed",
+          txRef,
+        });
+        setErrorMessage(
+          err instanceof Error ? err.message : "Verification failed.",
+        );
         setStatus("failed");
       }
     })();
 
     return () => {
       mounted = false;
+      if (timer) window.clearTimeout(timer);
     };
   }, []);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-100 p-4">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-8 shadow-lg">
+    <div className="min-h-screen w-full bg-white text-zinc-900">
+      <div className="w-full px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
         {status === "loading" && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
-            <h1 className="text-xl font-extrabold text-zinc-900">Verifying payment…</h1>
-            <p className="text-sm text-zinc-500">Please wait while we confirm your payment.</p>
+          <div className="w-full py-10 sm:py-14">
+            <div className="flex items-center gap-3">
+              <Loader2 className="h-7 w-7 animate-spin text-zinc-500" />
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Verifying payment…
+              </h1>
+            </div>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+              Please wait while we confirm your payment.
+            </p>
           </div>
         )}
 
         {status === "success" && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment successful!</h1>
-            <p className="text-sm text-zinc-600 leading-6">
-              Your payment has been confirmed and your order is now held securely in escrow.
-              The seller has been notified.
+          <div className="w-full py-10 sm:py-14">
+            <div className="flex items-center gap-3">
+              <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Payment successful!
+              </h1>
+            </div>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+              Your payment has been confirmed.
             </p>
-            {orderId && (
-              <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">
-                Order: {orderId}
+
+            {orderId ? (
+              <p className="mt-6 font-mono text-xs text-zinc-500">
+                Order ID: {orderId}
               </p>
-            )}
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors"
-            >
-              Continue shopping
-            </button>
+            ) : null}
+
+            <p className="mt-4 text-xs text-zinc-500">
+              Redirecting to your order tracking page…
+            </p>
+
+            <div className="mt-8">
+              <button
+                type="button"
+                onClick={() =>
+                  navigateToPath(buildListingDetailsPath(fallbackListingId))
+                }
+                className="inline-flex items-center justify-center gap-2 border-0 bg-zinc-900 px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back to listing
+              </button>
+            </div>
           </div>
         )}
 
         {status === "failed" && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-14 w-14 text-red-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment failed</h1>
-            <p className="text-sm text-zinc-600 leading-6">
-              {errorMessage ?? "We could not verify your payment. Please try again or contact support."}
+          <div className="w-full py-10 sm:py-14">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Payment failed
+              </h1>
+            </div>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
+              {errorMessage ??
+                "We could not verify your payment. Please try again or contact support."}
             </p>
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Go back
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="w-full rounded-2xl bg-zinc-100 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
-            >
-              Browse listings
-            </button>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  navigateToPath(buildListingDetailsPath(fallbackListingId))
+                }
+                className="inline-flex items-center justify-center gap-2 bg-zinc-100 px-5 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Go back
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="bg-transparent px-5 py-3 text-sm font-bold text-zinc-700 underline-offset-4 hover:underline"
+              >
+                Browse listings
+              </button>
+            </div>
           </div>
         )}
 
         {status === "cancelled" && (
-          <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-14 w-14 text-amber-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
-            <p className="text-sm text-zinc-600 leading-6">
+          <div className="w-full py-10 sm:py-14">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-amber-500" />
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Payment cancelled
+              </h1>
+            </div>
+
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
               You cancelled the payment. Your order was not charged.
             </p>
-            <button
-              type="button"
-              onClick={() => window.history.back()}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50 transition-colors"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Go back
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
-              className="w-full rounded-2xl bg-zinc-100 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-200 transition-colors"
-            >
-              Browse listings
-            </button>
+
+            <div className="mt-8 flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() =>
+                  navigateToPath(buildListingDetailsPath(fallbackListingId))
+                }
+                className="inline-flex items-center justify-center gap-2 bg-zinc-100 px-5 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-200"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Go back
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="bg-transparent px-5 py-3 text-sm font-bold text-zinc-700 underline-offset-4 hover:underline"
+              >
+                Browse listings
+              </button>
+            </div>
           </div>
         )}
       </div>

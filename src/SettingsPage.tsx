@@ -16,6 +16,7 @@ import {
   KeyRound,
   ShieldAlert,
   Loader2,
+  Wallet,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import PrivacyPolicyPage from "./components/PrivacyPolicyPage";
@@ -28,8 +29,8 @@ import FeedbackModal from "./components/FeedbackModal";
 import PasswordPromptModal from "./components/PasswordPromptModal";
 import TotpSetupModal from "./components/TotpSetupModal";
 import {
-  ADMIN_REPORTS_PATH,
-  ADMIN_SELLER_APPLICATIONS_PATH,
+  ADMIN_MODERATION_QUEUE_PATH,
+  ADMIN_SETUP_PATH,
   BECOME_SELLER_PATH,
   CHANGE_EMAIL_PATH,
   CHANGE_PASSWORD_PATH,
@@ -45,6 +46,7 @@ import {
   TERMS_PATH,
   navigateBackOrPath,
   navigateToPath,
+  navigateToSellerPayouts,
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useIsAdmin } from "./hooks/useIsAdmin";
@@ -177,6 +179,14 @@ export default function SettingsPage() {
     };
   }, []);
 
+  // Always open the Account accordion when the Settings page (menu view) is active.
+  // Users may still collapse it; this ensures it re-opens when returning to Settings.
+  useEffect(() => {
+    if (view === "menu") {
+      setExpandedSections((current) => ({ ...current, account: true }));
+    }
+  }, [view]);
+
   useEffect(() => {
     try {
       localStorage.setItem(ACCORDION_STORAGE_KEY, JSON.stringify(expandedSections));
@@ -234,9 +244,9 @@ export default function SettingsPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
+    message?: string
   ) => {
-    setFeedback({ open: true, type, title, message });
+    setFeedback({ open: true, type, title, message: message ?? "" });
   };
 
   const totpQrImageUrl = useMemo(() => {
@@ -610,15 +620,30 @@ export default function SettingsPage() {
                 </button>
 
                 {profile?.is_seller ? (
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
-                    disabled={verifiedAccountRequiredDisabled}
-                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
-                  >
-                    <span className="font-bold text-zinc-900">Edit Seller Profile</span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(EDIT_PROFILE_PATH)}
+                      disabled={verifiedAccountRequiredDisabled}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    >
+                      <span className="font-bold text-zinc-900">Edit Seller Profile</span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => navigateToSellerPayouts()}
+                      disabled={verifiedAccountRequiredDisabled}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-emerald-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                    >
+                      <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                        <Wallet className="w-4 h-4 text-emerald-700" />
+                        Payout settings
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </>
                 ) : (
                   <button
                     type="button"
@@ -635,24 +660,24 @@ export default function SettingsPage() {
                   <>
                     <button
                       type="button"
-                      onClick={() => navigateToPath(ADMIN_REPORTS_PATH)}
+                      onClick={() => navigateToPath(ADMIN_MODERATION_QUEUE_PATH)}
                       className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <FileText className="w-4 h-4" />
-                        Admin Reports
+                        Moderation Queue
                       </span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH)}
+                      onClick={() => navigateToPath(ADMIN_SETUP_PATH)}
                       className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                     >
                       <span className="font-bold text-indigo-900 inline-flex items-center gap-2">
                         <UserCheck className="w-4 h-4" />
-                        Seller Approvals
+                        Admin Setup Checklist
                       </span>
                       <ChevronRight className="w-4 h-4 text-zinc-400" />
                     </button>

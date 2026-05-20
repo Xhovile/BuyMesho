@@ -12,41 +12,82 @@ export class SqlitePaymentRepository {
   }
 
   save(payment: StoredPayment): StoredPayment {
-    this.db.prepare(`
-      INSERT INTO payments (id, order_id, provider, method, status, reference, provider_reference, currency, amount, checkout_url, paid_at, raw_response, verified, verification, created_at, updated_at)
-      VALUES (@id, @order_id, @provider, @method, @status, @reference, @provider_reference, @currency, @amount, @checkout_url, @paid_at, @raw_response, @verified, @verification, @created_at, @updated_at)
-      ON CONFLICT(reference) DO UPDATE SET
-        status = excluded.status,
-        provider_reference = excluded.provider_reference,
-        currency = excluded.currency,
-        amount = excluded.amount,
-        checkout_url = excluded.checkout_url,
-        paid_at = excluded.paid_at,
-        raw_response = excluded.raw_response,
-        verified = excluded.verified,
-        verification = excluded.verification,
-        updated_at = excluded.updated_at
-    `).run({
-      id: payment.id,
-      order_id: payment.orderId,
-      provider: payment.provider,
-      method: payment.method,
-      status: payment.status,
-      reference: payment.reference,
-      provider_reference: payment.providerReference ?? null,
-      currency: payment.amount.currency,
-      amount: payment.amount.amount,
-      checkout_url: payment.checkoutUrl ?? null,
-      paid_at: payment.paidAt ?? null,
-      raw_response: payment.rawResponse ? JSON.stringify(payment.rawResponse) : null,
-      verified: payment.verified ? 1 : 0,
-      verification: payment.verification ? JSON.stringify(payment.verification) : null,
-      created_at: payment.createdAt,
-      updated_at: payment.updatedAt,
-    });
-    return payment;
-  }
+  const updateStmt = this.db.prepare(`
+    UPDATE payments SET
+      id = @id,
+      order_id = @order_id,
+      provider = @provider,
+      method = @method,
+      status = @status,
+      provider_reference = @provider_reference,
+      currency = @currency,
+      amount = @amount,
+      checkout_url = @checkout_url,
+      paid_at = @paid_at,
+      raw_response = @raw_response,
+      verified = @verified,
+      verification = @verification,
+      updated_at = @updated_at
+    WHERE reference = @reference
+  `);
 
+  const insertStmt = this.db.prepare(`
+    INSERT INTO payments (
+      id, order_id, provider, method, status, reference, provider_reference,
+      currency, amount, checkout_url, paid_at, raw_response, verified,
+      verification, created_at, updated_at
+    ) VALUES (
+      @id, @order_id, @provider, @method, @status, @reference, @provider_reference,
+      @currency, @amount, @checkout_url, @paid_at, @raw_response, @verified,
+      @verification, @created_at, @updated_at
+    )
+  `);
+
+  this.db.transaction((p: StoredPayment) => {
+    const updateResult = updateStmt.run({
+      id: p.id,
+      order_id: p.orderId,
+      provider: p.provider,
+      method: p.method,
+      status: p.status,
+      reference: p.reference,
+      provider_reference: p.providerReference ?? null,
+      currency: p.amount.currency,
+      amount: p.amount.amount,
+      checkout_url: p.checkoutUrl ?? null,
+      paid_at: p.paidAt ?? null,
+      raw_response: p.rawResponse ? JSON.stringify(p.rawResponse) : null,
+      verified: p.verified ? 1 : 0,
+      verification: p.verification ? JSON.stringify(p.verification) : null,
+      created_at: p.createdAt,
+      updated_at: p.updatedAt,
+    });
+
+    if (updateResult.changes === 0) {
+      insertStmt.run({
+        id: p.id,
+        order_id: p.orderId,
+        provider: p.provider,
+        method: p.method,
+        status: p.status,
+        reference: p.reference,
+        provider_reference: p.providerReference ?? null,
+        currency: p.amount.currency,
+        amount: p.amount.amount,
+        checkout_url: p.checkoutUrl ?? null,
+        paid_at: p.paidAt ?? null,
+        raw_response: p.rawResponse ? JSON.stringify(p.rawResponse) : null,
+        verified: p.verified ? 1 : 0,
+        verification: p.verification ? JSON.stringify(p.verification) : null,
+        created_at: p.createdAt,
+        updated_at: p.updatedAt,
+      });
+    }
+  })(payment);
+
+  return payment;
+  }
+  
   findByReference(reference: string): StoredPayment | undefined {
     const row = this.db.prepare('SELECT * FROM payments WHERE reference = ?').get(reference) as Record<string, unknown> | undefined;
     if (!row) return undefined;
@@ -61,6 +102,7 @@ export class SqlitePaymentRepository {
   }
 
   clear(): void {
+    this.db.prepare('DELETE FROM payment_webhook_events').run();
     this.db.prepare('DELETE FROM payments').run();
   }
 

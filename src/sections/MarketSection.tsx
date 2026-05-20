@@ -4,6 +4,7 @@ import { Funnel, Loader2, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
+import FloatingCartButton from "../components/FloatingCartButton";
 import type { HeaderChip } from "../constants";
 
 export type MarketSectionFilters = {
@@ -198,6 +199,7 @@ export default function MarketSection({
 
   return (
     <>
+      <FloatingCartButton isLoggedIn={isLoggedIn} />
       <FilterSection
         selectedUniv={selectedUniv}
         setSelectedUniv={setSelectedUniv}
