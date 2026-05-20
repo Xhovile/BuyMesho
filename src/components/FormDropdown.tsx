@@ -9,6 +9,7 @@ type FormDropdownProps = {
   placeholder?: string;
   searchPlaceholder?: string;
   disabled?: boolean;
+  searchable?: boolean;
 };
 
 export default function FormDropdown({
@@ -19,6 +20,7 @@ export default function FormDropdown({
   placeholder = "Select an option",
   searchPlaceholder = "Search...",
   disabled = false,
+  searchable = true,
 }: FormDropdownProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -120,18 +122,20 @@ export default function FormDropdown({
 
       {open && (
         <div className={menuWrapper}>
-          <div className={searchWrap}>
-            <div className="relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder={searchPlaceholder}
-                className={searchInput}
-              />
+          {searchable ? (
+            <div className={searchWrap}>
+              <div className="relative">
+                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  className={searchInput}
+                />
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className={listWrap}>
             {filteredOptions.length > 0 ? (

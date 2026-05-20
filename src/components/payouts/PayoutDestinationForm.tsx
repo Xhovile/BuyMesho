@@ -1,4 +1,5 @@
 import { Loader2, Save, ShieldCheck, Trash2 } from "lucide-react";
+import FormDropdown from "../FormDropdown";
 
 export type PayoutDestinationType = "mobile_money" | "bank";
 
@@ -24,6 +25,20 @@ type PayoutDestinationFormProps = {
   isEditing?: boolean;
   activeDestinationCount?: number;
 };
+
+const BANK_OPTIONS = [
+  "CDH INVESTMENT BANK",
+  "ECOBANK",
+  "FDH BANK",
+  "FIRST CAPITAL BANK",
+  "NATIONAL BANK OF MALAWI",
+  "NBS BANK",
+  "NEDBANK",
+  "STANDARD BANK",
+  "MALAWI NEW FINANCE BANK MALAWI",
+] as const;
+
+const MOBILE_OPERATOR_OPTIONS = ["Airtel", "TNM"] as const;
 
 export default function PayoutDestinationForm({
   value,
@@ -79,19 +94,16 @@ export default function PayoutDestinationForm({
           </select>
         </label>
 
-        <label className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">
-            {value.destinationType === "bank" ? "Bank" : "Mobile operator"}
-          </span>
-          <input
-            value={value.providerName}
-            onChange={(event) => updateValue("providerName", event.target.value)}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-            placeholder={value.destinationType === "bank" ? "e.g. NBS, Standard Bank" : "e.g. TNM, Airtel"}
-            disabled={loading || disabled}
-            required
-          />
-        </label>
+        <FormDropdown
+          label={value.destinationType === "bank" ? "Bank" : "Mobile operator"}
+          value={value.providerName}
+          onChange={(nextProviderName) => updateValue("providerName", nextProviderName)}
+          options={value.destinationType === "bank" ? BANK_OPTIONS : MOBILE_OPERATOR_OPTIONS}
+          placeholder={value.destinationType === "bank" ? "Select bank" : "Select mobile operator"}
+          searchPlaceholder="Search bank..."
+          searchable={value.destinationType === "bank"}
+          disabled={loading || disabled}
+        />
 
         <label className="space-y-2">
           <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider ref ID</span>
