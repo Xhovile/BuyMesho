@@ -19,6 +19,7 @@ import { getSellerPayoutStatusLabel, getVisibleAdminActions } from "./modules/pa
 import ActionModal from "./components/ActionModal";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToAdminPayoutDestinations } from "./lib/appNavigation";
+import FormDropdown from "./components/FormDropdown";
 
 type PayoutRow = {
   id: string;
@@ -118,6 +119,24 @@ type StatusFilter = "all" | "pending" | "failed" | "held" | "paid" | "cancelled"
 
 const PENDING_STATES = ["eligible", "queued", "processing", "pending", "held"];
 const PAGE_SIZE = 50;
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "pending", label: "Pending states" },
+  { value: "failed", label: "Failed" },
+  { value: "held", label: "Held" },
+  { value: "paid", label: "Paid" },
+  { value: "cancelled", label: "Cancelled" },
+] as const;
+const DESTINATION_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "verified", label: "Verified" },
+  { value: "failed", label: "Failed" },
+  { value: "disabled", label: "Disabled" },
+] as const;
+const ADJUSTMENT_TYPE_OPTIONS = [
+  { value: "manual_adjustment", label: "Manual payout adjustment" },
+  { value: "processing_fee", label: "Legacy compatibility amount (hidden)" },
+] as const;
 
 type PayoutsListResponse = {
   rows?: PayoutRow[];
@@ -731,18 +750,16 @@ function AdminPayoutsManagerContent() {
                 className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm outline-none ring-zinc-300 focus:ring"
               />
 
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-semibold text-zinc-700"
-              >
-                <option value="all">All statuses</option>
-                <option value="pending">Pending states</option>
-                <option value="failed">Failed</option>
-                <option value="held">Held</option>
-                <option value="paid">Paid</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+              <div className="min-w-[220px]">
+                <FormDropdown
+                  label="Status"
+                  value={statusFilter}
+                  options={STATUS_FILTER_OPTIONS}
+                  onChange={(value) => setStatusFilter(value as StatusFilter)}
+                  placeholder="All statuses"
+                  searchPlaceholder="Search statuses..."
+                />
+              </div>
 
               <button
                 type="button"
@@ -1116,17 +1133,15 @@ function AdminPayoutsManagerContent() {
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <select
+                  <FormDropdown
+                    label="Destination status"
                     value={destinationStatus}
-                    onChange={(event) => setDestinationStatus(event.target.value)}
-                    className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
+                    options={DESTINATION_STATUS_OPTIONS}
+                    onChange={setDestinationStatus}
+                    placeholder="Select destination status"
+                    searchPlaceholder="Search status..."
                     disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                  >
-                    <option value="pending">pending</option>
-                    <option value="verified">verified</option>
-                    <option value="failed">failed</option>
-                    <option value="disabled">disabled</option>
-                  </select>
+                  />
                   <input
                     value={destinationReason}
                     onChange={(event) => setDestinationReason(event.target.value)}
@@ -1195,15 +1210,15 @@ function AdminPayoutsManagerContent() {
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr]">
-                  <select
+                  <FormDropdown
+                    label="Adjustment type"
                     value={adjustmentType}
-                    onChange={(event) => setAdjustmentType(event.target.value as "processing_fee" | "manual_adjustment")}
-                    className="rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
+                    options={ADJUSTMENT_TYPE_OPTIONS}
+                    onChange={(value) => setAdjustmentType(value as "processing_fee" | "manual_adjustment")}
+                    placeholder="Select adjustment type"
+                    searchPlaceholder="Search adjustment type..."
                     disabled={actionBusyId === selected.id}
-                  >
-                    <option value="manual_adjustment">Manual payout adjustment</option>
-                    <option value="processing_fee">Legacy compatibility amount (hidden)</option>
-                  </select>
+                  />
                   <input
                     value={adjustmentAmount}
                     onChange={(event) => setAdjustmentAmount(event.target.value)}
