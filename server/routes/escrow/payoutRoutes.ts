@@ -941,7 +941,8 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
         return res.status(404).json({ error: 'Payout destination not found' });
       }
       assertEditSettingsAccess(req, existing.seller_uid);
-      if (existing.is_default === 1) {
+      const isDefaultDestination = existing.is_default === 1;
+      if (isDefaultDestination) {
         return res.status(409).json({
           error: 'Default payout destination cannot be removed. Replace it instead.',
         });

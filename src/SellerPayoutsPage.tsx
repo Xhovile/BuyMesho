@@ -199,7 +199,7 @@ export default function SellerPayoutsPage() {
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [removeTarget?.id]);
+  }, [removeTarget]);
 
   const handleSaveDestination = async () => {
     if (!sellerId) return;
