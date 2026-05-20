@@ -4,6 +4,7 @@ import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { fetchAdminActionLogs } from "./modules/admin/adminApi";
 import type { AdminActionLog } from "./modules/admin/adminTypes";
 import { ADMIN_ACTION_LABELS, ADMIN_TARGET_LABELS, isAdminActionType, isAdminTargetType } from "./modules/admin/shared/adminAuditTypes";
+import FormDropdown from "./components/FormDropdown";
 
 export default function AdminAuditLogPage() {
   const PAGE_SIZE = 100;
@@ -27,6 +28,14 @@ export default function AdminAuditLogPage() {
   const [total, setTotal] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const actionTypeOptions = useMemo(
+    () => [{ value: "", label: "All actions" }, ...Object.entries(ADMIN_ACTION_LABELS).map(([value, label]) => ({ value, label }))],
+    [],
+  );
+  const targetTypeOptions = useMemo(
+    () => [{ value: "", label: "All targets" }, ...Object.entries(ADMIN_TARGET_LABELS).map(([value, label]) => ({ value, label }))],
+    [],
+  );
 
   const toggleRow = (rowId: number) => {
     setExpandedRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
@@ -147,32 +156,26 @@ export default function AdminAuditLogPage() {
       <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
         <div className="border-b border-zinc-200 bg-zinc-50 px-4 py-3">
           <div className="flex flex-wrap items-end gap-3">
-            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
-              Action type
-              <select
+            <div className="min-w-[180px] flex-1">
+              <FormDropdown
+                label="Action type"
                 value={filters.action_type}
-                onChange={(event) => setFilters((prev) => ({ ...prev, action_type: event.target.value }))}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
-              >
-                <option value="">All actions</option>
-                {Object.entries(ADMIN_ACTION_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
-              Target type
-              <select
+                options={actionTypeOptions}
+                onChange={(value) => setFilters((prev) => ({ ...prev, action_type: value }))}
+                placeholder="All actions"
+                searchPlaceholder="Search actions..."
+              />
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <FormDropdown
+                label="Target type"
                 value={filters.target_type}
-                onChange={(event) => setFilters((prev) => ({ ...prev, target_type: event.target.value }))}
-                className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium normal-case tracking-normal text-zinc-900"
-              >
-                <option value="">All targets</option>
-                {Object.entries(ADMIN_TARGET_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
+                options={targetTypeOptions}
+                onChange={(value) => setFilters((prev) => ({ ...prev, target_type: value }))}
+                placeholder="All targets"
+                searchPlaceholder="Search targets..."
+              />
+            </div>
             <label className="flex min-w-[180px] flex-1 flex-col gap-1 text-xs font-semibold uppercase tracking-wide text-zinc-600">
               Admin
               <input

@@ -4,7 +4,7 @@ import { ChevronRight, Search } from "lucide-react";
 type FormDropdownProps = {
   label: string;
   value: string;
-  options: readonly string[] | string[];
+  options: readonly (string | { value: string; label: string })[] | (string | { value: string; label: string })[];
   onChange: (value: string) => void;
   placeholder?: string;
   searchPlaceholder?: string;
@@ -59,15 +59,26 @@ export default function FormDropdown({
     }
   }, [disabled]);
 
+  const normalizedOptions = useMemo(() => {
+    return options.map((option) =>
+      typeof option === "string"
+        ? { value: option, label: option, searchable: option.toLowerCase() }
+        : { value: option.value, label: option.label, searchable: `${option.label} ${option.value}`.toLowerCase() },
+    );
+  }, [options]);
+
   const filteredOptions = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
 
-    if (!trimmed) return options;
+    if (!trimmed) return normalizedOptions;
 
-    return options.filter((option) =>
-      option.toLowerCase().includes(trimmed)
-    );
-  }, [options, query]);
+    return normalizedOptions.filter((option) => option.searchable.includes(trimmed));
+  }, [normalizedOptions, query]);
+
+  const selectedLabel = useMemo(() => {
+    const selectedOption = normalizedOptions.find((option) => option.value === value);
+    return selectedOption?.label ?? value;
+  }, [normalizedOptions, value]);
 
   const triggerBase =
     "w-full flex items-center justify-between gap-3 bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-700 hover:border-zinc-300 hover:bg-white transition-all";
@@ -99,7 +110,7 @@ export default function FormDropdown({
         disabled={disabled}
         className={`${triggerBase} ${disabled ? "cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200 hover:bg-zinc-100" : ""}`}
       >
-        <span className="truncate text-left">{value || placeholder}</span>
+        <span className="truncate text-left">{selectedLabel || placeholder}</span>
         <ChevronRight
           className={`w-4 h-4 text-zinc-400 transition-transform flex-shrink-0 ${
             open ? "rotate-90" : "rotate-0"
@@ -126,18 +137,18 @@ export default function FormDropdown({
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <button
-                  key={option}
+                  key={option.value}
                   type="button"
                   onClick={() => {
-                    onChange(option);
+                    onChange(option.value);
                     setOpen(false);
                     setQuery("");
                   }}
                   className={`${itemBase} ${
-                    value === option ? activeItem : inactiveItem
+                    value === option.value ? activeItem : inactiveItem
                   }`}
                 >
-                  {option}
+                  {option.label}
                 </button>
               ))
             ) : (
