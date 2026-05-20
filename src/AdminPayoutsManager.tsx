@@ -971,37 +971,59 @@ function AdminPayoutsManagerContent() {
       {selected ? (
         <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={() => setSelectedId(null)}>
           <aside className="ml-auto h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-zinc-200 bg-white px-5 py-4">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payout detail</p>
-                <h3 className="mt-1 text-lg font-black text-zinc-950">{selected.id}</h3>
+            <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white px-5 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Payout detail</p>
+                  <h3 className="mt-1 text-lg font-black text-zinc-950">{selected.id}</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(null)}
+                  className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50"
+                >
+                  <X className="h-5 w-5 text-zinc-500" />
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedId(null)}
-                className="rounded-2xl border border-zinc-200 p-2 hover:bg-zinc-50"
-              >
-                <X className="h-5 w-5 text-zinc-500" />
-              </button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(selected.status)}`}>
+                  {formatStatus(selected.status)}
+                </span>
+                {selected.retryEligible ? (
+                  <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                    retry eligible
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-600">
+                    {selected.retryBlockedReason ?? "retry unavailable"}
+                  </span>
+                )}
+                <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
+                  destination {formatStatus(selected.destinationVerificationStatus)}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${
+                    selected.sellerSuspended
+                      ? "border-rose-200 bg-rose-50 text-rose-700"
+                      : "border-zinc-200 bg-zinc-100 text-zinc-700"
+                  }`}
+                >
+                  {selected.sellerSuspended ? "seller suspended" : "seller active"}
+                </span>
+              </div>
             </div>
 
             <div className="space-y-5 p-5">
               <section className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5">
-                <h4 className="text-base font-black">Core fields</h4>
+                <h4 className="text-base font-black">Payout summary</h4>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   <Info label="Payout ID" value={selected.id} />
                   <Info label="Seller ID" value={selected.sellerId} />
                   <Info label="Order ID" value={selected.orderId ?? "—"} />
                   <Info label="Escrow ID" value={selected.escrowId ?? "—"} />
                   <Info label="Release entry ID" value={selected.releaseEntryId ?? "—"} />
-                  <Info label="Status" value={formatStatus(selected.status)} />
-                  <Info label="Current state" value={formatStatus(selected.currentState ?? selected.status)} />
                   <Info label="Amount" value={`${selected.currency} ${Number(selected.amount).toLocaleString()}`} />
                   <Info label="Requested by" value={selected.requestedBy ?? "—"} />
-                  <Info label="Provider charge" value={selected.providerChargeId ?? "—"} />
-                  <Info label="Provider ref" value={selected.providerReference ?? "—"} />
-                  <Info label="Provider tx" value={selected.providerTransactionId ?? "—"} />
-                  <Info label="Provider status" value={formatStatus(selected.providerStatus)} />
                   <Info label="Destination" value={selected.destinationMaskedAccount ?? "—"} />
                   <Info label="Destination type" value={formatStatus(selected.destinationType)} />
                   <Info label="Destination active" value={selected.destinationActive ? "Yes" : "No"} />
@@ -1009,6 +1031,42 @@ function AdminPayoutsManagerContent() {
                     label="Retry eligibility"
                     value={selected.retryEligible ? "Can retry safely" : selected.retryBlockedReason ?? "Retry unavailable"}
                   />
+                </div>
+              </section>
+
+              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <h4 className="text-base font-black">Destination verification</h4>
+                <div className="mt-3 grid gap-2">
+                  <Info label="Destination ID" value={selected.destinationAccountId ?? "—"} />
+                  <Info label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />
+                  <Info label="Last destination error" value={selected.destinationLastError ?? "—"} />
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
+                  <FormDropdown
+                    label="Destination status"
+                    value={destinationStatus}
+                    options={DESTINATION_STATUS_OPTIONS}
+                    onChange={setDestinationStatus}
+                    placeholder="Select destination status"
+                    searchPlaceholder="Search status..."
+                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
+                  />
+                  <input
+                    value={destinationReason}
+                    onChange={(event) => setDestinationReason(event.target.value)}
+                    placeholder="Reason (required for failed/disabled)"
+                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
+                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void updateDestinationVerification()}
+                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
+                    className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
+                  >
+                    {actionBusyId === selected.id ? "Saving..." : "Update"}
+                  </button>
                 </div>
               </section>
 
@@ -1098,66 +1156,8 @@ function AdminPayoutsManagerContent() {
               </section>
 
               <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Attempts and audit</h4>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  <Info
-                    label="Latest attempt"
-                    value={selected.latestAttemptNo ? `#${selected.latestAttemptNo} (${selected.latestAttemptStatus ?? "—"})` : "—"}
-                  />
-                  <Info label="Latest attempt time" value={toDate(selected.latestAttemptAt)} />
-                  <Info label="Latest attempt error" value={selected.latestAttemptFailureReason ?? selected.failureReason ?? "—"} />
-                  <Info label="Webhook snapshot" value={selected.latestWebhookEventType ? `${selected.latestWebhookEventType} @ ${toDate(selected.latestWebhookEventAt)}` : "—"} />
-                  <Info label="Audit latest event" value={selected.auditSummary?.latestEventType ?? "—"} />
-                  <Info label="Audit total events" value={String(selected.auditSummary?.totalEvents ?? 0)} />
-                </div>
-
-                {Array.isArray(selected.verificationBlockers) && selected.verificationBlockers.length > 0 ? (
-                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                    <strong>Verification blockers:</strong> {selected.verificationBlockers.join(" • ")}
-                  </p>
-                ) : null}
-
-                {selected.holdReason || selected.manualReviewReason ? (
-                  <p className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-                    <strong>Hold reason:</strong> {selected.holdReason ?? selected.manualReviewReason}
-                  </p>
-                ) : null}
-              </section>
-
-              <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-                <h4 className="text-base font-black">Destination verification</h4>
-                <div className="mt-3 grid gap-2">
-                  <Info label="Destination ID" value={selected.destinationAccountId ?? "—"} />
-                  <Info label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />
-                  <Info label="Last destination error" value={selected.destinationLastError ?? "—"} />
-                </div>
-
-                <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
-                  <FormDropdown
-                    label="Destination status"
-                    value={destinationStatus}
-                    options={DESTINATION_STATUS_OPTIONS}
-                    onChange={setDestinationStatus}
-                    placeholder="Select destination status"
-                    searchPlaceholder="Search status..."
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                  />
-                  <input
-                    value={destinationReason}
-                    onChange={(event) => setDestinationReason(event.target.value)}
-                    placeholder="Reason (required for failed/disabled)"
-                    className="rounded-2xl border border-zinc-200 px-3 py-2.5 text-sm"
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void updateDestinationVerification()}
-                    disabled={!selected.destinationAccountId || actionBusyId === selected.id}
-                    className="rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50"
-                  >
-                    {actionBusyId === selected.id ? "Saving..." : "Update"}
-                  </button>
-                </div>
+                <h4 className="text-base font-black">Secondary admin controls</h4>
+                <p className="mt-2 text-sm text-zinc-600">Seller suspension and payout adjustments are available below.</p>
               </section>
 
               <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
@@ -1280,6 +1280,37 @@ function AdminPayoutsManagerContent() {
                   )}
                 </div>
               </section>
+
+              <details className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <summary className="cursor-pointer list-none text-base font-black text-zinc-900">Technical details</summary>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  <Info label="Provider charge" value={selected.providerChargeId ?? "—"} />
+                  <Info label="Provider ref" value={selected.providerReference ?? "—"} />
+                  <Info label="Provider tx" value={selected.providerTransactionId ?? "—"} />
+                  <Info label="Provider status" value={formatStatus(selected.providerStatus)} />
+                  <Info
+                    label="Latest attempt"
+                    value={selected.latestAttemptNo ? `#${selected.latestAttemptNo} (${selected.latestAttemptStatus ?? "—"})` : "—"}
+                  />
+                  <Info label="Latest attempt time" value={toDate(selected.latestAttemptAt)} />
+                  <Info label="Latest attempt error" value={selected.latestAttemptFailureReason ?? selected.failureReason ?? "—"} />
+                  <Info label="Webhook snapshot" value={selected.latestWebhookEventType ? `${selected.latestWebhookEventType} @ ${toDate(selected.latestWebhookEventAt)}` : "—"} />
+                  <Info label="Audit latest event" value={selected.auditSummary?.latestEventType ?? "—"} />
+                  <Info label="Audit total events" value={String(selected.auditSummary?.totalEvents ?? 0)} />
+                </div>
+
+                {Array.isArray(selected.verificationBlockers) && selected.verificationBlockers.length > 0 ? (
+                  <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    <strong>Verification blockers:</strong> {selected.verificationBlockers.join(" • ")}
+                  </p>
+                ) : null}
+
+                {selected.holdReason || selected.manualReviewReason ? (
+                  <p className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+                    <strong>Hold reason:</strong> {selected.holdReason ?? selected.manualReviewReason}
+                  </p>
+                ) : null}
+              </details>
             </div>
           </aside>
         </div>
