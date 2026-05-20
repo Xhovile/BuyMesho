@@ -1,17 +1,6 @@
-import { ClipboardList, Home, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
 import type { ComponentType } from "react";
-import {
-  ADMIN_AUDIT_PATH,
-  ADMIN_MODERATION_QUEUE_PATH,
-  ADMIN_PATH,
-  ADMIN_PAYMENTS_PATH,
-  ADMIN_PAYOUT_DESTINATIONS_PATH,
-  ADMIN_PAYOUTS_PATH,
-  ADMIN_REPORTS_PATH,
-  ADMIN_SELLER_APPLICATIONS_PATH,
-  ADMIN_SETUP_PATH,
-  navigateToPath,
-} from "../../lib/appNavigation";
+import { navigateToPath } from "../../lib/appNavigation";
+import { ADMIN_WORKSPACE_NAV_ITEMS } from "./adminWorkspaceConfig";
 
 type AdminWorkspaceNavProps = {
   pathname: string;
@@ -23,23 +12,13 @@ type NavItem = {
   icon: ComponentType<{ className?: string }>;
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Overview", path: ADMIN_PATH, icon: Home },
-  { label: "Moderation Queue", path: ADMIN_MODERATION_QUEUE_PATH, icon: ListChecks },
-  { label: "Reports", path: ADMIN_REPORTS_PATH, icon: ClipboardList },
-  { label: "Seller Applications", path: ADMIN_SELLER_APPLICATIONS_PATH, icon: ShieldCheck },
-  { label: "Payments", path: ADMIN_PAYMENTS_PATH, icon: ReceiptText },
-  { label: "Payouts", path: ADMIN_PAYOUTS_PATH, icon: Wallet },
-  { label: "Audit Log", path: ADMIN_AUDIT_PATH, icon: ClipboardList },
-  { label: "Admin Setup", path: ADMIN_SETUP_PATH, icon: Wrench },
-  { label: "Destination Requests", path: ADMIN_PAYOUT_DESTINATIONS_PATH, icon: ShieldCheck },
-];
-
 export default function AdminWorkspaceNav({ pathname }: AdminWorkspaceNavProps) {
+  const navItems = ADMIN_WORKSPACE_NAV_ITEMS as NavItem[];
+
   return (
     <nav className="rounded-3xl border border-zinc-200 bg-white p-2 shadow-sm">
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-9">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.path;
           return (

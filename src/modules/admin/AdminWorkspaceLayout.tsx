@@ -8,6 +8,7 @@ type AdminWorkspaceLayoutProps = {
   description?: string;
   onRefresh?: () => void;
   children: ReactNode;
+  showNav?: boolean;
 };
 
 export default function AdminWorkspaceLayout({
@@ -15,6 +16,7 @@ export default function AdminWorkspaceLayout({
   description,
   onRefresh,
   children,
+  showNav = true,
 }: AdminWorkspaceLayoutProps) {
   const pathname = window.location.pathname;
 
@@ -50,7 +52,7 @@ export default function AdminWorkspaceLayout({
           {description ? <p className="mt-2 text-sm text-zinc-600 sm:text-base">{description}</p> : null}
         </section>
 
-        <AdminWorkspaceNav pathname={pathname} />
+        {showNav ? <AdminWorkspaceNav pathname={pathname} /> : null}
 
         {children}
       </main>
