@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
+import ConfirmModal from "./components/ConfirmModal";
 import PayoutDestinationCard from "./components/payouts/PayoutDestinationCard";
 import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequiredBanner";
 import PayoutDestinationForm from "./components/payouts/PayoutDestinationForm";
@@ -24,6 +25,7 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import {
   createPayoutDestination,
+  deletePayoutDestination,
   getPayoutDestinations,
   getPayoutHistory,
   getPayoutPermissions,
@@ -91,6 +93,8 @@ export default function SellerPayoutsPage() {
     type: "success" | "error" | "info";
     message: string;
   } | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<PayoutDestination | null>(null);
+  const [removeCountdown, setRemoveCountdown] = useState(3);
 
   const sellerId = firebaseUser?.uid || profile?.uid || "";
   const isSeller = !!profile?.is_seller;
@@ -179,6 +183,23 @@ export default function SellerPayoutsPage() {
     setDestinationFormError(null);
     setForm(INITIAL_FORM);
   };
+
+  useEffect(() => {
+    if (!removeTarget) return;
+    setRemoveCountdown(3);
+
+    const interval = window.setInterval(() => {
+      setRemoveCountdown((prev) => {
+        if (prev <= 0) {
+          window.clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [removeTarget]);
 
   const handleSaveDestination = async () => {
     if (!sellerId) return;
@@ -272,10 +293,45 @@ export default function SellerPayoutsPage() {
   };
 
   const handleRemoveDestination = (destination: PayoutDestination) => {
-    setDestinationFormError(
-      `${destination.providerName} cannot be removed directly yet. Replace it with a new destination to deactivate the old details safely.`,
-    );
+    if (destination.isDefault) {
+      startEdit(destination);
+      document
+        .getElementById("payout-destination-settings")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      setNotice({
+        type: "info",
+        message:
+          "Default payout destination cannot be removed. Replace it in Payout Setup.",
+      });
+      return;
+    }
+
+    setRemoveTarget(destination);
+    setDestinationFormError(null);
     setNotice(null);
+  };
+
+  const handleConfirmRemoveDestination = async () => {
+    if (!removeTarget || removeCountdown > 0) return;
+    setSavingDestination(true);
+    try {
+      await deletePayoutDestination(removeTarget.id);
+      setNotice({
+        type: "success",
+        message: `${removeTarget.providerName} payout destination removed.`,
+      });
+      if (selectedDestinationId === removeTarget.id) {
+        resetForm();
+      }
+      setRemoveTarget(null);
+      await loadData();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to remove destination";
+      setNotice({ type: "error", message });
+    } finally {
+      setSavingDestination(false);
+    }
   };
 
   const handleRefresh = async () => {
@@ -692,6 +748,21 @@ export default function SellerPayoutsPage() {
           </div>
         </section>
       </main>
+      <ConfirmModal
+        open={Boolean(removeTarget)}
+        title="Remove payout destination"
+        message="Are you sure you want to remove this payout destination?"
+        cancelText="Cancel"
+        confirmText={
+          removeCountdown > 0
+            ? `Confirm (${removeCountdown}s)`
+            : "Confirm"
+        }
+        confirmDisabled={savingDestination || removeCountdown > 0}
+        danger
+        onCancel={() => setRemoveTarget(null)}
+        onConfirm={() => void handleConfirmRemoveDestination()}
+      />
     </div>
   );
 }

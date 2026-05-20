@@ -933,6 +933,59 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
     }
   });
 
+  router.delete('/destinations/:id', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const destinationId = normalizeDestinationId(req.params.id);
+      const existing = findDestinationById(destinationId);
+      if (!existing) {
+        return res.status(404).json({ error: 'Payout destination not found' });
+      }
+      assertEditSettingsAccess(req, existing.seller_uid);
+      const isDefaultDestination = existing.is_default === 1;
+      if (isDefaultDestination) {
+        return res.status(409).json({
+          error: 'Default payout destination cannot be removed. Replace it instead.',
+        });
+      }
+
+      const now = new Date().toISOString();
+      const db = getPaymentDb();
+      db.prepare(
+        `UPDATE seller_payout_accounts
+         SET is_active = 0,
+             is_default = 0,
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(now, existing.id);
+
+      const updated = findDestinationById(existing.id);
+      if (!updated) {
+        throw new Error('Failed to remove payout destination');
+      }
+
+      addDestinationEvent({
+        sellerId: existing.seller_uid,
+        accountId: existing.id,
+        eventType: 'destination_removed',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { providerName: existing.provider_name },
+      });
+
+      return res.json({
+        destination: rowToSellerPayoutDestination(updated),
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove payout destination';
+      const status = /Unauthorized/i.test(message)
+        ? 401
+        : /not allowed/i.test(message)
+          ? 403
+          : 400;
+      return res.status(status).json({ error: message });
+    }
+  });
+
   router.post('/destinations/:id/replace', payoutLimiter, requireAuth, (req, res) => {
     try {
       const destinationId = normalizeDestinationId(req.params.id);

@@ -8,6 +8,7 @@ type ConfirmModalProps = {
   confirmText?: string;
   cancelText?: string;
   danger?: boolean;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -19,6 +20,7 @@ export default function ConfirmModal({
   confirmText = "Confirm",
   cancelText = "Cancel",
   danger = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -73,9 +75,10 @@ export default function ConfirmModal({
               <button
                 type="button"
                 onClick={onConfirm}
+                disabled={confirmDisabled}
                 className={`flex-1 py-3 rounded-2xl font-bold text-white transition-colors ${
                   danger ? "bg-red-600 hover:bg-red-700" : "bg-zinc-900 hover:bg-zinc-800"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
               >
                 {confirmText}
               </button>
