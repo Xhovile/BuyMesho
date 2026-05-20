@@ -302,8 +302,8 @@ export default function SellerProfilePage() {
 
               <div className="p-0 sm:p-0">
                 <div className="mb-5 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                    Search seller listings
+                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+                    Search Seller Listings
                   </p>
                   <div className="relative mt-3">
                     <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
@@ -378,7 +378,7 @@ export default function SellerProfilePage() {
                   </div>
                 ) : listings.length > 0 ? (
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                    No listings match this search yet. Try another keyword.
+                    No listings match your search. Try another keyword.
                   </div>
                 ) : (
                   <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
