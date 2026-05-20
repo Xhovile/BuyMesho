@@ -272,10 +272,10 @@ export default function SellerPayoutsPage() {
   };
 
   const handleRemoveDestination = (destination: PayoutDestination) => {
-    setNotice({
-      type: "info",
-      message: `${destination.providerName} cannot be removed directly yet. Replace it with a new destination to deactivate the old details safely.`,
-    });
+    setDestinationFormError(
+      `${destination.providerName} cannot be removed directly yet. Replace it with a new destination to deactivate the old details safely.`,
+    );
+    setNotice(null);
   };
 
   const handleRefresh = async () => {
@@ -329,7 +329,7 @@ export default function SellerPayoutsPage() {
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-white/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-zinc-200/70 bg-white/95">
         <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <BrandMark />
           <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -517,7 +517,7 @@ export default function SellerPayoutsPage() {
                       destination={destination}
                       onReplace={startEdit}
                       onRemove={handleRemoveDestination}
-                      onMakeDefault={(item) => void handleMakeDefault(item)}
+                      onMakeDefault={handleMakeDefault}
                       formatDate={formatDate}
                       actionsDisabled={!canEditSettings || savingDestination}
                     />
