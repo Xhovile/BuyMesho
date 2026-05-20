@@ -1,6 +1,5 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
-import { motion } from "motion/react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
@@ -23,6 +22,7 @@ type ListingCardProps = {
   ultraCompact?: boolean;
   clickable?: boolean;
   showActionsMenu?: boolean;
+  performanceMode?: boolean;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
 };
@@ -50,6 +50,7 @@ export default function ListingCard({
   ultraCompact = false,
   clickable = false,
   showActionsMenu = true,
+  performanceMode = false,
   onOpenDetails,
   onOpenSeller,
 }: ListingCardProps) {
@@ -108,33 +109,38 @@ export default function ListingCard({
   const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
   const outerPadding = ultraCompact ? "px-2 pt-2" : "px-4 pt-4";
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
+  const cardShadow = performanceMode
+    ? "shadow-[0_6px_18px_rgba(24,24,27,0.05)]"
+    : "shadow-[0_10px_30px_rgba(24,24,27,0.06)]";
+  const hoverShadow = performanceMode
+    ? "hover:shadow-[0_8px_22px_rgba(24,24,27,0.07)]"
+    : compact
+      ? "hover:shadow-[0_14px_40px_rgba(24,24,27,0.09)]"
+      : "hover:shadow-[0_16px_46px_rgba(24,24,27,0.12)]";
 
   return (
     <article
-  className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
-  onClick={clickable ? handleOpenDetails : undefined}
-  onKeyDown={
-    clickable
-      ? (e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleOpenDetails();
-          }
-        }
-      : undefined
-  }
-  tabIndex={clickable ? 0 : undefined}
-  role={clickable ? "button" : undefined}
->
-      
-      <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 group-hover:opacity-100 transition pointer-events-none" />
+      className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
+      onClick={clickable ? handleOpenDetails : undefined}
+      onKeyDown={
+        clickable
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleOpenDetails();
+              }
+            }
+          : undefined
+      }
+      tabIndex={clickable ? 0 : undefined}
+      role={clickable ? "button" : undefined}
+    >
+      {!performanceMode ? (
+        <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 transition pointer-events-none group-hover:opacity-100" />
+      ) : null}
 
       <div
-        className={`relative overflow-hidden ${cardRadius} border border-zinc-200/80 bg-white shadow-[0_10px_30px_rgba(24,24,27,0.06)] transition-all ${
-          compact
-            ? "hover:shadow-[0_14px_40px_rgba(24,24,27,0.09)]"
-            : "hover:shadow-[0_16px_46px_rgba(24,24,27,0.12)]"
-        }`}
+        className={`relative overflow-hidden ${cardRadius} border border-zinc-200/80 bg-white ${cardShadow} transition-shadow ${hoverShadow}`}
       >
         <div className={`${outerPadding} flex items-center justify-between gap-2`}>
           <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
@@ -180,7 +186,7 @@ export default function ListingCard({
             <img
               src={firstPhoto}
               alt={titleLabel}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              className={`h-full w-full object-cover ${performanceMode ? "" : "transition-transform duration-700 group-hover:scale-105"}`}
               referrerPolicy="no-referrer"
             />
           </button>
@@ -216,7 +222,9 @@ export default function ListingCard({
           <div className="absolute bottom-3 left-3 max-w-[86%]">
             {offerLabel ? (
               <div
-                className={`inline-flex flex-col gap-0.5 rounded-xl bg-white/88 px-2 py-1 shadow-sm backdrop-blur-md ${
+                className={`inline-flex flex-col gap-0.5 rounded-xl bg-white/92 px-2 py-1 shadow-sm ${
+                  performanceMode ? "" : "backdrop-blur-md"
+                } ${
                   ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"
                 }`}
               >
@@ -237,7 +245,9 @@ export default function ListingCard({
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm backdrop-blur-md ${
+                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm ${
+                  performanceMode ? "" : "backdrop-blur-md"
+                } ${
                   ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
                 } text-zinc-900`}
               >
@@ -272,6 +282,6 @@ export default function ListingCard({
           ) : null}
         </div>
       </div>
-    </motion.article>
+    </article>
   );
 }
