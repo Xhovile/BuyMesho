@@ -31,7 +31,25 @@ export default function MyListingsPage() {
       setLoadingListings(true);
       try {
         const data = await apiFetch(`/api/users/${firebaseUser.uid}/listings`);
-        setListings(Array.isArray(data) ? data : []);
+        if (!Array.isArray(data)) {
+          setListings([]);
+          return;
+        }
+
+        const uniqueById = new Map<number, Listing>();
+        for (const item of data) {
+          if (
+            !item ||
+            typeof item !== "object" ||
+            !Number.isFinite(Number((item as Listing).id))
+          ) {
+            continue;
+          }
+          const listing = item as Listing;
+          uniqueById.set(Number(listing.id), listing);
+        }
+
+        setListings(Array.from(uniqueById.values()));
       } catch (error) {
         console.error("Failed to load my listings", error);
         setListings([]);
@@ -231,26 +249,28 @@ export default function MyListingsPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
             {listings.map((listing) => (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                currentUid={firebaseUser?.uid}
-                isLoggedIn={!!firebaseUser}
-                showActionsMenu
-                clickable
-                onReport={() => undefined}
-                onEdit={(item) => navigateToEditListing(item.id)}
-                onDelete={(id) => void handleDeleteListing(id)}
-                onToggleStatus={(item) => void handleToggleStatus(item)}
-                onRecordSale={(item, quantity) =>
-                  void handleRecordSale(item, quantity)
-                }
-                onRestock={(item, quantity) => void handleRestock(item, quantity)}
-                onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
-                onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
-              />
+              <div key={listing.id} className="min-w-0 self-start">
+                <ListingCard
+                  listing={listing}
+                  currentUid={firebaseUser?.uid}
+                  isLoggedIn={!!firebaseUser}
+                  showActionsMenu
+                  clickable
+                  performanceMode
+                  onReport={() => undefined}
+                  onEdit={(item) => navigateToEditListing(item.id)}
+                  onDelete={(id) => void handleDeleteListing(id)}
+                  onToggleStatus={(item) => void handleToggleStatus(item)}
+                  onRecordSale={(item, quantity) =>
+                    void handleRecordSale(item, quantity)
+                  }
+                  onRestock={(item, quantity) => void handleRestock(item, quantity)}
+                  onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
+                  onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
+                />
+              </div>
             ))}
           </div>
         </div>
