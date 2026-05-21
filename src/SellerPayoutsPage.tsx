@@ -77,22 +77,24 @@ function formatDate(value: string | null) {
 }
 
 function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
-  if (!value || typeof value !== "object") return null;
+  if (value === null || value === undefined || typeof value !== "object") {
+    return null;
+  }
   const escrow = value as Record<string, unknown>;
+  const normalizeAmount = (input: unknown): number | string | null => {
+    if (input === null) return null;
+    if (input === undefined) return null;
+    if (typeof input === "number" || typeof input === "string") return input;
+    return null;
+  };
+  const readAmountField = (camelKey: string, snakeKey: string) => {
+    return normalizeAmount(escrow[camelKey] ?? escrow[snakeKey]);
+  };
   return {
-    amount:
-      escrow.amount ??
-      escrow.totalAmount ??
-      escrow.total_amount ??
-      escrow.gross_amount,
-    grossAmount:
-      escrow.grossAmount ?? escrow.gross_amount ?? escrow.totalAmount,
-    netAmount:
-      escrow.netAmount ??
-      escrow.net_amount ??
-      escrow.sellerAmount ??
-      escrow.seller_amount,
-    sellerAmount: escrow.sellerAmount ?? escrow.seller_amount,
+    amount: normalizeAmount(escrow.amount),
+    grossAmount: readAmountField("grossAmount", "gross_amount"),
+    netAmount: readAmountField("netAmount", "net_amount"),
+    sellerAmount: readAmountField("sellerAmount", "seller_amount"),
     status:
       typeof escrow.status === "string" ? escrow.status : undefined,
     state: typeof escrow.state === "string" ? escrow.state : undefined,
