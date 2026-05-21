@@ -58,7 +58,7 @@ export function getPayoutReconciliationSchedulerConfig(
   env: NodeJS.ProcessEnv = process.env,
 ): PayoutReconciliationSchedulerConfig {
   return {
-    enabled: parseBooleanEnv(env.PAYOUT_RECONCILIATION_WORKER_ENABLED, false),
+    enabled: parseBooleanEnv(env.PAYOUT_RECONCILIATION_WORKER_ENABLED, true),
     intervalMs: parsePositiveIntegerEnv(env.PAYOUT_RECONCILIATION_WORKER_INTERVAL_MS, DEFAULT_INTERVAL_MS, {
       min: MIN_INTERVAL_MS,
     }),
