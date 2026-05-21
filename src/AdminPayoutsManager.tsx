@@ -221,7 +221,7 @@ function canAction(row: PayoutRow, action: RowAction) {
   }
 
   if (action === "mark_paid") {
-    return !["paid", "cancelled"].includes(status);
+    return status === "held";
   }
 
   if (action === "mark_failed") {
