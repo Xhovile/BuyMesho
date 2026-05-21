@@ -140,7 +140,6 @@ export default function SellerPayoutsPage() {
     getPayoutPermissions(sellerId),
     getPayoutDestinations(sellerId),
     getPayoutHistory(sellerId),
-    fetchMyOrders(),
     fetchSellerEscrows(),
   ]);
       if (permissionsRes.status === "fulfilled") {
