@@ -135,14 +135,14 @@ export default function SellerPayoutsPage() {
     if (!sellerId) return;
     setLoading(true);
     try {
-      const [permissionsRes, destinationsRes, payoutsRes, ordersRes] =
-        await Promise.allSettled([
-          getPayoutPermissions(sellerId),
-          getPayoutDestinations(sellerId),
-          getPayoutHistory(sellerId),
-          fetchMyOrders(),
-        ]);
-
+      const [permissionsRes, destinationsRes, payoutsRes, escrowsRes] =
+  await Promise.allSettled([
+    getPayoutPermissions(sellerId),
+    getPayoutDestinations(sellerId),
+    getPayoutHistory(sellerId),
+    fetchMyOrders(),
+    fetchSellerEscrows(),
+  ]);
       if (permissionsRes.status === "fulfilled") {
         setPermissions(permissionsRes.value);
       } else {
