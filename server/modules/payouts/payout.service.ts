@@ -1369,7 +1369,7 @@ export class PayoutService {
     const from = existing.status;
     const allowedTransitions: Record<AdminOverrideAction, ReadonlySet<PayoutStatus>> = {
       hold: new Set(['eligible', 'queued', 'processing', 'pending', 'failed']),
-      mark_paid: new Set(['eligible', 'queued', 'processing', 'pending', 'failed', 'held']),
+      mark_paid: new Set(['held']),
       mark_failed: new Set(['eligible', 'queued', 'processing', 'pending', 'held']),
       cancel: new Set(['eligible', 'queued', 'failed', 'held']),
     };
