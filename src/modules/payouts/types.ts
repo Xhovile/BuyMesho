@@ -21,7 +21,7 @@ export type PayoutDestination = {
   updatedAt: string;
 };
 
-export type PayoutStatus = "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled";
+export type PayoutStatus = "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled" | "in_escrow";
 
 export type PayoutRecord = {
   id: string;
@@ -99,7 +99,6 @@ export type SellerFacingPayoutSummary = {
   title: string;
   detail: string;
 };
-
 
 export type PayoutProviderOption = {
   id: string;
