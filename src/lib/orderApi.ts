@@ -2,6 +2,18 @@ import { apiFetch } from "./api";
 import type { SellerOrderPayoutMetadata, SellerOrderPayoutStatus } from "../shared/types/payment";
 import { maskAccountLast4 } from "../modules/payouts/masking";
 
+export type SellerEscrowRecord = {
+  id: string;
+  orderId: string;
+  state?: string;
+  status?: string;
+  balanceAmount?: number;
+  totalAmount?: number;
+  currency?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type OrderBundle = {
   order: {
     id: string;
@@ -139,6 +151,10 @@ export async function fetchOrderById(idOrReference: string): Promise<OrderBundle
 
 export async function fetchMyOrders(): Promise<OrderBundle[]> {
   return apiFetch("/api/payments/orders/me") as Promise<OrderBundle[]>;
+}
+
+export async function fetchSellerEscrows(): Promise<SellerEscrowRecord[]> {
+  return apiFetch("/api/seller/escrows/me") as Promise<SellerEscrowRecord[]>;
 }
 
 export async function openOrderDispute(orderId: string, reason: string): Promise<Record<string, unknown>> {
