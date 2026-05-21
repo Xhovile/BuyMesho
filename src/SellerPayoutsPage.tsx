@@ -161,6 +161,23 @@ export default function SellerPayoutsPage() {
         setPayouts([]);
       }
 
+      if (escrowsRes.status === "fulfilled") {  
+        setEscrows(
+          escrowsRes.value.map((escrow) => ({
+            amount: Number(escrow.balanceAmount ?? 0),
+            grossAmount: Number(
+              escrow.totalAmount ?? escrow.balanceAmount ?? 0,
+            ),
+            netAmount: Number(escrow.balanceAmount ?? 0),
+            sellerAmount: Number(escrow.balanceAmount ?? 0),
+            state: String(escrow.state ?? escrow.status ?? "in_escrow"),
+            status: String(escrow.status ?? escrow.state ?? "in_escrow"),
+          })),
+        );
+      } else {
+        setEscrows([]);
+      }
+      
       if (ordersRes.status === "fulfilled") {
         const escrowRecords = ordersRes.value
           .map((bundle) => toEscrowSummaryRecord(bundle.escrow))
