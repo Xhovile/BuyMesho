@@ -32,7 +32,11 @@ import {
   replacePayoutDestination,
   updatePayoutDestination,
 } from "./modules/payouts/api";
-import { buildSellerEarningsSummary } from "./modules/payouts/summary";
+import {
+  buildSellerEarningsSummary,
+  type EscrowSummaryRecord,
+} from "./modules/payouts/summary";
+import { fetchMyOrders } from "./lib/orderApi";
 import type {
   PayoutDestination,
   PayoutDestinationFormState,
@@ -72,6 +76,29 @@ function formatDate(value: string | null) {
   return date.toLocaleString();
 }
 
+function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
+  if (!value || typeof value !== "object") return null;
+  const escrow = value as Record<string, unknown>;
+  return {
+    amount:
+      escrow.amount ??
+      escrow.totalAmount ??
+      escrow.total_amount ??
+      escrow.gross_amount,
+    grossAmount:
+      escrow.grossAmount ?? escrow.gross_amount ?? escrow.totalAmount,
+    netAmount:
+      escrow.netAmount ??
+      escrow.net_amount ??
+      escrow.sellerAmount ??
+      escrow.seller_amount,
+    sellerAmount: escrow.sellerAmount ?? escrow.seller_amount,
+    status:
+      typeof escrow.status === "string" ? escrow.status : undefined,
+    state: typeof escrow.state === "string" ? escrow.state : undefined,
+  };
+}
+
 export default function SellerPayoutsPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
   const [permissions, setPermissions] = useState<PayoutPermissions | null>(
@@ -79,6 +106,7 @@ export default function SellerPayoutsPage() {
   );
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
+  const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<
     string | null
   >(null);
@@ -103,11 +131,12 @@ export default function SellerPayoutsPage() {
     if (!sellerId) return;
     setLoading(true);
     try {
-      const [permissionsRes, destinationsRes, payoutsRes] =
+      const [permissionsRes, destinationsRes, payoutsRes, ordersRes] =
         await Promise.allSettled([
           getPayoutPermissions(sellerId),
           getPayoutDestinations(sellerId),
           getPayoutHistory(sellerId),
+          fetchMyOrders(),
         ]);
 
       if (permissionsRes.status === "fulfilled") {
@@ -127,6 +156,15 @@ export default function SellerPayoutsPage() {
       } else {
         setPayouts([]);
       }
+
+      if (ordersRes.status === "fulfilled") {
+        const escrowRecords = ordersRes.value
+          .map((bundle) => toEscrowSummaryRecord(bundle.escrow))
+          .filter((entry): entry is EscrowSummaryRecord => entry !== null);
+        setEscrows(escrowRecords);
+      } else {
+        setEscrows([]);
+      }
     } catch (error) {
       setNotice({
         type: "error",
@@ -145,8 +183,8 @@ export default function SellerPayoutsPage() {
   }, [sellerId, loadData]);
 
   const earningsSummary = useMemo(
-    () => buildSellerEarningsSummary({ payouts, destinations }),
-    [payouts, destinations],
+    () => buildSellerEarningsSummary({ payouts, escrows, destinations }),
+    [payouts, escrows, destinations],
   );
 
   const summary = useMemo<PayoutSummary>(
