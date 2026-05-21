@@ -110,6 +110,7 @@ export default function SellerPayoutsPage() {
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
+  const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<
     string | null
   >(null);
