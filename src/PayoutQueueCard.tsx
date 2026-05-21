@@ -118,7 +118,7 @@ export default function PayoutQueueCard({
             </button>
           ) : null}
 
-          {visibleActions.includes("mark_paid") ? (
+           {visibleActions.includes("mark_paid") && row.status === "held" ? (
             <button
               type="button"
               disabled={busy || !canAction(row, "mark_paid")}
@@ -126,7 +126,7 @@ export default function PayoutQueueCard({
               className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wallet className="h-4 w-4" />}
-              Mark paid
+              Comfirm as Paid
             </button>
           ) : null}
 
