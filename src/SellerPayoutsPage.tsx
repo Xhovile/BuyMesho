@@ -36,6 +36,7 @@ import {
   buildSellerEarningsSummary,
   type EscrowSummaryRecord,
 } from "./modules/payouts/summary";
+import { fetchSellerEscrows } from "./lib/orderApi";
 import { fetchMyOrders } from "./lib/orderApi";
 import type {
   PayoutDestination,
