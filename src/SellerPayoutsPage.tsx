@@ -37,7 +37,6 @@ import {
   type EscrowSummaryRecord,
 } from "./modules/payouts/summary";
 import { fetchSellerEscrows } from "./lib/orderApi";
-import { fetchMyOrders } from "./lib/orderApi";
 import type {
   PayoutDestination,
   PayoutDestinationFormState,
@@ -108,7 +107,6 @@ export default function SellerPayoutsPage() {
     null,
   );
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
-  const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
   const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<
     string | null
