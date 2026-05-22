@@ -160,9 +160,11 @@ export default function SellerPayoutsPage() {
   const sellerId = firebaseUser?.uid || profile?.uid || "";
   const isSeller = !!profile?.is_seller;
 
-const loadData = useCallback(async () => {
+const loadData = useCallback(async (options?: { silent?: boolean }) => {
   if (!sellerId) return;
-  setLoading(true);
+  if (!options?.silent) {
+    setLoading(true);
+  }
   try {
     const [permissionsRes, destinationsRes, payoutsRes, escrowsRes] =
       await Promise.allSettled([
@@ -205,7 +207,9 @@ const loadData = useCallback(async () => {
         error instanceof Error ? error.message : "Failed to load payout data",
     });
   } finally {
-    setLoading(false);
+    if (!options?.silent) {
+      setLoading(false);
+    }
     setRefreshing(false);
   }
 }, [sellerId]);
@@ -220,18 +224,23 @@ useEffect(() => {
     [payouts, escrows, destinations],
   );
 
+  const activeDestinations = useMemo(
+    () => destinations.filter((item) => item.isActive),
+    [destinations],
+  );
+
   const summary = useMemo<PayoutSummary>(
     () => ({
-      activeDestinations: destinations.filter((item) => item.isActive).length,
+      activeDestinations: activeDestinations.length,
       defaultDestination:
-        destinations.find((item) => item.isDefault && item.isActive) || null,
+        activeDestinations.find((item) => item.isDefault) || null,
       total: earningsSummary.lifetimeSales,
       paid: earningsSummary.paidOut,
       pending:
         earningsSummary.availableForPayout + earningsSummary.pendingPayout,
       failed: earningsSummary.failedActionRequired,
     }),
-    [destinations, earningsSummary],
+    [activeDestinations, earningsSummary],
   );
 
   const startEdit = (destination: PayoutDestination) => {
@@ -329,7 +338,7 @@ useEffect(() => {
           : "Payout destination saved.",
       });
       resetForm();
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to save destination";
@@ -349,7 +358,7 @@ useEffect(() => {
         type: "success",
         message: `${destination.providerName} is now your default payout destination.`,
       });
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       setNotice({
         type: "error",
@@ -366,9 +375,6 @@ useEffect(() => {
   const handleRemoveDestination = (destination: PayoutDestination) => {
     if (destination.isDefault) {
       startEdit(destination);
-      document
-        .getElementById("payout-destination-settings")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
       setNotice({
         type: "info",
         message:
@@ -395,7 +401,7 @@ useEffect(() => {
         resetForm();
       }
       setRemoveTarget(null);
-      await loadData();
+      await loadData({ silent: true });
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to remove destination";
@@ -407,7 +413,7 @@ useEffect(() => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadData();
+    await loadData({ silent: true });
   };
 
   if (profileLoading || loading) {
@@ -450,7 +456,6 @@ useEffect(() => {
     );
   }
 
-  const activeDestinations = destinations.filter((item) => item.isActive);
   const canEditSettings = permissions?.editPayoutSettings !== false;
   const canViewHistory = permissions?.viewPayoutHistory !== false;
 
@@ -633,12 +638,12 @@ useEffect(() => {
 
             <div className="mt-5 overflow-x-auto">
               <div className="flex min-w-max gap-3 pb-2">
-                {destinations.length === 0 ? (
+                {activeDestinations.length === 0 ? (
                   <div className="min-w-[320px] rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
                     No payout destination yet.
                   </div>
                 ) : (
-                  destinations.map((destination) => (
+                  activeDestinations.map((destination) => (
                     <PayoutDestinationCard
                       key={destination.id}
                       destination={destination}
