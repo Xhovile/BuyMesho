@@ -80,21 +80,52 @@ function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
   if (value === null || value === undefined || typeof value !== "object") {
     return null;
   }
+
   const escrow = value as Record<string, unknown>;
+
   const normalizeAmount = (input: unknown): number | string | null => {
     if (input === null) return null;
     if (input === undefined) return null;
     if (typeof input === "number" || typeof input === "string") return input;
     return null;
   };
-  const readAmountField = (camelKey: string, snakeKey: string) => {
-    return normalizeAmount(escrow[camelKey] ?? escrow[snakeKey]);
+
+  const readAmountField = (...keys: string[]) => {
+    for (const key of keys) {
+      const value = normalizeAmount(escrow[key]);
+      if (value !== null) return value;
+    }
+    return null;
   };
+
   return {
-    amount: normalizeAmount(escrow.amount),
-    grossAmount: readAmountField("grossAmount", "gross_amount"),
-    netAmount: readAmountField("netAmount", "net_amount"),
-    sellerAmount: readAmountField("sellerAmount", "seller_amount"),
+    amount: readAmountField(
+      "amount",
+      "balanceAmount",
+      "balance_amount",
+      "totalAmount",
+      "total_amount",
+    ),
+    grossAmount: readAmountField(
+      "grossAmount",
+      "gross_amount",
+      "totalAmount",
+      "total_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
+    netAmount: readAmountField(
+      "netAmount",
+      "net_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
+    sellerAmount: readAmountField(
+      "sellerAmount",
+      "seller_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
     status:
       typeof escrow.status === "string" ? escrow.status : undefined,
     state: typeof escrow.state === "string" ? escrow.state : undefined,
@@ -107,6 +138,7 @@ export default function SellerPayoutsPage() {
     null,
   );
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
   const [selectedDestinationId, setSelectedDestinationId] = useState<
     string | null
@@ -128,39 +160,60 @@ export default function SellerPayoutsPage() {
   const sellerId = firebaseUser?.uid || profile?.uid || "";
   const isSeller = !!profile?.is_seller;
 
-  const loadData = useCallback(async () => {
-    if (!sellerId) return;
-    setLoading(true);
-    try {
-      const [permissionsRes, destinationsRes, payoutsRes, escrowsRes] =
-  await Promise.allSettled([
-    getPayoutPermissions(sellerId),
-    getPayoutDestinations(sellerId),
-    getPayoutHistory(sellerId),
-    fetchSellerEscrows(),
-  ]);
-      if (permissionsRes.status === "fulfilled") {
-        setPermissions(permissionsRes.value);
-      } else {
-        setPermissions(null);
-      }
+const loadData = useCallback(async () => {
+  if (!sellerId) return;
+  setLoading(true);
+  try {
+    const [permissionsRes, destinationsRes, payoutsRes, escrowsRes] =
+      await Promise.allSettled([
+        getPayoutPermissions(sellerId),
+        getPayoutDestinations(sellerId),
+        getPayoutHistory(sellerId),
+        fetchSellerEscrows(),
+      ]);
 
-      if (destinationsRes.status === "fulfilled") {
-        setDestinations(destinationsRes.value);
-      } else {
-        setDestinations([]);
-      }
+    if (permissionsRes.status === "fulfilled") {
+      setPermissions(permissionsRes.value);
+    } else {
+      setPermissions(null);
+    }
 
-      if (payoutsRes.status === "fulfilled") {
-        setPayouts(payoutsRes.value);
-      } else {
-        setPayouts([]);
-      }
+    if (destinationsRes.status === "fulfilled") {
+      setDestinations(destinationsRes.value);
+    } else {
+      setDestinations([]);
+    }
 
-  useEffect(() => {
-    if (!sellerId) return;
-    void loadData();
-  }, [sellerId, loadData]);
+    if (payoutsRes.status === "fulfilled") {
+      setPayouts(payoutsRes.value);
+    } else {
+      setPayouts([]);
+    }
+
+    if (escrowsRes.status === "fulfilled") {
+      const escrowRecords = escrowsRes.value
+        .map((entry) => toEscrowSummaryRecord(entry))
+        .filter((entry): entry is EscrowSummaryRecord => entry !== null);
+      setEscrows(escrowRecords);
+    } else {
+      setEscrows([]);
+    }
+  } catch (error) {
+    setNotice({
+      type: "error",
+      message:
+        error instanceof Error ? error.message : "Failed to load payout data",
+    });
+  } finally {
+    setLoading(false);
+    setRefreshing(false);
+  }
+}, [sellerId]);
+
+useEffect(() => {
+  if (!sellerId) return;
+  void loadData();
+}, [sellerId, loadData]);
 
   const earningsSummary = useMemo(
     () => buildSellerEarningsSummary({ payouts, escrows, destinations }),
