@@ -507,6 +507,34 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
             active: nextActive === 1,
           },
         });
+
+ if (status === 'verified') {
+  db.prepare(
+    `INSERT INTO admin_actions (
+      admin_uid,
+      admin_email,
+      action_type,
+      target_type,
+      target_id,
+      details,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    actorId,
+    req.user?.email ?? null,
+    ADMIN_ACTION_TYPES.APPROVE_PAYOUT_DESTINATION,
+    ADMIN_TARGET_TYPES.PAYOUT_DESTINATION,
+    destinationId,
+    JSON.stringify({
+      sellerId: destination.seller_uid,
+      previousStatus: destination.verification_status,
+      nextStatus: status,
+      verificationAttempts: nextAttempts,
+      reason,
+    }),
+    now,
+  );
+}
       })();
 
       const updated = db.prepare(
