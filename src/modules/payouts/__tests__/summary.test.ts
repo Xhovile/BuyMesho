@@ -91,3 +91,12 @@ test("buildSellerEarningsSummary supports snake_case backend totals as authorita
   assert.equal(summary.pendingPayout, 300);
   assert.equal(summary.paidOut, 4700);
 });
+
+test("buildSellerEarningsSummary counts in_escrow rows as active escrow", () => {
+  const summary = buildSellerEarningsSummary({
+    escrows: [{ state: "in_escrow", balanceAmount: 1250 }],
+  });
+
+  assert.equal(summary.inEscrow, 1250);
+  assert.equal(summary.lifetimeSales, 1250);
+});

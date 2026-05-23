@@ -16,20 +16,20 @@ export function createSellerEscrowRouter(requireAuth: RequestHandler) {
 
       const escrows = db.prepare(`
         SELECT
-          e.id,
+          COALESCE(e.id, o.id) as id,
           e.order_id as orderId,
-          e.state,
-          e.status,
-          e.balance_amount as balanceAmount,
-          e.total_amount as totalAmount,
-          e.currency,
-          e.created_at as createdAt,
-          e.updated_at as updatedAt
-        FROM escrows e
-        INNER JOIN orders o ON o.id = e.order_id
+          COALESCE(e.state, o.status) as state,
+          COALESCE(e.status, o.status) as status,
+          COALESCE(e.balance_amount, o.total_amount) as balanceAmount,
+          COALESCE(e.total_amount, o.total_amount) as totalAmount,
+          COALESCE(e.currency, o.total_currency) as currency,
+          COALESCE(e.created_at, o.created_at) as createdAt,
+          COALESCE(e.updated_at, o.updated_at) as updatedAt
+        FROM orders o
+        LEFT JOIN escrows e ON e.order_id = o.id
         WHERE o.seller_id = ?
-          AND LOWER(COALESCE(e.state, '')) NOT IN ('released', 'refunded', 'closed')
-        ORDER BY e.created_at DESC
+          AND LOWER(COALESCE(e.state, o.status, '')) IN ('initiated', 'funded', 'held', 'disputed', 'in_escrow')
+        ORDER BY COALESCE(e.updated_at, o.updated_at) DESC
       `).all(sellerId);
 
       return res.status(200).json(escrows);

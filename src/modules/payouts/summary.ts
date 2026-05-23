@@ -1,6 +1,11 @@
 import type { PayoutRecord, PayoutStatus } from "./types";
 import { ESCROW_ACTIVE_STATES } from "../escrow/states";
 
+const SELLER_ESCROW_ACTIVE_STATES = new Set([
+  ...ESCROW_ACTIVE_STATES,
+  "in_escrow",
+]);
+
 export type SellerEarningsBucketKey =
   | "lifetimeSales"
   | "inEscrow"
@@ -127,7 +132,7 @@ function addEscrowBuckets(
 ) {
   for (const escrow of escrows) {
     const state = String(escrow.state ?? escrow.status ?? "").toLowerCase();
-    if (ESCROW_ACTIVE_STATES.includes(state as (typeof ESCROW_ACTIVE_STATES)[number])) {
+    if (SELLER_ESCROW_ACTIVE_STATES.has(state)) {
       const value = escrowAmount(escrow);
       summary.inEscrow += value;
       summary.lifetimeSales += value;
