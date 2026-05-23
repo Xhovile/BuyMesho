@@ -45,6 +45,20 @@ function seedPayout(id: string, status: string): void {
   ).run(id, sellerId, 1500, 'MWK', status, 'seed', stamp, stamp, stamp);
 }
 
+function seedProviderAttemptMetadata(id: string): void {
+  const db = getPaymentDb();
+  const stamp = now();
+  db.prepare(
+    `UPDATE payouts
+       SET provider_charge_id = ?,
+           last_attempt_id = ?,
+           provider = 'paychangu',
+           provider_status = 'processing',
+           updated_at = ?
+     WHERE id = ?`,
+  ).run(`${id}-A01`, `${id}-attempt-1`, stamp, id);
+}
+
 async function callOverride(
   app: express.Express,
   payload: Record<string, unknown>,
@@ -114,6 +128,9 @@ test('each override action updates state and emits one audit event with actor', 
 
   for (const testCase of cases) {
     seedPayout(testCase.payoutId, testCase.start);
+    if (testCase.action === 'mark_paid') {
+      seedProviderAttemptMetadata(testCase.payoutId);
+    }
     const result = await callOverride(createPayoutApp('admin-override-actor', true), {
       payoutId: testCase.payoutId,
       action: testCase.action,
