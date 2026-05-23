@@ -4,6 +4,7 @@ import {
   Banknote,
   Clock3,
   Landmark,
+  ShieldAlert,
   type LucideIcon,
   Wallet,
 } from "lucide-react";
@@ -24,6 +25,13 @@ type SummaryCard = {
   label: string;
   helper: string;
   tone: string;
+  icon: LucideIcon;
+};
+
+type SummaryNotice = {
+  tone: "red" | "amber" | "emerald";
+  title: string;
+  message: string;
   icon: LucideIcon;
 };
 
@@ -72,11 +80,57 @@ const CARDS: SummaryCard[] = [
   },
 ];
 
+function getSummaryNotice(summary: SellerEarningsSummaryModel): SummaryNotice | null {
+  if (summary.hasFailedPayout) {
+    return {
+      tone: "red",
+      title: "Failed payout needs action",
+      message:
+        "One or more payouts failed. Review your payout destination or retry after admin guidance.",
+      icon: AlertTriangle,
+    };
+  }
+
+  if (summary.hasHeldPayout) {
+    return {
+      tone: "amber",
+      title: "Payout held for review",
+      message:
+        "One or more payouts are currently held while they are reviewed.",
+      icon: ShieldAlert,
+    };
+  }
+
+  if (summary.hasMissingDestination) {
+    return {
+      tone: "emerald",
+      title: "Add a payout destination",
+      message:
+        "Set a default mobile money or bank destination so released funds can be paid out.",
+      icon: Wallet,
+    };
+  }
+
+  if (summary.hasUnverifiedDestination) {
+    return {
+      tone: "amber",
+      title: "Payout destination not verified",
+      message:
+        "Your active payout destination must be verified before available funds can move out.",
+      icon: ShieldAlert,
+    };
+  }
+
+  return null;
+}
+
 export default function SellerEarningsSummary({
   summary,
   className = "",
   compact = false,
 }: SellerEarningsSummaryProps) {
+  const notice = getSummaryNotice(summary);
+
   return (
     <div className={className}>
       <div
@@ -92,6 +146,28 @@ export default function SellerEarningsSummary({
           />
         ))}
       </div>
+
+      {notice ? (
+        <div
+          className={`mt-4 flex items-start gap-3 rounded-[1.5rem] border p-4 ${
+            notice.tone === "red"
+              ? "border-red-200 bg-red-50 text-red-900"
+              : notice.tone === "amber"
+                ? "border-amber-200 bg-amber-50 text-amber-900"
+                : "border-emerald-200 bg-emerald-50 text-emerald-900"
+          }`}
+        >
+          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/80">
+            <notice.icon className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="text-sm font-black">{notice.title}</p>
+            <p className="mt-1 text-xs font-semibold leading-5 opacity-85 sm:text-sm">
+              {notice.message}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -119,7 +195,8 @@ function SellerEarningsSummaryCard({
             {card.label}
           </p>
           <p
-            className={`${compact ? "text-base" : "text-xl"} mt-1 truncate font-black tracking-tight text-zinc-900`}
+            className={`${compact ? "text-base" : "text-xl"} mt-1 whitespace-nowrap font-black tabular-nums tracking-tight text-zinc-900`}
+            aria-label={`${card.label}: ${formatSellerEarningsAmount(value, currency)}`}
           >
             {formatSellerEarningsAmount(value, currency)}
           </p>
