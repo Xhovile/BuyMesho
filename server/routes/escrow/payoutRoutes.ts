@@ -941,39 +941,28 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
         return res.status(404).json({ error: 'Payout destination not found' });
       }
       assertEditSettingsAccess(req, existing.seller_uid);
-      const isDefaultDestination = existing.is_default === 1;
-      if (isDefaultDestination) {
+
+      if (existing.is_default === 1) {
         return res.status(409).json({
           error: 'Default payout destination cannot be removed. Replace it instead.',
         });
       }
 
-      const now = new Date().toISOString();
       const db = getPaymentDb();
-      db.prepare(
-        `UPDATE seller_payout_accounts
-         SET is_active = 0,
-             is_default = 0,
-             updated_at = ?
-         WHERE id = ?`,
-      ).run(now, existing.id);
+      db.transaction(() => {
+        db.prepare(
+          `DELETE FROM seller_payout_account_events
+           WHERE account_id = ?`,
+        ).run(existing.id);
 
-      const updated = findDestinationById(existing.id);
-      if (!updated) {
-        throw new Error('Failed to remove payout destination');
-      }
-
-      addDestinationEvent({
-        sellerId: existing.seller_uid,
-        accountId: existing.id,
-        eventType: 'destination_removed',
-        actorType: req.user?.is_admin ? 'admin' : 'seller',
-        actorId: req.user?.uid ?? null,
-        payload: { providerName: existing.provider_name },
-      });
+        db.prepare(
+          `DELETE FROM seller_payout_accounts
+           WHERE id = ?`,
+        ).run(existing.id);
+      })();
 
       return res.json({
-        destination: rowToSellerPayoutDestination(updated),
+        deletedDestinationId: existing.id,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove payout destination';
