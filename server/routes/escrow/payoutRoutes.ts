@@ -671,6 +671,7 @@ function updateDestinationRecord(
     : maskValue(normalizeMobileNumber(mobile));
 
   const isDefault = updates.isDefault ?? existing.is_default === 1;
+  const shouldResetVerification = fingerprint !== existing.destination_fingerprint;
 
   db.transaction(() => {
     if (isDefault) {
@@ -693,10 +694,10 @@ function updateDestinationRecord(
            masked_account = ?,
            destination_fingerprint = ?,
            is_default = ?,
-           verification_status = 'pending',
-           verification_attempts = 0,
-           last_error = NULL,
-           verified_at = NULL,
+           verification_status = ?,
+           verification_attempts = ?,
+           last_error = ?,
+           verified_at = ?,
            updated_at = ?
        WHERE id = ?`,
     ).run(
@@ -710,6 +711,10 @@ function updateDestinationRecord(
       maskedAccount,
       fingerprint,
       isDefault ? 1 : 0,
+      shouldResetVerification ? 'pending' : existing.verification_status,
+      shouldResetVerification ? 0 : existing.verification_attempts,
+      shouldResetVerification ? null : existing.last_error,
+      shouldResetVerification ? null : existing.verified_at,
       now,
       existing.id,
     );
