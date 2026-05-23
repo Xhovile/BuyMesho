@@ -180,6 +180,7 @@ const loadData = useCallback(async (options?: { silent?: boolean }) => {
         getPayoutDestinations(sellerId),
         getPayoutHistory(sellerId),
         fetchSellerEscrows(),
+        getPayoutProviderMetadata(),
       ]);
 
     if (permissionsRes.status === "fulfilled") {
@@ -192,6 +193,10 @@ const loadData = useCallback(async (options?: { silent?: boolean }) => {
       setDestinations(destinationsRes.value);
     } else {
       setDestinations([]);
+    }
+
+    if (providerMetadataRes.status === "fulfilled") {
+      setProviderMetadata(providerMetadataRes.value);
     }
 
     if (payoutsRes.status === "fulfilled") {
