@@ -31,6 +31,7 @@ import {
   getPayoutPermissions,
   replacePayoutDestination,
   updatePayoutDestination,
+  getPayoutProviderMetadata,
 } from "./modules/payouts/api";
 import {
   buildSellerEarningsSummary,
@@ -39,6 +40,7 @@ import {
 import { fetchSellerEscrows } from "./lib/orderApi";
 import type {
   PayoutDestination,
+  PayoutProviderMetadata,
   PayoutDestinationFormState,
   PayoutPermissions,
   PayoutRecord,
