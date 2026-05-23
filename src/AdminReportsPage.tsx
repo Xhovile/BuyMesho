@@ -130,6 +130,10 @@ function MessageReportCard({
   onResolve: () => void;
   resolving: boolean;
 }) {
+  const buyerLabel = report.buyer_business_name || report.buyer_uid || "Unknown buyer";
+  const sellerLabel = report.seller_business_name || report.seller_uid || "Unknown seller";
+  const listingLabel = report.listing_name || "Unknown listing";
+
   return (
     <div className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -168,10 +172,28 @@ function MessageReportCard({
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Conversation</p>
               <p className="text-zinc-800">{report.conversation_id ?? "Unknown conversation"}</p>
             </div>
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Buyer</p>
+              <p className="text-zinc-800 break-all">{buyerLabel}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller</p>
+              <p className="text-zinc-800 break-all">{sellerLabel}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Listing</p>
+              <p className="text-zinc-800">{listingLabel}</p>
+            </div>
             {report.message_id ? (
               <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
                 <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Message</p>
                 <p className="text-zinc-800">Message #{report.message_id}</p>
+              </div>
+            ) : null}
+            {report.message_body ? (
+              <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+                <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reported Message</p>
+                <p className="text-zinc-800 whitespace-pre-wrap break-words">{report.message_body}</p>
               </div>
             ) : null}
           </div>

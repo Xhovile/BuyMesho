@@ -301,4 +301,10 @@ export interface MessageReport {
   status: "open" | "reviewed" | "resolved";
   created_at: string;
   updated_at?: string;
+  message_body?: string | null;
+  listing_name?: string | null;
+  seller_business_name?: string | null;
+  buyer_business_name?: string | null;
+  buyer_uid?: string | null;
+  seller_uid?: string | null;
 }
