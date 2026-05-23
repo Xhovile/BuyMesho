@@ -303,6 +303,13 @@ useEffect(() => {
       return;
     }
 
+    if (!form.providerRefId.trim()) {
+      const message = "Please select a supported payout provider from the list.";
+      setDestinationFormError(message);
+      setNotice({ type: "info", message });
+      return;
+    }
+    
     if (form.destinationType === "bank" && !form.accountNumber.trim()) {
       const message = "Bank account number is required.";
       setDestinationFormError(message);
