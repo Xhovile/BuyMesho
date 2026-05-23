@@ -232,6 +232,26 @@ useEffect(() => {
   void loadData();
 }, [sellerId, loadData]);
 
+useEffect(() => {
+  if (!sellerId) return;
+
+  const refreshData = () => {
+    if (document.visibilityState !== "visible") return;
+    void loadData({ silent: true });
+  };
+
+  window.addEventListener("focus", refreshData);
+  document.addEventListener("visibilitychange", refreshData);
+
+  const interval = window.setInterval(refreshData, 30000);
+
+  return () => {
+    window.removeEventListener("focus", refreshData);
+    document.removeEventListener("visibilitychange", refreshData);
+    window.clearInterval(interval);
+  };
+}, [sellerId, loadData]);
+
   const earningsSummary = useMemo(
     () => buildSellerEarningsSummary({ payouts, escrows, destinations }),
     [payouts, escrows, destinations],
