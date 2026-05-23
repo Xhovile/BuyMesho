@@ -401,6 +401,8 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 }
 
 export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
+  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
+  app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
   app.use('/api/payments', createPaymentRouter(requireAuth));
 }
 
@@ -408,4 +410,5 @@ export const paychanguRoutes = {
   initialize: PAYMENT_ENDPOINTS.paychangu.initialize,
   verify: PAYMENT_ENDPOINTS.paychangu.verify,
   webhook: PAYMENT_ENDPOINTS.paychangu.webhook,
+  payoutWebhook: PAYMENT_ENDPOINTS.paychangu.payoutWebhook,
 } as const;

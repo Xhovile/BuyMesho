@@ -212,3 +212,51 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     resetPayChanguEnv();
   }
 });
+
+
+test('PayChangu mobile money payout fails fast when routing ID is missing', async () => {
+  useDefaultPayChanguEnv();
+  const requests = mockPayChanguFetch({ status: 'success' });
+
+  await assert.rejects(
+    executePayChanguPayout({
+      payoutId: 'mobile-missing-route',
+      sellerId: 'seller-mobile-missing-route',
+      amount: 1250,
+      currency: 'MWK',
+      providerName: 'Airtel Money',
+      destinationReference: '0990000000',
+      attemptNo: 1,
+      destinationType: 'mobile_money',
+      mobile: '0990000000',
+    }),
+    /requires mobileMoneyOperatorRefId/,
+  );
+
+  assert.equal(requests.length, 0);
+  resetPayChanguEnv();
+});
+
+test('PayChangu bank payout fails fast when bank UUID is missing', async () => {
+  useDefaultPayChanguEnv();
+  const requests = mockPayChanguFetch({ status: 'success' });
+
+  await assert.rejects(
+    executePayChanguPayout({
+      payoutId: 'bank-missing-route',
+      sellerId: 'seller-bank-missing-route',
+      amount: 10000,
+      currency: 'MWK',
+      providerName: 'National Bank',
+      destinationReference: '1001000010',
+      attemptNo: 1,
+      destinationType: 'bank',
+      bankAccountName: 'Test',
+      bankAccountNumber: '1001000010',
+    }),
+    /requires bankUuid/,
+  );
+
+  assert.equal(requests.length, 0);
+  resetPayChanguEnv();
+});

@@ -384,7 +384,7 @@ async function getJson(
 function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerChargeId: string): Record<string, unknown> {
   return {
     mobile: input.mobile ?? input.destinationReference,
-    mobile_money_operator_ref_id: input.mobileMoneyOperatorRefId ?? input.providerName,
+    mobile_money_operator_ref_id: input.mobileMoneyOperatorRefId,
     amount: String(input.amount),
     charge_id: providerChargeId,
     email: input.email,
@@ -396,7 +396,7 @@ function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerCharge
 function buildBankBody(input: ExecutePayChanguPayoutInput, providerChargeId: string): Record<string, unknown> {
   return {
     payout_method: 'bank_transfer',
-    bank_uuid: input.bankUuid ?? input.providerName,
+    bank_uuid: input.bankUuid,
     amount: String(input.amount),
     charge_id: providerChargeId,
     bank_account_name: input.bankAccountName ?? input.firstName ?? input.providerName,
@@ -546,6 +546,14 @@ export async function executePayChanguPayout(
     input.destinationType !== 'bank'
   ) {
     throw new Error(`Unsupported payout destination type: ${input.destinationType}`);
+  }
+
+  if (input.destinationType === 'mobile_money' && !input.mobileMoneyOperatorRefId) {
+    throw new Error('PayChangu mobile money payout requires mobileMoneyOperatorRefId');
+  }
+
+  if (input.destinationType === 'bank' && !input.bankUuid) {
+    throw new Error('PayChangu bank payout requires bankUuid');
   }
 
   return executeStructuredPayChanguPayout(input, resolved);

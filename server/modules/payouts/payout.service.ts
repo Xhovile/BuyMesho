@@ -771,6 +771,15 @@ export class PayoutService {
       };
     }
 
+    const destinationProviderRefId = ((row.destination_provider_ref_id as string | null) ?? '').trim();
+    if (!destinationProviderRefId) {
+      return {
+        allowed: false,
+        reasonCode: 'destination_incomplete',
+        reason: 'Destination routing details are incomplete',
+      };
+    }
+
     return {
       allowed: true,
       sellerId: row.seller_id as string,
@@ -779,7 +788,7 @@ export class PayoutService {
       provider: (row.provider as string | null) ?? 'paychangu',
       destinationType: row.destination_type as 'bank' | 'mobile_money',
       destinationValue,
-      destinationProviderRefId: (row.destination_provider_ref_id as string | null) ?? null,
+      destinationProviderRefId,
       destinationProviderName: (row.destination_provider_name as string | null) ?? null,
       destinationAccountName: (row.destination_account_name as string | null) ?? null,
       currentFailureReason: (row.failure_reason as string | null) ?? null,
@@ -974,7 +983,7 @@ export class PayoutService {
       sellerId: gate.sellerId,
       amount: gate.amount,
       currency: gate.currency,
-      providerName: gate.destinationProviderName ?? gate.provider,
+      providerName: gate.provider,
       destinationReference: gate.destinationValue ?? input.destinationReference ?? input.payoutId,
       attemptNo,
       destinationType: gate.destinationType,
