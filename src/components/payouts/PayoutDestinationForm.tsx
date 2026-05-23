@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { Loader2, Save, ShieldCheck, Trash2 } from "lucide-react";
 import FormDropdown from "../FormDropdown";
+import type { PayoutProviderOption } from "../../modules/payouts/types";
 
 export type PayoutDestinationType = "mobile_money" | "bank";
 
@@ -24,21 +26,44 @@ type PayoutDestinationFormProps = {
   disabled?: boolean;
   isEditing?: boolean;
   activeDestinationCount?: number;
+  providerOptions?: PayoutProviderOption[];
 };
 
-const BANK_OPTIONS = [
-  "CDH INVESTMENT BANK",
-  "ECOBANK",
-  "FDH BANK",
-  "FIRST CAPITAL BANK",
-  "NATIONAL BANK OF MALAWI",
-  "NBS BANK",
-  "NEDBANK",
-  "STANDARD BANK",
-  "MALAWI NEW FINANCE BANK MALAWI",
-] as const;
+const FALLBACK_BANK_OPTIONS: PayoutProviderOption[] = [
+  {
+    id: "82310dd1-ec9b-4fe7-a32c-2f262ef08681",
+    name: "National Bank of Malawi",
+    destinationType: "bank",
+    providerRefId: "82310dd1-ec9b-4fe7-a32c-2f262ef08681",
+  },
+  {
+    id: "b064172a-8a1b-4f7f-aad7-81b036c46c57",
+    name: "FDH Bank Limited",
+    destinationType: "bank",
+    providerRefId: "b064172a-8a1b-4f7f-aad7-81b036c46c57",
+  },
+  {
+    id: "e7447c2c-c147-4907-b194-e087fe8d8585",
+    name: "Standard Bank Limited",
+    destinationType: "bank",
+    providerRefId: "e7447c2c-c147-4907-b194-e087fe8d8585",
+  },
+];
 
-const MOBILE_OPERATOR_OPTIONS = ["Airtel", "TNM"] as const;
+const FALLBACK_MOBILE_OPTIONS: PayoutProviderOption[] = [
+  {
+    id: "e8d5fca0-e5ac-4714-a518-484be9011326",
+    name: "Airtel Money",
+    destinationType: "mobile_money",
+    providerRefId: "e8d5fca0-e5ac-4714-a518-484be9011326",
+  },
+  {
+    id: "5e9946ae-76ed-43f5-ad59-63e09096006a",
+    name: "TNM Mpamba",
+    destinationType: "mobile_money",
+    providerRefId: "5e9946ae-76ed-43f5-ad59-63e09096006a",
+  },
+];
 
 export default function PayoutDestinationForm({
   value,
@@ -50,10 +75,27 @@ export default function PayoutDestinationForm({
   disabled = false,
   isEditing = false,
   activeDestinationCount,
+  providerOptions = [],
 }: PayoutDestinationFormProps) {
   const updateValue = <Key extends keyof PayoutDestinationFormValue>(key: Key, nextValue: PayoutDestinationFormValue[Key]) => {
     onChange({ ...value, [key]: nextValue });
   };
+
+  const availableProviders = useMemo(() => {
+    const filtered = providerOptions.filter(
+      (option) => option.destinationType === value.destinationType,
+    );
+
+    if (filtered.length > 0) {
+      return filtered;
+    }
+
+    return value.destinationType === "bank"
+      ? FALLBACK_BANK_OPTIONS
+      : FALLBACK_MOBILE_OPTIONS;
+  }, [providerOptions, value.destinationType]);
+
+  const dropdownValue = value.providerRefId || value.providerName;
 
   return (
     <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
@@ -62,7 +104,7 @@ export default function PayoutDestinationForm({
           <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Payout setup</p>
           <h2 className="mt-2 text-2xl font-black tracking-tight">Add or update your payout destination.</h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Choose mobile money or bank, then store the payout destination securely on the server.
+            Choose a PayChangu-supported payout destination. Real provider identifiers are stored securely on the server.
           </p>
         </div>
         {activeDestinationCount !== undefined ? (
@@ -84,7 +126,14 @@ export default function PayoutDestinationForm({
           <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Destination type</span>
           <select
             value={value.destinationType}
-            onChange={(event) => updateValue("destinationType", event.target.value as PayoutDestinationType)}
+            onChange={(event) =>
+              onChange({
+                ...value,
+                destinationType: event.target.value as PayoutDestinationType,
+                providerName: "",
+                providerRefId: "",
+              })
+            }
             className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
             disabled={loading || disabled}
             required
@@ -96,23 +145,37 @@ export default function PayoutDestinationForm({
 
         <FormDropdown
           label={value.destinationType === "bank" ? "Bank" : "Mobile operator"}
-          value={value.providerName}
-          onChange={(nextProviderName) => updateValue("providerName", nextProviderName)}
-          options={value.destinationType === "bank" ? BANK_OPTIONS : MOBILE_OPERATOR_OPTIONS}
+          value={dropdownValue}
+          onChange={(selectedProviderId) => {
+            const selected = availableProviders.find(
+              (option) => option.id === selectedProviderId,
+            );
+
+            if (!selected) return;
+
+            onChange({
+              ...value,
+              providerName: selected.name,
+              providerRefId: selected.providerRefId || selected.id,
+            });
+          }}
+          options={availableProviders.map((option) => ({
+            value: option.id,
+            label: option.name,
+          }))}
           placeholder={value.destinationType === "bank" ? "Select bank" : "Select mobile operator"}
-          searchPlaceholder="Search bank..."
-          searchable={value.destinationType === "bank"}
+          searchPlaceholder="Search provider..."
+          searchable
           disabled={loading || disabled}
         />
 
         <label className="space-y-2">
-          <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider ref ID</span>
+          <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-400">Provider identifier</span>
           <input
             value={value.providerRefId}
-            onChange={(event) => updateValue("providerRefId", event.target.value)}
-            className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-            placeholder="Optional provider reference"
-            disabled={loading || disabled}
+            readOnly
+            className="w-full rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-3 text-sm font-semibold text-zinc-600 outline-none"
+            placeholder="Provider ID selected automatically"
           />
         </label>
 
