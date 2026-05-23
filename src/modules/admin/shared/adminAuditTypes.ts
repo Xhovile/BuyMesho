@@ -7,12 +7,14 @@ export const ADMIN_ACTION_TYPES = {
   UNSUSPEND_SELLER: "unsuspend_seller",
   SUSPEND_PAYOUTS: "suspend_payouts",
   UNSUSPEND_PAYOUTS: "unsuspend_payouts",
+  APPROVE_PAYOUT_DESTINATION: "approve_payout_destination",
 } as const;
 
 export const ADMIN_TARGET_TYPES = {
   SELLER_APPLICATION: "seller_application",
   LISTING: "listing",
   SELLER: "seller",
+  PAYOUT_DESTINATION: "payout_destination",
 } as const;
 
 export type AdminActionType = (typeof ADMIN_ACTION_TYPES)[keyof typeof ADMIN_ACTION_TYPES];
@@ -27,12 +29,14 @@ export const ADMIN_ACTION_LABELS: Record<AdminActionType, string> = {
   [ADMIN_ACTION_TYPES.UNSUSPEND_SELLER]: "Unsuspended seller",
   [ADMIN_ACTION_TYPES.SUSPEND_PAYOUTS]: "Suspended payouts",
   [ADMIN_ACTION_TYPES.UNSUSPEND_PAYOUTS]: "Unsuspended payouts",
+  [ADMIN_ACTION_TYPES.APPROVE_PAYOUT_DESTINATION]: "Approved payout destination",
 };
 
 export const ADMIN_TARGET_LABELS: Record<AdminTargetType, string> = {
   [ADMIN_TARGET_TYPES.SELLER_APPLICATION]: "Seller application",
   [ADMIN_TARGET_TYPES.LISTING]: "Listing",
   [ADMIN_TARGET_TYPES.SELLER]: "Seller",
+  [ADMIN_TARGET_TYPES.PAYOUT_DESTINATION]: "Payout destination",
 };
 
 export function isAdminActionType(value: string): value is AdminActionType {
