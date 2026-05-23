@@ -160,6 +160,12 @@ export default function SellerPayoutsPage() {
   const sellerId = firebaseUser?.uid || profile?.uid || "";
   const isSeller = !!profile?.is_seller;
 
+  const [providerMetadata, setProviderMetadata] = useState<PayoutProviderMetadata>({
+  mobileMoneyOperators: [],
+  banks: [],
+  currencies: ["MWK"],
+});
+  
 const loadData = useCallback(async (options?: { silent?: boolean }) => {
   if (!sellerId) return;
   if (!options?.silent) {
