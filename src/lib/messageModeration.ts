@@ -63,9 +63,14 @@ export async function markConversationSpam(
   });
 }
 
-export async function fetchMessageReports(status = "open") {
-  const query = new URLSearchParams({ status });
-  const result = await apiFetch(`/api/admin/message-reports?${query.toString()}`);
+export async function fetchMessageReports(status: string = "open") {
+  const query = new URLSearchParams();
+  if (status !== "all") {
+    query.set("status", status);
+  }
+
+  const queryString = query.toString();
+  const result = await apiFetch(`/api/admin/message-reports${queryString ? `?${queryString}` : ""}`);
 
   if (result?.data?.items) {
     return result.data.items as MessageReport[];
