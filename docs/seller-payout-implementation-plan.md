@@ -402,3 +402,175 @@ To keep these decisions actionable, tie them to concrete backlog items before pa
 - **Audit/observability:** add explicit audit events and operator-visible status labels for `held`, `negative_balance`, `pending_funding`, and `recovery_in_progress` transitions.
 
 These follow-ups should be tracked as required launch blockers wherever payout provider submission, reconciliation jobs, and seller/admin payout management endpoints are implemented.
+
+
+
+
+
+//#######Get Banks
+
+# Get Banks
+
+Query for all Banks
+
+This endpoint enables you to retrieve all the banks we currently support in processing payments.
+
+# OpenAPI definition
+
+```json
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "live",
+    "version": "1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.paychangu.com"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "sec0": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "Authorization",
+        "x-default": "",
+        "x-bearer-format": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "sec0": []
+    }
+  ],
+  "paths": {
+    "/direct-charge/payouts/supported-banks?currency=MWK": {
+      "get": {
+        "summary": "Get Banks",
+        "description": "Query for all Banks",
+        "operationId": "get-banks",
+        "responses": {
+          "200": {
+            "description": "200",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": {
+                      "status": "success",
+                      "message": "Retrieved successfully.",
+                      "data": [
+                        {
+                          "uuid": "82310dd1-ec9b-4fe7-a32c-2f262ef08681",
+                          "name": "National Bank of Malawi"
+                        },
+                        {
+                          "uuid": "87e62436-0553-4fb5-a76d-f27d28420c5b",
+                          "name": "Ecobank Malawi Limited"
+                        },
+                        {
+                          "uuid": "b064172a-8a1b-4f7f-aad7-81b036c46c57",
+                          "name": "FDH Bank Limited"
+                        },
+                        {
+                          "uuid": "e7447c2c-c147-4907-b194-e087fe8d8585",
+                          "name": "Standard Bank Limited"
+                        },
+                        {
+                          "uuid": "236760c9-3045-4a01-990e-497b28d115bb",
+                          "name": "Centenary Bank"
+                        },
+                        {
+                          "uuid": "968ac588-3b1f-4d89-81ff-a3d43a599003",
+                          "name": "First Capital Limited"
+                        },
+                        {
+                          "uuid": "c759d7b6-ae5c-4a95-814a-79171271897a",
+                          "name": "CDH Investment Bank"
+                        },
+                        {
+                          "uuid": "5e9946ae-76ed-43f5-ad59-63e09096006a",
+                          "name": "TNM Mpamba"
+                        },
+                        {
+                          "uuid": "e8d5fca0-e5ac-4714-a518-484be9011326",
+                          "name": "Airtel Money"
+                        },
+                        {
+                          "uuid": "86007bf5-1b04-49ba-84c1-9758bbf5c996",
+                          "name": "NBS Bank Limited"
+                        }
+                      ]
+                    }
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Retrieved successfully."
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "uuid": {
+                            "type": "string",
+                            "example": "82310dd1-ec9b-4fe7-a32c-2f262ef08681"
+                          },
+                          "name": {
+                            "type": "string",
+                            "example": "National Bank of Malawi"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "400",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "Result": {
+                    "value": "{}"
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {}
+                }
+              }
+            }
+          }
+        },
+        "deprecated": false,
+        "security": [
+          {
+            "sec0": []
+          }
+        ]
+      }
+    }
+  },
+  "x-readme": {
+    "headers": [],
+    "explorer-enabled": true,
+    "proxy-enabled": true
+  },
+  "x-readme-fauxas": true
+}
+```
+
+
