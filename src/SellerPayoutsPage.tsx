@@ -174,15 +174,15 @@ const loadData = useCallback(async (options?: { silent?: boolean }) => {
     setLoading(true);
   }
   try {
-    const [permissionsRes, destinationsRes, payoutsRes, escrowsRes] =
-      await Promise.allSettled([
-        getPayoutPermissions(sellerId),
-        getPayoutDestinations(sellerId),
-        getPayoutHistory(sellerId),
-        fetchSellerEscrows(),
-        getPayoutProviderMetadata(),
-      ]);
-
+    const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes] =
+  await Promise.allSettled([
+    getPayoutPermissions(sellerId),
+    getPayoutDestinations(sellerId),
+    getPayoutHistory(sellerId),
+    fetchSellerEscrows(),
+    getPayoutProviderMetadata(),
+  ]);
+    
     if (permissionsRes.status === "fulfilled") {
       setPermissions(permissionsRes.value);
     } else {
