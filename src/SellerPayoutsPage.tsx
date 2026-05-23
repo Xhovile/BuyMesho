@@ -589,7 +589,11 @@ useEffect(() => {
             disabled={!canEditSettings}
             isEditing={Boolean(selectedDestinationId)}
             activeDestinationCount={activeDestinations.length}
-          />
+            providerOptions={[
+            ...providerMetadata.mobileMoneyOperators, 
+            ...providerMetadata.banks,
+           ]}
+         />
           <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
             <div className="flex items-start justify-between gap-4">
               <div>
