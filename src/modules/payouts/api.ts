@@ -4,8 +4,22 @@ import type {
   PayoutDestinationPayload,
   PayoutPermissions,
   PayoutProviderMetadata,
+  PayoutProviderOption,
   PayoutRecord,
 } from "./types";
+
+function toProviderOption(
+  item: { id: string; name: string },
+  destinationType: "mobile_money" | "bank",
+): PayoutProviderOption {
+  return {
+    id: item.id,
+    name: item.name,
+    destinationType,
+    providerRefId: item.id,
+    currency: "MWK",
+  };
+}
 
 export async function getPayoutPermissions(sellerUid: string): Promise<PayoutPermissions> {
   const response = await apiFetch(`/api/payouts/permissions/${encodeURIComponent(sellerUid)}`);
@@ -41,7 +55,6 @@ export async function updatePayoutDestination(
   return response?.destination ?? response;
 }
 
-
 export async function replacePayoutDestination(
   destinationId: string,
   payload: PayoutDestinationPayload
@@ -54,11 +67,29 @@ export async function replacePayoutDestination(
 }
 
 export async function getPayoutProviderMetadata(): Promise<PayoutProviderMetadata> {
-  const response = await apiFetch("/api/payouts/metadata");
+  const [mobileMoneyResult, bankResult] = await Promise.allSettled([
+    apiFetch("/api/payouts/provider/mobile-money-operators"),
+    apiFetch("/api/payouts/provider/banks?currency=MWK"),
+  ]);
+
+  const mobileMoneyOperators =
+    mobileMoneyResult.status === "fulfilled" && Array.isArray(mobileMoneyResult.value?.operators)
+      ? mobileMoneyResult.value.operators.map((item: { refId: string; name: string }) =>
+          toProviderOption({ id: item.refId, name: item.name }, "mobile_money"),
+        )
+      : [];
+
+  const banks =
+    bankResult.status === "fulfilled" && Array.isArray(bankResult.value?.banks)
+      ? bankResult.value.banks.map((item: { uuid: string; name: string }) =>
+          toProviderOption({ id: item.uuid, name: item.name }, "bank"),
+        )
+      : [];
+
   return {
-    mobileMoneyOperators: Array.isArray(response?.mobileMoneyOperators) ? response.mobileMoneyOperators : [],
-    banks: Array.isArray(response?.banks) ? response.banks : [],
-    currencies: Array.isArray(response?.currencies) ? response.currencies : ["MWK"],
+    mobileMoneyOperators,
+    banks,
+    currencies: ["MWK"],
   };
 }
 
