@@ -1386,6 +1386,15 @@ export class PayoutService {
       throw new Error(`Invalid admin override transition from ${from} via ${input.action}`);
     }
 
+    if (input.action === 'mark_paid') {
+      const hasProviderAttempt =
+        Boolean(existing.providerChargeId && String(existing.providerChargeId).trim()) ||
+        Boolean(existing.lastAttemptId && String(existing.lastAttemptId).trim());
+      if (!hasProviderAttempt) {
+        throw new Error('Cannot mark payout as paid before any provider attempt exists');
+      }
+    }
+
     let payout: PayoutRecord | undefined;
     if (input.action === 'mark_paid') {
       payout = this.repository.updateStatus(input.payoutId, 'paid', {

@@ -389,10 +389,14 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
                 : 'Destination pending verification',
           );
         }
+        const hasRetryableFailureContext =
+          status === 'held'
+            ? !failureReason || isRetryableFailureCode(failureReason)
+            : isRetryableFailureCode(failureReason);
         const retryEligible =
-          status === 'failed' &&
+          (status === 'failed' || status === 'held') &&
           attemptCount < PAYOUT_POLICY.maxRetryCount &&
-          isRetryableFailureCode(failureReason) &&
+          hasRetryableFailureContext &&
           !sellerSuspended &&
           destinationVerificationStatus === 'verified' &&
           destinationActive;

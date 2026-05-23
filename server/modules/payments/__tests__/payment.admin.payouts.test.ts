@@ -255,6 +255,28 @@ test('admin payouts list supports paginated response with metadata', async () =>
   assert.equal(typeof pagination.hasMore, 'boolean');
 });
 
+test('admin payouts list marks held payout retry-eligible when destination is verified and active', async () => {
+  const { payoutId, destinationId } = seedAdminPayout('admin-held-retry', 'held');
+  const db = getPaymentDb();
+  db.prepare(
+    `UPDATE seller_payout_accounts
+     SET verification_status = 'verified',
+         is_active = 1
+     WHERE id = ?`,
+  ).run(destinationId);
+  db.prepare(`UPDATE payouts SET failure_reason = NULL WHERE id = ?`).run(payoutId);
+
+  const result = await callAdmin('/api/admin/payouts?limit=50&offset=0');
+  assert.equal(result.status, 200);
+  const rows = Array.isArray(result.body.rows) ? result.body.rows : [];
+  const row = rows.find((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    return (entry as Record<string, unknown>).id === payoutId;
+  }) as Record<string, unknown> | undefined;
+  assert.ok(row);
+  assert.equal(row.retryEligible, true);
+});
+
 test('admin reconcile endpoint syncs provider status and terminal payout fields', async () => {
   const { payoutId } = seedAdminPayout('admin-reconcile');
   const originalFetch = global.fetch;
