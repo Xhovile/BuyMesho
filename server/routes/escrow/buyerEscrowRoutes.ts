@@ -36,7 +36,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
     }
   });
 
-  router.post('/:orderId/release', escrowActionLimiter, requireAuth, (req, res) => {
+  router.post('/:orderId/release', escrowActionLimiter, requireAuth, async (req, res) => {
     try {
       const access = assertEscrowReleaseAccess(req, req.params.orderId, orderRepository);
 
@@ -170,7 +170,42 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      return res.status(200).json(result);
+      const dispatchResult = await payoutService.executePayout({
+        payoutId: result.payout.id,
+        actorType: 'system',
+      });
+
+      return res.status(200).json({
+        escrow: result.escrow,
+        payout: dispatchResult.payout ?? result.payout,
+        payoutEligibility: result.payoutEligibility,
+        payoutDispatch: {
+          reasonCode: dispatchResult.reasonCode ?? null,
+          reason: dispatchResult.reason,
+          nextAction: dispatchResult.nextAction,
+          attempt: dispatchResult.attempt
+            ? {
+                id: dispatchResult.attempt.id,
+                attemptNo: dispatchResult.attempt.attemptNo,
+                provider: dispatchResult.attempt.provider,
+                providerChargeId: dispatchResult.attempt.providerChargeId,
+                providerReference: dispatchResult.attempt.providerReference,
+                providerTransactionId: dispatchResult.attempt.providerTransactionId,
+                status: dispatchResult.attempt.status,
+              }
+            : null,
+          execution: dispatchResult.execution
+            ? {
+                provider: dispatchResult.execution.provider,
+                providerChargeId: dispatchResult.execution.providerChargeId,
+                providerReference: dispatchResult.execution.providerReference,
+                providerTransactionId: dispatchResult.execution.providerTransactionId,
+                status: dispatchResult.execution.status,
+                processedAt: dispatchResult.execution.processedAt,
+              }
+            : null,
+        },
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (
