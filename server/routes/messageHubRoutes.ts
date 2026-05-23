@@ -997,6 +997,7 @@ async function adminMessageReports(req: Request, res: Response) {
   if (!hasAdminAccess(user)) return sendError(res, 403, "Admin access required");
 
   const status = sanitizeText(req.query.status, 24) || "open";
+  const shouldFilterByStatus = status === "open" || status === "resolved";
   const rows = db
     .prepare(
       `SELECT
@@ -1014,11 +1015,11 @@ async function adminMessageReports(req: Request, res: Response) {
        LEFT JOIN listings l ON l.id = c.listing_id
        LEFT JOIN sellers sb ON sb.uid = c.seller_uid
        LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
-       WHERE r.status = ?
+       ${shouldFilterByStatus ? "WHERE r.status = ?" : ""}
        ORDER BY r.created_at DESC, r.id DESC
        LIMIT 200`
     )
-    .all(status);
+    .all(...(shouldFilterByStatus ? [status] : []));
 
   return sendOk(res, { items: rows });
 }
