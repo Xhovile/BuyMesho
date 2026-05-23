@@ -1,4 +1,5 @@
 import type { PayoutRecord, PayoutStatus } from "./types";
+import { ESCROW_ACTIVE_STATES } from "../escrow/states";
 
 export type SellerEarningsBucketKey =
   | "lifetimeSales"
@@ -12,9 +13,11 @@ export type SellerEarningsBuckets = Record<SellerEarningsBucketKey, number>;
 
 export type EscrowSummaryRecord = {
   amount?: number | string | null;
+  balanceAmount?: number | string | null;
   grossAmount?: number | string | null;
   netAmount?: number | string | null;
   sellerAmount?: number | string | null;
+  totalAmount?: number | string | null;
   status?: string | null;
   state?: string | null;
 };
@@ -74,14 +77,6 @@ const PENDING_STATUSES: PayoutStatus[] = [
 ];
 const PAID_STATUSES: PayoutStatus[] = ["paid"];
 const FAILED_STATUSES: PayoutStatus[] = ["failed"];
-const ACTIVE_ESCROW_STATES = new Set([
-  "created",
-  "held",
-  "in_escrow",
-  "funded",
-  "pending_release",
-  "disputed",
-]);
 
 function amount(value: unknown): number {
   const parsed = Number(value ?? 0);
@@ -94,10 +89,12 @@ function payoutAmount(payout: PayoutRecord): number {
 
 function escrowAmount(escrow: EscrowSummaryRecord): number {
   return amount(
-    escrow.sellerAmount ??
+    escrow.balanceAmount ??
+      escrow.sellerAmount ??
       escrow.netAmount ??
       escrow.grossAmount ??
-      escrow.amount,
+      escrow.amount ??
+      escrow.totalAmount,
   );
 }
 
@@ -130,7 +127,7 @@ function addEscrowBuckets(
 ) {
   for (const escrow of escrows) {
     const state = String(escrow.state ?? escrow.status ?? "").toLowerCase();
-    if (ACTIVE_ESCROW_STATES.has(state)) {
+    if (ESCROW_ACTIVE_STATES.includes(state as (typeof ESCROW_ACTIVE_STATES)[number])) {
       const value = escrowAmount(escrow);
       summary.inEscrow += value;
       summary.lifetimeSales += value;
