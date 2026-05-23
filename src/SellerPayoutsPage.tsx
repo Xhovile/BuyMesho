@@ -630,7 +630,7 @@ useEffect(() => {
               <MiniStatus
                 icon={<ShieldCheck className="w-4 h-4" />}
                 title="Held"
-                text="Payout held while the admin team reviews the release."
+                text="Escrow release immediately submits the payout to PayChangu and continues reconciliation in the background." 
               />
               <MiniStatus
                 icon={<BadgeCheck className="w-4 h-4" />}
