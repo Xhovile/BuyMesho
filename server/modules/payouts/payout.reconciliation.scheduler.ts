@@ -1,3 +1,4 @@
+import './payout.execution.patch.js';
 import { payoutService } from './payout.service.js';
 
 export type PayoutReconciliationSchedulerConfig = {
