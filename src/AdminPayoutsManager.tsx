@@ -244,7 +244,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function AdminPayoutsManagerContent() {
+export default function AdminPayoutsManager() {
   const { user } = useAuthUser();
   const { isAdmin } = useIsAdmin(user);
 
@@ -892,8 +892,4 @@ function AdminPayoutsManagerContent() {
       />
     </AdminWorkspaceLayout>
   );
-}
-
-export default function AdminPayoutsManager() {
-  return <AdminPayoutsManagerContent />;
 }

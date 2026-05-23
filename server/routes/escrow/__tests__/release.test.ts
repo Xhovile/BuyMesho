@@ -184,6 +184,13 @@ function countPayoutAttempts(payoutId: string): number {
   return row.count;
 }
 
+function countPayoutsForOrder(orderId: string): number {
+  const row = getPaymentDb()
+    .prepare('SELECT COUNT(*) AS count FROM payouts WHERE order_id = ?')
+    .get(orderId) as { count: number };
+  return row.count;
+}
+
 test('release endpoint creates an eligible payout candidate and dispatches it to PayChangu', async () => {
   clearReleasePayoutState();
   useDefaultPayChanguEnv();
