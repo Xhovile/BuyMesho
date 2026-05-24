@@ -36,6 +36,7 @@ export interface PayoutRecord {
   status: PayoutStatus;
   provider: string | null;
   providerChargeId: string | null;
+  providerStatus?: string | null;
   lastAttemptId?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;
@@ -575,6 +576,7 @@ export class PayoutRepository {
       status: row.status as PayoutStatus,
       provider: (row.provider as string | null) ?? null,
       providerChargeId: (row.provider_charge_id as string | null) ?? null,
+      providerStatus: (row.provider_status as string | null) ?? null,
       requestedBy: (row.requested_by as string | null) ?? null,
       requestedAt: (row.requested_at as string | null) ?? null,
       createdAt: row.created_at as string,

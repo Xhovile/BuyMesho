@@ -80,14 +80,21 @@ function mockPayChanguFetch(): CapturedRequest[] {
     const headers = new Headers(init?.headers);
     const method = init?.method ?? 'GET';
 
+    const parsedUrl = new URL(url);
+
+    // Forward any non-PayChangu requests (e.g., calls to the local test server)
+    // to the original fetch implementation so tests can contact the server.
+    const host = parsedUrl.hostname || '';
+    if (!host.includes('paychangu') && !host.includes('api.paychangu.com')) {
+      return originalFetch(input, init);
+    }
+
     requests.push({
       url,
       method,
       authorization: headers.get('authorization'),
       body: init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {},
     });
-
-    const parsedUrl = new URL(url);
 
     if (method === 'GET' && parsedUrl.pathname === '/wallet-balance') {
       return new Response(JSON.stringify({
