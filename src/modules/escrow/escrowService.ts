@@ -26,7 +26,7 @@ export class EscrowService {
     return {
       id: request.escrowId,
       orderId: request.orderId,
-      state: 'initiated',
+      state: 'funded',
       currency: request.currency,
       ledger: createEmptyEscrowLedger(request.escrowId, request.currency),
     };
