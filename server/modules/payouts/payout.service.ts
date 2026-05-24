@@ -1319,13 +1319,30 @@ export class PayoutService {
        LIMIT ?`,
     ).all(limit) as Array<{ id: string }>;
 
-    const results = [];
+    const results: Array<
+      | { ok: true; payoutId: string; payout: unknown; status: unknown }
+      | { ok: false; payoutId: string; error: string }
+    > = [];
     for (const row of rows) {
-      results.push(await this.reconcilePayoutStatus({
-        payoutId: row.id,
-        actorType: input.actorType,
-        actorId: input.actorId,
-      }));
+      try {
+        const reconciled = await this.reconcilePayoutStatus({
+          payoutId: row.id,
+          actorType: input.actorType,
+          actorId: input.actorId,
+        });
+        results.push({
+          ok: true,
+          payoutId: row.id,
+          payout: reconciled.payout,
+          status: reconciled.status,
+        });
+      } catch (error) {
+        results.push({
+          ok: false,
+          payoutId: row.id,
+          error: error instanceof Error ? error.message : 'Unknown reconcile error',
+        });
+      }
     }
 
     return results;

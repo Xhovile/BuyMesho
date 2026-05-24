@@ -119,12 +119,12 @@ Add a `seller_payout_accounts` table, separate from the public `sellers` profile
 
 Suggested fields:
 
-- `id`
+- `id` (UUID string; stored as text, generated server-side)
 - `seller_uid`
 - `destination_type`: `mobile_money` or `bank`
 - `currency`: initially `MWK`
 - `provider_name`: Airtel Money, TNM Mpamba, National Bank, etc.
-- `provider_ref_id` / `bank_uuid`: PayChangu operator or bank identifier
+- `provider_ref_id`: PayChangu operator/bank identifier (when provider payload uses `uuid`, map that value into `provider_ref_id`)
 - `account_name`
 - `account_number_encrypted` or `mobile_encrypted`
 - `masked_account`: for UI display only
@@ -572,5 +572,4 @@ This endpoint enables you to retrieve all the banks we currently support in proc
   "x-readme-fauxas": true
 }
 ```
-
 
