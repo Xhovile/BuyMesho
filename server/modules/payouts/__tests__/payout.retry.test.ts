@@ -194,10 +194,18 @@ test('concurrent retry calls do not reuse the same attempt_no', async () => {
        WHERE payout_id = ?
        ORDER BY attempt_no ASC`,
     ).all(payoutId) as Array<{ attempt_no: number }>;
+    const groupedAttempts = db.prepare(
+      `SELECT attempt_no, COUNT(*) AS count
+       FROM payout_attempts
+       WHERE payout_id = ?
+       GROUP BY attempt_no
+       ORDER BY attempt_no ASC`,
+    ).all(payoutId) as Array<{ attempt_no: number; count: number }>;
 
     assert.equal(payoutRequestCount, 2);
     assert.equal(attempts.length, 2);
     assert.deepEqual(attempts.map((row) => row.attempt_no), [1, 2]);
+    assert.deepEqual(groupedAttempts.map((row) => row.count), [1, 1]);
   } finally {
     global.fetch = originalFetch;
     resetState();
