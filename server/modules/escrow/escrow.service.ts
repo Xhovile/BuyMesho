@@ -21,7 +21,7 @@ export class EscrowService {
     return {
       id: escrowId,
       orderId,
-      state: 'initiated',
+      state: 'funded',
       currency,
       balance: { amount: 0, currency },
       entries: [],
