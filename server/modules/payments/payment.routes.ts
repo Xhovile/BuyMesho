@@ -99,7 +99,7 @@ function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): Or
   return buildOrderBundle(order.id);
 }
 
-function toPublicOrderStatus(idOrReference: string): Record<string, unknown> | null {
+function buildPublicTransactionStatus(idOrReference: string): Record<string, unknown> | null {
   const order = findOrderByParam(idOrReference);
   if (!order) return null;
   const bundle = buildOrderBundle(order.id);
@@ -112,6 +112,7 @@ function toPublicOrderStatus(idOrReference: string): Record<string, unknown> | n
     paymentStatus: bundle.payment?.status ?? null,
     paymentVerified: Boolean(bundle.payment?.verified),
     escrowStatus: bundle.escrow?.state ?? null,
+    escrowId: bundle.escrow?.id ?? null,
   };
 }
 
@@ -355,10 +356,30 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // Public status surface for payment_return redirects.
+  router.get('/orders/:orderId/status', orderLookupLimiter, (req, res) => {
+    try {
+      const status = buildPublicTransactionStatus(req.params.orderId);
+      if (!status) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json(status);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
+    }
+  });
+
+  router.get('/:reference/status', orderLookupLimiter, (req, res) => {
+    try {
+      const status = buildPublicTransactionStatus(decodeURIComponent(req.params.reference));
+      if (!status) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json(status);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
+    }
+  });
+
+  // Backward-compatible alias for the payment return page.
   router.get('/public-status/:reference', orderLookupLimiter, (req, res) => {
     try {
-      const status = toPublicOrderStatus(decodeURIComponent(req.params.reference));
+      const status = buildPublicTransactionStatus(decodeURIComponent(req.params.reference));
       if (!status) return res.status(404).json({ error: 'Order not found' });
       return res.status(200).json(status);
     } catch (error) {
