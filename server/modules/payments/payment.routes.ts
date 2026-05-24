@@ -66,8 +66,6 @@ type OrderBundle = {
   dispute: Record<string, unknown> | null;
 };
 
-type OrderLookupResult = OrderBundle | 'forbidden' | null;
-
 function findOrderByParam(param: string) {
   const byId = orderRepository.findById(param);
   if (byId) return byId;
@@ -94,11 +92,27 @@ function buildOrderBundle(orderId: string): OrderBundle | null {
   };
 }
 
-function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderLookupResult {
+function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderBundle | null | 'forbidden' {
   const order = findOrderByParam(idOrReference);
   if (!order) return null;
   if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
   return buildOrderBundle(order.id);
+}
+
+function toPublicOrderStatus(idOrReference: string): Record<string, unknown> | null {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  const bundle = buildOrderBundle(order.id);
+  if (!bundle) return null;
+
+  return {
+    reference: order.paymentReference ?? idOrReference,
+    orderId: order.id,
+    orderStatus: order.status,
+    paymentStatus: bundle.payment?.status ?? null,
+    paymentVerified: Boolean(bundle.payment?.verified),
+    escrowStatus: bundle.escrow?.state ?? null,
+  };
 }
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
@@ -341,6 +355,17 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
+  // Public status surface for payment_return redirects.
+  router.get('/public-status/:reference', orderLookupLimiter, (req, res) => {
+    try {
+      const status = toPublicOrderStatus(decodeURIComponent(req.params.reference));
+      if (!status) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json(status);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
+    }
+  });
+
   // Public verification route for payment_return redirects.
   // PayChangu redirects the browser back without the app Bearer token.
   router.get('/paychangu/verify/:txRef', async (req, res) => {
@@ -353,29 +378,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.post('/paychangu/webhook', async (req, res) => {
-  try {
-    const rawBody =
-      Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
-      typeof req.body === 'string' ? req.body :
-      req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
-      '';
-
-    if (!rawBody) {
-      return res.status(400).json({ error: 'Missing webhook body' });
-    }
-
-    const signature =
-      req.header('x-paychangu-signature') ?? req.header('Signature');
-
-    const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
-    return res.status(200).json(result);
-  } catch (error) {
-    return res.status(400).json(jsonError(error, 'Failed to process webhook'));
-  }
-});
-
-  router.post('/paychangu-payout/webhook', async (req, res) => {
+  router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
     try {
       const rawBody =
         Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
