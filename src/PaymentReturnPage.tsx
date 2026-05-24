@@ -5,15 +5,18 @@ import { apiFetch } from "./lib/api";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
-interface VerifyResult {
-  verified: boolean;
+interface PublicStatusResponse {
   reference?: string;
-  status?: string;
   orderId?: string;
+  orderStatus?: string;
+  paymentStatus?: string | null;
+  paymentVerified?: boolean;
+  escrowStatus?: string | null;
 }
 
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
+  const [reference, setReference] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -33,32 +36,86 @@ export default function PaymentReturnPage() {
       return;
     }
 
+    setReference(txRef);
+
     let mounted = true;
-    void (async () => {
+    let attempts = 0;
+
+    const pollStatus = async () => {
       try {
         const result = (await apiFetch(
-          `/api/payments/paychangu/verify/${encodeURIComponent(txRef)}`,
-        )) as VerifyResult;
+          `/api/payments/public-status/${encodeURIComponent(txRef)}`,
+        )) as PublicStatusResponse;
 
         if (!mounted) return;
 
-        if (result.verified) {
+        const paymentVerified = Boolean(result.paymentVerified);
+        const orderStatus = String(result.orderStatus ?? "").toLowerCase();
+        const paymentStatus = String(result.paymentStatus ?? "").toLowerCase();
+
+        const isSuccessful =
+          paymentVerified ||
+          paymentStatus === "captured" ||
+          orderStatus === "paid" ||
+          orderStatus === "processing";
+
+        if (isSuccessful) {
           setOrderId(result.orderId ?? null);
           setStatus("success");
-        } else {
-          setErrorMessage(
-            result.status
-              ? `Payment status: ${result.status}`
-              : "The payment could not be verified.",
-          );
-          setStatus("failed");
+
+          window.setTimeout(() => {
+            navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
+              replace: true,
+            });
+          }, 1200);
+
+          return;
         }
+
+        const isFailed =
+          paymentStatus === "failed" ||
+          paymentStatus === "cancelled" ||
+          paymentStatus === "canceled";
+
+        if (isFailed) {
+          setErrorMessage(`Payment status: ${paymentStatus}`);
+          setStatus("failed");
+          return;
+        }
+
+        attempts += 1;
+
+        if (attempts >= 8) {
+          setStatus("success");
+
+          window.setTimeout(() => {
+            navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
+              replace: true,
+            });
+          }, 1200);
+
+          return;
+        }
+
+        window.setTimeout(pollStatus, 2000);
       } catch (err: unknown) {
         if (!mounted) return;
-        setErrorMessage(err instanceof Error ? err.message : "Verification failed.");
-        setStatus("failed");
+
+        attempts += 1;
+
+        if (attempts >= 8) {
+          setErrorMessage(
+            err instanceof Error ? err.message : "Failed to recover payment status.",
+          );
+          setStatus("failed");
+          return;
+        }
+
+        window.setTimeout(pollStatus, 2000);
       }
-    })();
+    };
+
+    void pollStatus();
 
     return () => {
       mounted = false;
@@ -71,30 +128,43 @@ export default function PaymentReturnPage() {
         {status === "loading" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <Loader2 className="h-12 w-12 animate-spin text-zinc-500" />
-            <h1 className="text-xl font-extrabold text-zinc-900">Verifying payment…</h1>
-            <p className="text-sm text-zinc-500">Please wait while we confirm your payment.</p>
+            <h1 className="text-xl font-extrabold text-zinc-900">Finalizing payment…</h1>
+            <p className="text-sm text-zinc-500">
+              We are confirming your order and syncing payment status.
+            </p>
           </div>
         )}
 
         {status === "success" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment successful!</h1>
+            <h1 className="text-2xl font-black text-zinc-900">Payment received!</h1>
             <p className="text-sm text-zinc-600 leading-6">
-              Your payment has been confirmed and your order is now held securely in escrow.
-              The seller has been notified.
+              Your payment was received successfully. Opening your order tracking page.
             </p>
+
+            {reference && (
+              <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">
+                Ref: {reference}
+              </p>
+            )}
+
             {orderId && (
               <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">
                 Order: {orderId}
               </p>
             )}
+
             <button
               type="button"
-              onClick={() => navigateToPath(EXPLORE_PATH)}
+              onClick={() =>
+                reference
+                  ? navigateToPath(`/orders/${encodeURIComponent(reference)}`)
+                  : navigateToPath(EXPLORE_PATH)
+              }
               className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors"
             >
-              Continue shopping
+              Open order tracking
             </button>
           </div>
         )}
@@ -102,9 +172,9 @@ export default function PaymentReturnPage() {
         {status === "failed" && (
           <div className="flex flex-col items-center gap-4 text-center">
             <AlertTriangle className="h-14 w-14 text-red-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment failed</h1>
+            <h1 className="text-2xl font-black text-zinc-900">Payment status unavailable</h1>
             <p className="text-sm text-zinc-600 leading-6">
-              {errorMessage ?? "We could not verify your payment. Please try again or contact support."}
+              {errorMessage ?? "We could not recover your payment status."}
             </p>
             <button
               type="button"
