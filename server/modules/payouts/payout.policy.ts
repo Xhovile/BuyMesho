@@ -4,7 +4,9 @@ export const PAYOUT_POLICY = {
   payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
   disputeWindowHours: 72,
-  minimumPayoutAmount: 1000,
+  // Allow low-value orders to disburse instead of being held for manual review.
+  // Keep this at 1 (smallest whole-money unit persisted by the current model).
+  minimumPayoutAmount: 1,
   maxRetryCount: 3,
   launchMode: 'admin_approved' as const,
   retryableFailureCodes: new Set([

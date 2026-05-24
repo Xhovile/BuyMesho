@@ -104,6 +104,7 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
     assert.deepEqual(requests[0]?.body, {
       mobile: '0990000000',
       mobile_money_operator_ref_id: '20be6c20-adeb-4b5b-a7ba-0769820df4fb',
+      currency: 'MWK',
       amount: '1250',
       charge_id: 'BM-PO-mobile-body-test-A01',
       email: 'recipient@example.com',
@@ -151,6 +152,7 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
     assert.deepEqual(requests[0]?.body, {
       payout_method: 'bank_transfer',
       bank_uuid: '82310dd1-ec9b-4fe7-a32c-2f262ef08681',
+      currency: 'MWK',
       amount: '10000',
       charge_id: 'BM-PO-bank-body-test-A02',
       bank_account_name: 'Madalitso Kamwendo',

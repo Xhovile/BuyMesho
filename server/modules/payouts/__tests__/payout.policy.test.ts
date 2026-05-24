@@ -20,7 +20,7 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
   assert.equal(PAYOUT_POLICY.platformFeeBps, 300);
   assert.equal(PAYOUT_POLICY.reserveCapBps, 600);
   assert.equal(PAYOUT_POLICY.disputeWindowHours, 72);
-  assert.equal(PAYOUT_POLICY.minimumPayoutAmount, 1000);
+  assert.equal(PAYOUT_POLICY.minimumPayoutAmount, 1);
   assert.equal(PAYOUT_POLICY.maxRetryCount, 3);
   assert.equal(PAYOUT_POLICY.launchMode, 'admin_approved');
 
