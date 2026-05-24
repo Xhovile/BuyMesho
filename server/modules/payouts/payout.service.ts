@@ -478,7 +478,8 @@ export class PayoutRepository {
     actorType: 'admin' | 'system';
     actorId?: string | null;
   }): { id: string; attemptNo: number; providerChargeId: string; createdAt: string } {
-    const transaction = this.db.transaction(() => {
+    this.db.prepare('BEGIN IMMEDIATE TRANSACTION').run();
+    try {
       const attemptNo = this.nextAttemptNo(input.payoutId);
       const providerChargeId = buildPayChanguPayoutChargeId(input.payoutId, attemptNo);
       const id = randomUUID();
@@ -522,10 +523,12 @@ export class PayoutRepository {
         now,
       );
 
+      this.db.prepare('COMMIT').run();
       return { id, attemptNo, providerChargeId, createdAt: now };
-    });
-
-    return transaction();
+    } catch (error) {
+      this.db.prepare('ROLLBACK').run();
+      throw error;
+    }
   }
 
   addEvent(input: {
