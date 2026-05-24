@@ -140,11 +140,15 @@ export function applyVerifiedPayChanguPayment(
   const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
   const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
 
-  if (!escrowRepository.findByOrderId(activeOrder.id)) {
-    escrowRepository.create(activeOrder.id, currency, escrowAmount);
+  let escrow = escrowRepository.findByOrderId(activeOrder.id);
+
+  if (!escrow) {
+    escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
   }
 
-  const escrowedOrder = serverOrderService.setStatus(activeOrder.id, 'in_escrow') ?? activeOrder;
+  const escrowedOrder =
+    serverOrderService.markInEscrow(activeOrder.id, escrow.id) ??
+    activeOrder;
 
   if (escrowedOrder.status === 'in_escrow' && order.status !== 'in_escrow') {
     emitOrderPaidNotification(
