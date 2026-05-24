@@ -36,6 +36,7 @@ export interface PayoutRecord {
   status: PayoutStatus;
   provider: string | null;
   providerChargeId: string | null;
+  lastAttemptId?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;
   createdAt: string;
