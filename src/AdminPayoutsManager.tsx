@@ -465,11 +465,31 @@ export default function AdminPayoutsManager() {
       const result = (await apiFetch("/api/admin/payouts/reconcile-pending", {
         method: "POST",
         body: JSON.stringify({ limit: 100 }),
-      })) as { count?: number };
-      setNotice({
-        type: "success",
-        message: `Reconcile-pending completed. Processed ${Number(result?.count ?? 0)} payout(s).`,
-      });
+      })) as {
+        results?: Array<{ ok?: boolean; payoutId?: string; error?: string; status?: { status?: string } }>;
+      };
+      const results = Array.isArray(result?.results) ? result.results : [];
+      const failed = results.filter((item) => item?.ok === false);
+      const providerFailed = results.filter((item) => item?.ok === true && String(item?.status?.status ?? "").toLowerCase() === "failed");
+      const successCount = results.length - failed.length;
+
+      if (failed.length > 0 || providerFailed.length > 0) {
+        const failedMessage = failed
+          .slice(0, 3)
+          .map((item) => `${item.payoutId ?? "unknown"}: ${item.error ?? "reconcile failed"}`)
+          .join(" | ");
+        const providerFailedIds = providerFailed.slice(0, 3).map((item) => item.payoutId).filter(Boolean).join(", ");
+        setError(
+          `Reconcile completed with issues. ${failed.length} request error(s), ${providerFailed.length} provider failed payout(s), ${successCount} other payout(s) processed.` +
+            (failedMessage ? ` Errors: ${failedMessage}.` : "") +
+            (providerFailedIds ? ` Provider failed payout IDs: ${providerFailedIds}.` : ""),
+        );
+      } else {
+        setNotice({
+          type: "success",
+          message: `Reconcile-pending completed. Processed ${results.length} payout(s) with no errors.`,
+        });
+      }
       await load(pageIndex);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reconcile pending payouts.");
