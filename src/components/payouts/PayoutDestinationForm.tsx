@@ -126,6 +126,12 @@ export default function PayoutDestinationForm({
   }, [providerOptions, value.destinationType]);
 
   const dropdownValue = value.providerRefId || value.providerName;
+  const mobilePlaceholder = useMemo(() => {
+    const provider = `${value.providerName} ${value.providerRefId}`.toLowerCase();
+    if (provider.includes('airtel')) return '09********';
+    if (provider.includes('tnm') || provider.includes('mpamba')) return '08********';
+    return 'Mobile wallet number';
+  }, [value.providerName, value.providerRefId]);
 
   return (
     <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
@@ -242,7 +248,7 @@ export default function PayoutDestinationForm({
               value={value.mobile}
               onChange={(event) => updateValue("mobile", event.target.value)}
               className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
-              placeholder="Mobile wallet number"
+              placeholder={mobilePlaceholder}
               disabled={loading || disabled}
               required
             />

@@ -225,8 +225,30 @@ function normalizeAccountNumber(value: unknown): string {
   return onlyDigits(normalizeDestinationValue(value, 'accountNumber'));
 }
 
+function formatPayChanguMobile(value: unknown, targetEndpoint: 'momo' | 'bank_payout_momo' = 'momo'): string {
+  const raw = normalizeDestinationValue(value, 'mobile');
+  const digits = onlyDigits(raw);
+
+  let local: string;
+  if (digits.length === 10 && digits.startsWith('0')) {
+    local = digits;
+  } else if (digits.length === 12 && digits.startsWith('265')) {
+    local = `0${digits.slice(3)}`;
+  } else if (digits.length === 9) {
+    local = `0${digits}`;
+  } else {
+    throw new Error('mobile must be a valid Malawi number');
+  }
+
+  if (local.length !== 10 || !local.startsWith('0')) {
+    throw new Error('mobile must be a valid Malawi number');
+  }
+
+  return targetEndpoint === 'bank_payout_momo' ? `265${local.slice(1)}` : local;
+}
+
 function normalizeMobileNumber(value: unknown): string {
-  return onlyDigits(normalizeDestinationValue(value, 'mobile'));
+  return formatPayChanguMobile(value, 'bank_payout_momo');
 }
 
 function buildDestinationFingerprint(input: {
