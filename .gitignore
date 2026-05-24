@@ -13,4 +13,4 @@ market.db.before-cf5c564
 market.*.db
 market.db-wal
 market.db-shm
-test.market.db
+test-market.db
