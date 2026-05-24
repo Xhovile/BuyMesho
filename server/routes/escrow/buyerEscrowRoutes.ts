@@ -82,8 +82,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           releasedBy: requesterId,
           reference: releaseReference,
         });
-
-        console.log('[escrow][release] released:', released);
+ 
 
         if (!released) {
           return undefined;
@@ -209,7 +208,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         },
       });
     } catch (error) {
-      console.error('[escrow][release] error:', error);
       const message = error instanceof Error ? error.message : '';
       if (
         message.startsWith('Escrow is already') ||
