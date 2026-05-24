@@ -9,6 +9,7 @@ import { serverPaymentService, createServerPaymentConfigFromEnv } from './paymen
 import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { paymentRepository } from './payment.repository.js';
+import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -29,6 +30,14 @@ const initializeLimiter = rateLimit({
   message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
 });
 
+const orderLookupLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many order lookup requests. Please try again in a moment.' },
+});
+
 interface ListingRow {
   id: number;
   seller_uid: string;
@@ -41,6 +50,67 @@ interface ListingRow {
 
 function jsonError(error: unknown, fallback: string): { error: string } {
   return { error: error instanceof Error ? error.message : fallback };
+}
+
+type AuthUser = {
+  uid: string;
+  is_admin?: boolean;
+};
+
+type OrderBundle = {
+  order: ReturnType<typeof orderRepository.findById>;
+  payment: ReturnType<typeof paymentRepository.findByReference> | null;
+  escrow: ReturnType<typeof escrowRepository.findByOrderId> | null;
+  dispute: Record<string, unknown> | null;
+};
+
+function findOrderByParam(param: string) {
+  const byId = orderRepository.findById(param);
+  if (byId) return byId;
+  return orderRepository.findByPaymentReference(param);
+}
+
+function buildOrderBundle(orderId: string): OrderBundle | null {
+  const order = orderRepository.findById(orderId);
+  if (!order) return null;
+
+  const db = getPaymentDb();
+  const paymentReference = order.paymentReference ?? null;
+  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
+  const escrow = escrowRepository.findByOrderId(order.id) ?? null;
+  const dispute = db
+    .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
+    .get(order.id) as Record<string, unknown> | undefined;
+
+  return {
+    order,
+    payment,
+    escrow,
+    dispute: dispute ?? null,
+  };
+}
+
+function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderBundle | null | 'forbidden' {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
+  return buildOrderBundle(order.id);
+}
+
+function toPublicOrderStatus(idOrReference: string): Record<string, unknown> | null {
+  const order = findOrderByParam(idOrReference);
+  if (!order) return null;
+  const bundle = buildOrderBundle(order.id);
+  if (!bundle) return null;
+
+  return {
+    reference: order.paymentReference ?? idOrReference,
+    orderId: order.id,
+    orderStatus: order.status,
+    paymentStatus: bundle.payment?.status ?? null,
+    paymentVerified: Boolean(bundle.payment?.verified),
+    escrowStatus: bundle.escrow?.state ?? null,
+  };
 }
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
@@ -198,8 +268,59 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // GET /api/payments/paychangu/verify/:txRef
-  router.get('/paychangu/verify/:txRef', requireAuth, async (req, res) => {
+  router.get('/orders/me', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const db = getPaymentDb();
+      const orderIds = db
+        .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC')
+        .all(req.user!.uid) as Array<{ id: string }>;
+
+      const bundles = orderIds
+        .map((row) => buildOrderBundle(row.id))
+        .filter((bundle): bundle is OrderBundle => bundle !== null);
+
+      return res.status(200).json(bundles);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch buyer orders'));
+    }
+  });
+
+  router.get('/orders/by-reference/:reference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  router.get('/orders/:idOrReference', orderLookupLimiter, requireAuth, (req, res) => {
+    try {
+      const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
+      if (!bundle) return res.status(404).json({ error: 'Order not found' });
+      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
+      return res.status(200).json(bundle);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
+    }
+  });
+
+  // Public status surface for payment_return redirects.
+  router.get('/public-status/:reference', orderLookupLimiter, (req, res) => {
+    try {
+      const status = toPublicOrderStatus(decodeURIComponent(req.params.reference));
+      if (!status) return res.status(404).json({ error: 'Order not found' });
+      return res.status(200).json(status);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
+    }
+  });
+
+  // Public verification route for payment_return redirects.
+  // PayChangu redirects the browser back without the app Bearer token.
+  router.get('/paychangu/verify/:txRef', async (req, res) => {
     try {
       const txRef = decodeURIComponent(req.params.txRef);
       const result = await paymentController.verifyPaychangu(txRef);
@@ -209,7 +330,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  // POST /api/payments/paychangu/webhook  (no auth — called by payment provider)
   router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
     try {
       const rawBody = Buffer.isBuffer(req.body)
