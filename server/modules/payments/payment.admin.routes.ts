@@ -664,6 +664,84 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
+  router.post('/payouts/:payoutId/rebind-destination', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+      const payoutId = String(req.params.payoutId || '').trim();
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
+      }
+
+      const db = getPaymentDb();
+      const payout = db.prepare(
+        `SELECT id, seller_id AS sellerId, status, destination_account_id AS destinationAccountId
+         FROM payouts
+         WHERE id = ?
+         LIMIT 1`,
+      ).get(payoutId) as { id: string; sellerId: string; status: string; destinationAccountId: string | null } | undefined;
+
+      if (!payout) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+
+      const latestDestination = db.prepare(
+        `SELECT id
+         FROM seller_payout_accounts
+         WHERE seller_uid = ?
+           AND is_default = 1
+           AND is_active = 1
+           AND verification_status = 'verified'
+         ORDER BY updated_at DESC, created_at DESC
+         LIMIT 1`,
+      ).get(payout.sellerId) as { id: string } | undefined;
+
+      if (!latestDestination) {
+        return res.status(400).json({ error: 'No active verified default destination found for seller' });
+      }
+
+      if (payout.destinationAccountId === latestDestination.id) {
+        return res.status(200).json({
+          payoutId: payout.id,
+          sellerId: payout.sellerId,
+          status: payout.status,
+          destinationAccountId: payout.destinationAccountId,
+          updated: false,
+        });
+      }
+
+      const now = new Date().toISOString();
+      db.prepare(
+        `UPDATE payouts
+         SET destination_account_id = ?, updated_at = ?
+         WHERE id = ?`,
+      ).run(latestDestination.id, now, payout.id);
+
+      payoutService.addEvent({
+        payoutId: payout.id,
+        sellerId: payout.sellerId,
+        eventType: 'payout_destination_rebound',
+        actorType: 'admin',
+        actorId: String(req.user?.uid || 'admin'),
+        note: 'Destination rebound to seller default verified destination',
+        payload: {
+          previousDestinationAccountId: payout.destinationAccountId,
+          nextDestinationAccountId: latestDestination.id,
+          payoutStatus: payout.status,
+        },
+      });
+
+      return res.status(200).json({
+        payoutId: payout.id,
+        sellerId: payout.sellerId,
+        status: payout.status,
+        destinationAccountId: latestDestination.id,
+        updated: true,
+      });
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to rebind payout destination'));
+    }
+  });
+
   router.post('/payouts/reconcile-pending', payoutLimiter, requireAuth, async (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;

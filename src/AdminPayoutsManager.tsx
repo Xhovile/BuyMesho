@@ -211,6 +211,11 @@ function csvCell(value: unknown) {
 
 function canAction(row: PayoutRow, action: RowAction) {
   const status = String(row.status || "").toLowerCase();
+  const hasProviderAttemptSignal =
+    Number(row.attemptCount ?? 0) > 0 ||
+    Number(row.latestAttemptNo ?? 0) > 0 ||
+    Boolean(row.providerTransactionId) ||
+    Boolean(row.providerReference);
 
   if (action === "retry") {
     return row.retryEligible === true;
@@ -221,7 +226,7 @@ function canAction(row: PayoutRow, action: RowAction) {
   }
 
   if (action === "mark_paid") {
-    return status === "held";
+    return status === "held" && hasProviderAttemptSignal;
   }
 
   if (action === "mark_failed") {
@@ -430,7 +435,24 @@ export default function AdminPayoutsManager() {
       setNotice({ type: "success", message: `Reconciled payout ${row.id}.` });
       await load(pageIndex);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reconcile payout.");
+      const message = err instanceof Error ? err.message : "Failed to reconcile payout.";
+      if (/no provider attempt to reconcile/i.test(message)) {
+        try {
+          await apiFetch(`/api/admin/payouts/${encodeURIComponent(row.id)}/rebind-destination`, {
+            method: "POST",
+            body: JSON.stringify({}),
+          });
+          setNotice({
+            type: "success",
+            message: `Updated payout ${row.id} to seller's latest verified destination.`,
+          });
+          await load(pageIndex);
+        } catch (rebindErr) {
+          setError(rebindErr instanceof Error ? rebindErr.message : "Failed to rebind payout destination.");
+        }
+      } else {
+        setError(message);
+      }
     } finally {
       setActionBusyId(null);
     }
