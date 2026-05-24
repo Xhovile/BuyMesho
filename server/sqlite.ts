@@ -140,6 +140,22 @@ function initPaymentSchema(db: Database.Database): void {
 
     CREATE INDEX IF NOT EXISTS idx_escrows_order_id ON escrows(order_id);
 
+    CREATE TABLE IF NOT EXISTS escrow_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      escrow_id TEXT NOT NULL,
+      entry_type TEXT NOT NULL,
+      actor_type TEXT NOT NULL,
+      actor_id TEXT,
+      reference TEXT,
+      amount REAL,
+      currency TEXT,
+      note TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (escrow_id) REFERENCES escrows(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_escrow_events_escrow_id ON escrow_events(escrow_id, created_at DESC);
+
     CREATE TABLE IF NOT EXISTS payment_webhook_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       provider TEXT NOT NULL,
