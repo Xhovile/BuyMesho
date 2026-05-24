@@ -41,6 +41,15 @@ export class ServerOrderService {
       updatedAt: new Date().toISOString(),
     }));
   }
+
+  markInEscrow(orderId: string, escrowId: string): StoredOrder | undefined {
+    return orderRepository.update(orderId, (current) => ({
+      ...current,
+      escrowId,
+      status: 'in_escrow',
+      updatedAt: new Date().toISOString(),
+    }));
+  }
 }
 
 export const serverOrderService = new ServerOrderService();
