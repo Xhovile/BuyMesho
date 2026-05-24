@@ -7,6 +7,7 @@ const testOrderIds = [
   'escrow-release-accounting-1',
   'escrow-release-accounting-repeat',
   'escrow-release-accounting-held',
+  'escrow-release-accounting-disputed',
 ];
 
 function clearEscrowRepositoryTestState(): void {
@@ -96,6 +97,30 @@ test('releaseToSellerEarnings validates escrow state transitions before appendin
   assert.equal(result.escrow.state, 'released', 'held escrows should transition into released state');
   assert.equal(result.releaseEntry.reference, 'held-release', 'held release should preserve release reference');
   assert.equal(releaseEntries('escrow-release-accounting-held').length, 1, 'held release should append one release entry');
+
+  clearEscrowRepositoryTestState();
+});
+
+test('releaseToSellerEarnings rejects disputed escrows without appending release entries', () => {
+  clearEscrowRepositoryTestState();
+
+  escrowRepository.create('escrow-release-accounting-disputed', 'MWK', 1200);
+  escrowRepository.updateState('escrow-release-accounting-disputed', 'disputed');
+
+  assert.throws(
+    () => escrowRepository.releaseToSellerEarnings({
+      orderId: 'escrow-release-accounting-disputed',
+      releasedBy: 'buyer-accounting-disputed',
+      reference: 'disputed-release',
+    }),
+    /Escrow cannot be released from disputed state/,
+  );
+
+  assert.equal(
+    releaseEntries('escrow-release-accounting-disputed').length,
+    0,
+    'disputed escrows should not append release entries',
+  );
 
   clearEscrowRepositoryTestState();
 });
