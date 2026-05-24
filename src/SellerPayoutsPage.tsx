@@ -585,15 +585,17 @@ useEffect(() => {
           </div>
         ) : null}
 
-        <PayoutActionRequiredBanner
-          summary={earningsSummary}
-          destinations={destinations}
-          onAction={() => {
-            document
-              .getElementById("payout-destination-settings")
-              ?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        />
+        <div className="min-h-[88px]">
+          <PayoutActionRequiredBanner
+            summary={earningsSummary}
+            destinations={destinations}
+            onAction={() => {
+              document
+                .getElementById("payout-destination-settings")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
+        </div>
 
         <section
           id="payout-destination-settings"
