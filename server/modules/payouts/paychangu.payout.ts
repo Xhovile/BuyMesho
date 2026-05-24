@@ -385,6 +385,7 @@ function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerCharge
   return {
     mobile: input.mobile ?? input.destinationReference,
     mobile_money_operator_ref_id: input.mobileMoneyOperatorRefId,
+    currency: input.currency,
     amount: String(input.amount),
     charge_id: providerChargeId,
     email: input.email,
@@ -397,6 +398,7 @@ function buildBankBody(input: ExecutePayChanguPayoutInput, providerChargeId: str
   return {
     payout_method: 'bank_transfer',
     bank_uuid: input.bankUuid,
+    currency: input.currency,
     amount: String(input.amount),
     charge_id: providerChargeId,
     bank_account_name: input.bankAccountName ?? input.firstName ?? input.providerName,
