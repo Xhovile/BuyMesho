@@ -6,7 +6,7 @@ import { getPaymentDb } from '../../../sqlite.js';
 const testOrderIds = [
   'escrow-release-accounting-1',
   'escrow-release-accounting-repeat',
-  'escrow-release-accounting-initiated',
+  'escrow-release-accounting-held',
 ];
 
 function clearEscrowRepositoryTestState(): void {
@@ -81,22 +81,21 @@ test('releaseToSellerEarnings rejects repeat release attempts without duplicatin
   clearEscrowRepositoryTestState();
 });
 
-test('releaseToSellerEarnings validates release state before appending a release ledger entry', () => {
+test('releaseToSellerEarnings validates escrow state transitions before appending a release ledger entry', () => {
   clearEscrowRepositoryTestState();
 
-  escrowRepository.create('escrow-release-accounting-initiated', 'MWK', 900);
-  escrowRepository.updateState('escrow-release-accounting-initiated', 'initiated');
+  escrowRepository.create('escrow-release-accounting-held', 'MWK', 900);
+  escrowRepository.updateState('escrow-release-accounting-held', 'held');
 
-  assert.throws(
-    () => escrowRepository.releaseToSellerEarnings({
-      orderId: 'escrow-release-accounting-initiated',
-      releasedBy: 'buyer-accounting-initiated',
-      reference: 'not-funded',
-    }),
-    /Escrow cannot be released from initiated state/,
-  );
+  const result = escrowRepository.releaseToSellerEarnings({
+    orderId: 'escrow-release-accounting-held',
+    releasedBy: 'buyer-accounting-held',
+    reference: 'held-release',
+  });
 
-  assert.equal(releaseEntries('escrow-release-accounting-initiated').length, 0, 'invalid state should not append a release entry');
+  assert.equal(result.escrow.state, 'released', 'held escrows should transition into released state');
+  assert.equal(result.releaseEntry.reference, 'held-release', 'held release should preserve release reference');
+  assert.equal(releaseEntries('escrow-release-accounting-held').length, 1, 'held release should append one release entry');
 
   clearEscrowRepositoryTestState();
 });
