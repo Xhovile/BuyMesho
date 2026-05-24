@@ -126,6 +126,27 @@ export interface Listing {
   single_item_price?: number | null;
 }
 
+export interface SellerDashboardPayoutTotals {
+  currency?: string | null;
+  lifetimeSales?: number | string | null;
+  lifetime_sales?: number | string | null;
+  inEscrow?: number | string | null;
+  in_escrow?: number | string | null;
+  availableForPayout?: number | string | null;
+  available_for_payout?: number | string | null;
+  pendingPayout?: number | string | null;
+  pending_payout?: number | string | null;
+  paidOut?: number | string | null;
+  paid_out?: number | string | null;
+  failedActionRequired?: number | string | null;
+  failed_action_required?: number | string | null;
+  total?: number | string | null;
+  totalSales?: number | string | null;
+  total_sales?: number | string | null;
+  totalPayoutVolume?: number | string | null;
+  total_payout_volume?: number | string | null;
+}
+
 export interface SellerDashboardData {
   seller: {
     uid: string;
@@ -150,6 +171,12 @@ export interface SellerDashboardData {
     status: string;
     created_at: string;
   } | null;
+  payouts?: SellerDashboardPayoutTotals | null;
+  payouts_summary?: SellerDashboardPayoutTotals | null;
+  payoutSummary?: SellerDashboardPayoutTotals | null;
+  payout_summary?: SellerDashboardPayoutTotals | null;
+  earnings?: SellerDashboardPayoutTotals | null;
+  earnings_summary?: SellerDashboardPayoutTotals | null;
 }
 
 export interface RatingSummary {
@@ -274,4 +301,10 @@ export interface MessageReport {
   status: "open" | "reviewed" | "resolved";
   created_at: string;
   updated_at?: string;
+  message_body?: string | null;
+  listing_name?: string | null;
+  seller_business_name?: string | null;
+  buyer_business_name?: string | null;
+  buyer_uid?: string | null;
+  seller_uid?: string | null;
 }

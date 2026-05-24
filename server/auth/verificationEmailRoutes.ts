@@ -1,8 +1,6 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import nodemailer from "nodemailer";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
-import { registerAccountDeletionRoutes } from "./accountDeletionRoutes.js";
-import { registerMessageModerationRoutes, registerMessageRoutes } from "../routes/messageHubRoutes.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -224,9 +222,6 @@ function registerVerificationEmailRoutes(app: Express) {
 
   app.post("/api/auth/send-verification-email", verifyBearerIdentity, verificationEmailHandler);
   app.post("/api/auth/resend-verification-email", verifyBearerIdentity, verificationEmailHandler);
-  registerAccountDeletionRoutes(app);
-  registerMessageRoutes(app);
-  registerMessageModerationRoutes(app);
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }

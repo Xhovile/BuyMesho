@@ -12,6 +12,33 @@ CREATE TABLE IF NOT EXISTS sellers (
   join_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS seller_payout_accounts (
+  id TEXT PRIMARY KEY,
+  seller_uid TEXT NOT NULL,
+  destination_type TEXT NOT NULL,
+  provider_name TEXT NOT NULL,
+  provider_ref_id TEXT,
+  currency TEXT NOT NULL DEFAULT 'MWK',
+  account_name TEXT NOT NULL,
+  account_number_encrypted TEXT,
+  mobile_encrypted TEXT,
+  masked_account TEXT NOT NULL,
+  destination_fingerprint TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  verification_status TEXT NOT NULL DEFAULT 'pending',
+  verification_attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  verified_at TIMESTAMPTZ,
+  replaced_from_id TEXT,
+  replaced_by_id TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE,
+  FOREIGN KEY (replaced_from_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL,
+  FOREIGN KEY (replaced_by_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL
+);
+
 CREATE TABLE IF NOT EXISTS seller_applications (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   applicant_uid TEXT NOT NULL,
@@ -239,3 +266,120 @@ CREATE TABLE IF NOT EXISTS orders (
 
 CREATE INDEX IF NOT EXISTS idx_orders_payment_reference
 ON orders (payment_reference);
+
+CREATE TABLE IF NOT EXISTS payouts (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT NOT NULL,
+  order_id TEXT,
+  escrow_id TEXT,
+  release_entry_id TEXT,
+  destination_account_id TEXT,
+  amount DOUBLE PRECISION NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'processing',
+  provider TEXT,
+  provider_ref_id TEXT,
+  provider_charge_id TEXT,
+  provider_transaction_id TEXT,
+  provider_status TEXT,
+  failure_reason TEXT,
+  manual_review_reason TEXT,
+  requested_by TEXT,
+  approved_by TEXT,
+  requested_at TIMESTAMPTZ,
+  sent_at TIMESTAMPTZ,
+  paid_at TIMESTAMPTZ,
+  failed_at TIMESTAMPTZ,
+  last_attempt_id TEXT,
+  raw_request TEXT,
+  raw_response TEXT,
+  processed_by TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (destination_account_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_payouts_seller_id
+ON payouts (seller_id);
+
+CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id
+ON payouts (destination_account_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_release_escrow
+ON payouts (escrow_id)
+WHERE escrow_id IS NOT NULL AND release_entry_id IS NOT NULL;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_provider_charge_id
+ON payouts (provider_charge_id)
+WHERE provider_charge_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_payouts_status
+ON payouts (status, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS payout_attempts (
+  id TEXT PRIMARY KEY,
+  payout_id TEXT NOT NULL,
+  attempt_no INTEGER NOT NULL,
+  provider TEXT NOT NULL,
+  provider_charge_id TEXT NOT NULL UNIQUE,
+  request_payload TEXT NOT NULL,
+  response_payload TEXT,
+  status TEXT NOT NULL DEFAULT 'created',
+  failure_reason TEXT,
+  sent_at TIMESTAMPTZ,
+  completed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_payout_attempts_payout_id
+ON payout_attempts (payout_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_payout_attempts_status
+ON payout_attempts (status, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS payout_events (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  payout_id TEXT NOT NULL,
+  seller_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  actor_type TEXT NOT NULL,
+  actor_id TEXT,
+  note TEXT,
+  payload TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS seller_payout_account_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  seller_uid TEXT NOT NULL,
+  account_id TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  actor_type TEXT NOT NULL,
+  actor_id TEXT,
+  note TEXT,
+  payload TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (account_id) REFERENCES seller_payout_accounts(id) ON DELETE CASCADE,
+  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_payout_events_payout_id
+ON payout_events (payout_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_payout_events_seller_id
+ON payout_events (seller_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid
+ON seller_payout_account_events (seller_uid, created_at DESC);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_seller_payout_accounts_destination_fingerprint
+ON seller_payout_accounts (seller_uid, destination_fingerprint);
+
+CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_seller_uid
+ON seller_payout_accounts (seller_uid, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_verification_status
+ON seller_payout_accounts (seller_uid, verification_status, is_active);

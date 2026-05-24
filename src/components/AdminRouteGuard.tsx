@@ -2,7 +2,7 @@ import { type ReactNode, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { useAuthUser } from "../hooks/useAuthUser";
 import { useIsAdmin } from "../hooks/useIsAdmin";
-import { LOGIN_PATH, PROFILE_PATH, navigateToPath } from "../lib/appNavigation";
+import { PROFILE_PATH, navigateToLoginWithReturnPath, navigateToPath } from "../lib/appNavigation";
 
 type AdminRouteGuardProps = {
   children: ReactNode;
@@ -17,7 +17,7 @@ export default function AdminRouteGuard({ children }: AdminRouteGuardProps) {
     if (loading) return;
 
     if (!user) {
-      navigateToPath(LOGIN_PATH);
+      navigateToLoginWithReturnPath(window.location.pathname + window.location.search);
     }
   }, [loading, user]);
 

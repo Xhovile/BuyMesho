@@ -12,6 +12,8 @@ export type AppRoute =
   | "safety"
   | "report"
   | "seller"
+  | "seller_dashboard"
+  | "seller_payouts"
   | "listing_details"
   | "messages"
   | "create"
@@ -30,10 +32,16 @@ export type AppRoute =
   | "my_listings"
   | "admin"
   | "admin_payments"
+  | "admin_payouts"
+  | "admin_payout_destinations"
   | "admin_reports"
   | "admin_seller_applications"
+  | "admin_moderation_queue"
+  | "admin_audit"
+  | "admin_setup"
   | "payment_return";
 
+export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
 export const HOME_PATH = "/";
 export const EXPLORE_PATH = "/explore";
 export const SAVED_PATH = "/saved";
@@ -44,6 +52,8 @@ export const TERMS_PATH = "/terms";
 export const SAFETY_PATH = "/safety";
 export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
+export const SELLER_DASHBOARD_PATH = "/seller-dashboard";
+export const SELLER_PAYOUTS_PATH = "/seller/payouts";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
 export const CREATE_PATH = "/create";
@@ -62,9 +72,19 @@ export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_PATH = "/admin";
 export const ADMIN_PAYMENTS_PATH = "/admin/payments";
+export const ADMIN_PAYOUTS_PATH = "/admin/payouts";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
+export const ADMIN_MODERATION_QUEUE_PATH = "/admin/moderation-queue";
+export const ADMIN_AUDIT_PATH = "/admin/audit";
+export const ADMIN_SETUP_PATH = "/admin/setup";
 export const PAYMENT_RETURN_PATH = "/payment/return";
+export const PAYMENTS_HUB_PATH = "/payments";
+export const PAYMENT_METHOD_PATH = "/payments/payment-method";
+export const TRACK_ORDER_PATH = "/payments/track-order";
+export const DISPUTES_PATH = "/payments/disputes";
+export const BUYER_PAYMENTS_PATH = "/buyer-payments";
+export const CART_PATH = "/cart";
 
 export const MARKET_CHIP_PATHS: Record<HeaderChip, string> = {
   All: EXPLORE_PATH,
@@ -325,6 +345,14 @@ export const getAppRouteFromLocation = (
     return "my_listings";
   }
 
+  if (location.pathname === SELLER_PAYOUTS_PATH) {
+    return "seller_payouts";
+  }
+
+  if (location.pathname === SELLER_DASHBOARD_PATH) {
+    return "seller_dashboard";
+  }
+
   if (location.pathname === ADMIN_PATH) {
     return "admin";
   }
@@ -333,12 +361,28 @@ export const getAppRouteFromLocation = (
     return "admin_payments";
   }
 
+  if (location.pathname === ADMIN_PAYOUTS_PATH) {
+    return "admin_payouts";
+  }
+
   if (location.pathname === ADMIN_REPORTS_PATH) {
     return "admin_reports";
   }
 
   if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) {
     return "admin_seller_applications";
+  }
+
+  if (location.pathname === ADMIN_MODERATION_QUEUE_PATH) {
+    return "admin_moderation_queue";
+  }
+
+  if (location.pathname === ADMIN_AUDIT_PATH) {
+    return "admin_audit";
+  }
+
+  if (location.pathname === ADMIN_SETUP_PATH) {
+    return "admin_setup";
   }
 
   if (location.pathname === PAYMENT_RETURN_PATH) {
@@ -369,22 +413,6 @@ export const getAppRouteFromLocation = (
     return "settings";
   }
 
-  if (location.pathname === PRIVACY_PATH) {
-    return "privacy";
-  }
-
-  if (location.pathname === TERMS_PATH) {
-    return "terms";
-  }
-
-  if (location.pathname === SAFETY_PATH) {
-    return "safety";
-  }
-
-  if (location.pathname === REPORT_PATH) {
-    return "report";
-  }
-
   if (location.pathname === SAVED_PATH) {
     return "saved";
   }
@@ -396,28 +424,35 @@ export const getAppRouteFromLocation = (
   if (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`)) {
     return "explore";
   }
+  
+  if (location.pathname === ADMIN_PAYOUT_DESTINATIONS_PATH) {
+    return "admin_payout_destinations";
+  }
 
   return "home";
 };
 
-export const navigateToPath = (path: string) => {
-  const url = new URL(window.location.href);
-  url.pathname = path;
+export const navigateToPath = (path: string, options?: { replace?: boolean }) => {
+  const url = new URL(path, window.location.href);
 
-  if (path !== EXPLORE_PATH && path !== LISTING_PATH) {
+  if (url.pathname !== EXPLORE_PATH && url.pathname !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
   }
 
-  if (path !== SELLER_PATH) {
+  if (url.pathname !== SELLER_PATH) {
     url.searchParams.delete("uid");
   }
 
-  if (path !== EDIT_PATH) {
+  if (url.pathname !== EDIT_PATH) {
     url.searchParams.delete("id");
   }
 
-  window.history.pushState(markAppHistoryState(), "", url.toString());
+  if (options?.replace) {
+    window.history.replaceState(markAppHistoryState(), "", url.toString());
+  } else {
+    window.history.pushState(markAppHistoryState(), "", url.toString());
+  }
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -440,6 +475,28 @@ export const consumeAuthReturnPath = (fallbackPath: string = PROFILE_PATH) => {
   sessionStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
   return storedReturnPath ?? fallbackPath;
 };
+
+const getCurrentAppPath = () =>
+  `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+export const storeAuthReturnPath = (path?: string) => {
+  if (typeof window === "undefined") return;
+  const sanitized = sanitizeInternalReturnPath(path ?? getCurrentAppPath());
+  if (!sanitized) return;
+  sessionStorage.setItem(AUTH_RETURN_PATH_STORAGE_KEY, sanitized);
+};
+
+export const navigateToLoginWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(LOGIN_PATH);
+};
+
+export const navigateToSignupWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(SIGNUP_PATH);
+};
+
+export const navigateToSellerDashboard = () => navigateToPath(SELLER_DASHBOARD_PATH);
 
 export type SettingsSection = "privacy" | "terms" | "safety" | "report";
 
@@ -523,6 +580,8 @@ export const navigateToSellerProfile = (uid: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export const navigateToSellerPayouts = () => navigateToPath(SELLER_PAYOUTS_PATH);
+
 export const navigateToCreateListing = () => {
   const url = new URL(window.location.href);
   url.pathname = CREATE_PATH;
@@ -560,9 +619,32 @@ export const navigateToChangePassword = () => navigateToPath(CHANGE_PASSWORD_PAT
 export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
 export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
 export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
+export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
 export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
+export const navigateToAdminModerationQueue = () => navigateToPath(ADMIN_MODERATION_QUEUE_PATH);
+export const navigateToAdminAudit = () => navigateToPath(ADMIN_AUDIT_PATH);
+export const navigateToAdminSetup = () => navigateToPath(ADMIN_SETUP_PATH);
+export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
+export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
+export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
+export const navigateToDisputes = () => navigateToPath(DISPUTES_PATH);
+export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
+export const navigateToCart = () => navigateToPath(CART_PATH);
+export const ORDER_TRACKING_BASE_PATH = "/orders";
+export const navigateToAdminPayoutDestinations = () => navigateToPath(ADMIN_PAYOUT_DESTINATIONS_PATH);
 
+export const buildOrderTrackingPath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`;
+
+export const buildOrderDisputePath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}/dispute`;
+
+export const navigateToOrderTracking = (reference: string) =>
+  navigateToPath(buildOrderTrackingPath(reference));
+
+export const navigateToOrderDispute = (reference: string) =>
+  navigateToPath(buildOrderDisputePath(reference));
 export const getSellerUidFromUrl = () => {
   const params = new URLSearchParams(window.location.search);
   return params.get("uid");

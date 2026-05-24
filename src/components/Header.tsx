@@ -1,17 +1,23 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck } from "lucide-react";
-import { type FormEvent, useEffect, useState } from "react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, Wallet } from "lucide-react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
 import { signOut } from "firebase/auth";
 import type { UserProfile } from "../types";
 import { getAvatarUrl } from "../lib/avatar";
 import {
-  ADMIN_PATH,
+  navigateToAdminModerationQueue,
   BECOME_SELLER_PATH,
+  CREATE_PATH,
+  EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
+  PAYMENTS_HUB_PATH,
+  SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
+  PROFILE_PATH,
+  navigateToLoginWithReturnPath,
   navigateToPath,
 } from "../lib/appNavigation";
 import { QUICK_CHIPS } from "../constants";
@@ -33,6 +39,8 @@ type HeaderProps = {
   onChipChange?: (chip: HeaderChip) => void;
 };
 
+const DESKTOP_BREAKPOINT = 768;
+
 export default function Header({
   searchValue,
   onSearch,
@@ -45,9 +53,11 @@ export default function Header({
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
+  const visibilityRafRef = useRef<number | null>(null);
 
   const { isAdmin } = useIsAdmin(firebaseUser);
 
@@ -59,10 +69,15 @@ export default function Header({
 
   const closeMenu = () => setMobileMenuOpen(false);
 
+  const openAuthGuard = (returnPath: string, afterClose?: () => void) => {
+    afterClose?.();
+    setAuthReturnPath(returnPath);
+    setAuthGuardOpen(true);
+  };
+
   const handleSettingsClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(SETTINGS_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -71,8 +86,7 @@ export default function Header({
 
   const handleMessagesClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(MESSAGES_PATH, afterClose);
       return;
     }
     afterClose?.();
@@ -81,8 +95,7 @@ export default function Header({
 
   const handleSellClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
-      afterClose?.();
-      setAuthGuardOpen(true);
+      openAuthGuard(CREATE_PATH, afterClose);
       return;
     }
 
@@ -93,6 +106,24 @@ export default function Header({
     }
 
     navigateToPath(BECOME_SELLER_PATH);
+  };
+
+  const handlePaymentsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(PAYMENTS_HUB_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(PAYMENTS_HUB_PATH);
+  };
+
+  const handleSellerPayoutsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SELLER_PAYOUTS_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SELLER_PAYOUTS_PATH);
   };
 
   const handleLogout = async (afterClose?: () => void) => {
@@ -111,22 +142,43 @@ export default function Header({
   const desktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
+  const pathname = typeof window === "undefined" ? HOME_PATH : window.location.pathname;
+  const isMarketRoute =
+    pathname === EXPLORE_PATH ||
+    pathname.startsWith(`${EXPLORE_PATH}/`);
+  const primaryDrawerPath = isMarketRoute ? HOME_PATH : EXPLORE_PATH;
+  const primaryDrawerLabel = isMarketRoute ? "Home" : "Market";
+
   useEffect(() => {
     const updateHeaderVisibility = () => {
+      if (window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`).matches) {
+        setTopRowHidden(false);
+        return;
+      }
       setTopRowHidden((prev) => {
-        if (prev) return window.scrollY >= 4;
+        if (prev) return window.scrollY >= 2;
         return window.scrollY > 30;
       });
     };
 
-    const onScroll = () => {
-      window.requestAnimationFrame(updateHeaderVisibility);
+    const scheduleVisibilityUpdate = () => {
+      if (visibilityRafRef.current !== null) return;
+      visibilityRafRef.current = window.requestAnimationFrame(() => {
+        visibilityRafRef.current = null;
+        updateHeaderVisibility();
+      });
     };
 
     updateHeaderVisibility();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", scheduleVisibilityUpdate, { passive: true });
+    window.addEventListener("resize", scheduleVisibilityUpdate, { passive: true });
     return () => {
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", scheduleVisibilityUpdate);
+      window.removeEventListener("resize", scheduleVisibilityUpdate);
+      if (visibilityRafRef.current !== null) {
+        window.cancelAnimationFrame(visibilityRafRef.current);
+        visibilityRafRef.current = null;
+      }
     };
   }, []);
 
@@ -175,50 +227,34 @@ export default function Header({
                 <BrandMark />
 
                 <div className="hidden md:flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(HOME_PATH)}
-                    className={desktopNavButtonClass}
-                  >
-                    <House className="w-4 h-4" />
+                  <button type="button" onClick={() => navigateToPath(HOME_PATH)} className={desktopNavButtonClass}>
+                    <House className="w-4 h-4 text-blue-500" />
                     Home
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleMessagesClick()}
-                    className={desktopNavButtonClass}
-                  >
-                    <MessageSquareText className="w-4 h-4" />
+                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
+                    <CreditCard className="w-4 h-4 text-amber-500" />
+                    Payments
+                  </button>
+                  <button type="button" onClick={() => handleSellerPayoutsClick()} className={desktopNavButtonClass}>
+                    <Wallet className="w-4 h-4 text-emerald-600" />
+                    Seller Payouts
+                  </button>
+                  <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
+                    <MessageSquareText className="w-4 h-4 text-teal-500" />
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
-                      {unreadCount > 0 ? (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                          {unreadCount}
-                        </span>
-                      ) : null}
+                      {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                     </div>
                   </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSettingsClick()}
-                    className={desktopNavButtonClass}
-                  >
-                    <Settings className="w-4 h-4" />
-                    Settings
-                  </button>
-
                   {isAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => navigateToPath(ADMIN_PATH)}
-                      className={desktopNavButtonClass}
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      Admin Access
+                    <button type="button" onClick={() => navigateToAdminModerationQueue()} className={desktopNavButtonClass}>
+                      <ShieldCheck className="w-4 h-4 text-slate-700" />
+                      ADMIN
                     </button>
                   ) : null}
+                  <button type="button" onClick={() => handleSettingsClick()} aria-label="Settings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-500 bg-slate-500 text-sm font-bold text-white hover:bg-slate-600 hover:border-slate-600 transition-colors">
+                    <Settings className="w-4 h-4 text-white" />
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
@@ -226,14 +262,14 @@ export default function Header({
                     onClick={() => handleSellClick()}
                     className="hidden sm:flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95"
                   >
-                    {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                    {isSeller ? <Plus className="w-4 h-4 text-red-500" /> : <Store className="w-4 h-4 text-red-500" />}
                     <span className="hidden sm:inline">{isSeller ? "List Item" : "Sell"}</span>
                   </button>
 
                   <button
                     onClick={() => {
                       if (!firebaseUser) {
-                        setAuthGuardOpen(true);
+                        openAuthGuard(PROFILE_PATH);
                         return;
                       }
                       onProfileClick();
@@ -266,22 +302,13 @@ export default function Header({
               </div>
             </div>
 
-            <div
-              className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}
-            >
-              <form
-                onSubmit={(e: FormEvent<HTMLFormElement>) => {
-                  e.preventDefault();
-                  onSearch(searchValue.trim());
-                }}
-                className="w-full"
-              >
+            <div className={`px-3 transition-[padding] duration-200 ${topRowHidden ? "pb-2 pt-2" : "pb-3 pt-2"}`}>
+              <form onSubmit={(e: FormEvent<HTMLFormElement>) => {
+                e.preventDefault();
+                onSearch(searchValue.trim());
+              }} className="w-full">
                 <div className="mx-auto flex w-full max-w-3xl items-center gap-2 md:max-w-4xl">
-                  <div
-                    className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${
-                      topRowHidden ? "px-3 py-1.5" : "px-3 py-2"
-                    }`}
-                  >
+                  <div className={`flex min-w-0 w-full items-center gap-2 rounded-2xl border border-zinc-200 bg-white shadow-sm transition-all ${topRowHidden ? "px-3 py-1.5" : "px-3 py-2"}`}>
                     <input
                       type="text"
                       value={searchValue}
@@ -289,11 +316,7 @@ export default function Header({
                       placeholder="Search listings, products, or services..."
                       className="w-full min-w-0 bg-transparent pl-1 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none"
                     />
-                    <button
-                      type="submit"
-                      aria-label="Search listings"
-                      className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4"
-                    >
+                    <button type="submit" aria-label="Search listings" className="inline-flex shrink-0 items-center justify-center rounded-xl bg-red-900 px-3 py-1.5 text-sm font-extrabold text-white hover:bg-red-800 sm:px-4">
                       Search
                     </button>
                   </div>
@@ -316,36 +339,32 @@ export default function Header({
           </div>
 
           <div className="px-3 py-1.5 bg-zinc-100 border-t border-zinc-200">
-          <div className="mx-auto max-w-7xl">
-            <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-              <div className="flex min-w-max items-center gap-4 pb-0.5">
-                {QUICK_CHIPS.map((chip) => {
-                  const isActive = chip === selectedChip;
-                  return (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        setSelectedChip(chip);
-                        onChipChange?.(chip);
-                      }}
-                      className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${
-                        isActive
-                          ? "text-zinc-800"
-                          : "text-zinc-700 hover:text-zinc-800"
-                      }`}
-                      aria-pressed={isActive}
-                      aria-label={chip}
-                    >
-                      <span>{chip}</span>
-                    </button>
-                  );
-                })}
+            <div className="mx-auto max-w-7xl">
+              <div className="-mx-1 overflow-x-auto px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                <div className="flex min-w-max items-center gap-4 pb-0.5">
+                  {QUICK_CHIPS.map((chip) => {
+                    const isActive = chip === selectedChip;
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => {
+                          setSelectedChip(chip);
+                          onChipChange?.(chip);
+                        }}
+                        className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${isActive ? "text-zinc-800" : "text-zinc-700 hover:text-zinc-800"}`}
+                        aria-pressed={isActive}
+                        aria-label={chip}
+                      >
+                        <span>{chip}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
       </nav>
 
       <AnimatePresence>
@@ -379,73 +398,78 @@ export default function Header({
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
                 <h2 id="drawer-title" className="mt-1 text-base font-black text-zinc-900">Start here</h2>
               </div>
-              <button
-                type="button"
-                onClick={closeMenu}
-                aria-label="Close menu"
-                className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
-              >
+              <button type="button" onClick={closeMenu} aria-label="Close menu" className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors">
                 <X className="w-4 h-4 text-zinc-600" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-              <button
-                type="button"
-                onClick={() => handleSellClick(closeMenu)}
-                className="w-full flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3 text-left text-sm font-bold text-white hover:bg-zinc-800 transition-colors"
-              >
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-[1px]">
+              <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                  {isSeller ? "List Item" : "Sell"}
+                  {primaryDrawerLabel === "Home" ? (
+                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <House className="w-4 h-4 text-white" />
+                    </span>
+                  ) : (
+                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                      <Store className="w-4 h-4 text-white" />
+                    </span>
+                  )}
+                  {primaryDrawerLabel}
                 </span>
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  handleMessagesClick();
-                }}
-                className={navButtonClass}
-              >
+              <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <MessageSquareText className="w-4 h-4 text-zinc-500" />
+                  <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-4 h-4 text-white" />
+                  </span>
+                  Payments
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                    <Wallet className="w-4 h-4 text-white" />
+                  </span>
+                  Seller Payouts
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                    <MessageSquareText className="w-4 h-4 text-white" />
+                  </span>
                   <div className="flex items-center gap-2">
                     <span>Messages</span>
-                    {unreadCount > 0 ? (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
-                        {unreadCount}
-                      </span>
-                    ) : null}
+                    {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                   </div>
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  closeMenu();
-                  navigateToPath(HOME_PATH);
-                }}
-                className={navButtonClass}
-              >
-                <span className="inline-flex items-center gap-3">
-                  <House className="w-4 h-4 text-zinc-500" />
-                  Home
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
+              {isAdmin ? (
+                <button type="button" onClick={() => { closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-white" />
+                    </span>
+                    ADMIN
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              ) : null}
 
-              <button
-                type="button"
-                onClick={() => handleSettingsClick(closeMenu)}
-                className={navButtonClass}
-              >
+              <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
-                  <Settings className="w-4 h-4 text-zinc-500" />
+                  <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                    <Settings className="w-4 h-4 text-white" />
+                  </span>
                   Settings
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -453,74 +477,31 @@ export default function Header({
 
               {firebaseUser ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      onProfileClick();
-                    }}
-                    className={navButtonClass}
-                  >
+                  <button type="button" onClick={() => { closeMenu(); onProfileClick(); }} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
-                      <User className="w-4 h-4 text-zinc-500" />
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
                       Profile
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
-
-                  {isAdmin ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        closeMenu();
-                        navigateToPath(ADMIN_PATH);
-                      }}
-                      className={navButtonClass}
-                    >
-                      <span className="inline-flex items-center gap-3">
-                        <ShieldCheck className="w-4 h-4 text-zinc-500" />
-                        Admin Access
-                      </span>
-                      <ChevronRight className="w-4 h-4 text-zinc-400" />
-                    </button>
-                  ) : null}
 
                   <button
                     type="button"
                     onClick={() => handleLogout(closeMenu)}
                     className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
                   >
-                    <span className="inline-flex items-center gap-3 text-red-600">
-                      <LogOut className="w-4 h-4" />
-                      Log Out
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                        <LogOut className="w-4 h-4 text-white" />
+                      </span>
+                      Logout
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 </>
-              ) : (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath("/signup");
-                    }}
-                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                  >
-                    Sign Up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      closeMenu();
-                      navigateToPath("/login");
-                    }}
-                    className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-                  >
-                    Sign In
-                  </button>
-                </div>
-              )}
+              ) : null}
             </div>
           </motion.div>
         )}
@@ -531,18 +512,25 @@ export default function Header({
         type="error"
         title="Login required"
         message="You need to be logged in to access this page. Sign in or create an account to continue."
-        onClose={() => setAuthGuardOpen(false)}
+        onClose={() => {
+          setAuthGuardOpen(false);
+          setAuthReturnPath(null);
+        }}
         actions={[
           {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(LOGIN_PATH);
+              navigateToLoginWithReturnPath(authReturnPath ?? undefined);
+              setAuthReturnPath(null);
             },
           },
           {
             label: "Cancel",
-            onClick: () => setAuthGuardOpen(false),
+            onClick: () => {
+              setAuthGuardOpen(false);
+              setAuthReturnPath(null);
+            },
             variant: "secondary",
           },
         ]}

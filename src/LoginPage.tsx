@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import TotpChallengeModal from "./components/TotpChallengeModal";
@@ -7,6 +7,7 @@ import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import {
   consumeAuthReturnPath,
+  HOME_PATH,
   navigateToLogin,
   navigateToPath,
   navigateToSignup,
@@ -31,6 +32,7 @@ type FeedbackState = {
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [totpChallengeOpen, setTotpChallengeOpen] = useState(false);
   const [totpChallengeCode, setTotpChallengeCode] = useState("");
@@ -45,7 +47,7 @@ export default function LoginPage() {
 
   const closeFeedback = () => setFeedback(null);
 
-  const getPostAuthPath = () => consumeAuthReturnPath("/profile");
+  const getPostAuthPath = () => consumeAuthReturnPath(HOME_PATH);
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -205,13 +207,23 @@ export default function LoginPage() {
 
         <div>
           <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
-          <input
-            required
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
-            className="w-full px-0 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
-          />
+          <div className="relative">
+            <input
+              required
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              className="w-full px-0 pr-10 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((prev) => !prev)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors"
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-4 text-sm font-bold">

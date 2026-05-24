@@ -6,6 +6,7 @@ import FeedbackModal from "./components/FeedbackModal";
 import { auth } from "./firebase";
 import {
   consumeAuthReturnPath,
+  HOME_PATH,
   navigateToLogin,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -40,7 +41,7 @@ export default function VerifyEmailPage() {
       return;
     }
     if (emailVerified) {
-      navigateToPath(consumeAuthReturnPath("/profile"));
+      navigateToPath(consumeAuthReturnPath(HOME_PATH));
     }
   }, [authLoading, firebaseUser, emailVerified]);
 
@@ -64,7 +65,7 @@ export default function VerifyEmailPage() {
           [
             {
               label: "Continue",
-              onClick: () => navigateToPath(consumeAuthReturnPath("/profile")),
+              onClick: () => navigateToPath(consumeAuthReturnPath(HOME_PATH)),
             },
           ]
         );

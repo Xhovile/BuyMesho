@@ -14,7 +14,9 @@ import { motion } from "motion/react";
 import { apiFetch } from "./lib/api";
 import {
   BECOME_SELLER_PATH,
+  CREATE_PATH,
   LOGIN_PATH,
+  navigateToLoginWithReturnPath,
   navigateToCreateListing,
   navigateToExplore,
   navigateToListingDetails,
@@ -26,6 +28,11 @@ import ListingCard from "./components/ListingCard";
 import FormDropdown from "./components/FormDropdown";
 import FeedbackModal from "./components/FeedbackModal";
 import { useAccountProfile } from "./hooks/useAccountProfile";
+import {
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+} from "./lib/hiddenCollections";
 
 type CategoryKey = "phones" | "fashion" | "books" | "food" | "beauty";
 
@@ -41,6 +48,7 @@ type CategoryConfig = {
 
 type ListingPreview = {
   id: number | string;
+  seller_uid?: string;
   name: string;
   price: number | string;
   description?: string | null;
@@ -119,6 +127,12 @@ export default function CategoryPage() {
   const [subcategory, setSubcategory] = useState(DEFAULT_SUBCATEGORY);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+    readHiddenSellerUids()
+  );
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+    readHiddenListingIds()
+  );
 
   const categoryKey = useMemo(() => {
     const params = new URLSearchParams(window.location.search);
@@ -168,6 +182,24 @@ export default function CategoryPage() {
     };
   }, [config.apiCategory]);
 
+  useEffect(() => {
+    const syncHiddenCollections = () => {
+      setHiddenSellerUids(readHiddenSellerUids());
+      setHiddenListingIds(readHiddenListingIds());
+    };
+
+    return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
+  const hiddenSellerSet = useMemo(
+    () => new Set(hiddenSellerUids),
+    [hiddenSellerUids]
+  );
+  const hiddenListingSet = useMemo(
+    () => new Set(hiddenListingIds),
+    [hiddenListingIds]
+  );
+
   const subcategoryOptions = useMemo(() => {
     const subs = getListingSubcategories(config.apiCategory);
     return [DEFAULT_SUBCATEGORY, ...subs];
@@ -203,6 +235,13 @@ export default function CategoryPage() {
     const normalizedSubcategory = subcategory.trim().toLowerCase();
 
     const filtered = items.filter((item) => {
+      const listingId = Number(item.id);
+      const hiddenByListingId =
+        Number.isInteger(listingId) && hiddenListingSet.has(listingId);
+      const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+
+      if (hiddenByListingId || hiddenBySeller) return false;
+
       const campusMatch =
         normalizedCampus === DEFAULT_CAMPUS_NORMALIZED ||
         (item.university || "").trim().toLowerCase() === normalizedCampus;
@@ -230,12 +269,12 @@ export default function CategoryPage() {
     });
 
     return sorted;
-  }, [items, sortBy, campus, subcategory]);
+  }, [items, sortBy, campus, subcategory, hiddenListingSet, hiddenSellerSet]);
 
   const handleSellClick = () => {
-    if (!firebaseUser) {
-      setAuthGuardOpen(true);
-      return;
+      if (!firebaseUser) {
+        setAuthGuardOpen(true);
+        return;
     }
 
     if (profileLoading) return;
@@ -470,7 +509,7 @@ export default function CategoryPage() {
             label: "Log in",
             onClick: () => {
               setAuthGuardOpen(false);
-              navigateToPath(LOGIN_PATH);
+              navigateToLoginWithReturnPath(CREATE_PATH);
             },
           },
           {

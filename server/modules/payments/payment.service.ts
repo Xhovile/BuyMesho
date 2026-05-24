@@ -5,6 +5,8 @@ import { flutterwaveProvider } from '../../../src/modules/payments/providers/flu
 import { paystackProvider } from '../../../src/modules/payments/providers/paystack.js';
 import { paychanguProvider } from './paychangu.provider.js';
 import { paymentRepository } from './payment.repository.js';
+import { orderRepository } from '../orders/order.repository.js';
+import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -14,6 +16,8 @@ export interface ServerPaymentConfig {
   paychanguWebhookSecret?: string;
   paychanguBaseUrl?: string;
 }
+
+const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';
 
 function readEnv(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -38,6 +42,18 @@ function validatePayChanguConfig(config: ServerPaymentConfig): void {
       `Missing required PayChangu environment variables in production: ${missing.join(', ')}`,
     );
   }
+}
+
+function normalizeCurrency(value: string | undefined): string {
+  return String(value ?? '').trim().toUpperCase();
+}
+
+function moneyMatches(
+  expected: { amount: number; currency: string },
+  actual?: { amount: number; currency: string },
+): boolean {
+  if (!actual) return false;
+  return expected.amount === actual.amount && normalizeCurrency(expected.currency) === normalizeCurrency(actual.currency);
 }
 
 export function createServerPaymentConfigFromEnv(): ServerPaymentConfig {
@@ -65,12 +81,15 @@ export class ServerPaymentService {
     validatePayChanguConfig(config);
   }
 
-
   private resolveConfig(): ServerPaymentConfig {
+    const envPayChanguSecretKey = readEnv('PAYCHANGU_SECRET_KEY');
+    const envPayChanguWebhookSecret = readEnv('PAYCHANGU_WEBHOOK_SECRET');
+    const envPayChanguBaseUrl = readEnv('PAYCHANGU_BASE_URL');
+
     return {
-      paychanguSecretKey: this.config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY,
-      paychanguWebhookSecret: this.config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET,
-      paychanguBaseUrl: this.config.paychanguBaseUrl ?? process.env.PAYCHANGU_BASE_URL,
+      paychanguSecretKey: envPayChanguSecretKey ?? this.config.paychanguSecretKey,
+      paychanguWebhookSecret: envPayChanguWebhookSecret ?? this.config.paychanguWebhookSecret,
+      paychanguBaseUrl: envPayChanguBaseUrl ?? this.config.paychanguBaseUrl,
     };
   }
 
@@ -92,24 +111,72 @@ export class ServerPaymentService {
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-    const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
+  const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
+  const payment = paymentRepository.findByReference(verification.reference ?? txRef);
 
-    await paymentRepository.updateByReference(verification.reference ?? txRef, (current) => ({
+  let strictVerified = verification.verified;
+  let failureReason = verification.failureReason;
+
+  if (!payment) {
+    strictVerified = false;
+    failureReason = failureReason ?? 'Stored payment record not found for this reference';
+  } else {
+    const order = orderRepository.findById(payment.orderId);
+    if (!order) {
+      strictVerified = false;
+      failureReason = failureReason ?? 'Associated order not found';
+    } else {
+      const amountMatches = moneyMatches(order.total, verification.amount);
+      if (!amountMatches) {
+        strictVerified = false;
+        failureReason =
+          failureReason ?? `Payment amount or currency does not match order total for ${order.id}`;
+      }
+    }
+  }
+
+  const strictVerification: PaymentVerificationResult = {
+    ...verification,
+    verified: strictVerified,
+    orderId: payment?.orderId,
+    failureReason,
+  };
+
+  if (payment) {
+    await paymentRepository.updateByReference(payment.reference, (current) => ({
       ...current,
-      verified: verification.verified,
-      verification,
+      verified: strictVerification.verified,
+      verification: strictVerification,
     }));
+  }
 
-    return verification;
+  if (strictVerification.verified && payment) {
+    const currentOrder = orderRepository.findById(payment.orderId);
+
+    if (
+      currentOrder &&
+      !['in_escrow', 'fulfilled', 'refunded', 'closed', 'disputed'].includes(currentOrder.status)
+    ) {
+      applyVerifiedPayChanguPayment({
+        ...strictVerification,
+        provider: 'paychangu',
+        reference: strictVerification.reference ?? txRef,
+        txRef,
+        status: strictVerification.status ?? 'captured',
+      });
+    }
+  }
+
+  return strictVerification;
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {
     const provider = this.registry.get(request.provider);
 
     if (!provider.capabilities.supportsRefunds) {
-      throw new ApiError(`Refunds are not supported for provider: ${request.provider}`, {
-        message: `Refunds are not supported for provider: ${request.provider}`,
-        code: 'REFUNDS_UNSUPPORTED',
+      throw new ApiError(REFUND_UNAVAILABLE_MESSAGE, {
+        message: REFUND_UNAVAILABLE_MESSAGE,
+        code: 'REFUNDS_UNAVAILABLE',
         status: 501,
       });
     }

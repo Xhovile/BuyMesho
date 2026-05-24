@@ -14,6 +14,7 @@ import {
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
+import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type SellerApplicationStatus = "pending" | "approved" | "rejected";
 
@@ -161,7 +162,12 @@ export default function AdminSellerApplicationsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <AdminWorkspaceLayout
+      title="Seller applications"
+      description="Review pending, approved, and rejected seller onboarding requests."
+      onRefresh={() => void fetchApplications()}
+    >
+      <div className="space-y-6">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
@@ -461,6 +467,7 @@ export default function AdminSellerApplicationsPage() {
           </button>
         </div>
       </main>
-    </div>
+      </div>
+    </AdminWorkspaceLayout>
   );
 }

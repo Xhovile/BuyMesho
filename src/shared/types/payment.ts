@@ -3,7 +3,7 @@ export type { MoneyValue } from './common.js';
 
 export type PaymentProviderKey = 'paystack' | 'flutterwave' | 'paychangu';
 export type PaymentMethod = 'card' | 'bank_transfer' | 'mobile_money' | 'ussd' | 'wallet';
-export type PaymentIntentStatus = 'pending' | 'requires_action' | 'authorized' | 'captured' | 'failed' | 'cancelled';
+export type PaymentIntentStatus = 'pending' | 'requires_action' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
 export type EscrowState = 'initiated' | 'funded' | 'held' | 'released' | 'refunded' | 'disputed' | 'closed';
 export type SettlementStatus = 'pending' | 'processing' | 'settled' | 'failed';
 
@@ -53,4 +53,34 @@ export interface PayoutInstruction extends Timestamped {
     type: 'bank' | 'mobile_money' | 'wallet';
     maskedAccount?: string;
   };
+}
+
+export type SellerOrderPayoutStatus =
+  | 'eligible'
+  | 'queued'
+  | 'processing'
+  | 'pending'
+  | 'held'
+  | 'paid'
+  | 'failed'
+  | 'cancelled'
+  | 'unknown';
+
+export type SellerOrderReleaseEligibility =
+  | 'eligible'
+  | 'awaiting_release'
+  | 'blocked'
+  | 'not_applicable';
+
+export interface SellerOrderPayoutMetadata {
+  paymentCaptured: boolean;
+  escrowState: string;
+  releaseEligibility: SellerOrderReleaseEligibility;
+  payoutStatus: SellerOrderPayoutStatus;
+  estimatedPayoutDate?: ISODateString | null;
+  payoutDestinationMask?: string | null;
+  destinationStatus?: string | null;
+  manualReviewPending?: boolean | null;
+  retryAllowed?: boolean | null;
+  verificationBlockers?: string[] | null;
 }

@@ -4,7 +4,12 @@ import { useState } from "react";
 import ConfirmModal from "../components/ConfirmModal";
 import { useAccountProfile } from "../hooks/useAccountProfile";
 import { useAuthUser } from "../hooks/useAuthUser";
-import { BECOME_SELLER_PATH, navigateToLogin, navigateToPath } from "../lib/appNavigation";
+import {
+  BECOME_SELLER_PATH,
+  CREATE_PATH,
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+} from "../lib/appNavigation";
 
 type HeroSectionProps = {
   onListItem: () => void;
@@ -36,7 +41,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
     closePrompt();
 
     if (promptType === "guest") {
-      navigateToLogin();
+      navigateToLoginWithReturnPath(CREATE_PATH);
       return;
     }
 

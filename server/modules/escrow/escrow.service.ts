@@ -11,6 +11,11 @@ export interface EscrowRecord {
   entries: EscrowLedgerEntry[];
 }
 
+export type EscrowAccessActor = {
+  uid: string;
+  is_admin?: boolean;
+};
+
 export class EscrowService {
   createEscrow(orderId: string, currency: string, escrowId: string): EscrowRecord {
     return {
@@ -36,6 +41,23 @@ export class EscrowService {
       ...record,
       state,
     };
+  }
+
+  canAccessEscrowPayoutState(actor: EscrowAccessActor | null, sellerId: string): boolean {
+    if (!actor?.uid) return false;
+    return actor.is_admin === true || actor.uid === sellerId;
+  }
+
+  canSellerRequestWithdrawal(actor: EscrowAccessActor | null, sellerId: string): boolean {
+    return this.canAccessEscrowPayoutState(actor, sellerId);
+  }
+
+  canSellerRetryPayout(actor: EscrowAccessActor | null, sellerId: string): boolean {
+    return this.canAccessEscrowPayoutState(actor, sellerId);
+  }
+
+  canAdminApproveOverride(actor: EscrowAccessActor | null): boolean {
+    return actor?.is_admin === true;
   }
 }
 

@@ -17,6 +17,7 @@ import {
 } from "./lib/appNavigation";
 import { fetchMessageReports, resolveMessageReport } from "./lib/messageModeration";
 import type { MessageReport } from "./types";
+import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 
 type ReportRow = {
   id: number;
@@ -61,8 +62,8 @@ function TabButton({
       className={[
         "px-4 py-2 rounded-xl text-sm font-bold transition",
         active
-          ? "bg-white text-zinc-900 shadow-sm"
-          : "text-zinc-500 hover:text-zinc-800 hover:bg-white/60",
+          ? "bg-zinc-700 text-white shadow-sm shadow-zinc-700/30"
+          : "bg-zinc-200 text-zinc-600 hover:text-zinc-800 hover:bg-zinc-300",
         className,
       ].join(" ")}
     >
@@ -129,6 +130,10 @@ function MessageReportCard({
   onResolve: () => void;
   resolving: boolean;
 }) {
+  const buyerLabel = report.buyer_business_name || report.buyer_uid || "Unknown buyer";
+  const sellerLabel = report.seller_business_name || report.seller_uid || "Unknown seller";
+  const listingLabel = report.listing_name || "Unknown listing";
+
   return (
     <div className="border border-zinc-200 rounded-3xl p-4 sm:p-5 bg-white shadow-sm">
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -167,10 +172,28 @@ function MessageReportCard({
               <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Conversation</p>
               <p className="text-zinc-800">{report.conversation_id ?? "Unknown conversation"}</p>
             </div>
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Buyer</p>
+              <p className="text-zinc-800 break-all">{buyerLabel}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Seller</p>
+              <p className="text-zinc-800 break-all">{sellerLabel}</p>
+            </div>
+            <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+              <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Listing</p>
+              <p className="text-zinc-800">{listingLabel}</p>
+            </div>
             {report.message_id ? (
               <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
                 <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Message</p>
                 <p className="text-zinc-800">Message #{report.message_id}</p>
+              </div>
+            ) : null}
+            {report.message_body ? (
+              <div className="bg-zinc-50 rounded-2xl p-3 md:col-span-2">
+                <p className="text-xs font-bold text-zinc-400 uppercase mb-1">Reported Message</p>
+                <p className="text-zinc-800 whitespace-pre-wrap break-words">{report.message_body}</p>
               </div>
             ) : null}
           </div>
@@ -528,7 +551,22 @@ export default function AdminReportsPage() {
       : "Review seller complaints, suspend or unsuspend sellers, and keep the record clean.";
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <AdminWorkspaceLayout
+      title={mainTab === "content" ? currentContentTitle : "Chat reports queue"}
+      description={
+        mainTab === "content"
+          ? currentContentDescription
+          : "Review reported conversations, keep evidence, and resolve abuse without deleting the record."
+      }
+      onRefresh={() => {
+        if (mainTab === "content") {
+          void fetchContentReports();
+        } else {
+          void fetchChatReports();
+        }
+      }}
+    >
+      <div className="space-y-6">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <button
@@ -805,6 +843,7 @@ export default function AdminReportsPage() {
           </button>
         </div>
       </main>
-    </div>
+      </div>
+    </AdminWorkspaceLayout>
   );
 }
