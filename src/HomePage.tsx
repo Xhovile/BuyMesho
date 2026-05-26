@@ -58,6 +58,7 @@ import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
 import { signOut } from "firebase/auth";
 import { auth } from "./firebase";
+import { getAvatarUrl } from "./lib/avatar";
 
 type FeaturedSection = {
   key: string;
@@ -219,6 +220,8 @@ export default function HomePage() {
   const isLoggedIn = !!firebaseUser;
   const isSeller = !!(isLoggedIn && profile?.is_seller);
   const isSellerProfileLoading = isLoggedIn && profileLoading;
+  const fallbackLetter = (profile?.email || firebaseUser?.email || "?").charAt(0).toUpperCase();
+  const avatarUrl = getAvatarUrl(profile, firebaseUser);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
@@ -437,14 +440,16 @@ export default function HomePage() {
                 <CreditCard className={marketDesktopIconClass.payments} />
                 Payments
               </button>
-              <button
-                type="button"
-                onClick={() => handleSellerPayoutsClick()}
-                className={marketDesktopNavButtonClass}
-              >
-                <Wallet className="w-4 h-4 text-emerald-600" />
-                Seller Payouts
-              </button>
+              {isSeller ? (
+                <button
+                  type="button"
+                  onClick={() => handleSellerPayoutsClick()}
+                  className={marketDesktopNavButtonClass}
+                >
+                  <Wallet className="w-4 h-4 text-emerald-600" />
+                  Seller Payouts
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={() => handleMessagesClick()}
@@ -483,7 +488,13 @@ export default function HomePage() {
                 onClick={() => handleProfileClick()}
                 className={desktopProfileButtonClass}
               >
-                <UserRound className="w-5 h-5 text-zinc-600" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                    {fallbackLetter}
+                  </div>
+                )}
               </button>
             </div>
 
@@ -609,19 +620,21 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => handleSellerPayoutsClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                      <Wallet className="w-4 h-4 text-white" />
+                {isSeller ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSellerPayoutsClick(closeMenu)}
+                    className={navButtonClass}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <Wallet className="w-4 h-4 text-white" />
+                      </span>
+                      Seller Payouts
                     </span>
-                    Seller Payouts
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ) : null}
 
                 <button
                   type="button"
