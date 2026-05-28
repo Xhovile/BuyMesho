@@ -529,6 +529,32 @@ export default function AdminPayoutsManager() {
     }
   };
 
+  const approveDestinationVerification = async () => {
+    if (!selected?.destinationAccountId) return;
+
+    setActionBusyId(selected.id);
+    setNotice(null);
+    setError(null);
+
+    try {
+      await apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId)}/verification`, {
+        method: "POST",
+        body: JSON.stringify({ status: "verified" }),
+      });
+      setNotice({
+        type: "success",
+        message: `Destination ${selected.destinationAccountId} approved as verified and kept active.`,
+      });
+      setDestinationStatus("verified");
+      setDestinationReason("");
+      await load(pageIndex);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to approve destination verification.");
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
   const updateSellerSuspension = async (suspended: boolean) => {
     if (!selected) return;
     if (!sellerControlReason.trim()) {
@@ -905,6 +931,7 @@ export default function AdminPayoutsManager() {
           onDestinationStatusChange={setDestinationStatus}
           onDestinationReasonChange={setDestinationReason}
           onUpdateDestinationVerification={() => void updateDestinationVerification()}
+          onApproveDestinationVerification={() => void approveDestinationVerification()}
           onSellerControlReasonChange={setSellerControlReason}
           onUpdateSellerSuspension={(suspended) => void updateSellerSuspension(suspended)}
           onReloadAdjustments={() => void loadAdjustments(selected.id)}

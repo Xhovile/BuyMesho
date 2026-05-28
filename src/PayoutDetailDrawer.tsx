@@ -28,6 +28,7 @@ type PayoutDetailDrawerProps = {
   onDestinationStatusChange: (value: string) => void;
   onDestinationReasonChange: (value: string) => void;
   onUpdateDestinationVerification: () => void;
+  onApproveDestinationVerification: () => void;
   onSellerControlReasonChange: (value: string) => void;
   onUpdateSellerSuspension: (suspended: boolean) => void;
   onReloadAdjustments: () => void;
@@ -73,6 +74,7 @@ export default function PayoutDetailDrawer({
   onDestinationStatusChange,
   onDestinationReasonChange,
   onUpdateDestinationVerification,
+  onApproveDestinationVerification,
   onSellerControlReasonChange,
   onUpdateSellerSuspension,
   onReloadAdjustments,
@@ -82,6 +84,11 @@ export default function PayoutDetailDrawer({
   onAdjustmentProviderRefChange,
   onCreateAdjustment,
 }: PayoutDetailDrawerProps) {
+  const destinationVerified =
+    String(selected.destinationVerificationStatus ?? "").toLowerCase() === "verified" &&
+    selected.destinationActive !== false;
+  const canApproveDestination = !!selected.destinationAccountId && !destinationVerified;
+
   return (
     <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={onClose}>
       <aside className="ml-auto h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
@@ -146,6 +153,26 @@ export default function PayoutDetailDrawer({
               <Info label="Current status" value={formatStatus(selected.destinationVerificationStatus)} />
               <Info label="Last destination error" value={selected.destinationLastError ?? "—"} />
             </div>
+
+            {canApproveDestination ? (
+              <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                  <div>
+                    <p className="font-black">Destination must be verified before payout release.</p>
+                    <p className="mt-1 text-emerald-700">Approve this destination as verified and keep it active for the payout gate.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={onApproveDestinationVerification}
+                  disabled={actionBusyId === selected.id}
+                  className="inline-flex shrink-0 items-center justify-center rounded-2xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+                >
+                  {actionBusyId === selected.id ? "Approving..." : "Approve as verified"}
+                </button>
+              </div>
+            ) : null}
 
             <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
               <FormDropdown
