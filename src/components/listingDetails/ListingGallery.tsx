@@ -68,7 +68,8 @@ export default function ListingGallery({
   return (
     <>
       <div className="w-full min-w-0 max-w-full">
-        <div className="mb-3 flex items-center justify-end gap-2">
+        <div className="mb-3 flex items-center justify-start gap-2">
+          <div className="shrink-0">{actionsMenu}</div>
           <button
             type="button"
             onClick={onToggleSaved}
@@ -79,7 +80,6 @@ export default function ListingGallery({
           >
             <Bookmark className={`h-4 w-4 ${saved ? "fill-current" : ""}`} />
           </button>
-          <div className="shrink-0">{actionsMenu}</div>
         </div>
 
         <div className="min-w-0">

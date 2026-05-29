@@ -235,10 +235,12 @@ export default function Header({
                     <CreditCard className="w-4 h-4 text-amber-500" />
                     Payments
                   </button>
-                  <button type="button" onClick={() => handleSellerPayoutsClick()} className={desktopNavButtonClass}>
-                    <Wallet className="w-4 h-4 text-emerald-600" />
-                    Seller Payouts
-                  </button>
+                  {isSeller ? (
+                    <button type="button" onClick={() => handleSellerPayoutsClick()} className={desktopNavButtonClass}>
+                      <Wallet className="w-4 h-4 text-emerald-600" />
+                      Seller Payouts
+                    </button>
+                  ) : null}
                   <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
                     <MessageSquareText className="w-4 h-4 text-teal-500" />
                     <div className="flex items-center gap-2">
@@ -430,15 +432,17 @@ export default function Header({
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
-              <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                    <Wallet className="w-4 h-4 text-white" />
+              {isSeller ? (
+                <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <Wallet className="w-4 h-4 text-white" />
+                    </span>
+                    Seller Payouts
                   </span>
-                  Seller Payouts
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              ) : null}
 
               <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">

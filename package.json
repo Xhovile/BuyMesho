@@ -26,14 +26,18 @@
     "better-sqlite3": "^12.4.1",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
-    "express": "^4.21.2",
+    "express": "^4.22.2",
     "express-rate-limit": "^8.5.0",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.1.1",
+<<<<<<< HEAD
     "nodemailer": "^8.0.8",
+=======
+    "nodemailer": "^8.0.5",
+>>>>>>> b5489e874114594ff7b54d62f62b7f08cb1a854b
     "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -100,6 +100,7 @@ export default function PaymentReturnPage() {
 
     let mounted = true;
     let attempts = 0;
+    let timer: number | null = null;
 
     const pollStatus = async () => {
       try {
@@ -123,7 +124,7 @@ export default function PaymentReturnPage() {
           setOrderId(result.orderId ?? null);
           setStatus("success");
 
-          window.setTimeout(() => {
+          timer = window.setTimeout(() => {
             navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
               replace: true,
             });
@@ -148,7 +149,7 @@ export default function PaymentReturnPage() {
         if (attempts >= 8) {
           setStatus("success");
 
-          window.setTimeout(() => {
+          timer = window.setTimeout(() => {
             navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
               replace: true,
             });
@@ -157,7 +158,7 @@ export default function PaymentReturnPage() {
           return;
         }
 
-        window.setTimeout(pollStatus, 2000);
+        timer = window.setTimeout(pollStatus, 2000);
       } catch (err: unknown) {
         if (!mounted) return;
 
@@ -171,7 +172,7 @@ export default function PaymentReturnPage() {
           return;
         }
 
-        window.setTimeout(pollStatus, 2000);
+        timer = window.setTimeout(pollStatus, 2000);
       }
     };
 

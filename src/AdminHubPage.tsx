@@ -3,10 +3,12 @@ import type { ComponentType, MouseEvent } from "react";
 import {
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PAYMENTS_PATH,
+  ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
+  navigateToAdminPayoutDestinations,
   navigateToAdminReports,
   navigateToAdminSellerApplications,
   navigateToPath,
@@ -94,6 +96,16 @@ export default function AdminHubPage() {
           onClick={(event) => {
             event.preventDefault();
             navigateToAdminPayments();
+          }}
+        />
+        <AdminOverviewCard
+          title="Payout Destination Review"
+          description="Approve pending seller payout destinations before payouts are released to PayChangu."
+          icon={ShieldCheck}
+          path={ADMIN_PAYOUT_DESTINATIONS_PATH}
+          onClick={(event) => {
+            event.preventDefault();
+            navigateToAdminPayoutDestinations();
           }}
         />
       </section>

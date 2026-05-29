@@ -349,24 +349,27 @@ export class PaymentWebhookHandler {
     }
 
     const eventId = insertResult.id;
-    const result = await serverPaymentService.verifyWebhook(
-      "paychangu",
-      signature,
-      rawPayload,
-    );
-
-    if (!result.valid) {
-      updatePaymentWebhookEventStatus(eventId, "rejected", {
-        processedAt: new Date().toISOString(),
-        error: "Invalid PayChangu webhook signature",
-        signatureValid: false,
-      });
-      throw new Error("Invalid PayChangu webhook signature");
-    }
-
-    const reference = txRef || result.reference || undefined;
+    let finalizedStatus: "rejected" | "processed" | "failed" | null = null;
 
     try {
+      const result = await serverPaymentService.verifyWebhook(
+        "paychangu",
+        signature,
+        rawPayload,
+      );
+
+      if (!result.valid) {
+        updatePaymentWebhookEventStatus(eventId, "rejected", {
+          processedAt: new Date().toISOString(),
+          error: "Invalid PayChangu webhook signature",
+          signatureValid: false,
+        });
+        finalizedStatus = "rejected";
+        throw new Error("Invalid PayChangu webhook signature");
+      }
+
+      const reference = txRef || result.reference || undefined;
+
       if (eventType && !isAcceptedPaychanguEventType(eventType)) {
         console.info(
           "[webhook] proceeding with PayChangu event that uses an unrecognized event type",
@@ -480,14 +483,18 @@ export class PaymentWebhookHandler {
         processedAt: new Date().toISOString(),
         signatureValid: true,
       });
+      finalizedStatus = "processed";
 
       return result;
     } catch (error) {
-      updatePaymentWebhookEventStatus(eventId, "failed", {
-        processedAt: new Date().toISOString(),
-        error: conciseErrorMessage(error),
-        signatureValid: true,
-      });
+      if (finalizedStatus !== "rejected") {
+        updatePaymentWebhookEventStatus(eventId, "failed", {
+          processedAt: new Date().toISOString(),
+          error: conciseErrorMessage(error),
+          signatureValid: true,
+        });
+        finalizedStatus = "failed";
+      }
       throw error;
     }
   }
