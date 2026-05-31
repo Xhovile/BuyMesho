@@ -33,11 +33,7 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.1.1",
-<<<<<<< HEAD
     "nodemailer": "^8.0.8",
-=======
-    "nodemailer": "^8.0.5",
->>>>>>> b5489e874114594ff7b54d62f62b7f08cb1a854b
     "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
