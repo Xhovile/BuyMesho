@@ -8,7 +8,7 @@ const capabilities: PaymentProviderCapabilities = {
   supportsRefunds: false,
   supportsPartialCapture: false,
   supportedMethods: ['card', 'bank_transfer', 'mobile_money'],
-  currencies: ['MWK', 'USD', 'ZAR'],
+  currencies: ['MWK', 'USD'],
 };
 
 const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';

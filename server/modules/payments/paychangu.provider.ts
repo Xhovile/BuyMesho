@@ -40,18 +40,24 @@ export interface PayChanguConfig {
   paychanguReturnUrl?: string;
 }
 
+interface PayChanguPaymentSessionData {
+  tx_ref?: string;
+  txRef?: string;
+  reference?: string;
+  id?: string;
+  status?: string;
+}
+
+interface PayChanguPaymentInitData extends PayChanguPaymentSessionData {
+  checkout_url?: string;
+  checkoutUrl?: string;
+  data?: PayChanguPaymentSessionData;
+}
+
 interface PayChanguPaymentInitResponse {
   status?: string;
   message?: string;
-  data?: {
-    checkout_url?: string;
-    checkoutUrl?: string;
-    tx_ref?: string;
-    txRef?: string;
-    reference?: string;
-    id?: string;
-    status?: string;
-  };
+  data?: PayChanguPaymentInitData;
 }
 
 function getBaseUrl(config: PayChanguConfig): string {
@@ -64,6 +70,18 @@ function normalizeTxRef(value: string | undefined, fallback: string): string {
 
 function toISODate(): string {
   return new Date().toISOString();
+}
+
+function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (config.paychanguSecretKey) {
+    headers.Authorization = `Bearer ${config.paychanguSecretKey}`;
+  }
+
+  return headers;
 }
 
 function serializeMeta(metadata: Record<string, unknown> | undefined): string {
@@ -351,8 +369,10 @@ export const paychanguProvider = {
       throw new Error(data.message ?? 'PayChangu payment initialization failed');
     }
 
+    const sessionData = data.data?.data ?? data.data;
     const checkoutUrl = data.data?.checkout_url ?? data.data?.checkoutUrl ?? null;
-    const providerReference = data.data?.id ?? data.data?.reference ?? null;
+    const returnedTxRef = sessionData?.tx_ref ?? sessionData?.txRef;
+    const providerReference = sessionData?.id ?? sessionData?.reference ?? null;
 
     return {
       id: randomUUID(),
@@ -361,7 +381,7 @@ export const paychanguProvider = {
       method: request.method,
       status: 'pending',
       amount: request.amount,
-      reference: data.data?.tx_ref ?? data.data?.txRef ?? txRef,
+      reference: returnedTxRef ?? txRef,
       providerReference,
       checkoutUrl,
       paidAt: null,

@@ -94,6 +94,8 @@ function seedRetryPayout(prefix: string) {
 test('retry writes one normalized payout_retried audit event with fresh charge id', async () => {
   const { payoutId } = seedRetryPayout('retry-audit');
   const originalFetch = global.fetch;
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
 
   global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -137,6 +139,11 @@ test('retry writes one normalized payout_retried audit event with fresh charge i
     assert.equal(payload.providerChargeId, buildPayChanguPayoutChargeId(payoutId, 2));
   } finally {
     global.fetch = originalFetch;
+    if (originalSecretKey === undefined) {
+      delete process.env.PAYCHANGU_SECRET_KEY;
+    } else {
+      process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
   }
 });
 
