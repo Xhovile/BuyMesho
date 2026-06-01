@@ -24,6 +24,7 @@ export type PayoutRow = {
   sellerId: string;
   orderId: string | null;
   escrowId: string | null;
+  escrowState?: string | null;
   releaseEntryId: string | null;
   amount: number;
   currency: string;
@@ -164,6 +165,14 @@ type PendingDialog =
       danger?: boolean;
     }
   | {
+      kind: "refund_escrow";
+      row: PayoutRow;
+      title: string;
+      message: string;
+      confirmLabel: string;
+      danger?: boolean;
+    }
+  | {
       kind: "override";
       row: PayoutRow;
       action: OverrideAction;
@@ -207,6 +216,18 @@ function csvCell(value: unknown) {
   const text = String(value ?? "");
   const escaped = text.replace(/"/g, '""');
   return `"${escaped}"`;
+}
+
+function canRefundEscrow(row: PayoutRow, isAdmin: boolean) {
+  const escrowState = String(row.escrowState ?? "").toLowerCase();
+  return (
+    isAdmin &&
+    Boolean(row.orderId) &&
+    Boolean(row.escrowId) &&
+    escrowState !== "released" &&
+    escrowState !== "refunded" &&
+    escrowState !== "closed"
+  );
 }
 
 function canAction(row: PayoutRow, action: RowAction) {
@@ -283,12 +304,14 @@ export default function AdminPayoutsManager() {
   const [adjustmentProviderRef, setAdjustmentProviderRef] = useState("");
   const [pendingDialog, setPendingDialog] = useState<PendingDialog | null>(null);
   const [overrideReason, setOverrideReason] = useState("");
+  const [refundReason, setRefundReason] = useState("");
 
   const [lastRefreshAt, setLastRefreshAt] = useState<string | null>(null);
 
   const closeActionDialog = () => {
     setPendingDialog(null);
     setOverrideReason("");
+    setRefundReason("");
   };
 
   const load = async (nextPageIndex = pageIndex) => {
@@ -419,6 +442,31 @@ export default function AdminPayoutsManager() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed.");
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const refundEscrow = async (row: PayoutRow, reason: string) => {
+    if (!row.orderId || !row.escrowId) return;
+
+    setActionBusyId(row.id);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await apiFetch(`/api/escrow/${encodeURIComponent(row.orderId)}/refund`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      });
+
+      setNotice({ type: "success", message: `Escrow refunded for order ${row.orderId}.` });
+      await load(pageIndex);
+      if (selected?.id === row.id) {
+        await loadAdjustments(row.id);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refund escrow.");
     } finally {
       setActionBusyId(null);
     }
@@ -638,6 +686,19 @@ export default function AdminPayoutsManager() {
     });
   };
 
+  const openRefundEscrowDialog = (row: PayoutRow) => {
+    if (!canRefundEscrow(row, isAdmin)) return;
+    setPendingDialog({
+      kind: "refund_escrow",
+      row,
+      title: "Refund escrow",
+      message: `Refund escrow ${row.escrowId} for order ${row.orderId}? This action returns escrow funds and cannot be used after escrow has been released.`,
+      confirmLabel: "Refund escrow",
+      danger: true,
+    });
+    setRefundReason("");
+  };
+
   const openRetryDialog = (row: PayoutRow) => {
     if (!canAction(row, "retry")) return;
     setPendingDialog({
@@ -661,6 +722,7 @@ export default function AdminPayoutsManager() {
       danger: action === "mark_failed" || action === "cancel",
     });
     setOverrideReason("");
+    setRefundReason("");
   };
 
   const runPendingDialogAction = async () => {
@@ -672,6 +734,16 @@ export default function AdminPayoutsManager() {
     }
     if (pendingDialog.kind === "retry") {
       await runAction(pendingDialog.row, "retry");
+      closeActionDialog();
+      return;
+    }
+    if (pendingDialog.kind === "refund_escrow") {
+      const reason = refundReason.trim();
+      if (!reason) {
+        setError("Reason is required to refund escrow.");
+        return;
+      }
+      await refundEscrow(pendingDialog.row, reason);
       closeActionDialog();
       return;
     }
@@ -928,6 +1000,8 @@ export default function AdminPayoutsManager() {
           onOpenRetryDialog={() => openRetryDialog(selected)}
           onOpenOverrideDialog={(action, confirmLabel) => openOverrideDialog(selected, action, confirmLabel)}
           onOpenReconcileDialog={() => openReconcileDialog(selected)}
+          onOpenRefundEscrowDialog={() => openRefundEscrowDialog(selected)}
+          isAdmin={isAdmin}
           onDestinationStatusChange={setDestinationStatus}
           onDestinationReasonChange={setDestinationReason}
           onUpdateDestinationVerification={() => void updateDestinationVerification()}
@@ -951,11 +1025,11 @@ export default function AdminPayoutsManager() {
         cancelLabel="Cancel"
         loading={Boolean(actionBusyId)}
         danger={pendingDialog?.danger}
-        inputType={pendingDialog?.kind === "override" ? "textarea" : undefined}
-        inputLabel={pendingDialog?.kind === "override" ? "Reason" : undefined}
-        inputValue={pendingDialog?.kind === "override" ? overrideReason : undefined}
-        inputPlaceholder={pendingDialog?.kind === "override" ? "Enter reason" : undefined}
-        onInputChange={(value) => setOverrideReason(value)}
+        inputType={pendingDialog?.kind === "override" || pendingDialog?.kind === "refund_escrow" ? "textarea" : undefined}
+        inputLabel={pendingDialog?.kind === "override" || pendingDialog?.kind === "refund_escrow" ? "Reason" : undefined}
+        inputValue={pendingDialog?.kind === "refund_escrow" ? refundReason : pendingDialog?.kind === "override" ? overrideReason : undefined}
+        inputPlaceholder={pendingDialog?.kind === "refund_escrow" ? "Enter refund reason" : pendingDialog?.kind === "override" ? "Enter reason" : undefined}
+        onInputChange={(value) => (pendingDialog?.kind === "refund_escrow" ? setRefundReason(value) : setOverrideReason(value))}
         onConfirm={() => void runPendingDialogAction()}
         onCancel={closeActionDialog}
       />

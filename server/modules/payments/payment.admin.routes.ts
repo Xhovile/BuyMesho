@@ -306,6 +306,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
           p.seller_id AS sellerId,
           p.order_id AS orderId,
           p.escrow_id AS escrowId,
+          e.state AS escrowState,
           p.release_entry_id AS releaseEntryId,
           p.amount,
           p.currency,
@@ -363,6 +364,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
              LIMIT 1
            ) AS latestSellerPayoutControlDetails
          FROM payouts p
+         LEFT JOIN escrows e ON e.id = p.escrow_id
          LEFT JOIN seller_payout_accounts spa ON spa.id = p.destination_account_id
          LEFT JOIN sellers s ON s.uid = p.seller_id
          ORDER BY p.created_at DESC
