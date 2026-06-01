@@ -36,6 +36,8 @@ export interface PayChanguConfig {
   paychanguSecretKey?: string;
   paychanguWebhookSecret?: string;
   paychanguBaseUrl?: string;
+  paychanguCallbackUrl?: string;
+  paychanguReturnUrl?: string;
 }
 
 interface PayChanguPaymentInitResponse {
@@ -260,7 +262,7 @@ export const paychanguProvider = {
     supportsRefunds: false,
     supportsPartialCapture: false,
     supportedMethods: ['card', 'bank_transfer', 'mobile_money'] as PaymentMethod[],
-    currencies: ['MWK', 'USD', 'ZAR'],
+    currencies: ['MWK', 'USD'],
   },
 
   async createPayment(
@@ -270,24 +272,50 @@ export const paychanguProvider = {
     const baseUrl = getBaseUrl(config);
     const reference = `PAYCHANGU-${request.orderId}-${Date.now()}`;
     const txRef = normalizeTxRef(undefined, reference);
+    const callbackUrl =
+      config.paychanguCallbackUrl ||
+      process.env.PAYCHANGU_CALLBACK_URL ||
+      request.returnUrl;
+    const returnUrl =
+      request.returnUrl ||
+      config.paychanguReturnUrl ||
+      process.env.PAYCHANGU_RETURN_URL;
 
-    const payload = {
-      amount: request.amount.amount,
+    if (!callbackUrl || !returnUrl) {
+      throw new Error('Missing callback_url or return_url for PayChangu initiation');
+    }
+
+    const amountValue = Number(request.amount.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      throw new Error('Invalid amount for PayChangu initiation');
+    }
+
+    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name || '').trim().split(/\s+/);
+    const firstName = firstNameRaw || undefined;
+    const lastName = lastNameRaw.join(' ').trim() || undefined;
+
+    const payload: Record<string, unknown> = {
+      amount: amountValue.toFixed(2),
       currency: request.amount.currency,
       tx_ref: txRef,
-      callback_url: request.returnUrl,
-      return_url: request.returnUrl,
-      cancel_url: request.cancelUrl,
-      email: request.customer.email,
-      first_name: request.customer.name,
-      last_name: request.customer.name,
-      mobile_number: request.customer.phoneNumber,
+      callback_url: callbackUrl,
+      return_url: returnUrl,
       customization: {
         title: 'BuyMesho Checkout',
         description: `Payment for order ${request.orderId}`,
       },
-      metadata: request.metadata ?? {},
+      meta: JSON.stringify(request.metadata ?? {}),
     };
+
+    if (request.customer.email) {
+      payload.email = request.customer.email;
+    }
+    if (firstName) {
+      payload.first_name = firstName;
+    }
+    if (lastName) {
+      payload.last_name = lastName;
+    }
 
     const response = await fetch(`${baseUrl}/payment`, {
       method: 'POST',
