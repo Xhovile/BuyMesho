@@ -281,16 +281,22 @@ export const paychanguProvider = {
       config.paychanguReturnUrl ||
       process.env.PAYCHANGU_RETURN_URL;
 
-    if (!callbackUrl || !returnUrl) {
-      throw new Error('Missing callback_url or return_url for PayChangu initiation');
+    if (!callbackUrl) {
+      throw new Error('Missing required callback_url for PayChangu initiation');
+    }
+    if (!returnUrl) {
+      throw new Error('Missing required return_url for PayChangu initiation');
     }
 
     const amountValue = Number(request.amount.amount);
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
-      throw new Error('Invalid amount for PayChangu initiation');
+      throw new Error(`Invalid amount for PayChangu initiation: ${String(request.amount.amount)}`);
     }
 
-    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name || '').trim().split(/\s+/);
+    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name || '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
     const firstName = firstNameRaw || undefined;
     const lastName = lastNameRaw.join(' ').trim() || undefined;
 
