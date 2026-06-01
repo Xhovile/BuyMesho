@@ -85,6 +85,8 @@ test('missing bank UUID blocks payout submission', async () => {
 
 test('valid routing ID is sent in provider payload and pending/processing stay in-flight', async () => {
   const originalFetch = global.fetch;
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
   const bodies: Array<Record<string, unknown>> = [];
   let call = 0;
 
@@ -113,6 +115,11 @@ test('valid routing ID is sent in provider payload and pending/processing stay i
     assert.equal(processingResult.status, 'processing');
   } finally {
     global.fetch = originalFetch;
+    if (originalSecretKey === undefined) {
+      delete process.env.PAYCHANGU_SECRET_KEY;
+    } else {
+      process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
   }
 });
 

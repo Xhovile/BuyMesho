@@ -42,11 +42,31 @@ function mockPayChanguFetch(
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
       assert.equal(headers.get('content-type'), 'application/json');
       assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
+      const payload = JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>;
+      assert.equal(typeof payload.amount, 'string');
+      assert.match(String(payload.amount), /^\d+(?:\.\d{2})$/);
+      assert.equal(payload.currency, 'MWK');
+      assert.equal(typeof payload.callback_url, 'string');
+      assert.ok(String(payload.callback_url).length > 0, 'initiation should include callback_url');
+      assert.equal(typeof payload.return_url, 'string');
+      assert.ok(String(payload.return_url).length > 0, 'initiation should include return_url');
+      assert.equal(typeof payload.tx_ref, 'string');
+      assert.ok(String(payload.tx_ref).length > 0, 'initiation should include a tx_ref');
+      assert.equal((payload.customization as { title?: string } | undefined)?.title, 'BuyMesho Checkout');
+      assert.equal(typeof payload.meta, 'string');
       return new Response(JSON.stringify({
+        message: 'Hosted payment session generated successfully.',
+        status: 'success',
         data: {
+          event: 'checkout.session:created',
           checkout_url: 'https://checkout.paychangu.test/session',
-          tx_ref: reference,
-          id: `pch_${reference}`,
+          data: {
+            tx_ref: reference,
+            currency: 'MWK',
+            amount,
+            mode: 'sandbox',
+            status: 'pending',
+          },
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }

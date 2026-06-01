@@ -280,6 +280,8 @@ test('admin payouts list marks held payout retry-eligible when destination is ve
 test('admin reconcile endpoint syncs provider status and terminal payout fields', async () => {
   const { payoutId } = seedAdminPayout('admin-reconcile');
   const originalFetch = global.fetch;
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
 
   global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -337,5 +339,10 @@ test('admin reconcile endpoint syncs provider status and terminal payout fields'
     assert.equal(event.actor_id, 'admin-user');
   } finally {
     global.fetch = originalFetch;
+    if (originalSecretKey === undefined) {
+      delete process.env.PAYCHANGU_SECRET_KEY;
+    } else {
+      process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
   }
 });

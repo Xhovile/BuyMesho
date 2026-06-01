@@ -81,6 +81,8 @@ function seedPayout(prefix: string, status: 'eligible' | 'failed' = 'eligible') 
 test('provider balance lookup timeout holds payout for manual review', async () => {
   const { payoutId } = seedPayout('balance-timeout');
   const originalFetch = global.fetch;
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
 
   global.fetch = (async () => {
     throw new Error('provider timeout while checking wallet-balance');
@@ -113,6 +115,11 @@ test('provider balance lookup timeout holds payout for manual review', async () 
     assert.equal(attempts.count, 0);
   } finally {
     global.fetch = originalFetch;
+    if (originalSecretKey === undefined) {
+      delete process.env.PAYCHANGU_SECRET_KEY;
+    } else {
+      process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
   }
 });
 
@@ -122,6 +129,8 @@ test('provider payout submission outage holds payout without writing paid state'
   db.prepare(`UPDATE payouts SET failure_reason = 'provider_timeout' WHERE id = ?`).run(payoutId);
 
   const originalFetch = global.fetch;
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
   global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (url.includes('/wallet-balance')) {
@@ -159,5 +168,10 @@ test('provider payout submission outage holds payout without writing paid state'
     assert.ok(payout.last_attempt_id);
   } finally {
     global.fetch = originalFetch;
+    if (originalSecretKey === undefined) {
+      delete process.env.PAYCHANGU_SECRET_KEY;
+    } else {
+      process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+    }
   }
 });

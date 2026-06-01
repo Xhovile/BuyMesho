@@ -308,6 +308,7 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
     assert.deepEqual(requests[1]?.body, {
       mobile: '0990000000',
       mobile_money_operator_ref_id: 'airtel-money',
+      currency: 'MWK',
       amount: '1455',
       charge_id: expectedChargeId,
     });

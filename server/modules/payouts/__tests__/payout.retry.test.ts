@@ -11,6 +11,20 @@ const orderId = 'retry-order-test';
 const sellerId = 'retry-seller-test';
 const destinationId = 'retry-destination-test';
 
+function setPayChanguSecretForTest(): string | undefined {
+  const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
+  process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
+  return originalSecretKey;
+}
+
+function restorePayChanguSecretForTest(originalSecretKey: string | undefined): void {
+  if (originalSecretKey === undefined) {
+    delete process.env.PAYCHANGU_SECRET_KEY;
+  } else {
+    process.env.PAYCHANGU_SECRET_KEY = originalSecretKey;
+  }
+}
+
 function resetState(): void {
   const db = getPaymentDb();
   db.prepare('DELETE FROM payout_attempts WHERE payout_id = ?').run(payoutId);
@@ -87,6 +101,7 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
   seedPayout();
 
   const originalFetch = global.fetch;
+  const originalSecretKey = setPayChanguSecretForTest();
   let requestCount = 0;
   const requestBodies: Array<Record<string, unknown>> = [];
 
@@ -148,6 +163,7 @@ test('retry payout generates a fresh provider charge id per attempt', async () =
     assert.notEqual(attempts[0]?.provider_charge_id, attempts[1]?.provider_charge_id);
   } finally {
     global.fetch = originalFetch;
+    restorePayChanguSecretForTest(originalSecretKey);
     resetState();
   }
 });
@@ -157,6 +173,7 @@ test('concurrent retry calls do not reuse the same attempt_no', async () => {
   seedPayout();
 
   const originalFetch = global.fetch;
+  const originalSecretKey = setPayChanguSecretForTest();
   let payoutRequestCount = 0;
 
   global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
@@ -208,6 +225,7 @@ test('concurrent retry calls do not reuse the same attempt_no', async () => {
     assert.deepEqual(groupedAttempts.map((row) => row.count), [1, 1]);
   } finally {
     global.fetch = originalFetch;
+    restorePayChanguSecretForTest(originalSecretKey);
     resetState();
   }
 });
