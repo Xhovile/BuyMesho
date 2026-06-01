@@ -36,6 +36,8 @@ export interface PayChanguConfig {
   paychanguSecretKey?: string;
   paychanguWebhookSecret?: string;
   paychanguBaseUrl?: string;
+  paychanguCallbackUrl?: string;
+  paychanguReturnUrl?: string;
 }
 
 interface PayChanguPaymentInitResponse {
@@ -64,16 +66,17 @@ function toISODate(): string {
   return new Date().toISOString();
 }
 
-function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, string> {
-  const secretKey = config.paychanguSecretKey?.trim();
-  if (!secretKey) {
-    throw new Error('Missing required PayChangu secret key');
+function serializeMeta(metadata: Record<string, unknown> | undefined): string {
+  try {
+    return JSON.stringify(metadata ?? {});
+  } catch {
+    return '{}';
   }
+}
 
-  return {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${secretKey}`,
-  };
+function hasAtMostTwoDecimals(value: number): boolean {
+  const scaled = value * 100;
+  return Number.isInteger(scaled);
 }
 
 export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
@@ -272,7 +275,7 @@ export const paychanguProvider = {
     supportsRefunds: false,
     supportsPartialCapture: false,
     supportedMethods: ['card', 'bank_transfer', 'mobile_money'] as PaymentMethod[],
-    currencies: ['MWK', 'USD', 'ZAR'],
+    currencies: ['MWK', 'USD'],
   },
 
   async createPayment(
@@ -282,24 +285,59 @@ export const paychanguProvider = {
     const baseUrl = getBaseUrl(config);
     const reference = `PAYCHANGU-${request.orderId}-${Date.now()}`;
     const txRef = normalizeTxRef(undefined, reference);
+    const callbackUrl =
+      config.paychanguCallbackUrl ||
+      process.env.PAYCHANGU_CALLBACK_URL ||
+      request.returnUrl;
+    const returnUrl =
+      request.returnUrl ||
+      config.paychanguReturnUrl ||
+      process.env.PAYCHANGU_RETURN_URL;
 
-    const payload = {
-      amount: request.amount.amount,
+    if (!callbackUrl) {
+      throw new Error('Missing required callback_url for PayChangu initiation');
+    }
+    if (!returnUrl) {
+      throw new Error('Missing required return_url for PayChangu initiation');
+    }
+
+    const amountValue = Number(request.amount.amount);
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
+      throw new Error(`Invalid amount for PayChangu initiation: ${String(request.amount.amount)}`);
+    }
+    if (!hasAtMostTwoDecimals(amountValue)) {
+      throw new Error(`Amount must have at most 2 decimal places: ${String(request.amount.amount)}`);
+    }
+
+    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const firstName = firstNameRaw || undefined;
+    const lastName = lastNameRaw.join(' ').trim() || undefined;
+
+    const payload: Record<string, unknown> = {
+      amount: amountValue.toFixed(2),
       currency: request.amount.currency,
       tx_ref: txRef,
-      callback_url: request.returnUrl,
-      return_url: request.returnUrl,
-      cancel_url: request.cancelUrl,
-      email: request.customer.email,
-      first_name: request.customer.name,
-      last_name: request.customer.name,
-      mobile_number: request.customer.phoneNumber,
+      callback_url: callbackUrl,
+      return_url: returnUrl,
       customization: {
         title: 'BuyMesho Checkout',
         description: `Payment for order ${request.orderId}`,
       },
-      metadata: request.metadata ?? {},
+      meta: serializeMeta(request.metadata),
     };
+
+    if (request.customer.email) {
+      payload.email = request.customer.email;
+    }
+    if (firstName) {
+      payload.first_name = firstName;
+    }
+    if (lastName) {
+      payload.last_name = lastName;
+    }
 
     const response = await fetch(`${baseUrl}/payment`, {
       method: 'POST',
