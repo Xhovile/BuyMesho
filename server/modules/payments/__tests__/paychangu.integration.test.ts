@@ -37,7 +37,10 @@ function mockPayChanguFetch(
 ): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const headers = new Headers(init?.headers);
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
+      assert.equal(headers.get('content-type'), 'application/json');
+      assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
       return new Response(JSON.stringify({
         data: {
           checkout_url: 'https://checkout.paychangu.test/session',
@@ -47,6 +50,8 @@ function mockPayChanguFetch(
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     if (new RegExp(`^https:\\/\\/[^/]*paychangu\\.com\\/verify-payment\\/${reference}`).test(target)) {
+      assert.equal(headers.get('content-type'), 'application/json');
+      assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
       return new Response(JSON.stringify({
         data: {
           tx_ref: reference,
@@ -189,6 +194,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     originalConsoleLog(...args);
   };
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -292,6 +298,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   const originalFetch = global.fetch;
   global.fetch = mockFetch(originalFetch);
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -335,6 +342,7 @@ test('integration: PayChangu-prefixed references activate escrow after verificat
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, prefixedReference, 'successful');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -376,6 +384,7 @@ test('integration: invalid paychangu webhook signature is audited as rejected', 
 
   const app = createApp();
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -437,6 +446,7 @@ test('integration: pending webhook keeps payment and order pending without escro
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-pending-1', 'queued');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -471,6 +481,7 @@ test('integration: failed webhook fails payment without paying order or creating
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-failed-1', 'failed');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -505,6 +516,7 @@ test('integration: reversed webhook refunds captured escrow according to domain 
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-reversed-1', 'reversed');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;

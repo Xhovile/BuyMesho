@@ -23,6 +23,7 @@ type CapturedRequest = {
   url: string;
   method: string;
   authorization: string | null;
+  contentType: string | null;
   body: Record<string, unknown>;
 };
 
@@ -57,6 +58,7 @@ function mockPayChanguFetch(responsePayload: unknown): CapturedRequest[] {
       url: typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url,
       method: init?.method ?? 'GET',
       authorization: headers.get('authorization'),
+      contentType: headers.get('content-type'),
       body: init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {},
     });
 
@@ -101,6 +103,7 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/mobile-money/payouts/initialize');
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.contentType, 'application/json');
     assert.deepEqual(requests[0]?.body, {
       mobile: '0990000000',
       mobile_money_operator_ref_id: '20be6c20-adeb-4b5b-a7ba-0769820df4fb',
@@ -149,6 +152,7 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/direct-charge/payouts/initialize');
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.contentType, 'application/json');
     assert.deepEqual(requests[0]?.body, {
       payout_method: 'bank_transfer',
       bank_uuid: '82310dd1-ec9b-4fe7-a32c-2f262ef08681',
@@ -185,6 +189,7 @@ test('PayChangu payout lookups use documented default paths', async () => {
     );
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.contentType, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
@@ -205,11 +210,15 @@ test('PayChangu provider list helpers use documented default paths', async () =>
 
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/mobile-money');
     assert.equal(requests[0]?.method, 'GET');
+    assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.contentType, 'application/json');
     assert.equal(
       requests[1]?.url,
       'https://api.paychangu.com/direct-charge/payouts/supported-banks?currency=MWK',
     );
     assert.equal(requests[1]?.method, 'GET');
+    assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[1]?.contentType, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
