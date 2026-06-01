@@ -341,12 +341,7 @@ export const paychanguProvider = {
 
     const response = await fetch(`${baseUrl}/payment`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(config.paychanguSecretKey
-          ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
-          : {}),
-      },
+      headers: buildPayChanguJsonHeaders(config),
       body: JSON.stringify(payload),
     });
 
@@ -386,11 +381,7 @@ export const paychanguProvider = {
       `${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`,
       {
         method: 'GET',
-        headers: {
-          ...(config.paychanguSecretKey
-            ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
-            : {}),
-        },
+        headers: buildPayChanguJsonHeaders(config),
       },
     );
 

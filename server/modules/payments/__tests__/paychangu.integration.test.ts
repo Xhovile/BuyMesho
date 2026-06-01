@@ -12,6 +12,7 @@ import { getPaymentDb } from '../../../sqlite.js';
 const WEBHOOK_SECRET = 'integration-secret';
 
 type WebhookAuditRow = {
+  provider: string;
   provider_event_id: string | null;
   tx_ref: string | null;
   payload_hash: string | null;
@@ -37,7 +38,10 @@ function mockPayChanguFetch(
 ): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    const headers = new Headers(init?.headers);
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
+      assert.equal(headers.get('content-type'), 'application/json');
+      assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
       return new Response(JSON.stringify({
         data: {
           checkout_url: 'https://checkout.paychangu.test/session',
@@ -47,6 +51,8 @@ function mockPayChanguFetch(
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
     if (new RegExp(`^https:\\/\\/[^/]*paychangu\\.com\\/verify-payment\\/${reference}`).test(target)) {
+      assert.equal(headers.get('content-type'), 'application/json');
+      assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
       return new Response(JSON.stringify({
         data: {
           tx_ref: reference,
@@ -130,7 +136,7 @@ async function postPayChanguWebhook(base: string, rawWebhook: string, signature 
 function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
   return getPaymentDb()
     .prepare(
-      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+      `SELECT provider, provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
        FROM payment_webhook_events
        WHERE reference = ? OR tx_ref = ?
        ORDER BY id ASC`,
@@ -141,7 +147,7 @@ function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
 function fetchWebhookAuditRowsByPayloadHash(payloadHash: string): WebhookAuditRow[] {
   return getPaymentDb()
     .prepare(
-      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+      `SELECT provider, provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
        FROM payment_webhook_events
        WHERE payload_hash = ?
        ORDER BY id ASC`,
@@ -189,6 +195,7 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     originalConsoleLog(...args);
   };
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -263,12 +270,14 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
 
     const processedAudit = processedAuditRows[0];
     const duplicateAudit = duplicateAuditRows[0];
+    assert.equal(processedAudit.provider, 'paychangu', 'buyer payment webhooks should use the payment webhook handler');
     assert.equal(processedAudit.provider_event_id, 'evt_success_1', 'provider_event_id should be stored when present');
     assert.equal(processedAudit.tx_ref, checkoutResult.reference, 'tx_ref should be stored');
     assert.equal(processedAudit.payload_hash, hashPayload(rawWebhook), 'payload_hash should be stored');
     assert.equal(processedAudit.processing_status, 'processed', 'valid success webhook should be processed');
     assert.ok(processedAudit.processed_at, 'processed_at should be non-null');
     assert.equal(processedAudit.error, null, 'processed success webhook should not have an error');
+    assert.equal(duplicateAudit.provider, 'paychangu', 'duplicate buyer payment webhooks should stay in the payment webhook stream');
     assert.equal(duplicateAudit.provider_event_id, 'evt_success_1', 'duplicate webhook should preserve provider_event_id');
     assert.equal(duplicateAudit.tx_ref, checkoutResult.reference, 'duplicate webhook should preserve tx_ref');
     assert.equal(duplicateAudit.payload_hash, hashPayload(rawWebhook), 'duplicate webhook should preserve payload_hash');
@@ -292,6 +301,7 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   const originalFetch = global.fetch;
   global.fetch = mockFetch(originalFetch);
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -335,6 +345,7 @@ test('integration: PayChangu-prefixed references activate escrow after verificat
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, prefixedReference, 'successful');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
@@ -376,6 +387,7 @@ test('integration: invalid paychangu webhook signature is audited as rejected', 
 
   const app = createApp();
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -437,6 +449,7 @@ test('integration: pending webhook keeps payment and order pending without escro
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-pending-1', 'queued');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -471,6 +484,7 @@ test('integration: failed webhook fails payment without paying order or creating
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-failed-1', 'failed');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
@@ -505,6 +519,7 @@ test('integration: reversed webhook refunds captured escrow according to domain 
   const originalFetch = global.fetch;
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-reversed-1', 'reversed');
   process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
   const port = (server.address() as { port: number }).port;
   const base = `http://127.0.0.1:${port}`;
