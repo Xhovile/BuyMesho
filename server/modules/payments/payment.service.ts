@@ -48,12 +48,12 @@ function normalizeCurrency(value: string | undefined): string {
   return String(value ?? '').trim().toUpperCase();
 }
 
-function moneyMatches(
+function paymentCoversExpectedTotal(
   expected: { amount: number; currency: string },
   actual?: { amount: number; currency: string },
 ): boolean {
   if (!actual) return false;
-  return expected.amount === actual.amount && normalizeCurrency(expected.currency) === normalizeCurrency(actual.currency);
+  return actual.amount >= expected.amount && normalizeCurrency(expected.currency) === normalizeCurrency(actual.currency);
 }
 
 export function createServerPaymentConfigFromEnv(): ServerPaymentConfig {
@@ -111,63 +111,73 @@ export class ServerPaymentService {
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
-  const verification = await paychanguProvider.verifyPayment(txRef, this.resolveConfig());
-  const payment = paymentRepository.findByReference(verification.reference ?? txRef);
+    const requestedTxRef = txRef.trim();
+    const verification = await paychanguProvider.verifyPayment(requestedTxRef, this.resolveConfig());
+    const returnedReference = verification.reference?.trim() || requestedTxRef;
+    const payment = paymentRepository.findByReference(requestedTxRef);
 
-  let strictVerified = verification.verified;
-  let failureReason = verification.failureReason;
+    let strictVerified = verification.verified;
+    let failureReason = verification.failureReason;
 
-  if (!payment) {
-    strictVerified = false;
-    failureReason = failureReason ?? 'Stored payment record not found for this reference';
-  } else {
-    const order = orderRepository.findById(payment.orderId);
-    if (!order) {
+    if (returnedReference !== requestedTxRef) {
       strictVerified = false;
-      failureReason = failureReason ?? 'Associated order not found';
+      failureReason = failureReason ?? 'Verified transaction reference does not match requested transaction reference';
+    }
+
+    if (!payment) {
+      strictVerified = false;
+      failureReason = failureReason ?? 'Stored payment record not found for this reference';
+    } else if (payment.reference !== requestedTxRef) {
+      strictVerified = false;
+      failureReason = failureReason ?? 'Stored payment reference does not match requested transaction reference';
     } else {
-      const amountMatches = moneyMatches(order.total, verification.amount);
-      if (!amountMatches) {
+      const order = orderRepository.findById(payment.orderId);
+      if (!order) {
+        strictVerified = false;
+        failureReason = failureReason ?? 'Associated order not found';
+      } else if (order.paymentReference && order.paymentReference !== requestedTxRef) {
+        strictVerified = false;
+        failureReason = failureReason ?? 'Order payment reference does not match requested transaction reference';
+      } else if (!paymentCoversExpectedTotal(order.total, verification.amount)) {
         strictVerified = false;
         failureReason =
-          failureReason ?? `Payment amount or currency does not match order total for ${order.id}`;
+          failureReason ?? `Payment amount or currency does not cover order total for ${order.id}`;
       }
     }
-  }
 
-  const strictVerification: PaymentVerificationResult = {
-    ...verification,
-    verified: strictVerified,
-    orderId: payment?.orderId,
-    failureReason,
-  };
+    const strictVerification: PaymentVerificationResult = {
+      ...verification,
+      verified: strictVerified,
+      orderId: payment?.orderId,
+      failureReason,
+    };
 
-  if (payment) {
-    await paymentRepository.updateByReference(payment.reference, (current) => ({
-      ...current,
-      verified: strictVerification.verified,
-      verification: strictVerification,
-    }));
-  }
-
-  if (strictVerification.verified && payment) {
-    const currentOrder = orderRepository.findById(payment.orderId);
-
-    if (
-      currentOrder &&
-      !['in_escrow', 'fulfilled', 'refunded', 'closed', 'disputed'].includes(currentOrder.status)
-    ) {
-      applyVerifiedPayChanguPayment({
-        ...strictVerification,
-        provider: 'paychangu',
-        reference: strictVerification.reference ?? txRef,
-        txRef,
-        status: strictVerification.status ?? 'captured',
-      });
+    if (payment) {
+      await paymentRepository.updateByReference(payment.reference, (current) => ({
+        ...current,
+        verified: strictVerification.verified,
+        verification: strictVerification,
+      }));
     }
-  }
 
-  return strictVerification;
+    if (strictVerification.verified && payment) {
+      const currentOrder = orderRepository.findById(payment.orderId);
+
+      if (
+        currentOrder &&
+        !['in_escrow', 'fulfilled', 'refunded', 'closed', 'disputed'].includes(currentOrder.status)
+      ) {
+        applyVerifiedPayChanguPayment({
+          ...strictVerification,
+          provider: 'paychangu',
+          reference: requestedTxRef,
+          txRef: requestedTxRef,
+          status: strictVerification.status ?? 'captured',
+        });
+      }
+    }
+
+    return strictVerification;
   }
 
   async refund(request: RefundRequest): Promise<RefundResult> {

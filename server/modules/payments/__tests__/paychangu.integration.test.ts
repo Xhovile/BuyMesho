@@ -35,6 +35,8 @@ function mockPayChanguFetch(
   reference: string,
   status: string,
   amount = 1000,
+  currency = 'MWK',
+  verifiedReference = reference,
 ): typeof fetch {
   return (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
@@ -74,11 +76,14 @@ function mockPayChanguFetch(
       assert.equal(headers.get('content-type'), 'application/json');
       assert.equal(headers.get('authorization'), 'Bearer integration-secret-key');
       return new Response(JSON.stringify({
+        status: 'success',
+        message: 'Payment details retrieved successfully.',
         data: {
-          tx_ref: reference,
+          event_type: 'checkout.payment',
+          tx_ref: verifiedReference,
           status,
           amount,
-          currency: 'MWK',
+          currency,
         },
       }), { status: 200, headers: { 'content-type': 'application/json' } });
     }
@@ -126,6 +131,26 @@ function seedOrder(orderId: string, reference: string, status: 'pending_payment'
     updatedAt: now,
     paymentProvider: 'paychangu',
     paymentReference: reference,
+  });
+}
+
+function seedStoredPayment(orderId: string, reference: string, amount = 1000, currency = 'MWK'): void {
+  const now = new Date().toISOString();
+  paymentRepository.save({
+    id: `pay_${reference}`,
+    orderId,
+    provider: 'paychangu',
+    method: 'mobile_money',
+    status: 'pending',
+    amount: { amount, currency },
+    reference,
+    providerReference: null,
+    checkoutUrl: null,
+    paidAt: null,
+    rawResponse: {},
+    verified: false,
+    createdAt: now,
+    updatedAt: now,
   });
 }
 
@@ -181,6 +206,104 @@ function countEscrowsForOrder(orderId: string): number {
     .get(orderId) as { count: number };
   return row.count;
 }
+
+test('integration: PayChangu verification accepts successful payments that meet or exceed the expected amount', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-overpaid-1', 'success', 1250);
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_overpaid_1', 'txref-overpaid-1');
+    seedStoredPayment('order_overpaid_1', 'txref-overpaid-1');
+
+    const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/txref-overpaid-1`);
+    assert.equal(verifyRes.status, 200, 'verify should return 200');
+    const verifyResult = await verifyRes.json() as { verified?: boolean; amount?: { amount?: number } };
+
+    assert.equal(verifyResult.verified, true, 'overpaid successful payment should verify');
+    assert.equal(verifyResult.amount?.amount, 1250, 'verification should preserve the paid amount');
+    assert.equal(orderRepository.findById('order_overpaid_1')?.status, 'in_escrow', 'verified overpayment should place order in escrow');
+    assert.equal(paymentRepository.findByReference('txref-overpaid-1')?.verified, true, 'stored payment should be verified');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: PayChangu verification rejects underpaid, wrong-currency, and mismatched-reference responses', async () => {
+  const scenarios = [
+    {
+      name: 'underpaid',
+      reference: 'txref-underpaid-1',
+      amount: 999,
+      currency: 'MWK',
+      verifiedReference: 'txref-underpaid-1',
+      expectedReason: /amount or currency does not cover order total/,
+    },
+    {
+      name: 'wrong currency',
+      reference: 'txref-currency-1',
+      amount: 1000,
+      currency: 'USD',
+      verifiedReference: 'txref-currency-1',
+      expectedReason: /amount or currency does not cover order total/,
+    },
+    {
+      name: 'mismatched reference',
+      reference: 'txref-mismatch-1',
+      amount: 1000,
+      currency: 'MWK',
+      verifiedReference: 'txref-other-1',
+      expectedReason: /reference does not match requested transaction reference/,
+    },
+  ] as const;
+
+  for (const scenario of scenarios) {
+    clearPaymentState();
+
+    const app = createApp();
+    const originalFetch = global.fetch;
+    global.fetch = mockPayChanguFetch(
+      originalFetch,
+      scenario.reference,
+      'success',
+      scenario.amount,
+      scenario.currency,
+      scenario.verifiedReference,
+    );
+    process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+    const server = app.listen(0);
+    const port = (server.address() as { port: number }).port;
+    const base = `http://127.0.0.1:${port}`;
+
+    try {
+      const orderId = `order_${scenario.name.replace(/\s+/g, '_')}_1`;
+      seedOrder(orderId, scenario.reference);
+      seedStoredPayment(orderId, scenario.reference);
+
+      const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/${scenario.reference}`);
+      assert.equal(verifyRes.status, 200, `${scenario.name} verify should return 200 with verified=false`);
+      const verifyResult = await verifyRes.json() as { verified?: boolean; failureReason?: string };
+
+      assert.equal(verifyResult.verified, false, `${scenario.name} payment should not verify`);
+      assert.match(verifyResult.failureReason ?? '', scenario.expectedReason, `${scenario.name} should explain the validation failure`);
+      assert.equal(orderRepository.findById(orderId)?.status, 'pending_payment', `${scenario.name} should not mark order paid`);
+      assert.equal(countEscrowsForOrder(orderId), 0, `${scenario.name} should not create escrow`);
+      assert.equal(paymentRepository.findByReference(scenario.reference)?.verified, false, `${scenario.name} stored payment should remain unverified`);
+    } finally {
+      global.fetch = originalFetch;
+      server.close();
+      clearPaymentState();
+    }
+  }
+});
 
 test('integration: atomic checkout → paychangu payment → webhook persists state and classifies duplicate delivery', async () => {
   clearPaymentState();
