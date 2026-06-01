@@ -66,6 +66,19 @@ function toISODate(): string {
   return new Date().toISOString();
 }
 
+function serializeMeta(metadata: Record<string, unknown> | undefined): string {
+  try {
+    return JSON.stringify(metadata ?? {});
+  } catch {
+    return '{}';
+  }
+}
+
+function hasAtMostTwoDecimals(value: number): boolean {
+  const scaled = value * 100;
+  return Number.isInteger(scaled);
+}
+
 export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
 
 const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'queued', 'initiated', 'processing']);
@@ -292,8 +305,11 @@ export const paychanguProvider = {
     if (!Number.isFinite(amountValue) || amountValue <= 0) {
       throw new Error(`Invalid amount for PayChangu initiation: ${String(request.amount.amount)}`);
     }
+    if (!hasAtMostTwoDecimals(amountValue)) {
+      throw new Error(`Amount must have at most 2 decimal places: ${String(request.amount.amount)}`);
+    }
 
-    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name || '')
+    const [firstNameRaw, ...lastNameRaw] = String(request.customer.name ?? '')
       .trim()
       .split(/\s+/)
       .filter(Boolean);
@@ -310,7 +326,7 @@ export const paychanguProvider = {
         title: 'BuyMesho Checkout',
         description: `Payment for order ${request.orderId}`,
       },
-      meta: JSON.stringify(request.metadata ?? {}),
+      meta: serializeMeta(request.metadata),
     };
 
     if (request.customer.email) {
