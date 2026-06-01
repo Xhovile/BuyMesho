@@ -274,6 +274,7 @@ test('admin payouts list marks held payout retry-eligible when destination is ve
     return (entry as Record<string, unknown>).id === payoutId;
   }) as Record<string, unknown> | undefined;
   assert.ok(row);
+  assert.equal(row.escrowState, 'released');
   assert.equal(row.retryEligible, true);
 });
 
