@@ -348,6 +348,18 @@ function buildPayoutReference(payoutId: string): string {
   return `PAYCHANGU-PAYOUT-${payoutId}-${randomUUID().slice(0, 8)}`;
 }
 
+function buildPayChanguJsonHeaders(secretKey: string): Record<string, string> {
+  const trimmedSecretKey = secretKey.trim();
+  if (!trimmedSecretKey) {
+    throw new Error('Missing required PayChangu secret key');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${trimmedSecretKey}`,
+  };
+}
+
 async function postJson(
   url: string,
   body: Record<string, unknown>,
@@ -355,10 +367,7 @@ async function postJson(
 ): Promise<{ payload: unknown; rawText: string; ok: boolean; status: number }> {
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(secretKey ? { Authorization: `Bearer ${secretKey}` } : {}),
-    },
+    headers: buildPayChanguJsonHeaders(secretKey),
     body: JSON.stringify(body),
   });
 
@@ -372,9 +381,7 @@ async function getJson(
 ): Promise<{ payload: unknown; rawText: string; ok: boolean; status: number }> {
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      ...(secretKey ? { Authorization: `Bearer ${secretKey}` } : {}),
-    },
+    headers: buildPayChanguJsonHeaders(secretKey),
   });
 
   const { payload, rawText } = await readResponseBody(response);

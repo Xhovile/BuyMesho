@@ -64,6 +64,18 @@ function toISODate(): string {
   return new Date().toISOString();
 }
 
+function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, string> {
+  const secretKey = config.paychanguSecretKey?.trim();
+  if (!secretKey) {
+    throw new Error('Missing required PayChangu secret key');
+  }
+
+  return {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${secretKey}`,
+  };
+}
+
 export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
 
 const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'queued', 'initiated', 'processing']);
@@ -291,12 +303,7 @@ export const paychanguProvider = {
 
     const response = await fetch(`${baseUrl}/payment`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(config.paychanguSecretKey
-          ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
-          : {}),
-      },
+      headers: buildPayChanguJsonHeaders(config),
       body: JSON.stringify(payload),
     });
 
@@ -336,11 +343,7 @@ export const paychanguProvider = {
       `${baseUrl}/verify-payment/${encodeURIComponent(txRef)}`,
       {
         method: 'GET',
-        headers: {
-          ...(config.paychanguSecretKey
-            ? { Authorization: `Bearer ${config.paychanguSecretKey}` }
-            : {}),
-        },
+        headers: buildPayChanguJsonHeaders(config),
       },
     );
 
