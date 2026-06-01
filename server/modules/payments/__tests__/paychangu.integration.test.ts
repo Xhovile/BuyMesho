@@ -12,6 +12,7 @@ import { getPaymentDb } from '../../../sqlite.js';
 const WEBHOOK_SECRET = 'integration-secret';
 
 type WebhookAuditRow = {
+  provider: string;
   provider_event_id: string | null;
   tx_ref: string | null;
   payload_hash: string | null;
@@ -130,7 +131,7 @@ async function postPayChanguWebhook(base: string, rawWebhook: string, signature 
 function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
   return getPaymentDb()
     .prepare(
-      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+      `SELECT provider, provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
        FROM payment_webhook_events
        WHERE reference = ? OR tx_ref = ?
        ORDER BY id ASC`,
@@ -141,7 +142,7 @@ function fetchWebhookAuditRows(txRef: string): WebhookAuditRow[] {
 function fetchWebhookAuditRowsByPayloadHash(payloadHash: string): WebhookAuditRow[] {
   return getPaymentDb()
     .prepare(
-      `SELECT provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
+      `SELECT provider, provider_event_id, tx_ref, payload_hash, processing_status, processed_at, error
        FROM payment_webhook_events
        WHERE payload_hash = ?
        ORDER BY id ASC`,
@@ -263,12 +264,14 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
 
     const processedAudit = processedAuditRows[0];
     const duplicateAudit = duplicateAuditRows[0];
+    assert.equal(processedAudit.provider, 'paychangu', 'buyer payment webhooks should use the payment webhook handler');
     assert.equal(processedAudit.provider_event_id, 'evt_success_1', 'provider_event_id should be stored when present');
     assert.equal(processedAudit.tx_ref, checkoutResult.reference, 'tx_ref should be stored');
     assert.equal(processedAudit.payload_hash, hashPayload(rawWebhook), 'payload_hash should be stored');
     assert.equal(processedAudit.processing_status, 'processed', 'valid success webhook should be processed');
     assert.ok(processedAudit.processed_at, 'processed_at should be non-null');
     assert.equal(processedAudit.error, null, 'processed success webhook should not have an error');
+    assert.equal(duplicateAudit.provider, 'paychangu', 'duplicate buyer payment webhooks should stay in the payment webhook stream');
     assert.equal(duplicateAudit.provider_event_id, 'evt_success_1', 'duplicate webhook should preserve provider_event_id');
     assert.equal(duplicateAudit.tx_ref, checkoutResult.reference, 'duplicate webhook should preserve tx_ref');
     assert.equal(duplicateAudit.payload_hash, hashPayload(rawWebhook), 'duplicate webhook should preserve payload_hash');

@@ -3,7 +3,6 @@ import { randomUUID } from 'crypto';
 import rateLimit from 'express-rate-limit';
 import { paymentController } from './payment.controller.js';
 import { paymentWebhookHandler } from './payment.webhooks.js';
-import { payoutWebhookHandler } from '../payouts/payout.webhooks.js';
 import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
 import { paychanguProvider } from './paychangu.provider.js';
 import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
@@ -414,10 +413,10 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const signature =
         req.header('x-paychangu-signature') ?? req.header('Signature');
 
-      const result = await payoutWebhookHandler.handlePaychanguWebhook(signature, rawBody);
+      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
       return res.status(200).json(result);
     } catch (error) {
-      return res.status(400).json(jsonError(error, 'Failed to process payout webhook'));
+      return res.status(400).json(jsonError(error, 'Failed to process payment webhook'));
     }
   });
 
