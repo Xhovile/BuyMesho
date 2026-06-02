@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import express from 'express';
 import { createHash, createHmac } from 'crypto';
 import { mountPayChanguRoutes } from '../payment.routes.js';
+import { paychanguProvider } from '../paychangu.provider.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
@@ -215,6 +216,46 @@ function countEscrowsForOrder(orderId: string): number {
     .get(orderId) as { count: number };
   return row.count;
 }
+
+test('provider: PayChangu initialization formats object validation messages for buyers', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
+    const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
+      return new Response(JSON.stringify({
+        status: 'error',
+        message: {
+          email: ['The email field is required.'],
+          amount: ['The amount must be at least 100.'],
+        },
+      }), { status: 422, headers: { 'content-type': 'application/json' } });
+    }
+    return originalFetch(input);
+  }) as typeof fetch;
+
+  try {
+    await assert.rejects(
+      () => paychanguProvider.createPayment({
+        orderId: 'order_object_error_1',
+        provider: 'paychangu',
+        method: 'mobile_money',
+        amount: { amount: 50, currency: 'MWK' },
+        customer: { id: 'buyer_1', name: 'Buyer One' },
+        returnUrl: 'https://example.com/return',
+        cancelUrl: 'https://example.com/cancel',
+      }, { paychanguSecretKey: 'integration-secret-key' }),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.notEqual(error.message, '[object Object]');
+        assert.match(error.message, /email: The email field is required\./);
+        assert.match(error.message, /amount: The amount must be at least 100\./);
+        return true;
+      },
+    );
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
 
 test('integration: PayChangu verification accepts successful payments that meet or exceed the expected amount', async () => {
   clearPaymentState();

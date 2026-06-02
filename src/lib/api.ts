@@ -17,6 +17,42 @@ async function authHeader() {
 
 const API_FETCH_TIMEOUT_MS = 15000;
 
+function formatApiErrorMessage(value: unknown): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => formatApiErrorMessage(item))
+      .filter((item): item is string => Boolean(item));
+    return parts.length > 0 ? parts.join(", ") : null;
+  }
+
+  if (typeof value === "object" && value !== null) {
+    const record = value as Record<string, unknown>;
+    const directMessage = formatApiErrorMessage(
+      record.message ?? record.error ?? record.detail ?? record.reason,
+    );
+    if (directMessage) return directMessage;
+
+    const parts = Object.entries(record)
+      .map(([key, nested]) => {
+        const nestedMessage = formatApiErrorMessage(nested);
+        return nestedMessage ? `${key}: ${nestedMessage}` : null;
+      })
+      .filter((item): item is string => Boolean(item));
+    return parts.length > 0 ? parts.join("; ") : null;
+  }
+
+  return null;
+}
+
 function createCombinedAbortSignal(signal?: AbortSignal) {
   const controller = new AbortController();
   let callerAborted = false;
@@ -76,7 +112,8 @@ export async function apiFetch(url: string, init: RequestInit = {}) {
   if (!res.ok) {
     let body: any = null;
     try { body = await res.json(); } catch {}
-    throw new Error(body?.error || `Request failed (${res.status})`);
+    const message = formatApiErrorMessage(body?.error ?? body?.message) ?? `Request failed (${res.status})`;
+    throw new Error(message);
   }
 
   const text = await res.text();
