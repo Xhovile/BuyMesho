@@ -244,12 +244,15 @@ function extractProviderTransactionId(payload: unknown): string | null {
   return (
     extractString(payload, ['data', 'transaction', 'transaction_id']) ??
     extractString(payload, ['data', 'transaction', 'transactionId']) ??
+    extractString(payload, ['data', 'transaction', 'trans_id']) ??
     extractString(payload, ['data', 'transaction', 'id']) ??
     extractString(payload, ['data', 'transaction_id']) ??
     extractString(payload, ['data', 'transactionId']) ??
+    extractString(payload, ['data', 'trans_id']) ??
     extractString(payload, ['data', 'id']) ??
     extractString(payload, ['transaction_id']) ??
     extractString(payload, ['transactionId']) ??
+    extractString(payload, ['trans_id']) ??
     extractString(payload, ['id'])
   );
 }
@@ -355,6 +358,7 @@ function buildPayChanguJsonHeaders(secretKey: string): Record<string, string> {
   }
 
   return {
+    Accept: 'application/json',
     'Content-Type': 'application/json',
     Authorization: `Bearer ${trimmedSecretKey}`,
   };
@@ -390,14 +394,10 @@ async function getJson(
 
 function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerChargeId: string): Record<string, unknown> {
   return {
-    mobile: input.mobile ?? input.destinationReference,
     mobile_money_operator_ref_id: input.mobileMoneyOperatorRefId,
-    currency: input.currency,
+    mobile: input.mobile ?? input.destinationReference,
     amount: String(input.amount),
     charge_id: providerChargeId,
-    email: input.email,
-    first_name: input.firstName,
-    last_name: input.lastName,
   };
 }
 
