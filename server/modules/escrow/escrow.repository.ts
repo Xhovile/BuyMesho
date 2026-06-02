@@ -26,6 +26,18 @@ export interface ReleaseToSellerEarningsResult {
   releaseEntry: EscrowEntry;
 }
 
+export interface RefundHeldBalanceInput {
+  orderId: string;
+  refundedBy: string;
+  reference?: string;
+  note?: string;
+}
+
+export interface RefundHeldBalanceResult {
+  escrow: StoredEscrow;
+  refundEntry: EscrowEntry;
+}
+
 export interface StoredEscrow {
   id: string;
   orderId: string;
@@ -171,6 +183,68 @@ export class EscrowRepository {
       }
 
       return { escrow, releaseEntry };
+    })(input);
+  }
+
+  refundHeldBalance(input: RefundHeldBalanceInput): RefundHeldBalanceResult | undefined {
+    return this.db.transaction((refundInput: RefundHeldBalanceInput) => {
+      const current = this.findByOrderId(refundInput.orderId);
+      if (!current) return undefined;
+
+      if (current.entries.some((entry) => entry.entryType === 'refund')) {
+        throw new Error('Escrow is already refunded');
+      }
+
+      if (current.entries.some((entry) => entry.entryType === 'release')) {
+        throw new Error('Escrow is already released');
+      }
+
+      if (current.state === 'released' || current.state === 'refunded' || current.state === 'closed') {
+        throw new Error(`Escrow is already ${current.state}`);
+      }
+
+      if (current.state !== 'funded' && current.state !== 'held') {
+        throw new Error(`Escrow cannot be refunded from ${current.state} state`);
+      }
+
+      if (current.balanceAmount <= 0) {
+        throw new Error('Escrow has no held balance to refund');
+      }
+
+      const now = new Date().toISOString();
+      const refundEntry: EscrowEntry = {
+        id: randomUUID(),
+        escrowId: current.id,
+        entryType: 'refund',
+        amount: current.balanceAmount,
+        currency: current.balanceCurrency,
+        balanceAfter: 0,
+        note: refundInput.note || 'Escrow refunded to buyer',
+        actorId: refundInput.refundedBy,
+        reference: refundInput.reference,
+        createdAt: now,
+      };
+      const entries = [...current.entries, refundEntry];
+
+      this.db.prepare(
+        `UPDATE escrows
+         SET state = 'refunded',
+             balance_amount = 0,
+             entries = @entries,
+             updated_at = @updated_at
+         WHERE order_id = @order_id`,
+      ).run({
+        entries: JSON.stringify(entries),
+        updated_at: now,
+        order_id: refundInput.orderId,
+      });
+
+      const escrow = this.findByOrderId(refundInput.orderId);
+      if (!escrow) {
+        throw new Error('Escrow not found after refund');
+      }
+
+      return { escrow, refundEntry };
     })(input);
   }
 
