@@ -242,12 +242,15 @@ function extractProviderReference(payload: unknown): string | null {
 
 function extractProviderTransactionId(payload: unknown): string | null {
   return (
+    extractString(payload, ['data', 'transaction', 'trans_id']) ??
     extractString(payload, ['data', 'transaction', 'transaction_id']) ??
     extractString(payload, ['data', 'transaction', 'transactionId']) ??
     extractString(payload, ['data', 'transaction', 'id']) ??
+    extractString(payload, ['data', 'trans_id']) ??
     extractString(payload, ['data', 'transaction_id']) ??
     extractString(payload, ['data', 'transactionId']) ??
     extractString(payload, ['data', 'id']) ??
+    extractString(payload, ['trans_id']) ??
     extractString(payload, ['transaction_id']) ??
     extractString(payload, ['transactionId']) ??
     extractString(payload, ['id'])
@@ -355,6 +358,7 @@ function buildPayChanguJsonHeaders(secretKey: string): Record<string, string> {
   }
 
   return {
+    Accept: 'application/json',
     'Content-Type': 'application/json',
     Authorization: `Bearer ${trimmedSecretKey}`,
   };
@@ -405,7 +409,6 @@ function buildBankBody(input: ExecutePayChanguPayoutInput, providerChargeId: str
   return {
     payout_method: 'bank_transfer',
     bank_uuid: input.bankUuid,
-    currency: input.currency,
     amount: String(input.amount),
     charge_id: providerChargeId,
     bank_account_name: input.bankAccountName ?? input.firstName ?? input.providerName,

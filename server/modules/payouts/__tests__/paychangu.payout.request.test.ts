@@ -24,6 +24,7 @@ type CapturedRequest = {
   method: string;
   authorization: string | null;
   contentType: string | null;
+  accept: string | null;
   body: Record<string, unknown>;
 };
 
@@ -59,6 +60,7 @@ function mockPayChanguFetch(responsePayload: unknown): CapturedRequest[] {
       method: init?.method ?? 'GET',
       authorization: headers.get('authorization'),
       contentType: headers.get('content-type'),
+      accept: headers.get('accept'),
       body: init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {},
     });
 
@@ -83,7 +85,7 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
   });
 
   try {
-    await executePayChanguPayout({
+    const result = await executePayChanguPayout({
       payoutId: 'mobile-body-test',
       sellerId: 'seller-mobile-body-test',
       amount: 1250,
@@ -104,6 +106,8 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.contentType, 'application/json');
+    assert.equal(requests[0]?.accept, 'application/json');
+    assert.equal(result.providerTransactionId, 'mobile-trans');
     assert.deepEqual(requests[0]?.body, {
       mobile: '0990000000',
       mobile_money_operator_ref_id: '20be6c20-adeb-4b5b-a7ba-0769820df4fb',
@@ -134,7 +138,7 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
   });
 
   try {
-    await executePayChanguPayout({
+    const result = await executePayChanguPayout({
       payoutId: 'bank-body-test',
       sellerId: 'seller-bank-body-test',
       amount: 10000,
@@ -153,10 +157,11 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.contentType, 'application/json');
+    assert.equal(requests[0]?.accept, 'application/json');
+    assert.equal(result.providerTransactionId, 'bank-trans');
     assert.deepEqual(requests[0]?.body, {
       payout_method: 'bank_transfer',
       bank_uuid: '82310dd1-ec9b-4fe7-a32c-2f262ef08681',
-      currency: 'MWK',
       amount: '10000',
       charge_id: 'BM-PO-bank-body-test-A02',
       bank_account_name: 'Madalitso Kamwendo',
@@ -190,6 +195,7 @@ test('PayChangu payout lookups use documented default paths', async () => {
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.contentType, 'application/json');
+    assert.equal(requests[0]?.accept, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
@@ -212,6 +218,7 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.contentType, 'application/json');
+    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(
       requests[1]?.url,
       'https://api.paychangu.com/direct-charge/payouts/supported-banks?currency=MWK',
@@ -219,6 +226,7 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     assert.equal(requests[1]?.method, 'GET');
     assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[1]?.contentType, 'application/json');
+    assert.equal(requests[1]?.accept, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
