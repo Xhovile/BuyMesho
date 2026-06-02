@@ -23,6 +23,7 @@ type CapturedRequest = {
   url: string;
   method: string;
   authorization: string | null;
+  accept: string | null;
   contentType: string | null;
   accept: string | null;
   body: Record<string, unknown>;
@@ -59,6 +60,7 @@ function mockPayChanguFetch(responsePayload: unknown): CapturedRequest[] {
       url: typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url,
       method: init?.method ?? 'GET',
       authorization: headers.get('authorization'),
+      accept: headers.get('accept'),
       contentType: headers.get('content-type'),
       accept: headers.get('accept'),
       body: init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {},
@@ -105,20 +107,24 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/mobile-money/payouts/initialize');
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(result.providerTransactionId, 'mobile-trans');
     assert.deepEqual(requests[0]?.body, {
-      mobile: '0990000000',
       mobile_money_operator_ref_id: '20be6c20-adeb-4b5b-a7ba-0769820df4fb',
-      currency: 'MWK',
+      mobile: '0990000000',
       amount: '1250',
       charge_id: 'BM-PO-mobile-body-test-A01',
-      email: 'recipient@example.com',
-      first_name: 'Test',
-      last_name: 'Recipient',
     });
+    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'currency'), false);
+    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'email'), false);
+    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'first_name'), false);
+    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'last_name'), false);
     assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'transaction_status'), false);
+    assert.equal(result.status, 'pending');
+    assert.equal(result.providerReference, 'mobile-ref');
+    assert.equal(result.providerTransactionId, 'mobile-trans');
   } finally {
     resetPayChanguEnv();
   }
@@ -156,6 +162,7 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/direct-charge/payouts/initialize');
     assert.equal(requests[0]?.method, 'POST');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(result.providerTransactionId, 'bank-trans');
@@ -194,6 +201,7 @@ test('PayChangu payout lookups use documented default paths', async () => {
     );
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
     assert.equal(requests[0]?.accept, 'application/json');
   } finally {
@@ -217,6 +225,7 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     assert.equal(requests[0]?.url, 'https://api.paychangu.com/mobile-money');
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(
@@ -225,6 +234,7 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     );
     assert.equal(requests[1]?.method, 'GET');
     assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
+    assert.equal(requests[1]?.accept, 'application/json');
     assert.equal(requests[1]?.contentType, 'application/json');
     assert.equal(requests[1]?.accept, 'application/json');
   } finally {

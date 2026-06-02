@@ -309,12 +309,12 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
     assert.equal(requests[1]?.method, 'POST');
     assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
     assert.deepEqual(requests[1]?.body, {
-      mobile: '0990000000',
       mobile_money_operator_ref_id: 'airtel-money',
-      currency: 'MWK',
+      mobile: '0990000000',
       amount: '1455',
       charge_id: expectedChargeId,
     });
+    assert.equal(Object.hasOwn(requests[1]?.body ?? {}, 'currency'), false);
 
     assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout candidate');
     assert.equal(countPayoutAttempts(body.payout?.id ?? ''), 1, 'release should create one payout attempt');
