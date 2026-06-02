@@ -230,31 +230,71 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
       }
 
       const { orderId } = req.params;
-      const escrow = escrowRepository.findByOrderId(orderId);
+      const requesterId = req.user?.uid;
+      if (!requesterId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
-      if (!escrow) {
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
+      if (!reason) {
+        return res.status(400).json({ error: 'Refund reason is required' });
+      }
+
+      const result = getPaymentDb().transaction(() => {
+        const refunded = escrowRepository.refundHeldBalance({
+          orderId,
+          refundedBy: requesterId,
+          reference: `escrow-refund:${orderId}`,
+          note: reason,
+        });
+
+        if (!refunded) {
+          return undefined;
+        }
+
+        const payout = payoutRepository.findByEscrowId(refunded.escrow.id);
+        let cancelledPayout = null;
+        if (payout && payout.status !== 'paid' && payout.status !== 'cancelled') {
+          cancelledPayout = payoutService.applyAdminOverride({
+            payoutId: payout.id,
+            action: 'cancel',
+            actorId: requesterId,
+            reason: `Escrow refunded before seller payout: ${reason}`,
+          });
+        }
+
+        const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
+
+        if (!orderUpdated) {
+          console.warn(
+            `[escrow] refund: order ${orderId} not found when updating status to refunded`,
+          );
+        }
+
+        return {
+          escrow: refunded.escrow,
+          refundEntry: refunded.refundEntry,
+          payout: cancelledPayout,
+        };
+      })();
+
+      if (!result) {
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      if (
-        escrow.state === 'released' ||
-        escrow.state === 'refunded' ||
-        escrow.state === 'closed'
-      ) {
-        return res.status(400).json({ error: `Escrow is already ${escrow.state}` });
-      }
-
-      const updated = escrowRepository.updateState(orderId, 'refunded');
-      const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
-
-      if (!orderUpdated) {
-        console.warn(
-          `[escrow] refund: order ${orderId} not found when updating status to refunded`,
-        );
-      }
-
-      return res.status(200).json(updated);
+      return res.status(200).json(result);
     } catch (error) {
+      const message = error instanceof Error ? error.message : '';
+      if (
+        message.startsWith('Escrow is already') ||
+        message.startsWith('Escrow cannot') ||
+        message.startsWith('Escrow has no') ||
+        message === 'reason is required' ||
+        message.startsWith('Invalid admin override transition')
+      ) {
+        return res.status(400).json({ error: message });
+      }
+
       return res.status(500).json(jsonError(error, 'Failed to refund escrow'));
     }
   });

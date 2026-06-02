@@ -10,6 +10,7 @@ import { serverOrderService } from '../../../modules/orders/order.service.js';
 import { payoutRepository } from '../../../modules/payouts/payout.service.js';
 
 const releasePayoutOrderId = 'order-release-payout-step-3';
+const refundOrderId = 'order-refund-before-release-1';
 const sellerId = 'seller-release-payout-1';
 const destinationId = 'destination-release-payout-1';
 
@@ -401,6 +402,120 @@ test('release endpoint rejects sellers without releasing escrow or creating payo
   } finally {
     server.close();
     resetPayChanguState();
+    clearReleasePayoutState();
+  }
+});
+
+
+test('refund endpoint records a pre-release escrow refund ledger entry and zeroes balance', async () => {
+  clearReleasePayoutState();
+
+  const nowStamp = now();
+  serverOrderService.create({
+    id: refundOrderId,
+    buyerId: 'buyer-refund-before-release-1',
+    sellerId: sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    currency: 'MWK',
+    subtotal: { amount: 1600, currency: 'MWK' },
+    total: { amount: 1600, currency: 'MWK' },
+    items: [{ listingId: 'listing-refund-before-release-1', title: 'Refund Item', quantity: 1, unitPrice: { amount: 1600, currency: 'MWK' } }],
+    createdAt: nowStamp,
+    updatedAt: nowStamp,
+  });
+  escrowRepository.create(refundOrderId, 'MWK', 1600);
+
+  const app = createReleaseApp('admin-refund-before-release-1', true);
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/escrow/${refundOrderId}/refund`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Buyer requested cancellation before release' }),
+    });
+
+    assert.equal(response.status, 200, 'admin should be able to refund held escrow before release');
+    const body = await response.json() as {
+      escrow?: { id?: string; state?: string; balanceAmount?: number; entries?: Array<{ entryType: string; amount: number; balanceAfter: number; actorId?: string; note?: string }> };
+      refundEntry?: { entryType?: string; amount?: number; balanceAfter?: number; actorId?: string; note?: string };
+      payout?: unknown;
+    };
+
+    assert.equal(body.escrow?.state, 'refunded', 'refund should mark escrow as refunded');
+    assert.equal(body.escrow?.balanceAmount, 0, 'refund should zero the escrow balance');
+    assert.equal(body.refundEntry?.entryType, 'refund', 'response should include the refund ledger entry');
+    assert.equal(body.refundEntry?.amount, 1600, 'refund ledger should record held balance amount');
+    assert.equal(body.refundEntry?.balanceAfter, 0, 'refund ledger should settle escrow balance');
+    assert.equal(body.refundEntry?.actorId, 'admin-refund-before-release-1', 'refund ledger should audit the admin actor');
+    assert.equal(body.refundEntry?.note, 'Buyer requested cancellation before release', 'refund ledger should keep the admin reason');
+    assert.equal(body.payout, null, 'pre-release refund should not create or leave a payout');
+
+    const persisted = escrowRepository.findByOrderId(refundOrderId);
+    const persistedRefund = persisted?.entries.find((entry) => entry.entryType === 'refund');
+    assert.equal(persisted?.state, 'refunded', 'refunded state should be persisted');
+    assert.equal(persisted?.balanceAmount, 0, 'zero balance should be persisted');
+    assert.equal(persistedRefund?.amount, 1600, 'persisted refund ledger should record amount');
+    assert.equal(countPayoutsForOrder(refundOrderId), 0, 'refund before release should not create payout candidate');
+    assert.equal(orderRepository.findById(refundOrderId)?.status, 'refunded', 'refund should mark order refunded');
+  } finally {
+    server.close();
+    clearReleasePayoutState();
+  }
+});
+
+test('refund endpoint requires admin and a reason', async () => {
+  clearReleasePayoutState();
+
+  const nowStamp = now();
+  serverOrderService.create({
+    id: refundOrderId,
+    buyerId: 'buyer-refund-before-release-1',
+    sellerId: sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    currency: 'MWK',
+    subtotal: { amount: 1600, currency: 'MWK' },
+    total: { amount: 1600, currency: 'MWK' },
+    items: [{ listingId: 'listing-refund-before-release-1', title: 'Refund Item', quantity: 1, unitPrice: { amount: 1600, currency: 'MWK' } }],
+    createdAt: nowStamp,
+    updatedAt: nowStamp,
+  });
+  escrowRepository.create(refundOrderId, 'MWK', 1600);
+
+  const sellerApp = createReleaseApp(sellerId);
+  const sellerServer = sellerApp.listen(0);
+  const sellerPort = (sellerServer.address() as { port: number }).port;
+
+  try {
+    const sellerResponse = await fetch(`http://127.0.0.1:${sellerPort}/api/escrow/${refundOrderId}/refund`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Seller should not refund' }),
+    });
+    assert.equal(sellerResponse.status, 403, 'non-admin should not refund escrow');
+  } finally {
+    sellerServer.close();
+  }
+
+  const adminApp = createReleaseApp('admin-refund-before-release-1', true);
+  const adminServer = adminApp.listen(0);
+  const adminPort = (adminServer.address() as { port: number }).port;
+
+  try {
+    const noReasonResponse = await fetch(`http://127.0.0.1:${adminPort}/api/escrow/${refundOrderId}/refund`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: '   ' }),
+    });
+    assert.equal(noReasonResponse.status, 400, 'admin refund should require a reason');
+    assert.equal(escrowRepository.findByOrderId(refundOrderId)?.state, 'funded', 'validation failure should not refund escrow');
+    assert.equal(escrowRepository.findByOrderId(refundOrderId)?.balanceAmount, 1600, 'validation failure should preserve balance');
+    assert.equal(orderRepository.findById(refundOrderId)?.status, 'pending_payment', 'validation failure should preserve order status');
+  } finally {
+    adminServer.close();
     clearReleasePayoutState();
   }
 });
