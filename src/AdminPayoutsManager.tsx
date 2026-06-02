@@ -460,7 +460,7 @@ export default function AdminPayoutsManager() {
         body: JSON.stringify({ reason }),
       });
 
-      setNotice({ type: "success", message: `Escrow refunded for order ${row.orderId}.` });
+      setNotice({ type: "success", message: `Escrow refund recorded for order ${row.orderId}.` });
       await load(pageIndex);
       if (selected?.id === row.id) {
         await loadAdjustments(row.id);
@@ -692,8 +692,8 @@ export default function AdminPayoutsManager() {
       kind: "refund_escrow",
       row,
       title: "Refund escrow",
-      message: `Refund escrow ${row.escrowId} for order ${row.orderId}? This action returns escrow funds and cannot be used after escrow has been released.`,
-      confirmLabel: "Refund escrow",
+      message: `Record an escrow refund for ${row.escrowId} on order ${row.orderId}? This settles the held escrow balance and cannot be used after escrow has been released.`,
+      confirmLabel: "Record refund",
       danger: true,
     });
     setRefundReason("");

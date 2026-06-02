@@ -8,6 +8,9 @@ const testOrderIds = [
   'escrow-release-accounting-repeat',
   'escrow-release-accounting-held',
   'escrow-release-accounting-disputed',
+  'escrow-refund-accounting-1',
+  'escrow-refund-accounting-repeat',
+  'escrow-refund-accounting-released',
 ];
 
 function clearEscrowRepositoryTestState(): void {
@@ -21,6 +24,12 @@ function releaseEntries(orderId: string) {
   return escrowRepository
     .findByOrderId(orderId)
     ?.entries.filter((entry) => entry.entryType === 'release') ?? [];
+}
+
+function refundEntries(orderId: string) {
+  return escrowRepository
+    .findByOrderId(orderId)
+    ?.entries.filter((entry) => entry.entryType === 'refund') ?? [];
 }
 
 test('releaseToSellerEarnings creates an audited release ledger entry and persists zero balance', () => {
@@ -120,6 +129,99 @@ test('releaseToSellerEarnings rejects disputed escrows without appending release
     releaseEntries('escrow-release-accounting-disputed').length,
     0,
     'disputed escrows should not append release entries',
+  );
+
+  clearEscrowRepositoryTestState();
+});
+
+
+test('refundHeldBalance creates an audited refund ledger entry and persists zero balance', () => {
+  clearEscrowRepositoryTestState();
+
+  escrowRepository.create('escrow-refund-accounting-1', 'MWK', 2100);
+
+  const result = escrowRepository.refundHeldBalance({
+    orderId: 'escrow-refund-accounting-1',
+    refundedBy: 'admin-refund-accounting-1',
+    reference: 'admin-confirmed-refund',
+    note: 'Buyer refund approved',
+  });
+
+  assert.ok(result, 'refund should return the updated escrow');
+  assert.equal(result.escrow.state, 'refunded', 'escrow should be marked refunded');
+  assert.equal(result.escrow.balanceAmount, 0, 'refunded escrow should have zero balance');
+  assert.equal(result.refundEntry.entryType, 'refund', 'refund should create a refund ledger entry');
+  assert.equal(result.refundEntry.amount, 2100, 'refund entry should record refunded amount');
+  assert.equal(result.refundEntry.currency, 'MWK', 'refund entry should record currency');
+  assert.equal(result.refundEntry.balanceAfter, 0, 'refund entry should zero the balance');
+  assert.equal(result.refundEntry.actorId, 'admin-refund-accounting-1', 'refund entry should audit the refunding actor');
+  assert.equal(result.refundEntry.reference, 'admin-confirmed-refund', 'refund entry should audit the refund reference');
+  assert.equal(result.refundEntry.note, 'Buyer refund approved', 'refund entry should keep the admin reason');
+
+  const persisted = escrowRepository.findByOrderId('escrow-refund-accounting-1');
+  const persistedRefund = persisted?.entries.find((entry) => entry.entryType === 'refund');
+
+  assert.equal(persisted?.state, 'refunded', 'refunded state should be persisted');
+  assert.equal(persisted?.balanceAmount, 0, 'zero balance should be persisted');
+  assert.equal(persistedRefund?.id, result.refundEntry.id, 'refund entry should be persisted');
+  assert.equal(persistedRefund?.actorId, 'admin-refund-accounting-1', 'persisted refund should retain actor audit field');
+  assert.equal(persistedRefund?.reference, 'admin-confirmed-refund', 'persisted refund should retain reference audit field');
+
+  clearEscrowRepositoryTestState();
+});
+
+test('refundHeldBalance rejects repeat refunds without duplicating refund ledger entries', () => {
+  clearEscrowRepositoryTestState();
+
+  escrowRepository.create('escrow-refund-accounting-repeat', 'MWK', 1700);
+  escrowRepository.refundHeldBalance({
+    orderId: 'escrow-refund-accounting-repeat',
+    refundedBy: 'admin-refund-accounting-repeat',
+    reference: 'first-refund',
+    note: 'First refund',
+  });
+
+  assert.throws(
+    () => escrowRepository.refundHeldBalance({
+      orderId: 'escrow-refund-accounting-repeat',
+      refundedBy: 'admin-refund-accounting-repeat',
+      reference: 'second-refund',
+      note: 'Second refund',
+    }),
+    /Escrow is already refunded/,
+  );
+
+  const refunds = refundEntries('escrow-refund-accounting-repeat');
+  assert.equal(refunds.length, 1, 'repeat refund should not append another refund entry');
+  assert.equal(refunds[0]?.reference, 'first-refund', 'repeat refund should preserve original refund audit reference');
+
+  clearEscrowRepositoryTestState();
+});
+
+test('refundHeldBalance rejects released escrows without appending refund entries', () => {
+  clearEscrowRepositoryTestState();
+
+  escrowRepository.create('escrow-refund-accounting-released', 'MWK', 1900);
+  escrowRepository.releaseToSellerEarnings({
+    orderId: 'escrow-refund-accounting-released',
+    releasedBy: 'buyer-refund-accounting-released',
+    reference: 'already-released',
+  });
+
+  assert.throws(
+    () => escrowRepository.refundHeldBalance({
+      orderId: 'escrow-refund-accounting-released',
+      refundedBy: 'admin-refund-accounting-released',
+      reference: 'refund-after-release',
+      note: 'Should not refund released escrow',
+    }),
+    /Escrow is already released/,
+  );
+
+  assert.equal(
+    refundEntries('escrow-refund-accounting-released').length,
+    0,
+    'released escrows should not append refund entries',
   );
 
   clearEscrowRepositoryTestState();

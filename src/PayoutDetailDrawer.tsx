@@ -218,7 +218,7 @@ export default function PayoutDetailDrawer({
             <section className="rounded-[2rem] border border-rose-200 bg-rose-50 p-5 shadow-sm">
               <h4 className="text-base font-black text-rose-950">Escrow Actions</h4>
               <p className="mt-2 text-sm text-rose-800">
-                Refund escrow only when the order still has unreleased escrow funds. A confirmation reason is required before the admin-only refund route runs.
+                Record an escrow refund only when the order still has unreleased escrow funds. A confirmation reason is required before the held escrow balance is settled.
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-3">
                 <Info label="Order ID" value={selected.orderId ?? "—"} />
@@ -232,7 +232,7 @@ export default function PayoutDetailDrawer({
                 className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-rose-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
               >
                 {actionBusyId === selected.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CircleAlert className="h-4 w-4" />}
-                Refund escrow
+                Record refund
               </button>
             </section>
           ) : null}
