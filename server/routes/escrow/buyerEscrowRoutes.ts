@@ -241,6 +241,22 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
       }
 
       const result = getPaymentDb().transaction(() => {
+        const escrow = escrowRepository.findByOrderId(orderId);
+        if (!escrow) {
+          return undefined;
+        }
+
+        const cancelledPayouts = payoutRepository
+          .findAllByOrderOrEscrow({ orderId, escrowId: escrow.id })
+          .filter((payout) => payout.status !== 'paid' && payout.status !== 'cancelled')
+          .map((payout) => payoutService.applyAdminOverride({
+            payoutId: payout.id,
+            action: 'cancel',
+            actorId: requesterId,
+            reason: `Escrow refunded before seller payout: ${reason}`,
+          }))
+          .filter((payout) => payout !== undefined);
+
         const refunded = escrowRepository.refundHeldBalance({
           orderId,
           refundedBy: requesterId,
@@ -250,17 +266,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
         if (!refunded) {
           return undefined;
-        }
-
-        const payout = payoutRepository.findByEscrowId(refunded.escrow.id);
-        let cancelledPayout = null;
-        if (payout && payout.status !== 'paid' && payout.status !== 'cancelled') {
-          cancelledPayout = payoutService.applyAdminOverride({
-            payoutId: payout.id,
-            action: 'cancel',
-            actorId: requesterId,
-            reason: `Escrow refunded before seller payout: ${reason}`,
-          });
         }
 
         const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
@@ -274,7 +279,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return {
           escrow: refunded.escrow,
           refundEntry: refunded.refundEntry,
-          payout: cancelledPayout,
+          cancelledPayouts,
         };
       })();
 

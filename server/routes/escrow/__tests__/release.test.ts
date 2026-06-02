@@ -158,12 +158,14 @@ function mockPayChanguFetch(): CapturedRequest[] {
 
 function clearReleasePayoutState(): void {
   const db = getPaymentDb();
-  db.prepare('DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(releasePayoutOrderId);
-  db.prepare('DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(releasePayoutOrderId);
-  db.prepare('DELETE FROM payouts WHERE order_id = ?').run(releasePayoutOrderId);
-  db.prepare('DELETE FROM escrow_events WHERE escrow_id IN (SELECT id FROM escrows WHERE order_id = ?)').run(releasePayoutOrderId);
-  db.prepare('DELETE FROM escrows WHERE order_id = ?').run(releasePayoutOrderId);
-  db.prepare('DELETE FROM orders WHERE id = ?').run(releasePayoutOrderId);
+  for (const orderId of [releasePayoutOrderId, refundOrderId]) {
+    db.prepare('DELETE FROM payout_events WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(orderId);
+    db.prepare('DELETE FROM payout_attempts WHERE payout_id IN (SELECT id FROM payouts WHERE order_id = ?)').run(orderId);
+    db.prepare('DELETE FROM payouts WHERE order_id = ?').run(orderId);
+    db.prepare('DELETE FROM escrow_events WHERE escrow_id IN (SELECT id FROM escrows WHERE order_id = ?)').run(orderId);
+    db.prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
+    db.prepare('DELETE FROM orders WHERE id = ?').run(orderId);
+  }
   db.prepare('DELETE FROM seller_payout_account_events WHERE seller_uid = ?').run(sellerId);
   db.prepare('DELETE FROM seller_payout_accounts WHERE seller_uid = ?').run(sellerId);
   db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
@@ -441,7 +443,7 @@ test('refund endpoint records a pre-release escrow refund ledger entry and zeroe
     const body = await response.json() as {
       escrow?: { id?: string; state?: string; balanceAmount?: number; entries?: Array<{ entryType: string; amount: number; balanceAfter: number; actorId?: string; note?: string }> };
       refundEntry?: { entryType?: string; amount?: number; balanceAfter?: number; actorId?: string; note?: string };
-      payout?: unknown;
+      cancelledPayouts?: unknown[];
     };
 
     assert.equal(body.escrow?.state, 'refunded', 'refund should mark escrow as refunded');
@@ -451,7 +453,7 @@ test('refund endpoint records a pre-release escrow refund ledger entry and zeroe
     assert.equal(body.refundEntry?.balanceAfter, 0, 'refund ledger should settle escrow balance');
     assert.equal(body.refundEntry?.actorId, 'admin-refund-before-release-1', 'refund ledger should audit the admin actor');
     assert.equal(body.refundEntry?.note, 'Buyer requested cancellation before release', 'refund ledger should keep the admin reason');
-    assert.equal(body.payout, null, 'pre-release refund should not create or leave a payout');
+    assert.deepEqual(body.cancelledPayouts, [], 'pre-release refund should not create or leave a payout');
 
     const persisted = escrowRepository.findByOrderId(refundOrderId);
     const persistedRefund = persisted?.entries.find((entry) => entry.entryType === 'refund');
@@ -516,6 +518,84 @@ test('refund endpoint requires admin and a reason', async () => {
     assert.equal(orderRepository.findById(refundOrderId)?.status, 'pending_payment', 'validation failure should preserve order status');
   } finally {
     adminServer.close();
+    clearReleasePayoutState();
+  }
+});
+
+
+test('refund endpoint cancels manual payouts linked to the order escrow before refunding', async () => {
+  clearReleasePayoutState();
+
+  const nowStamp = now();
+  serverOrderService.create({
+    id: refundOrderId,
+    buyerId: 'buyer-refund-before-release-1',
+    sellerId,
+    source: 'listing',
+    status: 'in_escrow',
+    currency: 'MWK',
+    subtotal: { amount: 1600, currency: 'MWK' },
+    total: { amount: 1600, currency: 'MWK' },
+    items: [{ listingId: 'listing-refund-before-release-1', title: 'Refund Item', quantity: 1, unitPrice: { amount: 1600, currency: 'MWK' } }],
+    createdAt: nowStamp,
+    updatedAt: nowStamp,
+  });
+  const escrow = escrowRepository.create(refundOrderId, 'MWK', 1600);
+
+  const db = getPaymentDb();
+  db.prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+    .run(sellerId, `${sellerId}@example.com`);
+  db.prepare(
+    `INSERT INTO payouts (
+      id,
+      seller_id,
+      order_id,
+      escrow_id,
+      release_entry_id,
+      amount,
+      currency,
+      status,
+      requested_by,
+      requested_at,
+      created_at,
+      updated_at
+    ) VALUES (?, ?, ?, ?, NULL, 900, 'MWK', 'eligible', ?, ?, ?, ?)`,
+  ).run(
+    'manual-payout-refund-cancel-1',
+    sellerId,
+    refundOrderId,
+    escrow.id,
+    'admin-manual-payout',
+    nowStamp,
+    nowStamp,
+    nowStamp,
+  );
+
+  const app = createReleaseApp('admin-refund-before-release-1', true);
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${port}/api/escrow/${refundOrderId}/refund`, {
+      method: 'POST',
+      headers: { authorization: 'Bearer test', 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'Buyer refund should stop manual payout' }),
+    });
+
+    assert.equal(response.status, 200, 'refund should succeed after cancelling linked manual payout');
+    const body = await response.json() as { cancelledPayouts?: Array<{ id?: string; status?: string }> };
+    assert.equal(body.cancelledPayouts?.length, 1, 'refund should report the cancelled manual payout');
+    assert.equal(body.cancelledPayouts?.[0]?.id, 'manual-payout-refund-cancel-1');
+    assert.equal(body.cancelledPayouts?.[0]?.status, 'cancelled');
+
+    const payout = db.prepare('SELECT status, release_entry_id, failure_reason FROM payouts WHERE id = ?')
+      .get('manual-payout-refund-cancel-1') as { status: string; release_entry_id: string | null; failure_reason: string | null };
+    assert.equal(payout.release_entry_id, null, 'regression payout should be a manual payout without a release entry');
+    assert.equal(payout.status, 'cancelled', 'linked manual payout should be cancelled before refund completes');
+    assert.equal(payout.failure_reason, 'payout_cancelled');
+    assert.equal(escrowRepository.findByOrderId(refundOrderId)?.state, 'refunded', 'escrow should still be refunded');
+  } finally {
+    server.close();
     clearReleasePayoutState();
   }
 });

@@ -271,6 +271,21 @@ export class PayoutRepository {
     return this.rowToPayout(row);
   }
 
+  findAllByOrderOrEscrow(input: { orderId: string; escrowId: string }): PayoutRecord[] {
+    const rows = this.db
+      .prepare(
+        `SELECT * FROM payouts
+         WHERE order_id = @order_id OR escrow_id = @escrow_id
+         ORDER BY created_at ASC`,
+      )
+      .all({
+        order_id: input.orderId,
+        escrow_id: input.escrowId,
+      }) as Array<Record<string, unknown>>;
+
+    return rows.map((row) => this.rowToPayout(row));
+  }
+
   findById(id: string): PayoutRecord | undefined {
     const row = this.db
       .prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`)
@@ -1403,7 +1418,7 @@ export class PayoutService {
       hold: new Set(['eligible', 'queued', 'processing', 'pending', 'failed']),
       mark_paid: new Set(['held']),
       mark_failed: new Set(['eligible', 'queued', 'processing', 'pending', 'held']),
-      cancel: new Set(['eligible', 'queued', 'failed', 'held']),
+      cancel: new Set(['eligible', 'queued', 'processing', 'pending', 'failed', 'held']),
     };
     if (!allowedTransitions[input.action].has(from)) {
       throw new Error(`Invalid admin override transition from ${from} via ${input.action}`);
