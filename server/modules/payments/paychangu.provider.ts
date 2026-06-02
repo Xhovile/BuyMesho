@@ -97,6 +97,47 @@ function hasAtMostTwoDecimals(value: number): boolean {
   return Number.isInteger(scaled);
 }
 
+function formatProviderErrorMessage(value: unknown): string | null {
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    const parts = value
+      .map((item) => formatProviderErrorMessage(item))
+      .filter((item): item is string => Boolean(item));
+    return parts.length > 0 ? parts.join(', ') : null;
+  }
+
+  if (isPlainRecord(value)) {
+    const directMessage = formatProviderErrorMessage(value.message ?? value.error ?? value.detail ?? value.reason);
+    if (directMessage) return directMessage;
+
+    const parts = Object.entries(value)
+      .map(([key, nested]) => {
+        const nestedMessage = formatProviderErrorMessage(nested);
+        return nestedMessage ? `${key}: ${nestedMessage}` : null;
+      })
+      .filter((item): item is string => Boolean(item));
+    return parts.length > 0 ? parts.join('; ') : null;
+  }
+
+  return null;
+}
+
+function buildPayChanguFailureMessage(response: PayChanguPaymentInitResponse): string {
+  const providerMessage = formatProviderErrorMessage(
+    response.message ?? (response as Record<string, unknown>).error ?? response.data,
+  );
+
+  return providerMessage || 'PayChangu payment initialization failed';
+}
+
 export type PayChanguPaymentStatus = 'pending' | 'paid' | 'failed' | 'reversed' | 'unknown';
 
 const PAYCHANGU_PENDING_STATUSES = new Set(['pending', 'queued', 'initiated', 'processing']);
@@ -366,7 +407,7 @@ export const paychanguProvider = {
     const data = (await response.json()) as PayChanguPaymentInitResponse;
 
     if (!response.ok) {
-      throw new Error(data.message ?? 'PayChangu payment initialization failed');
+      throw new Error(buildPayChanguFailureMessage(data));
     }
 
     const sessionData = data.data?.data ?? data.data;
