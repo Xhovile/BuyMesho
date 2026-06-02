@@ -38,6 +38,7 @@ export async function fetchAdminActionLogs(filters: AdminActionLogFilters = {}) 
   setIfPresent("limit", filters.limit);
   setIfPresent("offset", filters.offset);
   setIfPresent("cursor", filters.cursor);
+  setIfPresent("cursor_id", filters.cursor_id);
 
   const query = params.toString();
   const path = query ? `/api/admin/actions?${query}` : "/api/admin/actions";

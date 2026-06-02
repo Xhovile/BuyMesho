@@ -55,6 +55,7 @@ export type AdminActionLogFilters = {
   limit?: number;
   offset?: number;
   cursor?: string;
+  cursor_id?: number;
 };
 
 export type AdminActionLogPage = {
@@ -63,6 +64,7 @@ export type AdminActionLogPage = {
   limit: number;
   offset: number;
   hasMore: boolean;
+  nextCursor?: string | null;
 };
 
 export type AdminQueueSummary = {

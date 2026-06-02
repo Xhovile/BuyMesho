@@ -62,13 +62,25 @@ export default function AdminAuditLogPage() {
     setExpandedRows((prev) => ({ ...prev, [rowId]: !prev[rowId] }));
   };
 
+  const toExclusiveNextDay = (dateValue: string) => {
+    const trimmedValue = dateValue.trim();
+    const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+    if (!dateMatch) return trimmedValue;
+
+    const [, year, month, day] = dateMatch;
+    const nextDay = new Date(
+      Date.UTC(Number(year), Number(month) - 1, Number(day) + 1),
+    );
+    return nextDay.toISOString().slice(0, 10);
+  };
+
   const buildRequestFilters = (currentFilters = filters, nextOffset = 0) => ({
     ...currentFilters,
     action_type: currentFilters.action_type || undefined,
     target_type: currentFilters.target_type || undefined,
     admin: currentFilters.admin.trim() || undefined,
     from: currentFilters.from || undefined,
-    to: currentFilters.to || undefined,
+    to: currentFilters.to ? toExclusiveNextDay(currentFilters.to) : undefined,
     q: currentFilters.q.trim() || undefined,
     limit: PAGE_SIZE,
     offset: nextOffset,
