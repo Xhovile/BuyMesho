@@ -94,6 +94,7 @@ function mockPayChanguFetch(
 function createApp(): express.Express {
   const app = express();
   app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
+  app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
   mountPayChanguRoutes(app, requireAuth);
   return app;
@@ -172,6 +173,14 @@ async function initializePayment(base: string, orderId: string): Promise<Respons
 
 async function postPayChanguWebhook(base: string, rawWebhook: string, signature = signWebhook(rawWebhook)): Promise<Response> {
   return fetch(`${base}/api/payments/paychangu/webhook`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
+    body: rawWebhook,
+  });
+}
+
+async function postPayChanguPayoutWebhook(base: string, rawWebhook: string, signature = signWebhook(rawWebhook)): Promise<Response> {
+  return fetch(`${base}/api/payments/paychangu-payout/webhook`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-paychangu-signature': signature },
     body: rawWebhook,
@@ -302,6 +311,46 @@ test('integration: PayChangu verification rejects underpaid, wrong-currency, and
       server.close();
       clearPaymentState();
     }
+  }
+});
+
+test('integration: PayChangu payout webhook route invokes payout handler', async () => {
+  clearPaymentState();
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+
+  const app = createApp();
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+  const rawWebhook = JSON.stringify({
+    event_type: 'charge.success',
+    event_id: 'evt_payout_route_1',
+    data: {
+      transaction: {
+        status: 'successful',
+        charge_id: 'BM-PO-payout-route-1-A01',
+        payout_reference: 'payout-route-1',
+        reference: 'provider-ref-route',
+        transaction_id: 'provider-txn-route',
+      },
+    },
+  });
+
+  try {
+    const webhookRes = await postPayChanguPayoutWebhook(base, rawWebhook);
+    assert.equal(webhookRes.status, 200, 'payout webhook route should return 200 for signed callbacks');
+
+    const auditRows = fetchWebhookAuditRows('BM-PO-payout-route-1-A01');
+    assert.equal(auditRows.length, 1, 'payout webhook route should create one audit row');
+    assert.equal(auditRows[0].provider, 'paychangu_payout', 'payout route should use the payout webhook handler');
+    assert.equal(auditRows[0].provider_event_id, 'evt_payout_route_1', 'payout audit should preserve provider_event_id');
+    assert.equal(auditRows[0].tx_ref, 'BM-PO-payout-route-1-A01', 'payout audit should preserve charge id as tx_ref');
+    assert.equal(auditRows[0].payload_hash, hashPayload(rawWebhook), 'payout audit should store payload hash');
+    assert.equal(auditRows[0].processing_status, 'ignored', 'unknown payout should be ignored after signature verification');
+    assert.match(auditRows[0].error ?? '', /No matching payout found/, 'unknown payout audit should explain why it was ignored');
+  } finally {
+    server.close();
+    clearPaymentState();
   }
 });
 
