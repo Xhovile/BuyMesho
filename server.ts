@@ -12,7 +12,7 @@ import { attachOptionalAuth, requireAuth } from "./server/middleware/requireAuth
 import { requireFirebaseUser } from "./server/middleware/requireFirebaseUser.js";
 import { getFirebaseAdmin } from "./server/auth/firebaseAdmin.js";
 import { registerAccountDeletionRoutes } from "./server/auth/accountDeletionRoutes.js";
-import { getConfiguredAdminEmails, hasAdminAccess } from "./server/auth/adminAccess.js";
+import { getConfiguredAdminEmails } from "./server/auth/adminAccess.js";
 import { registerVerificationEmailRoutes } from "./server/auth/verificationEmailRoutes.js";
 import { registerMessageModerationRoutes, registerMessageRoutes } from "./server/routes/messageHubRoutes.js";
 import { registerMessagesRoutes } from "./server/routes/messagesRoutes.js";
@@ -25,10 +25,8 @@ import { createAdminAccessRouter } from "./server/modules/admin/admin.access.rou
 import { createAdminSummaryRouter } from "./server/modules/admin/admin.summary.routes.js";
 import { startPayoutReconciliationScheduler } from "./server/modules/payouts/payout.reconciliation.scheduler.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
-import { getPaymentDb } from "./server/sqlite.js";
 import { uploadBufferToCloudinary } from "./server/lib/cloudinaryUpload.js";
 import {
-  withAsyncRoute,
   isMeaningfulTitle,
   isValidListingHierarchy,
   parseSpecFilters,
@@ -140,205 +138,6 @@ async function startServer() {
       });
     }
   });
-
-type IncomingSpecFilters = Record<string, unknown>;
-const SPEC_FILTER_KEY_PATTERN = /^[A-Za-z0-9_]+$/;
-
-function parseSpecFilters(raw: unknown): Record<string, string | string[] | boolean> {
-  if (typeof raw !== "string" || !raw.trim()) {
-    return {};
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as IncomingSpecFilters;
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return {};
-    }
-
-    const safe: Record<string, string | string[] | boolean> = {};
-
-    for (const [key, value] of Object.entries(parsed)) {
-      if (!key || key.length > 120 || !SPEC_FILTER_KEY_PATTERN.test(key)) {
-        continue;
-      }
-
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (trimmed) {
-          safe[key] = trimmed;
-        }
-        continue;
-      }
-
-      if (typeof value === "boolean") {
-        safe[key] = value;
-        continue;
-      }
-
-      if (Array.isArray(value)) {
-        const cleaned = value
-          .filter((item) => typeof item === "string")
-          .map((item) => item.trim())
-          .filter((item) => item.length > 0)
-          .slice(0, 25);
-
-        if (cleaned.length > 0) {
-          safe[key] = cleaned;
-        }
-      }
-    }
-
-    return safe;
-  } catch {
-    return {};
-  }
-}
-
-type NormalizedListingPricing = {
-  price: number;
-  original_price: number | null;
-  discount_percent: number | null;
-  deal_label: string | null;
-  deal_expires_at: string | null;
-  can_sell_individually: number | null;
-  single_item_price: number | null;
-  is_wholesale: number;
-  pack_size: number | null;
-  bulk_units: string | null;
-  listing_mode: "normal" | "deal" | "wholesale";
-};
-
-function toFiniteNumber(value: unknown): number | null {
-  if (value === null || value === undefined || value === "") return null;
-  const parsed = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function toTrimmedString(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : null;
-}
-
-function toBooleanFlag(value: unknown): number {
-  if (typeof value === "boolean") return value ? 1 : 0;
-  if (typeof value === "number") return value !== 0 ? 1 : 0;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return ["true", "1", "yes", "y", "on"].includes(normalized) ? 1 : 0;
-  }
-  return 0;
-}
-
-function computeOriginalPrice(price: number, discountPercent: number | null) {
-  if (discountPercent === null || discountPercent <= 0 || discountPercent >= 100) {
-    return null;
-  }
-
-  const computed = price / (1 - discountPercent / 100);
-  return Number.isFinite(computed) && computed > price ? Number(computed.toFixed(2)) : null;
-}
-
-function normalizeListingPricing(body: any, existingListingMode?: "normal" | "deal" | "wholesale"): NormalizedListingPricing {
-  const price = toFiniteNumber(body.price) ?? 0;
-  const originalPriceInput = toFiniteNumber(body.original_price);
-  const discountPercentInput = toFiniteNumber(body.discount_percent);
-  const isWholesale = toBooleanFlag(body.is_wholesale);
-  const packSize = toFiniteNumber(body.pack_size);
-  const bulkUnits = toTrimmedString(body.bulk_units);
-  const singleItemPriceInput = toFiniteNumber(body.single_item_price);
-  const dealLabel = toTrimmedString(body.deal_label);
-  const dealExpiresAt = toTrimmedString(body.deal_expires_at);
-  const canSellIndividually =
-    body.can_sell_individually === null || body.can_sell_individually === undefined
-      ? null
-      : toBooleanFlag(body.can_sell_individually);
-
-  const rawMode = toTrimmedString(body.listing_mode)?.toLowerCase();
-
-  const legacyDerivedMode =
-    isWholesale
-      ? "wholesale"
-      : originalPriceInput !== null
-        ? "deal"
-        : undefined;
-
-  const listing_mode: "normal" | "deal" | "wholesale" =
-    rawMode === "deal" || rawMode === "wholesale"
-      ? rawMode
-      : legacyDerivedMode ?? existingListingMode ?? "normal";
-
-  const discount_percent = null;
-  const original_price = listing_mode === "deal" && originalPriceInput !== null && originalPriceInput > price
-    ? originalPriceInput
-    : null;
-  const deal_label = listing_mode === "deal" ? dealLabel : null;
-  const deal_expires_at = listing_mode === "deal" ? dealExpiresAt : null;
-  const wholesaleFlag = listing_mode === "wholesale" ? 1 : 0;
-  const can_sell_individually = listing_mode === "wholesale" ? canSellIndividually : null;
-  const single_item_price =
-    listing_mode === "wholesale" && canSellIndividually === 1 && singleItemPriceInput !== null && singleItemPriceInput > 0
-      ? singleItemPriceInput
-      : null;
-  const safePackSize = listing_mode === "wholesale" ? packSize : null;
-  const safeBulkUnits = listing_mode === "wholesale" ? bulkUnits : null;
-
-  return {
-    price,
-    original_price,
-    discount_percent,
-    deal_label,
-    deal_expires_at,
-    can_sell_individually,
-    single_item_price,
-    is_wholesale: wholesaleFlag,
-    pack_size: safePackSize,
-    bulk_units: safeBulkUnits,
-    listing_mode,
-  };
-}
-  
-function serializeListingRow(row: any) {
-  return {
-    ...row,
-    price: Number(row.price ?? 0),
-    original_price:
-      row.original_price === null || row.original_price === undefined
-        ? null
-        : Number(row.original_price),
-    discount_percent:
-      row.discount_percent === null || row.discount_percent === undefined
-        ? null
-        : Number(row.discount_percent),
-    is_wholesale: Boolean(row.is_wholesale),
-    pack_size:
-      row.pack_size === null || row.pack_size === undefined
-        ? null
-        : Number(row.pack_size),
-    bulk_units:
-      typeof row.bulk_units === "string" && row.bulk_units.trim()
-        ? row.bulk_units.trim()
-        : null,
-    listing_mode:
-      typeof row.listing_mode === "string" && row.listing_mode.trim()
-        ? row.listing_mode.trim()
-        : "normal",
-    deal_expires_at:
-      typeof row.deal_expires_at === "string" && row.deal_expires_at.trim()
-        ? row.deal_expires_at.trim()
-        : null,
-    can_sell_individually:
-      row.can_sell_individually === null || row.can_sell_individually === undefined
-        ? null
-        : Boolean(row.can_sell_individually),
-    single_item_price:
-      row.single_item_price === null || row.single_item_price === undefined
-        ? null
-        : Number(row.single_item_price),
-    photos: JSON.parse(row.photos || "[]"),
-    spec_values: JSON.parse(row.spec_values || "{}"),
-  };
-}
 
   app.get("/api/listings", (req, res) => {
   const {
@@ -2147,7 +1946,6 @@ if (seller?.profile_picture) {
     res.status(500).json({ error: "Failed to submit report" });
   }
 });
-
 
   // Admin routes moved to server/modules/admin/*.routes.ts
 
