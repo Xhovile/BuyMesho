@@ -997,46 +997,67 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
 
   try {
     const info = db.prepare(`
-      INSERT INTO listings (
-        seller_uid, name, price, original_price, discount_percent, deal_label, deal_expires_at, can_sell_individually, single_item_price, listing_mode, is_wholesale, pack_size, bulk_units, description, category, subcategory, item_type, spec_values, university,
-        photos, video_url, status, condition,
-        quantity, sold_quantity, updated_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `).run(
-      seller_uid,
-      safeName,
-      pricing.price,
-      pricing.original_price,
-      pricing.discount_percent,
-      pricing.deal_label,
-      safeDealExpiresAt,
-      safeCanSellIndividually,
-      pricing.single_item_price,
-      safeListingMode,
-      isWholesale ? 1 : 0,
-      safePackSize ?? null,
-      safeBulkUnits ?? null,
-      description ?? null,
-      safeCategory,
-      safeSubcategory,
-      safeItemType,
-      safeSpecValues,
-      safeUniversity,
-      JSON.stringify(safePhotos),
-      safeVideoUrl,
-      safeStatus,
-      safeCondition,
-      safeQuantity,
-      safeSoldQuantity
-    );
-
+  INSERT INTO listings (
+    seller_uid,
+    name,
+    price,
+    original_price,
+    discount_percent,
+    deal_label,
+    deal_expires_at,
+    can_sell_individually,
+    single_item_price,
+    listing_mode,
+    is_wholesale,
+    pack_size,
+    bulk_units,
+    description,
+    category,
+    subcategory,
+    item_type,
+    spec_values,
+    university,
+    photos,
+    video_url,
+    status,
+    condition,
+    quantity,
+    sold_quantity
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+  seller_uid,
+  safeName,
+  pricing.price,
+  pricing.original_price,
+  pricing.discount_percent,
+  pricing.deal_label,
+  safeDealExpiresAt,
+  safeCanSellIndividually,
+  pricing.single_item_price,
+  safeListingMode,
+  isWholesale ? 1 : 0,
+  safePackSize ?? null,
+  safeBulkUnits ?? null,
+  description ?? null,
+  safeCategory,
+  safeSubcategory,
+  safeItemType,
+  safeSpecValues,
+  safeUniversity,
+  JSON.stringify(safePhotos),
+  safeVideoUrl,
+  safeStatus,
+  safeCondition,
+  safeQuantity,
+  safeSoldQuantity
+);
     res.json({ id: info.lastInsertRowid });
   } catch (error) {
     console.error("Listing error:", error);
     res.status(500).json({ error: "Failed to create listing" });
   }
-});
+);
   // ✅ Public seller profile by uid
 app.get("/api/users/:uid", (req, res) => {
   const { uid } = req.params;
