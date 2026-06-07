@@ -266,6 +266,10 @@ function initPaymentSchema(db: Database.Database): void {
     DROP INDEX IF EXISTS idx_payment_webhook_events_provider_event_id;
     DROP INDEX IF EXISTS idx_payment_webhook_events_dedupe;
 
+CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+  ON listings(hard_delete_after)
+  WHERE deleted_at IS NOT NULL;
+
     CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_reference
     ON payment_webhook_events(reference);
 
