@@ -56,10 +56,6 @@ function initPaymentSchema(db: Database.Database): void {
       updated_at TEXT NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
-    ON listings(hard_delete_after)
-    WHERE deleted_at IS NOT NULL;
-
     CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
     CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
 
@@ -234,12 +230,7 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "payment_webhook_events", "provider_event_id", "TEXT");
   ensureColumn(db, "payment_webhook_events", "tx_ref", "TEXT");
   ensureColumn(db, "payment_webhook_events", "payload_hash", "TEXT");
-  ensureColumn(
-    db,
-    "payment_webhook_events",
-    "processing_status",
-    "TEXT NOT NULL DEFAULT 'received'",
-  );
+  ensureColumn(db, "payment_webhook_events", "processing_status","TEXT NOT NULL DEFAULT 'received'",);
   ensureColumn(db, "payment_webhook_events", "processed_at", "TEXT");
   ensureColumn(db, "payment_webhook_events", "error", "TEXT");
   ensureColumn(db, "listings", "category", "TEXT");
@@ -249,9 +240,6 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "listings", "views_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "whatsapp_clicks", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "is_hidden", "INTEGER NOT NULL DEFAULT 0");
-  ensureColumn(db, "listings", "deleted_at", "TEXT");
-  ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
-  ensureColumn(db, "listings", "hard_delete_after", "TEXT");
   ensureColumn(db, "listings", "photos", "TEXT");
   ensureColumn(db, "payments", "currency", "TEXT NOT NULL DEFAULT 'MWK'");
   ensureColumn(db, "payments", "amount", "REAL NOT NULL DEFAULT 0");
@@ -261,11 +249,18 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "payouts", "provider_charge_id", "TEXT");
   ensureColumn(db, "payouts", "requested_by", "TEXT");
   ensureColumn(db, "payouts", "requested_at", "TEXT");
+  ensureColumn(db, "listings", "deleted_at", "TEXT");
+  ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
+  ensureColumn(db, "listings", "hard_delete_after", "TEXT");
   
   db.exec(`
     DROP INDEX IF EXISTS idx_payment_webhook_events_provider_event_id;
     DROP INDEX IF EXISTS idx_payment_webhook_events_dedupe;
-
+    
+    CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+    ON listings(hard_delete_after)
+    WHERE deleted_at IS NOT NULL;
+    
     CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_reference
     ON payment_webhook_events(reference);
 
@@ -301,15 +296,6 @@ function initPaymentSchema(db: Database.Database): void {
     ON payouts(status, created_at DESC);
   `);
 }
-ensureColumn(db, "listings", "deleted_at", "TEXT");
-ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
-ensureColumn(db, "listings", "hard_delete_after", "TEXT");
-
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
-  ON listings(hard_delete_after)
-  WHERE deleted_at IS NOT NULL;
-`);
 
 export type PaymentWebhookProcessingStatus =
   | "received"
