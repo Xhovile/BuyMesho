@@ -2,6 +2,17 @@
 
 This document defines the exact point at which the BuyMesho payout structure is complete enough for implementation.
 
+
+## Current caveats that are not complete
+
+This gate should not be read as a claim that every surrounding production workflow is finished. The current codebase still has these known limits:
+
+- Listing deletion is a hard delete in `server.ts`; do not describe listings as soft-deleted until the server route is changed to preserve deleted listing rows.
+- Payment-provider responsibilities remain partial until provider SLA/error-taxonomy ownership is documented in code.
+- Fraud-flag payout blocking remains blocked until a fraud data source is connected to payout gating.
+- Dispute-window enforcement remains partial until automatic elapsed-time enforcement is fully wired into release automation.
+
+
 Its purpose is to stop vague decisions, repeated redesign, and unsafe payment logic from leaking into code.
 
 **Hard rule:** if any item in this file is still moving, implementation does not start.

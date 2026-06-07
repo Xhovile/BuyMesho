@@ -25,7 +25,6 @@ type CapturedRequest = {
   authorization: string | null;
   accept: string | null;
   contentType: string | null;
-  accept: string | null;
   body: Record<string, unknown>;
 };
 
@@ -62,7 +61,6 @@ function mockPayChanguFetch(responsePayload: unknown): CapturedRequest[] {
       authorization: headers.get('authorization'),
       accept: headers.get('accept'),
       contentType: headers.get('content-type'),
-      accept: headers.get('accept'),
       body: init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {},
     });
 
