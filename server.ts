@@ -1057,7 +1057,7 @@ if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
     console.error("Listing error:", error);
     res.status(500).json({ error: "Failed to create listing" });
   }
-);
+});
   // ✅ Public seller profile by uid
 app.get("/api/users/:uid", (req, res) => {
   const { uid } = req.params;
