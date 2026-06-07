@@ -66,12 +66,19 @@ CREATE TABLE IF NOT EXISTS listings (
   views_count INTEGER NOT NULL DEFAULT 0,
   whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
   is_hidden INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  deleted_by_uid TEXT,
+  hard_delete_after TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
   sold_quantity INTEGER NOT NULL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid)
 );
+
+CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+ON listings (hard_delete_after)
+WHERE deleted_at IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS reports (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

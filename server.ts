@@ -161,6 +161,7 @@ async function startServer() {
     FROM listings l
     JOIN sellers s ON l.seller_uid = s.uid
     WHERE l.is_hidden = 0
+      AND l.deleted_at IS NULL
   `;
 
   const params: any[] = [];
@@ -308,7 +309,7 @@ async function startServer() {
           SELECT l.*, s.business_name, s.business_logo, s.is_verified
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
-          WHERE l.id = ? AND l.is_hidden = 0
+          WHERE l.id = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
           LIMIT 1
         `)
         .get(listingId) as any;
@@ -339,7 +340,7 @@ async function startServer() {
         .prepare(`
           SELECT id, category, subcategory, item_type, university
           FROM listings
-          WHERE id = ? AND is_hidden = 0
+          WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL
           LIMIT 1
         `)
         .get(listingId) as
@@ -362,6 +363,7 @@ async function startServer() {
           FROM listings l
           JOIN sellers s ON l.seller_uid = s.uid
           WHERE l.is_hidden = 0
+            AND l.deleted_at IS NULL
             AND l.id != ?
             AND l.category = ?
             AND l.university = ?
@@ -1088,7 +1090,7 @@ app.get("/api/users/:uid/listings", (req, res) => {
         SELECT l.*, s.business_name, s.business_logo, s.is_verified
         FROM listings l
         JOIN sellers s ON l.seller_uid = s.uid
-        WHERE l.seller_uid = ? AND l.is_hidden = 0
+        WHERE l.seller_uid = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
         ORDER BY l.created_at DESC
       `)
       .all(uid);
@@ -1270,10 +1272,10 @@ app.delete("/api/users/:uid/rating", requireAuth, (req, res) => {
   }
 
   try {
-    // Load listing row: seller_uid, photos, video_url
+    // Load listing row for ownership and soft-delete state
     const listing = db
-      .prepare("SELECT id, seller_uid, photos, video_url FROM listings WHERE id = ?")
-      .get(id) as { id: number; seller_uid: string; photos?: string | null; video_url?: string | null } | undefined;
+      .prepare("SELECT id, seller_uid, deleted_at FROM listings WHERE id = ?")
+      .get(id) as { id: number; seller_uid: string; deleted_at?: string | null } | undefined;
 
     if (!listing) {
       return res.status(404).json({ error: "Listing not found" });
@@ -1284,61 +1286,22 @@ app.delete("/api/users/:uid/rating", requireAuth, (req, res) => {
       return res.status(403).json({ error: "Forbidden: not your listing" });
     }
 
-    // Parse photos JSON safely + add video_url if present
-    const mediaUrls: string[] = [];
-    try {
-      const arr = JSON.parse(listing.photos || "[]");
-      if (Array.isArray(arr)) {
-        mediaUrls.push(...arr.filter((x) => typeof x === "string"));
-      }
-    } catch (e) {
-      console.warn("Failed to parse photos JSON for listing", id, e);
+    if (listing.deleted_at) {
+      return res.status(404).json({ error: "Listing not found" });
     }
 
-    if (listing.video_url && typeof listing.video_url === "string" && listing.video_url.trim().length > 0) {
-      mediaUrls.push(listing.video_url);
-    }
+    db.prepare(`
+      UPDATE listings
+      SET
+        deleted_at = CURRENT_TIMESTAMP,
+        deleted_by_uid = ?,
+        hard_delete_after = datetime('now', '+90 days'),
+        is_hidden = 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND deleted_at IS NULL
+    `).run(uid, id);
 
-    // Convert URLs to public_ids using existing cloudinaryPublicIdFromUrl helper
-    const publicIds = Array.from(
-      new Set(
-        mediaUrls
-          .map((u) => (typeof u === "string" ? cloudinaryPublicIdFromUrl(u) : null))
-          .filter((x): x is string => Boolean(x))
-      )
-    );
-
-    // Delete each public_id as both image and video resource_type (best-effort)
-    const cloudinaryResults: any[] = [];
-for (const pid of publicIds) {
-  try {
-    let r = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
-
-    if (r?.result === "not found") {
-      r = await cloudinary.uploader.destroy(pid, { resource_type: "video" });
-    }
-    cloudinaryResults.push({ public_id: pid, result: r });
-  } catch (e: any) {
-    cloudinaryResults.push({ public_id: pid, error: e?.message || String(e) });
-  }
-}
-
-    // Log Cloudinary results for server-side debugging (do not include in API response)
-    if (cloudinaryResults.length > 0) {
-      console.info("Cloudinary deletion results for listing", id, cloudinaryResults);
-    }
-
-    // Delete reports for that listing id (optional) then delete the listing row
-    try {
-      db.prepare("DELETE FROM reports WHERE listing_id = ?").run(id);
-    } catch (e) {
-      console.warn("Failed to delete reports for listing", id, e);
-    }
-
-    db.prepare("DELETE FROM listings WHERE id = ?").run(id);
-
-    // Respond with minimal payload only
-    return res.json({ success: true, deletedAssets: publicIds.length });
+    return res.json({ success: true, hard_delete_after_days: 90 });
   } catch (error) {
     console.error("Delete error:", error);
     return res.status(500).json({ error: "Failed to delete listing" });
@@ -1450,7 +1413,7 @@ const safeSpecValues =
     : JSON.stringify({});
 
 const existingListing = db
-  .prepare("SELECT id, seller_uid, listing_mode FROM listings WHERE id = ?")
+  .prepare("SELECT id, seller_uid, listing_mode FROM listings WHERE id = ? AND deleted_at IS NULL")
   .get(id) as { id: number; seller_uid: string; listing_mode: "normal" | "deal" | "wholesale" } | undefined;
 
 if (!existingListing) {
@@ -1585,7 +1548,7 @@ app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
 
   try {
     const listing = db
-      .prepare("SELECT id, seller_uid FROM listings WHERE id = ?")
+      .prepare("SELECT id, seller_uid FROM listings WHERE id = ? AND deleted_at IS NULL")
       .get(id) as { id: number; seller_uid: string } | undefined;
 
     if (!listing) return res.status(404).json({ error: "Listing not found" });
@@ -1616,7 +1579,7 @@ app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
   try {
     const listing = db
       .prepare(
-        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ?"
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL"
       )
       .get(id) as
       | {
@@ -1657,7 +1620,7 @@ app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
 
     const updated = db
       .prepare(
-        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? LIMIT 1"
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL LIMIT 1"
       )
       .get(id);
 
@@ -1688,7 +1651,7 @@ app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
   try {
     const listing = db
       .prepare(
-        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ?"
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL"
       )
       .get(id) as
       | {
@@ -1725,7 +1688,7 @@ app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
 
     const updated = db
       .prepare(
-        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? LIMIT 1"
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL LIMIT 1"
       )
       .get(id);
 
@@ -1778,6 +1741,85 @@ function cloudinaryPublicIdFromUrl(rawUrl: string): string | null {
     return null;
   }
 }
+
+type ExpiredListingRow = {
+  id: number;
+  photos: string | null;
+  video_url?: string | null;
+};
+
+async function purgeExpiredSoftDeletedListings() {
+  const expiredListings = db
+    .prepare(`
+      SELECT id, photos, video_url
+      FROM listings
+      WHERE deleted_at IS NOT NULL
+        AND hard_delete_after IS NOT NULL
+        AND hard_delete_after <= CURRENT_TIMESTAMP
+      LIMIT 50
+    `)
+    .all() as ExpiredListingRow[];
+
+  for (const listing of expiredListings) {
+    const mediaUrls: string[] = [];
+    try {
+      const parsedPhotos = JSON.parse(listing.photos || "[]");
+      if (Array.isArray(parsedPhotos)) {
+        mediaUrls.push(...parsedPhotos.filter((url) => typeof url === "string"));
+      }
+    } catch (error) {
+      console.warn("Failed to parse photos JSON for expired listing", listing.id, error);
+    }
+
+    if (listing.video_url && listing.video_url.trim().length > 0) {
+      mediaUrls.push(listing.video_url);
+    }
+
+    const publicIds = Array.from(
+      new Set(
+        mediaUrls
+          .map((url) => cloudinaryPublicIdFromUrl(url))
+          .filter((publicId): publicId is string => Boolean(publicId))
+      )
+    );
+
+    for (const publicId of publicIds) {
+      try {
+        let result = await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+        if (result?.result === "not found") {
+          result = await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+        }
+      } catch (error) {
+        console.warn("Failed to purge Cloudinary asset for expired listing", listing.id, publicId, error);
+      }
+    }
+
+    try {
+      db.prepare("DELETE FROM reports WHERE listing_id = ?").run(listing.id);
+      db.prepare("DELETE FROM listings WHERE id = ? AND deleted_at IS NOT NULL").run(listing.id);
+    } catch (error) {
+      console.warn("Failed to purge expired listing row", listing.id, error);
+    }
+  }
+}
+
+let listingPurgeRunning = false;
+function scheduleExpiredListingPurge() {
+  const runPurge = () => {
+    if (listingPurgeRunning) return;
+    listingPurgeRunning = true;
+    purgeExpiredSoftDeletedListings()
+      .catch((error) => console.warn("Expired listing purge failed:", error))
+      .finally(() => {
+        listingPurgeRunning = false;
+      });
+  };
+
+  runPurge();
+  setInterval(runPurge, 24 * 60 * 60 * 1000).unref?.();
+}
+
+scheduleExpiredListingPurge();
 
 // ✅ Delete profile + all listings + all Cloudinary images
 app.delete(
@@ -1924,7 +1966,7 @@ if (seller?.profile_picture) {
     }
 
     const listing = db
-      .prepare("SELECT id FROM listings WHERE id = ?")
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
       .get(safeListingId);
 
     if (!listing) {
@@ -1979,7 +2021,7 @@ app.post("/api/listings/:id/view", (req, res) => {
 
   try {
     const listing = db
-      .prepare("SELECT id FROM listings WHERE id = ?")
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
       .get(id) as { id: number } | undefined;
 
     if (!listing) {
@@ -2008,7 +2050,7 @@ app.post("/api/listings/:id/view", (req, res) => {
 
   try {
     const listing = db
-      .prepare("SELECT id FROM listings WHERE id = ?")
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
       .get(id) as { id: number } | undefined;
 
     if (!listing) {
@@ -2085,7 +2127,7 @@ app.post("/api/listings/:id/view", (req, res) => {
           COALESCE(SUM(views_count), 0) as total_views,
           COALESCE(SUM(whatsapp_clicks), 0) as total_whatsapp_clicks
         FROM listings
-        WHERE seller_uid = ?
+        WHERE seller_uid = ? AND deleted_at IS NULL
       `)
       .get(uid) as {
       total_listings: number;
@@ -2104,7 +2146,7 @@ app.post("/api/listings/:id/view", (req, res) => {
           status,
           created_at
         FROM listings
-        WHERE seller_uid = ?
+        WHERE seller_uid = ? AND deleted_at IS NULL
         ORDER BY views_count DESC, created_at DESC
         LIMIT 1
       `)
@@ -2118,7 +2160,7 @@ app.post("/api/listings/:id/view", (req, res) => {
           university,
           COUNT(*) as count
         FROM listings
-        WHERE seller_uid = ?
+        WHERE seller_uid = ? AND deleted_at IS NULL
         GROUP BY university
         ORDER BY count DESC
       `)

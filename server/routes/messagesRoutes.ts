@@ -111,7 +111,7 @@ function getListingById(listingId: number) {
       `SELECT l.id, l.seller_uid, l.name, l.price, l.status, l.photos, l.university, s.business_name, s.business_logo, s.is_verified
        FROM listings l
        JOIN sellers s ON s.uid = l.seller_uid
-       WHERE l.id = ? AND l.is_hidden = 0
+       WHERE l.id = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
        LIMIT 1`
     )
     .get(listingId) as

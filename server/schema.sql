@@ -89,6 +89,9 @@ CREATE TABLE IF NOT EXISTS listings (
   views_count INTEGER NOT NULL DEFAULT 0,
   whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
   is_hidden INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  deleted_by_uid TEXT,
+  hard_delete_after TEXT,
   quantity INTEGER NOT NULL DEFAULT 1,
   sold_quantity INTEGER NOT NULL DEFAULT 0,
   single_item_price DOUBLE PRECISION,
@@ -203,6 +206,10 @@ ON listings (category);
 
 CREATE INDEX IF NOT EXISTS idx_listings_university
 ON listings (university);
+
+CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+ON listings (hard_delete_after)
+WHERE deleted_at IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_reports_listing_id
 ON reports (listing_id);

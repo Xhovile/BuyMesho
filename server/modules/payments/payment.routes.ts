@@ -178,7 +178,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           return res.status(400).json({ error: 'Each checkout item requires a valid listingId' });
         }
 
-        const listing = db.prepare('SELECT * FROM listings WHERE id = ?').get(numericListingId) as ListingRow | undefined;
+        const listing = db
+          .prepare('SELECT * FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL')
+          .get(numericListingId) as ListingRow | undefined;
         if (!listing) {
           return res.status(404).json({ error: `Listing ${numericListingId} not found` });
         }
