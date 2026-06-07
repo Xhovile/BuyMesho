@@ -9,9 +9,9 @@ Buyer payments are already represented in the local payment and escrow flow:
 1. PayChangu checkout/webhook verification updates the payment row to `captured`.
 2. The matching order is confirmed and moved into `in_escrow`.
 3. An escrow record is created with state `funded` and a credit ledger entry for the paid amount.
-4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local `eligible` payout candidate for the released escrow, and moves the order status to `fulfilled`.
+4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local payout candidate for the released escrow, moves the order status to `fulfilled`, and attempts PayChangu payout dispatch using the seller's verified payout destination.
 
-The missing piece is that releasing escrow does **not** yet move money to a seller destination. The existing payout code only creates the local payout candidate; it does not call PayChangu, store seller payout destinations, create provider-attempt history, verify payout webhooks, or reconcile PayChangu payout status.
+The payout path now creates provider-attempt history, submits PayChangu payout requests, verifies payout webhooks, and reconciles PayChangu payout status. Release-time dispatch can still return a non-terminal provider status such as `pending`, so seller receipt is finalized by PayChangu callbacks, reconciliation, and any required manual-review or retry handling rather than guaranteed at the instant escrow is released.
 
 ## Scope alignment
 
