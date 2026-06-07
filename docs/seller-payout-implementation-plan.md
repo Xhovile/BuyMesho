@@ -57,13 +57,13 @@ These PayChangu docs should stay linked in this plan because they define the pay
 
 ## Important pre-merge notes
 
-Before merging a production payout implementation, resolve these product and safety details. Items marked **Resolved for local payout candidates** are covered by the current escrow-release path, but still need to be preserved when real PayChangu payout submission is added.
+Before treating the production payout implementation as complete, resolve these remaining product and safety details. Items marked **Resolved for release-time dispatch** are covered by the current escrow-release path, which creates the payout candidate and attempts PayChangu submission; they still need to be preserved as the payout stack is hardened.
 
 | Status | Note | Required pre-merge edit |
 | --- | --- | --- |
-| **Resolved for local payout candidates** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
-| **Resolved for local payout candidates** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry and one local payout candidate per escrow. Before provider submission, replace the temporary gross released-balance amount with the approved seller-net formula below. |
-| **Partially resolved** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level. Payout candidates must not reserve a PayChangu `charge_id`; add provider-attempt history before calling PayChangu and generate a fresh `charge_id` for each retry attempt. |
+| **Resolved for release-time dispatch** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
+| **Resolved for release-time dispatch** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry, one payout candidate per escrow, the approved seller-net formula, and release-time PayChangu dispatch using the seller's verified payout destination. |
+| **Resolved for launch scope** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level and preserve provider-attempt history with a fresh PayChangu `charge_id` for each retry attempt. Advanced concurrent retry deduplication remains Phase 2 hardening. |
 | **Resolved for launch scope** | Define the money formula before launch. | The formula is now implemented in code; keep the formula frozen and keep `signed/manual adjustment approval workflows` deferred until Phase 2 hardening. |
 | **Open workflow decision** | Plan for payout failure after escrow release. | Add a seller/admin remediation state where destination details can be corrected and payout can be retried with a new provider attempt while preserving audit history. Do not silently reopen buyer escrow after provider failure. |
 | **Open operations decision** | Plan for provider reversals/chargebacks. | Choose an operational policy for reversals after payout, such as reserve balance, negative seller balance, seller account hold, manual recovery, or some combination. |
@@ -397,11 +397,11 @@ Implementation follow-ups (if not already present in code):
 To keep these decisions actionable, tie them to concrete backlog items before payout go-live:
 
 - **Reversal/chargeback controls:** extend payout/ledger schema and admin controls in the backend payout module.
-- **Funding-gate controls:** implement PayChangu `main_balance` checks and queued retry orchestration in payout dispatcher/reconciliation jobs.
-- **Destination correction controls:** implement destination replacement + verification + admin retry flow with immutable attempt history in seller/admin payout APIs and UI.
-- **Audit/observability:** add explicit audit events and operator-visible status labels for `held`, `negative_balance`, `pending_funding`, and `recovery_in_progress` transitions.
+- **Funding-gate controls:** preserve PayChangu `main_balance` checks in the payout dispatcher and add queued retry orchestration for funding-related holds in reconciliation jobs.
+- **Destination correction controls:** preserve destination replacement + verification + admin retry flow with immutable attempt history, and complete any remaining seller/admin remediation UI hardening.
+- **Audit/observability:** preserve existing payout audit events and add any missing operator-visible status labels for `negative_balance`, `pending_funding`, and `recovery_in_progress` transitions.
 
-These follow-ups should be tracked as required launch blockers wherever payout provider submission, reconciliation jobs, and seller/admin payout management endpoints are implemented.
+These follow-ups should be tracked as remaining hardening items around payout provider submission, reconciliation jobs, and seller/admin payout management endpoints; they do not mean release-time PayChangu dispatch is absent.
 
 
 

@@ -2,6 +2,8 @@
 
 This document turns the current PayChangu integration findings into an implementation plan that is safe for production.
 
+**Status note:** this is a readiness and rollout plan, not a declaration that the PayChangu payment layer is completely finished. Full rollout still depends on the route-wiring, configuration validation, raw-body webhook security, idempotency, automated testing, monitoring, and reconciliation checks listed below.
+
 ## 1) Route wiring and endpoint contract
 
 Define a single source of truth for server routes and keep frontend constants aligned:
