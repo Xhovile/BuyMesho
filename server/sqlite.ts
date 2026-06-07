@@ -261,12 +261,6 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "payouts", "provider_charge_id", "TEXT");
   ensureColumn(db, "payouts", "requested_by", "TEXT");
   ensureColumn(db, "payouts", "requested_at", "TEXT");
-
-  db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
-  ON listings(hard_delete_after)
-  WHERE deleted_at IS NOT NULL;
-`);
   
   db.exec(`
     DROP INDEX IF EXISTS idx_payment_webhook_events_provider_event_id;
@@ -307,6 +301,15 @@ function initPaymentSchema(db: Database.Database): void {
     ON payouts(status, created_at DESC);
   `);
 }
+ensureColumn(db, "listings", "deleted_at", "TEXT");
+ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
+ensureColumn(db, "listings", "hard_delete_after", "TEXT");
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+  ON listings(hard_delete_after)
+  WHERE deleted_at IS NOT NULL;
+`);
 
 export type PaymentWebhookProcessingStatus =
   | "received"
