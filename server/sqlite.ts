@@ -30,7 +30,11 @@ function initPaymentSchema(db: Database.Database): void {
       price REAL NOT NULL,
       status TEXT NOT NULL DEFAULT 'available',
       quantity INTEGER NOT NULL DEFAULT 1,
-      sold_quantity INTEGER NOT NULL DEFAULT 0
+      sold_quantity INTEGER NOT NULL DEFAULT 0,
+      is_hidden INTEGER NOT NULL DEFAULT 0,
+      deleted_at TEXT,
+      deleted_by_uid TEXT,
+      hard_delete_after TEXT
     );
 
     CREATE TABLE IF NOT EXISTS payments (
@@ -51,6 +55,10 @@ function initPaymentSchema(db: Database.Database): void {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
+    ON listings(hard_delete_after)
+    WHERE deleted_at IS NOT NULL;
 
     CREATE INDEX IF NOT EXISTS idx_payments_reference ON payments(reference);
     CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
@@ -241,6 +249,9 @@ function initPaymentSchema(db: Database.Database): void {
   ensureColumn(db, "listings", "views_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "whatsapp_clicks", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "is_hidden", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "listings", "deleted_at", "TEXT");
+  ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
+  ensureColumn(db, "listings", "hard_delete_after", "TEXT");
   ensureColumn(db, "listings", "photos", "TEXT");
   ensureColumn(db, "payments", "currency", "TEXT NOT NULL DEFAULT 'MWK'");
   ensureColumn(db, "payments", "amount", "REAL NOT NULL DEFAULT 0");

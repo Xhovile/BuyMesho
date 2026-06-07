@@ -13,6 +13,7 @@ type ListingRow = {
   id: number;
   seller_uid: string;
   is_hidden?: number;
+  deleted_at?: string | null;
 };
 
 type ReviewRow = {
@@ -169,7 +170,7 @@ function getListingReviewSummary(listingId: number) {
 
 function getListingById(listingId: number): ListingRow | undefined {
   return db
-    .prepare(`SELECT id, seller_uid, is_hidden FROM listings WHERE id = ? LIMIT 1`)
+    .prepare(`SELECT id, seller_uid, is_hidden, deleted_at FROM listings WHERE id = ? LIMIT 1`)
     .get(listingId) as ListingRow | undefined;
 }
 
@@ -234,7 +235,7 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   }
 
   const listing = getListingById(listingId);
-  if (!listing || listing.is_hidden) {
+  if (!listing || listing.is_hidden || listing.deleted_at) {
     return reviewError(res, 404, "Listing not found");
   }
 
@@ -273,7 +274,7 @@ async function upsertListingReviewHandler(req: Request, res: Response) {
   }
 
   const listing = getListingById(listingId);
-  if (!listing || listing.is_hidden) {
+  if (!listing || listing.is_hidden || listing.deleted_at) {
     return reviewError(res, 404, "Listing not found");
   }
 
@@ -374,7 +375,7 @@ async function replyToListingReviewHandler(req: Request, res: Response) {
   }
 
   const listing = getListingById(listingId);
-  if (!listing || listing.is_hidden) {
+  if (!listing || listing.is_hidden || listing.deleted_at) {
     return reviewError(res, 404, "Listing not found");
   }
 
