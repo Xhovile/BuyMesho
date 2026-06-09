@@ -115,7 +115,7 @@ export default function PayoutStatusBanner({
         <div className="min-w-0 flex-1 space-y-3">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-current/60">
-              Payout status
+              Current payout status
             </p>
             <h3 className="mt-1 text-lg font-extrabold leading-tight text-current">
               {failureMeta?.label ?? statusLabel}
@@ -127,21 +127,21 @@ export default function PayoutStatusBanner({
 
           <div className="grid gap-2 text-sm text-current/80 sm:grid-cols-2">
             <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-              <span className="font-bold text-current">Provider:</span> {providerName}
+              <span className="font-bold text-current">Payout provider:</span> {providerName}
             </div>
             {updatedLabel ? (
               <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-                <span className="font-bold text-current">Updated:</span> {updatedLabel}
+                <span className="font-bold text-current">Last updated:</span> {updatedLabel}
               </div>
             ) : null}
             {manualReviewPending ? (
               <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-                <span className="font-bold text-current">Next step:</span> Awaiting admin review
+                <span className="font-bold text-current">Next step:</span> Waiting for admin review
               </div>
             ) : null}
             {retryAllowed === false && String(status).toLowerCase() === 'failed' ? (
               <div className="rounded-xl bg-white/60 px-3 py-2 ring-1 ring-black/5">
-                <span className="font-bold text-current">Retry:</span> Unavailable
+                <span className="font-bold text-current">Retry:</span> Not available
               </div>
             ) : null}
           </div>
@@ -149,7 +149,7 @@ export default function PayoutStatusBanner({
           {verificationBlockers?.length ? (
             <div className="rounded-2xl border border-current/10 bg-white/60 p-3">
               <p className="text-xs font-bold uppercase tracking-wide text-current/60">
-                What is blocking this payout
+                Why this payout is paused
               </p>
               <ul className="mt-2 space-y-1 text-sm text-current/80">
                 {verificationBlockers.map((blocker) => (
@@ -183,7 +183,7 @@ export default function PayoutStatusBanner({
                 className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-bold text-zinc-900 shadow-sm ring-1 ring-black/5 transition hover:bg-zinc-50"
               >
                 <RefreshCw className="h-4 w-4" />
-                Retry payout
+                Try again
               </button>
             ) : null}
 
@@ -194,7 +194,7 @@ export default function PayoutStatusBanner({
                 className="inline-flex items-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-black/85"
               >
                 <MessageCircleQuestion className="h-4 w-4" />
-                View details
+                Open payout details
               </button>
             ) : null}
 
@@ -204,14 +204,14 @@ export default function PayoutStatusBanner({
                 onClick={onContactSupport}
                 className="inline-flex items-center gap-2 rounded-xl bg-white/80 px-4 py-2 text-sm font-bold text-current shadow-sm ring-1 ring-black/5 transition hover:bg-white"
               >
-                Contact support
+                Get help
               </button>
             ) : null}
           </div>
 
           {isAdmin ? (
             <p className="text-xs font-medium text-current/60">
-              Admin view can expose the raw reason code and provider response.
+              Admin view can also reveal the raw reason code and provider response.
             </p>
           ) : null}
         </div>
