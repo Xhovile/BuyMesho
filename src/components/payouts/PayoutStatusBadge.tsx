@@ -11,10 +11,10 @@ const PAYOUT_STATUS_META: Record<string, { label: string; className: string }> =
   failed: { label: "Failed", className: "border-red-200 bg-red-50 text-red-700" },
   cancelled: { label: "Cancelled", className: "border-zinc-200 bg-zinc-100 text-zinc-700" },
   eligible: { label: "Eligible", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  queued: { label: "Queued", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  processing: { label: "Processing", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  pending: { label: "Pending", className: "border-amber-200 bg-amber-50 text-amber-700" },
-  held: { label: "Held", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  queued: { label: "Queued for review", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  processing: { label: "Sent to provider", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  pending: { label: "Provider pending", className: "border-amber-200 bg-amber-50 text-amber-700" },
+  held: { label: "Held for review", className: "border-amber-200 bg-amber-50 text-amber-700" },
 };
 
 const DESTINATION_STATUS_META: Record<string, { label: string; className: string }> = {
