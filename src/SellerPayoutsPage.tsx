@@ -549,7 +549,7 @@ useEffect(() => {
                   Active destinations: {summary.activeDestinations}
                 </span>
                 <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
-                  Default:{" "}
+                  Default: {" "}
                   {summary.defaultDestination
                     ? summary.defaultDestination.maskedAccount
                     : "Not set"}
@@ -612,7 +612,7 @@ useEffect(() => {
             isEditing={Boolean(selectedDestinationId)}
             activeDestinationCount={activeDestinations.length}
             providerOptions={[
-            ...providerMetadata.mobileMoneyOperators, 
+            ...providerMetadata.mobileMoneyOperators,
             ...providerMetadata.banks,
            ]}
          />
@@ -623,7 +623,7 @@ useEffect(() => {
                   Status snapshot
                 </p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight">
-                  What the seller sees.
+                  Current seller payout state.
                 </h2>
               </div>
               <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-right">
@@ -641,18 +641,18 @@ useEffect(() => {
             <div className="mt-6 space-y-3">
               <MiniStatus
                 icon={<Banknote className="w-4 h-4" />}
-                title="Setup required"
-                text="Add a payout destination before release can move money out."
+                title="Destination setup"
+                text="Add a payout destination before funds can move out of escrow."
               />
               <MiniStatus
                 icon={<ClipboardList className="w-4 h-4" />}
-                title="Queued for admin review"
-                text="Escrow release created a payout candidate that waits for admin review before PayChangu submission."
+                title="Queued for review"
+                text="Released escrow can be held briefly while payout review is completed."
               />
               <MiniStatus
                 icon={<ShieldCheck className="w-4 h-4" />}
-                title="Held"
-                text="Escrow release immediately submits the payout to PayChangu and continues reconciliation in the background." 
+                title="Processing"
+                text="Once approved, the payout is sent through the provider and tracked automatically."
               />
               <MiniStatus
                 icon={<BadgeCheck className="w-4 h-4" />}
@@ -662,7 +662,7 @@ useEffect(() => {
               <MiniStatus
                 icon={<AlertTriangle className="w-4 h-4" />}
                 title="Needs destination update"
-                text="Failed payouts stay visible while destination details are updated or admins retry safely."
+                text="If payout details fail, the destination must be corrected before retrying."
               />
             </div>
           </div>
@@ -772,8 +772,8 @@ useEffect(() => {
                                 </div>
                                 {payout.status === "held" ? (
                                   <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                                    <div>Payout held for review</div>
-                                    <div>Awaiting admin action</div>
+                                    <div>Payout paused for review</div>
+                                    <div>Seller is waiting on the next action</div>
                                   </div>
                                 ) : null}
                               </div>
@@ -819,14 +819,11 @@ useEffect(() => {
                                       )}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between gap-3">
-                                    <span>Adjustments</span>
+                                  <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
+                                    <span>Net</span>
                                     <span>
-                                      -
                                       {money(
-                                        Number(
-                                          payout.manualAdjustmentAmount || 0,
-                                        ),
+                                        Number(payout.netAmount || payout.amount || 0),
                                         payout.currency,
                                       )}
                                     </span>
