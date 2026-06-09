@@ -13,6 +13,7 @@ import {
 import AccountPageShell from "./components/AccountPageShell";
 import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequiredBanner";
 import PayoutStatusBanner from "./modules/payouts/components/PayoutStatusBanner";
+import PayoutTimeline from "./modules/payouts/components/PayoutTimeline";
 import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
@@ -493,23 +494,26 @@ export default function SellerDashboardPage() {
                 </div>
 
                 {latestActionablePayout ? (
-                  <PayoutStatusBanner
-                    status={latestActionablePayout.status}
-                    failureReasonCode={latestActionablePayout.lastFailureReason ?? null}
-                    retryAllowed={latestActionablePayout.retryAllowed ?? null}
-                    manualReviewPending={latestActionablePayout.manualReviewPending ?? null}
-                    destinationStatus={latestActionablePayout.destinationStatus ?? null}
-                    verificationBlockers={latestActionablePayout.verificationBlockers ?? null}
-                    providerName={latestActionablePayout.provider ?? "PayChangu"}
-                    updatedAt={
-                      latestActionablePayout.lastUpdatedTimestamp ??
-                      latestActionablePayout.updatedAt ??
-                      latestActionablePayout.createdAt
-                    }
-                    onViewDetails={() => navigateToPath("/seller/payouts")}
-                    onRetry={() => navigateToPath("/seller/payouts")}
-                    onContactSupport={() => navigateToPath("/report-problem")}
-                  />
+                  <div className="space-y-4">
+                    <PayoutStatusBanner
+                      status={latestActionablePayout.status}
+                      failureReasonCode={latestActionablePayout.lastFailureReason ?? null}
+                      retryAllowed={latestActionablePayout.retryAllowed ?? null}
+                      manualReviewPending={latestActionablePayout.manualReviewPending ?? null}
+                      destinationStatus={latestActionablePayout.destinationStatus ?? null}
+                      verificationBlockers={latestActionablePayout.verificationBlockers ?? null}
+                      providerName={latestActionablePayout.provider ?? "PayChangu"}
+                      updatedAt={
+                        latestActionablePayout.lastUpdatedTimestamp ??
+                        latestActionablePayout.updatedAt ??
+                        latestActionablePayout.createdAt
+                      }
+                      onViewDetails={() => navigateToPath("/seller/payouts")}
+                      onRetry={() => navigateToPath("/seller/payouts")}
+                      onContactSupport={() => navigateToPath("/report-problem")}
+                    />
+                    <PayoutTimeline payout={latestActionablePayout} />
+                  </div>
                 ) : null}
 
                 <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
