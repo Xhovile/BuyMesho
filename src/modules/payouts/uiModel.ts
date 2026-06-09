@@ -117,10 +117,28 @@ const FAILURE_REASON_META: Record<ProviderFailureReasonCode, SellerPayoutFailure
   },
 };
 
+const FAILURE_REASON_ALIASES: Array<{ match: RegExp; code: ProviderFailureReasonCode }> = [
+  { match: /timeout|timed\s*out|took\s*too\s*long/i, code: 'provider_timeout' },
+  { match: /unavailable|down|unreachable|cannot\s*reach|could\s*not\s*be\s*reached/i, code: 'provider_unavailable' },
+  { match: /rate\s*limit|too\s*many\s*requests|throttl/i, code: 'provider_rate_limited' },
+  { match: /submission\s*failed|provider\s*error|rejected|failed\s*during\s*submission/i, code: 'provider_execution_failed' },
+  { match: /destination.*not.*verified|verification.*pending|account.*not.*verified|destinat.*verification/i, code: 'destination_not_verified' },
+  { match: /destination.*incomplete|missing.*destination|account.*details.*missing|incomplete.*destination/i, code: 'destination_incomplete' },
+  { match: /order.*not.*releasable|not.*ready.*for.*payout|release.*blocked/i, code: 'order_not_releasable' },
+  { match: /manual\s*review|admin\s*review|review\s*required/i, code: 'manual_review_required' },
+  { match: /not\s*found|missing\s*payout/i, code: 'payout_not_found' },
+  { match: /cancelled|canceled/i, code: 'payout_cancelled' },
+];
+
 function normalizeReasonCode(value?: string | null): ProviderFailureReasonCode | null {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (!normalized) return null;
   if (normalized in FAILURE_REASON_META) return normalized as ProviderFailureReasonCode;
+
+  for (const alias of FAILURE_REASON_ALIASES) {
+    if (alias.match.test(normalized)) return alias.code;
+  }
+
   return null;
 }
 
