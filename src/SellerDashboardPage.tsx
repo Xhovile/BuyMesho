@@ -12,8 +12,6 @@ import {
 } from "lucide-react";
 import AccountPageShell from "./components/AccountPageShell";
 import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequiredBanner";
-import PayoutStatusBanner from "./modules/payouts/components/PayoutStatusBanner";
-import PayoutTimeline from "./modules/payouts/components/PayoutTimeline";
 import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { apiFetch } from "./lib/api";
@@ -66,18 +64,6 @@ function StatCard({
       </div>
     </div>
   );
-}
-
-function getPayoutSortTime(payout: PayoutRecord): number {
-  const candidate =
-    payout.lastUpdatedTimestamp ?? payout.updatedAt ?? payout.createdAt ?? payout.requestedAt ?? null;
-  const time = candidate ? new Date(candidate).getTime() : Number.NaN;
-  return Number.isFinite(time) ? time : 0;
-}
-
-function isBannerWorthyPayout(payout: PayoutRecord): boolean {
-  const status = String(payout.status ?? "").toLowerCase();
-  return ["held", "failed", "queued", "processing", "pending"].includes(status);
 }
 
 export default function SellerDashboardPage() {
@@ -173,12 +159,6 @@ export default function SellerDashboardPage() {
       destinations: payoutDestinations ?? undefined,
     });
   }, [dashboard, payoutDestinations, payoutHistory]);
-
-  const latestActionablePayout = useMemo(() => {
-    return [...payoutHistory]
-      .filter(isBannerWorthyPayout)
-      .sort((a, b) => getPayoutSortTime(b) - getPayoutSortTime(a))[0] ?? null;
-  }, [payoutHistory]);
 
   const handleRetry = () => {
     void loadDashboard();
@@ -480,7 +460,7 @@ export default function SellerDashboardPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 shadow-sm space-y-4">
+              <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 shadow-sm">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
@@ -493,35 +473,12 @@ export default function SellerDashboardPage() {
                   <Wallet className="h-5 w-5 text-zinc-400" />
                 </div>
 
-                {latestActionablePayout ? (
-                  <div className="space-y-4">
-                    <PayoutStatusBanner
-                      status={latestActionablePayout.status}
-                      failureReasonCode={latestActionablePayout.lastFailureReason ?? null}
-                      retryAllowed={latestActionablePayout.retryAllowed ?? null}
-                      manualReviewPending={latestActionablePayout.manualReviewPending ?? null}
-                      destinationStatus={latestActionablePayout.destinationStatus ?? null}
-                      verificationBlockers={latestActionablePayout.verificationBlockers ?? null}
-                      providerName={latestActionablePayout.provider ?? "PayChangu"}
-                      updatedAt={
-                        latestActionablePayout.lastUpdatedTimestamp ??
-                        latestActionablePayout.updatedAt ??
-                        latestActionablePayout.createdAt
-                      }
-                      onViewDetails={() => navigateToPath("/seller/payouts")}
-                      onRetry={() => navigateToPath("/seller/payouts")}
-                      onContactSupport={() => navigateToPath("/report-problem")}
-                    />
-                    <PayoutTimeline payout={latestActionablePayout} />
-                  </div>
-                ) : null}
-
-                <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+                <div className="mt-4 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
                   <SellerEarningsSummary summary={dashboardEarningsSummary} compact />
                 </div>
 
                 {!payoutDestinationError ? (
-                  <div>
+                  <div className="mt-4">
                     <PayoutActionRequiredBanner
                       summary={dashboardEarningsSummary}
                       destinations={payoutDestinations}
