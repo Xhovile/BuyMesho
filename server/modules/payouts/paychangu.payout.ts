@@ -28,6 +28,7 @@ export interface ExecutePayChanguPayoutInput {
   email?: string;
   firstName?: string;
   lastName?: string;
+  transactionStatus?: 'failed' | 'successful';
 }
 
 export type PayChanguPayoutFailureClass =
@@ -401,6 +402,10 @@ function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerCharge
     mobile: input.mobile ?? input.destinationReference,
     amount: String(input.amount),
     charge_id: providerChargeId,
+    ...(input.email ? { email: input.email } : {}),
+    ...(input.firstName ? { first_name: input.firstName } : {}),
+    ...(input.lastName ? { last_name: input.lastName } : {}),
+    ...(input.transactionStatus ? { transaction_status: input.transactionStatus } : {}),
   };
 }
 
