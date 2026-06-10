@@ -50,6 +50,10 @@ function Info({ label, value }: { label: string; value: string }) {
   );
 }
 
+function StatusPill({ label, tone }: { label: string; tone: string }) {
+  return <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${tone}`}>{label}</span>;
+}
+
 export default function PayoutDetailDrawer({
   selected,
   visibleActions,
@@ -101,6 +105,30 @@ export default function PayoutDetailDrawer({
     escrowState !== "refunded" &&
     escrowState !== "closed";
 
+  const verificationBlockers = Array.isArray(selected.verificationBlockers) ? selected.verificationBlockers.filter(Boolean) : [];
+  const manualBlockers = [
+    selected.holdReason,
+    selected.manualReviewReason,
+    selected.retryBlockedReason,
+    selected.lastError,
+    selected.latestAttemptFailureReason,
+  ].filter((value): value is string => Boolean(value));
+  const providerStatus = selected.providerStatus ? formatStatus(selected.providerStatus) : "—";
+  const providerReference = selected.providerReference ?? "—";
+  const providerTransactionId = selected.providerTransactionId ?? "—";
+  const latestWebhook = selected.latestWebhookEventType
+    ? `${formatStatus(selected.latestWebhookEventType)}${selected.latestWebhookEventAt ? ` · ${toDate(selected.latestWebhookEventAt)}` : ""}`
+    : "—";
+  const nextAction = selected.retryEligible
+    ? "Retry payout"
+    : verificationBlockers.length > 0
+      ? "Fix destination verification"
+      : selected.sellerSuspended
+        ? "Unsuspend seller"
+        : manualBlockers.length > 0
+          ? "Review hold reason"
+          : "Manual review";
+
   return (
     <div className="fixed inset-0 z-[90] flex bg-zinc-900/50 backdrop-blur-sm" onClick={onClose}>
       <aside className="ml-auto h-full w-full max-w-2xl overflow-y-auto bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
@@ -115,28 +143,17 @@ export default function PayoutDetailDrawer({
             </button>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(selected.status)}`}>
-              {formatStatus(selected.status)}
-            </span>
+            <StatusPill label={formatStatus(selected.status)} tone={statusTone(selected.status)} />
             {selected.retryEligible ? (
-              <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-700">
-                retry eligible
-              </span>
+              <StatusPill label="retry eligible" tone="border-emerald-200 bg-emerald-50 text-emerald-700" />
             ) : (
-              <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-600">
-                {selected.retryBlockedReason ?? "retry unavailable"}
-              </span>
+              <StatusPill label={selected.retryBlockedReason ?? "retry unavailable"} tone="border-zinc-200 bg-white text-zinc-600" />
             )}
-            <span className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-xs font-bold text-zinc-700">
-              destination {formatStatus(selected.destinationVerificationStatus)}
-            </span>
-            <span
-              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${
-                selected.sellerSuspended ? "border-rose-200 bg-rose-50 text-rose-700" : "border-zinc-200 bg-zinc-100 text-zinc-700"
-              }`}
-            >
-              {selected.sellerSuspended ? "seller suspended" : "seller active"}
-            </span>
+            <StatusPill label={`destination ${formatStatus(selected.destinationVerificationStatus)}`} tone="border-zinc-200 bg-white text-zinc-700" />
+            <StatusPill
+              label={selected.sellerSuspended ? "seller suspended" : "seller active"}
+              tone={selected.sellerSuspended ? "border-rose-200 bg-rose-50 text-rose-700" : "border-zinc-200 bg-zinc-100 text-zinc-700"}
+            />
           </div>
         </div>
 
@@ -156,6 +173,43 @@ export default function PayoutDetailDrawer({
               <Info label="Destination active" value={selected.destinationActive ? "Yes" : "No"} />
               <Info label="Retry eligibility" value={selected.retryEligible ? "Can retry safely" : selected.retryBlockedReason ?? "Retry unavailable"} />
             </div>
+          </section>
+
+          <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-5 shadow-sm">
+            <h4 className="text-base font-black text-amber-950">Admin resolution snapshot</h4>
+            <p className="mt-2 text-sm text-amber-800">This is the part that tells you exactly why the payout is not moving yet.</p>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <Info label="Next action" value={nextAction} />
+              <Info label="Provider status" value={providerStatus} />
+              <Info label="Provider reference" value={providerReference} />
+              <Info label="Provider transaction ID" value={providerTransactionId} />
+              <Info label="Latest webhook" value={latestWebhook} />
+              <Info label="Latest attempt failure" value={selected.latestAttemptFailureReason ?? "—"} />
+              <Info label="Hold reason" value={selected.holdReason ?? "—"} />
+              <Info label="Manual review reason" value={selected.manualReviewReason ?? "—"} />
+            </div>
+
+            {verificationBlockers.length > 0 ? (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-white px-4 py-3 text-sm text-rose-800">
+                <p className="font-black text-rose-950">Destination blockers</p>
+                <ul className="mt-2 space-y-1">
+                  {verificationBlockers.map((blocker) => (
+                    <li key={blocker}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+
+            {manualBlockers.length > 0 ? (
+              <div className="mt-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
+                <p className="font-black text-zinc-950">Operational blockers</p>
+                <ul className="mt-2 space-y-1">
+                  {manualBlockers.map((blocker) => (
+                    <li key={blocker}>• {blocker}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </section>
 
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
@@ -420,52 +474,18 @@ export default function PayoutDetailDrawer({
               ) : adjustments.length === 0 ? (
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-600">No adjustments recorded for this payout.</div>
               ) : (
-                adjustments.map((item) => (
-                  <div key={item.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <p className="text-sm font-bold text-zinc-900">{item.adjustmentType === "processing_fee" ? "Legacy compatibility amount" : "Manual payout adjustment"}</p>
-                      <p className="text-sm font-bold text-zinc-900">
-                        {item.currency} {Number(item.amount).toLocaleString()}
-                      </p>
-                    </div>
-                    <p className="mt-1 text-sm text-zinc-700">{item.reason}</p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {toDate(item.createdAt)} • {item.actorType}:{item.actorId ?? "—"}
-                      {item.providerReference ? ` • ref: ${item.providerReference}` : ""}
+                adjustments.map((adjustment) => (
+                  <div key={adjustment.id} className="rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-3 text-sm text-zinc-700">
+                    <p className="font-bold text-zinc-950">
+                      {adjustment.adjustmentType.replace(/_/g, " ")} · {adjustment.currency} {Number(adjustment.amount).toLocaleString()}
                     </p>
+                    <p className="mt-1">{adjustment.reason}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{toDate(adjustment.createdAt)} · {adjustment.actorType}</p>
                   </div>
                 ))
               )}
             </div>
           </section>
-
-          <details className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
-            <summary className="cursor-pointer list-none text-base font-black text-zinc-900">Technical details</summary>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <Info label="Provider charge" value={selected.providerChargeId ?? "—"} />
-              <Info label="Provider ref" value={selected.providerReference ?? "—"} />
-              <Info label="Provider tx" value={selected.providerTransactionId ?? "—"} />
-              <Info label="Provider status" value={formatStatus(selected.providerStatus)} />
-              <Info label="Latest attempt" value={selected.latestAttemptNo ? `#${selected.latestAttemptNo} (${selected.latestAttemptStatus ?? "—"})` : "—"} />
-              <Info label="Latest attempt time" value={toDate(selected.latestAttemptAt)} />
-              <Info label="Latest attempt error" value={selected.latestAttemptFailureReason ?? selected.failureReason ?? "—"} />
-              <Info label="Webhook snapshot" value={selected.latestWebhookEventType ? `${selected.latestWebhookEventType} @ ${toDate(selected.latestWebhookEventAt)}` : "—"} />
-              <Info label="Audit latest event" value={selected.auditSummary?.latestEventType ?? "—"} />
-              <Info label="Audit total events" value={String(selected.auditSummary?.totalEvents ?? 0)} />
-            </div>
-
-            {Array.isArray(selected.verificationBlockers) && selected.verificationBlockers.length > 0 ? (
-              <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                <strong>Verification blockers:</strong> {selected.verificationBlockers.join(" • ")}
-              </p>
-            ) : null}
-
-            {selected.holdReason || selected.manualReviewReason ? (
-              <p className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-                <strong>Hold reason:</strong> {selected.holdReason ?? selected.manualReviewReason}
-              </p>
-            ) : null}
-          </details>
         </div>
       </aside>
     </div>
