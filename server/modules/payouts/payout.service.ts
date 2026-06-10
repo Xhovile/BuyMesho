@@ -889,85 +889,52 @@ export class PayoutService {
       actorId: actor.actorId ?? null,
       note: 'Payout queued for provider submission',
     });
+    
+let balance: Awaited<ReturnType<typeof getPayChanguPayoutBalance>> | null = null;
 
-    let balance: Awaited<ReturnType<typeof getPayChanguPayoutBalance>>;
-    try {
-      balance = await this.getProviderBalance(gate.currency);
-    } catch (error) {
-      const failureReason = classifyProviderFailureFromError(error) ?? 'provider_unavailable';
-      const reason = providerFailureReason(failureReason);
-      const payout = this.holdForReview(
-        {
-          payoutId: input.payoutId,
-          sellerId: gate.sellerId,
-          reasonCode: failureReason,
-          reason,
-          payload: {
-            stage: 'balance_check',
-            error: error instanceof Error ? error.message : String(error),
-          },
-        },
-        actor,
-      );
+try {
+  balance = await this.getProviderBalance(gate.currency);
+} catch (error) {
+  const failureReason = classifyProviderFailureFromError(error) ?? 'provider_unavailable';
+  const reason = providerFailureReason(failureReason);
 
-      this.repository.addEvent({
-        payoutId: input.payoutId,
-        sellerId: gate.sellerId,
-        eventType: 'balance_check_failed',
-        actorType: actor.actorType,
-        actorId: actor.actorId ?? null,
-        note: reason,
-        payload: {
-          reasonCode: failureReason,
-          error: error instanceof Error ? error.message : String(error),
-        },
-      });
+  // Record the warning, but do not stop the payout.
+  this.repository.addEvent({
+    payoutId: input.payoutId,
+    sellerId: gate.sellerId,
+    eventType: 'balance_check_failed',
+    actorType: actor.actorType,
+    actorId: actor.actorId ?? null,
+    note: reason,
+    payload: {
+      stage: 'balance_check',
+      error: error instanceof Error ? error.message : String(error),
+      reasonCode: failureReason,
+    },
+  });
+}
 
-      return {
-        payout,
-        attempt: null,
-        execution: null,
-        reasonCode: failureReason,
-        reason,
-        nextAction: 'manual_review' as PayoutNextAction,
-      };
-    }
+if (balance && balance.availableBalance < gate.amount) {
+  const payout = this.holdForReview(
+    {
+      payoutId: input.payoutId,
+      sellerId: gate.sellerId,
+      reasonCode: 'balance_insufficient',
+      reason: 'Insufficient provider payout balance',
+    },
+    actor,
+  );
 
-    if (balance.availableBalance < gate.amount) {
-      const payout = this.holdForReview(
-        {
-          payoutId: input.payoutId,
-          sellerId: gate.sellerId,
-          reasonCode: 'balance_insufficient',
-          reason: 'Insufficient provider payout balance',
-        },
-        actor,
-      );
-
-      this.repository.addEvent({
-        payoutId: input.payoutId,
-        sellerId: gate.sellerId,
-        eventType: 'balance_check_failed',
-        actorType: actor.actorType,
-        actorId: actor.actorId ?? null,
-        note: 'Insufficient provider payout balance',
-        payload: {
-          availableBalance: balance.availableBalance,
-          requestedAmount: gate.amount,
-          currency: gate.currency,
-        },
-      });
-
-      return {
-        payout,
-        attempt: null,
-        execution: null,
-        reasonCode: 'balance_insufficient',
-        reason: 'Insufficient provider payout balance',
-        nextAction: 'manual_review' as PayoutNextAction,
-      };
-    }
-
+  return {
+    payout,
+    attempt: null,
+    execution: null,
+    reasonCode: 'balance_insufficient',
+    reason: 'Insufficient provider payout balance',
+    nextAction: 'manual_review',
+  };
+}
+      
     const reservedAttempt = this.repository.reserveRetryAttempt({
       payoutId: input.payoutId,
       provider: gate.provider,
