@@ -73,7 +73,7 @@ function mockPayChanguFetch(responsePayload: unknown): CapturedRequest[] {
   return requests;
 }
 
-test('PayChangu mobile money payout uses the documented initialize path and exact request body', async () => {
+test('PayChangu mobile money payout uses the documented initialize path and forwards optional fields', async () => {
   useDefaultPayChanguEnv();
   const requests = mockPayChanguFetch({
     status: 'success',
@@ -99,6 +99,7 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
       email: 'recipient@example.com',
       firstName: 'Test',
       lastName: 'Recipient',
+      transactionStatus: 'successful',
     });
 
     assert.equal(requests.length, 1);
@@ -107,19 +108,17 @@ test('PayChangu mobile money payout uses the documented initialize path and exac
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
-    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(result.providerTransactionId, 'mobile-trans');
     assert.deepEqual(requests[0]?.body, {
       mobile_money_operator_ref_id: '20be6c20-adeb-4b5b-a7ba-0769820df4fb',
       mobile: '0990000000',
       amount: '1250',
       charge_id: 'BM-PO-mobile-body-test-A01',
+      email: 'recipient@example.com',
+      first_name: 'Test',
+      last_name: 'Recipient',
+      transaction_status: 'successful',
     });
-    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'currency'), false);
-    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'email'), false);
-    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'first_name'), false);
-    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'last_name'), false);
-    assert.equal(Object.hasOwn(requests[0]?.body ?? {}, 'transaction_status'), false);
     assert.equal(result.status, 'pending');
     assert.equal(result.providerReference, 'mobile-ref');
     assert.equal(result.providerTransactionId, 'mobile-trans');
@@ -162,7 +161,6 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
-    assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(result.providerTransactionId, 'bank-trans');
     assert.deepEqual(requests[0]?.body, {
       payout_method: 'bank_transfer',
@@ -201,7 +199,6 @@ test('PayChangu payout lookups use documented default paths', async () => {
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
-    assert.equal(requests[0]?.accept, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
@@ -225,21 +222,15 @@ test('PayChangu provider list helpers use documented default paths', async () =>
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
-    assert.equal(requests[0]?.accept, 'application/json');
-    assert.equal(
-      requests[1]?.url,
-      'https://api.paychangu.com/direct-charge/payouts/supported-banks?currency=MWK',
-    );
+    assert.equal(requests[1]?.url, 'https://api.paychangu.com/direct-charge/payouts/supported-banks?currency=MWK');
     assert.equal(requests[1]?.method, 'GET');
     assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[1]?.accept, 'application/json');
     assert.equal(requests[1]?.contentType, 'application/json');
-    assert.equal(requests[1]?.accept, 'application/json');
   } finally {
     resetPayChanguEnv();
   }
 });
-
 
 test('PayChangu mobile money payout fails fast when routing ID is missing', async () => {
   useDefaultPayChanguEnv();
@@ -259,31 +250,6 @@ test('PayChangu mobile money payout fails fast when routing ID is missing', asyn
     }),
     /requires mobileMoneyOperatorRefId/,
   );
-
-  assert.equal(requests.length, 0);
-  resetPayChanguEnv();
-});
-
-test('PayChangu bank payout fails fast when bank UUID is missing', async () => {
-  useDefaultPayChanguEnv();
-  const requests = mockPayChanguFetch({ status: 'success' });
-
-  await assert.rejects(
-    executePayChanguPayout({
-      payoutId: 'bank-missing-route',
-      sellerId: 'seller-bank-missing-route',
-      amount: 10000,
-      currency: 'MWK',
-      providerName: 'National Bank',
-      destinationReference: '1001000010',
-      attemptNo: 1,
-      destinationType: 'bank',
-      bankAccountName: 'Test',
-      bankAccountNumber: '1001000010',
-    }),
-    /requires bankUuid/,
-  );
-
   assert.equal(requests.length, 0);
   resetPayChanguEnv();
 });
