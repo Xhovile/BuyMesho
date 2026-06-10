@@ -2,25 +2,18 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
-  Banknote,
-  BadgeCheck,
   Building2,
-  ClipboardList,
   Loader2,
   RefreshCw,
-  ShieldCheck,
   Wallet,
-  AlertTriangle,
 } from "lucide-react";
 import BrandMark from "./components/BrandMark";
 import ConfirmModal from "./components/ConfirmModal";
 import PayoutDestinationCard from "./components/payouts/PayoutDestinationCard";
-import PayoutActionRequiredBanner from "./components/payouts/PayoutActionRequiredBanner";
 import PayoutDestinationForm from "./components/payouts/PayoutDestinationForm";
 import PayoutStatusBadge from "./components/payouts/PayoutStatusBadge";
 import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "./components/payouts/PayoutTimeline";
-import PayoutPolicyExplainer from "./components/payouts/PayoutPolicyExplainer";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
 import {
@@ -29,9 +22,9 @@ import {
   getPayoutDestinations,
   getPayoutHistory,
   getPayoutPermissions,
+  getPayoutProviderMetadata,
   replacePayoutDestination,
   updatePayoutDestination,
-  getPayoutProviderMetadata,
 } from "./modules/payouts/api";
 import {
   buildSellerEarningsSummary,
@@ -40,9 +33,9 @@ import {
 import { fetchSellerEscrows } from "./lib/orderApi";
 import type {
   PayoutDestination,
-  PayoutProviderMetadata,
   PayoutDestinationFormState,
   PayoutPermissions,
+  PayoutProviderMetadata,
   PayoutRecord,
   PayoutSummary,
 } from "./modules/payouts/types";
@@ -86,16 +79,15 @@ function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
   const escrow = value as Record<string, unknown>;
 
   const normalizeAmount = (input: unknown): number | string | null => {
-    if (input === null) return null;
-    if (input === undefined) return null;
+    if (input === null || input === undefined) return null;
     if (typeof input === "number" || typeof input === "string") return input;
     return null;
   };
 
   const readAmountField = (...keys: string[]) => {
     for (const key of keys) {
-      const value = normalizeAmount(escrow[key]);
-      if (value !== null) return value;
+      const candidate = normalizeAmount(escrow[key]);
+      if (candidate !== null) return candidate;
     }
     return null;
   };
@@ -128,30 +120,50 @@ function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
       "balanceAmount",
       "balance_amount",
     ),
-    status:
-      typeof escrow.status === "string" ? escrow.status : undefined,
+    status: typeof escrow.status === "string" ? escrow.status : undefined,
     state: typeof escrow.state === "string" ? escrow.state : undefined,
   };
 }
 
+function SectionTitle({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+          {eyebrow}
+        </p>
+        <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
+      </div>
+      {action ? action : null}
+    </div>
+  );
+}
+
 export default function SellerPayoutsPage() {
   const { firebaseUser, profile, profileLoading } = useAccountProfile();
-  const [permissions, setPermissions] = useState<PayoutPermissions | null>(
-    null,
-  );
+  const [permissions, setPermissions] = useState<PayoutPermissions | null>(null);
   const [destinations, setDestinations] = useState<PayoutDestination[]>([]);
   const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [escrows, setEscrows] = useState<EscrowSummaryRecord[]>([]);
-  const [selectedDestinationId, setSelectedDestinationId] = useState<
-    string | null
-  >(null);
+  const [providerMetadata, setProviderMetadata] = useState<PayoutProviderMetadata>({
+    mobileMoneyOperators: [],
+    banks: [],
+    currencies: ["MWK"],
+  });
+  const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(null);
   const [form, setForm] = useState<PayoutDestinationFormState>(INITIAL_FORM);
   const [loading, setLoading] = useState(true);
-  const [savingDestination, setSavingDestination] = useState(false);
-  const [destinationFormError, setDestinationFormError] = useState<
-    string | null
-  >(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [savingDestination, setSavingDestination] = useState(false);
+  const [destinationFormError, setDestinationFormError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{
     type: "success" | "error" | "info";
     message: string;
@@ -160,97 +172,74 @@ export default function SellerPayoutsPage() {
   const [removeCountdown, setRemoveCountdown] = useState(3);
 
   const sellerId = firebaseUser?.uid || profile?.uid || "";
-  const isSeller = !!profile?.is_seller;
+  const isSeller = Boolean(profile?.is_seller);
 
-  const [providerMetadata, setProviderMetadata] = useState<PayoutProviderMetadata>({
-  mobileMoneyOperators: [],
-  banks: [],
-  currencies: ["MWK"],
-});
-  
-const loadData = useCallback(async (options?: { silent?: boolean }) => {
-  if (!sellerId) return;
-  if (!options?.silent) {
-    setLoading(true);
-  }
-  try {
-    const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes] =
-  await Promise.allSettled([
-    getPayoutPermissions(sellerId),
-    getPayoutDestinations(sellerId),
-    getPayoutHistory(sellerId),
-    fetchSellerEscrows(),
-    getPayoutProviderMetadata(),
-  ]);
-    
-    if (permissionsRes.status === "fulfilled") {
-      setPermissions(permissionsRes.value);
-    } else {
-      setPermissions(null);
-    }
+  const loadData = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!sellerId) return;
+      if (!options?.silent) setLoading(true);
 
-    if (destinationsRes.status === "fulfilled") {
-      setDestinations(destinationsRes.value);
-    } else {
-      setDestinations([]);
-    }
+      try {
+        const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes] =
+          await Promise.allSettled([
+            getPayoutPermissions(sellerId),
+            getPayoutDestinations(sellerId),
+            getPayoutHistory(sellerId),
+            fetchSellerEscrows(),
+            getPayoutProviderMetadata(),
+          ]);
 
-    if (providerMetadataRes.status === "fulfilled") {
-      setProviderMetadata(providerMetadataRes.value);
-    }
+        setPermissions(permissionsRes.status === "fulfilled" ? permissionsRes.value : null);
+        setDestinations(destinationsRes.status === "fulfilled" ? destinationsRes.value : []);
+        setPayouts(payoutsRes.status === "fulfilled" ? payoutsRes.value : []);
+        if (providerMetadataRes.status === "fulfilled") {
+          setProviderMetadata(providerMetadataRes.value);
+        }
 
-    if (payoutsRes.status === "fulfilled") {
-      setPayouts(payoutsRes.value);
-    } else {
-      setPayouts([]);
-    }
+        if (escrowsRes.status === "fulfilled") {
+          const escrowRecords = escrowsRes.value
+            .map((entry) => toEscrowSummaryRecord(entry))
+            .filter((entry): entry is EscrowSummaryRecord => entry !== null);
+          setEscrows(escrowRecords);
+        } else {
+          setEscrows([]);
+        }
+      } catch (error) {
+        setNotice({
+          type: "error",
+          message: error instanceof Error ? error.message : "Failed to load payout data",
+        });
+      } finally {
+        if (!options?.silent) setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [sellerId],
+  );
 
-    if (escrowsRes.status === "fulfilled") {
-      const escrowRecords = escrowsRes.value
-        .map((entry) => toEscrowSummaryRecord(entry))
-        .filter((entry): entry is EscrowSummaryRecord => entry !== null);
-      setEscrows(escrowRecords);
-    } else {
-      setEscrows([]);
-    }
-  } catch (error) {
-    setNotice({
-      type: "error",
-      message:
-        error instanceof Error ? error.message : "Failed to load payout data",
-    });
-  } finally {
-    if (!options?.silent) {
-      setLoading(false);
-    }
-    setRefreshing(false);
-  }
-}, [sellerId]);
+  useEffect(() => {
+    if (!sellerId) return;
+    void loadData();
+  }, [sellerId, loadData]);
 
-useEffect(() => {
-  if (!sellerId) return;
-  void loadData();
-}, [sellerId, loadData]);
+  useEffect(() => {
+    if (!sellerId) return;
 
-useEffect(() => {
-  if (!sellerId) return;
+    const refreshData = () => {
+      if (document.visibilityState !== "visible") return;
+      void loadData({ silent: true });
+    };
 
-  const refreshData = () => {
-    if (document.visibilityState !== "visible") return;
-    void loadData({ silent: true });
-  };
+    window.addEventListener("focus", refreshData);
+    document.addEventListener("visibilitychange", refreshData);
+    const interval = window.setInterval(refreshData, 30000);
 
-  window.addEventListener("focus", refreshData);
-  document.addEventListener("visibilitychange", refreshData);
-
-  const interval = window.setInterval(refreshData, 30000);
-
-  return () => {
-    window.removeEventListener("focus", refreshData);
-    document.removeEventListener("visibilitychange", refreshData);
-    window.clearInterval(interval);
-  };
-}, [sellerId, loadData]);
+    return () => {
+      window.removeEventListener("focus", refreshData);
+      document.removeEventListener("visibilitychange", refreshData);
+      window.clearInterval(interval);
+    };
+  }, [sellerId, loadData]);
 
   const earningsSummary = useMemo(
     () => buildSellerEarningsSummary({ payouts, escrows, destinations }),
@@ -265,16 +254,17 @@ useEffect(() => {
   const summary = useMemo<PayoutSummary>(
     () => ({
       activeDestinations: activeDestinations.length,
-      defaultDestination:
-        activeDestinations.find((item) => item.isDefault) || null,
+      defaultDestination: activeDestinations.find((item) => item.isDefault) || null,
       total: earningsSummary.lifetimeSales,
       paid: earningsSummary.paidOut,
-      pending:
-        earningsSummary.availableForPayout + earningsSummary.pendingPayout,
+      pending: earningsSummary.availableForPayout + earningsSummary.pendingPayout,
       failed: earningsSummary.failedActionRequired,
     }),
     [activeDestinations, earningsSummary],
   );
+
+  const canEditSettings = permissions?.editPayoutSettings !== false;
+  const canViewHistory = permissions?.viewPayoutHistory !== false;
 
   const startEdit = (destination: PayoutDestination) => {
     setDestinationFormError(null);
@@ -329,7 +319,7 @@ useEffect(() => {
       setNotice({ type: "info", message });
       return;
     }
-    
+
     if (form.destinationType === "bank" && !form.accountNumber.trim()) {
       const message = "Bank account number is required.";
       setDestinationFormError(message);
@@ -346,6 +336,7 @@ useEffect(() => {
 
     setDestinationFormError(null);
     setSavingDestination(true);
+
     try {
       const payload = {
         sellerUid: sellerId,
@@ -355,13 +346,9 @@ useEffect(() => {
         currency: form.currency.trim() || "MWK",
         accountName: form.accountName.trim(),
         accountNumber:
-          form.destinationType === "bank"
-            ? form.accountNumber.trim()
-            : undefined,
+          form.destinationType === "bank" ? form.accountNumber.trim() : undefined,
         mobile:
-          form.destinationType === "mobile_money"
-            ? form.mobile.trim()
-            : undefined,
+          form.destinationType === "mobile_money" ? form.mobile.trim() : undefined,
         isDefault: form.isDefault,
       };
 
@@ -380,8 +367,7 @@ useEffect(() => {
       resetForm();
       await loadData({ silent: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to save destination";
+      const message = error instanceof Error ? error.message : "Failed to save destination";
       setDestinationFormError(message);
       setNotice({ type: "error", message });
     } finally {
@@ -437,14 +423,11 @@ useEffect(() => {
         type: "success",
         message: `${removeTarget.providerName} payout destination removed.`,
       });
-      if (selectedDestinationId === removeTarget.id) {
-        resetForm();
-      }
+      if (selectedDestinationId === removeTarget.id) resetForm();
       setRemoveTarget(null);
       await loadData({ silent: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to remove destination";
+      const message = error instanceof Error ? error.message : "Failed to remove destination";
       setNotice({ type: "error", message });
     } finally {
       setSavingDestination(false);
@@ -461,9 +444,7 @@ useEffect(() => {
       <div className="min-h-screen bg-[#f4f5f7] flex items-center justify-center">
         <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm">
           <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
-          <span className="font-semibold text-zinc-700">
-            Loading seller payouts...
-          </span>
+          <span className="font-semibold text-zinc-700">Loading seller payouts...</span>
         </div>
       </div>
     );
@@ -472,7 +453,7 @@ useEffect(() => {
   if (!isSeller) {
     return (
       <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
-        <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="mx-auto max-w-4xl px-4 py-10">
           <button
             type="button"
             onClick={() => navigateToPath(EXPLORE_PATH)}
@@ -483,21 +464,15 @@ useEffect(() => {
           </button>
 
           <div className="mt-6 rounded-[28px] border border-zinc-200/80 bg-white p-8 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
-            <h1 className="text-3xl font-black tracking-tight">
-              Seller payouts
-            </h1>
+            <h1 className="text-3xl font-black tracking-tight">Seller payouts</h1>
             <p className="mt-3 text-sm text-zinc-600">
-              You are not marked as a seller yet. Seller payout tools appear
-              here after the account is approved as a seller.
+              You are not marked as a seller yet. Seller payout tools appear here after the account is approved as a seller.
             </p>
           </div>
         </div>
       </div>
     );
   }
-
-  const canEditSettings = permissions?.editPayoutSettings !== false;
-  const canViewHistory = permissions?.viewPayoutHistory !== false;
 
   return (
     <div className="min-h-screen bg-[#f4f5f7] text-zinc-900">
@@ -518,11 +493,7 @@ useEffect(() => {
               onClick={() => void handleRefresh()}
               className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 sm:flex-none"
             >
-              {refreshing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <RefreshCw className="w-4 h-4" />
-              )}
+              {refreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               Refresh
             </button>
           </div>
@@ -540,8 +511,7 @@ useEffect(() => {
                 Payout control center.
               </h1>
               <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
-                Set up your payout destination, track payout status, and keep a
-                clean view of what is pending, paid, or failed.
+                Set up your payout destination, track payout status, and keep a clean view of what is pending, paid, or failed.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold text-zinc-600">
@@ -549,10 +519,7 @@ useEffect(() => {
                   Active destinations: {summary.activeDestinations}
                 </span>
                 <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
-                  Default: {" "}
-                  {summary.defaultDestination
-                    ? summary.defaultDestination.maskedAccount
-                    : "Not set"}
+                  Default: {summary.defaultDestination ? summary.defaultDestination.maskedAccount : "Not set"}
                 </span>
                 <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5">
                   Permissions: {canEditSettings ? "Edit enabled" : "View only"}
@@ -565,9 +532,8 @@ useEffect(() => {
             </div>
           </div>
 
-          <div className="mt-5 grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <div className="mt-5">
             <PayoutTimeline payouts={payouts} />
-            <PayoutPolicyExplainer />
           </div>
         </section>
 
@@ -585,22 +551,7 @@ useEffect(() => {
           </div>
         ) : null}
 
-        <div className="min-h-[88px]">
-          <PayoutActionRequiredBanner
-            summary={earningsSummary}
-            destinations={destinations}
-            onAction={() => {
-              document
-                .getElementById("payout-destination-settings")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          />
-        </div>
-
-        <section
-          id="payout-destination-settings"
-          className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]"
-        >
+        <section id="payout-destination-settings" className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <PayoutDestinationForm
             value={form}
             onChange={setForm}
@@ -612,75 +563,17 @@ useEffect(() => {
             isEditing={Boolean(selectedDestinationId)}
             activeDestinationCount={activeDestinations.length}
             providerOptions={[
-            ...providerMetadata.mobileMoneyOperators,
-            ...providerMetadata.banks,
-           ]}
-         />
+              ...providerMetadata.mobileMoneyOperators,
+              ...providerMetadata.banks,
+            ]}
+          />
+
           <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                  Status snapshot
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight">
-                  Current seller payout state.
-                </h2>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-right">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                  Default
-                </p>
-                <p className="mt-1 text-sm font-black">
-                  {summary.defaultDestination
-                    ? summary.defaultDestination.maskedAccount
-                    : "Not set"}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 space-y-3">
-              <MiniStatus
-                icon={<Banknote className="w-4 h-4" />}
-                title="Destination setup"
-                text="Add a payout destination before funds can move out of escrow."
-              />
-              <MiniStatus
-                icon={<ClipboardList className="w-4 h-4" />}
-                title="Queued for review"
-                text="Released escrow can be held briefly while payout review is completed."
-              />
-              <MiniStatus
-                icon={<ShieldCheck className="w-4 h-4" />}
-                title="Processing"
-                text="Once approved, the payout is sent through the provider and tracked automatically."
-              />
-              <MiniStatus
-                icon={<BadgeCheck className="w-4 h-4" />}
-                title="Paid"
-                text="The provider confirmed the seller payout has been completed."
-              />
-              <MiniStatus
-                icon={<AlertTriangle className="w-4 h-4" />}
-                title="Needs destination update"
-                text="If payout details fail, the destination must be corrected before retrying."
-              />
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                  Payout destinations
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight">
-                  Saved destinations
-                </h2>
-              </div>
-              <Building2 className="w-5 h-5 text-zinc-400" />
-            </div>
+            <SectionTitle
+              eyebrow="Saved destinations"
+              title="Active payout routes."
+              action={<Building2 className="w-5 h-5 text-zinc-400" />}
+            />
 
             <div className="mt-5 overflow-x-auto">
               <div className="flex min-w-max gap-3 pb-2">
@@ -704,210 +597,134 @@ useEffect(() => {
               </div>
             </div>
           </div>
+        </section>
 
-          <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-                  Payout history
-                </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight">
-                  Release, paid, failed.
-                </h2>
-              </div>
-              <Wallet className="w-5 h-5 text-zinc-400" />
-            </div>
+        <section className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+          <SectionTitle
+            eyebrow="Payout history"
+            title="Release, paid, failed."
+            action={<Wallet className="w-5 h-5 text-zinc-400" />}
+          />
 
-            <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200">
-              <div className="min-w-[760px] max-h-[520px] overflow-auto">
-                <table className="w-full divide-y divide-zinc-200 text-left text-sm">
-                  <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
+          <div className="mt-5 overflow-x-auto rounded-2xl border border-zinc-200">
+            <div className="min-w-[760px] max-h-[520px] overflow-auto">
+              <table className="w-full divide-y divide-zinc-200 text-left text-sm">
+                <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
+                  <tr>
+                    <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Status</th>
+                    <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Amount</th>
+                    <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Order</th>
+                    <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Operational view</th>
+                    <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">Updated</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100 bg-white">
+                  {!canViewHistory ? (
                     <tr>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">
-                        Status
-                      </th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">
-                        Amount
-                      </th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">
-                        Order
-                      </th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">
-                        Operational view
-                      </th>
-                      <th className="px-4 py-3 font-extrabold uppercase tracking-[0.14em] text-[11px]">
-                        Updated
-                      </th>
+                      <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                        You do not have permission to view payout history.
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100 bg-white">
-                    {!canViewHistory ? (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-6 text-zinc-500">
-                          You do not have permission to view payout history.
-                        </td>
-                      </tr>
-                    ) : payouts.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="px-4 py-6 text-zinc-500">
-                          No payout activity yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      payouts.map((payout) => {
-                        const operationalSignals = sellerOperationalSignals({
-                          status: payout.status,
-                          destinationStatus: payout.destinationStatus,
-                          retryAllowed: payout.retryAllowed,
-                          manualReviewPending: payout.manualReviewPending,
-                          verificationBlockers: payout.verificationBlockers,
-                        });
-                        return (
-                          <tr key={payout.id} className="align-top">
-                            <td className="px-4 py-4">
-                              <div className="space-y-2">
-                                <PayoutStatusBadge status={payout.status} />
-                                <div className="text-xs font-semibold text-zinc-600">
-                                  {getSellerPayoutStatusLabel(payout.status)}
-                                </div>
-                                {payout.status === "held" ? (
-                                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
-                                    <div>Payout paused for review</div>
-                                    <div>Seller is waiting on the next action</div>
-                                  </div>
-                                ) : null}
+                  ) : payouts.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                        No payout activity yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    payouts.map((payout) => {
+                      const operationalSignals = sellerOperationalSignals({
+                        status: payout.status,
+                        destinationStatus: payout.destinationStatus,
+                        retryAllowed: payout.retryAllowed,
+                        manualReviewPending: payout.manualReviewPending,
+                        verificationBlockers: payout.verificationBlockers,
+                      });
+
+                      return (
+                        <tr key={payout.id} className="align-top">
+                          <td className="px-4 py-4">
+                            <div className="space-y-2">
+                              <PayoutStatusBadge status={payout.status} />
+                              <div className="text-xs font-semibold text-zinc-600">
+                                {getSellerPayoutStatusLabel(payout.status)}
                               </div>
-                            </td>
-                            <td className="px-4 py-4 text-zinc-700">
-                              <div className="font-bold text-zinc-900">
-                                {money(
-                                  Number(
-                                    payout.netAmount ?? payout.amount ?? 0,
-                                  ),
-                                  payout.currency,
-                                )}
-                              </div>
-                              {payout.grossAmount !== null &&
-                              payout.grossAmount !== undefined ? (
-                                <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
-                                  <div className="flex justify-between gap-3">
-                                    <span>Gross</span>
-                                    <span>
-                                      {money(
-                                        Number(payout.grossAmount || 0),
-                                        payout.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between gap-3">
-                                    <span>Platform commission</span>
-                                    <span>
-                                      -
-                                      {money(
-                                        Number(payout.platformFeeAmount || 0),
-                                        payout.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between gap-3">
-                                    <span>Reserve</span>
-                                    <span>
-                                      -
-                                      {money(
-                                        Number(payout.reserveAmount || 0),
-                                        payout.currency,
-                                      )}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
-                                    <span>Net</span>
-                                    <span>
-                                      {money(
-                                        Number(payout.netAmount || payout.amount || 0),
-                                        payout.currency,
-                                      )}
-                                    </span>
-                                  </div>
+                              {payout.status === "held" ? (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800">
+                                  <div>Payout paused for review</div>
+                                  <div>Seller is waiting on the next action</div>
                                 </div>
                               ) : null}
-                            </td>
-                            <td className="px-4 py-4 text-zinc-600">
-                              {payout.orderId || payout.escrowId || "—"}
-                            </td>
-                            <td className="px-4 py-4 text-zinc-600">
-                              <div className="space-y-1">
-                                {operationalSignals.length === 0 ? (
-                                  <span>—</span>
-                                ) : (
-                                  operationalSignals.map((message) => (
-                                    <div
-                                      key={`${payout.id}-${message}`}
-                                      className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold"
-                                    >
-                                      {message}
-                                    </div>
-                                  ))
-                                )}
-                                <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
-                                  {getSellerPayoutStatusDetail(payout.status)}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-zinc-700">
+                            <div className="font-bold text-zinc-900">
+                              {money(Number(payout.netAmount ?? payout.amount ?? 0), payout.currency)}
+                            </div>
+                            {payout.grossAmount !== null && payout.grossAmount !== undefined ? (
+                              <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
+                                <div className="flex justify-between gap-3">
+                                  <span>Gross</span>
+                                  <span>{money(Number(payout.grossAmount || 0), payout.currency)}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                  <span>Platform commission</span>
+                                  <span>-{money(Number(payout.platformFeeAmount || 0), payout.currency)}</span>
+                                </div>
+                                <div className="flex justify-between gap-3">
+                                  <span>Reserve</span>
+                                  <span>-{money(Number(payout.reserveAmount || 0), payout.currency)}</span>
+                                </div>
+                                <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
+                                  <span>Net</span>
+                                  <span>{money(Number(payout.netAmount || payout.amount || 0), payout.currency)}</span>
                                 </div>
                               </div>
-                            </td>
-                            <td className="px-4 py-4 text-zinc-500">
-                              {formatDate(payout.updatedAt)}
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                            ) : null}
+                          </td>
+                          <td className="px-4 py-4 text-zinc-600">{payout.orderId || payout.escrowId || "—"}</td>
+                          <td className="px-4 py-4 text-zinc-600">
+                            <div className="space-y-1">
+                              {operationalSignals.length === 0 ? (
+                                <span>—</span>
+                              ) : (
+                                operationalSignals.map((message) => (
+                                  <div
+                                    key={`${payout.id}-${message}`}
+                                    className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold"
+                                  >
+                                    {message}
+                                  </div>
+                                ))
+                              )}
+                              <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-xs font-semibold">
+                                {getSellerPayoutStatusDetail(payout.status)}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-zinc-500">{formatDate(payout.updatedAt)}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
       </main>
+
       <ConfirmModal
         open={Boolean(removeTarget)}
         title="Remove payout destination"
         message="Are you sure you want to remove this payout destination?"
         cancelText="Cancel"
-        confirmText={
-          removeCountdown > 0
-            ? `Confirm (${removeCountdown}s)`
-            : "Confirm"
-        }
+        confirmText={removeCountdown > 0 ? `Confirm (${removeCountdown}s)` : "Confirm"}
         confirmDisabled={savingDestination || removeCountdown > 0}
         danger
         onCancel={() => setRemoveTarget(null)}
         onConfirm={() => void handleConfirmRemoveDestination()}
       />
-    </div>
-  );
-}
-
-function MiniStatus({
-  icon,
-  title,
-  text,
-}: {
-  icon: ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-      <div className="flex items-center gap-3">
-        <div className="rounded-xl border border-zinc-200 bg-white p-2 text-zinc-700 shadow-sm">
-          {icon}
-        </div>
-        <div>
-          <p className="text-sm font-black text-zinc-900">{title}</p>
-          <p className="mt-0.5 text-xs font-semibold leading-5 text-zinc-500">
-            {text}
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
