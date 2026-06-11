@@ -567,21 +567,28 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
     }
   });
 
-  app.get("/api/profile", requireAuth, (req, res) => {
-    const uid = req.user!.uid;
-    try {
-      const profile = db
-        .prepare(
-          "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
-        )
-        .get(uid);
-      if (!profile) return res.status(404).json({ error: "Profile not found" });
-      res.json(profile);
-    } catch (e: any) {
-      console.error("GET /api/profile error:", e);
-      res.status(500).json({ error: "Failed to load profile" });
-    }
-  });
+app.get("/api/profile", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+
+  try {
+    const email = req.user?.email ?? "";
+    const safeUniversity = "Default"; // replace with your real fallback if needed
+
+    await ensureSellerRowFromFirestore(uid, email, safeUniversity);
+
+    const profile = db
+      .prepare(
+        "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+      )
+      .get(uid);
+
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json(profile);
+  } catch (e: any) {
+    console.error("GET /api/profile error:", e);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
 
   app.put("/api/profile", requireAuth, async (req, res) => {
   const uid = req.user!.uid;
