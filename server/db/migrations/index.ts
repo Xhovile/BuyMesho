@@ -47,6 +47,20 @@ export function runMigrations() {
     console.warn("Listings video_url migration failed:", error);
   }
 
+  for (const [column, definition] of [
+    ["profile_picture", "TEXT"],
+    ["is_seller", "INTEGER NOT NULL DEFAULT 0"],
+  ] as const) {
+    try {
+      const columns = db.prepare("PRAGMA table_info(sellers)").all() as Array<{ name: string }>;
+      if (!columns.some((row) => row.name === column)) {
+        db.exec(`ALTER TABLE sellers ADD COLUMN ${column} ${definition}`);
+      }
+    } catch (error) {
+      console.warn(`Sellers column migration failed for ${column}:`, error);
+    }
+  }
+
   try {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
