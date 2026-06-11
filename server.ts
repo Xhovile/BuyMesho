@@ -878,20 +878,25 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
   }
 });
 
-  app.post("/api/listings", requireAuth, (req, res) => {
+  app.post("/api/listings", requireAuth, async (req, res) => {
   // ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
+  const email = req.user?.email ?? "";
+  const safeUniversity = "Default"; // replace with your real fallback if needed
 
-const seller = db
-  .prepare(`
-    SELECT is_verified, is_seller, is_suspended
-    FROM sellers
-    WHERE uid = ?
-  `)
-  .get(seller_uid) as
-    | { is_verified?: number; is_seller?: number; is_suspended?: number }
-    | undefined;
+  try {
+    await ensureSellerRowFromFirestore(seller_uid, email, safeUniversity);
 
+    const seller = db
+      .prepare(`
+        SELECT is_verified, is_seller, is_suspended
+        FROM sellers
+        WHERE uid = ?
+      `)
+      .get(seller_uid) as
+        | { is_verified?: number; is_seller?: number; is_suspended?: number }
+        | undefined;
+    
 if (!seller) {
   return res.status(404).json({ error: "Seller profile not found" });
 }
