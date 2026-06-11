@@ -39,6 +39,15 @@ export function runMigrations() {
   }
 
   try {
+    const columns = db.prepare("PRAGMA table_info(listings)").all() as Array<{ name: string }>;
+    if (!columns.some((row) => row.name === "video_url")) {
+      db.exec(`ALTER TABLE listings ADD COLUMN video_url TEXT`);
+    }
+  } catch (error) {
+    console.warn("Listings video_url migration failed:", error);
+  }
+
+  try {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
       ON listings (hard_delete_after)
