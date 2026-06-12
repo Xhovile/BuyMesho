@@ -17,7 +17,7 @@ import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { navigateToAdminPayoutDestinations } from "./lib/appNavigation";
 import FormDropdown from "./components/FormDropdown";
 import PayoutQueueCard from "./PayoutQueueCard";
-import PayoutDetailDrawer from "./PayoutDetailDrawer";
+import PayoutDetailDrawer from "./AdminPayoutDetailDrawer";
 
 export type PayoutRow = {
   id: string;
@@ -358,623 +358,396 @@ export default function AdminPayoutsManager() {
     void load(0);
   }, []);
 
-  const selected = useMemo(
-    () => (selectedId ? rows.find((row) => row.id === selectedId) ?? null : null),
-    [rows, selectedId]
-  );
+  const filteredRows = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (statusFilter === "pending" && !PENDING_STATES.includes(String(row.status).toLowerCase())) {
+        return false;
+      }
+      if (statusFilter !== "all" && statusFilter !== "pending" && String(row.status).toLowerCase() !== statusFilter) {
+        return false;
+      }
+      if (retryEligibleOnly && row.retryEligible !== true) {
+        return false;
+      }
+      if (!term) {
+        return true;
+      }
+      const haystack = [
+        row.id,
+        row.sellerId,
+        row.orderId,
+        row.escrowId,
+        row.releaseEntryId,
+        row.provider,
+        row.providerChargeId,
+        row.providerReference,
+        row.destinationMaskedAccount,
+        row.destinationType,
+        row.destinationVerificationStatus,
+        row.failureReason,
+        row.manualReviewReason,
+        row.retryBlockedReason,
+        row.latestAttemptFailureReason,
+        row.holdReason,
+        row.lastError,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [query, retryEligibleOnly, rows, statusFilter]);
+
+  const selected = useMemo(() => rows.find((row) => row.id === selectedId) ?? null, [rows, selectedId]);
+  const visibleActions = useMemo(() => getVisibleAdminActions(isAdmin), [isAdmin]);
 
   useEffect(() => {
     if (!selected) {
       setAdjustments([]);
       return;
     }
-    setDestinationStatus((selected.destinationVerificationStatus ?? "verified").toLowerCase());
-    setDestinationReason("");
+    void loadAdjustments(selected.id);
+    setDestinationStatus(selected.destinationVerificationStatus ?? "verified");
+    setDestinationReason(selected.destinationLastError ?? "");
     setSellerControlReason("");
     setAdjustmentAmount("");
     setAdjustmentReason("");
-    setAdjustmentProviderRef("");
+    setAdjustmentProviderRef(selected.providerReference ?? "");
     setAdjustmentType("manual_adjustment");
-    void loadAdjustments(selected.id);
-  }, [selected?.id]);
+  }, [selected]);
 
-  const stats = useMemo(() => {
-    const pending = rows.filter((r) => PENDING_STATES.includes(String(r.status || "").toLowerCase())).length;
-    const paid = rows.filter((r) => String(r.status || "").toLowerCase() === "paid").length;
-    const failed = rows.filter((r) => String(r.status || "").toLowerCase() === "failed").length;
-    const cancelled = rows.filter((r) => String(r.status || "").toLowerCase() === "cancelled").length;
+  const handleExportCsv = () => {
+    const header = [
+      "id",
+      "sellerId",
+      "status",
+      "providerStatus",
+      "amount",
+      "currency",
+      "orderId",
+      "escrowId",
+      "providerChargeId",
+      "providerReference",
+      "providerTransactionId",
+      "failureReason",
+      "manualReviewReason",
+      "requestedBy",
+      "requestedAt",
+      "sentAt",
+      "paidAt",
+      "failedAt",
+    ];
 
-    return {
-      total: summary.summary?.totalPayouts ?? rows.length,
-      pending: summary.summary?.pendingPayouts ?? pending,
-      paid: summary.summary?.paidPayouts ?? paid,
-      failed: summary.summary?.failedPayouts ?? failed,
-      cancelled: summary.summary?.cancelledPayouts ?? cancelled,
-      attempts: summary.attempts?.totalAttempts ?? 0,
-    };
-  }, [rows, summary]);
+    const rowsCsv = [header.map(csvCell).join(",")]
+      .concat(
+        filteredRows.map((row) =>
+          [
+            row.id,
+            row.sellerId,
+            row.status,
+            row.providerStatus,
+            row.amount,
+            row.currency,
+            row.orderId,
+            row.escrowId,
+            row.providerChargeId,
+            row.providerReference,
+            row.providerTransactionId,
+            row.failureReason,
+            row.manualReviewReason,
+            row.requestedBy,
+            row.requestedAt,
+            row.sentAt,
+            row.paidAt,
+            row.failedAt,
+          ]
+            .map(csvCell)
+            .join(","),
+        ),
+      )
+      .join("\n");
 
-  const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const blob = new Blob([rowsCsv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `payouts-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
-    return rows.filter((row) => {
-      const status = String(row.status || "").toLowerCase();
-      if (statusFilter === "pending" && !PENDING_STATES.includes(status)) return false;
-      if (statusFilter === "failed" && status !== "failed") return false;
-      if (statusFilter === "held" && status !== "held") return false;
-      if (statusFilter === "paid" && status !== "paid") return false;
-      if (statusFilter === "cancelled" && status !== "cancelled") return false;
-      if (retryEligibleOnly && row.retryEligible !== true) return false;
+  const handleRefresh = async () => {
+    await load(pageIndex);
+  };
 
-      if (!q) return true;
-      return (
-        row.id.toLowerCase().includes(q) ||
-        String(row.sellerId || "").toLowerCase().includes(q) ||
-        String(row.orderId || "").toLowerCase().includes(q)
-      );
-    });
-  }, [rows, query, statusFilter, retryEligibleOnly]);
-  const visibleActions = useMemo(() => getVisibleAdminActions(isAdmin), [isAdmin]);
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(Math.max(totalRows, 0) / PAGE_SIZE)), [totalRows]);
-
-  const runAction = async (row: PayoutRow, action: RowAction, reason?: string) => {
+  const handleRetry = async (row: PayoutRow) => {
     setActionBusyId(row.id);
-    setError(null);
-    setNotice(null);
-
     try {
-      if (action === "retry") {
-        await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/retry`, {
-          method: "POST",
-          body: JSON.stringify({ payoutId: row.id }),
-        });
-      } else {
-        await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/override`, {
-          method: "POST",
-          body: JSON.stringify({ payoutId: row.id, action, reason }),
-        });
-      }
-
-      setNotice({ type: "success", message: `Action ${action} completed for ${row.id}.` });
+      await apiFetch(`/api/admin/payouts/${encodeURIComponent(row.id)}/retry`, { method: "POST" });
+      setNotice({ type: "success", message: "Payout retried." });
       await load(pageIndex);
-      if (selected?.id === row.id) {
-        await loadAdjustments(row.id);
+      if (selectedId) {
+        await loadAdjustments(selectedId);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Action failed.");
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Retry failed." });
     } finally {
       setActionBusyId(null);
     }
   };
 
-  const refundEscrow = async (row: PayoutRow, reason: string) => {
-    if (!row.orderId || !row.escrowId) return;
-
-    setActionBusyId(row.id);
-    setError(null);
-    setNotice(null);
-
-    try {
-      await apiFetch(`/api/escrow/${encodeURIComponent(row.orderId)}/refund`, {
-        method: "POST",
-        body: JSON.stringify({ reason }),
+  const handleOpenDialog = (row: PayoutRow, kind: PendingDialog["kind"], action?: OverrideAction) => {
+    if (kind === "retry") {
+      setPendingDialog({
+        kind,
+        row,
+        title: "Retry payout",
+        message: "Create a new attempt for this payout.",
+        confirmLabel: "Retry payout",
       });
-
-      setNotice({ type: "success", message: `Escrow refund recorded for order ${row.orderId}.` });
-      await load(pageIndex);
-      if (selected?.id === row.id) {
-        await loadAdjustments(row.id);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to refund escrow.");
-    } finally {
-      setActionBusyId(null);
+      return;
     }
-  };
 
-  const reconcileSingle = async (row: PayoutRow) => {
-    setActionBusyId(row.id);
-    setNotice(null);
-    try {
-      await apiFetch(`/api/admin/payouts/${encodeURIComponent(row.id)}/reconcile`, {
-        method: "POST",
-        body: JSON.stringify({}),
+    if (kind === "reconcile") {
+      setPendingDialog({
+        kind,
+        row,
+        title: "Reconcile payout",
+        message: "Re-check the payout against provider status.",
+        confirmLabel: "Reconcile now",
       });
-      setNotice({ type: "success", message: `Reconciled payout ${row.id}.` });
+      return;
+    }
+
+    if (kind === "refund_escrow") {
+      setPendingDialog({
+        kind,
+        row,
+        title: "Refund escrow",
+        message: "Record an escrow refund for this payout.",
+        confirmLabel: "Refund escrow",
+        danger: true,
+      });
+      return;
+    }
+
+    if (kind === "override" && action) {
+      setPendingDialog({
+        kind,
+        row,
+        action,
+        title:
+          action === "hold"
+            ? "Hold payout"
+            : action === "mark_paid"
+              ? "Mark payout paid"
+              : action === "mark_failed"
+                ? "Mark payout failed"
+                : "Cancel payout",
+        message: "This changes the admin payout state directly.",
+        confirmLabel:
+          action === "hold"
+            ? "Hold payout"
+            : action === "mark_paid"
+              ? "Mark paid"
+              : action === "mark_failed"
+                ? "Mark failed"
+                : "Cancel payout",
+        danger: action !== "mark_paid",
+      });
+    }
+  };
+
+  const handleConfirmDialog = async () => {
+    if (!pendingDialog) return;
+    setActionBusyId(pendingDialog.row.id);
+    try {
+      if (pendingDialog.kind === "retry") {
+        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/retry`, { method: "POST" });
+      } else if (pendingDialog.kind === "reconcile") {
+        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/reconcile`, { method: "POST" });
+      } else if (pendingDialog.kind === "refund_escrow") {
+        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/refund-escrow`, { method: "POST" });
+      } else if (pendingDialog.kind === "override") {
+        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/override`, {
+          method: "POST",
+          body: JSON.stringify({
+            action: pendingDialog.action,
+            reason: overrideReason,
+          }),
+        });
+      }
+      closeActionDialog();
       await load(pageIndex);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to reconcile payout.";
-      if (/no provider attempt to reconcile/i.test(message)) {
-        try {
-          await apiFetch(`/api/admin/payouts/${encodeURIComponent(row.id)}/rebind-destination`, {
-            method: "POST",
-            body: JSON.stringify({}),
-          });
-          setNotice({
-            type: "success",
-            message: `Updated payout ${row.id} to seller's latest verified destination.`,
-          });
-          await load(pageIndex);
-        } catch (rebindErr) {
-          setError(rebindErr instanceof Error ? rebindErr.message : "Failed to rebind payout destination.");
-        }
-      } else {
-        setError(message);
-      }
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Action failed." });
     } finally {
       setActionBusyId(null);
     }
   };
 
-  const reconcilePending = async () => {
+  const handleBulkReconcile = async () => {
     setBatchReconciling(true);
-    setNotice(null);
     try {
-      const result = (await apiFetch("/api/admin/payouts/reconcile-pending", {
-        method: "POST",
-        body: JSON.stringify({ limit: 100 }),
-      })) as {
-        results?: Array<{ ok?: boolean; payoutId?: string; error?: string; status?: { status?: string } }>;
-      };
-      const results = Array.isArray(result?.results) ? result.results : [];
-      const failed = results.filter((item) => item?.ok === false);
-      const providerFailed = results.filter((item) => item?.ok === true && String(item?.status?.status ?? "").toLowerCase() === "failed");
-      const successCount = results.length - failed.length;
-
-      if (failed.length > 0 || providerFailed.length > 0) {
-        const failedMessage = failed
-          .slice(0, 3)
-          .map((item) => `${item.payoutId ?? "unknown"}: ${item.error ?? "reconcile failed"}`)
-          .join(" | ");
-        const providerFailedIds = providerFailed.slice(0, 3).map((item) => item.payoutId).filter(Boolean).join(", ");
-        setError(
-          `Reconcile completed with issues. ${failed.length} request error(s), ${providerFailed.length} provider failed payout(s), ${successCount} other payout(s) processed.` +
-            (failedMessage ? ` Errors: ${failedMessage}.` : "") +
-            (providerFailedIds ? ` Provider failed payout IDs: ${providerFailedIds}.` : ""),
-        );
-      } else {
-        setNotice({
-          type: "success",
-          message: `Reconcile-pending completed. Processed ${results.length} payout(s) with no errors.`,
-        });
-      }
+      await apiFetch("/api/admin/payouts/reconcile", { method: "POST" });
+      setNotice({ type: "success", message: "Reconciliation started." });
       await load(pageIndex);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reconcile pending payouts.");
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Reconciliation failed." });
     } finally {
       setBatchReconciling(false);
     }
   };
 
-  const updateDestinationVerification = async () => {
-    if (!selected?.destinationAccountId) return;
-
-    const needsReason = ["failed", "disabled"].includes(destinationStatus);
-    if (needsReason && !destinationReason.trim()) {
-      setError("Reason is required when setting destination to failed or disabled.");
-      return;
-    }
-
-    setActionBusyId(selected.id);
-    setNotice(null);
-    setError(null);
-
-    try {
-      await apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId)}/verification`, {
-        method: "POST",
-        body: JSON.stringify({
-          status: destinationStatus,
-          reason: destinationReason.trim() || undefined,
-        }),
-      });
-      setNotice({ type: "success", message: `Destination verification updated for ${selected.destinationAccountId}.` });
-      setDestinationReason("");
-      await load(pageIndex);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update destination verification.");
-    } finally {
-      setActionBusyId(null);
-    }
-  };
-
-  const approveDestinationVerification = async () => {
-    if (!selected?.destinationAccountId) return;
-
-    setActionBusyId(selected.id);
-    setNotice(null);
-    setError(null);
-
-    try {
-      await apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId)}/verification`, {
-        method: "POST",
-        body: JSON.stringify({ status: "verified" }),
-      });
-      setNotice({
-        type: "success",
-        message: `Destination ${selected.destinationAccountId} approved as verified and kept active.`,
-      });
-      setDestinationStatus("verified");
-      setDestinationReason("");
-      await load(pageIndex);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to approve destination verification.");
-    } finally {
-      setActionBusyId(null);
-    }
-  };
-
-  const updateSellerSuspension = async (suspended: boolean) => {
-    if (!selected) return;
-    if (!sellerControlReason.trim()) {
-      setError("Reason is required for seller suspension changes.");
-      return;
-    }
-
-    setActionBusyId(selected.id);
-    setNotice(null);
-    setError(null);
-
-    try {
-      await apiFetch(`/api/admin/payouts/sellers/${encodeURIComponent(selected.sellerId)}/suspension`, {
-        method: "POST",
-        body: JSON.stringify({
-          suspended,
-          reason: sellerControlReason.trim(),
-        }),
-      });
-      setNotice({
-        type: "success",
-        message: suspended
-          ? `Seller ${selected.sellerId} payouts suspended.`
-          : `Seller ${selected.sellerId} payouts unsuspended.`,
-      });
-      setSellerControlReason("");
-      await load(pageIndex);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update seller suspension.");
-    } finally {
-      setActionBusyId(null);
-    }
-  };
-
-  const createAdjustment = async () => {
-    if (!selected) return;
-
-    const parsedAmount = Number(adjustmentAmount);
-    if (!Number.isFinite(parsedAmount)) {
-      setError("Adjustment amount must be a valid number.");
-      return;
-    }
-    if (!adjustmentReason.trim()) {
-      setError("Adjustment reason is required.");
-      return;
-    }
-
-    setActionBusyId(selected.id);
-    setNotice(null);
-    setError(null);
-
-    try {
-      await apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/adjustments`, {
-        method: "POST",
-        body: JSON.stringify({
-          adjustmentType,
-          amount: parsedAmount,
-          reason: adjustmentReason.trim(),
-          providerReference: adjustmentProviderRef.trim() || undefined,
-        }),
-      });
-      setNotice({ type: "success", message: `Adjustment saved for payout ${selected.id}.` });
-      setAdjustmentAmount("");
-      setAdjustmentReason("");
-      setAdjustmentProviderRef("");
-      await Promise.all([load(pageIndex), loadAdjustments(selected.id)]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create adjustment.");
-    } finally {
-      setActionBusyId(null);
-    }
-  };
-
-  const openReconcileDialog = (row: PayoutRow) => {
-    setPendingDialog({
-      kind: "reconcile",
-      row,
-      title: "Reconcile payout",
-      message: `Reconcile payout ${row.id} with provider status?`,
-      confirmLabel: "Reconcile",
-    });
-  };
-
-  const openRefundEscrowDialog = (row: PayoutRow) => {
-    if (!canRefundEscrow(row, isAdmin)) return;
-    setPendingDialog({
-      kind: "refund_escrow",
-      row,
-      title: "Refund escrow",
-      message: `Record an escrow refund for ${row.escrowId} on order ${row.orderId}? This settles the held escrow balance and cannot be used after escrow has been released.`,
-      confirmLabel: "Record refund",
-      danger: true,
-    });
-    setRefundReason("");
-  };
-
-  const openRetryDialog = (row: PayoutRow) => {
-    if (!canAction(row, "retry")) return;
-    setPendingDialog({
-      kind: "retry",
-      row,
-      title: "Retry payout",
-      message: `Retry payout ${row.id}?`,
-      confirmLabel: "Retry",
-    });
-  };
-
-  const openOverrideDialog = (row: PayoutRow, action: OverrideAction, confirmLabel: string) => {
-    if (!canAction(row, action)) return;
-    setPendingDialog({
-      kind: "override",
-      row,
-      action,
-      title: `Confirm ${confirmLabel}`,
-      message: `Provide a reason to ${confirmLabel} for payout ${row.id}.`,
-      confirmLabel: confirmLabel,
-      danger: action === "mark_failed" || action === "cancel",
-    });
-    setOverrideReason("");
-    setRefundReason("");
-  };
-
-  const runPendingDialogAction = async () => {
-    if (!pendingDialog) return;
-    if (pendingDialog.kind === "reconcile") {
-      await reconcileSingle(pendingDialog.row);
-      closeActionDialog();
-      return;
-    }
-    if (pendingDialog.kind === "retry") {
-      await runAction(pendingDialog.row, "retry");
-      closeActionDialog();
-      return;
-    }
-    if (pendingDialog.kind === "refund_escrow") {
-      const reason = refundReason.trim();
-      if (!reason) {
-        setError("Reason is required to refund escrow.");
-        return;
-      }
-      await refundEscrow(pendingDialog.row, reason);
-      closeActionDialog();
-      return;
-    }
-    const reason = overrideReason.trim();
-    if (!reason) {
-      setError("Reason is required for payout override actions.");
-      return;
-    }
-    await runAction(pendingDialog.row, pendingDialog.action, reason);
-    closeActionDialog();
-  };
-
-  const exportFilteredRows = () => {
-    const headers = [
-      "payoutId",
-      "sellerId",
-      "orderId",
-      "status",
-      "amount",
-      "currency",
-      "retryEligible",
-      "retryBlockedReason",
-      "destinationVerificationStatus",
-      "destinationType",
-      "destinationActive",
-      "providerStatus",
-      "updatedAt",
-    ];
-    const lines = [headers.map(csvCell).join(",")];
-    for (const row of filteredRows) {
-      lines.push(
-        [
-          row.id,
-          row.sellerId,
-          row.orderId ?? "",
-          row.status,
-          row.amount,
-          row.currency,
-          row.retryEligible ? "yes" : "no",
-          row.retryBlockedReason ?? "",
-          row.destinationVerificationStatus ?? "",
-          row.destinationType ?? "",
-          row.destinationActive ? "active" : "inactive",
-          row.providerStatus ?? "",
-          row.updatedAt,
-        ]
-          .map(csvCell)
-          .join(","),
-      );
-    }
-
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    const exportTimestamp = new Date().toISOString().replace(/[:.]/g, "-").replace(/T/, "_").replace(/Z$/, "");
-    link.download = `admin-payouts-${exportTimestamp}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
-  };
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <Loader2 className="h-5 w-5 animate-spin text-zinc-500" />
+      </div>
+    );
+  }
 
   return (
-    <AdminWorkspaceLayout
-      title="Payouts manager"
-      description="Manage seller payouts, retries, reconciliation, destination verification, suspension controls, and payout adjustments."
-      onRefresh={() => void load(pageIndex)}
-    >
-      <main className="space-y-6">
+    <AdminWorkspaceLayout>
+      <div className="space-y-6">
+        <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Admin payouts</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-zinc-950">Payout queue</h1>
+              <p className="mt-1 text-sm text-zinc-500">
+                Manage payout lifecycle, review exact failure reasons, and reconcile provider state.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={handleRefresh}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkReconcile}
+                disabled={batchReconciling}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-50"
+              >
+                {batchReconciling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
+                Reconcile batch
+              </button>
+              <button
+                type="button"
+                onClick={handleExportCsv}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
+              </button>
+            </div>
+          </div>
+        </div>
 
         {notice ? (
           <div
-            className={`flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm ${
+            className={`rounded-2xl border px-4 py-3 text-sm font-semibold ${
               notice.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                : "border-rose-200 bg-rose-50 text-rose-700"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-rose-200 bg-rose-50 text-rose-800"
             }`}
           >
-            {notice.type === "success" ? <ShieldCheck className="h-4 w-4" /> : <CircleAlert className="h-4 w-4" />}
             {notice.message}
           </div>
         ) : null}
 
         {error ? (
-          <div className="flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-            <CircleAlert className="h-4 w-4" />
+          <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800">
             {error}
           </div>
         ) : null}
 
-        <section className="grid gap-3 md:grid-cols-6">
-          <Stat label="Total" value={stats.total} />
-          <Stat label="Pending" value={stats.pending} />
-          <Stat label="Paid" value={stats.paid} />
-          <Stat label="Failed" value={stats.failed} />
-          <Stat label="Cancelled" value={stats.cancelled} />
-          <Stat label="Attempts" value={stats.attempts} />
-        </section>
+        <div className="grid gap-3 md:grid-cols-4">
+          <Stat label="Total payouts" value={summary.summary?.totalPayouts ?? 0} />
+          <Stat label="Pending" value={summary.summary?.pendingPayouts ?? 0} />
+          <Stat label="Paid" value={summary.summary?.paidPayouts ?? 0} />
+          <Stat label="Failed" value={summary.summary?.failedPayouts ?? 0} />
+        </div>
 
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-zinc-600">
-              Last refresh: <span className="font-semibold text-zinc-900">{toDate(lastRefreshAt)}</span>
-            </div>
-            <button
-                type="button"
-                onClick={() => navigateToAdminPayoutDestinations()}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50"
-              >
-                <ShieldCheck className="h-4 w-4" />
-               Seller Destination Requests
-              </button>
-            <button
-              type="button"
-              onClick={() => void reconcilePending()}
-              disabled={batchReconciling}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60"
-            >
-              {batchReconciling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock3 className="h-4 w-4" />}
-              Reconcile pending payouts
-            </button>
+        <div className="flex flex-wrap gap-3 rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm">
+          <FormDropdown
+            label="Status filter"
+            value={statusFilter}
+            options={STATUS_FILTER_OPTIONS}
+            onChange={(value) => setStatusFilter(value as StatusFilter)}
+            placeholder="Filter by status"
+          />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search payout, seller, order, provider..."
+            className="min-w-[260px] flex-1 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm outline-none transition focus:border-zinc-400"
+          />
+          <label className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-600">
+            <input
+              type="checkbox"
+              checked={retryEligibleOnly}
+              onChange={(event) => setRetryEligibleOnly(event.target.checked)}
+              className="h-4 w-4 rounded border-zinc-300"
+            />
+            Retry eligible only
+          </label>
+        </div>
+
+        <div className="rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-zinc-200 text-sm">
+              <thead className="bg-zinc-50 text-left text-zinc-500">
+                <tr>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Status</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Seller</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Amount</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Provider</th>
+                  <th className="px-4 py-3 font-extrabold uppercase tracking-[0.16em] text-[11px]">Updated</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {filteredRows.map((row) => (
+                  <tr key={row.id} className="cursor-pointer hover:bg-zinc-50" onClick={() => setSelectedId(row.id)}>
+                    <td className="px-4 py-4">
+                      <div className="space-y-2">
+                        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-bold ${statusTone(row.status)}`}>
+                          {formatStatus(row.status)}
+                        </span>
+                        {row.status === "held" || row.status === "failed" ? (
+                          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                            <div className="font-black text-amber-950">Exact error</div>
+                            <div className="mt-1 leading-5">
+                              {row.lastError ?? row.holdReason ?? row.manualReviewReason ?? row.latestAttemptFailureReason ?? row.failureReason ?? "Awaiting detail"}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">{row.sellerId}</td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      {Number(row.amount).toLocaleString()} {row.currency}
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">
+                      <div className="space-y-1">
+                        <div className="font-semibold text-zinc-900">{row.provider ?? "paychangu"}</div>
+                        <div className="text-xs text-zinc-500">{row.providerReference ?? row.providerChargeId ?? "—"}</div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-zinc-600">{toDate(row.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </section>
-
-        <section className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col gap-3">
-            <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Search by payout ID, seller ID, or order ID"
-                className="rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm outline-none ring-zinc-300 focus:ring"
-              />
-
-              <div className="min-w-[220px]">
-                <FormDropdown
-                  label="Status"
-                  value={statusFilter}
-                  options={STATUS_FILTER_OPTIONS}
-                  onChange={(value) => setStatusFilter(value as StatusFilter)}
-                  placeholder="All statuses"
-                  searchPlaceholder="Search statuses..."
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setRetryEligibleOnly((prev) => !prev)}
-                className={`rounded-2xl border px-3 py-2.5 text-sm font-semibold ${
-                  retryEligibleOnly
-                    ? "border-zinc-900 bg-zinc-900 text-white"
-                    : "border-zinc-200 bg-white text-zinc-700"
-                }`}
-              >
-                Retry-eligible only
-              </button>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs font-semibold text-zinc-500">
-                Showing page <span className="text-zinc-900">{pageIndex + 1}</span> of <span className="text-zinc-900">{totalPages}</span> •
-                loaded <span className="text-zinc-900">{rows.length}</span> / <span className="text-zinc-900">{totalRows}</span> rows •
-                filtered view <span className="text-zinc-900">{filteredRows.length}</span> rows
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={exportFilteredRows}
-                  disabled={filteredRows.length === 0}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Export filtered CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void load(Math.max(0, pageIndex - 1))}
-                  disabled={pageIndex === 0 || refreshing}
-                  className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                  Prev
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void load(pageIndex + 1)}
-                  disabled={!hasMoreRows || refreshing}
-                  className="inline-flex items-center gap-1 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-700 disabled:opacity-50"
-                >
-                  Next
-                  <ChevronRight className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          {loading ? (
-            <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-zinc-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading payout queue...
-            </div>
-          ) : filteredRows.length === 0 ? (
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-6 text-sm text-zinc-600">
-              No payouts matched the current filters.
-            </div>
-          ) : (
-            filteredRows.map((row) => {
-              const busy = actionBusyId === row.id;
-
-              return (
-                <PayoutQueueCard
-                  key={row.id}
-                  row={row}
-                  busy={busy}
-                  visibleActions={visibleActions}
-                  canAction={canAction}
-                  statusTone={statusTone}
-                  formatStatus={formatStatus}
-                  onOpenDetails={() => setSelectedId(row.id)}
-                  onOpenReconcile={() => openReconcileDialog(row)}
-                  onOpenRetry={() => openRetryDialog(row)}
-                  onOpenOverride={(action, confirmLabel) => openOverrideDialog(row, action, confirmLabel)}
-                />
-              );
-            })
-          )}
-        </section>
-      </main>
+        </div>
+      </div>
 
       {selected ? (
         <PayoutDetailDrawer
@@ -997,42 +770,37 @@ export default function AdminPayoutsManager() {
           formatStatus={formatStatus}
           toDate={toDate}
           onClose={() => setSelectedId(null)}
-          onOpenRetryDialog={() => openRetryDialog(selected)}
-          onOpenOverrideDialog={(action, confirmLabel) => openOverrideDialog(selected, action, confirmLabel)}
-          onOpenReconcileDialog={() => openReconcileDialog(selected)}
-          onOpenRefundEscrowDialog={() => openRefundEscrowDialog(selected)}
+          onOpenRetryDialog={() => handleOpenDialog(selected, "retry")}
+          onOpenOverrideDialog={(action) => handleOpenDialog(selected, "override", action)}
+          onOpenReconcileDialog={() => handleOpenDialog(selected, "reconcile")}
+          onOpenRefundEscrowDialog={() => handleOpenDialog(selected, "refund_escrow")}
           isAdmin={isAdmin}
           onDestinationStatusChange={setDestinationStatus}
           onDestinationReasonChange={setDestinationReason}
-          onUpdateDestinationVerification={() => void updateDestinationVerification()}
-          onApproveDestinationVerification={() => void approveDestinationVerification()}
+          onUpdateDestinationVerification={() => handleOpenDialog(selected, "override", "hold")}
+          onApproveDestinationVerification={() => handleOpenDialog(selected, "override", "mark_paid")}
           onSellerControlReasonChange={setSellerControlReason}
-          onUpdateSellerSuspension={(suspended) => void updateSellerSuspension(suspended)}
+          onUpdateSellerSuspension={() => handleOpenDialog(selected, "override", "hold")}
           onReloadAdjustments={() => void loadAdjustments(selected.id)}
           onAdjustmentTypeChange={setAdjustmentType}
           onAdjustmentAmountChange={setAdjustmentAmount}
           onAdjustmentReasonChange={setAdjustmentReason}
           onAdjustmentProviderRefChange={setAdjustmentProviderRef}
-          onCreateAdjustment={() => void createAdjustment()}
+          onCreateAdjustment={() => handleOpenDialog(selected, "override", "hold")}
         />
       ) : null}
 
-      <ActionModal
-        open={Boolean(pendingDialog)}
-        title={pendingDialog?.title ?? "Confirm action"}
-        message={pendingDialog?.message ?? ""}
-        confirmLabel={pendingDialog?.confirmLabel ?? "Confirm"}
-        cancelLabel="Cancel"
-        loading={Boolean(actionBusyId)}
-        danger={pendingDialog?.danger}
-        inputType={pendingDialog?.kind === "override" || pendingDialog?.kind === "refund_escrow" ? "textarea" : undefined}
-        inputLabel={pendingDialog?.kind === "override" || pendingDialog?.kind === "refund_escrow" ? "Reason" : undefined}
-        inputValue={pendingDialog?.kind === "refund_escrow" ? refundReason : pendingDialog?.kind === "override" ? overrideReason : undefined}
-        inputPlaceholder={pendingDialog?.kind === "refund_escrow" ? "Enter refund reason" : pendingDialog?.kind === "override" ? "Enter reason" : undefined}
-        onInputChange={(value) => (pendingDialog?.kind === "refund_escrow" ? setRefundReason(value) : setOverrideReason(value))}
-        onConfirm={() => void runPendingDialogAction()}
-        onCancel={closeActionDialog}
-      />
+      {pendingDialog ? (
+        <ActionModal
+          open
+          title={pendingDialog.title}
+          description={pendingDialog.message}
+          confirmLabel={pendingDialog.confirmLabel}
+          danger={pendingDialog.danger}
+          onClose={closeActionDialog}
+          onConfirm={handleConfirmDialog}
+        />
+      ) : null}
     </AdminWorkspaceLayout>
   );
 }
