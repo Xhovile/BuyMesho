@@ -49,6 +49,7 @@ export function runMigrations() {
 
   for (const [column, definition] of [
     ["profile_picture", "TEXT"],
+    ["university", "TEXT"],
     ["is_seller", "INTEGER NOT NULL DEFAULT 0"],
   ] as const) {
     try {
