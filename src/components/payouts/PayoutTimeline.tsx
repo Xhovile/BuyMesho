@@ -40,13 +40,14 @@ function stepIcon(state: StepState) {
 export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
   const latest = getLatestPayout(payouts);
   const status = String(latest?.status ?? "eligible").toLowerCase();
-  const failureMeta = getSellerPayoutFailureMeta(latest?.lastFailureReason ?? null);
+  const failureReasonSource = latest?.lastFailureReason ?? latest?.holdReason ?? null;
+  const failureMeta = getSellerPayoutFailureMeta(failureReasonSource);
   const title = failureMeta?.label ?? getSellerPayoutStatusLabel(status);
   const detail = failureMeta?.detail ?? getSellerPayoutStatusDetail(status);
   const manualReview = Boolean(latest?.manualReviewReason);
   const signals = sellerOperationalSignals({
     status,
-    failureReasonCode: latest?.lastFailureReason ?? null,
+    failureReasonCode: failureReasonSource,
     retryAllowed: latest?.retryEligible ?? null,
     manualReviewPending: manualReview,
     destinationStatus: latest?.destinationVerificationStatus ?? null,
@@ -145,7 +146,24 @@ export default function PayoutTimeline({ payouts }: PayoutTimelineProps) {
                 <span className="font-bold text-current">Next step:</span> Waiting for admin review
               </div>
             ) : null}
+            {failureMeta ? (
+              <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
+                <span className="font-bold text-current">Exact issue:</span> {failureMeta.label}
+                <div className="mt-1 text-xs leading-5 text-current/70">{failureMeta.detail}</div>
+              </div>
+            ) : blocked ? (
+              <div className="rounded-xl bg-white/70 px-3 py-2 ring-1 ring-black/5 sm:col-span-2">
+                <span className="font-bold text-current">Exact issue:</span> {detail}
+              </div>
+            ) : null}
           </div>
+
+          {failureReasonSource ? (
+            <div className="mt-3 rounded-2xl border border-current/10 bg-white/60 px-3 py-2 text-xs font-semibold text-current/70">
+              <span className="font-bold text-current/85">Reason code / source:</span>{" "}
+              {failureReasonSource}
+            </div>
+          ) : null}
 
           {signals.length > 0 ? (
             <div className="mt-3 flex flex-wrap gap-2">
