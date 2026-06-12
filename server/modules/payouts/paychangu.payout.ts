@@ -836,3 +836,9 @@ export function normalizePaychanguPayoutStatus(
 ): PayChanguPayoutExecutionStatus {
   return normalizeProviderStatus(status);
 }
+
+export function normalizePaychanguPayoutStatus(
+  status: string | undefined,
+): PayChanguPayoutExecutionStatus {
+  return normalizeProviderStatus(status);
+}
