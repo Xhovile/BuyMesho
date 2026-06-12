@@ -135,16 +135,14 @@ function resolveConfig(config: PayChanguPayoutConfig = {}): ResolvedPayChanguPay
   );
 
   return {
-    paychanguSecretKey:
-      config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY ?? '',
-    paychanguWebhookSecret:
-      config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET ?? '',
+    paychanguSecretKey: config.paychanguSecretKey ?? process.env.PAYCHANGU_SECRET_KEY ?? '',
+    paychanguWebhookSecret: config.paychanguWebhookSecret ?? process.env.PAYCHANGU_WEBHOOK_SECRET ?? '',
     paychanguBaseUrl: baseUrl,
     paychanguPayoutCreatePath: trimPath(
       config.paychanguPayoutCreatePath ?? process.env.PAYCHANGU_PAYOUT_CREATE_PATH ?? '/direct-charge/payouts/initialize',
     ),
     paychanguPayoutStatusPath: trimPath(
-      config.paychanguPayoutStatusPath ?? process.env.PAYCHANGU_PAYOUT_STATUS_PATH ?? '/direct-charge/payouts/{charge_id}/details',
+      config.paychanguPayoutStatusPath ?? process.env.PAYCHANGU_PAYOUT_STATUS_PATH ?? '/direct-charge/payouts',
     ),
     paychanguPayoutBalancePath: trimPath(
       config.paychanguPayoutBalancePath ?? process.env.PAYCHANGU_PAYOUT_BALANCE_PATH ?? '/wallet-balance',
@@ -246,17 +244,14 @@ function extractProviderTransactionId(payload: unknown): string | null {
     extractString(payload, ['data', 'transaction', 'trans_id']) ??
     extractString(payload, ['data', 'transaction', 'transaction_id']) ??
     extractString(payload, ['data', 'transaction', 'transactionId']) ??
-    extractString(payload, ['data', 'transaction', 'trans_id']) ??
     extractString(payload, ['data', 'transaction', 'id']) ??
     extractString(payload, ['data', 'trans_id']) ??
     extractString(payload, ['data', 'transaction_id']) ??
     extractString(payload, ['data', 'transactionId']) ??
-    extractString(payload, ['data', 'trans_id']) ??
     extractString(payload, ['data', 'id']) ??
     extractString(payload, ['trans_id']) ??
     extractString(payload, ['transaction_id']) ??
     extractString(payload, ['transactionId']) ??
-    extractString(payload, ['trans_id']) ??
     extractString(payload, ['id'])
   );
 }
@@ -278,7 +273,11 @@ function normalizeProviderStatus(rawStatus: unknown): PayChanguPayoutExecutionSt
   return 'pending';
 }
 
-function parsePayChanguList(payload: unknown, candidatePaths: string[][], fallbackKey: string): Record<string, unknown>[] {
+function parsePayChanguList(
+  payload: unknown,
+  candidatePaths: string[][],
+  fallbackKey: string,
+): Record<string, unknown>[] {
   for (const path of candidatePaths) {
     const value = extractNestedValue(payload, path);
     if (Array.isArray(value)) {
@@ -296,34 +295,39 @@ function parsePayChanguList(payload: unknown, candidatePaths: string[][], fallba
 
 function normalizeMobileMoneyOperators(payload: unknown): PayChanguMobileMoneyOperatorRecord[] {
   const records = parsePayChanguList(payload, [['data'], ['data', 'operators'], ['data', 'results']], 'operators');
-  return records.map((record) => {
-    const refId = String(
-      record.ref_id ?? record.refId ?? record.operator_ref_id ?? record.operatorRefId ?? record.id ?? '',
-    ).trim();
-    const name = String(record.name ?? record.operator_name ?? record.title ?? refId).trim();
-    return {
-      refId,
-      name,
-      raw: record,
-    };
-  }).filter((record) => record.refId.length > 0);
+  return records
+    .map((record) => {
+      const refId = String(
+        record.ref_id ?? record.refId ?? record.operator_ref_id ?? record.operatorRefId ?? record.id ?? '',
+      ).trim();
+      const name = String(record.name ?? record.operator_name ?? record.title ?? refId).trim();
+      return { refId, name, raw: record };
+    })
+    .filter((record) => record.refId.length > 0);
 }
 
 function normalizeBanks(payload: unknown): PayChanguBankRecord[] {
   const records = parsePayChanguList(payload, [['data'], ['data', 'banks'], ['data', 'results']], 'banks');
-  return records.map((record) => {
-    const uuid = String(record.uuid ?? record.bank_uuid ?? record.id ?? '').trim();
-    const name = String(record.name ?? record.bank_name ?? record.title ?? uuid).trim();
-    return {
-      uuid,
-      name,
-      raw: record,
-    };
-  }).filter((record) => record.uuid.length > 0);
+  return records
+    .map((record) => {
+      const uuid = String(record.uuid ?? record.bank_uuid ?? record.id ?? '').trim();
+      const name = String(record.name ?? record.bank_name ?? record.title ?? uuid).trim();
+      return { uuid, name, raw: record };
+    })
+    .filter((record) => record.uuid.length > 0);
 }
 
-export function normalizePaychanguPayoutStatus(status: string | undefined): PayChanguPayoutExecutionStatus {
-  return normalizeProviderStatus(status);
+function extractPayoutListItems(payload: unknown): Record<string, unknown>[] {
+  return parsePayChanguList(
+    payload,
+    [['data', 'data'], ['data', 'transactions'], ['data', 'results'], ['data', 'items'], ['transactions'], ['results'], ['items']],
+    'data',
+  );
+}
+
+function isSinglePayoutDetailsPath(path: string): boolean {
+  const lower = path.toLowerCase();
+  return lower.includes('{charge_id}') || lower.includes('{chargeid}') || lower.includes('details');
 }
 
 function classifyProviderError(error: unknown, httpStatus?: number): PayChanguPayoutFailureClass {
@@ -433,14 +437,13 @@ async function executeStructuredPayChanguPayout(
     const requestBody = buildMobileMoneyBody(input, providerChargeId);
 
     try {
-      const { payload, rawText, ok, status } = await postJson(
-        url,
-        requestBody,
-        resolved.paychanguSecretKey,
-      );
-
+      const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey);
       const responseRecord = toPlainObject(payload);
-      const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
+      const responseStatus =
+        extractString(payload, ['data', 'transaction', 'status']) ??
+        extractString(payload, ['data', 'status']) ??
+        extractString(payload, ['status']) ??
+        null;
       const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
       const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
       const responseReference = extractProviderReference(payload);
@@ -492,14 +495,13 @@ async function executeStructuredPayChanguPayout(
   const requestBody = buildBankBody(input, providerChargeId);
 
   try {
-    const { payload, rawText, ok, status } = await postJson(
-      url,
-      requestBody,
-      resolved.paychanguSecretKey,
-    );
-
+    const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey);
     const responseRecord = toPlainObject(payload);
-    const responseStatus = extractString(payload, ['data', 'transaction', 'status']) ?? extractString(payload, ['data', 'status']) ?? extractString(payload, ['status']) ?? null;
+    const responseStatus =
+      extractString(payload, ['data', 'transaction', 'status']) ??
+      extractString(payload, ['data', 'status']) ??
+      extractString(payload, ['status']) ??
+      null;
     const executionStatus = ok ? normalizeProviderStatus(responseStatus) : 'failed';
     const failureClass: PayChanguPayoutFailureClass = !ok ? classifyProviderError(null, status) : null;
     const responseReference = extractProviderReference(payload);
@@ -547,6 +549,118 @@ async function executeStructuredPayChanguPayout(
   }
 }
 
+async function getPayChanguPayoutStatusFromDetail(
+  chargeId: string,
+  resolved: ResolvedPayChanguPayoutConfig,
+): Promise<PayChanguPayoutStatusResult> {
+  const url = buildUrl(
+    resolved.paychanguBaseUrl,
+    resolved.paychanguPayoutStatusPath.replace('{charge_id}', encodeURIComponent(chargeId)).replace('{chargeId}', encodeURIComponent(chargeId)),
+  );
+  const { payload, ok, rawText, status } = await getJson(url, resolved.paychanguSecretKey);
+
+  if (!ok) {
+    const message =
+      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+      `PayChangu payout status lookup failed (${status})`;
+    throw new Error(message);
+  }
+
+  const responseRecord = toPlainObject(payload);
+  const transaction = extractNestedValue(payload, ['data', 'transaction']) ?? extractNestedValue(payload, ['transaction']) ?? payload;
+  const responseStatus = extractString(transaction, ['status']) ?? extractString(payload, ['status']) ?? null;
+  const amountValue = extractNumber(transaction, ['amount']) ?? extractNumber(payload, ['amount']);
+  const currencyValue = extractString(transaction, ['currency']) ?? extractString(payload, ['currency']);
+  const reference =
+    extractString(transaction, ['ref_id']) ??
+    extractString(transaction, ['reference']) ??
+    extractString(payload, ['reference']) ??
+    null;
+  const transactionId = extractProviderTransactionId(payload);
+
+  return {
+    provider: 'paychangu',
+    chargeId,
+    reference,
+    transactionId,
+    status: normalizeProviderStatus(responseStatus),
+    amount: amountValue,
+    currency: currencyValue,
+    rawResponse: responseRecord,
+    checkedAt: nowIso(),
+  };
+}
+
+async function getPayChanguPayoutStatusFromList(
+  chargeId: string,
+  resolved: ResolvedPayChanguPayoutConfig,
+): Promise<PayChanguPayoutStatusResult> {
+  const perPage = 100;
+  const maxPages = 25;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    const { payload, ok, rawText, status } = await getJson(
+      buildUrl(resolved.paychanguBaseUrl, resolved.paychanguPayoutStatusPath, {
+        page: String(page),
+        per_page: String(perPage),
+      }),
+      resolved.paychanguSecretKey,
+    );
+
+    if (!ok) {
+      const message =
+        (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
+        `PayChangu payout details lookup failed (${status})`;
+      throw new Error(message);
+    }
+
+    const responseRecord = toPlainObject(payload);
+    const items = extractPayoutListItems(payload);
+    const match = items.find((record) => {
+      const rowChargeId = String(
+        record.charge_id ?? record.chargeId ?? record.provider_charge_id ?? record.id ?? '',
+      ).trim();
+      return rowChargeId === chargeId;
+    });
+
+    if (match) {
+      return {
+        provider: 'paychangu',
+        chargeId,
+        reference:
+          extractString(match, ['ref_id']) ??
+          extractString(match, ['reference']) ??
+          null,
+        transactionId: extractProviderTransactionId(match),
+        status: normalizeProviderStatus(extractString(match, ['status']) ?? null),
+        amount: extractNumber(match, ['amount']),
+        currency: extractString(match, ['currency']),
+        rawResponse: {
+          httpStatus: status,
+          page,
+          perPage,
+          response: responseRecord,
+          matchedRow: match,
+          rawText,
+        },
+        checkedAt: nowIso(),
+      };
+    }
+
+    const totalPages = extractNumber(payload, ['data', 'total_pages']) ?? extractNumber(payload, ['total_pages']);
+    const nextPageUrl = extractString(payload, ['data', 'next_page_url']) ?? extractString(payload, ['next_page_url']);
+
+    if (typeof totalPages === 'number' && page >= totalPages) {
+      break;
+    }
+    if (!totalPages && (!nextPageUrl || items.length < perPage)) {
+      break;
+    }
+  }
+
+  throw new Error(`PayChangu payout ${chargeId} not found in payout listing`);
+}
+
 export async function executePayChanguPayout(
   input: ExecutePayChanguPayoutInput,
   config: PayChanguPayoutConfig = {},
@@ -557,10 +671,7 @@ export async function executePayChanguPayout(
     throw new Error('PayChangu payout destinationType is required');
   }
 
-  if (
-    input.destinationType !== 'mobile_money' &&
-    input.destinationType !== 'bank'
-  ) {
+  if (input.destinationType !== 'mobile_money' && input.destinationType !== 'bank') {
     throw new Error(`Unsupported payout destination type: ${input.destinationType}`);
   }
 
@@ -652,38 +763,10 @@ export async function getPayChanguPayoutStatus(
   config: PayChanguPayoutConfig = {},
 ): Promise<PayChanguPayoutStatusResult> {
   const resolved = resolveConfig(config);
-  const url = buildUrl(
-    resolved.paychanguBaseUrl,
-    resolved.paychanguPayoutStatusPath.replace('{charge_id}', encodeURIComponent(chargeId)),
-  );
-  const { payload, ok, rawText, status } = await getJson(url, resolved.paychanguSecretKey);
-
-  if (!ok) {
-    const message =
-      (extractString(payload, ['message']) ?? extractString(payload, ['error']) ?? rawText) ||
-      `PayChangu payout status lookup failed (${status})`;
-    throw new Error(message);
+  if (isSinglePayoutDetailsPath(resolved.paychanguPayoutStatusPath)) {
+    return getPayChanguPayoutStatusFromDetail(chargeId, resolved);
   }
-
-  const responseRecord = toPlainObject(payload);
-  const transaction = extractNestedValue(payload, ['data', 'transaction']) ?? extractNestedValue(payload, ['transaction']) ?? payload;
-  const responseStatus = extractString(transaction, ['status']) ?? extractString(payload, ['status']) ?? null;
-  const amountValue = extractNumber(transaction, ['amount']) ?? extractNumber(payload, ['amount']);
-  const currencyValue = extractString(transaction, ['currency']) ?? extractString(payload, ['currency']);
-  const reference = extractString(transaction, ['ref_id']) ?? extractString(transaction, ['reference']) ?? extractString(payload, ['reference']) ?? null;
-  const transactionId = extractProviderTransactionId(payload);
-
-  return {
-    provider: 'paychangu',
-    chargeId,
-    reference,
-    transactionId,
-    status: normalizeProviderStatus(responseStatus),
-    amount: amountValue,
-    currency: currencyValue,
-    rawResponse: responseRecord,
-    checkedAt: nowIso(),
-  };
+  return getPayChanguPayoutStatusFromList(chargeId, resolved);
 }
 
 export async function verifyPayChanguPayoutWebhook(
