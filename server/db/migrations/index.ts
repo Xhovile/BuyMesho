@@ -38,19 +38,55 @@ export function runMigrations() {
     }
   }
 
-  try {
-    const columns = db.prepare("PRAGMA table_info(listings)").all() as Array<{ name: string }>;
-    if (!columns.some((row) => row.name === "video_url")) {
-      db.exec(`ALTER TABLE listings ADD COLUMN video_url TEXT`);
+  for (const [column, definition] of [
+    ["description", "TEXT"],
+    ["original_price", "REAL"],
+    ["discount_percent", "INTEGER"],
+    ["deal_label", "TEXT"],
+    ["listing_mode", "TEXT NOT NULL DEFAULT 'normal'"],
+    ["deal_expires_at", "TEXT"],
+    ["can_sell_individually", "INTEGER"],
+    ["is_wholesale", "INTEGER NOT NULL DEFAULT 0"],
+    ["pack_size", "INTEGER"],
+    ["bulk_units", "TEXT"],
+    ["category", "TEXT"],
+    ["subcategory", "TEXT"],
+    ["item_type", "TEXT"],
+    ["spec_values", "TEXT"],
+    ["university", "TEXT"],
+    ["is_seller", "INTEGER NOT NULL DEFAULT 1"],
+    ["photos", "TEXT"],
+    ["video_url", "TEXT"],
+    ["condition", "TEXT NOT NULL DEFAULT 'used'"],
+    ["views_count", "INTEGER NOT NULL DEFAULT 0"],
+    ["whatsapp_clicks", "INTEGER NOT NULL DEFAULT 0"],
+    ["is_hidden", "INTEGER NOT NULL DEFAULT 0"],
+    ["quantity", "INTEGER NOT NULL DEFAULT 1"],
+    ["sold_quantity", "INTEGER NOT NULL DEFAULT 0"],
+    ["created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"],
+    ["updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP"],
+  ] as const) {
+    try {
+      const columns = db.prepare("PRAGMA table_info(listings)").all() as Array<{ name: string }>;
+      if (!columns.some((row) => row.name === column)) {
+        db.exec(`ALTER TABLE listings ADD COLUMN ${column} ${definition}`);
+      }
+    } catch (error) {
+      console.warn(`Listings column migration failed for ${column}:`, error);
     }
-  } catch (error) {
-    console.warn("Listings video_url migration failed:", error);
   }
 
   for (const [column, definition] of [
     ["profile_picture", "TEXT"],
-    ["university", "TEXT"],
     ["is_seller", "INTEGER NOT NULL DEFAULT 0"],
+    ["university", "TEXT"],
+    ["bio", "TEXT"],
+    ["business_name", "TEXT"],
+    ["business_logo", "TEXT"],
+    ["is_verified", "INTEGER NOT NULL DEFAULT 0"],
+    ["is_suspended", "INTEGER NOT NULL DEFAULT 0"],
+    ["profile_views", "INTEGER NOT NULL DEFAULT 0"],
+    ["join_date", "TEXT"],
   ] as const) {
     try {
       const columns = db.prepare("PRAGMA table_info(sellers)").all() as Array<{ name: string }>;
