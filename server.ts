@@ -843,17 +843,11 @@ app.get("/api/profile/seller-application", requireAuth, (req, res) => {
   }
 });
 
-  app.post("/api/listings", requireAuth, async (req, res) => {
-  // ✅ seller_uid MUST come from verified token
+ app.post("/api/listings", requireAuth, (req, res) => { 
+// ✅ seller_uid MUST come from verified token
   const seller_uid = req.user!.uid;
-  const email = req.user?.email ?? "";
-  const safeUniversity = "Default"; // replace with your real fallback if needed
-
-  try {
-    await ensureSellerRowFromFirestore(seller_uid, email, safeUniversity);
-
-    const seller = db
-      .prepare(`
+   const seller = db
+     .prepare(`
         SELECT is_verified, is_seller, is_suspended
         FROM sellers
         WHERE uid = ?
