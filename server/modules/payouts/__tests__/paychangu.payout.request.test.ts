@@ -175,30 +175,43 @@ test('PayChangu bank payout uses the documented initialize path and exact reques
   }
 });
 
-test('PayChangu payout lookups use documented default paths', async () => {
+test('PayChangu payout lookups use the documented payout list path by default', async () => {
   useDefaultPayChanguEnv();
   const requests = mockPayChanguFetch({
     status: 'success',
+    message: 'Transactions retrieved successfully.',
     data: {
-      transaction: {
-        status: 'success',
-        amount: 1000,
-        currency: 'MWK',
-        ref_id: 'status-ref',
-      },
+      current_page: 1,
+      total_pages: 1,
+      per_page: 100,
+      next_page_url: null,
+      data: [
+        {
+          charge_id: 'BM-PO-status-test-A01',
+          ref_id: 'status-ref',
+          trans_id: 'status-trans',
+          currency: 'MWK',
+          amount: 1000,
+          status: 'success',
+        },
+      ],
     },
   });
 
   try {
-    await getPayChanguPayoutStatus('BM-PO-status-test-A01');
-    assert.equal(
-      requests[0]?.url,
-      'https://api.paychangu.com/direct-charge/payouts/BM-PO-status-test-A01/details',
-    );
+    const result = await getPayChanguPayoutStatus('BM-PO-status-test-A01');
+
+    assert.equal(requests[0]?.url, 'https://api.paychangu.com/direct-charge/payouts?page=1&per_page=100');
     assert.equal(requests[0]?.method, 'GET');
     assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
     assert.equal(requests[0]?.accept, 'application/json');
     assert.equal(requests[0]?.contentType, 'application/json');
+    assert.equal(result.chargeId, 'BM-PO-status-test-A01');
+    assert.equal(result.reference, 'status-ref');
+    assert.equal(result.transactionId, 'status-trans');
+    assert.equal(result.status, 'paid');
+    assert.equal(result.amount, 1000);
+    assert.equal(result.currency, 'MWK');
   } finally {
     resetPayChanguEnv();
   }
