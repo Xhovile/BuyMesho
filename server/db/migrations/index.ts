@@ -63,6 +63,30 @@ export function runMigrations() {
 
   try {
     db.exec(`
+      CREATE TRIGGER IF NOT EXISTS trg_seller_applications_ensure_seller
+      BEFORE INSERT ON seller_applications
+      FOR EACH ROW
+      BEGIN
+        INSERT INTO sellers (uid, email, is_verified, is_seller)
+        VALUES (
+          NEW.applicant_uid,
+          COALESCE(NEW.applicant_email, ''),
+          0,
+          0
+        )
+        ON CONFLICT(uid) DO UPDATE SET
+          email = CASE
+            WHEN sellers.email = '' AND excluded.email <> '' THEN excluded.email
+            ELSE sellers.email
+          END;
+      END;
+    `);
+  } catch (error) {
+    console.warn("Seller application bootstrap trigger setup failed:", error);
+  }
+
+  try {
+    db.exec(`
       CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
       ON listings (hard_delete_after)
       WHERE deleted_at IS NOT NULL
