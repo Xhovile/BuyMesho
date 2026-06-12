@@ -43,6 +43,7 @@ export function runMigrations() {
     ["original_price", "REAL"],
     ["discount_percent", "INTEGER"],
     ["deal_label", "TEXT"],
+    ["single_item_price", "REAL"],
     ["listing_mode", "TEXT NOT NULL DEFAULT 'normal'"],
     ["deal_expires_at", "TEXT"],
     ["can_sell_individually", "INTEGER"],
