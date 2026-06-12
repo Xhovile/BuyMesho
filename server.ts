@@ -62,6 +62,7 @@ if (getConfiguredAdminEmails().length === 0) {
 
 async function startServer() {
   const app = express();
+  app.set("trust proxy", 1);
   const PORT = 3000;
 
   // Ensure PayChangu webhook receives raw JSON bytes for signature verification.
