@@ -58,40 +58,7 @@ if (getConfiguredAdminEmails().length === 0) {
   console.warn(
     "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
   );
-}
-
-async function ensureSellerRowFromFirestore(uid: string, email: string, safeUniversity: string) {
-  const adminApp = getFirebaseAdmin();
-  const snap = await adminApp.firestore().collection("users").doc(uid).get();
-  const data = snap.exists ? snap.data() : null;
-
-  const businessName = typeof data?.business_name === "string" ? data.business_name : null;
-  const businessLogo = typeof data?.business_logo === "string" ? data.business_logo : null;
-  const profilePicture = typeof data?.profile_picture === "string" ? data.profile_picture : null;
-  const university =
-    typeof data?.university === "string" && data.university.trim()
-      ? data.university.trim()
-      : safeUniversity;
-  const bio = typeof data?.bio === "string" ? data.bio : null;
-  const isVerified = data?.is_verified === true || data?.is_verified === 1 ? 1 : 0;
-  const isSeller = data?.is_seller === true || data?.is_seller === 1 ? 1 : 0;
-
-  db.prepare(`
-    INSERT INTO sellers (
-      uid, email, business_name, business_logo, profile_picture, university, bio,
-      is_verified, is_seller, join_date
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(uid) DO UPDATE SET
-      email = excluded.email,
-      business_name = COALESCE(sellers.business_name, excluded.business_name),
-      business_logo = COALESCE(sellers.business_logo, excluded.business_logo),
-      profile_picture = COALESCE(sellers.profile_picture, excluded.profile_picture),
-      university = COALESCE(sellers.university, excluded.university),
-      bio = COALESCE(sellers.bio, excluded.bio),
-      is_verified = CASE WHEN excluded.is_verified = 1 THEN 1 ELSE sellers.is_verified END,
-      is_seller = CASE WHEN excluded.is_seller = 1 THEN 1 ELSE sellers.is_seller END
-  `).run(uid, email, businessName, businessLogo, profilePicture, university, bio, isVerified, isSeller);
-}
+  }
 
 async function startServer() {
   const app = express();
