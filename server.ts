@@ -534,15 +534,13 @@ VALUES (?, ?, ?, ?, ?, ?, ?)
     }
   });
 
-app.get("/api/profile", requireAuth, async (req, res) => {
+app.get("/api/profile", requireAuth, (req, res) => {
   const uid = req.user!.uid;
 
   try {
     const email = req.user?.email ?? "";
     const safeUniversity = "Default"; // replace with your real fallback if needed
-
-    await ensureSellerRowFromFirestore(uid, email, safeUniversity);
-
+    
     const profile = db
       .prepare(
         "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
