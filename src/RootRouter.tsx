@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -87,6 +87,39 @@ function RouteLoader({ route }: { route: AppRoute }) {
   }
 
   return <div className="flex h-screen items-center justify-center bg-zinc-100/70"><Loader2 className="h-10 w-10 animate-spin text-zinc-700" /></div>;
+}
+
+class DebugErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error("DebugErrorBoundary caught:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-white p-6 text-zinc-900">
+          <div className="mx-auto max-w-3xl rounded-2xl border border-rose-200 bg-rose-50 p-5">
+            <h2 className="text-lg font-black text-rose-900">Admin Payouts crashed</h2>
+            <p className="mt-2 text-sm text-rose-900/90">{this.state.error?.message}</p>
+            <pre className="mt-4 overflow-auto rounded-xl bg-white p-4 text-xs leading-6 text-zinc-800">
+              {this.state.error?.stack}
+            </pre>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 export default function RootRouter() {
@@ -276,7 +309,7 @@ export default function RootRouter() {
         ) : route === "admin_payments" ? (
           <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
         ) : route === "admin_payouts" ? (
-          <AdminRouteGuard><AdminPayoutsManager /></AdminRouteGuard>
+          <AdminRouteGuard><DebugErrorBoundary><AdminPayoutsManager /></DebugErrorBoundary></AdminRouteGuard>
         ) : route === "admin_reports" ? (
           <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
         ) : route === "admin_seller_applications" ? (
