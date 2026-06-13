@@ -455,10 +455,12 @@ export class PayoutRepository {
     if (execution.status === 'failed') {
       statusExtras.failedAt = new Date().toISOString();
       statusExtras.failureReason = execution.failureClass ?? 'provider_execution_failed';
+      const exactMessage = exactProviderErrorMessage(execution.rawResponse);
+
       statusExtras.manualReviewReason = execution.failureClass
-        ? providerFailureReason(execution.failureClass)
-        : 'Provider reported payout failure';
-    }
+        ? providerFailureReason(execution.failureClass, exactMessage)
+        : exactMessage ?? 'Provider reported payout failure';
+   }
 
     return this.updateStatus(payoutId, execution.status, statusExtras);
   }
