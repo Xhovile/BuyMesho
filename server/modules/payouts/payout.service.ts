@@ -1029,7 +1029,8 @@ if (balance && balance.availableBalance < gate.amount) {
       createdAt: reservedAttempt.createdAt,
     };
     if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
-      const reason = providerFailureReason(execution.failureClass);
+      const exactMessage = exactProviderErrorMessage(execution.rawResponse);
+      const reason = providerFailureReason(execution.failureClass, exactMessage);
       const payout = this.holdForReview(
         {
           payoutId: input.payoutId,
