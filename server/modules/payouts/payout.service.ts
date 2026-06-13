@@ -146,6 +146,32 @@ function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailur
   return 'provider_unavailable';
 }
 
+function exactProviderErrorMessage(rawResponse: unknown): string | null {
+  if (!rawResponse || typeof rawResponse !== 'object') return null;
+
+  const record = rawResponse as Record<string, unknown>;
+  const candidates = [
+    record.message,
+    record.error,
+    record.detail,
+    record.reason,
+    record.rawText,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  const nested = record.response;
+  if (nested && typeof nested === 'object') {
+    return exactProviderErrorMessage(nested);
+  }
+
+  return null;
+}
+
 function providerFailureReason(reasonCode: PayChanguPayoutFailureClass): string {
   switch (reasonCode) {
     case 'provider_timeout':
