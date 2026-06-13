@@ -172,7 +172,12 @@ function exactProviderErrorMessage(rawResponse: unknown): string | null {
   return null;
 }
 
-function providerFailureReason(reasonCode: PayChanguPayoutFailureClass): string {
+function providerFailureReason(
+  reasonCode: PayChanguPayoutFailureClass,
+  exactMessage?: string | null,
+): string {
+  if (exactMessage) return exactMessage;
+
   switch (reasonCode) {
     case 'provider_timeout':
       return 'Provider timeout; payout held for manual review.';
