@@ -1178,7 +1178,10 @@ if (balance && balance.availableBalance < gate.amount) {
       paidAt: nextStatus === 'paid' ? now : null,
       failedAt: nextStatus === 'failed' ? now : null,
       failureReason: nextStatus === 'failed' ? 'provider_status_failed' : null,
-      manualReviewReason: nextStatus === 'failed' ? 'Provider status sync reported payout failure' : null,
+      const exactMessage = exactProviderErrorMessage(status.rawResponse);
+    manualReviewReason: nextStatus === 'failed'
+      ? exactMessage ?? 'Provider status sync reported payout failure'
+      : null,
     });
 
     if (row.last_attempt_id) {
