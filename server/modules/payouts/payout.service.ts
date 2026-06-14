@@ -147,29 +147,38 @@ function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailur
 }
 
 function exactProviderErrorMessage(rawResponse: unknown): string | null {
-  if (!rawResponse || typeof rawResponse !== 'object') return null;
+  const extract = (value: unknown): string | null => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
 
-  const record = rawResponse as Record<string, unknown>;
-  const candidates = [
-    record.message,
-    record.error,
-    record.detail,
-    record.reason,
-    record.rawText,
-  ];
-
-  for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim()) {
-      return candidate.trim();
+      try {
+        const parsed = JSON.parse(trimmed);
+        return extract(parsed) ?? trimmed;
+      } catch {
+        return trimmed;
+      }
     }
-  }
 
-  const nested = record.response;
-  if (nested && typeof nested === 'object') {
-    return exactProviderErrorMessage(nested);
-  }
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
 
-  return null;
+    const record = value as Record<string, unknown>;
+
+    for (const key of ['message', 'error', 'detail', 'reason', 'rawText']) {
+      const found = extract(record[key]);
+      if (found) return found;
+    }
+
+    if (record.response) {
+      return extract(record.response);
+    }
+
+    return null;
+  };
+
+  return extract(rawResponse);
 }
 
 function providerFailureReason(
