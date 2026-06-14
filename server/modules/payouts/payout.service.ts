@@ -1167,23 +1167,23 @@ if (balance && balance.availableBalance < gate.amount) {
     const status = await getPayChanguPayoutStatus(chargeId);
     const now = new Date().toISOString();
     const nextStatus = status.status;
+    const exactMessage = exactProviderErrorMessage(status.rawResponse);
 
-    this.repository.updateStatus(input.payoutId, nextStatus, {
-      provider: 'paychangu',
-      providerChargeId: chargeId,
-      providerReference: status.reference,
-      providerTransactionId: status.transactionId,
-      providerStatus: status.status,
-      rawResponse: status.rawResponse,
-      paidAt: nextStatus === 'paid' ? now : null,
-      failedAt: nextStatus === 'failed' ? now : null,
-      failureReason: nextStatus === 'failed' ? 'provider_status_failed' : null,
-      const exactMessage = exactProviderErrorMessage(status.rawResponse);
-    manualReviewReason: nextStatus === 'failed'
-      ? exactMessage ?? 'Provider status sync reported payout failure'
-      : null,
-    });
-
+this.repository.updateStatus(input.payoutId, nextStatus, {
+  provider: 'paychangu',
+  providerChargeId: chargeId,
+  providerReference: status.reference,
+  providerTransactionId: status.transactionId,
+  providerStatus: status.status,
+  rawResponse: status.rawResponse,
+  paidAt: nextStatus === 'paid' ? now : null,
+  failedAt: nextStatus === 'failed' ? now : null,
+  failureReason: nextStatus === 'failed' ? 'provider_status_failed' : null,
+  manualReviewReason: nextStatus === 'failed'
+    ? exactMessage ?? 'Provider status sync reported payout failure'
+    : null,
+});
+  
     if (row.last_attempt_id) {
       db.prepare(
         `UPDATE payout_attempts
