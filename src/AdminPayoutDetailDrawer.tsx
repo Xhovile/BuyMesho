@@ -5,15 +5,15 @@ type Props = ComponentProps<typeof PayoutDetailDrawer>;
 
 export default function AdminPayoutDetailDrawer(props: Props) {
   const { selected } = props;
-  const exactReason =
-    selected.failureReason ??
-    selected.holdReason ??
-    selected.manualReviewReason ??
-    selected.retryBlockedReason ??
-    selected.latestAttemptFailureReason ??
-    selected.lastError ??
-    selected.destinationLastError ??
-    null;
+const exactReason =
+  selected.manualReviewReason ??
+  selected.latestAttemptFailureReason ??
+  selected.lastError ??
+  selected.destinationLastError ??
+  selected.holdReason ??
+  selected.retryBlockedReason ??
+  selected.failureReason ??
+  null;
 
   return (
     <>
