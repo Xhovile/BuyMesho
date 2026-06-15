@@ -278,6 +278,41 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     }
   });
 
+  router.get('/paychangu/balance', requireAuth, async (req, res) => {
+  try {
+    if (!requireAdmin(req, res)) return;
+
+    const rawCurrency = Array.isArray(req.query?.currency) ? req.query.currency[0] : req.query?.currency;
+    const currency = String(rawCurrency ?? 'MWK').trim().toUpperCase() || 'MWK';
+
+    const result = await getPayChanguPayoutBalance(currency);
+    const raw = result.rawResponse as Record<string, unknown>;
+    const data = (raw?.data as Record<string, unknown> | undefined) ?? raw;
+
+    const mainBalance = Number(
+      data.main_balance ??
+        data.available_balance ??
+        data.balance ??
+        result.availableBalance ??
+        0,
+    );
+    const collectionBalance = Number(data.collection_balance ?? 0);
+
+    return res.status(200).json({
+      provider: 'paychangu',
+      environment: String(data.environment ?? 'live'),
+      currency: result.currency ?? currency,
+      mainBalance,
+      collectionBalance,
+      availableBalance: mainBalance,
+      checkedAt: result.checkedAt,
+      rawResponse: raw,
+    });
+  } catch (error) {
+    return res.status(500).json(jsonError(error, 'Failed to load PayChangu balance'));
+  }
+});
+  
   router.get('/payouts', payoutLimiter, requireAuth, (req, res) => {
     try {
       if (!requireAdmin(req, res)) return;
