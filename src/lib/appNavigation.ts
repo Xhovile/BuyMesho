@@ -387,6 +387,10 @@ export const getAppRouteFromLocation = (
     return "admin_setup";
   }
 
+  if (location.pathname === ADMIN_BALANCE_PATH) {
+  return "admin_balance";
+  }
+
   if (location.pathname === PAYMENT_RETURN_PATH) {
     return "payment_return";
   }
