@@ -5,6 +5,7 @@ import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
 import { ADMIN_ACTION_TYPES, ADMIN_TARGET_TYPES } from '../../../src/modules/admin/shared/adminAuditTypes.js';
+import { getPayChanguPayoutBalance } from '../payouts/paychangu.payout.js';
 
 const DEFAULT_PAYOUT_PAGE_SIZE = 200;
 const MAX_PAYOUT_PAGE_SIZE = 500;
