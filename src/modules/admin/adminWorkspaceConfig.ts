@@ -2,6 +2,7 @@ import { ClipboardList, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } f
 import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
+  ADMIN_BALANCE_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PATH,
   ADMIN_PAYMENTS_PATH,
