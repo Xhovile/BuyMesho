@@ -956,6 +956,21 @@ try {
   });
 }
 
+   const balance = await this.paychangu.getPayoutBalance();
+console.log('PAYCHANGU PAYOUT BALANCE CHECK:', {
+  payoutId: gate.payoutId,
+  sellerId: gate.sellerId,
+  amountToSend: gate.amount,
+  balance,
+});
+
+console.log('PAYCHANGU BALANCE FIELDS:', {
+  availableBalance: balance.availableBalance,
+  mainBalance: balance.mainBalance,
+  collectionBalance: balance.collectionBalance,
+  raw: balance,
+});
+
 if (balance && balance.availableBalance < gate.amount) {
   const payout = this.holdForReview(
     {
