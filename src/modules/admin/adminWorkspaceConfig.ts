@@ -48,6 +48,12 @@ export const ADMIN_HUB_ACTIONS: AdminWorkspaceItem[] = [
     description: "Inspect payment events and webhook activity.",
   },
   {
+    label: "Balance",
+    path: ADMIN_BALANCE_PATH,
+    icon: Wallet,
+    description: "Check PayChangu wallet balance before payouts.",
+  },
+  {
     label: "Payouts",
     path: ADMIN_PAYOUTS_PATH,
     icon: Wallet,
@@ -81,6 +87,11 @@ export const ADMIN_WORKSPACE_NAV_ITEMS: AdminWorkspaceItem[] = [
     label: "Payments",
     path: ADMIN_PAYMENTS_PATH,
     icon: ReceiptText,
+  },
+  {
+    label: "Balance",
+    path: ADMIN_BALANCE_PATH,
+    icon: Wallet,
   },
   {
     label: "Payouts",
