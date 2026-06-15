@@ -38,6 +38,7 @@ export type AppRoute =
   | "admin_seller_applications"
   | "admin_moderation_queue"
   | "admin_audit"
+  | "admin_balance" 
   | "admin_setup"
   | "payment_return";
 
@@ -77,6 +78,7 @@ export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
 export const ADMIN_MODERATION_QUEUE_PATH = "/admin/moderation-queue";
 export const ADMIN_AUDIT_PATH = "/admin/audit";
+export const ADMIN_BALANCE_PATH = "/admin/balance";
 export const ADMIN_SETUP_PATH = "/admin/setup";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
