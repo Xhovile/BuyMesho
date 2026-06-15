@@ -6,6 +6,7 @@ import {
   ADMIN_AUDIT_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
+  ADMIN_BALANCE_PATH, 
   getAppRouteFromLocation,
   HOME_PATH,
   navigateToPath,
@@ -24,6 +25,7 @@ import loaderImage from "../photos/LoaderPic.png";
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
+const AdminBalancePage = lazy(() => import("./AdminBalancePage"));
 const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManager"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
 const AdminSellerApplicationsPage = lazy(() => import("./AdminSellerApplicationsPage"));
@@ -167,6 +169,7 @@ export default function RootRouter() {
       import("./CartPage"),
       import("./AdminPaymentsConsole"),
       import("./AdminPayoutsManager"),
+      import("./AdminBalancePage"),
       import("./AdminModerationQueuePage"),
       import("./AdminAuditLogPage"),
       import("./AdminSetupPage"),
@@ -198,6 +201,7 @@ export default function RootRouter() {
       "admin_seller_applications",
       "admin_moderation_queue",
       "admin_audit",
+      "admin_balance",
       "admin_setup",
       "admin_payout_destinations",
     ];
@@ -308,6 +312,8 @@ export default function RootRouter() {
           <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
         ) : route === "admin_payments" ? (
           <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+        ) : route === "admin_balance" ? (
+          <AdminRouteGuard><AdminBalancePage /></AdminRouteGuard>
         ) : route === "admin_payouts" ? (
           <AdminRouteGuard><DebugErrorBoundary><AdminPayoutsManager /></DebugErrorBoundary></AdminRouteGuard>
         ) : route === "admin_reports" ? (
