@@ -807,6 +807,14 @@ export async function getPayChanguPayoutBalance(
   config: PayChanguPayoutConfig = {},
 ): Promise<PayChanguPayoutBalanceResult> {
   const resolved = resolveConfig(config);
+  
+  console.log("PAYCHANGU BALANCE REQUEST START", {
+  baseUrl: resolved.paychanguBaseUrl,
+  balancePath: resolved.paychanguPayoutBalancePath,
+  balanceUrl: resolved.paychanguPayoutBalanceUrl,
+  currency,
+});
+  
   const { payload, rawText, ok, status } = await getJson(
     resolveEndpoint(resolved.paychanguBaseUrl, resolved.paychanguPayoutBalancePath, { currency }),
     resolved.paychanguSecretKey,
