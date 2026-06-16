@@ -9,6 +9,8 @@ export type SellerPayoutSignalInput = {
 
 export type SellerPayoutLaunchStatus =
   | 'eligible'
+  | 'pending_settlement'
+  | 'ready_for_payout'
   | 'queued_for_admin_review'
   | 'sent_to_paychangu'
   | 'provider_pending'
