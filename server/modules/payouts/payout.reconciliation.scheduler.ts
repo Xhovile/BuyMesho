@@ -1,4 +1,5 @@
-import { payoutService } from './payout.service.js';
+import { getPaymentDb } from '../../sqlite.js';
+import { payoutRepository, payoutService } from './payout.service.js';
 
 export type PayoutReconciliationSchedulerConfig = {
   enabled: boolean;
@@ -17,6 +18,7 @@ const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
 const MIN_INTERVAL_MS = 10_000;
 const MAX_BATCH_LIMIT = 50;
+const T_PLUS_ONE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim() === '') {
@@ -52,6 +54,19 @@ function parsePositiveIntegerEnv(
   const min = options.min ?? integer;
   const max = options.max ?? Math.max(integer, min);
   return Math.min(Math.max(integer, min), max);
+}
+
+function isOlderThanTPlusOne(referenceAt: string | null | undefined, nowMs = Date.now()): boolean {
+  if (!referenceAt) {
+    return false;
+  }
+
+  const timestamp = new Date(referenceAt).getTime();
+  if (!Number.isFinite(timestamp)) {
+    return false;
+  }
+
+  return nowMs - timestamp >= T_PLUS_ONE_WINDOW_MS;
 }
 
 export function getPayoutReconciliationSchedulerConfig(
@@ -107,6 +122,80 @@ export class PayoutReconciliationScheduler {
     this.timer = undefined;
   }
 
+  private async settlePendingSettlementPayouts(limit: number): Promise<number> {
+    const db = getPaymentDb();
+    const rows = db.prepare(
+      `SELECT id, seller_id, requested_at, created_at
+       FROM payouts
+       WHERE status = 'pending_settlement'
+       ORDER BY COALESCE(requested_at, created_at) ASC
+       LIMIT ?`,
+    ).all(limit) as Array<{
+      id: string;
+      seller_id: string;
+      requested_at: string | null;
+      created_at: string;
+    }>;
+
+    let settledCount = 0;
+
+    for (const row of rows) {
+      const referenceAt = row.requested_at ?? row.created_at;
+      if (!isOlderThanTPlusOne(referenceAt)) {
+        continue;
+      }
+
+      const ready = payoutRepository.updateStatus(row.id, 'ready_for_payout', {
+        provider: 'paychangu',
+        providerStatus: 'ready_for_payout',
+      });
+
+      if (!ready) {
+        continue;
+      }
+
+      payoutRepository.addEvent({
+        payoutId: row.id,
+        sellerId: row.seller_id,
+        eventType: 'payout_ready_for_payout',
+        actorType: 'system',
+        actorId: null,
+        note: 'Settlement window elapsed; payout is ready for submission',
+        payload: {
+          referenceAt,
+          settledAt: new Date().toISOString(),
+        },
+      });
+
+      const queued = payoutRepository.updateStatus(row.id, 'queued', {
+        provider: 'paychangu',
+        providerStatus: 'queued',
+      });
+
+      if (!queued) {
+        continue;
+      }
+
+      payoutRepository.addEvent({
+        payoutId: row.id,
+        sellerId: row.seller_id,
+        eventType: 'payout_queued',
+        actorType: 'system',
+        actorId: null,
+        note: 'Payout queued for provider submission after settlement',
+      });
+
+      await payoutService.executePayout({
+        payoutId: row.id,
+        actorType: 'system',
+      });
+
+      settledCount += 1;
+    }
+
+    return settledCount;
+  }
+
   async runOnce(): Promise<void> {
     if (!this.config.enabled) {
       return;
@@ -119,6 +208,11 @@ export class PayoutReconciliationScheduler {
 
     this.running = true;
     try {
+      const settledCount = await this.settlePendingSettlementPayouts(this.config.batchLimit);
+      if (settledCount > 0) {
+        this.logger.log(`[payout-reconciliation] settlement worker released ${settledCount} payout(s)`);
+      }
+
       await this.reconcile({ actorType: 'system', limit: this.config.batchLimit });
     } catch (error) {
       this.logger.error('[payout-reconciliation] reconcile failed:', error);
