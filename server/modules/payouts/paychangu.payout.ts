@@ -144,9 +144,9 @@ function resolveConfig(config: PayChanguPayoutConfig = {}): ResolvedPayChanguPay
     paychanguPayoutStatusPath: trimPath(
       config.paychanguPayoutStatusPath ?? process.env.PAYCHANGU_PAYOUT_STATUS_PATH ?? '/direct-charge/payouts',
     ),
-    paychanguPayoutBalancePath: trimPath(
+    paychanguPayoutBalancePath: String(
       config.paychanguPayoutBalancePath ?? process.env.PAYCHANGU_PAYOUT_BALANCE_PATH ?? '/wallet-balance',
-    ),
+    ).trim(),
     paychanguMobileMoneyPath: trimPath(
       config.paychanguMobileMoneyPath ?? process.env.PAYCHANGU_MOBILE_MONEY_PATH ?? '/mobile-money',
     ),
@@ -171,6 +171,26 @@ function buildUrl(baseUrl: string, path: string, query?: Record<string, string |
       url.searchParams.set(key, String(value));
     }
   }
+  return url.toString();
+}
+
+function resolveEndpoint(
+  baseUrl: string,
+  pathOrUrl: string,
+  query?: Record<string, string | undefined>,
+): string {
+  const value = pathOrUrl.trim();
+  const url = /^https?:\/\//i.test(value)
+    ? new URL(value)
+    : new URL(`${trimSlash(baseUrl)}${trimPath(value)}`);
+
+  if (query) {
+    for (const [key, raw] of Object.entries(query)) {
+      if (raw === undefined || raw === null || String(raw).trim() === '') continue;
+      url.searchParams.set(key, String(raw));
+    }
+  }
+
   return url.toString();
 }
 
@@ -788,7 +808,7 @@ export async function getPayChanguPayoutBalance(
 ): Promise<PayChanguPayoutBalanceResult> {
   const resolved = resolveConfig(config);
   const { payload, rawText, ok, status } = await getJson(
-    buildUrl(resolved.paychanguBaseUrl, resolved.paychanguPayoutBalancePath, { currency }),
+    resolveEndpoint(resolved.paychanguBaseUrl, resolved.paychanguPayoutBalancePath, { currency }),
     resolved.paychanguSecretKey,
   );
 
