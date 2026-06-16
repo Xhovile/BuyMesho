@@ -285,6 +285,7 @@ export function createPaymentAdminRouter(requireAuth: RequestHandler): express.R
     const rawCurrency = Array.isArray(req.query?.currency) ? req.query.currency[0] : req.query?.currency;
     const currency = String(rawCurrency ?? 'MWK').trim().toUpperCase() || 'MWK';
 
+    console.log("ADMIN BALANCE ROUTE HIT", { currency });
     const result = await getPayChanguPayoutBalance(currency);
     const raw = result.rawResponse as Record<string, unknown>;
     const data = (raw?.data as Record<string, unknown> | undefined) ?? raw;
