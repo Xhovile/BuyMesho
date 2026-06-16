@@ -723,7 +723,7 @@ export class PayoutService {
     if (payoutStatus === 'paid') {
       return { allowed: false, reasonCode: 'manual_review_required', reason: 'Payout is already paid' };
     }
-    if (!['eligible', 'queued', 'failed', 'pending', 'held'].includes(payoutStatus)) {
+    if (!['eligible', 'ready_for_payout', 'queued', 'failed', 'pending', 'held'].includes(payoutStatus)) {
       return {
         allowed: false,
         reasonCode: 'manual_review_required',
