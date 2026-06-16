@@ -17,6 +17,8 @@ import {
 
 export type PayoutStatus =
   | 'eligible'
+  | 'pending_settlement'
+  | 'ready_for_payout'
   | 'queued'
   | 'processing'
   | 'pending'
