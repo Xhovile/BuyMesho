@@ -83,6 +83,11 @@ test('missing bank UUID blocks payout submission', async () => {
   assert.equal(result.reasonCode, 'destination_incomplete');
 });
 
+test('seller payout status labels include settlement states', () => {
+  assert.equal(getSellerPayoutStatusLabel('pending_settlement'), 'Awaiting settlement');
+  assert.equal(getSellerPayoutStatusLabel('ready_for_payout'), 'Ready for payout');
+});
+
 test('valid routing ID is sent in provider payload and pending/processing stay in-flight', async () => {
   const originalFetch = global.fetch;
   const originalSecretKey = process.env.PAYCHANGU_SECRET_KEY;
