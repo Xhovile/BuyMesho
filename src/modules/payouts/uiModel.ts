@@ -172,6 +172,10 @@ export function getSellerPayoutLaunchStatus(input: SellerPayoutSignalInput): Sel
   return 'eligible';
 }
 
+export function getSellerPayoutLaunchStatusMeta(input: SellerPayoutSignalInput): SellerPayoutLaunchStatusMeta {
+  return LAUNCH_STATUS_META[getSellerPayoutLaunchStatus(input)];
+}
+
 export function getSellerPayoutStatusLabel(status: string): string {
   const normalized = String(status ?? '').toLowerCase();
   if (normalized === 'queued') return 'Queued for admin review';
