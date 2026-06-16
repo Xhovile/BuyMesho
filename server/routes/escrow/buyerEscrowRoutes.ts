@@ -82,7 +82,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           releasedBy: requesterId,
           reference: releaseReference,
         });
- 
+  
 
         if (!released) {
           return undefined;
@@ -171,12 +171,11 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      const pendingSettlementPayout = payoutRepository.update(result.payout.id, {
-        status: 'pending_settlement',
+      const pendingSettlementPayout = payoutRepository.updateStatus(result.payout.id, 'pending_settlement', {
+        providerStatus: 'pending_settlement',
       });
 
       payoutRepository.addEvent({
-  
         payoutId: result.payout.id,
         sellerId: result.payout.sellerId,
         eventType: 'awaiting_settlement',
@@ -184,16 +183,16 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         note: 'Payout awaiting PayChangu T+1 settlement before submission',
       });
 
- return res.status(200).json({
-  escrow: result.escrow,
-  payout: pendingSettlementPayout ?? result.payout,
-  payoutEligibility: result.payoutEligibility,
-  payoutDispatch: {
-    status: 'pending_settlement',
-    reason: 'Awaiting PayChangu settlement',
-    nextAction: 'scheduler_release',
-  },
-});
+      return res.status(200).json({
+        escrow: result.escrow,
+        payout: pendingSettlementPayout ?? result.payout,
+        payoutEligibility: result.payoutEligibility,
+        payoutDispatch: {
+          status: 'pending_settlement',
+          reason: 'Awaiting PayChangu settlement',
+          nextAction: 'scheduler_release',
+        },
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
       if (
