@@ -74,6 +74,14 @@ const LAUNCH_STATUS_META: Record<SellerPayoutLaunchStatus, SellerPayoutLaunchSta
     label: 'Cancelled',
     detail: 'The payout was cancelled and will not be sent in its current state.',
   },
+  pending_settlement: {
+    label: 'Awaiting settlement',
+    detail: 'Funds are still settling from collection balance before payout can be sent.',
+  },
+  ready_for_payout: {
+    label: 'Ready for payout',
+    detail: 'Settled funds are available and the payout can be sent now.',
+  },
 };
 
 const FAILURE_REASON_META: Record<ProviderFailureReasonCode, SellerPayoutFailureMeta> = {
@@ -156,14 +164,12 @@ export function getSellerPayoutLaunchStatus(input: SellerPayoutSignalInput): Sel
   if (status === 'held') return 'held';
   if (status === 'paid') return 'paid';
   if (status === 'cancelled') return 'cancelled';
+  if (status === 'pending_settlement') return 'pending_settlement';
+  if (status === 'ready_for_payout') return 'ready_for_payout';
   if (status === 'processing') return 'sent_to_paychangu';
   if (status === 'pending') return 'provider_pending';
   if (status === 'queued' || input.manualReviewPending) return 'queued_for_admin_review';
   return 'eligible';
-}
-
-export function getSellerPayoutLaunchStatusMeta(input: SellerPayoutSignalInput): SellerPayoutLaunchStatusMeta {
-  return LAUNCH_STATUS_META[getSellerPayoutLaunchStatus(input)];
 }
 
 export function getSellerPayoutStatusLabel(status: string): string {
