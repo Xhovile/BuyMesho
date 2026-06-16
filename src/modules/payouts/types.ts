@@ -21,7 +21,17 @@ export type PayoutDestination = {
   updatedAt: string;
 };
 
-export type PayoutStatus = "eligible" | "queued" | "processing" | "pending" | "held" | "paid" | "failed" | "cancelled" | "in_escrow";
+export type SellerPayoutLaunchStatus =
+  | 'eligible'
+  | 'pending_settlement'
+  | 'ready_for_payout'
+  | 'queued_for_admin_review'
+  | 'sent_to_paychangu'
+  | 'provider_pending'
+  | 'paid'
+  | 'held'
+  | 'needs_destination_update'
+  | 'cancelled';
 
 export type PayoutRecord = {
   id: string;
