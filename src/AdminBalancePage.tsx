@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CircleAlert, Loader2, RefreshCw, Wallet } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
@@ -15,7 +15,15 @@ type PayChanguBalanceResponse = {
 };
 
 function formatMoney(value: unknown, currency = "MWK") {
-  const numeric = Number(value ?? 0);
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return "—";
+  }
+
   return `${currency} ${numeric.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -31,36 +39,83 @@ function formatDate(value?: unknown): string {
   }
 }
 
+function isAbortLikeError(error: unknown): boolean {
+  if (error instanceof Error) {
+    return error.name === "AbortError" || /aborted/i.test(error.message);
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const record = error as { name?: unknown; message?: unknown };
+    return (
+      record.name === "AbortError" ||
+      (typeof record.message === "string" && /aborted/i.test(record.message))
+    );
+  }
+
+  return false;
+}
+
 export default function AdminBalancePage() {
   const [balance, setBalance] = useState<PayChanguBalanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const requestIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const loadBalance = async () => {
+    const requestId = ++requestIdRef.current;
+    const hasExistingBalance = balance !== null;
+
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setError(null);
     setRefreshing(true);
 
     try {
-      const data = await apiFetch("/api/admin/paychangu/balance?currency=MWK");
+      const data = await apiFetch("/api/admin/paychangu/balance?currency=MWK", {
+        signal: controller.signal,
+      });
+
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
       setBalance((data ?? {}) as PayChanguBalanceResponse);
     } catch (err) {
-      setBalance(null);
-      setError(err instanceof Error ? err.message : "Failed to load PayChangu balance.");
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
+
+      if (!isAbortLikeError(err) && !hasExistingBalance) {
+        setError(err instanceof Error ? err.message : "Failed to load PayChangu balance.");
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (requestIdRef.current === requestId) {
+        setLoading(false);
+        setRefreshing(false);
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
+      }
     }
   };
 
   useEffect(() => {
     void loadBalance();
+
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const currency = balance?.currency ?? "MWK";
-  const mainBalance = Number(balance?.mainBalance ?? 0);
-  const collectionBalance = Number(balance?.collectionBalance ?? 0);
-  const availableBalance = Number(balance?.availableBalance ?? mainBalance);
+  const mainBalance = balance?.mainBalance ?? null;
+  const collectionBalance = balance?.collectionBalance ?? null;
+  const availableBalance = balance?.availableBalance ?? balance?.mainBalance ?? null;
 
   return (
     <AdminWorkspaceLayout
