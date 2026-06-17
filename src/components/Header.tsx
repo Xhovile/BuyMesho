@@ -52,12 +52,14 @@ export default function Header({
   onChipChange,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
   const [authGuardOpen, setAuthGuardOpen] = useState(false);
   const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
   const [topRowHidden, setTopRowHidden] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [selectedChip, setSelectedChip] = useState<HeaderChip>(activeChip);
   const visibilityRafRef = useRef<number | null>(null);
+  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
 
   const { isAdmin } = useIsAdmin(firebaseUser);
 
@@ -67,7 +69,10 @@ export default function Header({
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
   const isSeller = !!(firebaseUser && userProfile?.is_seller);
 
-  const closeMenu = () => setMobileMenuOpen(false);
+  const closeMenu = () => {
+    setMobileMenuOpen(false);
+    setDesktopMenuOpen(false);
+  };
 
   const openAuthGuard = (returnPath: string, afterClose?: () => void) => {
     afterClose?.();
@@ -142,6 +147,9 @@ export default function Header({
   const desktopNavButtonClass =
     "inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 text-sm font-semibold text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900 transition-colors";
 
+  const desktopMenuItemClass =
+    "w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+
   const pathname = typeof window === "undefined" ? HOME_PATH : window.location.pathname;
   const isMarketRoute =
     pathname === EXPLORE_PATH ||
@@ -213,6 +221,32 @@ export default function Header({
     };
   }, [firebaseUser]);
 
+  useEffect(() => {
+    if (!desktopMenuOpen) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (target && desktopMenuRef.current?.contains(target)) return;
+      setDesktopMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDesktopMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [desktopMenuOpen]);
+
   return (
     <>
       <nav className="sticky top-0 z-50">
@@ -225,39 +259,6 @@ export default function Header({
             >
               <div className="flex items-center justify-between gap-4">
                 <BrandMark />
-
-                <div className="hidden md:flex items-center gap-2">
-                  <button type="button" onClick={() => navigateToPath(HOME_PATH)} className={desktopNavButtonClass}>
-                    <House className="w-4 h-4 text-blue-500" />
-                    Home
-                  </button>
-                  <button type="button" onClick={() => handlePaymentsClick()} className={desktopNavButtonClass}>
-                    <CreditCard className="w-4 h-4 text-amber-500" />
-                    Payments
-                  </button>
-                  {isSeller ? (
-                    <button type="button" onClick={() => handleSellerPayoutsClick()} className={desktopNavButtonClass}>
-                      <Wallet className="w-4 h-4 text-emerald-600" />
-                      Seller Payouts
-                    </button>
-                  ) : null}
-                  <button type="button" onClick={() => handleMessagesClick()} className={desktopNavButtonClass}>
-                    <MessageSquareText className="w-4 h-4 text-teal-500" />
-                    <div className="flex items-center gap-2">
-                      <span>Messages</span>
-                      {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
-                    </div>
-                  </button>
-                  {isAdmin ? (
-                    <button type="button" onClick={() => navigateToAdminModerationQueue()} className={desktopNavButtonClass}>
-                      <ShieldCheck className="w-4 h-4 text-slate-700" />
-                      ADMIN
-                    </button>
-                  ) : null}
-                  <button type="button" onClick={() => handleSettingsClick()} aria-label="Settings" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-slate-500 bg-slate-500 text-sm font-bold text-white hover:bg-slate-600 hover:border-slate-600 transition-colors">
-                    <Settings className="w-4 h-4 text-white" />
-                  </button>
-                </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
@@ -290,6 +291,192 @@ export default function Header({
                       <User className="w-5 h-5 text-zinc-600" />
                     )}
                   </button>
+
+                  <div ref={desktopMenuRef} className="relative hidden md:block">
+                    <button
+                      type="button"
+                      onClick={() => setDesktopMenuOpen((value) => !value)}
+                      className="w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95"
+                      aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
+                      aria-expanded={desktopMenuOpen}
+                      aria-haspopup="menu"
+                    >
+                      {desktopMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
+                    </button>
+
+                    <AnimatePresence>
+                      {desktopMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                          transition={{ duration: 0.16 }}
+                          className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]"
+                          role="menu"
+                          aria-label="Desktop header menu"
+                        >
+                          <div className="px-4 pt-4 pb-3 border-b border-zinc-100">
+                            <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                            <h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2>
+                          </div>
+
+                          <div className="p-2 space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                navigateToPath(primaryDrawerPath);
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                  {primaryDrawerLabel === "Home" ? <House className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}
+                                </span>
+                                {primaryDrawerLabel}
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                handleMessagesClick();
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                                  <MessageSquareText className="w-4 h-4 text-white" />
+                                </span>
+                                <span className="flex items-center gap-2">
+                                  <span>Messages</span>
+                                  {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
+                                </span>
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                handlePaymentsClick();
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                                  <CreditCard className="w-4 h-4 text-white" />
+                                </span>
+                                Payments
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            {isSeller ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleSellerPayoutsClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                    <Wallet className="w-4 h-4 text-white" />
+                                  </span>
+                                  Seller Payouts
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            ) : null}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                handleSettingsClick();
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                                  <Settings className="w-4 h-4 text-white" />
+                                </span>
+                                Settings
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            {isAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToAdminModerationQueue();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                    <ShieldCheck className="w-4 h-4 text-white" />
+                                  </span>
+                                  ADMIN
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            ) : null}
+
+                            {firebaseUser ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    onProfileClick();
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                      <User className="w-4 h-4 text-white" />
+                                    </span>
+                                    Profile
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleLogout(closeMenu)}
+                                  className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                      <LogOut className="w-4 h-4 text-white" />
+                                    </span>
+                                    Logout
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-red-300" />
+                                </button>
+                              </>
+                            ) : null}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
 
                   <button
                     onClick={() => setMobileMenuOpen((value) => !value)}
