@@ -396,28 +396,46 @@ async function postJson(
   url: string,
   body: Record<string, unknown>,
   secretKey: string,
+  timeoutMs: number,
 ): Promise<{ payload: unknown; rawText: string; ok: boolean; status: number }> {
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: buildPayChanguJsonHeaders(secretKey),
-    body: JSON.stringify(body),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const { payload, rawText } = await readResponseBody(response);
-  return { payload, rawText, ok: response.ok, status: response.status };
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: buildPayChanguJsonHeaders(secretKey),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+
+    const { payload, rawText } = await readResponseBody(response);
+    return { payload, rawText, ok: response.ok, status: response.status };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function getJson(
   url: string,
   secretKey: string,
+  timeoutMs: number,
 ): Promise<{ payload: unknown; rawText: string; ok: boolean; status: number }> {
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: buildPayChanguJsonHeaders(secretKey),
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  const { payload, rawText } = await readResponseBody(response);
-  return { payload, rawText, ok: response.ok, status: response.status };
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: buildPayChanguJsonHeaders(secretKey),
+      signal: controller.signal,
+    });
+
+    const { payload, rawText } = await readResponseBody(response);
+    return { payload, rawText, ok: response.ok, status: response.status };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 function buildMobileMoneyBody(input: ExecutePayChanguPayoutInput, providerChargeId: string): Record<string, unknown> {
@@ -457,7 +475,7 @@ async function executeStructuredPayChanguPayout(
     const requestBody = buildMobileMoneyBody(input, providerChargeId);
 
     try {
-      const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey);
+      const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey, resolved.paychanguTimeoutMs);
       const responseRecord = toPlainObject(payload);
       const responseStatus =
         extractString(payload, ['data', 'transaction', 'status']) ??
@@ -515,7 +533,7 @@ async function executeStructuredPayChanguPayout(
   const requestBody = buildBankBody(input, providerChargeId);
 
   try {
-    const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey);
+    const { payload, rawText, ok, status } = await postJson(url, requestBody, resolved.paychanguSecretKey, resolved.paychanguTimeoutMs);
     const responseRecord = toPlainObject(payload);
     const responseStatus =
       extractString(payload, ['data', 'transaction', 'status']) ??
@@ -577,7 +595,7 @@ async function getPayChanguPayoutStatusFromDetail(
     resolved.paychanguBaseUrl,
     resolved.paychanguPayoutStatusPath.replace('{charge_id}', encodeURIComponent(chargeId)).replace('{chargeId}', encodeURIComponent(chargeId)),
   );
-  const { payload, ok, rawText, status } = await getJson(url, resolved.paychanguSecretKey);
+  const { payload, ok, rawText, status } = await getJson(url, resolved.paychanguSecretKey, resolved.paychanguTimeoutMs);
 
   if (!ok) {
     const message =
