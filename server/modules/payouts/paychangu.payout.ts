@@ -825,17 +825,22 @@ export async function getPayChanguPayoutBalance(
   config: PayChanguPayoutConfig = {},
 ): Promise<PayChanguPayoutBalanceResult> {
   const resolved = resolveConfig(config);
-  
+  const balanceUrl = resolveEndpoint(
+    resolved.paychanguBaseUrl,
+    resolved.paychanguPayoutBalancePath,
+    { currency },
+  );
+
   console.log("PAYCHANGU BALANCE REQUEST START", {
-  baseUrl: resolved.paychanguBaseUrl,
-  balancePath: resolved.paychanguPayoutBalancePath,
-  balanceUrl: resolved.paychanguPayoutBalanceUrl,
-  currency,
-});
-  
+    url: balanceUrl,
+    currency,
+    timeoutMs: resolved.paychanguTimeoutMs,
+  });
+
   const { payload, rawText, ok, status } = await getJson(
-    resolveEndpoint(resolved.paychanguBaseUrl, resolved.paychanguPayoutBalancePath, { currency }),
+    balanceUrl,
     resolved.paychanguSecretKey,
+    resolved.paychanguTimeoutMs,
   );
 
   if (!ok) {
@@ -858,6 +863,15 @@ export async function getPayChanguPayoutBalance(
     extractString(payload, ['data', 'currency']) ??
     extractString(payload, ['currency']) ??
     currency;
+
+  console.log("PAYCHANGU BALANCE REQUEST DONE", {
+    url: balanceUrl,
+    currency,
+    ok,
+    status,
+    availableBalance,
+    balanceCurrency,
+  });
 
   return {
     provider: 'paychangu',
