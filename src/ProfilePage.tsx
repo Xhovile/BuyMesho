@@ -1,15 +1,12 @@
 import { useState } from "react";
 import {
   AlertTriangle,
-  Bookmark,
   Loader2,
   LogOut,
-  Package,
   Settings,
   ShieldCheck,
   User,
   Lock,
-  EyeOff,
   ChevronRight,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
@@ -17,10 +14,7 @@ import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
 import { auth } from "./firebase";
 import { apiFetch } from "./lib/api";
-import {
-  HIDDEN_PATH,
-  navigateToPath,
-} from "./lib/appNavigation";
+import { navigateToPath } from "./lib/appNavigation";
 import { getAvatarUrl } from "./lib/avatar";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 
@@ -95,7 +89,6 @@ export default function ProfilePage() {
         </div>
       ) : (
         <div>
-          {/* Profile banner – picture pinned to the top-left corner of the 2nd card */}
           <div className="flex items-center gap-4 bg-zinc-50 border-b border-zinc-100 px-6 py-5">
             <div className="w-20 h-20 rounded-full bg-white overflow-hidden border border-zinc-200 shadow-sm flex items-center justify-center flex-shrink-0">
               {avatarUrl ? (
@@ -174,44 +167,6 @@ export default function ProfilePage() {
               <div className="divide-y divide-zinc-100">
                 <button
                   type="button"
-                  onClick={() => navigateToPath("/saved")}
-                  disabled={profileActionsDisabled}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-                      <Bookmark className="w-5 h-5 text-zinc-700" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900">Saved Items</span>
-                      <span className="hidden md:block text-sm text-zinc-500">Open the saved page.</span>
-                    </span>
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(HIDDEN_PATH)}
-                  disabled={profileActionsDisabled}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-                      <EyeOff className="w-5 h-5 text-zinc-700" />
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900">Hidden Listings & Sellers</span>
-                      <span className="hidden md:block text-sm text-zinc-500">
-                        Open hidden listings and hidden sellers.
-                      </span>
-                    </span>
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => navigateToPath("/settings")}
                   className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
                 >
@@ -257,32 +212,6 @@ export default function ProfilePage() {
               </div>
 
               <div className="divide-y divide-zinc-100">
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(profile.is_seller ? "/my-listings" : "/become-seller")}
-                  disabled={profileActionsDisabled}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:opacity-50"
-                >
-                  <span className="flex items-center gap-3 min-w-0">
-                    <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
-                      {profile.is_seller ? (
-                        <Package className="w-5 h-5 text-zinc-700" />
-                      ) : (
-                        <ShieldCheck className="w-5 h-5 text-zinc-700" />
-                      )}
-                    </span>
-                    <span className="min-w-0">
-                      <span className="block font-bold text-zinc-900">
-                        {profile.is_seller ? "My Listings & Dashboard" : "Become a Seller"}
-                      </span>
-                      <span className="hidden md:block text-sm text-zinc-500">
-                        {profile.is_seller ? "Manage what you posted." : "Apply for seller status."}
-                      </span>
-                    </span>
-                  </span>
-                  <ChevronRight className="w-5 h-5 text-zinc-400 shrink-0" />
-                </button>
-
                 <button
                   type="button"
                   onClick={() => navigateToPath(profile.is_seller ? "/edit-profile" : "/edit-account")}
