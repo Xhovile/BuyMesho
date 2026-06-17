@@ -77,6 +77,7 @@ export default function AdminBalancePage() {
     try {
       const data = await apiFetch("/api/admin/paychangu/balance?currency=MWK", {
         signal: controller.signal,
+        timeoutMs: 120000,
       });
 
       if (requestIdRef.current !== requestId) {
