@@ -26,5 +26,17 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const exactReason =
     exactReasonKey ? String(selected[exactReasonKey as keyof typeof selected] ?? "") : null;
 
-  return <PayoutDetailDrawer {...props} />;
+  return (
+    <>
+      {exactReason ? (
+        <div className="fixed right-4 top-4 z-[95] w-[min(28rem,calc(100vw-2rem))] rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-2xl">
+          <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-700">
+            Primary payout blocker{exactReasonLabel ? ` · ${exactReasonLabel}` : ""}
+          </p>
+          <p className="mt-1 break-words font-semibold leading-relaxed">{exactReason}</p>
+        </div>
+      ) : null}
+      <PayoutDetailDrawer {...props} />
+    </>
+  );
 }
