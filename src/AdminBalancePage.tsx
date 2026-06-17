@@ -39,22 +39,6 @@ function formatDate(value?: unknown): string {
   }
 }
 
-function isAbortLikeError(error: unknown): boolean {
-  if (error instanceof Error) {
-    return error.name === "AbortError" || /aborted/i.test(error.message);
-  }
-
-  if (typeof error === "object" && error !== null) {
-    const record = error as { name?: unknown; message?: unknown };
-    return (
-      record.name === "AbortError" ||
-      (typeof record.message === "string" && /aborted/i.test(record.message))
-    );
-  }
-
-  return false;
-}
-
 export default function AdminBalancePage() {
   const [balance, setBalance] = useState<PayChanguBalanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +49,6 @@ export default function AdminBalancePage() {
 
   const loadBalance = async () => {
     const requestId = ++requestIdRef.current;
-    const hasExistingBalance = balance !== null;
 
     abortControllerRef.current?.abort();
     const controller = new AbortController();
@@ -90,9 +73,7 @@ export default function AdminBalancePage() {
         return;
       }
 
-      if (!isAbortLikeError(err) && !hasExistingBalance) {
-        setError(err instanceof Error ? err.message : "Failed to load PayChangu balance.");
-      }
+      setError(err instanceof Error ? err.message : "Failed to load PayChangu balance.");
     } finally {
       if (requestIdRef.current === requestId) {
         setLoading(false);
