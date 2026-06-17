@@ -17,6 +17,10 @@ async function authHeader() {
 
 const API_FETCH_TIMEOUT_MS = 15000;
 
+type ApiFetchInit = RequestInit & {
+  timeoutMs?: number;
+};
+
 function formatApiErrorMessage(value: unknown): string | null {
   if (typeof value === "string") {
     const trimmed = value.trim();
@@ -76,7 +80,7 @@ function createCombinedAbortSignal(signal?: AbortSignal) {
   return { controller, wasCallerAborted: () => callerAborted };
 }
 
-export async function apiFetch(url: string, init: RequestInit = {}) {
+export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
     ...(await authHeader()),
@@ -89,24 +93,30 @@ export async function apiFetch(url: string, init: RequestInit = {}) {
 
   const { controller, wasCallerAborted } = createCombinedAbortSignal(init.signal);
   let timedOut = false;
+  const timeoutMs = init.timeoutMs ?? API_FETCH_TIMEOUT_MS;
   const timeoutId = setTimeout(() => {
     timedOut = true;
-    controller.abort();
-  }, API_FETCH_TIMEOUT_MS);
+    const timeoutError = new Error("Request aborted by timeout.");
+    timeoutError.name = "AbortError";
+    controller.abort(timeoutError);
+  }, timeoutMs);
 
   let res: Response;
   try {
     res = await fetch(url, { ...init, headers, signal: controller.signal });
   } catch (error: any) {
     if (error?.name === "AbortError") {
-      const message =
-        error?.message && String(error.message).trim()
-          ? String(error.message).trim()
-          : timedOut && !wasCallerAborted()
-            ? "Request aborted by timeout."
-            : "Request aborted.";
-
-      throw new Error(message);
+      const reason = controller.signal.reason;
+      if (reason instanceof Error && reason.message.trim()) {
+        throw reason;
+      }
+      if (typeof reason === "string" && reason.trim()) {
+        throw new Error(reason.trim());
+      }
+      if (timedOut && !wasCallerAborted()) {
+        throw new Error("Request aborted by timeout.");
+      }
+      throw new Error("Request aborted.");
     }
     throw error;
   } finally {
