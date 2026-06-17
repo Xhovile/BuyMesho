@@ -80,6 +80,18 @@ function createCombinedAbortSignal(signal?: AbortSignal) {
   return { controller, wasCallerAborted: () => callerAborted };
 }
 
+function normalizeAbortReason(reason: unknown, fallbackMessage: string) {
+  if (reason instanceof Error && reason.message.trim()) {
+    return reason;
+  }
+
+  if (typeof reason === "string" && reason.trim()) {
+    return new Error(reason.trim());
+  }
+
+  return new Error(fallbackMessage);
+}
+
 export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
@@ -96,27 +108,19 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
   const timeoutMs = init.timeoutMs ?? API_FETCH_TIMEOUT_MS;
   const timeoutId = setTimeout(() => {
     timedOut = true;
-    const timeoutError = new Error("Request aborted by timeout.");
-    timeoutError.name = "AbortError";
-    controller.abort(timeoutError);
+    controller.abort(new Error(`Request timed out after ${timeoutMs}ms.`));
   }, timeoutMs);
 
   let res: Response;
   try {
     res = await fetch(url, { ...init, headers, signal: controller.signal });
   } catch (error: any) {
-    if (error?.name === "AbortError") {
+    if (error?.name === "AbortError" || controller.signal.aborted) {
       const reason = controller.signal.reason;
-      if (reason instanceof Error && reason.message.trim()) {
-        throw reason;
-      }
-      if (typeof reason === "string" && reason.trim()) {
-        throw new Error(reason.trim());
-      }
       if (timedOut && !wasCallerAborted()) {
-        throw new Error("Request aborted by timeout.");
+        throw normalizeAbortReason(reason, `Request timed out after ${timeoutMs}ms.`);
       }
-      throw new Error("Request aborted.");
+      throw normalizeAbortReason(reason, "Request aborted.");
     }
     throw error;
   } finally {
