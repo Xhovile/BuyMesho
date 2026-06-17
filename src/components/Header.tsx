@@ -1,4 +1,4 @@
-import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, Wallet } from "lucide-react";
+import { Plus, Store, User, Menu, X, House, Settings, ChevronRight, LogOut, MessageSquareText, ShieldCheck, CreditCard, Wallet, Bookmark, EyeOff, Package } from "lucide-react";
 import { type FormEvent, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import type { User as FirebaseUser } from "firebase/auth";
@@ -17,6 +17,9 @@ import {
   SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
   PROFILE_PATH,
+  SAVED_PATH,
+  HIDDEN_PATH,
+  MY_LISTINGS_PATH,
   navigateToLoginWithReturnPath,
   navigateToPath,
 } from "../lib/appNavigation";
@@ -129,6 +132,38 @@ export default function Header({
     }
     afterClose?.();
     navigateToPath(SELLER_PAYOUTS_PATH);
+  };
+
+  const handleSavedClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SAVED_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SAVED_PATH);
+  };
+
+  const handleHiddenClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(HIDDEN_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(HIDDEN_PATH);
+  };
+
+  const handleMyListingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(BECOME_SELLER_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH);
+  };
+
+  const handleSignInClick = (afterClose?: () => void) => {
+    afterClose?.();
+    navigateToLoginWithReturnPath(authReturnPath ?? undefined);
   };
 
   const handleLogout = async (afterClose?: () => void) => {
@@ -339,6 +374,26 @@ export default function Header({
                               <ChevronRight className="w-4 h-4 text-zinc-400" />
                             </button>
 
+                            {isSeller && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleMyListingsClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                    {isSeller ? <Package className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                                  </span>
+                                  {isSeller ? "My Listings" : "Become a Seller"}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            )}
+
                             <button
                               type="button"
                               onClick={() => {
@@ -356,6 +411,42 @@ export default function Header({
                                   <span>Messages</span>
                                   {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
                                 </span>
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                handleSavedClick();
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                                  <Bookmark className="w-4 h-4 text-white" />
+                                </span>
+                                Saved
+                              </span>
+                              <ChevronRight className="w-4 h-4 text-zinc-400" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                closeMenu();
+                                handleHiddenClick();
+                              }}
+                              className={desktopMenuItemClass}
+                              role="menuitem"
+                            >
+                              <span className="inline-flex items-center gap-3">
+                                <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                                  <EyeOff className="w-4 h-4 text-white" />
+                                </span>
+                                Hidden
                               </span>
                               <ChevronRight className="w-4 h-4 text-zinc-400" />
                             </button>
@@ -398,6 +489,26 @@ export default function Header({
                               </button>
                             ) : null}
 
+                            {isAdmin ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToAdminModerationQueue();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                    <ShieldCheck className="w-4 h-4 text-white" />
+                                  </span>
+                                  ADMIN
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            ) : null}
+
                             <button
                               type="button"
                               onClick={() => {
@@ -416,21 +527,21 @@ export default function Header({
                               <ChevronRight className="w-4 h-4 text-zinc-400" />
                             </button>
 
-                            {isAdmin ? (
+                            {!isSeller && firebaseUser ? (
                               <button
                                 type="button"
                                 onClick={() => {
                                   closeMenu();
-                                  navigateToAdminModerationQueue();
+                                  handleMyListingsClick();
                                 }}
                                 className={desktopMenuItemClass}
                                 role="menuitem"
                               >
                                 <span className="inline-flex items-center gap-3">
-                                  <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
                                     <ShieldCheck className="w-4 h-4 text-white" />
                                   </span>
-                                  ADMIN
+                                  Become a Seller
                                 </span>
                                 <ChevronRight className="w-4 h-4 text-zinc-400" />
                               </button>
@@ -471,7 +582,25 @@ export default function Header({
                                   <ChevronRight className="w-4 h-4 text-red-300" />
                                 </button>
                               </>
-                            ) : null}
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleSignInClick();
+                                }}
+                                className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <User className="w-4 h-4 text-white" />
+                                  </span>
+                                  Sign in / Sign up
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            )}
                           </div>
                         </motion.div>
                       )}
@@ -609,6 +738,51 @@ export default function Header({
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
 
+              {isSeller && (
+                <button type="button" onClick={() => { closeMenu(); handleMyListingsClick(); }} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                      {isSeller ? <Package className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                    </span>
+                    {isSeller ? "My Listings" : "Become a Seller"}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              )}
+
+              <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                    <MessageSquareText className="w-4 h-4 text-white" />
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span>Messages</span>
+                    {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
+                  </div>
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleSavedClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                    <Bookmark className="w-4 h-4 text-white" />
+                  </span>
+                  Saved
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
+              <button type="button" onClick={() => handleHiddenClick(closeMenu)} className={navButtonClass}>
+                <span className="inline-flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                    <EyeOff className="w-4 h-4 text-white" />
+                  </span>
+                  Hidden
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-400" />
+              </button>
+
               <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
                 <span className="inline-flex items-center gap-3">
                   <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
@@ -631,19 +805,6 @@ export default function Header({
                 </button>
               ) : null}
 
-              <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
-                    <MessageSquareText className="w-4 h-4 text-white" />
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span>Messages</span>
-                    {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
-                  </div>
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
               {isAdmin ? (
                 <button type="button" onClick={() => { closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
                   <span className="inline-flex items-center gap-3">
@@ -665,6 +826,18 @@ export default function Header({
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
               </button>
+
+              {!isSeller && firebaseUser ? (
+                <button type="button" onClick={() => { closeMenu(); handleMyListingsClick(); }} className={navButtonClass}>
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                      <ShieldCheck className="w-4 h-4 text-white" />
+                    </span>
+                    Become a Seller
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              ) : null}
 
               {firebaseUser ? (
                 <>
@@ -692,7 +865,21 @@ export default function Header({
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 </>
-              ) : null}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { closeMenu(); handleSignInClick(); }}
+                  className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </span>
+                    Sign in / Sign up
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              )}
             </div>
           </motion.div>
         )}
