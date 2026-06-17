@@ -99,10 +99,14 @@ export async function apiFetch(url: string, init: RequestInit = {}) {
     res = await fetch(url, { ...init, headers, signal: controller.signal });
   } catch (error: any) {
     if (error?.name === "AbortError") {
-      if (timedOut && !wasCallerAborted()) {
-        throw new Error("Network timeout. Please check your connection and try again.");
-      }
-      throw error;
+      const message =
+        error?.message && String(error.message).trim()
+          ? String(error.message).trim()
+          : timedOut && !wasCallerAborted()
+            ? "Request aborted by timeout."
+            : "Request aborted.";
+
+      throw new Error(message);
     }
     throw error;
   } finally {
