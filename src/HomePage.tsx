@@ -2,7 +2,6 @@ import { type ElementType, useCallback, useEffect, useMemo, useState } from "rea
 import {
   ArrowRight,
   BookOpen,
-  House,
   Check,
   ChevronRight,
   CreditCard,
@@ -625,15 +624,15 @@ export default function HomePage() {
                   type="button"
                   onClick={() => {
                     closeMenu();
-                    navigateToPath(HOME_PATH);
+                    navigateToPath(EXPLORE_PATH);
                   }}
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <House className="w-4 h-4 text-white" />
+                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                      <ShoppingBag className="w-4 h-4 text-white" />
                     </span>
-                    Home
+                    Market
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
@@ -711,7 +710,7 @@ export default function HomePage() {
                 >
                   <span className="inline-flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white">★</span>
+                      <Bookmark className="w-4 h-4 text-white" />
                     </span>
                     Saved
                   </span>
@@ -725,7 +724,7 @@ export default function HomePage() {
                 >
                   <span className="inline-flex items-center gap-3">
                     <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white">◌</span>
+                      <EyeOff className="w-4 h-4 text-white" />
                     </span>
                     Hidden
                   </span>
