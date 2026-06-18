@@ -288,7 +288,7 @@ export default function Header({
         <div className="bg-zinc-100 border-b border-zinc-200 shadow-sm">
           <div className="mx-auto max-w-7xl overflow-visible">
             <div
-              className={`overflow-hidden px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
+              className={`overflow-hidden md:overflow-visible px-3 transition-[max-height,opacity,transform] duration-200 will-change-transform ${
                 topRowHidden && !mobileMenuOpen ? "max-h-0 opacity-0 -translate-y-2" : "max-h-24 opacity-100 translate-y-0 pt-3"
               }`}
             >
