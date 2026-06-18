@@ -12,6 +12,7 @@ import {
   EXPLORE_PATH,
   HOME_PATH,
   LOGIN_PATH,
+  SIGNUP_PATH,
   MESSAGES_PATH,
   PAYMENTS_HUB_PATH,
   SELLER_PAYOUTS_PATH,
@@ -866,19 +867,29 @@ export default function Header({
                   </button>
                 </>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => { closeMenu(); handleSignInClick(); }}
-                  className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                >
-                  <span className="inline-flex items-center gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => { closeMenu(); navigateToPath(SIGNUP_PATH); }}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                  >
                     <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                       <User className="w-4 h-4 text-white" />
                     </span>
-                    Sign in / Sign up
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
+                    Sign Up
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => { closeMenu(); handleSignInClick(); }}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                      <User className="w-4 h-4 text-white" />
+                    </span>
+                    Sign In
+                  </button>
+                </div>
               )}
             </div>
           </motion.div>
