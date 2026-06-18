@@ -463,20 +463,7 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-4">
             <BrandMark />
 
-            <BrandMark />
-
-            <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
-              <button
-                onClick={handleStartSelling}
-                disabled={isSellerProfileLoading}
-                className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
-              >
-                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
-                <span className="hidden sm:inline">
-                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
-                </span>
-              </button>
-
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               <button
                 type="button"
                 onClick={() => {
@@ -486,18 +473,14 @@ export default function HomePage() {
                   }
                   handleProfileClick();
                 }}
-                className="w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95"
+                className={desktopProfileButtonClass}
               >
-                {firebaseUser ? (
-                  avatarUrl ? (
-                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
-                      {fallbackLetter}
-                    </div>
-                  )
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <UserRound className="w-5 h-5 text-zinc-600" />
+                  <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                    {fallbackLetter}
+                  </div>
                 )}
               </button>
 
@@ -505,7 +488,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setDesktopMenuOpen((value) => !value)}
-                  className="w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95"
+                  className={desktopMenuButtonClass}
                   aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
                   aria-expanded={desktopMenuOpen}
                   aria-haspopup="menu"
@@ -591,45 +574,41 @@ export default function HomePage() {
                           <ChevronRight className="w-4 h-4 text-zinc-400" />
                         </button>
 
-                        {isLoggedIn ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              closeMenu();
-                              handleSavedClick();
-                            }}
-                            className={desktopMenuItemClass}
-                            role="menuitem"
-                          >
-                            <span className="inline-flex items-center gap-3">
-                              <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                                <Bookmark className="w-4 h-4 text-white" />
-                              </span>
-                              Saved
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeMenu();
+                            handleSavedClick();
+                          }}
+                          className={desktopMenuItemClass}
+                          role="menuitem"
+                        >
+                          <span className="inline-flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                              <Bookmark className="w-4 h-4 text-white" />
                             </span>
-                            <ChevronRight className="w-4 h-4 text-zinc-400" />
-                          </button>
-                        ) : null}
+                            Saved
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-zinc-400" />
+                        </button>
 
-                        {isLoggedIn ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              closeMenu();
-                              handleHiddenClick();
-                            }}
-                            className={desktopMenuItemClass}
-                            role="menuitem"
-                          >
-                            <span className="inline-flex items-center gap-3">
-                              <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                                <EyeOff className="w-4 h-4 text-white" />
-                              </span>
-                              Hidden
+                        <button
+                          type="button"
+                          onClick={() => {
+                            closeMenu();
+                            handleHiddenClick();
+                          }}
+                          className={desktopMenuItemClass}
+                          role="menuitem"
+                        >
+                          <span className="inline-flex items-center gap-3">
+                            <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                              <EyeOff className="w-4 h-4 text-white" />
                             </span>
-                            <ChevronRight className="w-4 h-4 text-zinc-400" />
-                          </button>
-                        ) : null}
+                            Hidden
+                          </span>
+                          <ChevronRight className="w-4 h-4 text-zinc-400" />
+                        </button>
 
                         <button
                           type="button"
@@ -765,9 +744,7 @@ export default function HomePage() {
                 </AnimatePresence>
               </div>
             </div>
-
             <div className="flex items-center gap-2 flex-shrink-0">
-
               <button
                 onClick={handleStartSelling}
                 disabled={isSellerProfileLoading}
