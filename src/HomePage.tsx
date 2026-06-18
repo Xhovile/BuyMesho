@@ -11,6 +11,8 @@ import {
   Plus,
   Settings,
   ShoppingBag,
+  Bookmark,
+  EyeOff,
   ShieldCheck,
   Smartphone,
   Store,
@@ -653,36 +655,6 @@ export default function HomePage() {
 
                 <button
                   type="button"
-                  onClick={() => handleBuyerPaymentsClick(closeMenu)}
-                  className={navButtonClass}
-                >
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
-                      <CreditCard className="w-4 h-4 text-white" />
-                    </span>
-                    Payments
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-
-                {isSeller ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSellerPayoutsClick(closeMenu)}
-                    className={navButtonClass}
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <Wallet className="w-4 h-4 text-white" />
-                      </span>
-                      Seller Payouts
-                    </span>
-                    <ChevronRight className="w-4 h-4 text-zinc-400" />
-                  </button>
-                ) : null}
-
-                <button
-                  type="button"
                   onClick={() => handleMessagesClick(closeMenu)}
                   className={navButtonClass}
                 >
@@ -692,7 +664,6 @@ export default function HomePage() {
                     </span>
                     <div className="flex items-center gap-2">
                       <span>Messages</span>
-
                       {unreadCount > 0 ? (
                         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
                           {unreadCount}
@@ -730,6 +701,36 @@ export default function HomePage() {
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleBuyerPaymentsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                      <CreditCard className="w-4 h-4 text-white" />
+                    </span>
+                    Payments
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                {isSeller ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSellerPayoutsClick(closeMenu)}
+                    className={navButtonClass}
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <Wallet className="w-4 h-4 text-white" />
+                      </span>
+                      Seller Payouts
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ) : null}
 
                 {isAdmin ? (
                   <button
@@ -778,49 +779,49 @@ export default function HomePage() {
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
 
- {isLoggedIn ? (
-  <button
-    type="button"
-    onClick={() => {
-      closeMenu();
-      void handleLogout();
-    }}
-    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-  >
-    <span className="inline-flex items-center gap-3">
-      <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
-        <LogOut className="w-4 h-4 text-white" />
-      </span>
-      Log Out
-    </span>
-    <ChevronRight className="w-4 h-4 text-zinc-400" />
-  </button>
-) : (
-  <div className="grid grid-cols-2 gap-2">
-    <button
-      type="button"
-      onClick={() => {
-        closeMenu();
-        navigateToPath(SIGNUP_PATH);
-      }}
-      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-    >
-      Sign Up
-    </button>
+                {isLoggedIn ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeMenu();
+                      void handleLogout();
+                    }}
+                    className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                        <LogOut className="w-4 h-4 text-white" />
+                      </span>
+                      Log Out
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(SIGNUP_PATH);
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign Up
+                    </button>
 
-    <button
-      type="button"
-      onClick={() => {
-        closeMenu();
-        navigateToPath(LOGIN_PATH);
-      }}
-      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-    >
-      Sign In
-    </button>
-  </div>
-)}
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(LOGIN_PATH);
+                      }}
+                      className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+                    >
+                      Sign In
+                    </button>
+                  </div>
+                )}
+</div>
             </motion.div>
           </>
         )}
