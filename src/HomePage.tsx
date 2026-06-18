@@ -2,6 +2,7 @@ import { type ElementType, useCallback, useEffect, useMemo, useState } from "rea
 import {
   ArrowRight,
   BookOpen,
+  House,
   Check,
   ChevronRight,
   CreditCard,
@@ -26,6 +27,7 @@ import {
   BECOME_SELLER_PATH,
   CREATE_PATH,
   EXPLORE_PATH,
+  HOME_PATH,
   PAYMENTS_HUB_PATH,
   SELLER_PAYOUTS_PATH,
   LOGIN_PATH,
@@ -36,6 +38,9 @@ import {
   SAFETY_PATH,
   SETTINGS_PATH,
   SIGNUP_PATH,
+  SAVED_PATH,
+  HIDDEN_PATH,
+  MY_LISTINGS_PATH,
   TERMS_PATH,
   navigateToLoginWithReturnPath,
   navigateToCreateListing,
@@ -340,6 +345,33 @@ export default function HomePage() {
     afterClose?.();
     navigateToPath(PROFILE_PATH);
   };
+
+  const handleSavedClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SAVED_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SAVED_PATH);
+  };
+
+  const handleHiddenClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(HIDDEN_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(HIDDEN_PATH);
+  };
+
+  const handleMyListingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(BECOME_SELLER_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH);
+  };
   
   const handleMessagesClick = (afterClose?: () => void) => {
     if (!firebaseUser) {
@@ -593,15 +625,29 @@ export default function HomePage() {
                   type="button"
                   onClick={() => {
                     closeMenu();
-                    navigateToPath(EXPLORE_PATH);
+                    navigateToPath(HOME_PATH);
                   }}
                   className={navButtonClass}
                 >
                   <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
-                      <ShoppingBag className="w-4 h-4 text-white" />
+                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                      <House className="w-4 h-4 text-white" />
                     </span>
-                    Market
+                    Home
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleMyListingsClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                      {isSeller ? <Store className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                    </span>
+                    {isSeller ? "My Listings" : "Become a Seller"}
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
@@ -654,6 +700,34 @@ export default function HomePage() {
                         </span>
                       ) : null}
                     </div>
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSavedClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white">★</span>
+                    </span>
+                    Saved
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleHiddenClick(closeMenu)}
+                  className={navButtonClass}
+                >
+                  <span className="inline-flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white">◌</span>
+                    </span>
+                    Hidden
                   </span>
                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                 </button>
