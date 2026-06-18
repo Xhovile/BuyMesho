@@ -743,6 +743,7 @@ export default function HomePage() {
                   )}
                 </AnimatePresence>
               </div>
+            </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={handleStartSelling}
