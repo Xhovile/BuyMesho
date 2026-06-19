@@ -933,32 +933,38 @@ export class PayoutService {
       actorId: actor.actorId ?? null,
       note: 'Payout queued for provider submission',
     });
-    
-let balance: Awaited<ReturnType<typeof getPayChanguPayoutBalance>> | null = null;
 
-try {
-  balance = await this.getProviderBalance(gate.currency);
-} catch (error) {
-  const failureReason = classifyProviderFailureFromError(error) ?? 'provider_unavailable';
-  const reason = providerFailureReason(failureReason);
+    try {
+      await this.getProviderBalance(gate.currency);
+    } catch (error) {
+      const failureReason = classifyProviderFailureFromError(error) ?? 'provider_unavailable';
+      const reason = providerFailureReason(failureReason);
 
-  // Record the warning, but do not stop the payout.
-  this.repository.addEvent({
-    payoutId: input.payoutId,
-    sellerId: gate.sellerId,
-    eventType: 'balance_check_failed',
-    actorType: actor.actorType,
-    actorId: actor.actorId ?? null,
-    note: reason,
-    payload: {
-      stage: 'balance_check',
-      error: error instanceof Error ? error.message : String(error),
-      reasonCode: failureReason,
-    },
-  });
-}
+      const payout = this.holdForReview(
+        {
+          payoutId: input.payoutId,
+          sellerId: gate.sellerId,
+          reasonCode: failureReason,
+          reason,
+          payload: {
+            stage: 'balance_check',
+            error: error instanceof Error ? error.message : String(error),
+            reasonCode: failureReason,
+          },
+        },
+        actor,
+      );
 
-         
+      return {
+        payout,
+        attempt: null,
+        execution: null,
+        reasonCode: failureReason,
+        reason,
+        nextAction: 'manual_review' as PayoutNextAction,
+      };
+    }
+
     const reservedAttempt = this.repository.reserveRetryAttempt({
       payoutId: input.payoutId,
       provider: gate.provider,
@@ -1021,7 +1027,10 @@ try {
     };
     if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
       const exactMessage = exactProviderErrorMessage(execution.rawResponse);
-      const reason = providerFailureReason(execution.failureClass, exactMessage);
+      const reason = providerFailureReason(
+        execution.failureClass,
+        execution.failureClass === 'provider_unavailable' ? null : exactMessage,
+      );
       const payout = this.holdForReview(
         {
           payoutId: input.payoutId,

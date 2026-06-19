@@ -807,7 +807,15 @@ export async function getPayChanguPayoutStatus(
   if (isSinglePayoutDetailsPath(resolved.paychanguPayoutStatusPath)) {
     return getPayChanguPayoutStatusFromDetail(chargeId, resolved);
   }
-  return getPayChanguPayoutStatusFromList(chargeId, resolved);
+  try {
+    return await getPayChanguPayoutStatusFromList(chargeId, resolved);
+  } catch {
+    const detailResolved = {
+      ...resolved,
+      paychanguPayoutStatusPath: `/mobile-money/payments/${encodeURIComponent(chargeId)}/details`,
+    };
+    return getPayChanguPayoutStatusFromDetail(chargeId, detailResolved);
+  }
 }
 
 export async function verifyPayChanguPayoutWebhook(
