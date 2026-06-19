@@ -57,6 +57,8 @@ export type PayoutRecord = {
   platformFeeAmount?: number | null;
   reserveAmount?: number | null;
   manualAdjustmentAmount?: number | null;
+  payoutFeeAmount?: number | null;
+  sellerReceivesAmount?: number | null;
   netAmount?: number | null;
   status: PayoutStatus;
   provider: string | null;

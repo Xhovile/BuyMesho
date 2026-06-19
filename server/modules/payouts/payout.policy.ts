@@ -1,5 +1,11 @@
 export const PAYOUT_POLICY = {
   platformFeeBps: 300,
+  payoutFeeBps: {
+    airtel_money: 180,
+    tnm_mpamba: 150,
+    bank_transfer: 170,
+  },
+  bankPayoutFlatFeeAmount: 700,
   buyerFeeBps: 0,
   payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
@@ -36,6 +42,7 @@ export type PayoutFormulaInput = {
   processingFeeAmount?: number;
   reserveAmount?: number;
   manualAdjustmentAmount?: number;
+  payoutMethod?: 'airtel_money' | 'tnm_mpamba' | 'bank_transfer' | null;
   currency?: string;
 };
 
@@ -59,6 +66,8 @@ export type PayoutFormulaResult = {
   reserveAmount: number;
   reserveCapAmount: number;
   manualAdjustmentAmount: number;
+  payoutFeeAmount: number;
+  sellerReceivesAmount: number;
   netAmount: number;
   currency: string;
 };
@@ -83,6 +92,15 @@ export function calculateCustomerCheckoutFees(input: CustomerCheckoutFeeInput): 
   };
 }
 
+export function calculatePayoutFee(amount: number, payoutMethod?: PayoutFormulaInput['payoutMethod']): number {
+  const payoutAmount = toFixedMoney(amount);
+  if (!payoutMethod) return 0;
+
+  const variableFee = toFixedMoney((payoutAmount * PAYOUT_POLICY.payoutFeeBps[payoutMethod]) / 10_000);
+  const flatFee = payoutMethod === 'bank_transfer' ? PAYOUT_POLICY.bankPayoutFlatFeeAmount : 0;
+  return toFixedMoney(variableFee + flatFee);
+}
+
 export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormulaResult {
   const grossAmount = toFixedMoney(input.grossAmount);
   const manualAdjustmentAmount = toFixedMoney(input.manualAdjustmentAmount ?? 0);
@@ -104,6 +122,8 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
         manualAdjustmentAmount,
     ),
   );
+  const payoutFeeAmount = calculatePayoutFee(netAmount, input.payoutMethod ?? null);
+  const sellerReceivesAmount = Math.max(0, toFixedMoney(netAmount - payoutFeeAmount));
 
   return {
     grossAmount,
@@ -112,6 +132,8 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
     reserveAmount,
     reserveCapAmount,
     manualAdjustmentAmount,
+    payoutFeeAmount,
+    sellerReceivesAmount,
     netAmount,
     currency: (input.currency ?? 'MWK').toUpperCase(),
   };

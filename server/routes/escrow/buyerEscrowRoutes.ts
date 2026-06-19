@@ -94,17 +94,26 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
         const db = getPaymentDb();
         const destination = db.prepare(
-          `SELECT id
+          `SELECT id, destination_type, provider_ref_id, provider_name
            FROM seller_payout_accounts
            WHERE seller_uid = ?
              AND is_active = 1
              AND verification_status = 'verified'
            ORDER BY is_default DESC, updated_at DESC
            LIMIT 1`,
-        ).get(access.order.sellerId) as { id: string } | undefined;
+        ).get(access.order.sellerId) as { id: string; destination_type?: string | null; provider_ref_id?: string | null; provider_name?: string | null } | undefined;
+
+        const payoutMethod = destination?.destination_type === 'bank'
+          ? 'bank_transfer'
+          : /tnm|mpamba/i.test(`${destination?.provider_ref_id ?? ''} ${destination?.provider_name ?? ''}`)
+            ? 'tnm_mpamba'
+            : /airtel/i.test(`${destination?.provider_ref_id ?? ''} ${destination?.provider_name ?? ''}`)
+              ? 'airtel_money'
+              : null;
 
         const payoutFormula = calculatePayoutFormula({
           grossAmount: released.releaseEntry.amount,
+          payoutMethod,
           currency: released.releaseEntry.currency,
         });
 
@@ -120,6 +129,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           reserveAmount: payoutFormula.reserveAmount,
           reserveCapAmount: payoutFormula.reserveCapAmount,
           manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
+          payoutFeeAmount: payoutFormula.payoutFeeAmount,
+          sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
           netAmount: payoutFormula.netAmount,
           formulaSnapshot: payoutFormula,
           currency: released.releaseEntry.currency,

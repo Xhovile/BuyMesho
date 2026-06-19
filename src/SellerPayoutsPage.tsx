@@ -64,6 +64,12 @@ function money(amount: number, currency = "MWK") {
   }).format(amount || 0);
 }
 
+function payoutFeeNote(payout: PayoutRecord) {
+  const fee = Number(payout.payoutFeeAmount ?? 0);
+  if (fee > 0) return `Estimated PayChangu transfer fee: -${money(fee, payout.currency)}`;
+  return "A PayChangu payout transaction fee may also be deducted when funds are transferred to your account.";
+}
+
 function formatDate(value: string | null) {
   if (!value) return "—";
   const date = new Date(value);
@@ -676,9 +682,18 @@ export default function SellerPayoutsPage() {
                                   <span>-{money(Number(payout.reserveAmount || 0), payout.currency)}</span>
                                 </div>
                                 <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
-                                  <span>Net</span>
+                                  <span>Net sent for payout</span>
                                   <span>{money(Number(payout.netAmount || payout.amount || 0), payout.currency)}</span>
                                 </div>
+                                <div className="rounded-lg bg-white px-2 py-1 text-[10px] leading-4 text-zinc-600">
+                                  {payoutFeeNote(payout)}
+                                </div>
+                                {Number(payout.sellerReceivesAmount ?? 0) > 0 && Number(payout.payoutFeeAmount ?? 0) > 0 ? (
+                                  <div className="flex justify-between gap-3 font-bold text-zinc-700">
+                                    <span>Estimated after payout fee</span>
+                                    <span>{money(Number(payout.sellerReceivesAmount), payout.currency)}</span>
+                                  </div>
+                                ) : null}
                               </div>
                             ) : null}
                           </td>
