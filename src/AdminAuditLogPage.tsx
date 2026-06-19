@@ -2,7 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Clock3, Loader2 } from "lucide-react";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
 import { fetchAdminActionLogs } from "./modules/admin/adminApi";
-import type { AdminActionLog } from "./modules/admin/adminTypes";
+import type { AdminActionLog, AdminActionLogFilters } from "./modules/admin/adminTypes";
 import {
   ADMIN_ACTION_LABELS,
   ADMIN_TARGET_LABELS,
@@ -34,6 +34,7 @@ export default function AdminAuditLogPage() {
   const [filters, setFilters] = useState(initialFilters);
   const [total, setTotal] = useState<number | null>(null);
   const [offset, setOffset] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
   const actionTypeOptions = useMemo(
@@ -74,7 +75,11 @@ export default function AdminAuditLogPage() {
     return nextDay.toISOString().slice(0, 10);
   };
 
-  const buildRequestFilters = (currentFilters = filters, nextOffset = 0) => ({
+  const buildRequestFilters = (
+    currentFilters = filters,
+    nextOffset = 0,
+    cursor?: string | null,
+  ): AdminActionLogFilters => ({
     ...currentFilters,
     action_type: currentFilters.action_type || undefined,
     target_type: currentFilters.target_type || undefined,
@@ -83,7 +88,8 @@ export default function AdminAuditLogPage() {
     to: currentFilters.to ? toExclusiveNextDay(currentFilters.to) : undefined,
     q: currentFilters.q.trim() || undefined,
     limit: PAGE_SIZE,
-    offset: nextOffset,
+    offset: cursor ? undefined : nextOffset,
+    cursor: cursor || undefined,
   });
 
   const load = async (currentFilters = filters) => {
@@ -94,6 +100,7 @@ export default function AdminAuditLogPage() {
       setRows(data.rows);
       setTotal(data.total);
       setOffset(data.offset);
+      setNextCursor(data.nextCursor ?? null);
       setHasMore(data.hasMore);
       setExpandedRows({});
     } catch (err) {
@@ -111,10 +118,13 @@ export default function AdminAuditLogPage() {
     const nextOffset = rows.length;
 
     try {
-      const data = await fetchAdminActionLogs(buildRequestFilters(filters, nextOffset));
+      const data = await fetchAdminActionLogs(
+        buildRequestFilters(filters, nextOffset, nextCursor),
+      );
       setRows((prev) => [...prev, ...data.rows]);
       setTotal(data.total);
       setOffset(data.offset);
+      setNextCursor(data.nextCursor ?? null);
       setHasMore(data.hasMore);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load more admin actions.");
