@@ -171,27 +171,17 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      const pendingSettlementPayout = payoutRepository.updateStatus(result.payout.id, 'pending_settlement', {
-        providerStatus: 'pending_settlement',
-      });
-
-      payoutRepository.addEvent({
+      const payoutDispatch = await payoutService.executePayout({
         payoutId: result.payout.id,
-        sellerId: result.payout.sellerId,
-        eventType: 'awaiting_settlement',
-        actorType: 'system',
-        note: 'Payout awaiting PayChangu T+1 settlement before submission',
+        actorType: req.user?.is_admin ? 'admin' : 'system',
+        actorId: requesterId,
       });
 
       return res.status(200).json({
         escrow: result.escrow,
-        payout: pendingSettlementPayout ?? result.payout,
+        payout: payoutDispatch.payout ?? result.payout,
         payoutEligibility: result.payoutEligibility,
-        payoutDispatch: {
-          status: 'pending_settlement',
-          reason: 'Awaiting PayChangu settlement',
-          nextAction: 'scheduler_release',
-        },
+        payoutDispatch,
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';

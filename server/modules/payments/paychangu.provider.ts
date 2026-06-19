@@ -84,17 +84,15 @@ function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, stri
   return headers;
 }
 
-type PayChanguMetaItem = { key: string; value: string };
+function serializeMeta(metadata: Record<string, unknown> | undefined): string {
+  if (!metadata) return JSON.stringify([]);
 
-function serializeMeta(metadata: Record<string, unknown> | undefined): PayChanguMetaItem[] {
-  if (!metadata) return [];
-
-  return Object.entries(metadata)
+  return JSON.stringify(Object.entries(metadata)
     .filter(([, value]) => value !== undefined && value !== null)
     .map(([key, value]) => ({
       key,
       value: Array.isArray(value) ? JSON.stringify(value) : String(value),
-    }));
+    })));
 }
 
 function hasAtMostTwoDecimals(value: number): boolean {
