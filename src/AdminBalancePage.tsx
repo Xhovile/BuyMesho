@@ -14,6 +14,8 @@ type PayChanguBalanceResponse = {
   rawResponse?: Record<string, unknown>;
 };
 
+let cachedPayChanguBalance: PayChanguBalanceResponse | null = null;
+
 function formatMoney(value: unknown, currency = "MWK") {
   if (value === null || value === undefined || value === "") {
     return "—";
@@ -40,14 +42,24 @@ function formatDate(value?: unknown): string {
 }
 
 export default function AdminBalancePage() {
-  const [balance, setBalance] = useState<PayChanguBalanceResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState<PayChanguBalanceResponse | null>(
+    cachedPayChanguBalance,
+  );
+  const [loading, setLoading] = useState(!cachedPayChanguBalance);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const loadBalance = async () => {
+  const loadBalance = async (forceRefresh = false) => {
+    if (cachedPayChanguBalance && !forceRefresh) {
+      setBalance(cachedPayChanguBalance);
+      setLoading(false);
+      setRefreshing(false);
+      setError(null);
+      return;
+    }
+
     const requestId = ++requestIdRef.current;
 
     abortControllerRef.current?.abort();
@@ -67,7 +79,8 @@ export default function AdminBalancePage() {
         return;
       }
 
-      setBalance((data ?? {}) as PayChanguBalanceResponse);
+      cachedPayChanguBalance = (data ?? {}) as PayChanguBalanceResponse;
+      setBalance(cachedPayChanguBalance);
     } catch (err) {
       if (requestIdRef.current !== requestId) {
         return;
@@ -103,7 +116,7 @@ export default function AdminBalancePage() {
     <AdminWorkspaceLayout
       title="Balance"
       description="PayChangu wallet balance for payout readiness."
-      onRefresh={() => void loadBalance()}
+      onRefresh={() => void loadBalance(true)}
     >
       <main className="space-y-6">
         {error ? (
