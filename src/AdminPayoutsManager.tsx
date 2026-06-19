@@ -610,7 +610,7 @@ export default function AdminPayoutsManager() {
   }
 
   return (
-    <AdminWorkspaceLayout>
+    <AdminWorkspaceLayout title="Payout queue" description="Manage payout lifecycle, review exact failure reasons, and reconcile provider state.">
       <div className="space-y-6">
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -795,10 +795,10 @@ export default function AdminPayoutsManager() {
         <ActionModal
           open
           title={pendingDialog.title}
-          description={pendingDialog.message}
+          message={pendingDialog.message}
           confirmLabel={pendingDialog.confirmLabel}
           danger={pendingDialog.danger}
-          onClose={closeActionDialog}
+          onCancel={closeActionDialog}
           onConfirm={handleConfirmDialog}
         />
       ) : null}

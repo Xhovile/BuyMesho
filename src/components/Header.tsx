@@ -357,7 +357,9 @@ export default function Header({
                           </div>
 
                           <div className="p-2 space-y-1">
-                            <button
+                            {firebaseUser ? (
+                              <>
+                                <button
                               type="button"
                               onClick={() => {
                                 closeMenu();
@@ -548,8 +550,6 @@ export default function Header({
                               </button>
                             ) : null}
 
-                            {firebaseUser ? (
-                              <>
                                 <button
                                   type="button"
                                   onClick={() => {

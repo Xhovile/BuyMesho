@@ -1,5 +1,17 @@
 export type DestinationType = "mobile_money" | "bank";
 
+export type PayoutStatus =
+  | "eligible"
+  | "pending_settlement"
+  | "ready_for_payout"
+  | "queued"
+  | "processing"
+  | "pending"
+  | "held"
+  | "paid"
+  | "failed"
+  | "cancelled";
+
 export type PayoutDestination = {
   id: string;
   sellerId: string;
@@ -54,9 +66,13 @@ export type PayoutRecord = {
   holdReason?: string | null;
   lastFailureReason?: string | null;
   retryAllowed?: boolean;
+  retryEligible?: boolean | null;
+  retryBlockedReason?: string | null;
   retryCount?: number;
   manualReviewPending?: boolean;
+  manualReviewReason?: string | null;
   verificationBlockers?: string[];
+  destinationVerificationStatus?: string | null;
   lastUpdatedTimestamp?: string | null;
   requestedBy: string | null;
   requestedAt: string | null;

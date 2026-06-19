@@ -101,11 +101,11 @@ class DebugErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     console.error("DebugErrorBoundary caught:", error, info);
   }
 
-  render() {
+  override render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-white p-6 text-zinc-900">
