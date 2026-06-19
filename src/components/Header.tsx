@@ -584,25 +584,79 @@ export default function Header({
                                 </button>
                               </>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  closeMenu();
-                                  handleSignInClick();
-                                }}
-                                className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                                role="menuitem"
-                              >
-                                <span className="inline-flex items-center gap-3">
-                                  <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                                    <User className="w-4 h-4 text-white" />
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    navigateToPath(primaryDrawerPath);
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                                      {primaryDrawerLabel === "Home" ? <House className="w-4 h-4 text-white" /> : <Store className="w-4 h-4 text-white" />}
+                                    </span>
+                                    {primaryDrawerLabel}
                                   </span>
-                                  Sign in / Sign up
-                                </span>
-                                <ChevronRight className="w-4 h-4 text-zinc-400" />
-                              </button>
-                            )}
-                          </div>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    navigateToPath(BECOME_SELLER_PATH);
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                      <ShieldCheck className="w-4 h-4 text-white" />
+                                    </span>
+                                    Become a Seller
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    handleSignInClick();
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                      <User className="w-4 h-4 text-white" />
+                                    </span>
+                                    Sign In
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    navigateToPath(SIGNUP_PATH);
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                      <User className="w-4 h-4 text-white" />
+                                    </span>
+                                    Sign Up
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+                              </>
                         </motion.div>
                       )}
                     </AnimatePresence>
@@ -730,10 +784,53 @@ export default function Header({
                       <House className="w-4 h-4 text-white" />
                     </span>
                   ) : (
-                    <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
-                      <Store className="w-4 h-4 text-white" />
+                <>
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      {primaryDrawerLabel === "Home" ? (
+                        <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                          <House className="w-4 h-4 text-white" />
+                        </span>
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                          <Store className="w-4 h-4 text-white" />
+                        </span>
+                      )}
+                      {primaryDrawerLabel}
                     </span>
-                  )}
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(BECOME_SELLER_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </span>
+                      Become a Seller
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+
+                  <button type="button" onClick={() => { closeMenu(); handleSignInClick(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
+                      Sign In
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(SIGNUP_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
+                      Sign Up
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                </>
                   {primaryDrawerLabel}
                 </span>
                 <ChevronRight className="w-4 h-4 text-zinc-400" />
@@ -867,30 +964,53 @@ export default function Header({
                   </button>
                 </>
               ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => { closeMenu(); navigateToPath(SIGNUP_PATH); }}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                  >
-                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
+                <>
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      {primaryDrawerLabel === "Home" ? (
+                        <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
+                          <House className="w-4 h-4 text-white" />
+                        </span>
+                      ) : (
+                        <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                          <Store className="w-4 h-4 text-white" />
+                        </span>
+                      )}
+                      {primaryDrawerLabel}
                     </span>
-                    Sign Up
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => { closeMenu(); handleSignInClick(); }}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
-                  >
-                    <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(BECOME_SELLER_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                        <ShieldCheck className="w-4 h-4 text-white" />
+                      </span>
+                      Become a Seller
                     </span>
-                    Sign In
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
-                </div>
-              )}
+
+                  <button type="button" onClick={() => { closeMenu(); handleSignInClick(); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
+                      Sign In
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+
+                  <button type="button" onClick={() => { closeMenu(); navigateToPath(SIGNUP_PATH); }} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                        <User className="w-4 h-4 text-white" />
+                      </span>
+                      Sign Up
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                </>
             </div>
           </motion.div>
         )}
@@ -926,4 +1046,4 @@ export default function Header({
       />
     </>
   );
-}
+ }
