@@ -777,15 +777,8 @@ export default function Header({
                 <X className="w-4 h-4 text-zinc-600" />
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-[1px]">
-              <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  {primaryDrawerLabel === "Home" ? (
-                    <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                      <House className="w-4 h-4 text-white" />
-                    </span>
-                  ) : (
+              {firebaseUser ? (
                 <>
                   <button type="button" onClick={() => { closeMenu(); navigateToPath(primaryDrawerPath); }} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
@@ -803,144 +796,95 @@ export default function Header({
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
 
-                  <button type="button" onClick={() => { closeMenu(); navigateToPath(BECOME_SELLER_PATH); }} className={navButtonClass}>
-                    <span className="inline-flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                        <ShieldCheck className="w-4 h-4 text-white" />
+                  {isSeller ? (
+                    <button type="button" onClick={() => { closeMenu(); handleMyListingsClick(); }} className={navButtonClass}>
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                          {isSeller ? <Package className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                        </span>
+                        {isSeller ? "My Listings" : "Become a Seller"}
                       </span>
-                      Become a Seller
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  ) : null}
+
+                  <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                        <MessageSquareText className="w-4 h-4 text-white" />
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span>Messages</span>
+                        {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
+                      </div>
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
 
-                  <button type="button" onClick={() => { closeMenu(); handleSignInClick(); }} className={navButtonClass}>
+                  <button type="button" onClick={() => handleSavedClick(closeMenu)} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-white" />
+                      <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                        <Bookmark className="w-4 h-4 text-white" />
                       </span>
-                      Sign In
+                      Saved
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
 
-                  <button type="button" onClick={() => { closeMenu(); navigateToPath(SIGNUP_PATH); }} className={navButtonClass}>
+                  <button type="button" onClick={() => handleHiddenClick(closeMenu)} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
-                      <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                        <User className="w-4 h-4 text-white" />
+                      <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                        <EyeOff className="w-4 h-4 text-white" />
                       </span>
-                      Sign Up
+                      Hidden
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
-                </>
-                  {primaryDrawerLabel}
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
 
-              {isSeller && (
-                <button type="button" onClick={() => { closeMenu(); handleMyListingsClick(); }} className={navButtonClass}>
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                      {isSeller ? <Package className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                  <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                        <CreditCard className="w-4 h-4 text-white" />
+                      </span>
+                      Payments
                     </span>
-                    {isSeller ? "My Listings" : "Become a Seller"}
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-              )}
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
 
-              <button type="button" onClick={() => handleMessagesClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
-                    <MessageSquareText className="w-4 h-4 text-white" />
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span>Messages</span>
-                    {unreadCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">{unreadCount}</span> : null}
-                  </div>
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
+                  {isSeller ? (
+                    <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                          <Wallet className="w-4 h-4 text-white" />
+                        </span>
+                        Seller Payouts
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  ) : null}
 
-              <button type="button" onClick={() => handleSavedClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                    <Bookmark className="w-4 h-4 text-white" />
-                  </span>
-                  Saved
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
+                  {isAdmin ? (
+                    <button type="button" onClick={() => { closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-white" />
+                        </span>
+                        ADMIN
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  ) : null}
 
-              <button type="button" onClick={() => handleHiddenClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
-                    <EyeOff className="w-4 h-4 text-white" />
-                  </span>
-                  Hidden
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              <button type="button" onClick={() => handlePaymentsClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-4 h-4 text-white" />
-                  </span>
-                  Payments
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              {isSeller ? (
-                <button type="button" onClick={() => handleSellerPayoutsClick(closeMenu)} className={navButtonClass}>
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                      <Wallet className="w-4 h-4 text-white" />
+                  <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
+                    <span className="inline-flex items-center gap-3">
+                      <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                        <Settings className="w-4 h-4 text-white" />
+                      </span>
+                      Settings
                     </span>
-                    Seller Payouts
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-              ) : null}
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
 
-              {isAdmin ? (
-                <button type="button" onClick={() => { closeMenu(); navigateToAdminModerationQueue(); }} className={navButtonClass}>
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                    </span>
-                    ADMIN
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-              ) : null}
-
-              <button type="button" onClick={() => handleSettingsClick(closeMenu)} className={navButtonClass}>
-                <span className="inline-flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
-                    <Settings className="w-4 h-4 text-white" />
-                  </span>
-                  Settings
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-400" />
-              </button>
-
-              {!isSeller && firebaseUser ? (
-                <button type="button" onClick={() => { closeMenu(); handleMyListingsClick(); }} className={navButtonClass}>
-                  <span className="inline-flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                    </span>
-                    Become a Seller
-                  </span>
-                  <ChevronRight className="w-4 h-4 text-zinc-400" />
-                </button>
-              ) : null}
-
-              {firebaseUser ? (
-                <>
                   <button type="button" onClick={() => { closeMenu(); onProfileClick(); }} className={navButtonClass}>
                     <span className="inline-flex items-center gap-3">
                       <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
@@ -1013,8 +957,10 @@ export default function Header({
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
                 </>
+              )}
             </div>
-          </motion.div>
+            </motion.div>
+
         )}
       </AnimatePresence>
 
