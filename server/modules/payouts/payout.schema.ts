@@ -96,6 +96,8 @@ function ensurePayoutLifecycleSchema(): void {
   ensureColumn('payouts', 'reserve_amount', 'INTEGER');
   ensureColumn('payouts', 'reserve_cap_amount', 'INTEGER');
   ensureColumn('payouts', 'manual_adjustment_amount', 'INTEGER');
+  ensureColumn('payouts', 'payout_fee_amount', 'INTEGER');
+  ensureColumn('payouts', 'seller_receives_amount', 'INTEGER');
   ensureColumn('payouts', 'net_amount', 'INTEGER');
   ensureColumn('payouts', 'formula_snapshot', 'TEXT');
   ensureColumn('payouts', 'last_adjustment_id', 'TEXT');

@@ -14,6 +14,7 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
     processingFeeAmount: 10,
     reserveAmount: 200,
     manualAdjustmentAmount: 20,
+    payoutMethod: 'bank_transfer',
     currency: 'mwk',
   });
 
@@ -36,6 +37,8 @@ test('payout policy freezes the seller-net formula and hard caps reserves', () =
 
   // 1500 - 45 - 90 - 20 = 1345
   assert.equal(formula.netAmount, 1345, 'seller net payout must be formula-driven');
+  assert.equal(formula.payoutFeeAmount, 723, 'bank payout fee must include 1.7% plus K700 flat');
+  assert.equal(formula.sellerReceivesAmount, 622, 'seller receives net payout less payout transfer fee');
   assert.equal(formula.currency, 'MWK');
 });
 

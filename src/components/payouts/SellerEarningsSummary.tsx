@@ -53,14 +53,14 @@ const CARDS: SummaryCard[] = [
   {
     key: "availableForPayout",
     label: "Available for payout",
-    helper: "Released funds ready to be queued",
+    helper: "Released funds after BuyMesho commission; PayChangu payout fees may still apply",
     tone: "bg-emerald-50 text-emerald-700 border-emerald-100",
     icon: Banknote,
   },
   {
     key: "pendingPayout",
     label: "Pending payout",
-    helper: "Queued, processing, pending, or held",
+    helper: "Net amount sent to PayChangu; transfer fees may be deducted by payout method",
     tone: "bg-amber-50 text-amber-700 border-amber-100",
     icon: Clock3,
   },

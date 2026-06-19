@@ -325,7 +325,7 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
 
     const formulaRow = getPaymentDb()
       .prepare(`SELECT gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount, reserve_cap_amount,
-                       manual_adjustment_amount, net_amount, formula_snapshot
+                       manual_adjustment_amount, payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot
                 FROM payouts
                 WHERE id = ?`)
       .get(body.payout?.id) as {
@@ -335,6 +335,8 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
         reserve_amount: number | null;
         reserve_cap_amount: number | null;
         manual_adjustment_amount: number | null;
+        payout_fee_amount: number | null;
+        seller_receives_amount: number | null;
         net_amount: number | null;
         formula_snapshot: string | null;
       };
@@ -345,6 +347,8 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
     assert.equal(formulaRow.reserve_amount, 0, 'payout should persist the reserve formula amount');
     assert.equal(formulaRow.reserve_cap_amount, 90, 'payout should persist the reserve cap formula amount');
     assert.equal(formulaRow.manual_adjustment_amount, 0, 'payout should persist the manual adjustment formula amount');
+    assert.equal(formulaRow.payout_fee_amount, 26, 'payout should persist the PayChangu transfer fee estimate');
+    assert.equal(formulaRow.seller_receives_amount, 1429, 'payout should persist the seller amount after payout fee estimate');
     assert.equal(formulaRow.net_amount, 1455, 'payout should persist the net formula amount');
     assert.deepEqual(JSON.parse(formulaRow.formula_snapshot ?? '{}'), {
       grossAmount: 1500,
@@ -353,6 +357,8 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
       reserveAmount: 0,
       reserveCapAmount: 90,
       manualAdjustmentAmount: 0,
+      payoutFeeAmount: 26,
+      sellerReceivesAmount: 1429,
       netAmount: 1455,
       currency: 'MWK',
     });
