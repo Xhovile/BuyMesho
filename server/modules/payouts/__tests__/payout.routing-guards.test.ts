@@ -6,6 +6,7 @@ import { payoutService } from '../payout.service.js';
 import { executePayChanguPayout } from '../paychangu.payout.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { escrowRepository } from '../../escrow/escrow.repository.js';
+import { getSellerPayoutStatusLabel } from '../../../../src/modules/payouts/uiModel.js';
 
 function seedSubmissionPayout(prefix: string, destinationType: 'mobile_money' | 'bank', providerRefId: string | null) {
   const db = getPaymentDb();

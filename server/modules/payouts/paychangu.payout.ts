@@ -643,6 +643,7 @@ async function getPayChanguPayoutStatusFromList(
         per_page: String(perPage),
       }),
       resolved.paychanguSecretKey,
+      resolved.paychanguTimeoutMs,
     );
 
     if (!ok) {
@@ -731,6 +732,7 @@ export async function listPayChanguMobileMoneyOperators(
   const { payload, ok, rawText, status } = await getJson(
     buildUrl(resolved.paychanguBaseUrl, resolved.paychanguMobileMoneyPath),
     resolved.paychanguSecretKey,
+    resolved.paychanguTimeoutMs,
   );
 
   if (!ok) {
@@ -751,6 +753,7 @@ export async function listPayChanguPayoutBanks(
   const { payload, ok, rawText, status } = await getJson(
     buildUrl(resolved.paychanguBaseUrl, resolved.paychanguBanksPath, { currency }),
     resolved.paychanguSecretKey,
+    resolved.paychanguTimeoutMs,
   );
 
   if (!ok) {

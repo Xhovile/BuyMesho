@@ -588,7 +588,7 @@ export function storeIdempotencyKey(
 
 export function getPaymentDb(): Database.Database {
   if (!_db) {
-    const configuredPath = process.env.PAYMENT_DB_PATH?.trim();
+    const configuredPath = process.env.NODE_ENV === "test" ? process.env.PAYMENT_DB_PATH?.trim() : "";
     const dbPath = configuredPath
       ? path.resolve(configuredPath)
       : path.resolve(__dirname, "..", "market.db");
