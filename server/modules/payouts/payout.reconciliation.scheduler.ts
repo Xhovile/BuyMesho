@@ -66,15 +66,23 @@ function isPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined
     return false;
   }
 
-  const settlementAt = Date.UTC(
-    referenceDate.getUTCFullYear(),
-    referenceDate.getUTCMonth(),
-    referenceDate.getUTCDate() + 1,
-    0,
-    0,
-    0,
-    0,
-  );
+  const catFormatter = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Blantyre',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  });
+
+  const parts = catFormatter.formatToParts(referenceDate);
+  const year = Number(parts.find((part) => part.type === 'year')?.value);
+  const month = Number(parts.find((part) => part.type === 'month')?.value);
+  const day = Number(parts.find((part) => part.type === 'day')?.value);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return false;
+  }
+
+  const settlementAt = Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0);
 
   return nowMs >= settlementAt;
 }
