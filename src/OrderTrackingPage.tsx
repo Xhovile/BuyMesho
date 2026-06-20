@@ -13,6 +13,7 @@ import {
   releaseOrderEscrow,
   type OrderBundle,
 } from "./lib/orderApi";
+import { getCountdownParts, getNextCatMidnightMs } from "./lib/settlementWindow";
 import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
 import OrderProgressTracker from "./components/orders/OrderProgressTracker";
 import OrderDetailsCard from "./components/orders/OrderDetailsCard";
@@ -44,6 +45,7 @@ function OrderTrackingPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const reference = useMemo(() => {
     const segments = window.location.pathname.split("/").filter(Boolean);
@@ -74,6 +76,11 @@ function OrderTrackingPageContent() {
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const order = bundle?.order ?? null;
   const viewerUid = firebaseUser?.uid ?? profile?.uid ?? null;
@@ -158,7 +165,8 @@ const escrowUpdatedAt =
     order?.status === "in_escrow" &&
     escrowState !== "released" &&
     escrowState !== "refunded" &&
-    escrowState !== "closed";
+    escrowState !== "closed" &&
+    nowMs >= releaseAvailableAt;
 
   const handleBackToListing = () => {
     const firstListingId = order?.items?.[0]?.listingId;
@@ -300,6 +308,7 @@ const escrowUpdatedAt =
                 disputeReason={disputeReason}
                 submitting={submitting}
                 canConfirmDelivery={canConfirmDelivery}
+                releaseCountdownText={releaseCountdownText}
                 onChangeReason={setDisputeReason}
                 onConfirmDelivery={() => void handleConfirmDelivery()}
                 onOpenDispute={() => void handleOpenDispute()}

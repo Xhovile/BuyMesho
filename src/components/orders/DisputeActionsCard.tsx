@@ -4,6 +4,7 @@ type DisputeActionsCardProps = {
   disputeReason: string;
   submitting: 'release' | 'dispute' | null;
   canConfirmDelivery: boolean;
+  releaseCountdownText?: string | null;
   onChangeReason: (value: string) => void;
   onConfirmDelivery: () => void;
   onOpenDispute: () => void;
@@ -13,12 +14,19 @@ export default function DisputeActionsCard({
   disputeReason,
   submitting,
   canConfirmDelivery,
+  releaseCountdownText,
   onChangeReason,
   onConfirmDelivery,
   onOpenDispute,
 }: DisputeActionsCardProps) {
   return (
     <div className="space-y-3">
+      {!canConfirmDelivery && releaseCountdownText ? (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
+          {releaseCountdownText}
+        </div>
+      ) : null}
+
       <button
         type="button"
         onClick={onConfirmDelivery}
