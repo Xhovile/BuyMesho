@@ -201,7 +201,7 @@ function countPayoutsForOrder(orderId: string): number {
   return row.count;
 }
 
-test('release endpoint creates an eligible payout candidate and dispatches it to PayChangu', async () => {
+test('release endpoint creates a pending-settlement payout candidate without immediate PayChangu dispatch', async () => {
   clearReleasePayoutState();
   useDefaultPayChanguEnv();
   const requests = mockPayChanguFetch();
@@ -287,37 +287,21 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
     assert.equal(body.payout?.orderId, releasePayoutOrderId, 'payout should link to the order');
     assert.equal(body.payout?.escrowId, body.escrow?.id, 'payout should link to the escrow');
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
-    assert.equal(body.payout?.amount, 1455, 'payout should use the server-side net payout formula');
+    assert.equal(body.payout?.amount, 1429, 'payout should use the server-side net payout formula after payout fee');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
-    assert.equal(body.payout?.status, 'pending', 'payout should advance beyond eligible after dispatch');
+    assert.equal(body.payout?.status, 'pending_settlement', 'payout should wait for PayChangu settlement before dispatch');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');
-    assert.equal(body.payout?.providerStatus, 'pending', 'payout should reflect the provider pending status');
+    assert.equal(body.payout?.providerStatus, null, 'payout should not have provider status before submission');
     assert.equal(body.payout?.requestedBy, 'buyer-release-payout-1', 'payout should record the releasing buyer as requester');
 
     assert.equal(body.payoutDispatch?.nextAction, 'awaiting_provider', 'dispatch should report awaiting provider');
     assert.equal(body.payoutDispatch?.reasonCode, null, 'dispatch should not report an error code');
-    assert.equal(body.payoutDispatch?.attempt?.status, 'pending', 'attempt should be marked pending');
-    assert.equal(body.payoutDispatch?.execution?.status, 'pending', 'execution should be marked pending');
+    assert.equal(body.payoutDispatch?.attempt, null, 'release should not create a provider attempt before settlement');
+    assert.equal(body.payoutDispatch?.execution, null, 'release should not execute provider payout before settlement');
 
-    assert.equal(requests.length, 2, 'release should check provider balance and submit one payout request');
-    assert.equal(requests[0]?.url, 'https://api.paychangu.com/wallet-balance?currency=MWK');
-    assert.equal(requests[0]?.method, 'GET');
-    assert.equal(requests[0]?.authorization, 'Bearer test-secret-key');
-
-    const expectedChargeId = `BM-PO-${body.payout?.id}-A01`;
-    assert.equal(requests[1]?.url, 'https://api.paychangu.com/mobile-money/payouts/initialize');
-    assert.equal(requests[1]?.method, 'POST');
-    assert.equal(requests[1]?.authorization, 'Bearer test-secret-key');
-    assert.deepEqual(requests[1]?.body, {
-      mobile_money_operator_ref_id: 'airtel-money',
-      mobile: '0990000000',
-      amount: '1455',
-      charge_id: expectedChargeId,
-    });
-    assert.equal(Object.hasOwn(requests[1]?.body ?? {}, 'currency'), false);
-
+    assert.equal(requests.length, 0, 'release should not call PayChangu before settlement');
     assert.equal(countPayoutsForOrder(releasePayoutOrderId), 1, 'release should persist exactly one payout candidate');
-    assert.equal(countPayoutAttempts(body.payout?.id ?? ''), 1, 'release should create one payout attempt');
+    assert.equal(countPayoutAttempts(body.payout?.id ?? ''), 0, 'release should not create a payout attempt before settlement');
 
     const savedPayout = payoutRepository.findByEscrowId(body.escrow?.id ?? '');
     assert.equal(savedPayout?.id, body.payout?.id, 'payout should be persisted for the escrow');
@@ -349,7 +333,7 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
     assert.equal(formulaRow.manual_adjustment_amount, 0, 'payout should persist the manual adjustment formula amount');
     assert.equal(formulaRow.payout_fee_amount, 26, 'payout should persist the PayChangu transfer fee estimate');
     assert.equal(formulaRow.seller_receives_amount, 1429, 'payout should persist the seller amount after payout fee estimate');
-    assert.equal(formulaRow.net_amount, 1455, 'payout should persist the net formula amount');
+    assert.equal(formulaRow.net_amount, 1429, 'payout should persist the net formula amount after payout fee');
     assert.deepEqual(JSON.parse(formulaRow.formula_snapshot ?? '{}'), {
       grossAmount: 1500,
       platformFeeAmount: 45,
@@ -359,7 +343,7 @@ test('release endpoint creates an eligible payout candidate and dispatches it to
       manualAdjustmentAmount: 0,
       payoutFeeAmount: 26,
       sellerReceivesAmount: 1429,
-      netAmount: 1455,
+      netAmount: 1429,
       currency: 'MWK',
     });
     assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'fulfilled', 'release should fulfill the order');

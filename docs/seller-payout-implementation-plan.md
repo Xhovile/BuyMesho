@@ -9,9 +9,9 @@ Buyer payments are already represented in the local payment and escrow flow:
 1. PayChangu checkout/webhook verification updates the payment row to `captured`.
 2. The matching order is confirmed and moved into `in_escrow`.
 3. An escrow record is created with state `funded` and a credit ledger entry for the paid amount.
-4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local payout candidate for the released escrow, moves the order status to `fulfilled`, and attempts PayChangu payout dispatch using the seller's verified payout destination.
+4. Buyer/admin release changes the escrow state to `released`, appends a release ledger entry, creates one local payout candidate for the released escrow in `pending_settlement`, moves the order status to `fulfilled`, and leaves PayChangu submission to the settlement worker after midnight/T+1 when funds are expected to be usable.
 
-The payout path now creates provider-attempt history, submits PayChangu payout requests, verifies payout webhooks, and reconciles PayChangu payout status. Release-time dispatch can still return a non-terminal provider status such as `pending`, so seller receipt is finalized by PayChangu callbacks, reconciliation, and any required manual-review or retry handling rather than guaranteed at the instant escrow is released.
+The payout path creates provider-attempt history only after settlement, submits PayChangu payout requests from the scheduler/worker, verifies payout webhooks, and reconciles PayChangu payout status. Release-time never fires the provider payout immediately; seller receipt is finalized by the settlement worker, PayChangu callbacks, reconciliation, and any required manual-review or retry handling rather than guaranteed at the instant escrow is released.
 
 ## Scope alignment
 
@@ -62,7 +62,7 @@ Before treating the production payout implementation as complete, resolve these 
 | Status | Note | Required pre-merge edit |
 | --- | --- | --- |
 | **Resolved for release-time dispatch** | Escrow release authorization must stay buyer/admin-only. | Keep release endpoints on the dedicated buyer/admin release access check; do not reuse general order access for release or payout-triggering routes. Add/keep regression coverage that sellers cannot release escrow for their own orders. |
-| **Resolved for release-time dispatch** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry, one payout candidate per escrow, the approved seller-net formula, and release-time PayChangu dispatch using the seller's verified payout destination. |
+| **Resolved for settlement-queued dispatch** | Escrow release must be an accounting event, not just a status flip. | Preserve the transactional release ledger entry, one payout candidate per escrow in `pending_settlement`, the approved seller-net formula, and worker-driven PayChangu dispatch after settlement using the seller's verified payout destination. |
 | **Resolved for launch scope** | Separate escrow idempotency from provider-attempt idempotency. | Keep payout-candidate uniqueness at the escrow/release level and preserve provider-attempt history with a fresh PayChangu `charge_id` for each retry attempt. Advanced concurrent retry deduplication remains Phase 2 hardening. |
 | **Resolved for launch scope** | Define the money formula before launch. | The formula is now implemented in code; keep the formula frozen and keep `signed/manual adjustment approval workflows` deferred until Phase 2 hardening. |
 | **Open workflow decision** | Plan for payout failure after escrow release. | Add a seller/admin remediation state where destination details can be corrected and payout can be retried with a new provider attempt while preserving audit history. Do not silently reopen buyer escrow after provider failure. |

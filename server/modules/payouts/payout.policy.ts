@@ -113,7 +113,7 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
   // Keep this field for compatibility, but it is no longer part of the payout formula.
   const processingFeeAmount = 0;
 
-  const netAmount = Math.max(
+  const amountBeforePayoutFee = Math.max(
     0,
     toFixedMoney(
       grossAmount -
@@ -122,8 +122,9 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
         manualAdjustmentAmount,
     ),
   );
-  const payoutFeeAmount = calculatePayoutFee(netAmount, input.payoutMethod ?? null);
-  const sellerReceivesAmount = Math.max(0, toFixedMoney(netAmount - payoutFeeAmount));
+  const payoutFeeAmount = calculatePayoutFee(amountBeforePayoutFee, input.payoutMethod ?? null);
+  const netAmount = Math.max(0, toFixedMoney(amountBeforePayoutFee - payoutFeeAmount));
+  const sellerReceivesAmount = netAmount;
 
   return {
     grossAmount,

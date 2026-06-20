@@ -18,7 +18,6 @@ const DEFAULT_INTERVAL_MS = 5 * 60 * 1000;
 const DEFAULT_BATCH_LIMIT = 25;
 const MIN_INTERVAL_MS = 10_000;
 const MAX_BATCH_LIMIT = 50;
-const T_PLUS_ONE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function parseBooleanEnv(value: string | undefined, defaultValue: boolean): boolean {
   if (value === undefined || value.trim() === '') {
@@ -56,17 +55,28 @@ function parsePositiveIntegerEnv(
   return Math.min(Math.max(integer, min), max);
 }
 
-function isOlderThanTPlusOne(referenceAt: string | null | undefined, nowMs = Date.now()): boolean {
+function isPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined, nowMs = Date.now()): boolean {
   if (!referenceAt) {
     return false;
   }
 
-  const timestamp = new Date(referenceAt).getTime();
+  const referenceDate = new Date(referenceAt);
+  const timestamp = referenceDate.getTime();
   if (!Number.isFinite(timestamp)) {
     return false;
   }
 
-  return nowMs - timestamp >= T_PLUS_ONE_WINDOW_MS;
+  const settlementAt = Date.UTC(
+    referenceDate.getUTCFullYear(),
+    referenceDate.getUTCMonth(),
+    referenceDate.getUTCDate() + 1,
+    0,
+    0,
+    0,
+    0,
+  );
+
+  return nowMs >= settlementAt;
 }
 
 export function getPayoutReconciliationSchedulerConfig(
@@ -141,7 +151,7 @@ export class PayoutReconciliationScheduler {
 
     for (const row of rows) {
       const referenceAt = row.requested_at ?? row.created_at;
-      if (!isOlderThanTPlusOne(referenceAt)) {
+      if (!isPastSettlementMidnightTPlusOne(referenceAt)) {
         continue;
       }
 

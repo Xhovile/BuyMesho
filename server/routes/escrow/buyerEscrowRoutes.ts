@@ -122,7 +122,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           orderId,
           escrowId: released.escrow.id,
           releaseEntryId: released.releaseEntry.id,
-          amount: payoutFormula.netAmount,
+          amount: payoutFormula.sellerReceivesAmount,
           grossAmount: payoutFormula.grossAmount,
           platformFeeAmount: payoutFormula.platformFeeAmount,
           processingFeeAmount: payoutFormula.processingFeeAmount,
@@ -156,6 +156,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             releaseEntryId: released.releaseEntry.id,
             payoutStatus: payout.status,
             payoutAmount: payout.amount,
+            payoutStatusReason: 'pending_paychangu_settlement_until_t_plus_1',
             payoutFormula,
           },
         });
@@ -182,17 +183,18 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      const payoutDispatch = await payoutService.executePayout({
-        payoutId: result.payout.id,
-        actorType: req.user?.is_admin ? 'admin' : 'system',
-        actorId: requesterId,
-      });
-
       return res.status(200).json({
         escrow: result.escrow,
-        payout: payoutDispatch.payout ?? result.payout,
+        payout: result.payout,
         payoutEligibility: result.payoutEligibility,
-        payoutDispatch,
+        payoutDispatch: {
+          payout: result.payout,
+          attempt: null,
+          execution: null,
+          reasonCode: null,
+          reason: 'Payout queued pending PayChangu settlement; provider submission will run after T+1 settlement.',
+          nextAction: 'awaiting_provider',
+        },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
