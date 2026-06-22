@@ -544,7 +544,7 @@ export default function Header({
                                   <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
                                     <ShieldCheck className="w-4 h-4 text-white" />
                                   </span>
-                                  Become a Seller
+                                  Become Seller
                                 </span>
                                 <ChevronRight className="w-4 h-4 text-zinc-400" />
                               </button>
@@ -578,7 +578,7 @@ export default function Header({
                                     <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
                                       <LogOut className="w-4 h-4 text-white" />
                                     </span>
-                                    Logout
+                                    Log Out
                                   </span>
                                   <ChevronRight className="w-4 h-4 text-red-300" />
                                 </button>
@@ -616,7 +616,7 @@ export default function Header({
                                     <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
                                       <ShieldCheck className="w-4 h-4 text-white" />
                                     </span>
-                                    Become a Seller
+                                    Become Seller
                                   </span>
                                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                                 </button>
@@ -634,7 +634,7 @@ export default function Header({
                                     <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                                       <User className="w-4 h-4 text-white" />
                                     </span>
-                                    Sign In
+                                    Log In
                                   </span>
                                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                                 </button>
@@ -652,7 +652,7 @@ export default function Header({
                                     <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                                       <User className="w-4 h-4 text-white" />
                                     </span>
-                                    Sign Up
+                                    Create Account 
                                   </span>
                                   <ChevronRight className="w-4 h-4 text-zinc-400" />
                                 </button>
@@ -904,7 +904,7 @@ export default function Header({
                       <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
                         <LogOut className="w-4 h-4 text-white" />
                       </span>
-                      Logout
+                      Log Out
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
@@ -932,7 +932,7 @@ export default function Header({
                       <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
                         <ShieldCheck className="w-4 h-4 text-white" />
                       </span>
-                      Become a Seller
+                      Become Seller
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
@@ -942,7 +942,7 @@ export default function Header({
                       <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                         <User className="w-4 h-4 text-white" />
                       </span>
-                      Sign In
+                      Log In
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
@@ -952,7 +952,7 @@ export default function Header({
                       <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
                         <User className="w-4 h-4 text-white" />
                       </span>
-                      Sign Up
+                      Create Account
                     </span>
                     <ChevronRight className="w-4 h-4 text-zinc-400" />
                   </button>
