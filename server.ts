@@ -2226,9 +2226,12 @@ app.post("/api/listings/:id/view", (req, res) => {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "dist")));
+    const clientDist = path.resolve(__dirname, "../dist");
+
+    app.use(express.static(clientDist));
+
     app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
+      res.sendFile(path.join(clientDist, "index.html"));
     });
   }
 
