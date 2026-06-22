@@ -96,6 +96,7 @@ export default function EditProfilePage() {
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
     if (!firebaseUser || !profile) return;
+
     setSaving(true);
     try {
       const updatedProfile: UserProfile = {
@@ -105,6 +106,7 @@ export default function EditProfilePage() {
         university: form.university,
         bio: form.bio,
       };
+
       await apiFetch("/api/profile", {
         method: "PUT",
         body: JSON.stringify({
@@ -114,10 +116,54 @@ export default function EditProfilePage() {
           bio: updatedProfile.bio || "",
         }),
       });
+
       setProfile(updatedProfile);
       showFeedback("success", "Profile updated", "Your seller profile was saved successfully.");
       navigateToPath("/profile");
     } catch (err: any) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      if (message.includes("Seller profile not found")) {
+        try {
+          await apiFetch("/api/profile/bootstrap", {
+            method: "POST",
+            body: JSON.stringify({
+              university: form.university,
+            }),
+          });
+
+          const updatedProfile: UserProfile = {
+            ...profile,
+            business_name: form.businessName,
+            business_logo: form.logoUrl || undefined,
+            university: form.university,
+            bio: form.bio,
+          };
+
+          await apiFetch("/api/profile", {
+            method: "PUT",
+            body: JSON.stringify({
+              business_name: updatedProfile.business_name,
+              business_logo: updatedProfile.business_logo || "",
+              university: updatedProfile.university,
+              bio: updatedProfile.bio || "",
+            }),
+          });
+
+          setProfile(updatedProfile);
+          showFeedback("success", "Profile updated", "Your seller profile was created and saved successfully.");
+          navigateToPath("/profile");
+          return;
+        } catch (bootstrapError: any) {
+          showFeedback(
+            "error",
+            "Profile update failed",
+            bootstrapError?.message || "We could not create your seller profile."
+          );
+          return;
+        }
+      }
+
       showFeedback("error", "Profile update failed", err?.message || "We could not update your profile.");
     } finally {
       setSaving(false);
