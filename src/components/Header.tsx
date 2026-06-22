@@ -200,8 +200,8 @@ export default function Header({
         return;
       }
       setTopRowHidden((prev) => {
-        if (prev) return window.scrollY >= 2;
-        return window.scrollY > 30;
+        if (prev) return window.scrollY >= 1;
+        return window.scrollY > 20;
       });
     };
 
