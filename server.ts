@@ -61,8 +61,6 @@ if (getConfiguredAdminEmails().length === 0) {
   }
 
 async function startServer() {
-  const app = express();
-  app.set("trust proxy", 1);
   const PORT = Number(process.env.PORT) || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
