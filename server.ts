@@ -64,6 +64,10 @@ async function startServer() {
   const app = express();
   app.set("trust proxy", 1);
   const PORT = Number(process.env.PORT) || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
+});
   
   // Ensure PayChangu webhook receives raw JSON bytes for signature verification.
   app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
