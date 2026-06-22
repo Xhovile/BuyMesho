@@ -295,9 +295,6 @@ export default function MessagesInboxPage() {
             <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
               Conversations
             </p>
-            <p className="mt-1 text-sm text-zinc-600">
-              Chat management, moderation tools, and unread counters.
-            </p>
           </div>
 
           <div className="space-y-3">
