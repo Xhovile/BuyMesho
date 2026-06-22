@@ -546,7 +546,7 @@ export default function HomePage() {
                                   <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
                                     <ShoppingBag className="w-4 h-4 text-white" />
                                   </span>
-                                  Market / Home
+                                  Market
                                 </span>
                                 <ChevronRight className="w-4 h-4 text-zinc-400" />
                               </button>
