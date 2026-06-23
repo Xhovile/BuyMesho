@@ -120,10 +120,10 @@ export default function VerifyEmailPage() {
             <div>
               <p className="font-bold">Verification required</p>
               <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                Please verify your email before using Profile, Settings, seller tools, or account editing.
+                Please verify your email...          
               </p>
               <p className="mt-2 text-sm leading-relaxed text-amber-800">
-                This page is the only place unverified users should land after signup or login.
+                This page is where unverified users land after signup or login.
               </p>
             </div>
           </div>
