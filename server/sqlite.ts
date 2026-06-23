@@ -588,20 +588,21 @@ export function storeIdempotencyKey(
   ).run(key, JSON.stringify(response), new Date().toISOString());
 }
 
-export function getPaymentDb(): Database.Database {
-  if (!_db) {
-    const dbPath = resolvePaymentDatabasePath();
-    const dbDir = path.dirname(dbPath);
+function resolvePaymentDatabasePath(): string {
+  const candidates = [
+    process.env.PAYMENT_DB_PATH,
+    process.env.SQLITE_PATH,
+    process.env.DB_PATH,
+    process.env.DATABASE_FILE,
+  ];
 
-    if (dbDir && dbDir !== ".") {
-      fs.mkdirSync(dbDir, { recursive: true });
+  for (const candidate of candidates) {
+    if (candidate && candidate.trim()) {
+      return candidate.trim();
     }
-
-    _db = new Database(dbPath);
-    initPaymentSchema(_db);
   }
 
-  return _db;
+  return path.resolve(__dirname, "..", "market.db");
 }
 
 export function getPaymentDb(): Database.Database {
