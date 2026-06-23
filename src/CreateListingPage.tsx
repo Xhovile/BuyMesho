@@ -87,10 +87,32 @@ export default function CreateListingPage() {
     setSubmitting(true);
     try {
       await refreshProfile();
-      await apiFetch("/api/listings", {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
+   try {
+  await apiFetch("/api/listings", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+} catch (err: any) {
+  const message = err instanceof Error ? err.message : String(err);
+
+  if (message.includes("Seller profile not found")) {
+    await apiFetch("/api/profile/bootstrap", {
+      method: "POST",
+      body: JSON.stringify({
+        university: payload.university,
+      }),
+    });
+
+    await apiFetch("/api/listings", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    return;
+  }
+
+  throw err;
+}
 
       invalidateHomepageCache();
       setRedirectAfterFeedback(true);
