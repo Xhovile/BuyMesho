@@ -3,6 +3,9 @@ import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
+import { payoutRepository, payoutService } from '../payouts/payout.service.js';
+import { calculatePayoutFormula } from '../payouts/payout.policy.js';
+import { getPaymentDb } from '../../sqlite.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 
 export interface ApplyPayChanguResult {
@@ -10,6 +13,15 @@ export interface ApplyPayChanguResult {
   order?: ReturnType<typeof orderRepository.findByPaymentReference>;
   verification: PaymentVerificationResult;
 }
+
+interface SellerPayoutDestination {
+  id: string;
+  destination_type?: string | null;
+  provider_ref_id?: string | null;
+  provider_name?: string | null;
+}
+
+type ConnectPayoutMethod = 'airtel_money' | 'tnm_mpamba' | 'bank_transfer' | null;
 
 function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '').trim();
@@ -56,6 +68,48 @@ function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: s
   };
 
   console.log('[notification] order_paid', JSON.stringify(payload));
+}
+
+
+function emitSellerPayoutQueuedNotification(sellerId: string, orderId: string, payoutId: string): void {
+  const payload = {
+    orderId,
+    sellerId,
+    payoutId,
+    event: 'seller_payout_queued',
+    emittedAt: new Date().toISOString(),
+  };
+
+  console.log('[notification] seller_payout_queued', JSON.stringify(payload));
+}
+
+function findSellerDefaultPayoutDestination(sellerId: string): SellerPayoutDestination | undefined {
+  return getPaymentDb().prepare(
+    `SELECT id, destination_type, provider_ref_id, provider_name
+     FROM seller_payout_accounts
+     WHERE seller_uid = ?
+       AND is_active = 1
+       AND verification_status = 'verified'
+     ORDER BY is_default DESC, updated_at DESC
+     LIMIT 1`,
+  ).get(sellerId) as SellerPayoutDestination | undefined;
+}
+
+function derivePayoutMethod(destination: SellerPayoutDestination | undefined): ConnectPayoutMethod {
+  if (destination?.destination_type === 'bank') {
+    return 'bank_transfer';
+  }
+
+  const providerReference = `${destination?.provider_ref_id ?? ''} ${destination?.provider_name ?? ''}`;
+  if (/tnm|mpamba/i.test(providerReference)) {
+    return 'tnm_mpamba';
+  }
+
+  if (/airtel/i.test(providerReference)) {
+    return 'airtel_money';
+  }
+
+  return null;
 }
 
 function isCaptured(verification: PaymentVerificationResult): boolean {
@@ -139,6 +193,59 @@ export function applyVerifiedPayChanguPayment(
   const activeOrder = confirmedOrder ?? order;
 
   if (activeOrder.settlementRoute === 'connect') {
+    const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
+    const payoutMethod = derivePayoutMethod(destination);
+    const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
+    const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+    const payoutFormula = calculatePayoutFormula({
+      grossAmount,
+      currency,
+      payoutMethod,
+    });
+
+    const { payout, created } = payoutService.createConnectPayoutCandidate({
+      sellerId: activeOrder.sellerId,
+      orderId: activeOrder.id,
+      amount: payoutFormula.sellerReceivesAmount,
+      grossAmount: payoutFormula.grossAmount,
+      platformFeeAmount: payoutFormula.platformFeeAmount,
+      processingFeeAmount: payoutFormula.processingFeeAmount,
+      reserveAmount: payoutFormula.reserveAmount,
+      reserveCapAmount: payoutFormula.reserveCapAmount,
+      manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
+      payoutFeeAmount: payoutFormula.payoutFeeAmount,
+      sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
+      netAmount: payoutFormula.netAmount,
+      formulaSnapshot: payoutFormula,
+      currency,
+      requestedBy: 'system',
+      destinationAccountId: destination?.id ?? null,
+      snapshot: {
+        payoutFormula,
+        settlementRoute: activeOrder.settlementRoute,
+        paymentReference: reference,
+        payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
+      },
+    });
+
+    if (created) {
+      payoutRepository.addEvent({
+        payoutId: payout.id,
+        sellerId: activeOrder.sellerId,
+        eventType: 'connect_payout_queued',
+        actorType: 'system',
+        note: 'Connect payment created seller payout candidate',
+        payload: {
+          settlementRoute: activeOrder.settlementRoute,
+          payoutFormula,
+          destinationAccountId: destination?.id ?? null,
+          payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
+        },
+      });
+
+      emitSellerPayoutQueuedNotification(activeOrder.sellerId, activeOrder.id, payout.id);
+    }
+
     return {
       payment,
       order: activeOrder,
