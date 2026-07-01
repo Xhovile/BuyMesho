@@ -4,7 +4,6 @@ export type { MoneyValue } from './common.js';
 export type PaymentProviderKey = 'paystack' | 'flutterwave' | 'paychangu';
 export type PaymentMethod = 'card' | 'bank_transfer' | 'mobile_money' | 'ussd' | 'wallet';
 export type CheckoutSettlementRoute = 'escrow' | 'connect';
-export type CheckoutSettlementRoute = 'escrow' | 'connect';
 export type PaymentIntentStatus = 'pending' | 'requires_action' | 'authorized' | 'captured' | 'failed' | 'cancelled' | 'refunded';
 export type EscrowState = 'initiated' | 'funded' | 'held' | 'released' | 'refunded' | 'disputed' | 'closed';
 export type SettlementStatus = 'pending' | 'processing' | 'settled' | 'failed';
