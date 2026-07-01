@@ -82,6 +82,27 @@ export interface CreateEligiblePayoutInput {
   snapshot?: Record<string, unknown> | null;
 }
 
+export interface CreateConnectPayoutInput {
+  sellerId: string;
+  orderId: string;
+  amount: number;
+  grossAmount: number;
+  platformFeeAmount: number;
+  processingFeeAmount: number;
+  reserveAmount: number;
+  reserveCapAmount: number;
+  manualAdjustmentAmount: number;
+  payoutFeeAmount?: number;
+  sellerReceivesAmount?: number;
+  netAmount: number;
+  formulaSnapshot: Record<string, unknown>;
+  currency: string;
+  requestedBy: string;
+  requestedAt?: string;
+  destinationAccountId?: string | null;
+  snapshot?: Record<string, unknown> | null;
+}
+
 export interface PayoutRequest {
   sellerId: string;
   amount: MoneyValue;
@@ -315,6 +336,19 @@ export class PayoutRepository {
     return this.rowToPayout(row);
   }
 
+  findConnectPayoutByOrderId(orderId: string): PayoutRecord | undefined {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM payouts
+         WHERE order_id = ? AND escrow_id IS NULL
+         ORDER BY created_at ASC
+         LIMIT 1`,
+      )
+      .get(orderId) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    return this.rowToPayout(row);
+  }
+
   findAllByOrderOrEscrow(input: { orderId: string; escrowId: string }): PayoutRecord[] {
     const rows = this.db
       .prepare(
@@ -404,6 +438,73 @@ export class PayoutRepository {
     const created = this.findByEscrowId(input.escrowId);
     if (!created) {
       throw new Error('Failed to create payout candidate');
+    }
+    return created;
+  }
+
+  createConnectForOrder(input: CreateConnectPayoutInput): PayoutRecord {
+    const existing = this.findConnectPayoutByOrderId(input.orderId);
+    if (existing) return existing;
+
+    const now = input.requestedAt ?? new Date().toISOString();
+    const id = randomUUID();
+
+    this.db.prepare(
+       `INSERT OR IGNORE INTO payouts (
+         id,
+         seller_id,
+         order_id,
+         escrow_id,
+         release_entry_id,
+         destination_account_id,
+         amount,
+         gross_amount,
+         platform_fee_amount,
+         processing_fee_amount,
+         reserve_amount,
+         reserve_cap_amount,
+         manual_adjustment_amount,
+         payout_fee_amount,
+         seller_receives_amount,
+         net_amount,
+         formula_snapshot,
+         currency,
+         status,
+         provider,
+         provider_charge_id,
+         requested_by,
+         requested_at,
+         raw_request,
+         created_at,
+         updated_at
+       ) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement', 'paychangu', NULL, ?, ?, ?, ?, ?)`,
+     ).run(
+       id,
+       input.sellerId,
+       input.orderId,
+       input.destinationAccountId ?? null,
+       input.amount,
+       input.grossAmount,
+       input.platformFeeAmount,
+       input.processingFeeAmount,
+       input.reserveAmount,
+       input.reserveCapAmount,
+       input.manualAdjustmentAmount,
+       input.payoutFeeAmount ?? 0,
+       input.sellerReceivesAmount ?? input.netAmount,
+       input.netAmount,
+       JSON.stringify(input.formulaSnapshot),
+       input.currency,
+       input.requestedBy,
+       now,
+       input.snapshot ? JSON.stringify(input.snapshot) : null,
+       now,
+       now,
+     );
+
+    const created = this.findConnectPayoutByOrderId(input.orderId);
+    if (!created) {
+      throw new Error('Failed to create Connect payout candidate');
     }
     return created;
   }
@@ -659,6 +760,10 @@ export class PayoutService {
 
   createEligiblePayoutCandidate(input: CreateEligiblePayoutInput): PayoutRecord {
     return this.repository.createEligibleForRelease(input);
+  }
+
+  createConnectPayoutCandidate(input: CreateConnectPayoutInput): PayoutRecord {
+    return this.repository.createConnectForOrder(input);
   }
 
   addEvent(input: Parameters<PayoutRepository['addEvent']>[0]): void {
