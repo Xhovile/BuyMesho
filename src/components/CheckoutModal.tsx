@@ -8,6 +8,7 @@ import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
 import { calculateCustomerCheckoutFees } from "../../server/modules/payouts/payout.policy";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
+type SettlementRoute = "escrow" | "connect";
 
 interface CheckoutResult {
   orderId: string;
@@ -27,6 +28,26 @@ interface CheckoutModalProps {
 function formatPrice(amount: number): string {
   return `MK ${Number(amount).toLocaleString()}`;
 }
+
+const settlementOptions: Array<{
+  route: SettlementRoute;
+  label: string;
+  description: string;
+  buttonClassName: string;
+}> = [
+  {
+    route: "escrow",
+    label: "Pay and confirm later",
+    description: "Funds are held until delivery is confirmed.",
+    buttonClassName: "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
+  },
+  {
+    route: "connect",
+    label: "Pay directly to seller",
+    description: "Money goes to the seller's connected account.",
+    buttonClassName: "border-zinc-900 bg-zinc-900 text-white hover:bg-zinc-800",
+  },
+];
 
 export default function CheckoutModal({
   listing,
@@ -60,7 +81,7 @@ export default function CheckoutModal({
     }
   }, [isOpen]);
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (settlementRoute: SettlementRoute) => {
     setStep("loading");
     setError(null);
     try {
@@ -77,6 +98,7 @@ export default function CheckoutModal({
           listingId: listing.id,
           quantity,
           method: "mobile_money",
+          settlementRoute,
           returnUrl,
           cancelUrl,
           buyerName: buyerName || buyerEmail || undefined,
@@ -127,7 +149,7 @@ export default function CheckoutModal({
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
             className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 p-6">
+            <div className="flex items-start justify-between gap-4 border-b border-zinc-100 p-6">
               <div className="flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900">
                   <ShoppingBag className="h-5 w-5 text-white" />
@@ -137,7 +159,7 @@ export default function CheckoutModal({
                     Checkout
                   </p>
                   <h2 className="text-base font-extrabold text-zinc-900">
-                    Complete your purchase
+                    Choose how you want to pay
                   </h2>
                 </div>
               </div>
@@ -244,8 +266,7 @@ export default function CheckoutModal({
                   </div>
 
                   <p className="text-xs text-zinc-400 leading-5">
-                    You will be redirected to PayChangu's secure payment page to complete
-                    your purchase. Your funds are held in escrow until delivery is confirmed.
+                    Choose one of the payment routes below.
                   </p>
 
                   {step === "error" && error && (
@@ -258,21 +279,24 @@ export default function CheckoutModal({
             </div>
 
             {(step === "form" || step === "error") && (
-              <div className="flex gap-3 border-t border-zinc-100 px-6 pb-6 pt-4">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 rounded-2xl border border-zinc-200 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleConfirm()}
-                  className="flex-1 rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors"
-                >
-                  {step === "error" ? "Retry" : "Confirm & Pay"}
-                </button>
+              <div className="border-t border-zinc-100 px-6 pb-6 pt-4">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {settlementOptions.map((option) => (
+                    <button
+                      key={option.route}
+                      type="button"
+                      onClick={() => void handleConfirm(option.route)}
+                      className={`rounded-2xl border px-4 py-4 text-left transition-colors ${option.buttonClassName}`}
+                    >
+                      <div className="text-sm font-extrabold leading-tight">
+                        {option.label}
+                      </div>
+                      <div className={`mt-1 text-xs leading-5 ${option.route === "connect" ? "text-white/80" : "text-zinc-500"}`}>
+                        {option.description}
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>
