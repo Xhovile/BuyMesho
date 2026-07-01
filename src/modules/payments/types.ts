@@ -1,5 +1,5 @@
 import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common.js';
-import type { PaymentMethod, PaymentProviderKey, PaymentIntentStatus, SettlementStatus } from '../../shared/types/payment.js';
+import type { CheckoutSettlementRoute, PaymentMethod, PaymentProviderKey, PaymentIntentStatus, SettlementStatus } from '../../shared/types/payment.js';
 
 export interface PaymentProviderCapabilities {
   supportsWebhookVerification: boolean;
@@ -20,6 +20,7 @@ export interface CreatePaymentRequest {
   orderId: EntityId;
   provider: PaymentProviderKey;
   method: PaymentMethod;
+  settlementRoute?: CheckoutSettlementRoute;
   amount: MoneyValue;
   customer: PaymentCustomer;
   metadata?: Record<string, unknown>;
