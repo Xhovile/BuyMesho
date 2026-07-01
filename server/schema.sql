@@ -260,6 +260,7 @@ CREATE TABLE IF NOT EXISTS orders (
   total_amount DOUBLE PRECISION NOT NULL,
   total_currency TEXT NOT NULL,
   payment_provider TEXT,
+  settlement_route TEXT,
   payment_reference TEXT,
   escrow_id TEXT,
   items TEXT NOT NULL,
@@ -339,54 +340,3 @@ CREATE TABLE IF NOT EXISTS payout_attempts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
 );
-
-CREATE INDEX IF NOT EXISTS idx_payout_attempts_payout_id
-ON payout_attempts (payout_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_payout_attempts_status
-ON payout_attempts (status, created_at DESC);
-
-CREATE TABLE IF NOT EXISTS payout_events (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  payout_id TEXT NOT NULL,
-  seller_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  actor_type TEXT NOT NULL,
-  actor_id TEXT,
-  note TEXT,
-  payload TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (payout_id) REFERENCES payouts(id) ON DELETE CASCADE
-);
-
-CREATE TABLE IF NOT EXISTS seller_payout_account_events (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  seller_uid TEXT NOT NULL,
-  account_id TEXT NOT NULL,
-  event_type TEXT NOT NULL,
-  actor_type TEXT NOT NULL,
-  actor_id TEXT,
-  note TEXT,
-  payload TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES seller_payout_accounts(id) ON DELETE CASCADE,
-  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
-);
-
-CREATE INDEX IF NOT EXISTS idx_payout_events_payout_id
-ON payout_events (payout_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_payout_events_seller_id
-ON payout_events (seller_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid
-ON seller_payout_account_events (seller_uid, created_at DESC);
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_seller_payout_accounts_destination_fingerprint
-ON seller_payout_accounts (seller_uid, destination_fingerprint);
-
-CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_seller_uid
-ON seller_payout_accounts (seller_uid, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_seller_payout_accounts_verification_status
-ON seller_payout_accounts (seller_uid, verification_status, is_active);
