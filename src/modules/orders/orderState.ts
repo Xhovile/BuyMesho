@@ -1,5 +1,5 @@
 import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../shared/types/common.js';
-import type { PaymentProviderKey } from '../../shared/types/payment.js';
+import type { CheckoutSettlementRoute, PaymentProviderKey } from '../../shared/types/payment.js';
 
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_escrow' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed' | 'closed';
 export type OrderSource = 'listing' | 'layby' | 'event' | 'accommodation' | 'wholesale';
@@ -23,6 +23,7 @@ export interface OrderState extends Timestamped {
   fees?: MoneyValue;
   total: MoneyValue;
   paymentProvider?: PaymentProviderKey | null;
+  settlementRoute?: CheckoutSettlementRoute | null;
   paymentReference?: string | null;
   escrowId?: EntityId | null;
   items: OrderItem[];
