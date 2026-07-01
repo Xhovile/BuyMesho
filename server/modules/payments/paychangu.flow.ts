@@ -137,6 +137,15 @@ export function applyVerifiedPayChanguPayment(
     order;
 
   const activeOrder = confirmedOrder ?? order;
+
+  if (activeOrder.settlementRoute === 'connect') {
+    return {
+      payment,
+      order: activeOrder,
+      verification,
+    };
+  }
+
   const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
   const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
 
