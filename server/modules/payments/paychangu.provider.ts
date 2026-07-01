@@ -10,6 +10,7 @@ import type {
 import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
+const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';
 
 export const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'success',
@@ -486,6 +487,10 @@ export const paychanguProvider = {
     };
   },
 
+  async refund(_request: RefundRequest): Promise<RefundResult> {
+    throw new Error(REFUND_UNAVAILABLE_MESSAGE);
+  },
+
   async verifyWebhook(
     signature: string | undefined,
     payload: string | Record<string, unknown>,
@@ -526,6 +531,17 @@ export const paychanguProvider = {
   },
 };
 
-function isPaychanguSuccessStatus(status: string): boolean {
-  return PAYCHANGU_SUCCESS_STATUSES.has(status);
+export const paychanguWebhookSpec = {
+  acceptedSignatureHeaders: ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS,
+  acceptedEventTypes: [...PAYCHANGU_ACCEPTED_EVENT_TYPES],
+  successfulStatuses: [...PAYCHANGU_SUCCESS_STATUSES],
+};
+
+export function isAcceptedPaychanguEventType(eventType: string | undefined): boolean {
+  if (!eventType) return false;
+  return PAYCHANGU_ACCEPTED_EVENT_TYPES.has(eventType.trim().toLowerCase());
+}
+
+export function isPaychanguSuccessStatus(status: string | undefined): boolean {
+  return normalizePaychanguPaymentStatus(status) === 'paid';
 }
