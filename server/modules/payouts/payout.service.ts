@@ -336,6 +336,19 @@ export class PayoutRepository {
     return this.rowToPayout(row);
   }
 
+  findConnectPayoutByOrderId(orderId: string): PayoutRecord | undefined {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM payouts
+         WHERE order_id = ? AND escrow_id IS NULL
+         ORDER BY created_at ASC
+         LIMIT 1`,
+      )
+      .get(orderId) as Record<string, unknown> | undefined;
+    if (!row) return undefined;
+    return this.rowToPayout(row);
+  }
+
   findAllByOrderOrEscrow(input: { orderId: string; escrowId: string }): PayoutRecord[] {
     const rows = this.db
       .prepare(

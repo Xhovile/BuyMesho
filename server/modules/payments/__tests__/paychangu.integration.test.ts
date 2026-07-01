@@ -1,4 +1,5 @@
 import test from 'node:test';
+import '../../payouts/payout.schema.js';
 import assert from 'node:assert/strict';
 import express from 'express';
 import { createHash, createHmac } from 'crypto';
@@ -11,6 +12,24 @@ import { escrowRepository } from '../../escrow/escrow.repository.js';
 import { getPaymentDb } from '../../../sqlite.js';
 
 const WEBHOOK_SECRET = 'integration-secret';
+
+type ConnectPayoutRow = {
+  id: string;
+  seller_id: string;
+  order_id: string;
+  escrow_id: string | null;
+  destination_account_id: string | null;
+  amount: number;
+  gross_amount: number;
+  platform_fee_amount: number;
+  processing_fee_amount: number;
+  reserve_amount: number;
+  payout_fee_amount: number;
+  seller_receives_amount: number;
+  net_amount: number;
+  formula_snapshot: string | null;
+  status: string;
+};
 
 type WebhookAuditRow = {
   provider: string;
@@ -56,7 +75,7 @@ function mockPayChanguFetch(
       assert.equal(typeof payload.tx_ref, 'string');
       assert.ok(String(payload.tx_ref).length > 0, 'initiation should include a tx_ref');
       assert.equal((payload.customization as { title?: string } | undefined)?.title, 'BuyMesho Checkout');
-      assert.equal(typeof payload.meta, 'string');
+      assert.ok(typeof payload.meta === 'string' || Array.isArray(payload.meta));
       return new Response(JSON.stringify({
         message: 'Hosted payment session generated successfully.',
         status: 'success',
@@ -111,13 +130,23 @@ function hashPayload(rawWebhook: string): string {
 
 function clearPaymentState(): void {
   const db = getPaymentDb();
+  db.prepare('DELETE FROM payout_events').run();
+  db.prepare('DELETE FROM payout_attempts').run();
+  db.prepare('DELETE FROM payouts').run();
   db.prepare('DELETE FROM escrows').run();
+  db.prepare('DELETE FROM seller_payout_account_events').run();
+  db.prepare('DELETE FROM seller_payout_accounts WHERE seller_uid = ?').run('seller_1');
   db.prepare('DELETE FROM payment_webhook_events').run();
   orderRepository.clear();
   paymentRepository.clear();
 }
 
-function seedOrder(orderId: string, reference: string, status: 'pending_payment' | 'paid' | 'in_escrow' = 'pending_payment'): void {
+function seedOrder(
+  orderId: string,
+  reference: string,
+  status: 'pending_payment' | 'paid' | 'in_escrow' = 'pending_payment',
+  settlementRoute: 'escrow' | 'connect' = 'escrow',
+): void {
   const now = new Date().toISOString();
   serverOrderService.create({
     id: orderId,
@@ -133,8 +162,27 @@ function seedOrder(orderId: string, reference: string, status: 'pending_payment'
     updatedAt: now,
     paymentProvider: 'paychangu',
     paymentReference: reference,
+    settlementRoute,
   });
 }
+
+function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller_1_connect'): void {
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com')`).run();
+  db.prepare(
+    `INSERT OR REPLACE INTO seller_payout_accounts (
+      id, seller_uid, destination_type, provider_name, provider_ref_id, currency,
+      account_name, account_number_encrypted, mobile_encrypted, masked_account,
+      destination_fingerprint, is_default, verification_status, verification_attempts,
+      last_error, verified_at, replaced_from_id, replaced_by_id, is_active, created_at, updated_at
+    ) VALUES (?, 'seller_1', 'mobile_money', 'paychangu', 'provider-dest-1', 'MWK',
+      'Seller One', NULL, 'encrypted-mobile', '***1111',
+      'seller-1-destination-fingerprint', 1, 'verified', 1,
+      NULL, ?, NULL, NULL, 1, ?, ?)`,
+  ).run(destinationId, now, now, now);
+}
+
 
 function seedStoredPayment(orderId: string, reference: string, amount = 1000, currency = 'MWK'): void {
   const now = new Date().toISOString();
@@ -210,6 +258,27 @@ function fetchWebhookAuditRowsByPayloadHash(payloadHash: string): WebhookAuditRo
     .all(payloadHash) as WebhookAuditRow[];
 }
 
+
+function fetchConnectPayoutsForOrder(orderId: string): ConnectPayoutRow[] {
+  return getPaymentDb()
+    .prepare(
+      `SELECT id, seller_id, order_id, escrow_id, destination_account_id, amount,
+              gross_amount, platform_fee_amount, processing_fee_amount, reserve_amount,
+              payout_fee_amount, seller_receives_amount, net_amount, formula_snapshot, status
+       FROM payouts
+       WHERE order_id = ?
+       ORDER BY created_at ASC`,
+    )
+    .all(orderId) as ConnectPayoutRow[];
+}
+
+function countPayoutEvents(payoutId: string, eventType: string): number {
+  const row = getPaymentDb()
+    .prepare('SELECT COUNT(*) AS count FROM payout_events WHERE payout_id = ? AND event_type = ?')
+    .get(payoutId, eventType) as { count: number };
+  return row.count;
+}
+
 function countEscrowsForOrder(orderId: string): number {
   const row = getPaymentDb()
     .prepare('SELECT COUNT(*) AS count FROM escrows WHERE order_id = ?')
@@ -282,6 +351,114 @@ test('integration: PayChangu verification accepts successful payments that meet 
     assert.equal(paymentRepository.findByReference('txref-overpaid-1')?.verified, true, 'stored payment should be verified');
   } finally {
     global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+
+test('integration: PayChangu callback for Connect order queues payout without escrow', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-connect-1', 'successful', 1000);
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_connect_1', 'txref-connect-1', 'pending_payment', 'connect');
+    seedStoredPayment('order_connect_1', 'txref-connect-1');
+    seedVerifiedSellerPayoutDestination();
+
+    const rawWebhook = JSON.stringify({
+      event_type: 'charge.success',
+      event_id: 'evt_connect_success_1',
+      tx_ref: 'txref-connect-1',
+      data: { tx_ref: 'txref-connect-1', status: 'successful', amount: 1000, currency: 'MWK' },
+    });
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook);
+    assert.equal(webhookRes.status, 200, 'connect webhook should return 200');
+
+    const savedOrder = orderRepository.findById('order_connect_1');
+    const savedPayment = paymentRepository.findByReference('txref-connect-1');
+    const payouts = fetchConnectPayoutsForOrder('order_connect_1');
+
+    assert.equal(savedPayment?.verified, true, 'connect payment should be verified');
+    assert.equal(savedPayment?.status, 'captured', 'connect payment status should be captured');
+    assert.equal(savedOrder?.status, 'paid', 'connect order should be marked paid');
+    assert.equal(savedOrder?.escrowId ?? null, null, 'connect order should not be attached to escrow');
+    assert.equal(countEscrowsForOrder('order_connect_1'), 0, 'connect order should not create escrow');
+    assert.equal(payouts.length, 1, 'connect order should create one payout');
+
+    const payout = payouts[0];
+    assert.equal(payout.escrow_id, null, 'connect payout should not reference escrow');
+    assert.equal(payout.destination_account_id, 'dest_seller_1_connect', 'connect payout should attach verified destination account');
+    assert.equal(payout.gross_amount, 1000, 'connect payout should persist gross amount');
+    assert.equal(payout.platform_fee_amount, 30, 'connect payout should persist platform fee');
+    assert.equal(payout.net_amount, 970, 'connect payout should persist seller net amount');
+    assert.equal(payout.seller_receives_amount, 970, 'connect payout should persist seller receives amount');
+    assert.equal(payout.amount, 970, 'connect payout amount should match seller net amount');
+    assert.equal(payout.status, 'queued', 'connect payout should be queued');
+
+    const formula = JSON.parse(payout.formula_snapshot ?? '{}') as Record<string, unknown>;
+    assert.equal(formula.grossAmount, 1000, 'connect payout formula should persist gross amount');
+    assert.equal(formula.platformFeeAmount, 30, 'connect payout formula should persist platform fee');
+    assert.equal(formula.netAmount, 970, 'connect payout formula should persist seller net amount');
+    assert.equal(countPayoutEvents(payout.id, 'connect_payout_queued'), 1, 'connect payout queued audit event should exist');
+  } finally {
+    global.fetch = originalFetch;
+    server.close();
+    clearPaymentState();
+  }
+});
+
+test('integration: duplicate PayChangu callback for Connect order does not duplicate payout or seller notification', async () => {
+  clearPaymentState();
+
+  const app = createApp();
+  const originalFetch = global.fetch;
+  const originalConsoleLog = console.log;
+  const sellerPayoutNotifications: unknown[][] = [];
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-connect-duplicate-1', 'successful', 1000);
+  console.log = (...args: unknown[]) => {
+    if (args[0] === '[notification] seller_payout_queued') sellerPayoutNotifications.push(args);
+    originalConsoleLog(...args);
+  };
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+  const server = app.listen(0);
+  const port = (server.address() as { port: number }).port;
+  const base = `http://127.0.0.1:${port}`;
+
+  try {
+    seedOrder('order_connect_duplicate_1', 'txref-connect-duplicate-1', 'pending_payment', 'connect');
+    seedStoredPayment('order_connect_duplicate_1', 'txref-connect-duplicate-1');
+    seedVerifiedSellerPayoutDestination('dest_seller_1_connect_duplicate');
+
+    const rawWebhook = JSON.stringify({
+      event_type: 'charge.success',
+      event_id: 'evt_connect_duplicate_1',
+      tx_ref: 'txref-connect-duplicate-1',
+      data: { tx_ref: 'txref-connect-duplicate-1', status: 'successful', amount: 1000, currency: 'MWK' },
+    });
+    const signature = signWebhook(rawWebhook);
+
+    const webhookRes = await postPayChanguWebhook(base, rawWebhook, signature);
+    assert.equal(webhookRes.status, 200, 'first connect webhook should return 200');
+    const duplicateWebhookRes = await postPayChanguWebhook(base, rawWebhook, signature);
+    assert.equal(duplicateWebhookRes.status, 200, 'duplicate connect webhook should return 200');
+
+    const payouts = fetchConnectPayoutsForOrder('order_connect_duplicate_1');
+    assert.equal(payouts.length, 1, 'duplicate connect webhook should not create a second payout');
+    assert.equal(countPayoutEvents(payouts[0].id, 'connect_payout_queued'), 1, 'duplicate connect webhook should not create a second queued audit event');
+    assert.equal(sellerPayoutNotifications.length, 1, 'duplicate connect webhook should not emit duplicate seller payout notifications');
+  } finally {
+    global.fetch = originalFetch;
+    console.log = originalConsoleLog;
     server.close();
     clearPaymentState();
   }
