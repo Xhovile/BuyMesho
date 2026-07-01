@@ -12,11 +12,12 @@ export class SqliteOrderRepository {
 
   save(order: StoredOrder): StoredOrder {
     this.db.prepare(`
-      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, payment_reference, escrow_id, items, placed_at, paid_at, fulfilled_at, created_at, updated_at)
-      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @payment_reference, @escrow_id, @items, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
+      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, escrow_id, items, placed_at, paid_at, fulfilled_at, created_at, updated_at)
+      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @escrow_id, @items, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
       ON CONFLICT(id) DO UPDATE SET
         status = excluded.status,
         payment_provider = excluded.payment_provider,
+        settlement_route = excluded.settlement_route,
         payment_reference = excluded.payment_reference,
         escrow_id = excluded.escrow_id,
         paid_at = excluded.paid_at,
@@ -34,6 +35,7 @@ export class SqliteOrderRepository {
       total_amount: order.total.amount,
       total_currency: order.total.currency,
       payment_provider: order.paymentProvider ?? null,
+      settlement_route: order.settlementRoute ?? null,
       payment_reference: order.paymentReference ?? null,
       escrow_id: order.escrowId ?? null,
       items: JSON.stringify(order.items),
@@ -93,6 +95,7 @@ export class SqliteOrderRepository {
       subtotal: { amount: row.subtotal_amount as number, currency: row.subtotal_currency as string },
       total: { amount: row.total_amount as number, currency: row.total_currency as string },
       paymentProvider: (row.payment_provider as StoredOrder['paymentProvider']) ?? undefined,
+      settlementRoute: (row.settlement_route as StoredOrder['settlementRoute']) ?? null,
       paymentReference: (row.payment_reference as string | null) ?? null,
       escrowId: (row.escrow_id as string | null) ?? null,
       items,
