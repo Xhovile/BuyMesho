@@ -84,15 +84,15 @@ function buildPayChanguJsonHeaders(config: PayChanguConfig): Record<string, stri
   return headers;
 }
 
-function serializeMeta(metadata: Record<string, unknown> | undefined): string {
-  if (!metadata) return JSON.stringify([]);
+function serializeMeta(metadata: Record<string, unknown> | undefined): Array<{ key: string; value: string }> {
+  if (!metadata) return [];
 
-  return JSON.stringify(Object.entries(metadata)
+  return Object.entries(metadata)
     .filter(([, value]) => value !== undefined && value !== null)
     .map(([key, value]) => ({
       key,
       value: Array.isArray(value) ? JSON.stringify(value) : String(value),
-    })));
+    }));
 }
 
 function hasAtMostTwoDecimals(value: number): boolean {
@@ -506,19 +506,12 @@ export const paychanguProvider = {
         ? String(parsedPayload.tx_ref ?? parsedPayload.reference ?? '')
         : undefined,
       signature,
-      payload: parsedPayload ?? payload,
+      payload,
     };
   },
 
-  async refund(_request: RefundRequest): Promise<RefundResult> {
-    throw new Error('PayChangu refund flow is not enabled yet');
-  },
-
-  async parseWebhook(
-    payload: unknown,
-  ): Promise<WebhookVerificationResult> {
+  async parseWebhook(payload: unknown): Promise<WebhookVerificationResult> {
     const { rawPayload, parsedPayload } = parseWebhookPayload(payload);
-
     return {
       valid: parsedPayload !== null,
       provider: 'paychangu',
@@ -533,17 +526,6 @@ export const paychanguProvider = {
   },
 };
 
-export const paychanguWebhookSpec = {
-  acceptedSignatureHeaders: ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS,
-  acceptedEventTypes: [...PAYCHANGU_ACCEPTED_EVENT_TYPES],
-  successfulStatuses: [...PAYCHANGU_SUCCESS_STATUSES],
-};
-
-export function isAcceptedPaychanguEventType(eventType: string | undefined): boolean {
-  if (!eventType) return false;
-  return PAYCHANGU_ACCEPTED_EVENT_TYPES.has(eventType.trim().toLowerCase());
-}
-
-export function isPaychanguSuccessStatus(status: string | undefined): boolean {
-  return normalizePaychanguPaymentStatus(status) === 'paid';
+function isPaychanguSuccessStatus(status: string): boolean {
+  return PAYCHANGU_SUCCESS_STATUSES.has(status);
 }
