@@ -10,6 +10,7 @@ import type {
 import type { PaymentMethod } from '../../../src/shared/types/payment.js';
 
 const ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS = ['x-paychangu-signature', 'signature'] as const;
+const REFUND_UNAVAILABLE_MESSAGE = 'Refunds are not available yet for this payment provider';
 
 export const PAYCHANGU_SUCCESS_STATUSES = new Set([
   'success',
@@ -484,6 +485,10 @@ export const paychanguProvider = {
       checkoutUrl: null,
       rawResponse: data,
     };
+  },
+
+  async refund(_request: RefundRequest): Promise<RefundResult> {
+    throw new Error(REFUND_UNAVAILABLE_MESSAGE);
   },
 
   async verifyWebhook(
