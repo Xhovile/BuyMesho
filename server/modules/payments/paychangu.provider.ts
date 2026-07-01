@@ -526,6 +526,17 @@ export const paychanguProvider = {
   },
 };
 
-function isPaychanguSuccessStatus(status: string): boolean {
-  return PAYCHANGU_SUCCESS_STATUSES.has(status);
+export const paychanguWebhookSpec = {
+  acceptedSignatureHeaders: ACCEPTED_PAYCHANGU_SIGNATURE_HEADERS,
+  acceptedEventTypes: [...PAYCHANGU_ACCEPTED_EVENT_TYPES],
+  successfulStatuses: [...PAYCHANGU_SUCCESS_STATUSES],
+};
+
+export function isAcceptedPaychanguEventType(eventType: string | undefined): boolean {
+  if (!eventType) return false;
+  return PAYCHANGU_ACCEPTED_EVENT_TYPES.has(eventType.trim().toLowerCase());
+}
+
+export function isPaychanguSuccessStatus(status: string | undefined): boolean {
+  return normalizePaychanguPaymentStatus(status) === 'paid';
 }
