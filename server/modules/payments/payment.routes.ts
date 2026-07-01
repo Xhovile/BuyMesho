@@ -13,6 +13,7 @@ import { paymentRepository } from './payment.repository.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
 import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
+import type { CheckoutSettlementRoute } from '../../../src/shared/types/payment.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
 import { calculateCustomerCheckoutFees } from '../payouts/payout.policy.js';
 
@@ -135,6 +136,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         quantity = 1,
         items,
         method = 'mobile_money',
+        settlementRoute = 'escrow',
         returnUrl,
         cancelUrl,
         buyerName,
@@ -144,6 +146,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         quantity?: number;
         items?: Array<{ listingId?: number | string; quantity?: number }>;
         method?: string;
+        settlementRoute?: CheckoutSettlementRoute;
         returnUrl?: string;
         cancelUrl?: string;
         buyerName?: string;
@@ -233,6 +236,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         subtotal: { amount: total, currency },
         total: { amount: feeBreakdown.finalTotalAmount, currency },
         paymentProvider: 'paychangu',
+        settlementRoute,
         items: orderItems,
         placedAt: now,
         createdAt: now,
@@ -247,6 +251,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         orderId,
         provider: 'paychangu',
         method: method as CreatePaymentRequest['method'],
+        settlementRoute,
         amount: { amount: feeBreakdown.finalTotalAmount, currency },
         customer: {
           id: buyerUid,
@@ -263,6 +268,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           sellerId: primarySellerId,
           sellerIds: Array.from(sellerIds),
           feeBreakdown,
+          settlementRoute,
         },
       };
 
@@ -273,6 +279,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       orderRepository.update(orderId, (o) => ({
         ...o,
         paymentReference: payment.reference,
+        settlementRoute,
         updatedAt: new Date().toISOString(),
       }));
 
@@ -289,6 +296,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           quantity: item.quantity,
           reference: item.reference,
         })),
+        settlementRoute,
       };
 
       if (idempotencyKey) {
