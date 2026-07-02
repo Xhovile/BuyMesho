@@ -33,7 +33,7 @@ test('Connect payout candidate is idempotent by order without escrow fields', ()
     requestedBy,
     destinationAccountId: null,
     snapshot: { source: 'connect' },
-  });
+  }).payout;
 
   const second = payoutService.createConnectPayoutCandidate({
     sellerId,
@@ -51,7 +51,7 @@ test('Connect payout candidate is idempotent by order without escrow fields', ()
     formulaSnapshot: { grossAmount: 1000, netAmount: 900 },
     currency: 'MWK',
     requestedBy,
-  });
+  }).payout;
 
   assert.equal(second.id, first.id);
   assert.equal(second.amount, first.amount);

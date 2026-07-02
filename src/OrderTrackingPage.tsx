@@ -157,6 +157,13 @@ const escrowUpdatedAt =
       ? bundle.escrow.updated_at
       : null;
   
+  const releaseAvailableAt = getNextCatMidnightMs(paidAt ?? escrowUpdatedAt ?? Date.now());
+  const releaseCountdownParts = getCountdownParts(releaseAvailableAt, nowMs);
+  const releaseCountdownText =
+    releaseCountdownParts.diffMs === 0
+      ? "Now"
+      : `${releaseCountdownParts.days}d ${releaseCountdownParts.hours}h ${releaseCountdownParts.minutes}m`;
+
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
   const firstItemTitle = order?.items?.[0]?.title ?? "—";
