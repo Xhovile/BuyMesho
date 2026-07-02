@@ -61,6 +61,31 @@ export function buildPayChanguPayoutChargeId(payoutId: string, attemptNo: number
 }
 
 
+
+function emitSellerPayoutQueuedNotification(sellerId: string, orderId: string, payoutId: string): void {
+  const payload = {
+    orderId,
+    payoutId,
+    sellerId,
+    event: 'seller_payout_queued',
+    emittedAt: new Date().toISOString(),
+  };
+
+  console.log('[notification] seller_payout_queued', JSON.stringify(payload));
+}
+
+function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
+  const payload = {
+    orderId,
+    buyerId,
+    sellerId,
+    event: 'order_paid',
+    emittedAt: new Date().toISOString(),
+  };
+
+  console.log('[notification] order_paid', JSON.stringify(payload));
+}
+
 function findActiveVerifiedDestination(sellerId: string): { id: string; destination_type: string | null } | undefined {
   return getPaymentDb()
     .prepare(
