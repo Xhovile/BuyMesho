@@ -7,7 +7,7 @@ export function runMigrations() {
 
 
   try {
-    db.exec(\`
+    db.exec("""
       CREATE TABLE IF NOT EXISTS seller_connect_accounts (
         id TEXT PRIMARY KEY,
         seller_uid TEXT NOT NULL UNIQUE,
@@ -30,7 +30,7 @@ export function runMigrations() {
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )
-    \`);
+    """);
   } catch (error) {
     console.warn("Seller Connect accounts table migration failed:", error);
   }
