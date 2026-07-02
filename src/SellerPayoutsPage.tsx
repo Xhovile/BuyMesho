@@ -16,7 +16,13 @@ import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "./components/payouts/PayoutTimeline";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
-import { apiFetch } from "./lib/api";
+import {
+  createConnectAuthorizationLink,
+  disconnectConnectAccount,
+  getConnectAccount,
+  type PayChanguConnectAccount,
+  type PayChanguConnectMode,
+} from "./modules/connect/api";
 import {
   createPayoutDestination,
   deletePayoutDestination,
@@ -137,73 +143,8 @@ function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
   };
 }
 
-type SellerConnectStatus = "pending" | "connected" | "revoked" | "error";
-
-interface SellerConnectAccount {
-  sellerUid: string;
-  providerName?: string;
-  status: SellerConnectStatus;
-  mode: "live" | "test";
-  scope?: string | null;
-  authorizationUrl?: string | null;
-  connectUserId?: string | null;
-  connectUserEmail?: string | null;
-  connectUserName?: string | null;
-  connectedAt?: string | null;
-  revokedAt?: string | null;
-  lastError?: string | null;
-}
-
-const CONNECT_DEFAULT_MODE: "live" | "test" =
-  (import.meta.env.VITE_PAYCHANGU_CONNECT_MODE as string | undefined)?.trim() === "test"
-    ? "test"
-    : "live";
-
-const CONNECT_CLIENT_ID =
-  (import.meta.env.VITE_PAYCHANGU_CONNECT_CLIENT_ID as string | undefined)?.trim() ?? "";
-const CONNECT_SCOPE =
-  (import.meta.env.VITE_PAYCHANGU_CONNECT_SCOPE as string | undefined)?.trim() ||
-  DEFAULT_CONNECT_SCOPE;
-const CONNECT_WEBHOOK_URL =
-  (import.meta.env.VITE_PAYCHANGU_CONNECT_WEBHOOK_URL as string | undefined)?.trim() || "";
-const CONNECT_WEBHOOK_SECRET =
-  (import.meta.env.VITE_PAYCHANGU_CONNECT_WEBHOOK_SECRET as string | undefined)?.trim() || "";
-
-async function fetchSellerConnectAccount(sellerUid: string): Promise<SellerConnectAccount | null> {
-  try {
-    const response = await apiFetch(`/api/connect/status/${encodeURIComponent(sellerUid)}`);
-    return (response?.account ?? response ?? null) as SellerConnectAccount | null;
-  } catch (error) {
-    if (error instanceof Error && error.message.includes("404")) return null;
-    throw error;
-  }
-}
-
-async function requestSellerConnectAuthorizationLink(input: {
-  sellerUid: string;
-  clientId: string;
-  redirectUri: string;
-  mode: "live" | "test";
-  scope?: string;
-  whUrl?: string;
-  whSecret?: string;
-}): Promise<string> {
-  const response = await apiFetch("/api/connect/authorize-link", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-
-  return String(response?.authorizationUrl ?? response?.url ?? "");
-}
-
-async function disconnectSellerConnectAccount(sellerUid: string): Promise<SellerConnectAccount | null> {
-  const response = await apiFetch(`/api/connect/disconnect/${encodeURIComponent(sellerUid)}`, {
-    method: "POST",
-    body: JSON.stringify({ reason: "Disconnected from payout page" }),
-  });
-
-  return (response?.account ?? response ?? null) as SellerConnectAccount | null;
-}
+const CONNECT_DEFAULT_MODE: PayChanguConnectMode =
+  import.meta.env.VITE_PAYCHANGU_MODE === "live" ? "live" : "test";
 
 function SectionTitle({
   eyebrow,
@@ -257,7 +198,7 @@ function ConnectStatCard({
   );
 }
 
-function getConnectStatusLabel(status?: SellerConnectStatus | null) {
+function getConnectStatusLabel(status?: PayChanguConnectAccount["status"] | null) {
   switch (status) {
     case "connected":
       return "Connected";
@@ -272,7 +213,7 @@ function getConnectStatusLabel(status?: SellerConnectStatus | null) {
   }
 }
 
-function getConnectStatusDetail(status?: SellerConnectStatus | null) {
+function getConnectStatusDetail(status?: PayChanguConnectAccount["status"] | null) {
   if (status === "connected") {
     return "PayChangu Connect is ready for direct seller settlement.";
   }
@@ -335,8 +276,8 @@ export default function SellerPayoutsPage() {
     currencies: [DEFAULT_CURRENCY],
   });
 
-  const [connectAccount, setConnectAccount] = useState<SellerConnectAccount | null>(null);
-  const [connectBusy, setConnectBusy] = useState(false);
+  const [connectAccount, setConnectAccount] = useState<PayChanguConnectAccount | null>(null);
+  const [connectLoading, setConnectLoading] = useState(false);
   const [connectError, setConnectError] = useState<string | null>(null);
 
   const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(null);
@@ -376,7 +317,7 @@ export default function SellerPayoutsPage() {
           getPayoutHistory(sellerId),
           fetchSellerEscrows(),
           getPayoutProviderMetadata(),
-          fetchSellerConnectAccount(sellerId),
+          getConnectAccount(sellerId),
         ]);
 
         setPermissions(permissionsRes.status === "fulfilled" ? permissionsRes.value : null);
@@ -499,7 +440,7 @@ export default function SellerPayoutsPage() {
   };
 
   const handleConnectRefresh = async () => {
-    setConnectBusy(true);
+    setConnectLoading(true);
     setConnectError(null);
 
     try {
@@ -507,61 +448,50 @@ export default function SellerPayoutsPage() {
     } catch (error) {
       setConnectError(error instanceof Error ? error.message : "Failed to refresh Connect status.");
     } finally {
-      setConnectBusy(false);
+      setConnectLoading(false);
     }
   };
 
-  const handleConnectSetup = async () => {
+  const handleConnect = async () => {
     if (!sellerId) return;
 
-    if (!CONNECT_CLIENT_ID) {
-      setConnectError("Missing VITE_PAYCHANGU_CONNECT_CLIENT_ID in the app environment.");
-      return;
-    }
-
-    setConnectBusy(true);
-    setConnectError(null);
-
     try {
-      const authorizationUrl = await requestSellerConnectAuthorizationLink({
+      setConnectLoading(true);
+      setConnectError(null);
+
+      const result = await createConnectAuthorizationLink({
         sellerUid: sellerId,
-        clientId: CONNECT_CLIENT_ID,
-        redirectUri: `${window.location.origin}${window.location.pathname}`,
+        clientId: import.meta.env.VITE_PAYCHANGU_CLIENT_ID,
+        redirectUri: `${window.location.origin}/connect/callback`,
         mode: CONNECT_DEFAULT_MODE,
-        scope: CONNECT_SCOPE,
-        whUrl: CONNECT_WEBHOOK_URL || undefined,
-        whSecret: CONNECT_WEBHOOK_SECRET || undefined,
+        scope: DEFAULT_CONNECT_SCOPE,
+        whUrl: import.meta.env.VITE_PAYCHANGU_WEBHOOK_URL,
+        whSecret: import.meta.env.VITE_PAYCHANGU_WEBHOOK_SECRET,
       });
 
-      if (!authorizationUrl) {
-        throw new Error("PayChangu did not return an authorization link.");
-      }
-
-      window.location.href = authorizationUrl;
+      window.location.href = result.authorizationUrl;
     } catch (error) {
-      setConnectError(error instanceof Error ? error.message : "Failed to open PayChangu Connect.");
+      setConnectError(error instanceof Error ? error.message : "Failed to start Connect onboarding.");
     } finally {
-      setConnectBusy(false);
+      setConnectLoading(false);
     }
   };
 
-  const handleConnectDisconnect = async () => {
+  const handleDisconnect = async () => {
     if (!sellerId) return;
 
-    setConnectBusy(true);
-    setConnectError(null);
-
     try {
-      await disconnectSellerConnectAccount(sellerId);
-      await loadData({ silent: true });
-      setNotice({
-        type: "success",
-        message: "PayChangu Connect disconnected for this seller account.",
-      });
+      setConnectLoading(true);
+      setConnectError(null);
+      const updated = await disconnectConnectAccount(
+        sellerId,
+        "Seller disconnected from PayChangu Connect",
+      );
+      setConnectAccount(updated);
     } catch (error) {
-      setConnectError(error instanceof Error ? error.message : "Failed to disconnect PayChangu Connect.");
+      setConnectError(error instanceof Error ? error.message : "Failed to disconnect Connect.");
     } finally {
-      setConnectBusy(false);
+      setConnectLoading(false);
     }
   };
 
@@ -914,10 +844,10 @@ export default function SellerPayoutsPage() {
               <button
                 type="button"
                 onClick={() => void handleConnectRefresh()}
-                disabled={connectBusy}
+                disabled={connectLoading}
                 className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {connectBusy ? (
+                {connectLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <RefreshCw className="h-4 w-4" />
@@ -927,19 +857,19 @@ export default function SellerPayoutsPage() {
 
               <button
                 type="button"
-                onClick={() => void handleConnectSetup()}
-                disabled={connectBusy}
+                onClick={() => void handleConnect()}
+                disabled={connectLoading}
                 className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {connectBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {connectLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 {connectAccount?.status === "connected" ? "Reconnect PayChangu" : "Connect PayChangu"}
               </button>
 
               {connectAccount?.status === "connected" ? (
                 <button
                   type="button"
-                  onClick={() => void handleConnectDisconnect()}
-                  disabled={connectBusy}
+                  onClick={() => void handleDisconnect()}
+                  disabled={connectLoading}
                   className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Disconnect
@@ -968,7 +898,7 @@ export default function SellerPayoutsPage() {
             <ConnectStatCard
               label="Mode"
               value={connectAccount?.mode || CONNECT_DEFAULT_MODE}
-              detail={connectAccount?.scope || CONNECT_SCOPE}
+              detail={connectAccount?.scope || DEFAULT_CONNECT_SCOPE}
             />
             <ConnectStatCard
               label="Last update"
