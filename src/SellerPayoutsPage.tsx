@@ -16,6 +16,7 @@ import SellerEarningsSummary from "./components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "./components/payouts/PayoutTimeline";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { EXPLORE_PATH, navigateToPath } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import {
   createPayoutDestination,
   deletePayoutDestination,
@@ -131,6 +132,72 @@ function toEscrowSummaryRecord(value: unknown): EscrowSummaryRecord | null {
   };
 }
 
+
+type SellerConnectStatus = "pending" | "connected" | "revoked" | "error";
+
+interface SellerConnectAccount {
+  sellerUid: string;
+  providerName?: string;
+  status: SellerConnectStatus;
+  mode: "live" | "test";
+  scope?: string | null;
+  authorizationUrl?: string | null;
+  connectUserId?: string | null;
+  connectUserEmail?: string | null;
+  connectUserName?: string | null;
+  connectedAt?: string | null;
+  revokedAt?: string | null;
+  lastError?: string | null;
+}
+
+const CONNECT_DEFAULT_MODE =
+  (import.meta.env.VITE_PAYCHANGU_CONNECT_MODE as string | undefined)?.trim() === "test"
+    ? "test"
+    : "live";
+
+const CONNECT_CLIENT_ID = (import.meta.env.VITE_PAYCHANGU_CONNECT_CLIENT_ID as string | undefined)?.trim() ?? "";
+const CONNECT_SCOPE = (import.meta.env.VITE_PAYCHANGU_CONNECT_SCOPE as string | undefined)?.trim() || "payments:write payments:read";
+const CONNECT_WEBHOOK_URL = (import.meta.env.VITE_PAYCHANGU_CONNECT_WEBHOOK_URL as string | undefined)?.trim() || "";
+const CONNECT_WEBHOOK_SECRET = (import.meta.env.VITE_PAYCHANGU_CONNECT_WEBHOOK_SECRET as string | undefined)?.trim() || "";
+
+async function fetchSellerConnectAccount(sellerUid: string): Promise<SellerConnectAccount | null> {
+  try {
+    const response = await apiFetch(`/api/connect/status/${encodeURIComponent(sellerUid)}`);
+    return (response?.account ?? response) as SellerConnectAccount;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("404")) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+async function requestSellerConnectAuthorizationLink(input: {
+  sellerUid: string;
+  clientId: string;
+  redirectUri: string;
+  mode: "live" | "test";
+  scope?: string;
+  whUrl?: string;
+  whSecret?: string;
+}): Promise<string> {
+  const response = await apiFetch("/api/connect/authorize-link", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+
+  return String(response?.authorizationUrl ?? response?.url ?? "");
+}
+
+async function disconnectSellerConnectAccount(sellerUid: string): Promise<SellerConnectAccount | null> {
+  const response = await apiFetch(`/api/connect/disconnect/${encodeURIComponent(sellerUid)}`, {
+    method: "POST",
+    body: JSON.stringify({ reason: "Disconnected from payout page" }),
+  });
+
+  return (response?.account ?? response ?? null) as SellerConnectAccount | null;
+}
+
 function SectionTitle({
   eyebrow,
   title,
@@ -164,6 +231,9 @@ export default function SellerPayoutsPage() {
     banks: [],
     currencies: ["MWK"],
   });
+  const [connectAccount, setConnectAccount] = useState<SellerConnectAccount | null>(null);
+  const [connectBusy, setConnectBusy] = useState(false);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const [selectedDestinationId, setSelectedDestinationId] = useState<string | null>(null);
   const [form, setForm] = useState<PayoutDestinationFormState>(INITIAL_FORM);
   const [loading, setLoading] = useState(true);
@@ -186,13 +256,14 @@ export default function SellerPayoutsPage() {
       if (!options?.silent) setLoading(true);
 
       try {
-        const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes] =
+        const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes, connectRes] =
           await Promise.allSettled([
             getPayoutPermissions(sellerId),
             getPayoutDestinations(sellerId),
             getPayoutHistory(sellerId),
             fetchSellerEscrows(),
             getPayoutProviderMetadata(),
+            fetchSellerConnectAccount(sellerId),
           ]);
 
         setPermissions(permissionsRes.status === "fulfilled" ? permissionsRes.value : null);
@@ -200,6 +271,12 @@ export default function SellerPayoutsPage() {
         setPayouts(payoutsRes.status === "fulfilled" ? payoutsRes.value : []);
         if (providerMetadataRes.status === "fulfilled") {
           setProviderMetadata(providerMetadataRes.value);
+        }
+
+        if (connectRes.status === "fulfilled") {
+          setConnectAccount(connectRes.value);
+        } else {
+          setConnectAccount(null);
         }
 
         if (escrowsRes.status === "fulfilled") {
@@ -271,6 +348,72 @@ export default function SellerPayoutsPage() {
 
   const canEditSettings = permissions?.editPayoutSettings !== false;
   const canViewHistory = permissions?.viewPayoutHistory !== false;
+
+  const handleConnectRefresh = async () => {
+    setConnectBusy(true);
+    setConnectError(null);
+    try {
+      await loadData({ silent: true });
+    } catch (error) {
+      setConnectError(error instanceof Error ? error.message : "Failed to refresh Connect status.");
+    } finally {
+      setConnectBusy(false);
+    }
+  };
+
+  const handleConnectSetup = async () => {
+    if (!sellerId) return;
+    if (!CONNECT_CLIENT_ID) {
+      setConnectError("Missing VITE_PAYCHANGU_CONNECT_CLIENT_ID in the app environment.");
+      return;
+    }
+
+    setConnectBusy(true);
+    setConnectError(null);
+
+    try {
+      const authorizationUrl = await requestSellerConnectAuthorizationLink({
+        sellerUid: sellerId,
+        clientId: CONNECT_CLIENT_ID,
+        redirectUri: `${window.location.origin}${window.location.pathname}`,
+        mode: CONNECT_DEFAULT_MODE,
+        scope: CONNECT_SCOPE,
+        whUrl: CONNECT_WEBHOOK_URL || undefined,
+        whSecret: CONNECT_WEBHOOK_SECRET || undefined,
+      });
+
+      if (!authorizationUrl) {
+        throw new Error("PayChangu did not return an authorization link.");
+      }
+
+      window.location.href = authorizationUrl;
+    } catch (error) {
+      setConnectError(error instanceof Error ? error.message : "Failed to open PayChangu Connect.");
+    } finally {
+      setConnectBusy(false);
+    }
+  };
+
+  const handleConnectDisconnect = async () => {
+    if (!sellerId) return;
+
+    setConnectBusy(true);
+    setConnectError(null);
+
+    try {
+      await disconnectSellerConnectAccount(sellerId);
+      await loadData({ silent: true });
+      setNotice({
+        type: "success",
+        message: "PayChangu Connect disconnected for this seller account.",
+      });
+    } catch (error) {
+      setConnectError(error instanceof Error ? error.message : "Failed to disconnect PayChangu Connect.");
+    } finally {
+      setConnectBusy(false);
+    }
+  };
+
 
   const startEdit = (destination: PayoutDestination) => {
     setDestinationFormError(null);
@@ -556,6 +699,109 @@ export default function SellerPayoutsPage() {
             {notice.message}
           </div>
         ) : null}
+
+
+        <section className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="max-w-2xl">
+              <SectionTitle
+                eyebrow="PayChangu Connect"
+                title="Direct settlement setup."
+                action={<Building2 className="w-5 h-5 text-zinc-400" />}
+              />
+              <p className="mt-3 text-sm leading-6 text-zinc-600">
+                Connect your PayChangu account here so connect settlement orders can pay directly to your linked PayChangu account. Your payout destinations below still handle the standard seller payout routes.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void handleConnectRefresh()}
+                disabled={connectBusy}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {connectBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                Refresh status
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void handleConnectSetup()}
+                disabled={connectBusy}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {connectBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {connectAccount?.status === "connected" ? "Reconnect PayChangu" : "Connect PayChangu"}
+              </button>
+
+              {connectAccount?.status === "connected" ? (
+                <button
+                  type="button"
+                  onClick={() => void handleConnectDisconnect()}
+                  disabled={connectBusy}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Disconnect
+                </button>
+              ) : null}
+            </div>
+          </div>
+
+          {connectError ? (
+            <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              {connectError}
+            </div>
+          ) : null}
+
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">Connection status</p>
+              <p className="mt-2 text-lg font-black text-zinc-950">
+                {connectAccount?.status === "connected"
+                  ? "Connected"
+                  : connectAccount?.status === "revoked"
+                    ? "Disconnected"
+                    : connectAccount?.status === "error"
+                      ? "Error"
+                      : "Not connected"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">
+                {connectAccount?.status === "connected"
+                  ? "PayChangu Connect is ready for direct seller settlement."
+                  : "Set up Connect to enable direct settlement for connect-route orders."}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">Connected user</p>
+              <p className="mt-2 text-lg font-black text-zinc-950">
+                {connectAccount?.connectUserName || connectAccount?.connectUserEmail || "—"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">
+                {connectAccount?.connectUserEmail || "No PayChangu profile linked yet."}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">Mode</p>
+              <p className="mt-2 text-lg font-black text-zinc-950">{connectAccount?.mode || CONNECT_DEFAULT_MODE}</p>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">
+                {connectAccount?.scope || CONNECT_SCOPE}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.16em] text-zinc-400">Last update</p>
+              <p className="mt-2 text-lg font-black text-zinc-950">
+                {formatDate(connectAccount?.connectedAt || connectAccount?.revokedAt || null)}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-zinc-600">
+                {connectAccount?.lastError || "Connection details are stored on the seller account."}
+              </p>
+            </div>
+          </div>
+        </section>
 
         <section id="payout-destination-settings" className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <PayoutDestinationForm
