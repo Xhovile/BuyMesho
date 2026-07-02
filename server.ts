@@ -18,6 +18,7 @@ import { registerMessageModerationRoutes, registerMessageRoutes } from "./server
 import { registerMessagesRoutes } from "./server/routes/messagesRoutes.js";
 import { registerReviewsRoutes } from "./server/routes/reviewsRoutes.js";
 import { createPaymentRouter } from "./server/modules/payments/payment.routes.js";
+import { createConnectRouter } from "./server/modules/connect/connect.routes.js";
 import { createPaymentAdminRouter } from "./server/modules/payments/payment.admin.routes.js";
 import { createAdminModerationRouter } from "./server/modules/admin/admin.moderation.routes.js";
 import { createAdminActionsRouter } from "./server/modules/admin/admin.actions.routes.js";
@@ -83,6 +84,7 @@ async function startServer() {
   registerReviewsRoutes(app);
   mountTotpRoutes(app);
   app.use('/api/payments', createPaymentRouter(requireFirebaseUser));
+  app.use('/api/connect', createConnectRouter(requireFirebaseUser));
   app.use('/api/admin', createPaymentAdminRouter(requireAuth));
   app.use('/api/admin', createAdminAccessRouter(requireAuth));
   app.use('/api/admin', createAdminActionsRouter({ requireAuth, db }));

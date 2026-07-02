@@ -5,6 +5,36 @@ export function runMigrations() {
   const db = getDatabase();
   db.exec(schemaSql);
 
+
+  try {
+    db.exec(\`
+      CREATE TABLE IF NOT EXISTS seller_connect_accounts (
+        id TEXT PRIMARY KEY,
+        seller_uid TEXT NOT NULL UNIQUE,
+        provider_name TEXT NOT NULL DEFAULT 'paychangu',
+        status TEXT NOT NULL DEFAULT 'pending',
+        mode TEXT NOT NULL DEFAULT 'test',
+        scope TEXT,
+        authorization_url TEXT,
+        connect_user_id TEXT,
+        connect_user_email TEXT,
+        connect_user_name TEXT,
+        access_token_encrypted TEXT,
+        refresh_token_encrypted TEXT,
+        webhook_url TEXT,
+        webhook_secret_encrypted TEXT,
+        connected_at TEXT,
+        revoked_at TEXT,
+        last_error TEXT,
+        raw_profile TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      )
+    \`);
+  } catch (error) {
+    console.warn("Seller Connect accounts table migration failed:", error);
+  }
+
   try {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_seller_applications_applicant_uid

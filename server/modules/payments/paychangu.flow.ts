@@ -5,6 +5,7 @@ import { orderRepository } from '../orders/order.repository.js';
 import { serverOrderService } from '../orders/order.service.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
 import { payoutRepository, payoutService } from '../payouts/payout.service.js';
+import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
 import { getPaymentDb } from '../../sqlite.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
@@ -322,6 +323,15 @@ export function applyVerifiedPayChanguPayment(
   const activeOrder = confirmedOrder ?? order;
 
   if (activeOrder.settlementRoute === 'connect') {
+    const connectAccount = getConnectAccount(activeOrder.sellerId);
+    if (!connectAccount || connectAccount.status !== 'connected') {
+      return {
+        payment,
+        order: activeOrder,
+        verification,
+      };
+    }
+
     const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
     const payoutMethod = derivePayoutMethod(destination);
     const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
@@ -354,6 +364,9 @@ export function applyVerifiedPayChanguPayment(
         settlementRoute: activeOrder.settlementRoute,
         paymentReference: reference,
         payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
+        connectAccountId: connectAccount.id,
+        connectStatus: connectAccount.status,
+        connectMode: connectAccount.mode,
       },
     });
 
@@ -368,6 +381,8 @@ export function applyVerifiedPayChanguPayment(
           settlementRoute: activeOrder.settlementRoute,
           payoutFormula,
           destinationAccountId: destination?.id ?? null,
+          connectAccountId: connectAccount.id,
+          connectStatus: connectAccount.status,
           payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
         },
       });
