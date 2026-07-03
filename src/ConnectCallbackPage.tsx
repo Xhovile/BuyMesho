@@ -1,15 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { navigateToPath, SELLER_PAYOUTS_PATH } from "./lib/appNavigation";
 import { submitConnectCallback } from "./modules/connect/api";
 
 export default function ConnectCallbackPage() {
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
   const [message, setMessage] = useState("Connecting your PayChangu account...");
 
   useEffect(() => {
     const run = async () => {
       try {
+        const params = new URLSearchParams(window.location.search);
         const sellerUid = params.get("sellerUid") ?? "";
         if (!sellerUid) {
           throw new Error("Missing sellerUid");
@@ -26,16 +25,16 @@ export default function ConnectCallbackPage() {
         });
 
         setMessage("Connected. Redirecting...");
-        navigate("/seller-payouts", { replace: true });
+        setTimeout(() => {
+          navigateToPath(SELLER_PAYOUTS_PATH, { replace: true });
+        }, 800);
       } catch (error) {
-        setMessage(
-          error instanceof Error ? error.message : "Connect setup failed."
-        );
+        setMessage(error instanceof Error ? error.message : "Connect setup failed.");
       }
     };
 
     void run();
-  }, [navigate, params]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
