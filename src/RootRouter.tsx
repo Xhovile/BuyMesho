@@ -6,7 +6,7 @@ import {
   ADMIN_AUDIT_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
-  ADMIN_BALANCE_PATH, 
+  ADMIN_BALANCE_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
   navigateToPath,
@@ -69,6 +69,7 @@ const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
+const ConnectCallbackPage = lazy(() => import("./ConnectCallbackPage"));
 const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
 const PaymentMethodPage = lazy(() => import("./PaymentMethodPage"));
 const TrackOrderPage = lazy(() => import("./TrackOrderPage"));
@@ -176,6 +177,7 @@ export default function RootRouter() {
       import("./OrderTrackingPage"),
       import("./OrderDisputePage"),
       import("./SellerPayoutsPage"),
+      import("./ConnectCallbackPage"),
     ]);
   }, []);
 
@@ -236,6 +238,8 @@ export default function RootRouter() {
           <MarketComingSoonPage />
         ) : locationPath.startsWith("/market/coming-soon") ? (
           <MarketComingSoonPage />
+        ) : locationPath === "/connect/callback" ? (
+          <ConnectCallbackPage />
         ) : locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute") ? (
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
