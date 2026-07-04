@@ -1,11 +1,11 @@
 import express, { type RequestHandler } from 'express';
 import {
-  buildConnectAuthorizationUrl,
   disconnectConnectAccount,
   getConnectAccount,
   recordConnectCallback,
   startConnectOnboarding,
 } from './connect.service.js';
+import { getRequestUser } from '../../routes/escrow/shared.js';
 import type {
   PayChanguConnectAuthorizeLinkRequest,
   PayChanguConnectCallbackPayload,
@@ -23,7 +23,7 @@ export function createConnectRouter(requireAuth?: RequestHandler): express.Route
 
   router.post('/start', auth, async (req, res) => {
     try {
-      const sellerUid = typeof req.user?.uid === 'string' ? req.user.uid : null;
+      const sellerUid = getRequestUser(req)?.uid ?? null;
       if (!sellerUid) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
