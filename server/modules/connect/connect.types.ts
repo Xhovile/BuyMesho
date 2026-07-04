@@ -1,7 +1,9 @@
 export type PayChanguConnectMode = 'live' | 'test';
 export type PayChanguConnectStatus = 'pending' | 'connected' | 'revoked' | 'error';
+export type ConnectAttemptStatus = 'pending' | 'consumed' | 'expired';
 
 export interface PayChanguConnectAuthorizeLinkRequest {
+  sellerUid: string;
   clientId: string;
   redirectUri: string;
   mode: PayChanguConnectMode;
@@ -10,8 +12,24 @@ export interface PayChanguConnectAuthorizeLinkRequest {
   whSecret?: string;
 }
 
+export interface PayChanguConnectStartRequest {
+  clientId: string;
+  redirectUri: string;
+  mode: PayChanguConnectMode;
+  scope?: string;
+  whUrl?: string;
+  whSecret?: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+export interface PayChanguConnectStartResponse {
+  connectAttemptId: string;
+  authorizationUrl: string;
+}
+
 export interface PayChanguConnectCallbackPayload {
   sellerUid: string;
+  connectAttemptId?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
   mode?: PayChanguConnectMode;
@@ -72,4 +90,24 @@ export interface SellerConnectAccountUpsertInput {
   revokedAt?: string | null;
   lastError?: string | null;
   rawProfile?: Record<string, unknown> | null;
+}
+
+export interface ConnectAttemptRecord {
+  id: string;
+  sellerUid: string;
+  status: ConnectAttemptStatus;
+  expiresAt: string;
+  consumedAt: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConnectAttemptCreateInput {
+  id?: string;
+  sellerUid: string;
+  status?: ConnectAttemptStatus;
+  expiresAt: string;
+  consumedAt?: string | null;
+  metadata?: Record<string, unknown> | null;
 }
