@@ -4,11 +4,13 @@ import {
   disconnectConnectAccount,
   getConnectAccount,
   recordConnectCallback,
+  startConnectOnboarding,
 } from './connect.service.js';
 import type {
   PayChanguConnectAuthorizeLinkRequest,
   PayChanguConnectCallbackPayload,
   PayChanguConnectMode,
+  PayChanguConnectStartRequest,
 } from './connect.types.js';
 
 function jsonError(error: unknown, fallback: string): { error: string } {
@@ -18,6 +20,44 @@ function jsonError(error: unknown, fallback: string): { error: string } {
 export function createConnectRouter(requireAuth?: RequestHandler): express.Router {
   const router = express.Router();
   const auth = requireAuth ?? ((_req, _res, next) => next());
+
+  router.post('/start', auth, async (req, res) => {
+    try {
+      const sellerUid = typeof req.user?.uid === 'string' ? req.user.uid : null;
+      if (!sellerUid) {
+        return res.status(401).json({ error: 'Unauthorized' });
+      }
+
+      const { clientId, redirectUri, mode, scope, whUrl, whSecret, metadata } = req.body as PayChanguConnectStartRequest & {
+        metadata?: Record<string, unknown> | null;
+      };
+
+      if (!clientId) {
+        return res.status(400).json({ error: 'clientId is required' });
+      }
+      if (!redirectUri) {
+        return res.status(400).json({ error: 'redirectUri is required' });
+      }
+      if (!mode) {
+        return res.status(400).json({ error: 'mode is required' });
+      }
+
+      const result = startConnectOnboarding({
+        sellerUid,
+        clientId,
+        redirectUri,
+        mode: mode as PayChanguConnectMode,
+        scope,
+        whUrl,
+        whSecret,
+        metadata,
+      });
+
+      return res.status(200).json(result);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to start Connect onboarding'));
+    }
+  });
 
   router.post('/authorize-link', auth, async (req, res) => {
     try {
@@ -44,7 +84,8 @@ export function createConnectRouter(requireAuth?: RequestHandler): express.Route
         return res.status(400).json({ error: 'mode is required' });
       }
 
-      const authorizationUrl = buildConnectAuthorizationUrl({
+      const result = startConnectOnboarding({
+        sellerUid,
         clientId,
         redirectUri,
         mode: mode as PayChanguConnectMode,
@@ -55,7 +96,7 @@ export function createConnectRouter(requireAuth?: RequestHandler): express.Route
 
       return res.status(200).json({
         sellerUid,
-        authorizationUrl,
+        ...result,
       });
     } catch (error) {
       return res.status(400).json(jsonError(error, 'Failed to build Connect authorization link'));
