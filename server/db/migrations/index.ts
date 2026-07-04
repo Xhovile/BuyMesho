@@ -37,6 +37,42 @@ export function runMigrations() {
 
   try {
     db.exec(`
+      CREATE TABLE IF NOT EXISTS connect_attempts (
+        id TEXT PRIMARY KEY,
+        seller_uid TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'consumed', 'expired')),
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        metadata TEXT,
+        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+      )
+    `);
+  } catch (error) {
+    console.warn("Connect attempts table migration failed:", error);
+  }
+
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_connect_attempts_seller_uid
+      ON connect_attempts (seller_uid, status, created_at DESC)
+    `);
+  } catch (error) {
+    console.warn("Connect attempts seller index migration failed:", error);
+  }
+
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_connect_attempts_expires_at
+      ON connect_attempts (expires_at, status)
+    `);
+  } catch (error) {
+    console.warn("Connect attempts expiry index migration failed:", error);
+  }
+
+  try {
+    db.exec(`
       CREATE INDEX IF NOT EXISTS idx_seller_applications_applicant_uid
       ON seller_applications (applicant_uid, created_at DESC)
     `);

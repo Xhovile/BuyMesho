@@ -13,8 +13,23 @@ export interface PayChanguConnectAuthorizeLinkRequest {
   whSecret?: string;
 }
 
+export interface PayChanguConnectStartRequest {
+  clientId: string;
+  redirectUri: string;
+  mode: PayChanguConnectMode;
+  scope?: string;
+  whUrl?: string;
+  whSecret?: string;
+  metadata?: Record<string, unknown> | null;
+}
+
 export interface PayChanguConnectAuthorizeLinkResponse {
-  sellerUid: string;
+  connectAttemptId: string;
+  authorizationUrl: string;
+}
+
+export interface PayChanguConnectStartResponse {
+  connectAttemptId: string;
   authorizationUrl: string;
 }
 
@@ -74,18 +89,25 @@ function normalizeConnectAccount(response: unknown): PayChanguConnectAccount {
   };
 }
 
-export async function createConnectAuthorizationLink(
-  payload: PayChanguConnectAuthorizeLinkRequest,
-): Promise<PayChanguConnectAuthorizeLinkResponse> {
-  const response = await apiFetch('/api/connect/authorize-link', {
+export async function startConnectOnboarding(
+  payload: PayChanguConnectStartRequest,
+): Promise<PayChanguConnectStartResponse> {
+  const response = await apiFetch('/api/connect/start', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
 
   return {
-    sellerUid: String(response?.sellerUid ?? response?.seller_uid ?? payload.sellerUid),
+    connectAttemptId: String(response?.connectAttemptId ?? response?.connect_attempt_id ?? ''),
     authorizationUrl: String(response?.authorizationUrl ?? response?.authorization_url ?? ''),
   };
+}
+
+export async function createConnectAuthorizationLink(
+  payload: PayChanguConnectAuthorizeLinkRequest,
+): Promise<PayChanguConnectAuthorizeLinkResponse> {
+  const { sellerUid: _sellerUid, ...startPayload } = payload;
+  return startConnectOnboarding(startPayload);
 }
 
 export async function getConnectAccount(sellerUid: string): Promise<PayChanguConnectAccount | null> {

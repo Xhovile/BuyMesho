@@ -4,6 +4,8 @@ import type {
   PayChanguConnectAuthorizeLinkRequest,
   PayChanguConnectCallbackPayload,
   PayChanguConnectMode,
+  PayChanguConnectStartRequest,
+  PayChanguConnectStartResponse,
   PayChanguConnectUserProfile,
   SellerConnectAccount,
   SellerConnectAccountUpsertInput,
@@ -11,6 +13,7 @@ import type {
 
 const CONNECT_TOKEN_ENCRYPTION_KEY = process.env.CONNECT_TOKEN_ENCRYPTION_KEY ?? process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
+const CONNECT_ATTEMPT_TTL_MS = 15 * 60 * 1000;
 
 function requireEncryptionKey(): string {
   if (!CONNECT_TOKEN_ENCRYPTION_KEY) {
@@ -75,30 +78,51 @@ export function buildConnectAuthorizationUrl(input: PayChanguConnectAuthorizeLin
   return url.toString();
 }
 
-export async function fetchConnectedUser(accessToken: string): Promise<PayChanguConnectUserProfile> {
-  const url = new URL('/connect/user', PAYCHANGU_API_BASE_URL);
-  url.searchParams.set('access_token', accessToken);
+function buildAttemptMetadata(input: PayChanguConnectStartRequest): Record<string, unknown> {
+  return {
+    clientId: input.clientId,
+    redirectUri: input.redirectUri,
+    mode: input.mode,
+    scope: input.scope ?? null,
+    whUrl: input.whUrl ?? null,
+    ...(input.metadata && typeof input.metadata === 'object' ? input.metadata : {}),
+  };
+}
 
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      Accept: 'application/json',
-    },
+function ensureSellerExists(sellerUid: string): void {
+  if (!connectRepository.sellerExists(sellerUid)) {
+    throw new Error('Seller account not found');
+  }
+}
+
+export function startConnectOnboarding(
+  input: PayChanguConnectStartRequest & { sellerUid: string },
+): PayChanguConnectStartResponse {
+  ensureSellerExists(input.sellerUid);
+
+  const connectAttemptId = randomUUID();
+  const expiresAt = new Date(Date.now() + CONNECT_ATTEMPT_TTL_MS).toISOString();
+
+  connectRepository.createConnectAttempt({
+    id: connectAttemptId,
+    sellerUid: input.sellerUid,
+    status: 'pending',
+    expiresAt,
+    metadata: buildAttemptMetadata(input),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch PayChangu Connect user: ${response.status}`);
-  }
+  const authorizationUrl = buildConnectAuthorizationUrl({
+    clientId: input.clientId,
+    redirectUri: input.redirectUri,
+    mode: input.mode,
+    scope: input.scope,
+    whUrl: input.whUrl,
+    whSecret: input.whSecret,
+  });
 
-  const payload = (await response.json()) as Record<string, unknown>;
   return {
-    id: String(payload.id ?? payload.user_id ?? payload.sub ?? randomUUID()),
-    email: (payload.email as string | null) ?? null,
-    name: (payload.name as string | null) ?? null,
-    phone: (payload.phone as string | null) ?? null,
-    status: (payload.status as string | null) ?? null,
-    rawResponse: payload,
+    connectAttemptId,
+    authorizationUrl,
   };
 }
 

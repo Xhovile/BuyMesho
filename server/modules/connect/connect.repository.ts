@@ -1,6 +1,9 @@
 import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../sqlite.js';
 import type {
+  ConnectAttemptCreateInput,
+  ConnectAttemptRecord,
+  ConnectAttemptStatus,
   PayChanguConnectMode,
   PayChanguConnectStatus,
   SellerConnectAccount,
@@ -46,9 +49,49 @@ function rowToConnectAccount(row: Record<string, unknown>): SellerConnectAccount
   };
 }
 
+function rowToConnectAttempt(row: Record<string, unknown>): ConnectAttemptRecord {
+  return {
+    id: String(row.id),
+    sellerUid: String(row.seller_uid),
+    status: String(row.status) as ConnectAttemptStatus,
+    expiresAt: String(row.expires_at),
+    consumedAt: (row.consumed_at as string | null) ?? null,
+    metadata: (() => {
+      const metadata = row.metadata;
+      if (!metadata) return null;
+      if (typeof metadata === 'string') {
+        try {
+          return JSON.parse(metadata) as Record<string, unknown>;
+        } catch {
+          return null;
+        }
+      }
+      if (typeof metadata === 'object') {
+        return metadata as Record<string, unknown>;
+      }
+      return null;
+    })(),
+    createdAt: String(row.created_at),
+    updatedAt: String(row.updated_at),
+  };
+}
+
 export class ConnectRepository {
   private get db() {
     return getPaymentDb();
+  }
+
+  sellerExists(sellerUid: string): boolean {
+    const row = this.db
+      .prepare(
+        `SELECT 1
+         FROM sellers
+         WHERE uid = ?
+         LIMIT 1`,
+      )
+      .get(sellerUid) as Record<string, unknown> | undefined;
+
+    return Boolean(row);
   }
 
   findBySellerUid(sellerUid: string): SellerConnectAccount | undefined {
@@ -73,6 +116,117 @@ export class ConnectRepository {
       .get(id) as Record<string, unknown> | undefined;
 
     return row ? rowToConnectAccount(row) : undefined;
+  }
+
+  createConnectAttempt(input: ConnectAttemptCreateInput): ConnectAttemptRecord {
+    const now = new Date().toISOString();
+    const id = input.id ?? randomUUID();
+
+    this.db
+      .prepare(
+        `INSERT INTO connect_attempts (
+          id,
+          seller_uid,
+          status,
+          expires_at,
+          consumed_at,
+          metadata,
+          created_at,
+          updated_at
+        ) VALUES (
+          @id,
+          @seller_uid,
+          @status,
+          @expires_at,
+          @consumed_at,
+          @metadata,
+          @created_at,
+          @updated_at
+        )`,
+      )
+      .run({
+        id,
+        seller_uid: input.sellerUid,
+        status: input.status ?? 'pending',
+        expires_at: input.expiresAt,
+        consumed_at: input.consumedAt ?? null,
+        metadata: input.metadata ? JSON.stringify(input.metadata) : null,
+        created_at: now,
+        updated_at: now,
+      });
+
+    const stored = this.findConnectAttemptById(id);
+    if (!stored) {
+      throw new Error('Failed to persist Connect attempt');
+    }
+
+    return stored;
+  }
+
+  findConnectAttemptById(id: string): ConnectAttemptRecord | undefined {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM connect_attempts
+         WHERE id = ?
+         LIMIT 1`,
+      )
+      .get(id) as Record<string, unknown> | undefined;
+
+    return row ? rowToConnectAttempt(row) : undefined;
+  }
+
+  markConnectAttemptConsumed(id: string, consumedAt: string = new Date().toISOString()): ConnectAttemptRecord {
+    const existing = this.findConnectAttemptById(id);
+    if (!existing) {
+      throw new Error('Connect attempt not found');
+    }
+
+    this.db
+      .prepare(
+        `UPDATE connect_attempts
+         SET status = 'consumed',
+             consumed_at = @consumed_at,
+             updated_at = @updated_at
+         WHERE id = @id`,
+      )
+      .run({
+        id,
+        consumed_at: consumedAt,
+        updated_at: new Date().toISOString(),
+      });
+
+    const stored = this.findConnectAttemptById(id);
+    if (!stored) {
+      throw new Error('Failed to update Connect attempt');
+    }
+
+    return stored;
+  }
+
+  markConnectAttemptExpired(id: string, expiredAt: string = new Date().toISOString()): ConnectAttemptRecord {
+    const existing = this.findConnectAttemptById(id);
+    if (!existing) {
+      throw new Error('Connect attempt not found');
+    }
+
+    this.db
+      .prepare(
+        `UPDATE connect_attempts
+         SET status = 'expired',
+             updated_at = @updated_at
+         WHERE id = @id`,
+      )
+      .run({
+        id,
+        updated_at: expiredAt,
+      });
+
+    const stored = this.findConnectAttemptById(id);
+    if (!stored) {
+      throw new Error('Failed to update Connect attempt');
+    }
+
+    return stored;
   }
 
   upsert(input: SellerConnectAccountUpsertInput): SellerConnectAccount {
