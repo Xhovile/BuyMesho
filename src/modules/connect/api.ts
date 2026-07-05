@@ -66,6 +66,46 @@ export interface PayChanguConnectCallbackPayload {
   rawPayload?: Record<string, unknown> | null;
 }
 
+function readRequiredString(value: unknown, label: string): string {
+  const text = typeof value === 'string' ? value.trim() : String(value ?? '').trim();
+  if (!text) {
+    throw new Error(`${label} is not configured`);
+  }
+
+  return text;
+}
+
+function validateUrl(value: string, label: string): string {
+  try {
+    return new URL(value).toString();
+  } catch {
+    throw new Error(`${label} must be a valid URL`);
+  }
+}
+
+export function validateConnectStartPayload(payload: PayChanguConnectStartRequest): PayChanguConnectStartRequest {
+  const clientId = readRequiredString(payload.clientId, 'VITE_PAYCHANGU_CLIENT_ID');
+  const redirectUri = validateUrl(readRequiredString(payload.redirectUri, 'redirectUri'), 'redirectUri');
+  const mode = payload.mode;
+  const whUrl = validateUrl(readRequiredString(payload.whUrl, 'VITE_PAYCHANGU_WEBHOOK_URL'), 'VITE_PAYCHANGU_WEBHOOK_URL');
+  const whSecret = readRequiredString(payload.whSecret, 'VITE_PAYCHANGU_WEBHOOK_SECRET');
+  const scope = typeof payload.scope === 'string' ? payload.scope.trim() : undefined;
+
+  if (mode !== 'live' && mode !== 'test') {
+    throw new Error('mode must be "live" or "test"');
+  }
+
+  return {
+    clientId,
+    redirectUri,
+    mode,
+    scope: scope || undefined,
+    whUrl,
+    whSecret,
+    metadata: payload.metadata ?? null,
+  };
+}
+
 function normalizeConnectAccount(response: unknown): PayChanguConnectAccount {
   if (!response || typeof response !== 'object') {
     throw new Error('Invalid Connect account response');
@@ -124,9 +164,10 @@ export function clearStoredConnectContext(): void {
 export async function startConnectOnboarding(
   payload: PayChanguConnectStartRequest,
 ): Promise<PayChanguConnectStartResponse> {
+  const validatedPayload = validateConnectStartPayload(payload);
   const response = await apiFetch('/api/connect/start', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(validatedPayload),
   });
 
   return {
