@@ -3,6 +3,7 @@ import {
   disconnectConnectAccount,
   getConnectAccount,
   recordConnectCallback,
+  revokeConnectAccessToken,
   startConnectOnboarding,
 } from './connect.service.js';
 import { getRequestUser } from '../../routes/escrow/shared.js';
@@ -126,10 +127,20 @@ export function createConnectRouter(requireAuth?: RequestHandler): express.Route
     }
   });
 
-  router.post('/disconnect/:sellerUid', auth, (req, res) => {
+  router.post('/revoke/:sellerUid', auth, async (req, res) => {
     try {
       const reason = typeof req.body?.reason === 'string' ? req.body.reason : null;
-      const account = disconnectConnectAccount(req.params.sellerUid, reason);
+      const account = await revokeConnectAccessToken(req.params.sellerUid, reason);
+      return res.status(200).json(account);
+    } catch (error) {
+      return res.status(400).json(jsonError(error, 'Failed to revoke Connect access token'));
+    }
+  });
+
+  router.post('/disconnect/:sellerUid', auth, async (req, res) => {
+    try {
+      const reason = typeof req.body?.reason === 'string' ? req.body.reason : null;
+      const account = await disconnectConnectAccount(req.params.sellerUid, reason);
       return res.status(200).json(account);
     } catch (error) {
       return res.status(400).json(jsonError(error, 'Failed to disconnect Connect account'));
