@@ -13,6 +13,7 @@ import type {
 
 const CONNECT_TOKEN_ENCRYPTION_KEY = process.env.CONNECT_TOKEN_ENCRYPTION_KEY ?? process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_BASE_URL ?? process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
+const PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH = process.env.PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH ?? '/new-endpoint-2';
 const CONNECT_ATTEMPT_TTL_MS = 15 * 60 * 1000;
 
 type ConnectAuthorizationUrlInput = Pick<
@@ -246,6 +247,45 @@ export async function fetchConnectedUser(accessToken: string): Promise<PayChangu
   };
 }
 
+function buildRevokeAccessTokenUrl(accessToken: string): URL {
+  const url = new URL(PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH, PAYCHANGU_API_BASE_URL);
+  url.searchParams.set('token', accessToken);
+  return url;
+}
+
+export async function revokeConnectAccessToken(
+  sellerUid: string,
+  reason: string | null = 'Seller disconnected PayChangu Connect',
+): Promise<SellerConnectAccount> {
+  validateConnectEnvironment();
+
+  const existing = connectRepository.findBySellerUid(sellerUid);
+  if (!existing) {
+    return connectRepository.revoke(sellerUid, reason);
+  }
+
+  const accessToken = decryptSecret(existing.accessTokenEncrypted);
+  if (!accessToken) {
+    return connectRepository.revoke(sellerUid, reason);
+  }
+
+  const response = await fetch(buildRevokeAccessTokenUrl(accessToken), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${readRequiredEnv('PAYCHANGU_SECRET_KEY')}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to revoke PayChangu Connect access token: ${response.status}`);
+  }
+
+  return connectRepository.revoke(sellerUid, reason);
+}
+
 export async function recordConnectCallback(input: PayChanguConnectCallbackPayload): Promise<SellerConnectAccount> {
   validateConnectEnvironment();
 
@@ -280,34 +320,9 @@ export function getConnectAccount(sellerUid: string): SellerConnectAccount | und
   return connectRepository.findBySellerUid(sellerUid);
 }
 
-export function disconnectConnectAccount(sellerUid: string, reason: string | null = 'Seller disconnected PayChangu Connect'): SellerConnectAccount {
-  const existing = connectRepository.findBySellerUid(sellerUid);
-  if (!existing) {
-    return connectRepository.upsert({
-      sellerUid,
-      mode: 'test',
-      status: 'revoked',
-      revokedAt: new Date().toISOString(),
-      lastError: reason,
-    });
-  }
-
-  return connectRepository.upsert({
-    sellerUid,
-    mode: existing.mode,
-    status: 'revoked',
-    scope: existing.scope ?? null,
-    authorizationUrl: existing.authorizationUrl ?? null,
-    connectUserId: existing.connectUserId ?? null,
-    connectUserEmail: existing.connectUserEmail ?? null,
-    connectUserName: existing.connectUserName ?? null,
-    accessTokenEncrypted: existing.accessTokenEncrypted ?? null,
-    refreshTokenEncrypted: existing.refreshTokenEncrypted ?? null,
-    webhookUrl: existing.webhookUrl ?? null,
-    webhookSecretEncrypted: existing.webhookSecretEncrypted ?? null,
-    connectedAt: existing.connectedAt ?? null,
-    revokedAt: new Date().toISOString(),
-    lastError: reason,
-    rawProfile: existing.rawProfile ?? null,
-  });
+export function disconnectConnectAccount(
+  sellerUid: string,
+  reason: string | null = 'Seller disconnected PayChangu Connect',
+): Promise<SellerConnectAccount> {
+  return revokeConnectAccessToken(sellerUid, reason);
 }
