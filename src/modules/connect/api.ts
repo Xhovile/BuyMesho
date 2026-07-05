@@ -3,6 +3,8 @@ import { apiFetch } from '../../lib/api';
 export type PayChanguConnectMode = 'live' | 'test';
 export type PayChanguConnectStatus = 'pending' | 'connected' | 'revoked' | 'error';
 
+const CONNECT_CONTEXT_STORAGE_KEY = 'buymesho.paychangu.connectContext';
+
 export interface PayChanguConnectAuthorizeLinkRequest {
   sellerUid: string;
   clientId: string;
@@ -89,6 +91,35 @@ function normalizeConnectAccount(response: unknown): PayChanguConnectAccount {
   };
 }
 
+function saveConnectContext(payload: { sellerUid: string; connectAttemptId: string; startedAt: string }): void {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.setItem(CONNECT_CONTEXT_STORAGE_KEY, JSON.stringify(payload));
+}
+
+export function getStoredConnectContext(): { sellerUid: string; connectAttemptId: string; startedAt: string } | null {
+  if (typeof window === 'undefined') return null;
+
+  const raw = window.sessionStorage.getItem(CONNECT_CONTEXT_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<{ sellerUid: string; connectAttemptId: string; startedAt: string }>;
+    if (!parsed.sellerUid || !parsed.connectAttemptId || !parsed.startedAt) return null;
+    return {
+      sellerUid: parsed.sellerUid,
+      connectAttemptId: parsed.connectAttemptId,
+      startedAt: parsed.startedAt,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function clearStoredConnectContext(): void {
+  if (typeof window === 'undefined') return;
+  window.sessionStorage.removeItem(CONNECT_CONTEXT_STORAGE_KEY);
+}
+
 export async function startConnectOnboarding(
   payload: PayChanguConnectStartRequest,
 ): Promise<PayChanguConnectStartResponse> {
@@ -106,8 +137,18 @@ export async function startConnectOnboarding(
 export async function createConnectAuthorizationLink(
   payload: PayChanguConnectAuthorizeLinkRequest,
 ): Promise<PayChanguConnectAuthorizeLinkResponse> {
-  const { sellerUid: _sellerUid, ...startPayload } = payload;
-  return startConnectOnboarding(startPayload);
+  const { sellerUid, ...startPayload } = payload;
+  const result = await startConnectOnboarding(startPayload);
+
+  if (sellerUid && result.connectAttemptId) {
+    saveConnectContext({
+      sellerUid,
+      connectAttemptId: result.connectAttemptId,
+      startedAt: new Date().toISOString(),
+    });
+  }
+
+  return result;
 }
 
 export async function getConnectAccount(sellerUid: string): Promise<PayChanguConnectAccount | null> {
