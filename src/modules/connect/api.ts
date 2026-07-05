@@ -55,6 +55,7 @@ export interface PayChanguConnectAccount {
 
 export interface PayChanguConnectCallbackPayload {
   sellerUid: string;
+  connectAttemptId?: string | null;
   accessToken?: string;
   refreshToken?: string | null;
   mode?: PayChanguConnectMode;
