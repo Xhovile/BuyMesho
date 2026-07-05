@@ -15,7 +15,52 @@ function setConnectEnv(overrides: Partial<typeof BASE_ENV> = {}): void {
   Object.assign(process.env, BASE_ENV, overrides);
 }
 
+function ensureConnectTables(): void {
+  const db = getPaymentDb();
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS sellers (
+      uid TEXT PRIMARY KEY,
+      email TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS connect_attempts (
+      id TEXT PRIMARY KEY,
+      seller_uid TEXT NOT NULL,
+      status TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT,
+      metadata TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS seller_connect_accounts (
+      id TEXT PRIMARY KEY,
+      seller_uid TEXT NOT NULL UNIQUE,
+      provider_name TEXT NOT NULL,
+      status TEXT NOT NULL,
+      mode TEXT NOT NULL,
+      scope TEXT,
+      authorization_url TEXT,
+      connect_user_id TEXT,
+      connect_user_email TEXT,
+      connect_user_name TEXT,
+      access_token_encrypted TEXT,
+      refresh_token_encrypted TEXT,
+      webhook_url TEXT,
+      webhook_secret_encrypted TEXT,
+      connected_at TEXT,
+      revoked_at TEXT,
+      last_error TEXT,
+      raw_profile TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+  `);
+}
+
 function clearConnectTables(): void {
+  ensureConnectTables();
   const db = getPaymentDb();
   db.prepare('DELETE FROM seller_connect_accounts').run();
   db.prepare('DELETE FROM connect_attempts').run();
