@@ -12,8 +12,39 @@ import type {
 } from './connect.types.js';
 
 const CONNECT_TOKEN_ENCRYPTION_KEY = process.env.CONNECT_TOKEN_ENCRYPTION_KEY ?? process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
-const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
+const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_BASE_URL ?? process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
 const CONNECT_ATTEMPT_TTL_MS = 15 * 60 * 1000;
+
+function readRequiredEnv(name: string): string {
+  const value = process.env[name]?.trim();
+  if (!value) {
+    throw new Error(`Missing required Connect environment variable: ${name}`);
+  }
+
+  return value;
+}
+
+function validateBaseUrl(value: string): string {
+  try {
+    new URL(value);
+    return value;
+  } catch {
+    throw new Error(`PAYCHANGU_BASE_URL must be a valid URL: ${value}`);
+  }
+}
+
+export function validateConnectEnvironment(): void {
+  const missing: string[] = [];
+  if (!process.env.PAYCHANGU_SECRET_KEY?.trim()) missing.push('PAYCHANGU_SECRET_KEY');
+  if (!process.env.PAYCHANGU_WEBHOOK_SECRET?.trim()) missing.push('PAYCHANGU_WEBHOOK_SECRET');
+  if (!CONNECT_TOKEN_ENCRYPTION_KEY.trim()) missing.push('CONNECT_TOKEN_ENCRYPTION_KEY');
+
+  if (missing.length > 0) {
+    throw new Error(`Missing required Connect environment variables: ${missing.join(', ')}`);
+  }
+
+  validateBaseUrl(PAYCHANGU_API_BASE_URL);
+}
 
 function requireEncryptionKey(): string {
   if (!CONNECT_TOKEN_ENCRYPTION_KEY) {
@@ -95,11 +126,64 @@ function ensureSellerExists(sellerUid: string): void {
   }
 }
 
+function validateStartRequest(input: PayChanguConnectStartRequest): PayChanguConnectStartRequest {
+  const clientId = input.clientId?.trim();
+  const redirectUri = input.redirectUri?.trim();
+  const mode = input.mode;
+  const scope = input.scope?.trim();
+  const whUrl = input.whUrl?.trim();
+  const whSecret = input.whSecret?.trim();
+
+  if (!clientId) {
+    throw new Error('VITE_PAYCHANGU_CLIENT_ID is not configured');
+  }
+
+  if (!redirectUri) {
+    throw new Error('redirectUri is required');
+  }
+
+  try {
+    new URL(redirectUri);
+  } catch {
+    throw new Error(`redirectUri must be a valid URL: ${redirectUri}`);
+  }
+
+  if (mode !== 'live' && mode !== 'test') {
+    throw new Error('VITE_PAYCHANGU_MODE must be "live" or "test"');
+  }
+
+  if (!whUrl) {
+    throw new Error('VITE_PAYCHANGU_WEBHOOK_URL is not configured');
+  }
+
+  try {
+    new URL(whUrl);
+  } catch {
+    throw new Error(`VITE_PAYCHANGU_WEBHOOK_URL must be a valid URL: ${whUrl}`);
+  }
+
+  if (!whSecret) {
+    throw new Error('VITE_PAYCHANGU_WEBHOOK_SECRET is not configured');
+  }
+
+  return {
+    clientId,
+    redirectUri,
+    mode,
+    scope: scope || undefined,
+    whUrl,
+    whSecret,
+    metadata: input.metadata ?? null,
+  };
+}
+
 export function startConnectOnboarding(
   input: PayChanguConnectStartRequest & { sellerUid: string },
 ): PayChanguConnectStartResponse {
+  validateConnectEnvironment();
   ensureSellerExists(input.sellerUid);
 
+  const validated = validateStartRequest(input);
   const connectAttemptId = randomUUID();
   const expiresAt = new Date(Date.now() + CONNECT_ATTEMPT_TTL_MS).toISOString();
 
@@ -108,16 +192,16 @@ export function startConnectOnboarding(
     sellerUid: input.sellerUid,
     status: 'pending',
     expiresAt,
-    metadata: buildAttemptMetadata(input),
+    metadata: buildAttemptMetadata(validated),
   });
 
   const authorizationUrl = buildConnectAuthorizationUrl({
-    clientId: input.clientId,
-    redirectUri: input.redirectUri,
-    mode: input.mode,
-    scope: input.scope,
-    whUrl: input.whUrl,
-    whSecret: input.whSecret,
+    clientId: validated.clientId,
+    redirectUri: validated.redirectUri,
+    mode: validated.mode,
+    scope: validated.scope,
+    whUrl: validated.whUrl,
+    whSecret: validated.whSecret,
   });
 
   return {
@@ -130,7 +214,36 @@ export function saveConnectAccount(input: SellerConnectAccountUpsertInput): Sell
   return connectRepository.upsert(input);
 }
 
+export async function fetchConnectedUser(accessToken: string): Promise<PayChanguConnectUserProfile> {
+  const url = new URL('/connect/user', PAYCHANGU_API_BASE_URL);
+  url.searchParams.set('access_token', accessToken);
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch PayChangu Connect user: ${response.status}`);
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>;
+  return {
+    id: String(payload.id ?? payload.user_id ?? payload.sub ?? randomUUID()),
+    email: (payload.email as string | null) ?? null,
+    name: (payload.name as string | null) ?? null,
+    phone: (payload.phone as string | null) ?? null,
+    status: (payload.status as string | null) ?? null,
+    rawResponse: payload,
+  };
+}
+
 export async function recordConnectCallback(input: PayChanguConnectCallbackPayload): Promise<SellerConnectAccount> {
+  validateConnectEnvironment();
+
   if (!input.sellerUid) {
     throw new Error('sellerUid is required');
   }
