@@ -15,6 +15,11 @@ const CONNECT_TOKEN_ENCRYPTION_KEY = process.env.CONNECT_TOKEN_ENCRYPTION_KEY ??
 const PAYCHANGU_API_BASE_URL = process.env.PAYCHANGU_BASE_URL ?? process.env.PAYCHANGU_API_BASE_URL ?? 'https://api.paychangu.com';
 const CONNECT_ATTEMPT_TTL_MS = 15 * 60 * 1000;
 
+type ConnectAuthorizationUrlInput = Pick<
+  PayChanguConnectAuthorizeLinkRequest,
+  'clientId' | 'redirectUri' | 'mode' | 'scope' | 'whUrl' | 'whSecret'
+>;
+
 function readRequiredEnv(name: string): string {
   const value = process.env[name]?.trim();
   if (!value) {
@@ -88,7 +93,7 @@ export function decryptSecret(value: string | null | undefined): string | null {
   }
 }
 
-export function buildConnectAuthorizationUrl(input: PayChanguConnectAuthorizeLinkRequest): string {
+export function buildConnectAuthorizationUrl(input: ConnectAuthorizationUrlInput): string {
   const url = new URL('/connect/authorize-link', PAYCHANGU_API_BASE_URL);
   url.searchParams.set('client_id', input.clientId);
   url.searchParams.set('redirect_uri', input.redirectUri);
