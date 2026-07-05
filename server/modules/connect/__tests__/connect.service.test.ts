@@ -9,6 +9,7 @@ const BASE_ENV = {
   PAYCHANGU_WEBHOOK_SECRET: 'test-webhook-secret',
   CONNECT_TOKEN_ENCRYPTION_KEY: 'test-connect-encryption-key',
   PAYCHANGU_BASE_URL: 'https://api.paychangu.test',
+  PAYCHANGU_REVOKE_ACCESS_TOKEN_PATH: '/new-endpoint-2',
 };
 
 function setConnectEnv(overrides: Partial<typeof BASE_ENV> = {}): void {
@@ -186,6 +187,84 @@ test('recordConnectCallback fetches the connected user and stores encrypted toke
     assert.equal(service.decryptSecret(stored?.accessTokenEncrypted ?? null), 'access-token-123');
     assert.equal(service.decryptSecret(stored?.refreshTokenEncrypted ?? null), 'refresh-token-456');
     assert.equal(service.decryptSecret(stored?.webhookSecretEncrypted ?? null), 'webhook-secret');
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('revokeConnectAccessToken revokes PayChangu access and clears local secrets', async () => {
+  setConnectEnv();
+  const service = await importFreshService('revoke-access-token');
+  clearConnectTables();
+
+  const db = getPaymentDb();
+  db.prepare("INSERT INTO sellers (uid, email) VALUES (?, ?)").run('seller_1', 'seller@example.com');
+
+  await service.recordConnectCallback({
+    sellerUid: 'seller_1',
+    connectAttemptId: 'attempt_1',
+    accessToken: 'access-token-123',
+    refreshToken: 'refresh-token-456',
+    mode: 'test',
+    scope: 'payments',
+    webhookUrl: 'https://example.com/webhook',
+    webhookSecret: 'webhook-secret',
+    authorizationUrl: 'https://paychangu.test/connect/authorize-link',
+    connectUser: {
+      id: 'user_123',
+      email: 'seller@example.com',
+      name: 'Seller One',
+      phone: '+265999000111',
+      status: 'active',
+    },
+    rawPayload: { source: 'callback-test' },
+  });
+
+  const originalFetch = global.fetch;
+  let fetchCalled = false;
+  global.fetch = (async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+    fetchCalled = true;
+    const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    assert.match(target, /\/new-endpoint-2\?token=access-token-123$/);
+    assert.equal(init?.method, 'POST');
+    const headers = new Headers(init?.headers);
+    assert.equal(headers.get('Authorization'), 'Bearer test-paychangu-secret');
+    assert.equal(headers.get('Accept'), 'application/json');
+    assert.equal(headers.get('Content-Type'), 'application/json');
+
+    return new Response(JSON.stringify({ status: 'revoked' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const revoked = await service.revokeConnectAccessToken('seller_1', 'Manual revoke');
+
+    assert.equal(fetchCalled, true);
+    assert.equal(revoked.status, 'revoked');
+    assert.equal(revoked.revokedAt ? true : false, true);
+    assert.equal(revoked.lastError, 'Manual revoke');
+    assert.equal(revoked.accessTokenEncrypted, null);
+    assert.equal(revoked.refreshTokenEncrypted, null);
+    assert.equal(revoked.webhookSecretEncrypted, null);
+    assert.equal(revoked.authorizationUrl, null);
+    assert.equal(revoked.connectUserId, null);
+    assert.equal(revoked.connectUserEmail, null);
+    assert.equal(revoked.connectUserName, null);
+    assert.equal(revoked.rawProfile, null);
+
+    const stored = service.getConnectAccount('seller_1');
+    assert.ok(stored, 'stored connect account should exist after revoke');
+    assert.equal(stored?.status, 'revoked');
+    assert.equal(stored?.accessTokenEncrypted, null);
+    assert.equal(stored?.refreshTokenEncrypted, null);
+    assert.equal(stored?.webhookSecretEncrypted, null);
+    assert.equal(stored?.authorizationUrl, null);
+    assert.equal(stored?.connectUserId, null);
+    assert.equal(stored?.connectUserEmail, null);
+    assert.equal(stored?.connectUserName, null);
+    assert.equal(service.decryptSecret(stored?.accessTokenEncrypted ?? null), null);
   } finally {
     global.fetch = originalFetch;
   }
