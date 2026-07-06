@@ -304,11 +304,11 @@ export default function SellerDashboardPage() {
               </button>
               <button
                 type="button"
-                onClick={() => navigateToPath("/my-listings")}
+                onClick={() => navigateToPath("/seller/payouts")}
                 className="inline-flex items-center gap-2 rounded-2xl bg-indigo-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-indigo-100 hover:bg-indigo-700"
               >
                 <ArrowRight className="h-4 w-4" />
-                My Listings
+                Seller settings
               </button>
             </div>
           </div>
@@ -430,7 +430,7 @@ export default function SellerDashboardPage() {
                     onClick={() => navigateToPath("/seller/payouts")}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
-                    <span>Open Seller Payouts</span>
+                    <span>Open Seller Settings</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <button
@@ -519,17 +519,6 @@ export default function SellerDashboardPage() {
                 <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
                   <SellerEarningsSummary summary={dashboardEarningsSummary} compact />
                 </div>
-
-                {!payoutDestinationError ? (
-                  <div>
-                    <PayoutActionRequiredBanner
-                      summary={dashboardEarningsSummary}
-                      destinations={payoutDestinations}
-                      onAction={() => navigateToPath("/seller/payouts")}
-                      actionLabel="Open Payouts"
-                    />
-                  </div>
-                ) : null}
               </div>
             </div>
           </>
