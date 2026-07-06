@@ -119,9 +119,9 @@ export default function ConnectSettingsCard({
               type="button"
               onClick={onDisconnect}
               disabled={connectLoading}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Disconnect
+              Revoke access token
             </button>
           ) : null}
         </div>
