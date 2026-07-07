@@ -743,4 +743,436 @@ export default function SettingsPage() {
               <div className="divide-y divide-zinc-100">
                 <button
                   type="button"
-                  onClick={() =>...
+                  onClick={() => navigateToPath(CHANGE_PASSWORD_PATH)}
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <Lock className="w-4 h-4" />
+                    Change Password
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(CHANGE_EMAIL_PATH)}
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <Mail className="w-4 h-4" />
+                    Change Email
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedSecurityItems((current) => ({
+                      ...current,
+                      twoFactor: !current.twoFactor,
+                    }))
+                  }
+                  disabled={verifiedAccountRequiredDisabled}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                  aria-expanded={expandedSecurityItems.twoFactor}
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-xl bg-fuchsia-50 text-fuchsia-700 inline-flex items-center justify-center">
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </span>
+                    2-Factor Authentication
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-fuchsia-500 transition-transform ${expandedSecurityItems.twoFactor ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {expandedSecurityItems.twoFactor ? (
+                  <div className="px-5 py-4 bg-zinc-50/60 border-t border-zinc-100">
+                    <div className="flex flex-col gap-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                            Two-factor authentication
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-zinc-900">
+                            {totpStatus === "enabled"
+                              ? "Enabled"
+                              : totpStatus === "pending"
+                              ? "Pending setup"
+                              : "Not enabled"}
+                          </p>
+                          <p className="mt-1 text-xs text-zinc-500">
+                            Use an authenticator app for your second factor.
+                          </p>
+                        </div>
+
+                        <span
+                          className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-[0.16em] ${
+                            totpStatus === "enabled"
+                              ? "bg-emerald-50 text-emerald-700"
+                              : totpStatus === "pending"
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-zinc-100 text-zinc-500"
+                          }`}
+                        >
+                          {totpStatus === "enabled"
+                            ? "Active"
+                            : totpStatus === "pending"
+                            ? "Setup"
+                            : "Off"}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        {totpStatus === "enabled" ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleDisableTotp}
+                              disabled={verifiedAccountRequiredDisabled || totpLoading}
+                              className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Disable 2FA
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handle2FAEntry}
+                              disabled={verifiedAccountRequiredDisabled || totpLoading}
+                              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              Re-enroll
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handle2FAEntry}
+                            disabled={verifiedAccountRequiredDisabled || totpLoading}
+                            className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            Enable authenticator app
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedSecurityItems((current) => ({
+                      ...current,
+                      emailVerification: !current.emailVerification,
+                    }))
+                  }
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                  aria-expanded={expandedSecurityItems.emailVerification}
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-xl bg-purple-50 text-purple-700 inline-flex items-center justify-center">
+                      <Mail className="w-3.5 h-3.5" />
+                    </span>
+                    Email Verification
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-purple-500 transition-transform ${expandedSecurityItems.emailVerification ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {expandedSecurityItems.emailVerification ? (
+                  <div className="px-5 py-4 bg-zinc-50/60 border-t border-zinc-100">
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+                          Email verification
+                        </p>
+                        <p className="mt-1 text-sm font-semibold text-zinc-900">
+                          {profileLoading
+                            ? "Checking..."
+                            : !firebaseUser
+                            ? "Login required"
+                            : emailVerified
+                            ? "Verified"
+                            : "Not verified"}
+                        </p>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          type="button"
+                          onClick={handleRefreshVerification}
+                          disabled={emailVerificationButtonsDisabled}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${
+                            emailVerificationButtonsDisabled
+                              ? "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                              : "bg-white text-zinc-900 hover:bg-zinc-50"
+                          }`}
+                        >
+                          Refresh status
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          disabled={resendVerificationDisabled}
+                          className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all active:scale-95 ${
+                            resendVerificationDisabled
+                              ? "bg-zinc-100 text-zinc-400 cursor-not-allowed opacity-60"
+                              : "bg-zinc-900 text-white hover:bg-zinc-800"
+                          }`}
+                        >
+                          {securityActionBusy === "resend" ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Resending...
+                            </>
+                          ) : (
+                            "Resend verification"
+                          )}
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-zinc-500">
+                        Verification must be completed before higher-trust actions should be allowed.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => void handleLogoutAllSessions()}
+                  disabled={!firebaseUser || securityActionBusy === "logoutAll"}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <LogOut className="w-4 h-4" />
+                    Logout all sessions
+                  </span>
+                  {securityActionBusy === "logoutAll" ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+                  ) : (
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleVerifyIdentity}
+                  disabled={!firebaseUser}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors disabled:cursor-not-allowed disabled:bg-zinc-100"
+                >
+                  <span className="font-bold text-zinc-900 inline-flex items-center gap-2">
+                    <KeyRound className="w-4 h-4" />
+                    Verify identity
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                </button>
+              </div>
+            ) : null}
+          </section>
+
+          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => toggleSection("privacy")}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+              aria-expanded={expandedSections.privacy}
+            >
+              <span className="inline-flex items-center gap-3 min-w-0">
+                <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                  <UserCheck className="w-5 h-5 text-zinc-700" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+                    Privacy
+                  </span>
+                </span>
+              </span>
+
+              <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                {expandedSections.privacy ? "Hide" : "Show"}
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${expandedSections.privacy ? "rotate-180" : ""}`}
+                />
+              </span>
+            </button>
+
+            {expandedSections.privacy ? (
+              <div className="divide-y divide-zinc-100">
+                <div className="px-5 py-4 bg-zinc-50/60">
+                  <FormDropdown
+                    label="Profile visibility"
+                    value={VISIBILITY_LABEL[profile?.profile_visibility || "everyone"]}
+                    options={VISIBILITY_OPTIONS}
+                    disabled={!firebaseUser || savingPrivacyField === "profile_visibility"}
+                    onChange={(value) =>
+                      void updateVisibility(
+                        "profile_visibility",
+                        LABEL_TO_VISIBILITY[value] ?? "everyone"
+                      )
+                    }
+                  />
+                </div>
+
+                <div className="px-5 py-4 bg-white">
+                  <FormDropdown
+                    label="Seller visibility"
+                    value={VISIBILITY_LABEL[profile?.seller_visibility || "everyone"]}
+                    options={VISIBILITY_OPTIONS}
+                    disabled={!firebaseUser || savingPrivacyField === "seller_visibility" || !profile?.is_seller}
+                    onChange={(value) =>
+                      void updateVisibility(
+                        "seller_visibility",
+                        LABEL_TO_VISIBILITY[value] ?? "everyone"
+                      )
+                    }
+                  />
+                  {!firebaseUser ? (
+                    <p className="mt-2 text-xs text-zinc-500">Sign in to view seller status.</p>
+                  ) : profileLoading ? (
+                    <p className="mt-2 text-xs text-zinc-500">Loading seller status...</p>
+                  ) : !profile?.is_seller ? (
+                    <p className="mt-2 text-xs text-zinc-500">Available after becoming a seller.</p>
+                  ) : null}
+                </div>
+
+                <div className="px-5 py-4 bg-zinc-50/60">
+                  <FormDropdown
+                    label="Saved items visibility"
+                    value={VISIBILITY_LABEL[profile?.saved_visibility || "only_me"]}
+                    options={VISIBILITY_OPTIONS}
+                    disabled={!firebaseUser || savingPrivacyField === "saved_visibility"}
+                    onChange={(value) =>
+                      void updateVisibility(
+                        "saved_visibility",
+                        LABEL_TO_VISIBILITY[value] ?? "only_me"
+                      )
+                    }
+                  />
+                </div>
+
+                {!firebaseUser ? (
+                  <div className="px-5 py-4 text-sm text-zinc-600 bg-white">
+                    Sign in to save privacy preferences.
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </section>
+
+          <section className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
+            <button
+              type="button"
+              onClick={() => toggleSection("helpLegal")}
+              className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+              aria-expanded={expandedSections.helpLegal}
+            >
+              <span className="inline-flex items-center gap-3 min-w-0">
+                <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                  <Settings className="w-5 h-5 text-zinc-700" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-extrabold uppercase tracking-[0.14em] text-zinc-400">
+                    Help & Legal
+                  </span>
+                </span>
+              </span>
+
+              <span className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-500">
+                {expandedSections.helpLegal ? "Hide" : "Show"}
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${expandedSections.helpLegal ? "rotate-180" : ""}`}
+                />
+              </span>
+            </button>
+
+            {expandedSections.helpLegal ? (
+              <div className="divide-y divide-zinc-100">
+                {[
+                  { key: "privacy", label: "Privacy Policy", icon: FileText },
+                  { key: "terms", label: "Terms of Use", icon: FileText },
+                  { key: "safety", label: "Safety Tips", icon: ShieldCheck },
+                  { key: "report", label: "Report a Problem", icon: HelpCircle },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => openView(item.key as SettingsView)}
+                      className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-zinc-50 transition-colors"
+                    >
+                      <span className="inline-flex items-center gap-3 min-w-0">
+                        <span className="w-10 h-10 rounded-2xl bg-zinc-100 flex items-center justify-center shrink-0">
+                          <Icon className="w-4 h-4 text-zinc-700" />
+                        </span>
+                        <span className="font-bold text-zinc-900">{item.label}</span>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : null}
+          </section>
+        </section>
+      </main>
+
+      <TotpSetupModal
+        open={totpSetupOpen}
+        title="Set up authenticator app"
+        message="Scan the QR code with Google Authenticator, Microsoft Authenticator, Authy, or any TOTP app. Then enter the 6-digit code to confirm setup."
+        qrCodeUrl={totpQrImageUrl}
+        otpauthUri={totpUri}
+        secret={totpSecret}
+        accountName={totpAccountName}
+        code={totpSetupCode}
+        busy={totpLoading}
+        onCodeChange={setTotpSetupCode}
+        onConfirm={handleTotpSetupConfirm}
+        onDisable={handleDisableTotp}
+        onBack={handleTotpSetupBack}
+        onClose={() => {
+          setTotpSetupOpen(false);
+          setTotpSetupCode("");
+        }}
+      />
+
+      <PasswordPromptModal
+        open={passwordPromptOpen}
+        title="Verify identity"
+        message="Enter your password to continue with this security action."
+        password={reauthPassword}
+        busy={passwordPromptBusy}
+        onPasswordChange={setReauthPassword}
+        onSubmit={handlePasswordPromptSubmit}
+        onCancel={handlePasswordPromptCancel}
+      />
+      <ConfirmModal
+        open={deleteConfirmOpen}
+        title="Delete account"
+        message="Are you sure you want to delete your account? This action cannot be undone."
+        confirmText="Delete"
+        danger
+        onConfirm={() => void handleDeleteAccount()}
+        onCancel={() => setDeleteConfirmOpen(false)}
+      />
+      {feedback && (
+        <FeedbackModal
+          open={feedback.open}
+          type={feedback.type}
+          title={feedback.title}
+          message={feedback.message}
+          onClose={() => setFeedback(null)}
+        />
+      )}
+    </div>
+  );
+}
