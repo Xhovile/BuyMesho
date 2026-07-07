@@ -47,14 +47,21 @@ export default function FloatingCartButton({
 
   useEffect(() => {
     let rafId: number | null = null;
+    let resizeObserver: ResizeObserver | null = null;
 
     const updatePosition = () => {
-      const stickyHeader = document.querySelector<HTMLElement>(stickyHeaderSelector);
+      const stickyHeaders = document.querySelectorAll<HTMLElement>(stickyHeaderSelector);
+      const stickyHeader = stickyHeaders[0];
+
       if (stickyHeader) {
-        const offset = Math.max(Math.round(stickyHeader.getBoundingClientRect().bottom) + HEADER_SPACING, MIN_TOP_OFFSET);
+        const offset = Math.max(
+          Math.round(stickyHeader.getBoundingClientRect().bottom) + HEADER_SPACING,
+          MIN_TOP_OFFSET
+        );
         setTopOffset(offset);
         return;
       }
+
       setTopOffset(window.innerWidth >= MD_BREAKPOINT ? DEFAULT_TOP_OFFSET_DESKTOP : DEFAULT_TOP_OFFSET_MOBILE);
     };
 
@@ -66,13 +73,28 @@ export default function FloatingCartButton({
       });
     };
 
+    const attachHeaderObserver = () => {
+      if (typeof ResizeObserver === "undefined") return;
+
+      const stickyHeaders = Array.from(document.querySelectorAll<HTMLElement>(stickyHeaderSelector));
+      if (stickyHeaders.length === 0) return;
+
+      resizeObserver = new ResizeObserver(() => {
+        schedulePositionUpdate();
+      });
+
+      stickyHeaders.forEach((header) => resizeObserver?.observe(header));
+    };
+
     updatePosition();
+    attachHeaderObserver();
     window.addEventListener("scroll", schedulePositionUpdate, { passive: true });
     window.addEventListener("resize", schedulePositionUpdate, { passive: true });
 
     return () => {
       window.removeEventListener("scroll", schedulePositionUpdate);
       window.removeEventListener("resize", schedulePositionUpdate);
+      resizeObserver?.disconnect();
       if (rafId !== null) {
         window.cancelAnimationFrame(rafId);
       }
