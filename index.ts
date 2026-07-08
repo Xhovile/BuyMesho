@@ -1,6 +1,14 @@
+import "dotenv/config";
+
 import fs from "node:fs";
 import { Client } from "pg";
-import dotenv from "dotenv";
+
+// Debugging
+console.log("Working directory:", process.cwd());
+console.log(
+  "DATABASE_URL:",
+  process.env.DATABASE_URL ? "Loaded ✅" : "Missing ❌"
+);
 
 const connectionString = process.env.DATABASE_URL;
 
@@ -17,16 +25,28 @@ const client = new Client({
 });
 
 async function main() {
+  console.log("Connecting to Aiven...");
+
   await client.connect();
-  const result = await client.query("SELECT version()");
+
+  console.log("Connected successfully!");
+
+  const result = await client.query("SELECT version();");
+
   console.log(result.rows[0].version);
+
   await client.end();
+
+  console.log("Connection closed.");
 }
 
 main().catch(async (err) => {
+  console.error("Connection failed:");
   console.error(err);
+
   try {
     await client.end();
   } catch {}
+
   process.exit(1);
 });
