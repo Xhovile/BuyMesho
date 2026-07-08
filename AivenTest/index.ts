@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { Client } from "pg";
+import dotenv from "dotenv";
 
 const connectionString = process.env.DATABASE_URL;
 
