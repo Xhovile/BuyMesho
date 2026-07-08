@@ -17,10 +17,9 @@ if (!connectionString) {
 }
 
 const client = new Client({
-  connectionString,
+  connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: true,
-    ca: fs.readFileSync("./ca.pem", "utf8"),
+  ca: fs.readFileSync("./ca.pem", "utf8"),
   },
 });
 
