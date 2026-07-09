@@ -12,7 +12,7 @@ import {
   getTotpEnrollmentSummary,
   setTotpStatus,
   upsertTotpEnrollment,
-} from "./totpStore.js";
+} from "./totpStoreCompat.js";
 import { getTotpDisplayName, normalizeTotpCode, type TotpMfaStatus } from "../lib/totp.js";
 
 export type AuthUserContext = {
@@ -118,18 +118,18 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
 
     const result = verifyTotpCode({ secret: record.secret, code });
     if (!result.ok) {
-      return sendError(res, 400, "Invalid code. Try the current code from your authenticator app.");
+      return sendError(res, 400, result.reason === "expired" ? "That code has expired." : "Invalid TOTP code.");
     }
 
     const confirmed = confirmTotpEnrollment(user.uid);
-    if (!confirmed) return sendError(res, 500, "Could not confirm TOTP enrollment.");
+    if (!confirmed) return sendError(res, 500, "Failed to confirm TOTP enrollment.");
 
+    const session = createTotpVerifiedSession(user.uid);
     return sendOk(res, {
       status: confirmed.status,
-      issuer: confirmed.issuer,
-      accountName: confirmed.accountName,
-      enrolledAt: confirmed.enrolledAt,
       confirmedAt: confirmed.confirmedAt,
+      sessionToken: session.token,
+      sessionExpiresAt: session.expiresAt,
     });
   });
 
@@ -138,55 +138,7 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
     if (!user) return sendError(res, 401, "Login required.");
 
     const removed = disableTotpEnrollment(user.uid);
-    if (!removed) return sendError(res, 404, "No TOTP enrollment found.");
-
-    return sendOk(res, { status: "disabled" });
-  });
-
-  router.post("/challenge/verify", async (req, res) => {
-    const user = await getUserContext(req, deps.resolveUser);
-    if (!user) return sendError(res, 401, "Login required.");
-
-    const code = normalizeTotpCode(requireString(req.body?.code));
-    if (!code) return sendError(res, 400, "A 6-digit code is required.");
-
-    const record = getTotpEnrollment(user.uid);
-    if (!record || record.status !== "enabled") {
-      return sendError(res, 404, "No active TOTP factor is enabled.");
-    }
-
-    const result = verifyTotpCode({ secret: record.secret, code });
-    if (!result.ok) {
-      return sendError(res, 401, "Invalid authenticator code.");
-    }
-
-    const session = createTotpVerifiedSession(user.uid);
-
-    return sendOk(res, {
-      verified: true,
-      status: record.status,
-      sessionToken: session.token,
-      expiresAt: session.expiresAt,
-    });
-  });
-
-  router.post("/status/set", async (req, res) => {
-    const user = await getUserContext(req, deps.resolveUser);
-    if (!user) return sendError(res, 401, "Login required.");
-
-    const status = requireString(req.body?.status) as TotpMfaStatus;
-    if (status !== "disabled" && status !== "pending" && status !== "enabled") {
-      return sendError(res, 400, "Invalid status.");
-    }
-
-    const updated = setTotpStatus(user.uid, status);
-    if (!updated) return sendError(res, 404, "No TOTP enrollment found.");
-
-    return sendOk(res, {
-      status: updated.status,
-      enrolledAt: updated.enrolledAt,
-      confirmedAt: updated.confirmedAt,
-    });
+    return sendOk(res, { removed });
   });
 
   return router;
