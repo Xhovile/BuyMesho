@@ -1,4 +1,3 @@
-import type Database from "better-sqlite3";
 import {
   isAdminActionType,
   isAdminTargetType,
@@ -15,7 +14,7 @@ export type LogAdminActionArgs = {
   details?: unknown;
 };
 
-export function createAdminAuditLogger(db: Database.Database) {
+export function createAdminAuditLogger(db: any) {
   return function logAdminAction({
     admin_uid,
     admin_email,
