@@ -1,18 +1,9 @@
-import Database from "better-sqlite3";
+import { sqliteDb } from "../db.js";
 
-let database: Database.Database | null = null;
-
-export function getDatabase(dbPath = process.env.DB_PATH ?? "market.db"): Database.Database {
-  if (!database) {
-    database = new Database(dbPath);
-  }
-
-  return database;
+export function getDatabase() {
+  return sqliteDb;
 }
 
 export function closeDatabase() {
-  if (!database) return;
-
-  database.close();
-  database = null;
+  sqliteDb.close();
 }
