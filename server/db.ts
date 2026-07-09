@@ -26,10 +26,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function normalizeParams(
-  sql: string,
-  params: unknown[],
-): { sql: string; params: unknown[] } {
+function normalizeParams(sql: string, params: unknown[]): { sql: string; params: unknown[] } {
   const positional = params.length > 1 || (params.length === 1 && !isPlainObject(params[0]));
 
   if (positional) {
@@ -56,10 +53,7 @@ function normalizeParams(
 
 function buildReturningSql(sql: string): string {
   const trimmed = sql.trim();
-  if (!/^insert\b/i.test(trimmed) || /\breturning\b/i.test(trimmed)) {
-    return sql;
-  }
-
+  if (!/^insert\b/i.test(trimmed) || /\breturning\b/i.test(trimmed)) return sql;
   const semicolon = trimmed.endsWith(";") ? ";" : "";
   const withoutSemicolon = semicolon ? trimmed.slice(0, -1) : trimmed;
   return `${withoutSemicolon} RETURNING *${semicolon}`;
@@ -90,32 +84,21 @@ try {
 `,
     ],
     {
-      env: {
-        ...process.env,
-        PG_PAYLOAD: payload,
-      },
+      env: { ...process.env, PG_PAYLOAD: payload },
       encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
     },
   );
 
   if (child.status !== 0) {
-    throw new Error(
-      [
-        "PostgreSQL query failed",
-        child.stderr ? String(child.stderr).trim() : "",
-        child.stdout ? String(child.stdout).trim() : "",
-      ]
-        .filter(Boolean)
-        .join(": "),
-    );
+    throw new Error([
+      "PostgreSQL query failed",
+      child.stderr ? String(child.stderr).trim() : "",
+      child.stdout ? String(child.stdout).trim() : "",
+    ].filter(Boolean).join(": "));
   }
 
-  const output = JSON.parse(String(child.stdout || "{}")) as {
-    rows?: Record<string, unknown>[];
-    rowCount?: number;
-  };
-
+  const output = JSON.parse(String(child.stdout || "{}")) as { rows?: Record<string, unknown>[]; rowCount?: number };
   return {
     rows: Array.isArray(output.rows) ? output.rows : [],
     rowCount: Number.isFinite(output.rowCount) ? Number(output.rowCount) : 0,
@@ -130,10 +113,7 @@ class PgCompatDatabase {
         const result = executeSync(normalized.sql, normalized.params);
         const firstRow = result.rows[0] as Record<string, unknown> | undefined;
         const lastInsertRowid = firstRow?.id !== undefined ? Number(firstRow.id) : undefined;
-        return {
-          changes: result.rowCount,
-          ...(Number.isFinite(lastInsertRowid) ? { lastInsertRowid } : {}),
-        };
+        return { changes: result.rowCount, ...(Number.isFinite(lastInsertRowid) ? { lastInsertRowid } : {}) };
       },
       get: (...params: unknown[]) => {
         const normalized = normalizeParams(sql, params);
@@ -153,24 +133,13 @@ class PgCompatDatabase {
     executeSync(sql, []);
   }
 
-  pragma(_statement: string): void {
-    // PostgreSQL does not use SQLite pragmas. Kept for compatibility.
-  }
-
-  transaction<T extends (...args: any[]) => any>(fn: T): T {
-    return ((...args: any[]) => fn(...args)) as T;
-  }
-
-  close(): void {
-    void closePool();
-  }
+  pragma(_statement: string): void {}
+  transaction<T extends (...args: any[]) => any>(fn: T): T { return ((...args: any[]) => fn(...args)) as T; }
+  close(): void { void closePool(); }
 }
 
 export const sqliteDb = new PgCompatDatabase();
-
-export async function getDatabaseClient(): Promise<PoolClient> {
-  return getClient();
-}
-
+export function getPaymentDb() { return sqliteDb; }
+export async function getDatabaseClient(): Promise<PoolClient> { return getClient(); }
 export { pool, query, closePool, getClient, withTransaction };
 export type { QueryResultRow };
