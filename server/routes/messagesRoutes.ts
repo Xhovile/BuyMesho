@@ -1,11 +1,10 @@
 import type { Express, Request, Response } from "express";
-import Database from "better-sqlite3";
+import { sqliteDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
-const db = new Database("market.db");
-db.pragma("foreign_keys = ON");
-
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messagesRoutesInstalled");
+
+db.pragma("foreign_keys = ON");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS conversations (
