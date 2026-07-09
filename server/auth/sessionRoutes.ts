@@ -1,6 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
-import { revokeTotpVerifiedSessions } from "../../src/server/totpStore.js";
+import { revokeTotpVerifiedSessions } from "../../src/server/totpStoreCompat.js";
 
 type VerifiedRequestUser = {
   uid: string;
