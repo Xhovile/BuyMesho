@@ -1,3 +1,3 @@
-export * from "./sqlite/db.js";
-export * from "./sqlite/schema.js";
-export * from "./sqlite/webhooks.js";
+export * from "./db.js";
+export * from "./schema.js";
+export * from "./webhooks.js";
