@@ -1,5 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
-import Database from "better-sqlite3";
+import { sqliteDb as db } from "../db.js";
 import { v2 as cloudinary } from "cloudinary";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 
@@ -11,7 +11,8 @@ type VerifiedRequestUser = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.accountDeletionRoutesInstalled");
-const db = new Database("market.db");
+
+db.pragma("foreign_keys = ON");
 
 function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
