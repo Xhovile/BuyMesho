@@ -1,9 +1,8 @@
 import type { Express, Request, Response } from "express";
-import Database from "better-sqlite3";
+import { sqliteDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { hasAdminAccess } from "../auth/adminAccess.js";
 import { ensureMessageSchema, MESSAGE_BLOCK_SCOPES, MESSAGE_REPORT_REASONS, isMessageReportReason, type MessageBlockScope } from "../../src/server/messageSchema.js";
-const db = new Database("market.db");
 db.pragma("foreign_keys = ON");
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubRoutesInstalled");
