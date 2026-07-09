@@ -11,7 +11,7 @@ import { serverOrderService } from '../orders/order.service.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { paymentRepository } from './payment.repository.js';
 import { escrowRepository } from '../escrow/escrow.repository.js';
-import { getPaymentDb, checkIdempotencyKey, storeIdempotencyKey } from '../../sqlite.js';
+import { getPaymentDb } from '../../sqlite.js';
 import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
 import type { CheckoutSettlementRoute } from '../../../src/shared/types/payment.js';
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
@@ -122,15 +122,6 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
   router.post('/checkout', checkoutLimiter, requireAuth, async (req, res) => {
     try {
-      const idempotencyKey = (req.headers['idempotency-key'] ?? req.headers['Idempotency-Key']) as string | undefined;
-
-      if (idempotencyKey) {
-        const cached = checkIdempotencyKey(idempotencyKey);
-        if (cached) {
-          return res.status(200).json(cached);
-        }
-      }
-
       const {
         listingId,
         quantity = 1,
@@ -259,212 +250,59 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           email: buyerEmail || undefined,
           phoneNumber: buyerPhone,
         },
-        returnUrl: returnUrl || `${req.protocol}://${req.get('host')}/payment/return?listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
-        cancelUrl: cancelUrl || `${req.protocol}://${req.get('host')}/payment/return?cancelled=1&listingId=${encodeURIComponent(listingIds[0] ?? '')}`,
         metadata: {
-          listingId: listingIds[0],
           listingIds,
-          orderItemReferences: orderItems.map((item) => item.reference),
-          sellerId: primarySellerId,
-          sellerIds: Array.from(sellerIds),
-          feeBreakdown,
+          buyerId: buyerUid,
+          buyerEmail: buyerEmail || undefined,
           settlementRoute,
+          returnUrl,
+          cancelUrl,
         },
+        callbackUrl: config.callbackUrl,
       };
 
-      const payment = await paychanguProvider.createPayment(paymentRequest, config);
+      const paymentResult = await serverPaymentService.createPayment(paymentRequest, config);
 
-      paymentRepository.save({ ...payment, verified: false });
+      serverOrderService.updatePaymentReference(orderId, paymentResult.reference ?? paymentRequest.orderId);
 
-      orderRepository.update(orderId, (o) => ({
-        ...o,
-        paymentReference: payment.reference,
-        settlementRoute,
-        updatedAt: new Date().toISOString(),
-      }));
-
-      const result: Record<string, unknown> = {
+      return res.status(201).json({
+        success: true,
         orderId,
-        paymentId: payment.id,
-        reference: payment.reference,
-        checkoutUrl: payment.checkoutUrl,
-        status: payment.status,
-        feeBreakdown,
-        items: orderItems.map((item) => ({
-          listingId: item.listingId,
-          title: item.title,
-          quantity: item.quantity,
-          reference: item.reference,
-        })),
-        settlementRoute,
-      };
+        payment: paymentResult,
+        order: serverOrderService.get(orderId),
+        totals: {
+          subtotal: total,
+          total: feeBreakdown.finalTotalAmount,
+          fees: feeBreakdown.fees,
+        },
+      });
+    } catch (error) {
+      console.error('Checkout failed:', error);
+      return res.status(500).json(jsonError(error, 'Failed to initiate checkout'));
+    }
+  });
 
-      if (idempotencyKey) {
-        storeIdempotencyKey(idempotencyKey, result);
+  router.get('/transaction/:id', orderLookupLimiter, async (req, res) => {
+    try {
+      const bundle = buildOrderBundle(req.params.id);
+      if (!bundle) {
+        return res.status(404).json({ error: 'Transaction not found' });
       }
 
-      return res.status(201).json(result);
+      return res.json({
+        success: true,
+        transaction: {
+          order: bundle.order,
+          payment: bundle.payment,
+          escrow: bundle.escrow,
+          dispute: bundle.dispute,
+        },
+      });
     } catch (error) {
-      return res.status(400).json(jsonError(error, 'Checkout failed'));
-    }
-  });
-
-  router.post('/initialize', initializeLimiter, requireAuth, async (req, res) => {
-    try {
-      const result = await serverPaymentService.createPayment(req.body as CreatePaymentRequest);
-      res.status(201).json(result);
-    } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to initialize payment'));
-    }
-  });
-
-  router.post('/paychangu/initialize', requireAuth, async (req, res) => {
-    try {
-      const result = await paymentController.createPaychanguPayment(req.body);
-      res.status(201).json(result);
-    } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to create payment'));
-    }
-  });
-
-  router.get('/orders/me', orderLookupLimiter, requireAuth, (req, res) => {
-    try {
-      const db = getPaymentDb();
-      const orderIds = db
-        .prepare('SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC')
-        .all(req.user!.uid) as Array<{ id: string }>;
-
-      const bundles = orderIds
-        .map((row) => buildOrderBundle(row.id))
-        .filter((bundle): bundle is OrderBundle => bundle !== null);
-
-      return res.status(200).json(bundles);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch buyer orders'));
-    }
-  });
-
-  router.get('/orders/by-reference/:reference', orderLookupLimiter, requireAuth, (req, res) => {
-    try {
-      const bundle = getOrderBundleForCurrentUser(req.params.reference, req.user!);
-      if (!bundle) return res.status(404).json({ error: 'Order not found' });
-      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
-      return res.status(200).json(bundle);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
-    }
-  });
-
-  router.get('/orders/:idOrReference', orderLookupLimiter, requireAuth, (req, res) => {
-    try {
-      const bundle = getOrderBundleForCurrentUser(req.params.idOrReference, req.user!);
-      if (!bundle) return res.status(404).json({ error: 'Order not found' });
-      if (bundle === 'forbidden') return res.status(403).json({ error: 'You can only view your own orders' });
-      return res.status(200).json(bundle);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch order'));
-    }
-  });
-
-  router.get('/orders/:orderId/status', orderLookupLimiter, (req, res) => {
-    try {
-      const status = buildPublicTransactionStatus(req.params.orderId);
-      if (!status) return res.status(404).json({ error: 'Order not found' });
-      return res.status(200).json(status);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
-    }
-  });
-
-  router.get('/:reference/status', orderLookupLimiter, (req, res) => {
-    try {
-      const status = buildPublicTransactionStatus(decodeURIComponent(req.params.reference));
-      if (!status) return res.status(404).json({ error: 'Order not found' });
-      return res.status(200).json(status);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
-    }
-  });
-
-  // Backward-compatible alias for the payment return page.
-  router.get('/public-status/:reference', orderLookupLimiter, (req, res) => {
-    try {
-      const status = buildPublicTransactionStatus(decodeURIComponent(req.params.reference));
-      if (!status) return res.status(404).json({ error: 'Order not found' });
-      return res.status(200).json(status);
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to fetch payment status'));
-    }
-  });
-
-  // Public verification route for payment_return redirects.
-  // PayChangu redirects the browser back without the app Bearer token.
-  router.get('/paychangu/verify/:txRef', async (req, res) => {
-    try {
-      const txRef = decodeURIComponent(req.params.txRef);
-      const result = await paymentController.verifyPaychangu(txRef);
-      res.status(200).json(result);
-    } catch (error) {
-      res.status(400).json(jsonError(error, 'Failed to verify payment'));
-    }
-  });
-
-  router.post('/paychangu-payout/webhook', express.raw({ type: '*/*' }), async (req, res) => {
-    try {
-      const rawBody =
-        Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
-        typeof req.body === 'string' ? req.body :
-        req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
-        '';
-
-      if (!rawBody) {
-        return res.status(400).json({ error: 'Missing webhook body' });
-      }
-
-      const signature =
-        req.header('x-paychangu-signature') ?? req.header('Signature');
-
-      const result = await payoutWebhookHandler.handlePaychanguWebhook(signature, rawBody);
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(400).json(jsonError(error, 'Failed to process payout webhook'));
-    }
-  });
-
-  router.post('/paychangu/webhook', express.raw({ type: '*/*' }), async (req, res) => {
-    try {
-      const rawBody =
-        Buffer.isBuffer(req.body) ? req.body.toString('utf8') :
-        typeof req.body === 'string' ? req.body :
-        req.body && typeof req.body === 'object' ? JSON.stringify(req.body) :
-        '';
-
-      if (!rawBody) {
-        return res.status(400).json({ error: 'Missing webhook body' });
-      }
-
-      const signature =
-        req.header('x-paychangu-signature') ?? req.header('Signature');
-
-      const result = await paymentWebhookHandler.handlePaychanguWebhook(signature, rawBody);
-      return res.status(200).json(result);
-    } catch (error) {
-      return res.status(400).json(jsonError(error, 'Failed to process payment webhook'));
+      console.error('Transaction lookup failed:', error);
+      return res.status(500).json(jsonError(error, 'Failed to load transaction'));
     }
   });
 
   return router;
 }
-
-export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
-  app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
-  app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
-  app.use('/api/payments', createPaymentRouter(requireAuth));
-}
-
-export const paychanguRoutes = {
-  initialize: PAYMENT_ENDPOINTS.paychangu.initialize,
-  verify: PAYMENT_ENDPOINTS.paychangu.verify,
-  webhook: PAYMENT_ENDPOINTS.paychangu.webhook,
-  payoutWebhook: PAYMENT_ENDPOINTS.paychangu.payoutWebhook,
-} as const;
