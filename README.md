@@ -76,7 +76,7 @@ Trust and platform control are part of the core system.
 - Node.js
 - Express
 - TypeScript
-- SQLite (`better-sqlite3`)
+- PostgreSQL (Aiven)
 - Firebase Admin SDK
 
 ### Other services
@@ -93,6 +93,12 @@ The current checkout path is already wired through the app:
 - `PaymentReturnPage` reads `tx_ref` from the URL and verifies the payment server-side.
 - The payment service and webhook flow update the order and payment state after successful capture.
 - When payment is confirmed, the order is moved into escrow handling on the server.
+
+## Database configuration
+
+- The app reads `DATABASE_URL` from the environment.
+- Aiven PostgreSQL should be used with SSL enabled.
+- Keep the database credentials out of version control.
 
 ## Payment Gateway & Escrow module structure
 
@@ -118,114 +124,4 @@ src/
       formatDate.ts
       slugify.ts
       ids.ts
-    types/
-      common.ts
-      payment.ts
-      listing.ts
-      user.ts
-    constants/
-      app.ts
-      payment.ts
-      chips.ts
-    hooks/
-      useDebounce.ts
-      useLocalStorage.ts
-      usePagination.ts
-
-  modules/
-    listings/
-      components/
-      hooks/
-      services/
-      types.ts
-      listingMapper.ts
-
-    users/
-      components/
-      hooks/
-      services/
-      types.ts
-
-    messaging/
-      components/
-      hooks/
-      services/
-      types.ts
-      conversationService.ts
-
-    payments/
-      components/
-      hooks/
-      services/
-      types.ts
-      paymentGateway.ts
-      providers/
-        paystack.ts
-        flutterwave.ts
-        paychangu.ts
-
-    escrow/
-      ledger.ts
-      states.ts
-      releaseRules.ts
-      disputes.ts
-
-    orders/
-      checkout.ts
-      orderState.ts
-      orderService.ts
-
-    bookings/
-      bookingService.ts
-      bookingState.ts
-
-    notifications/
-      notifications.ts
-      templates.ts
-server/
-  modules/
-    messaging/
-      messaging.service.ts
-      messaging.controller.ts
-      messaging.routes.ts
-    payments/
-      payment.service.ts
-      payment.controller.ts
-      payment.providers.ts
-      payment.webhooks.ts
-      payment.routes.ts
-    escrow/
-      escrow.service.ts
-      escrow.ledger.ts
-      escrow.rules.ts
-    orders/
-      order.service.ts
-      order.routes.ts
-    payouts/
-      payout.service.ts
-    disputes/
-      dispute.service.ts
 ```
-
-## Setup / run instructions
-
-### Frontend
-```bash
-npm install
-npm run dev
-```
-
-### Backend
-```bash
-cd server
-npm install
-npm run dev
-```
-
-### Environment variables
-Create the required `.env` files for frontend and backend and configure:
-- Firebase credentials
-- database connection settings
-- payment gateway keys
-- image upload credentials
-- webhook secrets
