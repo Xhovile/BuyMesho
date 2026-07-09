@@ -1,5 +1,3 @@
-import type Database from "better-sqlite3";
-
 export const MESSAGE_REPORT_REASONS = [
   "spam",
   "scam",
@@ -183,6 +181,12 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
 export const MESSAGE_BLOCK_SCOPES = ["messages", "listing", "all"] as const;
 export type MessageBlockScope = (typeof MESSAGE_BLOCK_SCOPES)[number];
 
+type SchemaDbLike = {
+  prepare(sql: string): { all(): Array<{ name: string }> };
+  exec(sql: string): void;
+  pragma(statement: string): void;
+};
+
 function hasNonConstantDefault(definition: string) {
   return /DEFAULT\s+CURRENT_TIMESTAMP/i.test(definition) || /DEFAULT\s*\(/i.test(definition);
 }
@@ -193,8 +197,8 @@ function stripNonConstantDefault(definition: string) {
     .replace(/\s+DEFAULT\s*\([^)]*\)/ig, "");
 }
 
-function ensureColumn(db: Database.Database, table: string, column: string, definition: string) {
-  const rows = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+function ensureColumn(db: SchemaDbLike, table: string, column: string, definition: string) {
+  const rows = db.prepare(`PRAGMA table_info(${table})`).all();
   if (rows.some((row) => row.name === column)) return;
 
   const alterDefinition = hasNonConstantDefault(definition)
@@ -204,7 +208,7 @@ function ensureColumn(db: Database.Database, table: string, column: string, defi
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${alterDefinition}`);
 }
 
-export function ensureMessageSchema(db: Database.Database) {
+export function ensureMessageSchema(db: SchemaDbLike) {
   db.pragma("foreign_keys = ON");
   db.exec(MESSAGE_SCHEMA_SQL);
 
@@ -270,8 +274,4 @@ export function ensureMessageSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_message_blocks_blocked_uid
     ON message_blocks (blocked_uid, block_scope);
   `);
-}
-
-export function isMessageReportReason(value: string): value is MessageReportReason {
-  return (MESSAGE_REPORT_REASONS as readonly string[]).includes(value);
 }
