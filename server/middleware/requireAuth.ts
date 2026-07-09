@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { verifyIdToken } from "../auth/firebaseAdmin.js";
 import { isConfiguredAdmin } from "../auth/adminAccess.js";
-import { getTotpEnrollment, verifyTotpVerifiedSession } from "../../src/server/totpStore.js";
+import { getTotpEnrollment, verifyTotpVerifiedSession } from "../../src/server/totpStoreCompat.js";
 
 function getBearerToken(req: Request): string | null {
   const header = req.headers.authorization;
@@ -80,9 +80,9 @@ export async function attachOptionalAuth(req: Request, _res: Response, next: Nex
         (decoded as any).role === "admin" ||
         isConfiguredAdmin({ uid, email }),
     };
-  } catch {
-    // Ignore optional auth failures and continue unauthenticated.
-  }
 
-  return next();
+    next();
+  } catch {
+    return next();
+  }
 }
