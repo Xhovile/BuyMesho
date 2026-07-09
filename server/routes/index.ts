@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import type Database from "better-sqlite3";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
@@ -15,7 +14,7 @@ import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js
 import { createAdminSummaryRouter } from "../modules/admin/admin.summary.routes.js";
 import { startPayoutReconciliationScheduler } from "../modules/payouts/payout.reconciliation.scheduler.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "../routes/escrowRoutes.js";
-import { getConfiguredAdminEmails, hasAdminAccess } from "../auth/adminAccess.js";
+import { getConfiguredAdminEmails } from "../auth/adminAccess.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
@@ -30,7 +29,7 @@ export type LogAdminActionArgs = {
 };
 
 export type RouteDeps = {
-  db: Database.Database;
+  db: any;
   requireAuth: typeof requireAuth;
   requireFirebaseUser: typeof requireFirebaseUser;
 };
