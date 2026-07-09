@@ -1,5 +1,5 @@
 import type { Express, NextFunction, Request, Response } from "express";
-import Database from "better-sqlite3";
+import { sqliteDb as db } from "../db.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 
 type VerifiedRequestUser = {
@@ -39,7 +39,7 @@ type ReviewRow = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.reviewsRoutesInstalled");
-const db = new Database("market.db");
+
 db.pragma("foreign_keys = ON");
 
 db.exec(`
