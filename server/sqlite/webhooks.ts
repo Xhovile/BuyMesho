@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 
-import { getPaymentDb } from "./db.js";
+import { getPaymentDb } from "../db.js";
 
 export type PaymentWebhookProcessingStatus =
   | "received"
