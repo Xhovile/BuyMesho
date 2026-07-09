@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import dotenv from "dotenv";
-import { Pool, type PoolClient, type QueryResultRow } from "pg";
+import { type PoolClient, type QueryResultRow } from "pg";
 
 import { closePool, getClient, pool, query, withTransaction } from "./postgres.js";
 
@@ -88,16 +88,15 @@ try {
   try { await client.end(); } catch {}
 }
 `,
-      ],
-      {
-        env: {
-          ...process.env,
-          PG_PAYLOAD: payload,
-        },
-        encoding: "utf8",
-        maxBuffer: 10 * 1024 * 1024,
+    ],
+    {
+      env: {
+        ...process.env,
+        PG_PAYLOAD: payload,
       },
-    ),
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
 
   if (child.status !== 0) {
@@ -121,17 +120,6 @@ try {
     rows: Array.isArray(output.rows) ? output.rows : [],
     rowCount: Number.isFinite(output.rowCount) ? Number(output.rowCount) : 0,
   };
-}
-
-function isResultSetStatement(sql: string): boolean {
-  const trimmed = sql.trim();
-  return (
-    /^select\b/i.test(trimmed) ||
-    /^with\b/i.test(trimmed) ||
-    /^pragma\b/i.test(trimmed) ||
-    /^values\b/i.test(trimmed) ||
-    /\breturning\b/i.test(trimmed)
-  );
 }
 
 class PgCompatDatabase {
