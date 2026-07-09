@@ -3,12 +3,12 @@ import {
   getIssuerLabel,
   type TotpEnrollmentRecord,
 } from "./totpService.js";
-import Database from "better-sqlite3";
+import { sqliteDb } from "../../server/db.js";
 import { createHash, randomBytes } from "crypto";
 import type { TotpMfaStatus } from "../lib/totp.js";
 
 const TOTP_VERIFIED_SESSION_TTL_MS = 15 * 60 * 1000;
-const verifiedSessionDb = new Database("market.db");
+const verifiedSessionDb = sqliteDb;
 
 verifiedSessionDb.exec(`
   CREATE TABLE IF NOT EXISTS totp_enrollments (
@@ -217,77 +217,41 @@ export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnroll
   const existing = getTotpEnrollment(userId);
   if (!existing) return null;
 
-  const next: TotpEnrollmentRecord = {
-    ...existing,
-    status,
-    confirmedAt: status === "enabled" ? existing.confirmedAt || new Date().toISOString() : existing.confirmedAt,
-  };
-
+  const next: TotpEnrollmentRecord = { ...existing, status };
   verifiedSessionDb
-    .prepare("UPDATE totp_enrollments SET status = ?, confirmed_at = ? WHERE user_id = ?")
-    .run(next.status, next.confirmedAt, userId);
+    .prepare("UPDATE totp_enrollments SET status = ? WHERE user_id = ?")
+    .run(status, userId);
 
   return next;
 }
 
-export function getTotpEnrollmentSummary(userId: string): TotpEnrollmentSummary | null {
-  const record = getTotpEnrollment(userId);
-  if (!record) return null;
-
-  return {
-    userId: record.userId,
-    email: record.email,
-    status: record.status,
-    issuer: record.issuer,
-    accountName: record.accountName,
-    enrolledAt: record.enrolledAt,
-    confirmedAt: record.confirmedAt,
-  };
-}
-
-export function clearTotpStore(): void {
-  verifiedSessionDb.prepare("DELETE FROM totp_enrollments").run();
-  verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions").run();
-}
-
-export function createTotpVerifiedSession(userId: string): TotpVerifiedSession {
+export function issueTotpVerifiedSession(userId: string): TotpVerifiedSession {
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const expiresAt = new Date(Date.now() + TOTP_VERIFIED_SESSION_TTL_MS).toISOString();
 
   verifiedSessionDb
     .prepare(
-      `
-      INSERT INTO totp_verified_sessions (token_hash, user_id, expires_at)
-      VALUES (?, ?, ?)
-      ON CONFLICT(token_hash) DO UPDATE SET
-        user_id = excluded.user_id,
-        expires_at = excluded.expires_at
-      `
+      `INSERT INTO totp_verified_sessions (token_hash, user_id, expires_at)
+       VALUES (?, ?, ?)`
     )
     .run(tokenHash, userId, expiresAt);
 
   return { token, userId, expiresAt };
 }
 
-export function verifyTotpVerifiedSession(userId: string, token: string): boolean {
-  const normalizedToken = token.trim();
-  if (!normalizedToken) return false;
-  const tokenHash = createHash("sha256").update(normalizedToken).digest("hex");
-
-  const session = verifiedSessionDb
-    .prepare("SELECT user_id, expires_at FROM totp_verified_sessions WHERE token_hash = ?")
+export function consumeTotpVerifiedSession(token: string): string | null {
+  const tokenHash = createHash("sha256").update(token).digest("hex");
+  const row = verifiedSessionDb
+    .prepare("SELECT user_id, expires_at FROM totp_verified_sessions WHERE token_hash = ? LIMIT 1")
     .get(tokenHash) as { user_id: string; expires_at: string } | undefined;
 
-  if (!session) return false;
-
-  if (session.user_id !== userId) return false;
-
-  const expiresAtMs = Date.parse(session.expires_at);
-  if (!Number.isFinite(expiresAtMs) || expiresAtMs <= Date.now()) {
+  if (!row) return null;
+  if (new Date(row.expires_at).getTime() < Date.now()) {
     verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE token_hash = ?").run(tokenHash);
-    return false;
+    return null;
   }
 
-  return true;
+  verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE token_hash = ?").run(tokenHash);
+  return row.user_id;
 }
