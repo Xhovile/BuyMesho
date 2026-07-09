@@ -118,7 +118,7 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
 
     const result = verifyTotpCode({ secret: record.secret, code });
     if (!result.ok) {
-      return sendError(res, 400, result.reason === "expired" ? "That code has expired." : "Invalid TOTP code.");
+      return sendError(res, 400, result.reason === "clock_skew" ? "That code has expired." : "Invalid TOTP code.");
     }
 
     const confirmed = confirmTotpEnrollment(user.uid);
