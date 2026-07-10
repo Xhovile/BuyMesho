@@ -460,6 +460,7 @@ async function markRead(req: Request, res: Response) {
 }
 
 export function registerMessagesRoutes(app: Express) {
+  ensureMessagesSchema();
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
   app.get("/api/messages/inbox", requireAuth, (req, res) => void listInbox(req, res));
