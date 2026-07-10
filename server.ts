@@ -101,22 +101,6 @@ async function startServer() {
     next();
   });
 
-app.get("/api/db-test", (_req, res) => {
-  try {
-    const row = db.prepare("SELECT NOW() AS now").get();
-
-    res.json({
-      ok: true,
-      row,
-    });
-  } catch (e) {
-    res.status(500).json({
-      ok: false,
-      error: String(e),
-    });
-  }
-});
-  
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
