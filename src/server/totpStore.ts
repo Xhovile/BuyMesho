@@ -9,28 +9,35 @@ import type { TotpMfaStatus } from "../lib/totp.js";
 
 const TOTP_VERIFIED_SESSION_TTL_MS = 15 * 60 * 1000;
 const verifiedSessionDb = sqliteDb;
+let totpTablesEnsured = false;
 
-verifiedSessionDb.exec(`
-  CREATE TABLE IF NOT EXISTS totp_enrollments (
-    user_id TEXT PRIMARY KEY,
-    email TEXT,
-    status TEXT NOT NULL,
-    secret TEXT NOT NULL,
-    issuer TEXT NOT NULL,
-    account_name TEXT NOT NULL,
-    enrolled_at TEXT NOT NULL,
-    confirmed_at TEXT
-  )
-`);
+function ensureTotpTables(): void {
+  if (totpTablesEnsured) return;
 
-verifiedSessionDb.exec(`
-  CREATE TABLE IF NOT EXISTS totp_verified_sessions (
-    token_hash TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+  verifiedSessionDb.exec(`
+    CREATE TABLE IF NOT EXISTS totp_enrollments (
+      user_id TEXT PRIMARY KEY,
+      email TEXT,
+      status TEXT NOT NULL,
+      secret TEXT NOT NULL,
+      issuer TEXT NOT NULL,
+      account_name TEXT NOT NULL,
+      enrolled_at TEXT NOT NULL,
+      confirmed_at TEXT
+    )
+  `);
+
+  verifiedSessionDb.exec(`
+    CREATE TABLE IF NOT EXISTS totp_verified_sessions (
+      token_hash TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  totpTablesEnsured = true;
+}
 
 export type TotpEnrollmentInput = {
   userId: string;
@@ -57,6 +64,8 @@ export type TotpVerifiedSession = {
 };
 
 export function getTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
+  ensureTotpTables();
+
   const row = verifiedSessionDb
     .prepare(
       `
@@ -93,6 +102,8 @@ export function getTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
 }
 
 export function listTotpEnrollments(): TotpEnrollmentRecord[] {
+  ensureTotpTables();
+
   const rows = verifiedSessionDb
     .prepare(
       `
@@ -125,6 +136,8 @@ export function listTotpEnrollments(): TotpEnrollmentRecord[] {
 }
 
 export function upsertTotpEnrollment(input: TotpEnrollmentInput): TotpEnrollmentRecord {
+  ensureTotpTables();
+
   const existing = getTotpEnrollment(input.userId);
   const next = existing
     ? {
@@ -180,6 +193,8 @@ export function upsertTotpEnrollment(input: TotpEnrollmentInput): TotpEnrollment
 }
 
 export function confirmTotpEnrollment(userId: string): TotpEnrollmentRecord | null {
+  ensureTotpTables();
+
   const existing = getTotpEnrollment(userId);
   if (!existing) return null;
 
@@ -197,6 +212,8 @@ export function confirmTotpEnrollment(userId: string): TotpEnrollmentRecord | nu
 }
 
 export function disableTotpEnrollment(userId: string): boolean {
+  ensureTotpTables();
+
   const clearEnrollment = verifiedSessionDb.prepare("DELETE FROM totp_enrollments WHERE user_id = ?");
   const clearVerifiedSessions = verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE user_id = ?");
 
@@ -210,10 +227,13 @@ export function disableTotpEnrollment(userId: string): boolean {
 }
 
 export function revokeTotpVerifiedSessions(userId: string): void {
+  ensureTotpTables();
   verifiedSessionDb.prepare("DELETE FROM totp_verified_sessions WHERE user_id = ?").run(userId);
 }
 
 export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnrollmentRecord | null {
+  ensureTotpTables();
+
   const existing = getTotpEnrollment(userId);
   if (!existing) return null;
 
@@ -226,6 +246,8 @@ export function setTotpStatus(userId: string, status: TotpMfaStatus): TotpEnroll
 }
 
 export function issueTotpVerifiedSession(userId: string): TotpVerifiedSession {
+  ensureTotpTables();
+
   const token = randomBytes(32).toString("hex");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const expiresAt = new Date(Date.now() + TOTP_VERIFIED_SESSION_TTL_MS).toISOString();
@@ -241,6 +263,8 @@ export function issueTotpVerifiedSession(userId: string): TotpVerifiedSession {
 }
 
 export function consumeTotpVerifiedSession(token: string): string | null {
+  ensureTotpTables();
+
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const row = verifiedSessionDb
     .prepare("SELECT user_id, expires_at FROM totp_verified_sessions WHERE token_hash = ? LIMIT 1")
