@@ -37,7 +37,7 @@ function registerFallbackHandlers(app: express.Express) {
 
 export async function startServer() {
   const app = createApp();
-  const db = runMigrations();
+  const db: any = runMigrations();
 
   if (getConfiguredAdminEmails().length === 0) {
     console.warn(
