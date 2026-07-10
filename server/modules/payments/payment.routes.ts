@@ -1,36 +1,20 @@
-import express, { type RequestHandler } from 'express';
-import { randomUUID } from 'crypto';
-import rateLimit from 'express-rate-limit';
-import { paymentController } from './payment.controller.js';
-import { paymentWebhookHandler } from './payment.webhooks.js';
-import { payoutWebhookHandler } from '../payouts/payout.webhooks.js';
-import { PAYMENT_ENDPOINTS } from './payment.endpoints.js';
-import { paychanguProvider } from './paychangu.provider.js';
-import { serverPaymentService, createServerPaymentConfigFromEnv } from './payment.service.js';
-import { serverOrderService } from '../orders/order.service.js';
-import { orderRepository } from '../orders/order.repository.js';
-import { paymentRepository } from './payment.repository.js';
-import { escrowRepository } from '../escrow/escrow.repository.js';
-import { getPaymentDb } from '../../sqlite.js';
-import type { CreatePaymentRequest } from '../../../src/modules/payments/types.js';
-import type { CheckoutSettlementRoute } from '../../../src/shared/types/payment.js';
-import type { OrderState } from '../../../src/modules/orders/orderState.js';
-import { calculateCustomerCheckoutFees } from '../payouts/payout.policy.js';
+import express, { type RequestHandler } from "express";
+import { randomUUID } from "crypto";
+import rateLimit from "express-rate-limit";
+import { serverPaymentService } from "./payment.service.js";
+import { serverOrderService } from "../orders/order.service.js";
+import { orderRepository } from "../orders/order.repository.js";
+import { paymentRepository } from "./payment.repository.js";
+import { escrowRepository } from "../escrow/escrow.repository.js";
+import { getPaymentDb } from "../../sqlite.js";
+import { calculateCustomerCheckoutFees } from "../payouts/payout.policy.js";
 
 const checkoutLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many checkout requests. Please try again in a moment.' },
-});
-
-const initializeLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many payment initialize requests. Please try again in a moment.' },
+  message: { error: "Too many checkout requests. Please try again in a moment." },
 });
 
 const orderLookupLimiter = rateLimit({
@@ -38,10 +22,10 @@ const orderLookupLimiter = rateLimit({
   max: 60,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many order lookup requests. Please try again in a moment.' },
+  message: { error: "Too many order lookup requests. Please try again in a moment." },
 });
 
-interface ListingRow {
+type ListingRow = {
   id: number;
   seller_uid: string;
   name: string;
@@ -49,15 +33,6 @@ interface ListingRow {
   status: string;
   quantity: number;
   sold_quantity: number;
-}
-
-function jsonError(error: unknown, fallback: string): { error: string } {
-  return { error: error instanceof Error ? error.message : fallback };
-}
-
-type AuthUser = {
-  uid: string;
-  is_admin?: boolean;
 };
 
 type OrderBundle = {
@@ -67,101 +42,54 @@ type OrderBundle = {
   dispute: Record<string, unknown> | null;
 };
 
+function jsonError(error: unknown, fallback: string) {
+  return { error: error instanceof Error ? error.message : fallback };
+}
+
 function findOrderByParam(param: string) {
-  const byId = orderRepository.findById(param);
-  if (byId) return byId;
-  return orderRepository.findByPaymentReference(param);
+  return orderRepository.findById(param) ?? orderRepository.findByPaymentReference(param);
 }
 
 function buildOrderBundle(orderId: string): OrderBundle | null {
   const order = orderRepository.findById(orderId);
   if (!order) return null;
 
-  const db = getPaymentDb();
-  const paymentReference = order.paymentReference ?? null;
-  const payment = paymentReference ? paymentRepository.findByReference(paymentReference) : null;
+  const db: any = getPaymentDb();
+  const payment = order.paymentReference ? paymentRepository.findByReference(order.paymentReference) : null;
   const escrow = escrowRepository.findByOrderId(order.id) ?? null;
-  const dispute = db
-    .prepare('SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1')
-    .get(order.id) as Record<string, unknown> | undefined;
+  const dispute = db.prepare("SELECT * FROM disputes WHERE order_id = ? ORDER BY created_at DESC LIMIT 1").get(order.id) ?? null;
 
-  return {
-    order,
-    payment,
-    escrow,
-    dispute: dispute ?? null,
-  };
-}
-
-function getOrderBundleForCurrentUser(idOrReference: string, user: AuthUser): OrderBundle | null | 'forbidden' {
-  const order = findOrderByParam(idOrReference);
-  if (!order) return null;
-  if (order.buyerId !== user.uid && !user.is_admin) return 'forbidden';
-  return buildOrderBundle(order.id);
-}
-
-function buildPublicTransactionStatus(idOrReference: string): Record<string, unknown> | null {
-  const order = findOrderByParam(idOrReference);
-  if (!order) return null;
-  const bundle = buildOrderBundle(order.id);
-  if (!bundle) return null;
-
-  return {
-    reference: order.paymentReference ?? idOrReference,
-    orderId: order.id,
-    orderStatus: order.status,
-    paymentStatus: bundle.payment?.status ?? null,
-    paymentVerified: Boolean(bundle.payment?.verified),
-    escrowStatus: bundle.escrow?.state ?? null,
-    escrowId: bundle.escrow?.id ?? null,
-  };
+  return { order, payment, escrow, dispute };
 }
 
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
-  router.post('/checkout', checkoutLimiter, requireAuth, async (req, res) => {
+  router.post("/checkout", checkoutLimiter, requireAuth, async (req: any, res) => {
     try {
-      const {
-        listingId,
-        quantity = 1,
-        items,
-        method = 'mobile_money',
-        settlementRoute = 'escrow',
-        returnUrl,
-        cancelUrl,
-        buyerName,
-        buyerPhone,
-      } = req.body as {
-        listingId?: number | string;
-        quantity?: number;
-        items?: Array<{ listingId?: number | string; quantity?: number }>;
-        method?: string;
-        settlementRoute?: CheckoutSettlementRoute;
-        returnUrl?: string;
-        cancelUrl?: string;
-        buyerName?: string;
-        buyerPhone?: string;
-      };
-
-      const requestedItems = Array.isArray(items) && items.length > 0
-        ? items.map((item) => ({ listingId: item.listingId, quantity: item.quantity ?? 1 }))
-        : listingId
-          ? [{ listingId, quantity }]
-          : [];
+      const body = req.body ?? {};
+      const listingId = body.listingId;
+      const quantity = body.quantity ?? 1;
+      const items = Array.isArray(body.items) ? body.items : [];
+      const method = body.method ?? "mobile_money";
+      const settlementRoute = body.settlementRoute ?? "escrow";
+      const returnUrl = body.returnUrl;
+      const cancelUrl = body.cancelUrl;
+      const buyerName = body.buyerName;
+      const buyerPhone = body.buyerPhone;
+      const requestedItems = items.length > 0 ? items : (listingId ? [{ listingId, quantity }] : []);
 
       if (requestedItems.length === 0) {
-        return res.status(400).json({ error: 'listingId or items are required' });
+        return res.status(400).json({ error: "listingId or items are required" });
       }
 
-      const db = getPaymentDb();
-      const currency = 'MWK';
+      const db: any = getPaymentDb();
+      const currency = "MWK";
       const now = new Date().toISOString();
-      const buyerUid = req.user!.uid;
-      const buyerEmail = req.user!.email ?? '';
+      const buyerUid = req.user.uid;
+      const buyerEmail = req.user.email ?? "";
       const orderId = `ord_${randomUUID()}`;
-
-      const orderItems: OrderState['items'] = [];
+      const orderItems: any[] = [];
       const listingIds: string[] = [];
       const sellerIds = new Set<string>();
       let total = 0;
@@ -169,17 +97,15 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       for (const item of requestedItems) {
         const numericListingId = Number(item.listingId);
         if (!Number.isInteger(numericListingId) || numericListingId <= 0) {
-          return res.status(400).json({ error: 'Each checkout item requires a valid listingId' });
+          return res.status(400).json({ error: "Each checkout item requires a valid listingId" });
         }
 
-        const listing = db
-          .prepare('SELECT * FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL')
-          .get(numericListingId) as ListingRow | undefined;
+        const listing = db.prepare("SELECT * FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL").get(numericListingId) as ListingRow | undefined;
         if (!listing) {
           return res.status(404).json({ error: `Listing ${numericListingId} not found` });
         }
 
-        if (listing.status === 'sold') {
+        if (listing.status === "sold") {
           return res.status(400).json({ error: `${listing.name} is no longer available` });
         }
 
@@ -190,58 +116,46 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
         const safeQty = Math.max(1, Math.floor(parsedQty));
         const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
-
-        if (availableQty === 0) {
-          return res.status(400).json({ error: `${listing.name} is out of stock` });
-        }
-
-        if (safeQty > availableQty) {
-          return res.status(400).json({ error: `Only ${availableQty} unit(s) available for ${listing.name}` });
-        }
+        if (availableQty === 0) return res.status(400).json({ error: `${listing.name} is out of stock` });
+        if (safeQty > availableQty) return res.status(400).json({ error: `Only ${availableQty} unit(s) available for ${listing.name}` });
 
         const unitPrice = Number(listing.price);
         total += unitPrice * safeQty;
         sellerIds.add(listing.seller_uid);
         listingIds.push(String(numericListingId));
-        const itemReference = `${orderId}-ITEM-${String(orderItems.length + 1).padStart(2, '0')}`;
-
         orderItems.push({
           listingId: String(numericListingId),
           title: listing.name,
           quantity: safeQty,
           unitPrice: { amount: unitPrice, currency },
-          reference: itemReference,
+          reference: `${orderId}-ITEM-${String(orderItems.length + 1).padStart(2, "0")}`,
         });
       }
 
-      const primarySellerId = sellerIds.values().next().value ?? 'multiple-sellers';
+      const primarySellerId = sellerIds.values().next().value ?? "multiple-sellers";
       const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
 
-      const order: OrderState = {
+      serverOrderService.create({
         id: orderId,
         buyerId: buyerUid,
         sellerId: primarySellerId,
-        source: 'listing',
-        status: 'pending_payment',
+        source: "listing",
+        status: "pending_payment",
         currency,
         subtotal: { amount: total, currency },
         total: { amount: feeBreakdown.finalTotalAmount, currency },
-        paymentProvider: 'paychangu',
+        paymentProvider: "paychangu",
         settlementRoute,
         items: orderItems,
         placedAt: now,
         createdAt: now,
         updatedAt: now,
-      };
+      } as any);
 
-      serverOrderService.create(order);
-
-      const config = createServerPaymentConfigFromEnv();
-
-      const paymentRequest: CreatePaymentRequest = {
+      const paymentResult = await serverPaymentService.createPayment({
         orderId,
-        provider: 'paychangu',
-        method: method as CreatePaymentRequest['method'],
+        provider: "paychangu",
+        method,
         settlementRoute,
         amount: { amount: feeBreakdown.finalTotalAmount, currency },
         customer: {
@@ -258,50 +172,36 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           returnUrl,
           cancelUrl,
         },
-        callbackUrl: config.callbackUrl,
-      };
+        returnUrl,
+        cancelUrl,
+      } as any);
 
-      const paymentResult = await serverPaymentService.createPayment(paymentRequest, config);
-
-      serverOrderService.updatePaymentReference(orderId, paymentResult.reference ?? paymentRequest.orderId);
+      orderRepository.update(orderId, (current) => ({
+        ...current,
+        paymentReference: paymentResult.reference ?? orderId,
+        updatedAt: now,
+      } as any));
 
       return res.status(201).json({
         success: true,
         orderId,
         payment: paymentResult,
-        order: serverOrderService.get(orderId),
+        order: orderRepository.findById(orderId),
         totals: {
           subtotal: total,
           total: feeBreakdown.finalTotalAmount,
-          fees: feeBreakdown.fees,
+          fees: feeBreakdown.payChanguTransactionFeeAmount,
         },
       });
     } catch (error) {
-      console.error('Checkout failed:', error);
-      return res.status(500).json(jsonError(error, 'Failed to initiate checkout'));
+      return res.status(500).json(jsonError(error, "Failed to initiate checkout"));
     }
   });
 
-  router.get('/transaction/:id', orderLookupLimiter, async (req, res) => {
-    try {
-      const bundle = buildOrderBundle(req.params.id);
-      if (!bundle) {
-        return res.status(404).json({ error: 'Transaction not found' });
-      }
-
-      return res.json({
-        success: true,
-        transaction: {
-          order: bundle.order,
-          payment: bundle.payment,
-          escrow: bundle.escrow,
-          dispute: bundle.dispute,
-        },
-      });
-    } catch (error) {
-      console.error('Transaction lookup failed:', error);
-      return res.status(500).json(jsonError(error, 'Failed to load transaction'));
-    }
+  router.get("/transaction/:id", orderLookupLimiter, async (req, res) => {
+    const bundle = buildOrderBundle(req.params.id);
+    if (!bundle) return res.status(404).json({ error: "Transaction not found" });
+    return res.json({ success: true, transaction: bundle });
   });
 
   return router;
