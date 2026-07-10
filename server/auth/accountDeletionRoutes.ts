@@ -117,7 +117,7 @@ async function destroyCloudinaryAsset(rawUrl: string) {
   }
 }
 
-async function deleteUserMedia(userId: string) {
+function collectUserMediaUrls(userId: string) {
   const sellerRow = db
     .prepare(`SELECT business_logo, profile_picture FROM sellers WHERE uid = ? LIMIT 1`)
     .get(userId) as { business_logo?: string | null; profile_picture?: string | null } | undefined;
@@ -136,7 +136,11 @@ async function deleteUserMedia(userId: string) {
   for (const listing of listingRows) collectCloudinaryUrls(listing).forEach((url) => urls.add(url));
   for (const application of applicationRows) collectCloudinaryUrls(application).forEach((url) => urls.add(url));
 
-  await Promise.allSettled([...urls].map((url) => destroyCloudinaryAsset(url)));
+  return [...urls];
+}
+
+async function purgeCloudinaryUrls(urls: string[]) {
+  await Promise.allSettled(urls.map((url) => destroyCloudinaryAsset(url)));
 }
 
 function cleanupUserRecords(userId: string) {
@@ -160,12 +164,18 @@ async function accountDeletionHandler(req: Request, res: Response) {
   if (!user) return res.status(401).json({ error: "Authentication required" });
 
   try {
-    await deleteUserMedia(user.uid);
+    const urls = collectUserMediaUrls(user.uid);
     cleanupUserRecords(user.uid);
 
-    return res.json({
+    res.json({
       success: true,
       message: "Account and related data deleted successfully.",
+    });
+
+    setImmediate(() => {
+      void purgeCloudinaryUrls(urls).catch((error) => {
+        console.warn("Cloudinary cleanup after account deletion failed:", error);
+      });
     });
   } catch (error) {
     console.error("Account deletion cleanup failed:", error);
