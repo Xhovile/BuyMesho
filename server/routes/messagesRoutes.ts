@@ -3,8 +3,48 @@ import { sqliteDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messagesRoutesInstalled");
-
 let messagesSchemaEnsured = false;
+
+type VerifiedRequestUser = {
+  uid: string;
+  email: string | null;
+  email_verified: boolean;
+  is_admin: boolean;
+};
+
+type ConversationRow = {
+  id: number;
+  listing_id: number;
+  buyer_uid: string;
+  seller_uid: string;
+  last_message_preview: string | null;
+  last_message_at: string | null;
+  buyer_unread_count: number;
+  seller_unread_count: number;
+  created_at: string;
+  updated_at: string;
+  listing_name?: string | null;
+  listing_price?: number | null;
+  listing_status?: string | null;
+  listing_photos?: string | null;
+  listing_university?: string | null;
+  seller_business_name?: string | null;
+  seller_logo?: string | null;
+  seller_is_verified?: number | null;
+  buyer_business_name?: string | null;
+  buyer_logo?: string | null;
+  buyer_is_verified?: number | null;
+};
+
+type MessageRow = {
+  id: number;
+  conversation_id: number;
+  sender_uid: string;
+  body: string;
+  is_read: number;
+  created_at: string;
+  read_at: string | null;
+};
 
 function ensureMessagesSchema() {
   if (messagesSchemaEnsured) return;
@@ -53,16 +93,6 @@ function ensureMessagesSchema() {
 
   messagesSchemaEnsured = true;
 }
-
-type MessageRow = {
-  id: number;
-  conversation_id: number;
-  sender_uid: string;
-  body: string;
-  is_read: number;
-  created_at: string;
-  read_at: string | null;
-};
 
 function getUser(req: Request) {
   return req.user as VerifiedRequestUser | undefined;
