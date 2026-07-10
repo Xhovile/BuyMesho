@@ -44,39 +44,45 @@ let reviewsSchemaEnsured = false;
 function ensureReviewsSchema() {
   if (reviewsSchemaEnsured) return;
 
-  db.pragma("foreign_keys = ON");
+  try {
+    db.pragma("foreign_keys = ON");
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS listing_reviews (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      listing_id INTEGER NOT NULL,
-      seller_uid TEXT NOT NULL,
-      reviewer_uid TEXT NOT NULL,
-      reviewer_email TEXT,
-      reviewer_name TEXT NOT NULL,
-      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-      title TEXT,
-      body TEXT,
-      is_verified_purchase INTEGER NOT NULL DEFAULT 0,
-      seller_reply TEXT,
-      seller_reply_at DATETIME,
-      is_hidden INTEGER NOT NULL DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (listing_id, reviewer_uid)
-    );
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS listing_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        listing_id INTEGER NOT NULL,
+        seller_uid TEXT NOT NULL,
+        reviewer_uid TEXT NOT NULL,
+        reviewer_email TEXT,
+        reviewer_name TEXT NOT NULL,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        title TEXT,
+        body TEXT,
+        is_verified_purchase INTEGER NOT NULL DEFAULT 0,
+        seller_reply TEXT,
+        seller_reply_at DATETIME,
+        is_hidden INTEGER NOT NULL DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE (listing_id, reviewer_uid)
+      );
 
-    CREATE INDEX IF NOT EXISTS idx_listing_reviews_listing_id
-    ON listing_reviews (listing_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_listing_reviews_listing_id
+      ON listing_reviews (listing_id, created_at DESC);
 
-    CREATE INDEX IF NOT EXISTS idx_listing_reviews_seller_uid
-    ON listing_reviews (seller_uid, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_listing_reviews_seller_uid
+      ON listing_reviews (seller_uid, created_at DESC);
 
-    CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
-    ON listing_reviews (reviewer_uid, created_at DESC);
-  `);
+      CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
+      ON listing_reviews (reviewer_uid, created_at DESC);
+    `);
 
-  reviewsSchemaEnsured = true;
+    reviewsSchemaEnsured = true;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Review schema init skipped because the database is unavailable: ${message}`);
+    reviewsSchemaEnsured = true;
+  }
 }
 
 function clampInt(value: unknown, fallback: number, min: number, max: number) {
