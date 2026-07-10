@@ -114,6 +114,4 @@ function ensurePayoutLifecycleSchema(): void {
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id ON payouts (destination_account_id)`);
 }
 
-ensurePayoutLifecycleSchema();
-
-export {};
+export { ensurePayoutLifecycleSchema };
