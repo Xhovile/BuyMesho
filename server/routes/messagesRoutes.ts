@@ -4,78 +4,55 @@ import { requireAuth } from "../middleware/requireAuth.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messagesRoutesInstalled");
 
-db.pragma("foreign_keys = ON");
+let messagesSchemaEnsured = false;
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS conversations (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    listing_id INTEGER NOT NULL,
-    buyer_uid TEXT NOT NULL,
-    seller_uid TEXT NOT NULL,
-    last_message_preview TEXT,
-    last_message_at DATETIME,
-    buyer_unread_count INTEGER NOT NULL DEFAULT 0,
-    seller_unread_count INTEGER NOT NULL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (listing_id, buyer_uid, seller_uid),
-    FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
-  );
+function ensureMessagesSchema() {
+  if (messagesSchemaEnsured) return;
 
-  CREATE TABLE IF NOT EXISTS messages (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL,
-    sender_uid TEXT NOT NULL,
-    body TEXT NOT NULL,
-    is_read INTEGER NOT NULL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    read_at DATETIME,
-    FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
-  );
+  db.pragma("foreign_keys = ON");
 
-  CREATE INDEX IF NOT EXISTS idx_conversations_listing
-  ON conversations (listing_id, updated_at DESC);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS conversations (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_id INTEGER NOT NULL,
+      buyer_uid TEXT NOT NULL,
+      seller_uid TEXT NOT NULL,
+      last_message_preview TEXT,
+      last_message_at DATETIME,
+      buyer_unread_count INTEGER NOT NULL DEFAULT 0,
+      seller_unread_count INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (listing_id, buyer_uid, seller_uid),
+      FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_conversations_buyer
-  ON conversations (buyer_uid, updated_at DESC);
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL,
+      sender_uid TEXT NOT NULL,
+      body TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      read_at DATETIME,
+      FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_conversations_seller
-  ON conversations (seller_uid, updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_conversations_listing
+      ON conversations (listing_id, updated_at DESC);
 
-  CREATE INDEX IF NOT EXISTS idx_messages_conversation
-  ON messages (conversation_id, created_at ASC, id ASC);
-`);
+    CREATE INDEX IF NOT EXISTS idx_conversations_buyer
+      ON conversations (buyer_uid, updated_at DESC);
 
-type VerifiedRequestUser = {
-  uid: string;
-  email: string | null;
-  email_verified: boolean;
-  is_admin: boolean;
-};
+    CREATE INDEX IF NOT EXISTS idx_conversations_seller
+      ON conversations (seller_uid, updated_at DESC);
 
-type ConversationRow = {
-  id: number;
-  listing_id: number;
-  buyer_uid: string;
-  seller_uid: string;
-  last_message_preview: string | null;
-  last_message_at: string | null;
-  buyer_unread_count: number;
-  seller_unread_count: number;
-  created_at: string;
-  updated_at: string;
-  listing_name?: string | null;
-  listing_price?: number | null;
-  listing_status?: string | null;
-  listing_photos?: string | null;
-  listing_university?: string | null;
-  seller_business_name?: string | null;
-  seller_logo?: string | null;
-  seller_is_verified?: number | null;
-  buyer_business_name?: string | null;
-  buyer_logo?: string | null;
-  buyer_is_verified?: number | null;
-};
+    CREATE INDEX IF NOT EXISTS idx_messages_conversation
+      ON messages (conversation_id, created_at ASC, id ASC);
+  `);
+
+  messagesSchemaEnsured = true;
+}
 
 type MessageRow = {
   id: number;
