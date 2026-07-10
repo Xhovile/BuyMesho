@@ -101,6 +101,25 @@ async function startServer() {
     next();
   });
 
+app.get("/api/db-test", (req, res) => {
+  try {
+    const row = db.prepare("SELECT 1 AS ok, CURRENT_TIMESTAMP AS now").get() as {
+      ok?: number;
+      now?: string;
+    } | undefined;
+
+    return res.json({
+      success: true,
+      db: row ?? null,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
