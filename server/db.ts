@@ -183,7 +183,7 @@ function ensureWorker() {
     type: "module",
     workerData: { role: "pg-worker", port: port2 },
     transferList: [port2],
-  });
+  } as any);
 
   worker.on("error", (error) => {
     console.warn("PostgreSQL worker error:", error);
