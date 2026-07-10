@@ -121,6 +121,12 @@ async function startServer() {
   }
 });
 
+  app.get("/api/env-test", (_req, res) => {
+  res.json({
+    DATABASE_URL: process.env.DATABASE_URL,
+  });
+});
+
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
