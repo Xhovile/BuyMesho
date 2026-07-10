@@ -39,38 +39,45 @@ type ReviewRow = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.reviewsRoutesInstalled");
+let reviewsSchemaEnsured = false;
 
-db.pragma("foreign_keys = ON");
+function ensureReviewsSchema() {
+  if (reviewsSchemaEnsured) return;
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS listing_reviews (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    listing_id INTEGER NOT NULL,
-    seller_uid TEXT NOT NULL,
-    reviewer_uid TEXT NOT NULL,
-    reviewer_email TEXT,
-    reviewer_name TEXT NOT NULL,
-    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-    title TEXT,
-    body TEXT,
-    is_verified_purchase INTEGER NOT NULL DEFAULT 0,
-    seller_reply TEXT,
-    seller_reply_at DATETIME,
-    is_hidden INTEGER NOT NULL DEFAULT 0,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (listing_id, reviewer_uid)
-  );
+  db.pragma("foreign_keys = ON");
 
-  CREATE INDEX IF NOT EXISTS idx_listing_reviews_listing_id
-  ON listing_reviews (listing_id, created_at DESC);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS listing_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      listing_id INTEGER NOT NULL,
+      seller_uid TEXT NOT NULL,
+      reviewer_uid TEXT NOT NULL,
+      reviewer_email TEXT,
+      reviewer_name TEXT NOT NULL,
+      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      title TEXT,
+      body TEXT,
+      is_verified_purchase INTEGER NOT NULL DEFAULT 0,
+      seller_reply TEXT,
+      seller_reply_at DATETIME,
+      is_hidden INTEGER NOT NULL DEFAULT 0,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE (listing_id, reviewer_uid)
+    );
 
-  CREATE INDEX IF NOT EXISTS idx_listing_reviews_seller_uid
-  ON listing_reviews (seller_uid, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_listing_reviews_listing_id
+    ON listing_reviews (listing_id, created_at DESC);
 
-  CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
-  ON listing_reviews (reviewer_uid, created_at DESC);
-`);
+    CREATE INDEX IF NOT EXISTS idx_listing_reviews_seller_uid
+    ON listing_reviews (seller_uid, created_at DESC);
+
+    CREATE INDEX IF NOT EXISTS idx_listing_reviews_reviewer_uid
+    ON listing_reviews (reviewer_uid, created_at DESC);
+  `);
+
+  reviewsSchemaEnsured = true;
+}
 
 function clampInt(value: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(value);
@@ -432,6 +439,8 @@ async function replyToListingReviewHandler(req: Request, res: Response) {
 }
 
 export function registerReviewsRoutes(app: Express) {
+  ensureReviewsSchema();
+
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
   app.get("/api/listings/:listingId/reviews", attachOptionalAuth, (req, res) => {
