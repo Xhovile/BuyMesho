@@ -101,6 +101,26 @@ async function startServer() {
     next();
   });
 
+  app.get("/api/db-test", (_req, res) => {
+  try {
+    db.exec(`CREATE TABLE IF NOT EXISTS db_health_test (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.prepare("INSERT INTO db_health_test DEFAULT VALUES").run();
+
+    const count = db.prepare("SELECT COUNT(*) AS count FROM db_health_test").get() as { count: number };
+
+    res.json({ ok: true, count: count.count });
+  } catch (error) {
+    res.status(500).json({
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
