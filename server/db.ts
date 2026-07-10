@@ -1,6 +1,6 @@
-import { spawnSync } from "node:child_process";
+import { MessageChannel, Worker, isMainThread, receiveMessageOnPort, workerData, type MessagePort } from "node:worker_threads";
 import dotenv from "dotenv";
-import { type PoolClient, type QueryResultRow } from "pg";
+import { type PoolClient, type QueryResultRow, Pool } from "pg";
 
 import { closePool, getClient, pool, query, withTransaction } from "./postgres.js";
 
@@ -20,6 +20,84 @@ export interface SqlitePreparedStatement {
   run(...params: unknown[]): { changes: number; lastInsertRowid?: number };
   get(...params: unknown[]): Record<string, unknown> | undefined;
   all(...params: unknown[]): Record<string, unknown>[];
+}
+
+type WorkerRequest = {
+  id: number;
+  sql: string;
+  params: unknown[];
+  signal: SharedArrayBuffer;
+};
+
+type WorkerResponse =
+  | { id: number; ok: true; rows: Record<string, unknown>[]; rowCount: number }
+  | { id: number; ok: false; error: string };
+
+function parseBoolean(value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) return true;
+  if (["0", "false", "no", "off"].includes(normalized)) return false;
+  return undefined;
+}
+
+function createPgPool() {
+  const connectionString = process.env.DATABASE_URL?.trim();
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is missing");
+  }
+
+  const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
+  const sslEnabled = sslMode !== "disable";
+  const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
+
+  return new Pool({
+    connectionString,
+    ssl: sslEnabled
+      ? {
+          rejectUnauthorized: sslRejectUnauthorized,
+        }
+      : false,
+    max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
+    idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30_000) || 30_000,
+    connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
+  });
+}
+
+function startWorker(port: MessagePort) {
+  const workerPool = createPgPool();
+
+  port.on("message", async (request: WorkerRequest) => {
+    const signal = new Int32Array(request.signal);
+
+    try {
+      const result = await workerPool.query(request.sql, request.params ?? []);
+      const response: WorkerResponse = {
+        id: request.id,
+        ok: true,
+        rows: result.rows ?? [],
+        rowCount: result.rowCount ?? (result.rows ?? []).length,
+      };
+      port.postMessage(response);
+    } catch (error) {
+      const response: WorkerResponse = {
+        id: request.id,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+      port.postMessage(response);
+    } finally {
+      Atomics.store(signal, 0, 1);
+      Atomics.notify(signal, 0, 1);
+    }
+  });
+
+  port.start();
+}
+
+const workerConfig = workerData as { role?: string; port?: MessagePort } | undefined;
+if (!isMainThread && workerConfig?.role === "pg-worker" && workerConfig.port) {
+  startWorker(workerConfig.port);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -92,49 +170,68 @@ function fetchTableColumns(tableName: string): Record<string, unknown>[] {
   return result.rows;
 }
 
-function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
-  const payload = JSON.stringify({ sql, params });
-  const child = spawnSync(
-    process.execPath,
-    [
-      "--input-type=module",
-      "-e",
-      `import { Client } from 'pg';
-const payload = JSON.parse(process.env.PG_PAYLOAD || '{}');
-const client = new Client({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.PGSSLMODE && process.env.PGSSLMODE.toLowerCase() === 'disable'
-    ? false
-    : { rejectUnauthorized: String(process.env.PGSSL_REJECT_UNAUTHORIZED || 'false').toLowerCase() === 'true' },
-});
-try {
-  await client.connect();
-  const result = await client.query(payload.sql, payload.params || []);
-  process.stdout.write(JSON.stringify({ rows: result.rows || [], rowCount: result.rowCount ?? (result.rows || []).length }));
-} finally {
-  try { await client.end(); } catch {}
-}
-`,
-    ],
-    {
-      env: { ...process.env, PG_PAYLOAD: payload },
-      encoding: "utf8",
-      maxBuffer: 10 * 1024 * 1024,
-    },
-  );
+let worker: Worker | null = null;
+let workerPort: MessagePort | null = null;
+let requestCounter = 0;
 
-  if (child.status !== 0) {
-    throw new Error([
-      "PostgreSQL query failed",
-      child.stderr ? String(child.stderr).trim() : "",
-      child.stdout ? String(child.stdout).trim() : "",
-    ].filter(Boolean).join(": "));
+function ensureWorker() {
+  if (worker && workerPort) return;
+
+  const { port1, port2 } = new MessageChannel();
+  workerPort = port1;
+  worker = new Worker(new URL(import.meta.url), {
+    type: "module",
+    workerData: { role: "pg-worker", port: port2 },
+    transferList: [port2],
+  });
+
+  worker.on("error", (error) => {
+    console.warn("PostgreSQL worker error:", error);
+  });
+
+  worker.on("exit", (code) => {
+    if (code !== 0) {
+      console.warn(`PostgreSQL worker exited with code ${code}`);
+    }
+  });
+
+  worker.unref();
+  workerPort.unref?.();
+}
+
+function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
+  ensureWorker();
+  if (!workerPort) {
+    throw new Error("PostgreSQL worker is not available");
   }
 
-  const output = JSON.parse(String(child.stdout || "{}")) as { rows?: Record<string, unknown>[]; rowCount?: number };
+  const payload = { id: ++requestCounter, sql, params, signal: new SharedArrayBuffer(4) } satisfies WorkerRequest;
+  const signal = new Int32Array(payload.signal);
+  workerPort.postMessage(payload);
+
+  const timeoutMs = Number(process.env.PG_SYNC_QUERY_TIMEOUT_MS ?? 30_000) || 30_000;
+  const waitResult = Atomics.wait(signal, 0, 0, timeoutMs);
+  if (waitResult === "timed-out") {
+    throw new Error(`PostgreSQL query timed out after ${timeoutMs}ms`);
+  }
+
+  const packet = receiveMessageOnPort(workerPort);
+  if (!packet || !packet.message) {
+    throw new Error("PostgreSQL worker returned no response");
+  }
+
+  const response = packet.message as WorkerResponse;
+  if (response.id !== payload.id) {
+    throw new Error("PostgreSQL worker response mismatch");
+  }
+
+  if (!response.ok) {
+    throw new Error(`PostgreSQL query failed: ${response.error}`);
+  }
+
   return {
-    rows: Array.isArray(output.rows) ? output.rows : [],
-    rowCount: Number.isFinite(output.rowCount) ? Number(output.rowCount) : 0,
+    rows: Array.isArray(response.rows) ? response.rows : [],
+    rowCount: Number.isFinite(response.rowCount) ? Number(response.rowCount) : 0,
   };
 }
 
@@ -177,12 +274,20 @@ class PgCompatDatabase {
   }
 
   pragma(_statement: string): void {}
-  transaction<T extends (...args: any[]) => any>(fn: T): T { return ((...args: any[]) => fn(...args)) as T; }
-  close(): void { void closePool(); }
+  transaction<T extends (...args: any[]) => any>(fn: T): T {
+    return ((...args: any[]) => fn(...args)) as T;
+  }
+  close(): void {
+    void closePool();
+  }
 }
 
 export const sqliteDb = new PgCompatDatabase();
-export function getPaymentDb() { return sqliteDb; }
-export async function getDatabaseClient(): Promise<PoolClient> { return getClient(); }
+export function getPaymentDb() {
+  return sqliteDb;
+}
+export async function getDatabaseClient(): Promise<PoolClient> {
+  return getClient();
+}
 export { pool, query, closePool, getClient, withTransaction };
 export type { QueryResultRow };
