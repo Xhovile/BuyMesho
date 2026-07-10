@@ -24,6 +24,13 @@ function resolveSchemaPath(): string {
 export function runMigrations() {
   const schemaPath = resolveSchemaPath();
   const sql = fs.readFileSync(schemaPath, "utf8");
-  sqliteDb.exec(sql);
+
+  try {
+    sqliteDb.exec(sql);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Migration step skipped because the database is unavailable: ${message}`);
+  }
+
   return sqliteDb;
 }
