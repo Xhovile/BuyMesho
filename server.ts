@@ -101,32 +101,22 @@ async function startServer() {
     next();
   });
 
-  app.get("/api/db-test", (_req, res) => {
+app.get("/api/db-test", (_req, res) => {
   try {
-    db.exec(`CREATE TABLE IF NOT EXISTS db_health_test (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`);
+    const row = db.prepare("SELECT NOW() AS now").get();
 
-    db.prepare("INSERT INTO db_health_test DEFAULT VALUES").run();
-
-    const count = db.prepare("SELECT COUNT(*) AS count FROM db_health_test").get() as { count: number };
-
-    res.json({ ok: true, count: count.count });
-  } catch (error) {
+    res.json({
+      ok: true,
+      row,
+    });
+  } catch (e) {
     res.status(500).json({
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: String(e),
     });
   }
 });
-
-  app.get("/api/env-test", (_req, res) => {
-  res.json({
-    DATABASE_URL: process.env.DATABASE_URL,
-  });
-});
-
+  
   // API Routes
   app.get("/api/upload", (req, res) => {
     res.json({ status: "ready", method: "POST required" });
