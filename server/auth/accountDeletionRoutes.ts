@@ -119,9 +119,9 @@ async function destroyCloudinaryAsset(rawUrl: string) {
 
 function collectUserMediaUrls(userId: string) {
   const sellerRow = db
-    .prepare(`SELECT business_logo, profile_picture FROM sellers WHERE uid = ? LIMIT 1`)
-    .get(userId) as { business_logo?: string | null; profile_picture?: string | null } | undefined;
-
+    .prepare(`SELECT business_logo FROM sellers WHERE uid = ? LIMIT 1`)
+    .get(userId) as { business_logo?: string | null } | undefined;
+  
   const listingRows = db
     .prepare(`SELECT photos, video_url FROM listings WHERE seller_uid = ?`)
     .all(userId) as { photos?: string | null; video_url?: string | null }[];
