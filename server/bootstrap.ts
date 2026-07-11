@@ -9,6 +9,7 @@ import { registerRoutes } from "./routes/index.js";
 import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
+import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
 
 dotenv.config();
 
