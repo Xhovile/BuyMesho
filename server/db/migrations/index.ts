@@ -34,6 +34,8 @@ export function runMigrations() {
 
   try {
     sqliteDb.exec(sql);
+    sqliteDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
+    sqliteDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`Migration step skipped because the schema could not be applied safely: ${message}`);
