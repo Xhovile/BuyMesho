@@ -16,6 +16,29 @@ import {
 export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
+  router.get('/me', requireAuth, (req, res) => {
+    try {
+      const sellerId = req.user!.uid;
+      const db = getPaymentDb();
+      const rows = db
+        .prepare(
+          `SELECT id
+           FROM orders
+           WHERE seller_id = ?
+           ORDER BY created_at DESC, updated_at DESC`,
+        )
+        .all(sellerId) as Array<{ id: string }>;
+
+      const escrows = rows
+        .map((row) => escrowRepository.findByOrderId(row.id))
+        .filter((entry): entry is NonNullable<ReturnType<typeof escrowRepository.findByOrderId>> => entry !== undefined);
+
+      return res.status(200).json(escrows);
+    } catch (error) {
+      return res.status(500).json(jsonError(error, 'Failed to fetch seller escrows'));
+    }
+  });
+
   router.get('/:orderId', requireAuth, (req, res) => {
     try {
       const access = assertOrderAccess(req, req.params.orderId, orderRepository);
@@ -82,7 +105,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           releasedBy: requesterId,
           reference: releaseReference,
         });
-  
 
         if (!released) {
           return undefined;
@@ -258,7 +280,6 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         }
 
         const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
-
         if (!orderUpdated) {
           console.warn(
             `[escrow] refund: order ${orderId} not found when updating status to refunded`,
@@ -276,19 +297,12 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
-      return res.status(200).json(result);
+      return res.status(200).json({
+        escrow: result.escrow,
+        refundEntry: result.refundEntry,
+        cancelledPayouts: result.cancelledPayouts,
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      if (
-        message.startsWith('Escrow is already') ||
-        message.startsWith('Escrow cannot') ||
-        message.startsWith('Escrow has no') ||
-        message === 'reason is required' ||
-        message.startsWith('Invalid admin override transition')
-      ) {
-        return res.status(400).json({ error: message });
-      }
-
       return res.status(500).json(jsonError(error, 'Failed to refund escrow'));
     }
   });
