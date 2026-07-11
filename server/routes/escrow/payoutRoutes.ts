@@ -1,6 +1,6 @@
 import express, { type RequestHandler } from 'express';
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID, scryptSync } from 'crypto';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import {
   listPayChanguMobileMoneyOperators,
   listPayChanguPayoutBanks,

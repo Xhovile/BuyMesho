@@ -7,7 +7,7 @@ import { escrowRepository } from '../escrow/escrow.repository.js';
 import { payoutRepository, payoutService } from '../payouts/payout.service.js';
 import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
 
 export interface ApplyPayChanguResult {

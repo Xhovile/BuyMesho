@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { escrowRepository } from '../escrow.repository.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const testOrderIds = [
   'escrow-release-accounting-1',

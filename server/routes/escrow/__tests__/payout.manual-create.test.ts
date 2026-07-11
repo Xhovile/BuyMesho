@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import express from 'express';
 import { createPayoutRouter } from '../../escrowRoutes.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const sellerId = 'seller-manual-create-test';
 const destinationId = 'destination-manual-create-test';
@@ -38,7 +38,7 @@ function resetState(): void {
 
 function seedSellerAndDestination(): void {
   const db = getPaymentDb();
-  db.prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)').run(sellerId, `${sellerId}@example.com`);
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)').run(sellerId, `${sellerId}@example.com`);
   const stamp = now();
   db.prepare(
     `INSERT INTO seller_payout_accounts (

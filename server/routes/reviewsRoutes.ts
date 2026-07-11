@@ -1,5 +1,5 @@
 import type { Express, NextFunction, Request, Response } from "express";
-import { sqliteDb as db } from "../db.js";
+import { postgresDb as db } from "../db.js";
 import { attachOptionalAuth, requireAuth } from "../middleware/requireAuth.js";
 
 type VerifiedRequestUser = {

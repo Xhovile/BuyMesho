@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 
-import { sqliteDb } from "../../server/db.js";
+import { postgresDb } from "../../server/db.js";
 import {
   consumeTotpVerifiedSession,
   confirmTotpEnrollment,
@@ -34,7 +34,7 @@ export function getTotpEnrollmentSummary(userId: string): TotpEnrollmentRecord |
 
 export function verifyTotpVerifiedSession(userId: string, token: string): boolean {
   const tokenHash = createHash("sha256").update(token).digest("hex");
-  const row = sqliteDb
+  const row = postgresDb
     .prepare("SELECT user_id, expires_at FROM totp_verified_sessions WHERE token_hash = ? LIMIT 1")
     .get(tokenHash) as { user_id: string; expires_at: string } | undefined;
 

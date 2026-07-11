@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { sqliteDb } from "../../db.js";
+import { postgresDb } from "../../db.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,13 +33,13 @@ export function runMigrations() {
   const sql = normalizeSchemaSql(fs.readFileSync(schemaPath, "utf8"));
 
   try {
-    sqliteDb.exec(sql);
-    sqliteDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
-    sqliteDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
+    postgresDb.exec(sql);
+    postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
+    postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`Migration step skipped because the schema could not be applied safely: ${message}`);
   }
 
-  return sqliteDb;
+  return postgresDb;
 }

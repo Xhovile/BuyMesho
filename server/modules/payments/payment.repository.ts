@@ -1,12 +1,12 @@
 import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 
 export interface StoredPayment extends PaymentResult {
   verified?: boolean;
   verification?: PaymentVerificationResult;
 }
 
-export class SqlitePaymentRepository {
+export class PostgresPaymentRepository {
   private get db() {
     return getPaymentDb();
   }
@@ -144,4 +144,4 @@ export class SqlitePaymentRepository {
   }
 }
 
-export const paymentRepository = new SqlitePaymentRepository();
+export const paymentRepository = new PostgresPaymentRepository();

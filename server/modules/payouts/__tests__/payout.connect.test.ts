@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { payoutRepository, payoutService } from '../payout.service.js';
 
 const orderId = 'connect-order-test';

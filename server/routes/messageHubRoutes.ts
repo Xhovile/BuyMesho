@@ -1,5 +1,5 @@
 import type { Express, Request, Response } from "express";
-import { sqliteDb as db } from "../db.js";
+import { postgresDb as db } from "../db.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.messageHubRoutesInstalled");

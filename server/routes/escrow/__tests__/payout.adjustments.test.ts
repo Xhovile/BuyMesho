@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import express from 'express';
 import { createPaymentAdminRouter } from '../../../modules/payments/payment.admin.routes.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const payoutId = 'payout-adjustment-test';
 const sellerId = 'seller-adjustment-test';

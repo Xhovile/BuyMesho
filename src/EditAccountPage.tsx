@@ -28,7 +28,7 @@ export default function EditAccountPage() {
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
-  // Fetch authoritative profile from server (SQLite) once authenticated so the
+  // Fetch authoritative profile from server (PostgreSQL) once authenticated so the
   // form is prefilled with current data regardless of Firestore state.
   useEffect(() => {
     if (!firebaseUser || authLoading) return;

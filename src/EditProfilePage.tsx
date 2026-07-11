@@ -31,7 +31,7 @@ export default function EditProfilePage() {
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const formInitialized = useRef(false);
 
-  // Fetch fresh profile data from the server (SQLite is the authoritative source for seller fields).
+  // Fetch fresh profile data from the server (PostgreSQL is the authoritative source for seller fields).
   // Firestore data is used only as a fallback if the server request fails.
   useEffect(() => {
     if (authLoading || profileLoading || formInitialized.current) return;

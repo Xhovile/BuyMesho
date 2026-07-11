@@ -1,9 +1,9 @@
-import { sqliteDb } from "../db.js";
+import { postgresDb } from "../db.js";
 
 export function getDatabase() {
-  return sqliteDb;
+  return postgresDb;
 }
 
 export function closeDatabase() {
-  sqliteDb.close();
+  postgresDb.close();
 }

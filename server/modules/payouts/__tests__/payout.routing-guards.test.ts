@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { payoutService } from '../payout.service.js';
 import { executePayChanguPayout } from '../paychangu.payout.js';
 import { serverOrderService } from '../../orders/order.service.js';
@@ -24,7 +24,7 @@ function seedSubmissionPayout(prefix: string, destinationType: 'mobile_money' | 
   db.prepare('DELETE FROM seller_payout_accounts WHERE id = ?').run(destinationId);
   db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(sellerId, `${prefix}@example.com`);
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(sellerId, `${prefix}@example.com`);
 
   db.prepare(`INSERT INTO seller_payout_accounts (
     id, seller_uid, destination_type, provider_name, provider_ref_id, currency, account_name,

@@ -9,7 +9,7 @@ import { serverOrderService } from '../../orders/order.service.js';
 import { orderRepository } from '../../orders/order.repository.js';
 import { paymentRepository } from '../payment.repository.js';
 import { escrowRepository } from '../../escrow/escrow.repository.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const WEBHOOK_SECRET = 'integration-secret';
 
@@ -169,9 +169,9 @@ function seedOrder(
 function seedVerifiedSellerPayoutDestination(destinationId = 'dest_seller_1_connect'): void {
   const db = getPaymentDb();
   const now = new Date().toISOString();
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com')`).run();
+  db.prepare(`INSERT INTO sellers (uid, email) VALUES ('seller_1', 'seller@example.com')`).run();
   db.prepare(
-    `INSERT OR REPLACE INTO seller_payout_accounts (
+    `INSERT INTO seller_payout_accounts (
       id, seller_uid, destination_type, provider_name, provider_ref_id, currency,
       account_name, account_number_encrypted, mobile_encrypted, masked_account,
       destination_fingerprint, is_default, verification_status, verification_attempts,
@@ -580,11 +580,11 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
   db.prepare('DELETE FROM sellers WHERE uid = ?').run('seller_1');
   db.prepare('DELETE FROM listings WHERE id = 999').run();
   db.prepare(
-    `INSERT OR REPLACE INTO sellers (uid, email)
+    `INSERT INTO sellers (uid, email)
      VALUES ('seller_1', 'seller@example.com')`,
   ).run();
   db.prepare(
-    `INSERT OR REPLACE INTO listings (
+    `INSERT INTO listings (
        id, seller_uid, name, price, category, university, whatsapp_number,
        status, condition, views_count, whatsapp_clicks, is_hidden,
        quantity, sold_quantity

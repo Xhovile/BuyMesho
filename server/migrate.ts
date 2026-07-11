@@ -18,7 +18,7 @@ async function runMigration() {
       client.release();
     }
 
-    console.log("SQLite schema applied successfully.");
+    console.log("PostgreSQL schema applied successfully.");
   } catch (error) {
     console.error("Migration failed:", error);
     process.exit(1);

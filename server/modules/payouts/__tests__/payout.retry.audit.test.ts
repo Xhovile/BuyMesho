@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { payoutService } from '../payout.service.js';
 import { PAYOUT_POLICY } from '../payout.policy.js';
 import { buildPayChanguPayoutChargeId } from '../paychangu.payout.js';
@@ -24,7 +24,7 @@ function seedRetryPayout(prefix: string) {
   db.prepare('DELETE FROM seller_payout_accounts WHERE id = ?').run(destinationId);
   db.prepare('DELETE FROM sellers WHERE uid = ?').run(sellerId);
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended)
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended)
     VALUES (?, ?, 1, 0)`).run(sellerId, `${prefix}@example.com`);
 
   db.prepare(`INSERT INTO seller_payout_accounts (

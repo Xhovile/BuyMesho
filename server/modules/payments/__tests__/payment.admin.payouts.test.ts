@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import express from 'express';
 import { createPaymentAdminRouter } from '../payment.admin.routes.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 function createAdminApp() {
   const app = express();
@@ -64,7 +64,7 @@ function seedAdminPayout(prefix: string, payoutStatus = 'processing') {
   const orderId = `${prefix}-order`;
   const attemptId = `${prefix}-attempt`;
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(
     sellerId,
     `${prefix}@example.com`,
   );

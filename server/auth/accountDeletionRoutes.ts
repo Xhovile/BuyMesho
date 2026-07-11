@@ -1,5 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
-import { sqliteDb as db } from "../db.js";
+import { postgresDb as db } from "../db.js";
 import { v2 as cloudinary } from "cloudinary";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 

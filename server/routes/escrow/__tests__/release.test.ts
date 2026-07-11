@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { test } from 'node:test';
 import express from 'express';
 import { createEscrowRouter } from '../../escrowRoutes.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { escrowRepository } from '../../../modules/escrow/escrow.repository.js';
 import { orderRepository } from '../../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../../modules/orders/order.service.js';
@@ -175,7 +175,7 @@ function seedVerifiedDestination(): void {
   const db = getPaymentDb();
   const stamp = now();
 
-  db.prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
     .run(sellerId, `${sellerId}@example.com`);
 
   db.prepare(
@@ -533,7 +533,7 @@ test('refund endpoint cancels manual payouts linked to the order escrow before r
   const escrow = escrowRepository.create(refundOrderId, 'MWK', 1600);
 
   const db = getPaymentDb();
-  db.prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
     .run(sellerId, `${sellerId}@example.com`);
   db.prepare(
     `INSERT INTO payouts (

@@ -3,7 +3,7 @@ import express from 'express';
 import { createBuyerEscrowRouter } from '../server/routes/escrow/buyerEscrowRoutes.js';
 import { serverOrderService } from '../server/modules/orders/order.service.js';
 import { escrowRepository } from '../server/modules/escrow/escrow.repository.js';
-import { getPaymentDb } from '../server/sqlite.js';
+import { getPaymentDb } from '../server/postgresCompat.js';
 
 // Minimal debug reproduction of the test
 async function main() {
@@ -41,7 +41,7 @@ async function main() {
   escrowRepository.create(releasePayoutOrderId, 'MWK', 1500);
 
   // seed destination directly (simpler approach)
-  db.prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)').run(sellerId, `${sellerId}@example.com`);
+  db.prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)').run(sellerId, `${sellerId}@example.com`);
   db.prepare(`INSERT INTO seller_payout_accounts (id, seller_uid, destination_type, provider_name, provider_ref_id, currency, account_name, mobile_encrypted, masked_account, destination_fingerprint, is_default, verification_status, verification_attempts, is_active, created_at, updated_at) VALUES (?, ?, 'mobile_money', 'paychangu', 'airtel-money', 'MWK', 'Release Test', '0990000000', '****0000', ?, 1, 'verified', 0, 1, ?, ?)`)
     .run('destination-release-payout-1', sellerId, 'debug-fingerprint', nowStamp, nowStamp);
 

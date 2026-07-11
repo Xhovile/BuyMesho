@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import type {
   ConnectAttemptCreateInput,
   ConnectAttemptRecord,

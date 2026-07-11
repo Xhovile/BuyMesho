@@ -5,7 +5,7 @@ import { orderRepository } from '../../modules/orders/order.repository.js';
 import { payoutRepository, payoutService } from '../../modules/payouts/payout.service.js';
 import { calculatePayoutFormula } from '../../modules/payouts/payout.policy.js';
 import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.js';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import {
   assertEscrowReleaseAccess,
   assertOrderAccess,
