@@ -13,7 +13,9 @@ import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.
 import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js";
 import { createAdminSummaryRouter } from "../modules/admin/admin.summary.routes.js";
 import { startPayoutReconciliationScheduler } from "../modules/payouts/payout.reconciliation.scheduler.js";
-import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "../routes/escrowRoutes.js";
+import { createEscrowRouter } from "../routes/escrowRoutes.js";
+import { createBuyerEscrowRouter } from "../routes/escrow/buyerEscrowRoutes.js";
+import { createOrderRouter } from "./orderRoutes.js";
 import { getConfiguredAdminEmails } from "../auth/adminAccess.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -87,6 +89,9 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerMessagesRoutes(app);
   registerReviewsRoutes(app);
   mountTotpRoutes(app);
+
+  app.use("/api/payments/orders", createOrderRouter(requireAuth));
+  app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
 
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
