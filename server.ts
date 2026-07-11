@@ -93,7 +93,6 @@ async function startServer() {
   app.use('/api/escrow', createEscrowRouter(requireFirebaseUser));
   app.use('/api/disputes', createDisputeRouter(requireFirebaseUser));
   app.use('/api/payouts', createPayoutRouter(requireFirebaseUser));
-  startPayoutReconciliationScheduler();
   
   // Logging middleware
   app.use((req, res, next) => {
