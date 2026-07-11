@@ -1,4 +1,4 @@
-import type Database from "better-sqlite3";
+import type { PgCompatDatabase } from "../../db.js";
 import express, { type NextFunction, type Request, type RequestHandler, type Response } from "express";
 import { getFirebaseAdmin } from "../../auth/firebaseAdmin.js";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
@@ -19,7 +19,7 @@ const withAsyncRoute = (handler: AsyncRouteHandler) => {
 
 export function createAdminModerationRouter(params: {
   requireAuth: RequestHandler;
-  db: Database.Database;
+  db: PgCompatDatabase;
   logAdminAction: (entry: {
     admin_uid?: string | null;
     admin_email?: string | null;

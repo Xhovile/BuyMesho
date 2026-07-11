@@ -4,11 +4,26 @@ import test from "node:test";
 import type { AddressInfo } from "node:net";
 import type { RequestHandler } from "express";
 import express from "express";
-import Database from "better-sqlite3";
 import { createAdminActionsRouter } from "../admin.actions.routes.js";
 
 test("admin actions cursor pagination preserves rows tied on created_at", async () => {
-  const db = new Database(":memory:");
+  const rows: any[] = [];
+  let nextId = 1;
+  const db = {
+    exec: () => undefined,
+    prepare: (sql: string) => ({
+      run: (...params: any[]) => {
+        if (/INSERT INTO admin_actions/i.test(sql)) {
+          rows.push({ id: nextId++, admin_uid: params[0], admin_email: params[1], action_type: params[2], target_type: params[3], target_id: params[4], details: params[5], created_at: params[6] });
+        }
+      },
+      all: (...params: any[]) => rows
+        .filter((row) => !params[0] || row.created_at < params[0] || (row.created_at === params[0] && row.id < params[1]))
+        .sort((a, b) => b.created_at.localeCompare(a.created_at) || b.id - a.id)
+        .slice(0, Number(params.at(-1) ?? 20)),
+      get: () => undefined,
+    }),
+  } as any;
   db.exec(`
     CREATE TABLE admin_actions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

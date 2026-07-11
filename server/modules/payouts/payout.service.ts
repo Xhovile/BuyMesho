@@ -1,6 +1,6 @@
 import './payout.schema.js';
 import { createDecipheriv, randomUUID, scryptSync } from 'crypto';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import type { MoneyValue } from '../../../src/shared/types/common.js';
 import {
   executePayChanguPayout,
@@ -395,7 +395,7 @@ export class PayoutRepository {
     const id = randomUUID();
 
     this.db.prepare(
-       `INSERT OR IGNORE INTO payouts (
+       `INSERT INTO payouts (
          id,
          seller_id,
          order_id,
@@ -422,7 +422,7 @@ export class PayoutRepository {
          raw_request,
          created_at,
          updated_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement', 'paychangu', NULL, ?, ?, ?, ?, ?)`,
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement', 'paychangu', NULL, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
      ).run(
        id,
        input.sellerId,
@@ -464,7 +464,7 @@ export class PayoutRepository {
     const id = randomUUID();
 
     this.db.prepare(
-      `INSERT OR IGNORE INTO payouts (
+      `INSERT INTO payouts (
         id,
         seller_id,
         order_id,
@@ -491,7 +491,7 @@ export class PayoutRepository {
         raw_request,
         created_at,
         updated_at
-      ) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement', 'paychangu', NULL, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending_settlement', 'paychangu', NULL, ?, ?, ?, ?, ?) ON CONFLICT(id) DO NOTHING`,
     ).run(
       id,
       input.sellerId,

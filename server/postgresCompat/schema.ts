@@ -1,12 +1,12 @@
-import Database from "better-sqlite3";
+import type { PgCompatDatabase } from "../db.js";
 
 function ensureColumn(
-  db: Database.Database,
+  db: PgCompatDatabase,
   tableName: string,
   columnName: string,
   definition: string,
 ): void {
-  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
+  const columns = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?`).all(tableName) as Array<{
     name: string;
   }>;
   if (!columns.some((column) => column.name === columnName)) {
@@ -14,7 +14,7 @@ function ensureColumn(
   }
 }
 
-export function initPaymentSchema(db: Database.Database): void {
+export function initPaymentSchema(db: PgCompatDatabase): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

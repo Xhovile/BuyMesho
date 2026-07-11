@@ -1,11 +1,11 @@
-import type Database from "better-sqlite3";
+import type { PgCompatDatabase } from "../../db.js";
 import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
 
 export function createAdminSummaryRouter(params: {
   requireAuth: RequestHandler;
-  db: Database.Database;
+  db: PgCompatDatabase;
 }): express.Router {
   const router = express.Router();
   const { requireAuth, db } = params;

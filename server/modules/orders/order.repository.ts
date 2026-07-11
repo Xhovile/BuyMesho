@@ -1,11 +1,11 @@
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
 }
 
-export class SqliteOrderRepository {
+export class PostgresOrderRepository {
   private get db() {
     return getPaymentDb();
   }
@@ -108,4 +108,4 @@ export class SqliteOrderRepository {
   }
 }
 
-export const orderRepository = new SqliteOrderRepository();
+export const orderRepository = new PostgresOrderRepository();

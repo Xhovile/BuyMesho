@@ -14,7 +14,7 @@
     "reset:finance": "tsx scripts/reset-finance.ts",
     "lint": "node scripts/run-lint.mjs",
     "smoke:paychangu": "tsx scripts/paychangu-smoke.ts",
-    "test:integration": "mkdir -p .tmp && NODE_ENV=test PAYMENT_DB_PATH=.tmp/test-market.db node --import tsx --test --test-concurrency=1 server/modules/payments/__tests__/paychangu.integration.test.ts server/modules/payments/__tests__/payment.admin.payouts.test.ts server/modules/payouts/__tests__/paychangu.payout.request.test.ts server/modules/payouts/__tests__/payout.routing-guards.test.ts server/routes/escrow/__tests__/shared.test.ts server/routes/escrow/__tests__/payout.provider-routes.test.ts server/modules/escrow/__tests__/escrow.repository.test.ts server/routes/escrow/__tests__/release.test.ts server/modules/payouts/__tests__/payout.policy.test.ts server/modules/payouts/__tests__/payout.retry.test.ts server/modules/payouts/__tests__/payout.retry.audit.test.ts server/modules/payouts/__tests__/payout.downtime.test.ts server/modules/payouts/__tests__/payout.webhook.reconciliation.test.ts server/modules/payouts/__tests__/payout.reconciliation.scheduler.test.ts server/routes/escrow/__tests__/payout.override.test.ts server/modules/payouts/__tests__/payout.ui-model.test.ts server/routes/escrow/__tests__/release.audit.test.ts server/routes/escrow/__tests__/payout.adjustments.test.ts server/modules/connect/__tests__/connect.service.test.ts src/modules/connect/__tests__/connect.api.test.ts && npm run check:structure-gate",
+    "test:integration": "NODE_ENV=test node --import tsx --test --test-concurrency=1 server/modules/payments/__tests__/paychangu.integration.test.ts server/modules/payments/__tests__/payment.admin.payouts.test.ts server/modules/payouts/__tests__/paychangu.payout.request.test.ts server/modules/payouts/__tests__/payout.routing-guards.test.ts server/routes/escrow/__tests__/shared.test.ts server/routes/escrow/__tests__/payout.provider-routes.test.ts server/modules/escrow/__tests__/escrow.repository.test.ts server/routes/escrow/__tests__/release.test.ts server/modules/payouts/__tests__/payout.policy.test.ts server/modules/payouts/__tests__/payout.retry.test.ts server/modules/payouts/__tests__/payout.retry.audit.test.ts server/modules/payouts/__tests__/payout.downtime.test.ts server/modules/payouts/__tests__/payout.webhook.reconciliation.test.ts server/modules/payouts/__tests__/payout.reconciliation.scheduler.test.ts server/routes/escrow/__tests__/payout.override.test.ts server/modules/payouts/__tests__/payout.ui-model.test.ts server/routes/escrow/__tests__/release.audit.test.ts server/routes/escrow/__tests__/payout.adjustments.test.ts server/modules/connect/__tests__/connect.service.test.ts src/modules/connect/__tests__/connect.api.test.ts && npm run check:structure-gate",
     "check:structure-gate": "tsx scripts/validate-structure-gate.ts",
     "check:payments": "npm run test:integration"
   },
@@ -23,7 +23,6 @@
     "@tailwindcss/vite": "^4.1.14",
     "@types/multer": "^2.0.0",
     "@vitejs/plugin-react": "^5.0.4",
-    "better-sqlite3": "^12.10.0",
     "cloudinary": "^2.9.0",
     "dotenv": "^17.2.3",
     "express": "^4.22.2",
@@ -40,7 +39,6 @@
     "vite": "^8.0.16"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/nodemailer": "^6.4.23",

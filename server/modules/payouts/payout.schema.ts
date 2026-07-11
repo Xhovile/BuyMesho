@@ -1,9 +1,9 @@
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 
 const db = getPaymentDb();
 
 function ensureColumn(tableName: string, columnName: string, definition: string): void {
-  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  const columns = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?`).all(tableName) as Array<{ name: string }>;
   if (!columns.some((column) => column.name === columnName)) {
     db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
   }

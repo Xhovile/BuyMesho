@@ -1,4 +1,4 @@
-import { getPaymentDb } from "../server/sqlite.js";
+import { getPaymentDb } from "../server/postgresCompat.js";
 
 const FINANCE_TABLES_IN_DELETE_ORDER = [
   "payout_attempts",
@@ -19,22 +19,9 @@ function main() {
   const db = getPaymentDb();
 
   const reset = db.transaction(() => {
-    db.exec("PRAGMA foreign_keys = ON");
-
     for (const table of FINANCE_TABLES_IN_DELETE_ORDER) {
       db.prepare(`DELETE FROM ${table}`).run();
     }
-
-    // Clear AUTOINCREMENT counters for finance-related tables where SQLite tracks them.
-    db.prepare(
-      `DELETE FROM sqlite_sequence WHERE name IN (
-        'payment_webhook_events',
-        'payout_attempts',
-        'payout_events',
-        'payout_adjustments',
-        'seller_payout_account_events'
-      )`,
-    ).run();
   });
 
   reset();

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import express from 'express';
 import { createPayoutRouter } from '../../escrowRoutes.js';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
 const sellerId = 'seller-override-test';
 const now = () => new Date().toISOString();
@@ -31,7 +31,7 @@ function clearOverrideState(): void {
 
 function seedSeller(): void {
   getPaymentDb()
-    .prepare('INSERT OR REPLACE INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
+    .prepare('INSERT INTO sellers (uid, email, is_verified) VALUES (?, ?, 1)')
     .run(sellerId, `${sellerId}@example.com`);
 }
 

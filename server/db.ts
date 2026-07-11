@@ -6,17 +6,17 @@ import { closePool, getClient, pool, query, withTransaction } from "./postgres.j
 
 dotenv.config();
 
-export interface SqliteQueryResult<Row = Record<string, unknown>> {
+export interface PgCompatQueryResult<Row = Record<string, unknown>> {
   rows: Row[];
   rowCount?: number;
 }
 
-export interface SqliteClient {
-  query(text: string, params?: unknown[]): Promise<SqliteQueryResult>;
+export interface PgCompatClient {
+  query(text: string, params?: unknown[]): Promise<PgCompatQueryResult>;
   release(): void;
 }
 
-export interface SqlitePreparedStatement {
+export interface PgCompatPreparedStatement {
   run(...params: unknown[]): { changes: number; lastInsertRowid?: number };
   get(...params: unknown[]): Record<string, unknown> | undefined;
   all(...params: unknown[]): Record<string, unknown>[];
@@ -144,12 +144,6 @@ function normalizeSchemaSql(sql: string): string {
     .replace(/\bDATETIME\b/gi, "TIMESTAMPTZ");
 }
 
-function parsePragmaTableInfo(sql: string): string | null {
-  const match = sql.trim().match(/^PRAGMA\s+table_info\s*\(\s*([^)]+?)\s*\)\s*;?$/i);
-  if (!match) return null;
-  return match[1].trim().replace(/^['"`\[]|['"`\]]$/g, "");
-}
-
 function fetchTableColumns(tableName: string): Record<string, unknown>[] {
   const result = executeSync(
     `
@@ -235,18 +229,8 @@ function executeSync(sql: string, params: unknown[] = []): { rows: Record<string
   };
 }
 
-class PgCompatDatabase {
-  prepare(sql: string): SqlitePreparedStatement {
-    const pragmaTableInfo = parsePragmaTableInfo(sql);
-
-    if (pragmaTableInfo) {
-      return {
-        run: () => ({ changes: 0 }),
-        get: () => fetchTableColumns(pragmaTableInfo)[0] ?? undefined,
-        all: () => fetchTableColumns(pragmaTableInfo),
-      };
-    }
-
+export class PgCompatDatabase {
+  prepare(sql: string): PgCompatPreparedStatement {
     return {
       run: (...params: unknown[]) => {
         const normalized = normalizeParams(buildReturningSql(normalizeSchemaSql(sql)), params);
@@ -282,9 +266,9 @@ class PgCompatDatabase {
   }
 }
 
-export const sqliteDb = new PgCompatDatabase();
+export const postgresDb = new PgCompatDatabase();
 export function getPaymentDb() {
-  return sqliteDb;
+  return postgresDb;
 }
 export async function getDatabaseClient(): Promise<PoolClient> {
   return getClient();

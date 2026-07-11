@@ -1,6 +1,6 @@
 import express, { type RequestHandler } from 'express';
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';

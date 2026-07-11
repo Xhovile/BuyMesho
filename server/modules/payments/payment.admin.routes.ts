@@ -1,6 +1,6 @@
 import express, { type RequestHandler } from 'express';
 import { hasAdminAccess } from '../../auth/adminAccess.js';
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import { payoutService } from '../payouts/payout.service.js';
 import { PAYOUT_POLICY, calculatePayoutFormula, isRetryableFailureCode } from '../payouts/payout.policy.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';

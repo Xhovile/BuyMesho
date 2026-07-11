@@ -1,10 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 
-const DB_PATH = '.tmp/connect-service.test.db';
 const BASE_ENV = {
-  PAYMENT_DB_PATH: DB_PATH,
   PAYCHANGU_SECRET_KEY: 'test-paychangu-secret',
   PAYCHANGU_WEBHOOK_SECRET: 'test-webhook-secret',
   CONNECT_TOKEN_ENCRYPTION_KEY: 'test-connect-encryption-key',

@@ -6,7 +6,7 @@ import { serverOrderService } from "../orders/order.service.js";
 import { orderRepository } from "../orders/order.repository.js";
 import { paymentRepository } from "./payment.repository.js";
 import { escrowRepository } from "../escrow/escrow.repository.js";
-import { getPaymentDb } from "../../sqlite.js";
+import { getPaymentDb } from "../../postgresCompat.js";
 import { calculateCustomerCheckoutFees } from "../payouts/payout.policy.js";
 
 const checkoutLimiter = rateLimit({

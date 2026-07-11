@@ -1,5 +1,5 @@
 import express, { type RequestHandler } from "express";
-import { getPaymentDb } from "../../sqlite.js";
+import { getPaymentDb } from "../../postgresCompat.js";
 
 export function createSellerEscrowRouter(requireAuth: RequestHandler) {
   const router = express.Router();

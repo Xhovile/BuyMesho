@@ -3,12 +3,12 @@ import {
   getIssuerLabel,
   type TotpEnrollmentRecord,
 } from "./totpService.js";
-import { sqliteDb } from "../../server/db.js";
+import { postgresDb } from "../../server/db.js";
 import { createHash, randomBytes } from "crypto";
 import type { TotpMfaStatus } from "../lib/totp.js";
 
 const TOTP_VERIFIED_SESSION_TTL_MS = 15 * 60 * 1000;
-const verifiedSessionDb = sqliteDb;
+const verifiedSessionDb = postgresDb;
 let totpTablesEnsured = false;
 
 function ensureTotpTables(): void {

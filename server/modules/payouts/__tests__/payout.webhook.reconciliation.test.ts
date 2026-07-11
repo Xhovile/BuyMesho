@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createHmac, randomUUID } from 'crypto';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { payoutWebhookHandler } from '../payout.webhooks.js';
 
 function signPayload(secret: string, payload: string): string {
@@ -22,7 +22,7 @@ function seedWebhookPayout(prefix: string) {
   db.prepare(`DELETE FROM sellers WHERE uid = ?`).run(sellerId);
   db.prepare(`DELETE FROM payment_webhook_events WHERE provider = 'paychangu_payout' AND reference = ?`).run(chargeId);
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended) VALUES (?, ?, 1, 0)`).run(
     sellerId,
     `${prefix}@example.com`,
   );

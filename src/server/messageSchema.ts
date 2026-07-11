@@ -198,7 +198,7 @@ function stripNonConstantDefault(definition: string) {
 }
 
 function ensureColumn(db: SchemaDbLike, table: string, column: string, definition: string) {
-  const rows = db.prepare(`PRAGMA table_info(${table})`).all();
+  const rows = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?`).all(table);
   if (rows.some((row) => row.name === column)) return;
 
   const alterDefinition = hasNonConstantDefault(definition)

@@ -755,7 +755,7 @@ const [editProfileForm, setEditProfileForm] = useState({
             console.log("Firestore: Profile found", profile.business_name);
             setUserProfile(profile);
 
-            // Sync with SQLite backend
+            // Sync with PostgreSQL backend
             try {
               try {
   await apiFetch("/api/sellers", {
@@ -763,10 +763,10 @@ const [editProfileForm, setEditProfileForm] = useState({
     body: JSON.stringify(profile),
   });
 } catch (e: any) {
-  console.error("SQLite: Sync failed", e?.message || e);
+  console.error("PostgreSQL: Sync failed", e?.message || e);
 }
             } catch (syncErr) {
-              console.error("SQLite: Sync error", syncErr);
+              console.error("PostgreSQL: Sync error", syncErr);
             }
 
             setAuthView("profile");
@@ -1562,14 +1562,14 @@ Open this listing: ${shareUrl}`;
       await setDoc(doc(firestore, "users", user.uid), profile);
       console.log("Auth: Profile saved to Firestore");
 
-      console.log("Auth: Syncing to SQLite...");
+      console.log("Auth: Syncing to PostgreSQL...");
       try {
         await apiFetch("/api/sellers", {
           method: "POST",
           body: JSON.stringify(profile),
         });
       } catch (e: any) {
-        console.warn("Auth: SQLite sync failed", e?.message || e);
+        console.warn("Auth: PostgreSQL sync failed", e?.message || e);
       }
 
       setUserProfile(profile);
@@ -1812,7 +1812,7 @@ Open this listing: ${shareUrl}`;
     // 3) update your local state so UI updates instantly
     setUserProfile((prev: any) => (prev ? { ...prev, is_verified: true } : prev));
 
-    // 4) sync to SQLite backend (server)
+    // 4) sync to PostgreSQL backend (server)
     await apiFetch("/api/sellers", {
       method: "POST",
       body: JSON.stringify({

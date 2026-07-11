@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { randomUUID } from 'crypto';
-import { getPaymentDb } from '../../../sqlite.js';
+import { getPaymentDb } from '../../../postgresCompat.js';
 import { payoutService } from '../payout.service.js';
 import { serverOrderService } from '../../orders/order.service.js';
 import { escrowRepository } from '../../escrow/escrow.repository.js';
@@ -40,7 +40,7 @@ function seedPayout(): void {
   const db = getPaymentDb();
   const now = new Date().toISOString();
 
-  db.prepare(`INSERT OR REPLACE INTO sellers (uid, email, is_verified, is_suspended)
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended)
     VALUES (?, ?, 1, 0)`).run(sellerId, 'retry@example.com');
 
   db.prepare(`INSERT INTO seller_payout_accounts (

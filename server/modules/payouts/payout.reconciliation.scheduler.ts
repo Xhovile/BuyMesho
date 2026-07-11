@@ -1,4 +1,4 @@
-import { getPaymentDb } from '../../sqlite.js';
+import { getPaymentDb } from '../../postgresCompat.js';
 import { payoutRepository, payoutService } from './payout.service.js';
 
 export type PayoutReconciliationSchedulerConfig = {
