@@ -12,10 +12,11 @@ import { createAdminModerationRouter } from "../modules/admin/admin.moderation.r
 import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.js";
 import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js";
 import { createAdminSummaryRouter } from "../modules/admin/admin.summary.routes.js";
-import { startPayoutReconciliationScheduler } from "../modules/payouts/payout.reconciliation.scheduler.js";
 import { createEscrowRouter } from "../routes/escrowRoutes.js";
 import { createBuyerEscrowRouter } from "../routes/escrow/buyerEscrowRoutes.js";
 import { createOrderRouter } from "./orderRoutes.js";
+import { createDisputeRouter } from "../routes/escrow/disputeRoutes.js";
+import { createPayoutRouter } from "../routes/escrow/payoutRoutes.js";
 import { getConfiguredAdminEmails } from "../auth/adminAccess.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
@@ -102,6 +103,4 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/escrow", createEscrowRouter(requireFirebaseUser));
   app.use("/api/disputes", createDisputeRouter(requireFirebaseUser));
   app.use("/api/payouts", createPayoutRouter(requireFirebaseUser));
-
-  startPayoutReconciliationScheduler();
 }
