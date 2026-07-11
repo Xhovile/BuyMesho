@@ -299,14 +299,15 @@ export default function LoginPage() {
           >
             Forgot Password?
           </button>
-          <button
-            type="button"
-            onClick={() => navigateToSignup()}
-            className="text-zinc-500 hover:text-zinc-900 hover:underline"
-          >
-            Create account
-          </button>
         </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+        >
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
+        </button>
 
         <div className="flex items-center gap-3">
           <div className="h-px flex-1 bg-zinc-200" />
@@ -327,11 +328,11 @@ export default function LoginPage() {
         </button>
 
         <button
-          type="submit"
-          disabled={loading}
-          className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
+          type="button"
+          onClick={() => navigateToSignup()}
+          className="w-full sm:w-auto min-w-[180px] text-zinc-500 hover:text-zinc-900 hover:underline font-bold"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
+          Create account
         </button>
       </form>
 
