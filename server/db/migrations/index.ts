@@ -65,7 +65,7 @@ export function runMigrations() {
           RETURN base_ts;
         END IF;
 
-        amount_text := regexp_replace(step_text, '^[+-]\s*([0-9]+(?:\.[0-9]+)?)\s+.*$', '\1');
+        amount_text := regexp_replace(step_text, '^[+-]\s*([0-9]+(?:\.[0-9]+)?)\s+.*$', '\\1');
         unit_text := lower(regexp_replace(step_text, '^[+-]\s*[0-9]+(?:\.[0-9]+)?\s*', ''));
         amount_value := amount_text::numeric;
 
