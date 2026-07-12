@@ -30,6 +30,8 @@ export default function ListingReviewsBlock({
   const [refreshKey, setRefreshKey] = useState(0);
   const [isEditingOwnReview, setIsEditingOwnReview] = useState(false);
 
+  const canReplyAsSeller = !!firebaseUser?.uid && firebaseUser.uid === listing.seller_uid;
+
   const loadReviews = useCallback(async () => {
     if (!listing?.id) return;
 
@@ -118,7 +120,7 @@ export default function ListingReviewsBlock({
             listingId={listing.id}
             initialSummary={summary}
             refreshKey={refreshKey}
-            canReply={firebaseUser?.uid === sellerUid || firebaseUser?.uid === listing.seller_uid}
+            canReply={canReplyAsSeller}
             viewerUid={firebaseUser?.uid}
             ownReviewId={viewerReview?.id ?? null}
             onEditOwnReview={handleEditOwnReview}
