@@ -33,7 +33,6 @@ type ReviewRow = {
   created_at: string;
   updated_at: string | null;
   reviewer_business_name?: string | null;
-  reviewer_profile_picture?: string | null;
   reviewer_logo?: string | null;
   reviewer_is_verified?: number | null;
 };
@@ -123,7 +122,7 @@ function serializeReview(row: ReviewRow) {
     reviewer_uid: row.reviewer_uid,
     reviewer_name: getReviewerDisplayName(row),
     reviewer_email: row.reviewer_email,
-    reviewer_avatar_url: row.reviewer_profile_picture || row.reviewer_logo || null,
+    reviewer_avatar_url: row.reviewer_logo || null,
     reviewer_badge: row.is_verified_purchase ? "Verified buyer" : null,
     rating: row.rating,
     title: row.title,
@@ -195,7 +194,6 @@ function getViewerReview(listingId: number, reviewerUid: string) {
           lr.*,
           s.business_name AS reviewer_business_name,
           s.business_logo AS reviewer_logo,
-          s.profile_picture AS reviewer_profile_picture,
           s.is_verified AS reviewer_is_verified
         FROM listing_reviews lr
         LEFT JOIN sellers s ON s.uid = lr.reviewer_uid
@@ -214,7 +212,6 @@ function getListingReviews(listingId: number, limit: number, offset: number) {
           lr.*,
           s.business_name AS reviewer_business_name,
           s.business_logo AS reviewer_logo,
-          s.profile_picture AS reviewer_profile_picture,
           s.is_verified AS reviewer_is_verified
         FROM listing_reviews lr
         LEFT JOIN sellers s ON s.uid = lr.reviewer_uid
@@ -258,32 +255,41 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const summary = getListingReviewSummary(listingId);
   const reviews = getListingReviews(listingId, limit, offset).map(serializeReview);
 
-  const viewer = req.user as VerifiedRequestUser | undefined;
-  const viewerReview = viewer ? getViewerReview(listingId, viewer.uid) : undefined;
+  let viewerReview: ReturnType<typeof serializeReview> | null = null;
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (user) {
+    const mine = getViewerReview(listingId, user.uid);
+    viewerReview = mine ? serializeReview(mine) : null;
+  }
 
   return res.json({
+    listing: {
+      id: listing.id,
+      seller_uid: listing.seller_uid,
+      is_hidden: !!listing.is_hidden,
+      deleted_at: listing.deleted_at ?? null,
+    },
     summary,
-    items: reviews,
+    reviews,
+    viewerReview,
     pagination: {
       limit,
       offset,
       total,
       hasMore: offset + reviews.length < total,
     },
-    viewerReview: viewerReview ? serializeReview(viewerReview) : null,
-    canReview: !!viewer && viewer.uid !== listing.seller_uid,
   });
 }
 
-async function upsertListingReviewHandler(req: Request, res: Response) {
-  const listingId = Number(req.params.listingId);
-  if (!Number.isInteger(listingId)) {
-    return reviewError(res, 400, "Invalid listing id");
-  }
-
+async function createListingReviewHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
   if (!user) {
     return reviewError(res, 401, "Authentication required");
+  }
+
+  const listingId = Number(req.params.listingId);
+  if (!Number.isInteger(listingId)) {
+    return reviewError(res, 400, "Invalid listing id");
   }
 
   const listing = getListingById(listingId);
@@ -291,179 +297,151 @@ async function upsertListingReviewHandler(req: Request, res: Response) {
     return reviewError(res, 404, "Listing not found");
   }
 
-  if (listing.seller_uid === user.uid) {
-    return reviewError(res, 403, "You cannot review your own listing");
-  }
-
-  const rating = Number((req.body as any)?.rating);
-  if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+  const rating = clampInt(req.body?.rating, 0, 1, 5);
+  if (!rating) {
     return reviewError(res, 400, "Rating must be between 1 and 5");
   }
 
-  const title = normalizeText((req.body as any)?.title, 80);
-  const body = normalizeText((req.body as any)?.body, 500);
+  const title = normalizeText(req.body?.title, 120);
+  const body = normalizeText(req.body?.body, 2000);
 
-  const reviewerProfile = db
-    .prepare(`SELECT business_name, email FROM sellers WHERE uid = ? LIMIT 1`)
-    .get(user.uid) as { business_name?: string | null; email?: string | null } | undefined;
+  try {
+    db.prepare(
+      `
+        INSERT INTO listing_reviews (
+          listing_id,
+          seller_uid,
+          reviewer_uid,
+          reviewer_email,
+          reviewer_name,
+          rating,
+          title,
+          body,
+          is_verified_purchase,
+          seller_reply,
+          seller_reply_at,
+          is_hidden,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL, NULL, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(listing_id, reviewer_uid) DO UPDATE SET
+          rating = excluded.rating,
+          title = excluded.title,
+          body = excluded.body,
+          updated_at = CURRENT_TIMESTAMP
+      `
+    ).run(
+      listingId,
+      listing.seller_uid,
+      user.uid,
+      user.email ?? null,
+      user.email || "Member",
+      rating,
+      title,
+      body
+    );
 
-  const reviewerName = getReviewerDisplayName({
-    reviewer_name: reviewerProfile?.business_name ?? null,
-    reviewer_business_name: reviewerProfile?.business_name ?? null,
-    reviewer_email: reviewerProfile?.email ?? null,
-  });
-
-  db.prepare(
-    `
-      INSERT INTO listing_reviews (
-        listing_id,
-        seller_uid,
-        reviewer_uid,
-        reviewer_email,
-        reviewer_name,
-        rating,
-        title,
-        body,
-        updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      ON CONFLICT(listing_id, reviewer_uid) DO UPDATE SET
-        seller_uid = excluded.seller_uid,
-        reviewer_email = excluded.reviewer_email,
-        reviewer_name = excluded.reviewer_name,
-        rating = excluded.rating,
-        title = excluded.title,
-        body = excluded.body,
-        updated_at = CURRENT_TIMESTAMP
-    `
-  ).run(listingId, listing.seller_uid, user.uid, user.email, reviewerName, rating, title, body);
-
-  const review = getViewerReview(listingId, user.uid);
-  if (!review) {
+    const updated = getViewerReview(listingId, user.uid);
+    return res.status(201).json({ success: true, review: updated ? serializeReview(updated) : null });
+  } catch (error) {
+    console.error("POST /api/listings/:listingId/reviews error:", error);
     return reviewError(res, 500, "Failed to save review");
   }
-
-  return res.status(201).json({
-    success: true,
-    review: serializeReview(review),
-    summary: getListingReviewSummary(listingId),
-  });
 }
 
-async function deleteMyListingReviewHandler(req: Request, res: Response) {
+async function updateListingReviewHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) {
+    return reviewError(res, 401, "Authentication required");
+  }
+
   const listingId = Number(req.params.listingId);
   if (!Number.isInteger(listingId)) {
     return reviewError(res, 400, "Invalid listing id");
   }
 
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) {
-    return reviewError(res, 401, "Authentication required");
-  }
-
-  const result = db
-    .prepare(`DELETE FROM listing_reviews WHERE listing_id = ? AND reviewer_uid = ?`)
-    .run(listingId, user.uid);
-
-  if (!result.changes) {
+  const review = getViewerReview(listingId, user.uid);
+  if (!review) {
     return reviewError(res, 404, "Review not found");
   }
 
-  return res.json({
-    success: true,
-    summary: getListingReviewSummary(listingId),
-  });
+  const rating = clampInt(req.body?.rating, review.rating, 1, 5);
+  const title = normalizeText(req.body?.title, 120);
+  const body = normalizeText(req.body?.body, 2000);
+
+  try {
+    db.prepare(
+      `
+        UPDATE listing_reviews
+        SET rating = ?, title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE listing_id = ? AND reviewer_uid = ?
+      `
+    ).run(rating, title, body, listingId, user.uid);
+
+    const updated = getViewerReview(listingId, user.uid);
+    return res.json({ success: true, review: updated ? serializeReview(updated) : null });
+  } catch (error) {
+    console.error("PUT /api/listings/:listingId/reviews error:", error);
+    return reviewError(res, 500, "Failed to update review");
+  }
 }
 
 async function replyToListingReviewHandler(req: Request, res: Response) {
-  const listingId = Number(req.params.listingId);
-  const reviewId = Number(req.params.reviewId);
-
-  if (!Number.isInteger(listingId) || !Number.isInteger(reviewId)) {
-    return reviewError(res, 400, "Invalid review id");
-  }
-
   const user = req.user as VerifiedRequestUser | undefined;
   if (!user) {
     return reviewError(res, 401, "Authentication required");
   }
 
+  const listingId = Number(req.params.listingId);
+  if (!Number.isInteger(listingId)) {
+    return reviewError(res, 400, "Invalid listing id");
+  }
+
   const listing = getListingById(listingId);
-  if (!listing || listing.is_hidden || listing.deleted_at) {
+  if (!listing) {
     return reviewError(res, 404, "Listing not found");
   }
 
   if (!canUserReplyToListing(listing, user)) {
-    return reviewError(res, 403, "Only the seller or an admin can reply to reviews");
+    return reviewError(res, 403, "You cannot reply to this review");
   }
 
-  const reply = normalizeText((req.body as any)?.reply, 500);
-
-  const reviewExists = db
-    .prepare(`SELECT id FROM listing_reviews WHERE id = ? AND listing_id = ? LIMIT 1`)
-    .get(reviewId, listingId) as { id: number } | undefined;
-
-  if (!reviewExists) {
+  const review = getViewerReview(listingId, req.body?.reviewerUid || "");
+  if (!review) {
     return reviewError(res, 404, "Review not found");
   }
 
-  db.prepare(
-    `
-      UPDATE listing_reviews
-      SET seller_reply = ?,
-          seller_reply_at = CASE WHEN ? IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END,
-          updated_at = CURRENT_TIMESTAMP
-      WHERE id = ? AND listing_id = ?
-    `
-  ).run(reply, reply, reviewId, listingId);
-
-  const updated = db
-    .prepare(
-      `
-        SELECT
-          lr.*,
-          s.business_name AS reviewer_business_name,
-          s.business_logo AS reviewer_logo,
-          s.profile_picture AS reviewer_profile_picture,
-          s.is_verified AS reviewer_is_verified
-        FROM listing_reviews lr
-        LEFT JOIN sellers s ON s.uid = lr.reviewer_uid
-        WHERE lr.id = ? AND lr.listing_id = ?
-        LIMIT 1
-      `
-    )
-    .get(reviewId, listingId) as ReviewRow | undefined;
-
-  if (!updated) {
-    return reviewError(res, 500, "Failed to update review reply");
+  const reply = normalizeText(req.body?.reply, 2000);
+  if (!reply) {
+    return reviewError(res, 400, "Reply is required");
   }
 
-  return res.json({
-    success: true,
-    review: serializeReview(updated),
-    summary: getListingReviewSummary(listingId),
-  });
+  try {
+    db.prepare(
+      `
+        UPDATE listing_reviews
+        SET seller_reply = ?, seller_reply_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        WHERE listing_id = ? AND reviewer_uid = ?
+      `
+    ).run(reply, listingId, review.reviewer_uid);
+
+    const updated = getViewerReview(listingId, review.reviewer_uid);
+    return res.json({ success: true, review: updated ? serializeReview(updated) : null });
+  } catch (error) {
+    console.error("POST /api/listings/:listingId/reviews/reply error:", error);
+    return reviewError(res, 500, "Failed to save seller reply");
+  }
 }
 
 export function registerReviewsRoutes(app: Express) {
-  ensureReviewsSchema();
-
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
-  app.get("/api/listings/:listingId/reviews", attachOptionalAuth, (req, res) => {
-    void listListingReviewsHandler(req, res);
-  });
+  ensureReviewsSchema();
 
-  app.post("/api/listings/:listingId/reviews", requireAuth, (req, res) => {
-    void upsertListingReviewHandler(req, res);
-  });
-
-  app.delete("/api/listings/:listingId/reviews/me", requireAuth, (req, res) => {
-    void deleteMyListingReviewHandler(req, res);
-  });
-
-  app.patch("/api/listings/:listingId/reviews/:reviewId/reply", requireAuth, (req, res) => {
-    void replyToListingReviewHandler(req, res);
-  });
+  app.get("/api/listings/:listingId/reviews", attachOptionalAuth, (req, res) => void listListingReviewsHandler(req, res));
+  app.post("/api/listings/:listingId/reviews", requireAuth, (req, res) => void createListingReviewHandler(req, res));
+  app.put("/api/listings/:listingId/reviews", requireAuth, (req, res) => void updateListingReviewHandler(req, res));
+  app.post("/api/listings/:listingId/reviews/reply", requireAuth, (req, res) => void replyToListingReviewHandler(req, res));
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
