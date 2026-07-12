@@ -234,6 +234,10 @@ function canUserReplyToListing(listing: ListingRow, user: VerifiedRequestUser) {
   return user.is_admin || listing.seller_uid === user.uid;
 }
 
+function canUserReviewListing(listing: ListingRow, user?: VerifiedRequestUser | undefined) {
+  return !!user && user.uid !== listing.seller_uid;
+}
+
 function reviewError(res: Response, status: number, error: string) {
   return res.status(status).json({ error });
 }
@@ -272,6 +276,7 @@ async function listListingReviewsHandler(req: Request, res: Response) {
     summary,
     reviews,
     viewerReview,
+    canReview: canUserReviewListing(listing, user),
     pagination: {
       limit,
       offset,
@@ -295,6 +300,10 @@ async function createListingReviewHandler(req: Request, res: Response) {
   const listing = getListingById(listingId);
   if (!listing || listing.is_hidden || listing.deleted_at) {
     return reviewError(res, 404, "Listing not found");
+  }
+
+  if (!canUserReviewListing(listing, user)) {
+    return reviewError(res, 403, "You cannot review your own listing");
   }
 
   const rating = clampInt(req.body?.rating, 0, 1, 5);
