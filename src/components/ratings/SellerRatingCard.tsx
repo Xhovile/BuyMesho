@@ -45,12 +45,12 @@ export default function SellerRatingCard({
     };
   });
   const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
-  const ratingCount = ratingSummary?.ratingCount ?? derivedRatingCount;
+  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (ratingSummary?.ratingCount ?? 0);
   const derivedAverage =
     ratingCount > 0
       ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
       : 0;
-  const averageRating = ratingCount > 0 ? derivedAverage : 0;
+  const averageRating = ratingCount > 0 ? derivedAverage : (ratingSummary?.averageRating ?? 0);
   const hasRatings = ratingCount > 0;
 
   return (
