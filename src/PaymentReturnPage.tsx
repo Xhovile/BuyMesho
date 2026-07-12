@@ -13,7 +13,7 @@ import {
 import { apiFetch } from "./lib/api";
 import {
   readBuyerPayments,
-  removeBuyerCartItem,
+  removeBuyerCartItems,
   updateBuyerPaymentStatus,
 } from "./lib/buyerState";
 
@@ -36,6 +36,7 @@ interface BuyerPaymentRecord {
   listingId?: string | null;
   listingIds?: string[];
   orderId?: string | null;
+  paymentId?: string | null;
 }
 
 const buildListingDetailsPath = (listingId: string | null) =>
@@ -45,6 +46,12 @@ const buildListingDetailsPath = (listingId: string | null) =>
 
 const normalizeStatus = (value: string | null | undefined) =>
   String(value ?? "").trim().toLowerCase();
+
+const getPurchasedListingIds = (payment: BuyerPaymentRecord | null): string[] => {
+  if (!payment) return [];
+  if (payment.listingIds?.length) return payment.listingIds.map(String).filter(Boolean);
+  return payment.listingId ? [String(payment.listingId)] : [];
+};
 
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
@@ -67,7 +74,11 @@ export default function PaymentReturnPage() {
 
     setFallbackListingId(listingIdFromReturn);
 
-    if (cancelled === "1" || paymentStatusFromUrl === "cancelled" || paymentStatusFromUrl === "canceled") {
+    if (
+      cancelled === "1" ||
+      paymentStatusFromUrl === "cancelled" ||
+      paymentStatusFromUrl === "canceled"
+    ) {
       setStatus("cancelled");
       return;
     }
@@ -83,7 +94,7 @@ export default function PaymentReturnPage() {
         (a, b) =>
           new Date(b.updatedAt ?? 0).getTime() -
           new Date(a.updatedAt ?? 0).getTime(),
-      )[0];
+      )[0] ?? null;
 
     const txRef = txRefFromUrl?.trim() || null;
 
@@ -131,6 +142,22 @@ export default function PaymentReturnPage() {
           orderStatus === "processing";
 
         if (isSuccessful) {
+          const matchedPayment =
+            buyerPayments.find(
+              (payment) => payment.txRef === txRef || payment.reference === txRef,
+            ) ?? latestPendingPayment;
+
+          if (matchedPayment) {
+            updateBuyerPaymentStatus(matchedPayment.reference || txRef, {
+              status: "captured",
+              txRef,
+              orderId: result.orderId ?? matchedPayment.orderId ?? null,
+              paymentId: matchedPayment.paymentId,
+            });
+
+            removeBuyerCartItems(getPurchasedListingIds(matchedPayment));
+          }
+
           setOrderId(result.orderId ?? null);
           setStatus("success");
 
