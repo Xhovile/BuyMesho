@@ -257,7 +257,7 @@ async function listListingReviewsHandler(req: Request, res: Response) {
   const offset = clampInt(req.query.offset, 0, 0, 100000);
   const total = getReviewsTotal(listingId);
   const summary = getListingReviewSummary(listingId);
-  const reviews = getListingReviews(listingId, limit, offset).map(serializeReview);
+  const items = getListingReviews(listingId, limit, offset).map(serializeReview);
 
   let viewerReview: ReturnType<typeof serializeReview> | null = null;
   const user = req.user as VerifiedRequestUser | undefined;
@@ -274,14 +274,15 @@ async function listListingReviewsHandler(req: Request, res: Response) {
       deleted_at: listing.deleted_at ?? null,
     },
     summary,
-    reviews,
+    items,
+    reviews: items,
     viewerReview,
     canReview: canUserReviewListing(listing, user),
     pagination: {
       limit,
       offset,
       total,
-      hasMore: offset + reviews.length < total,
+      hasMore: offset + items.length < total,
     },
   });
 }
