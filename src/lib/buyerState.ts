@@ -104,6 +104,19 @@ export const removeBuyerCartItem = (listingId: string) => {
   emitBuyerCartUpdated();
 };
 
+export const removeBuyerCartItems = (listingIds: string[]) => {
+  const cartKey = getBuyerCartKey();
+  if (!cartKey || listingIds.length === 0) return;
+
+  const listingIdSet = new Set(listingIds.map(String));
+  const current = readBuyerCart();
+  writeJson(
+    cartKey,
+    current.filter((item) => !listingIdSet.has(String(item.listingId))),
+  );
+  emitBuyerCartUpdated();
+};
+
 export const clearBuyerCart = () => {
   const key = getBuyerCartKey();
   if (!key) return;
