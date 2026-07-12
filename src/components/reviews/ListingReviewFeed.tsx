@@ -19,6 +19,10 @@ type ListingReviewFeedProps = {
 const INITIAL_LIMIT = 3;
 const PAGE_SIZE = 5;
 
+type ReviewFeedPayload = ListingReviewFeedResponse & {
+  reviews?: ListingReview[];
+};
+
 export default function ListingReviewFeed({
   listingId,
   compact = false,
@@ -53,13 +57,14 @@ export default function ListingReviewFeed({
       try {
         const result = (await apiFetch(
           `/api/listings/${listingId}/reviews?limit=${replace ? INITIAL_LIMIT : PAGE_SIZE}&offset=${nextOffset}`
-        )) as ListingReviewFeedResponse;
+        )) as ReviewFeedPayload;
 
         setSummary(result.summary ?? null);
         setTotal(result.pagination?.total ?? 0);
         setHasMore(Boolean(result.pagination?.hasMore));
         setOffset((result.pagination?.offset ?? 0) + (result.pagination?.limit ?? 0));
-        setItems((previous) => (replace ? result.items ?? [] : [...previous, ...(result.items ?? [])]));
+        const receivedItems = (result.items ?? result.reviews ?? []) as ListingReview[];
+        setItems((previous) => (replace ? receivedItems : [...previous, ...receivedItems]));
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : "Failed to load review feed.");
       } finally {
