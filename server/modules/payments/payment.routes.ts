@@ -185,6 +185,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       return res.status(201).json({
         success: true,
         orderId,
+        paymentId: paymentResult.id,
+        reference: paymentResult.reference,
+        checkoutUrl: paymentResult.checkoutUrl ?? null,
         payment: paymentResult,
         order: orderRepository.findById(orderId),
         totals: {
