@@ -15,12 +15,12 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
   });
 
   const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
-  const ratingCount = summary?.ratingCount ?? derivedRatingCount;
+  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (summary?.ratingCount ?? 0);
   const derivedAverage =
     ratingCount > 0
       ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
       : 0;
-  const averageRating = ratingCount > 0 ? derivedAverage.toFixed(1) : "0.0";
+  const averageRating = ratingCount > 0 ? derivedAverage.toFixed(1) : (summary?.averageRating ?? 0).toFixed(1);
   const latestReviewLabel = summary?.latestReviewAt ? formatDate(summary.latestReviewAt) : "—";
 
   return (
