@@ -12,9 +12,14 @@ type SettlementRoute = "escrow" | "connect";
 
 interface CheckoutResult {
   orderId: string;
-  paymentId: string;
-  reference: string;
-  checkoutUrl: string | null;
+  paymentId?: string;
+  reference?: string;
+  checkoutUrl?: string | null;
+  payment?: {
+    id?: string;
+    reference?: string;
+    checkoutUrl?: string | null;
+  };
 }
 
 interface CheckoutModalProps {
@@ -105,26 +110,30 @@ export default function CheckoutModal({
         }),
       })) as CheckoutResult;
 
+      const checkoutUrl = result.checkoutUrl ?? result.payment?.checkoutUrl ?? null;
+      const paymentId = result.paymentId ?? result.payment?.id ?? "";
+      const reference = result.reference ?? result.payment?.reference ?? "";
+
       touchBuyerPaymentFromCheckout({
-        reference: result.reference,
+        reference,
         orderId: result.orderId,
-        paymentId: result.paymentId,
+        paymentId,
         listingId: String(listing.id),
         listingIds: [String(listing.id)],
         listingTitle: listing.name,
         quantity,
         totalPrice: feeBreakdown.itemTotalAmount,
-        checkoutUrl: result.checkoutUrl,
-        txRef: result.reference,
+        checkoutUrl,
+        txRef: reference,
       });
 
-      setStep("success");
-
-      if (result.checkoutUrl) {
-        setTimeout(() => {
-          window.location.href = result.checkoutUrl!;
-        }, 800);
+      if (checkoutUrl) {
+        setStep("success");
+        window.location.href = checkoutUrl;
+        return;
       }
+
+      throw new Error("Payment gateway did not return a checkout URL.");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
       setStep("error");
