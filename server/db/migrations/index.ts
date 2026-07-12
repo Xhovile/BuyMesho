@@ -36,6 +36,55 @@ export function runMigrations() {
     postgresDb.exec(sql);
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
+    postgresDb.exec(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS profile_picture TEXT;`);
+    postgresDb.exec(`ALTER TABLE listings ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ USING NULLIF(hard_delete_after, '')::timestamptz;`);
+    postgresDb.exec(`
+      CREATE OR REPLACE FUNCTION datetime(base text, modifier text)
+      RETURNS TIMESTAMPTZ
+      LANGUAGE plpgsql
+      AS $$
+      DECLARE
+        base_ts TIMESTAMPTZ;
+        step_text TEXT;
+        amount_text TEXT;
+        amount_value NUMERIC;
+        unit_text TEXT;
+      BEGIN
+        IF base IS NULL OR lower(base) = 'now' THEN
+          base_ts := CURRENT_TIMESTAMP;
+        ELSE
+          base_ts := base::timestamptz;
+        END IF;
+
+        IF modifier IS NULL OR btrim(modifier) = '' THEN
+          RETURN base_ts;
+        END IF;
+
+        step_text := btrim(modifier);
+        IF left(step_text, 1) NOT IN ('+', '-') THEN
+          RETURN base_ts;
+        END IF;
+
+        amount_text := regexp_replace(step_text, '^[+-]\s*([0-9]+(?:\.[0-9]+)?)\s+.*$', '\1');
+        unit_text := lower(regexp_replace(step_text, '^[+-]\s*[0-9]+(?:\.[0-9]+)?\s*', ''));
+        amount_value := amount_text::numeric;
+
+        IF unit_text LIKE 'day%' THEN
+          RETURN base_ts + ((CASE WHEN left(step_text, 1) = '-' THEN -1 ELSE 1 END) * amount_value) * INTERVAL '1 day';
+        ELSIF unit_text LIKE 'hour%' THEN
+          RETURN base_ts + ((CASE WHEN left(step_text, 1) = '-' THEN -1 ELSE 1 END) * amount_value) * INTERVAL '1 hour';
+        ELSIF unit_text LIKE 'minute%' THEN
+          RETURN base_ts + ((CASE WHEN left(step_text, 1) = '-' THEN -1 ELSE 1 END) * amount_value) * INTERVAL '1 minute';
+        ELSIF unit_text LIKE 'week%' THEN
+          RETURN base_ts + ((CASE WHEN left(step_text, 1) = '-' THEN -1 ELSE 1 END) * amount_value) * INTERVAL '1 week';
+        ELSIF unit_text LIKE 'month%' THEN
+          RETURN base_ts + ((CASE WHEN left(step_text, 1) = '-' THEN -1 ELSE 1 END) * amount_value) * INTERVAL '1 month';
+        END IF;
+
+        RETURN base_ts;
+      END;
+      $$;
+    `);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`Migration step skipped because the schema could not be applied safely: ${message}`);
