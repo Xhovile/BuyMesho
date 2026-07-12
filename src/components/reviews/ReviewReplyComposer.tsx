@@ -50,6 +50,10 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
     }
   };
 
+  if (!canReply) {
+    return null;
+  }
+
   return (
     <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <button
@@ -71,7 +75,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             value={reply}
             onChange={(event) => setReply(event.target.value.slice(0, MAX_REPLY_LENGTH))}
             rows={4}
-            disabled={!canReply || submitting}
+            disabled={submitting}
             placeholder="Write a short reply to this review..."
             className="mt-3 min-h-[110px] w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-900 outline-none transition focus:border-zinc-900 disabled:bg-zinc-100 disabled:text-zinc-500"
           />
@@ -89,7 +93,7 @@ export default function ReviewReplyComposer({ listingId, review, canReply, onSav
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={!canReply || submitting}
+              disabled={submitting}
               className="inline-flex items-center justify-center rounded-full bg-zinc-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitting ? "Saving..." : "Save reply"}
