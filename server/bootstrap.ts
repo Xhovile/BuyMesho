@@ -61,9 +61,10 @@ export async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "dist")));
+    const staticDir = path.join(process.cwd(), "dist");
+    app.use(express.static(staticDir));
     app.get("*", (_req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
+      res.sendFile(path.join(staticDir, "index.html"));
     });
    }
   
