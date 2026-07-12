@@ -43,6 +43,9 @@ const buildListingDetailsPath = (listingId: string | null) =>
     ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0`
     : EXPLORE_PATH;
 
+const normalizeStatus = (value: string | null | undefined) =>
+  String(value ?? "").trim().toLowerCase();
+
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
   const [reference, setReference] = useState<string | null>(null);
@@ -54,11 +57,20 @@ export default function PaymentReturnPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const txRefFromUrl = params.get("tx_ref") ?? params.get("txRef");
+    const txRefFromUrl =
+      params.get("tx_ref") ?? params.get("txRef") ?? params.get("reference");
     const cancelled = params.get("cancelled");
+    const paymentStatusFromUrl = normalizeStatus(
+      params.get("payment_status") ?? params.get("paymentStatus") ?? params.get("status"),
+    );
     const listingIdFromReturn = params.get("listingId");
 
     setFallbackListingId(listingIdFromReturn);
+
+    if (cancelled === "1" || paymentStatusFromUrl === "cancelled" || paymentStatusFromUrl === "canceled") {
+      setStatus("cancelled");
+      return;
+    }
 
     const rawPayments = readBuyerPayments();
     const buyerPayments = Array.isArray(rawPayments)
@@ -73,26 +85,23 @@ export default function PaymentReturnPage() {
           new Date(a.updatedAt ?? 0).getTime(),
       )[0];
 
-    const txRef =
-      txRefFromUrl ??
-      latestPendingPayment?.txRef ??
-      latestPendingPayment?.reference ??
-      null;
-
-    if (cancelled === "1") {
-      if (txRef) {
-        updateBuyerPaymentStatus(txRef, {
-          status: "cancelled",
-          txRef,
-        });
-      }
-      setStatus("cancelled");
-      return;
-    }
+    const txRef = txRefFromUrl?.trim() || null;
 
     if (!txRef) {
+      if (latestPendingPayment?.txRef || latestPendingPayment?.reference) {
+        updateBuyerPaymentStatus(
+          String(latestPendingPayment.txRef ?? latestPendingPayment.reference),
+          {
+            status: "cancelled",
+            txRef: String(latestPendingPayment.txRef ?? latestPendingPayment.reference),
+          },
+        );
+      }
+
       setStatus("failed");
-      setErrorMessage("No payment reference could be recovered for verification.");
+      setErrorMessage(
+        "No completed payment was detected for this session. You can go back to the app and try again.",
+      );
       return;
     }
 
@@ -111,12 +120,13 @@ export default function PaymentReturnPage() {
         if (!mounted) return;
 
         const paymentVerified = Boolean(result.paymentVerified);
-        const orderStatus = String(result.orderStatus ?? "").toLowerCase();
-        const paymentStatus = String(result.paymentStatus ?? "").toLowerCase();
+        const orderStatus = normalizeStatus(result.orderStatus);
+        const paymentStatus = normalizeStatus(result.paymentStatus);
 
         const isSuccessful =
           paymentVerified ||
           paymentStatus === "captured" ||
+          paymentStatus === "paid" ||
           orderStatus === "paid" ||
           orderStatus === "processing";
 
@@ -136,10 +146,14 @@ export default function PaymentReturnPage() {
         const isFailed =
           paymentStatus === "failed" ||
           paymentStatus === "cancelled" ||
-          paymentStatus === "canceled";
+          paymentStatus === "canceled" ||
+          paymentStatus === "expired" ||
+          orderStatus === "failed" ||
+          orderStatus === "cancelled" ||
+          orderStatus === "canceled";
 
         if (isFailed) {
-          setErrorMessage(`Payment status: ${paymentStatus}`);
+          setErrorMessage(`Payment status: ${paymentStatus || orderStatus}`);
           setStatus("failed");
           return;
         }
@@ -147,14 +161,10 @@ export default function PaymentReturnPage() {
         attempts += 1;
 
         if (attempts >= 8) {
-          setStatus("success");
-
-          timer = window.setTimeout(() => {
-            navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
-              replace: true,
-            });
-          }, 1200);
-
+          setErrorMessage(
+            "We could not confirm a completed payment for this session. Your order was not marked as paid.",
+          );
+          setStatus("failed");
           return;
         }
 
