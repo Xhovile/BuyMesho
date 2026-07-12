@@ -357,6 +357,23 @@ function CartPageContent() {
           </div>
         </section>
       </div>
+      <div className="fixed inset-x-0 bottom-0 z-50 border-t border-zinc-200 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-7xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <button
+            type="button"
+            onClick={() => void handlePay()}
+            disabled={!items.length || checkoutLoading}
+            className="inline-flex w-full items-center justify-between rounded-2xl bg-zinc-950 px-5 py-4 text-white shadow-lg shadow-zinc-950/10 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <span className="text-sm font-black uppercase tracking-[0.18em]">
+              {checkoutLoading ? "Starting checkout…" : "Buy Now"}
+            </span>
+            <span className="text-base font-black">
+              {formatMoney(subtotal)}
+            </span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
