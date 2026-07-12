@@ -46,12 +46,11 @@ export default function SellerRatingCard({
   });
   const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
   const ratingCount = ratingSummary?.ratingCount ?? derivedRatingCount;
-  const derivedAverage = ratingCount > 0
-    ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
-    : 0;
-  const averageRating = ratingSummary && (ratingSummary.averageRating > 0 || ratingCount === 0)
-    ? ratingSummary.averageRating
-    : derivedAverage;
+  const derivedAverage =
+    ratingCount > 0
+      ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
+      : 0;
+  const averageRating = ratingCount > 0 ? derivedAverage : 0;
   const hasRatings = ratingCount > 0;
 
   return (
@@ -59,11 +58,11 @@ export default function SellerRatingCard({
       <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Rating</p>
       <div className="mt-3 flex items-center gap-3 flex-wrap">
         <div className="text-4xl font-black tracking-tight text-zinc-900">
-          {ratingSummary ? averageRating.toFixed(1) : "—"}
+          {ratingSummary || hasRatings ? averageRating.toFixed(1) : "—"}
         </div>
         <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
           <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-          {ratingSummary
+          {ratingSummary || hasRatings
             ? `${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
             : "No ratings yet"}
         </div>
