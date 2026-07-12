@@ -21,8 +21,21 @@ type ListingTrustBlockProps = {
 };
 
 export default function ListingTrustBlock({ listing, seller, ratingSummary }: ListingTrustBlockProps) {
-  const sellerRating = ratingSummary ? ratingSummary.averageRating.toFixed(1) : null;
-  const ratingCount = ratingSummary?.ratingCount ?? 0;
+  const distribution = [5, 4, 3, 2, 1].map((stars) => {
+    const matched = ratingSummary?.distribution?.find((row) => row.stars === stars);
+    return {
+      stars,
+      count: matched?.count ?? 0,
+      percentage: matched?.percentage ?? 0,
+    };
+  });
+  const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
+  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (ratingSummary?.ratingCount ?? 0);
+  const derivedAverage =
+    ratingCount > 0
+      ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
+      : 0;
+  const sellerRating = ratingCount > 0 ? derivedAverage.toFixed(1) : null;
   const sellerUid = seller?.uid || listing.seller_uid;
   const sellerName = (seller?.business_name || listing.business_name || "Seller").trim() || "Seller";
 
