@@ -23,6 +23,7 @@ export default function ListingReviewCard({
   onReviewChanged,
 }: ListingReviewCardProps) {
   const badge = review.reviewer_badge ?? (review.is_verified_purchase ? "Verified buyer" : null);
+  const showReplyComposer = Boolean(canReply && !isOwnReview);
 
   return (
     <article className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
@@ -81,7 +82,7 @@ export default function ListingReviewCard({
         </div>
       ) : null}
 
-      {canReply && !isOwnReview ? <ReviewReplyComposer listingId={listingId} review={review} canReply={canReply} onSaved={onReviewChanged} /> : null}
+      {showReplyComposer ? <ReviewReplyComposer listingId={listingId} review={review} canReply={showReplyComposer} onSaved={onReviewChanged} /> : null}
 
       {!review.body ? (
         <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500">
