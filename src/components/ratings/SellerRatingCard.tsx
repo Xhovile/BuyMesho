@@ -36,7 +36,6 @@ export default function SellerRatingCard({
   onRate,
   onRemoveRating,
 }: SellerRatingCardProps) {
-  const hasRatings = Boolean(ratingSummary && ratingSummary.ratingCount > 0);
   const distribution = FULL_DISTRIBUTION.map((stars) => {
     const matched = ratingSummary?.distribution?.find((row) => row.stars === stars);
     return {
@@ -45,23 +44,32 @@ export default function SellerRatingCard({
       percentage: matched?.percentage ?? 0,
     };
   });
+  const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
+  const ratingCount = ratingSummary?.ratingCount ?? derivedRatingCount;
+  const derivedAverage = ratingCount > 0
+    ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
+    : 0;
+  const averageRating = ratingSummary && (ratingSummary.averageRating > 0 || ratingCount === 0)
+    ? ratingSummary.averageRating
+    : derivedAverage;
+  const hasRatings = ratingCount > 0;
 
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
       <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Rating</p>
       <div className="mt-3 flex items-center gap-3 flex-wrap">
         <div className="text-4xl font-black tracking-tight text-zinc-900">
-          {ratingSummary ? ratingSummary.averageRating.toFixed(1) : "—"}
+          {ratingSummary ? averageRating.toFixed(1) : "—"}
         </div>
         <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
           <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
           {ratingSummary
-            ? `${ratingSummary.ratingCount} rating${ratingSummary.ratingCount === 1 ? "" : "s"}`
+            ? `${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
             : "No ratings yet"}
         </div>
         {hasRatings ? (
           <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-[0.1em]">
-            {ratingTierLabel(ratingSummary!.averageRating)}
+            {ratingTierLabel(averageRating)}
           </span>
         ) : null}
       </div>
