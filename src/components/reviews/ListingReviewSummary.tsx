@@ -5,10 +5,6 @@ import { formatDate } from "../listingDetails/ListingDetailsShared";
 const STAR_ROWS = [5, 4, 3, 2, 1];
 
 export default function ListingReviewSummary({ summary }: { summary: ListingReviewSummary | null }) {
-  const ratingCount = summary?.ratingCount ?? 0;
-  const averageRating = summary ? summary.averageRating.toFixed(1) : "0.0";
-  const latestReviewLabel = summary?.latestReviewAt ? formatDate(summary.latestReviewAt) : "—";
-
   const distribution = STAR_ROWS.map((stars) => {
     const matched = summary?.distribution.find((row) => row.stars === stars);
     return {
@@ -17,6 +13,16 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
       percentage: matched?.percentage ?? 0,
     };
   });
+
+  const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
+  const ratingCount = summary?.ratingCount ?? derivedRatingCount;
+  const derivedAverage = ratingCount > 0
+    ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
+    : 0;
+  const averageRating = summary && (summary.averageRating > 0 || ratingCount === 0)
+    ? summary.averageRating.toFixed(1)
+    : derivedAverage.toFixed(1);
+  const latestReviewLabel = summary?.latestReviewAt ? formatDate(summary.latestReviewAt) : "—";
 
   return (
     <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
