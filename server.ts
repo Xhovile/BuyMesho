@@ -26,6 +26,7 @@ import { createAdminAccessRouter } from "./server/modules/admin/admin.access.rou
 import { createAdminSummaryRouter } from "./server/modules/admin/admin.summary.routes.js";
 import { startPayoutReconciliationScheduler } from "./server/modules/payouts/payout.reconciliation.scheduler.js";
 import { createEscrowRouter, createDisputeRouter, createPayoutRouter } from "./server/routes/escrowRoutes.js";
+import { createCartRouter } from "./server/routes/cart.routes.js";
 import { uploadBufferToCloudinary } from "./server/lib/cloudinaryUpload.js";
 import {
   isMeaningfulTitle,
@@ -69,6 +70,7 @@ async function startServer() {
   // Ensure PayChangu webhook receives raw JSON bytes for signature verification.
   app.use('/api/payments/paychangu/webhook', express.raw({ type: 'application/json' }));
   app.use('/api/payments/paychangu-payout/webhook', express.raw({ type: 'application/json' }));
+  app.use('/api/cart', createCartRouter(requireFirebaseUser));
 
   // Basic middleware
   app.use(express.json({ limit: '10mb' }));
