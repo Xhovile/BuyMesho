@@ -73,6 +73,12 @@ const cacheBuyerCart = (items: BuyerCartItem[]) => {
   emitBuyerCartUpdated();
 };
 
+const cacheBuyerPayments = (records: BuyerPaymentRecord[]) => {
+  const key = getBuyerPaymentsKey();
+  if (!key) return;
+  writeJson(key, records.slice(0, 20));
+};
+
 export const readBuyerCart = (): BuyerCartItem[] => {
   const key = getBuyerCartKey();
   if (!key) return [];
@@ -89,103 +95,54 @@ export const refreshBuyerCartFromServer = async () => {
   const key = getBuyerCartKey();
   if (!key) return [];
 
-  try {
-    const result = await apiFetch("/api/cart");
-    const items = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
-    cacheBuyerCart(items);
-    return items;
-  } catch {
-    return readBuyerCart();
-  }
+  const result = await apiFetch("/api/cart");
+  const items = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
+  cacheBuyerCart(items);
+  return items;
 };
 
 export const setBuyerCartItem = async (item: BuyerCartItem) => {
   const key = getBuyerCartKey();
-  if (!key) return;
-
-  try {
-    const result = await apiFetch("/api/cart/items", {
-      method: "POST",
-      body: JSON.stringify({
-        listingId: item.listingId,
-        quantity: item.quantity,
-      }),
-    });
-
-    const nextItem = result?.item as BuyerCartItem | undefined;
-    const current = readBuyerCart();
-    const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
-
-    if (index >= 0 && nextItem) {
-      current[index] = nextItem;
-    } else if (nextItem) {
-      current.unshift(nextItem);
-    } else {
-      current.unshift(item);
-    }
-
-    cacheBuyerCart(current);
-  } catch {
-    const current = readBuyerCart();
-    const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
-
-    if (index >= 0) {
-      current[index] = { ...current[index], ...item, addedAt: item.addedAt };
-    } else {
-      current.unshift(item);
-    }
-
-    cacheBuyerCart(current);
+  if (!key) {
+    throw new Error("Please log in again before using your cart.");
   }
+
+  await apiFetch("/api/cart/items", {
+    method: "POST",
+    body: JSON.stringify({
+      listingId: item.listingId,
+      quantity: item.quantity,
+    }),
+  });
+
+  await refreshBuyerCartFromServer();
 };
 
 export const updateBuyerCartItemQuantity = async (listingId: string, quantity: number) => {
   const key = getBuyerCartKey();
-  if (!key) return;
-
-  try {
-    const result = await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ quantity }),
-    });
-
-    const nextItem = result?.item as BuyerCartItem | undefined;
-    const current = readBuyerCart();
-    const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
-
-    if (index >= 0 && nextItem) {
-      current[index] = nextItem;
-      cacheBuyerCart(current);
-      return;
-    }
-  } catch {
-    const current = readBuyerCart();
-    const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
-    if (index < 0) return;
-
-    current[index] = {
-      ...current[index],
-      quantity,
-      totalPrice: quantity * Number(current[index].unitPrice),
-    };
-    cacheBuyerCart(current);
+  if (!key) {
+    throw new Error("Please log in again before updating your cart.");
   }
+
+  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ quantity }),
+  });
+
+  await refreshBuyerCartFromServer();
 };
 
 export const removeBuyerCartItem = async (listingId: string) => {
   const key = getBuyerCartKey();
-  if (!key) return;
-
-  try {
-    await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
-      method: "DELETE",
-    });
-  } catch {
-    // fall back silently
+  if (!key) {
+    throw new Error("Please log in again before updating your cart.");
   }
 
-  const current = readBuyerCart();
-  cacheBuyerCart(current.filter((item) => String(item.listingId) !== String(listingId)));
+  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+    method: "DELETE",
+  });
+
+  await refreshBuyerCartFromServer();
 };
 
 export const removeBuyerCartItems = async (listingIds: string[]) => {
@@ -214,13 +171,11 @@ export const subtractBuyerCartItemQuantities = async (
 
 export const clearBuyerCart = async () => {
   const key = getBuyerCartKey();
-  if (!key) return;
-
-  try {
-    await apiFetch("/api/cart", { method: "DELETE" });
-  } catch {
-    // fall back silently
+  if (!key) {
+    throw new Error("Please log in again before clearing your cart.");
   }
+
+  await apiFetch("/api/cart", { method: "DELETE" });
 
   localStorage.removeItem(key);
   emitBuyerCartUpdated();
@@ -257,7 +212,7 @@ export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
     current.unshift(record);
   }
 
-  writeJson(paymentsKey, current.slice(0, 20));
+  cacheBuyerPayments(current);
 };
 
 export const clearBuyerPaymentRecords = () => {
@@ -296,5 +251,5 @@ export const updateBuyerPaymentStatus = (
       : item,
   );
 
-  writeJson(paymentsKey, next);
+  cacheBuyerPayments(next);
 };
