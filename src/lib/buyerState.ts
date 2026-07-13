@@ -1,4 +1,5 @@
 import { auth } from "../firebase";
+import { apiFetch } from "./api";
 
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
 const BUYER_PAYMENTS_KEY = "__buymesho_buyer_payments";
@@ -65,6 +66,13 @@ const getScopedStorageKey = (baseKey: string) => {
 const getBuyerCartKey = () => getScopedStorageKey(BUYER_CART_KEY);
 const getBuyerPaymentsKey = () => getScopedStorageKey(BUYER_PAYMENTS_KEY);
 
+const cacheBuyerCart = (items: BuyerCartItem[]) => {
+  const key = getBuyerCartKey();
+  if (!key) return;
+  writeJson(key, items.slice(0, 20));
+  emitBuyerCartUpdated();
+};
+
 export const readBuyerCart = (): BuyerCartItem[] => {
   const key = getBuyerCartKey();
   if (!key) return [];
@@ -77,90 +85,143 @@ export const readBuyerPayments = (): BuyerPaymentRecord[] => {
   return readJson(key, []);
 };
 
-export const setBuyerCartItem = (item: BuyerCartItem) => {
-  const cartKey = getBuyerCartKey();
-  if (!cartKey) return;
+export const refreshBuyerCartFromServer = async () => {
+  const key = getBuyerCartKey();
+  if (!key) return [];
 
-  const current = readBuyerCart();
-  const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
-
-  if (index >= 0) {
-    current[index] = { ...current[index], ...item, addedAt: item.addedAt };
-  } else {
-    current.unshift(item);
+  try {
+    const result = await apiFetch("/api/cart");
+    const items = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
+    cacheBuyerCart(items);
+    return items;
+  } catch {
+    return readBuyerCart();
   }
-
-  writeJson(cartKey, current.slice(0, 20));
-  emitBuyerCartUpdated();
 };
 
-export const removeBuyerCartItem = (listingId: string) => {
-  const cartKey = getBuyerCartKey();
-  if (!cartKey) return;
-
-  const current = readBuyerCart();
-  writeJson(
-    cartKey,
-    current.filter((item) => String(item.listingId) !== String(listingId)),
-  );
-  emitBuyerCartUpdated();
-};
-
-export const removeBuyerCartItems = (listingIds: string[]) => {
-  const cartKey = getBuyerCartKey();
-  if (!cartKey || listingIds.length === 0) return;
-
-  const listingIdSet = new Set(listingIds.map(String));
-  const current = readBuyerCart();
-  writeJson(
-    cartKey,
-    current.filter((item) => !listingIdSet.has(String(item.listingId))),
-  );
-  emitBuyerCartUpdated();
-};
-
-export const subtractBuyerCartItemQuantities = (
-  purchases: Array<{ listingId: string; quantity: number }>,
-) => {
-  const cartKey = getBuyerCartKey();
-  if (!cartKey || purchases.length === 0) return;
-
-  const purchaseMap = new Map<string, number>();
-  for (const purchase of purchases) {
-    const listingId = String(purchase.listingId);
-    const quantity = Math.max(0, Math.floor(Number(purchase.quantity)));
-    if (!listingId || quantity <= 0) continue;
-    purchaseMap.set(listingId, (purchaseMap.get(listingId) ?? 0) + quantity);
-  }
-
-  if (purchaseMap.size === 0) return;
-
-  const current = readBuyerCart();
-  const next = current.flatMap((item) => {
-    const purchasedQuantity = purchaseMap.get(String(item.listingId)) ?? 0;
-    if (purchasedQuantity <= 0) return [item];
-
-    const remainingQuantity = Math.max(0, Math.floor(item.quantity) - purchasedQuantity);
-    if (remainingQuantity <= 0) {
-      return [];
-    }
-
-    return [
-      {
-        ...item,
-        quantity: remainingQuantity,
-        totalPrice: remainingQuantity * Number(item.unitPrice),
-      },
-    ];
-  });
-
-  writeJson(cartKey, next);
-  emitBuyerCartUpdated();
-};
-
-export const clearBuyerCart = () => {
+export const setBuyerCartItem = async (item: BuyerCartItem) => {
   const key = getBuyerCartKey();
   if (!key) return;
+
+  try {
+    const result = await apiFetch("/api/cart/items", {
+      method: "POST",
+      body: JSON.stringify({
+        listingId: item.listingId,
+        quantity: item.quantity,
+      }),
+    });
+
+    const nextItem = result?.item as BuyerCartItem | undefined;
+    const current = readBuyerCart();
+    const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
+
+    if (index >= 0 && nextItem) {
+      current[index] = nextItem;
+    } else if (nextItem) {
+      current.unshift(nextItem);
+    } else {
+      current.unshift(item);
+    }
+
+    cacheBuyerCart(current);
+  } catch {
+    const current = readBuyerCart();
+    const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
+
+    if (index >= 0) {
+      current[index] = { ...current[index], ...item, addedAt: item.addedAt };
+    } else {
+      current.unshift(item);
+    }
+
+    cacheBuyerCart(current);
+  }
+};
+
+export const updateBuyerCartItemQuantity = async (listingId: string, quantity: number) => {
+  const key = getBuyerCartKey();
+  if (!key) return;
+
+  try {
+    const result = await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ quantity }),
+    });
+
+    const nextItem = result?.item as BuyerCartItem | undefined;
+    const current = readBuyerCart();
+    const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
+
+    if (index >= 0 && nextItem) {
+      current[index] = nextItem;
+      cacheBuyerCart(current);
+      return;
+    }
+  } catch {
+    const current = readBuyerCart();
+    const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
+    if (index < 0) return;
+
+    current[index] = {
+      ...current[index],
+      quantity,
+      totalPrice: quantity * Number(current[index].unitPrice),
+    };
+    cacheBuyerCart(current);
+  }
+};
+
+export const removeBuyerCartItem = async (listingId: string) => {
+  const key = getBuyerCartKey();
+  if (!key) return;
+
+  try {
+    await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+      method: "DELETE",
+    });
+  } catch {
+    // fall back silently
+  }
+
+  const current = readBuyerCart();
+  cacheBuyerCart(current.filter((item) => String(item.listingId) !== String(listingId)));
+};
+
+export const removeBuyerCartItems = async (listingIds: string[]) => {
+  for (const listingId of listingIds) {
+    await removeBuyerCartItem(listingId);
+  }
+};
+
+export const subtractBuyerCartItemQuantities = async (
+  purchases: Array<{ listingId: string; quantity: number }>,
+) => {
+  for (const purchase of purchases) {
+    const current = readBuyerCart();
+    const item = current.find((entry) => String(entry.listingId) === String(purchase.listingId));
+    if (!item) continue;
+
+    const remaining = Math.max(0, Math.floor(item.quantity) - Math.floor(purchase.quantity));
+    if (remaining <= 0) {
+      await removeBuyerCartItem(purchase.listingId);
+      continue;
+    }
+
+    await updateBuyerCartItemQuantity(purchase.listingId, remaining);
+  }
+};
+
+export const clearBuyerCart = async () => {
+  const key = getBuyerCartKey();
+  if (!key) return;
+
+  try {
+    await apiFetch("/api/cart", { method: "DELETE" });
+  } catch {
+    // fall back silently
+  }
+
   localStorage.removeItem(key);
   emitBuyerCartUpdated();
 };
