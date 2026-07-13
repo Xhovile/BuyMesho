@@ -36,7 +36,7 @@ export default function CartPage() {
 function CartPageContent() {
   const [items, setItems] = useState<BuyerCartItem[]>([]);
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>([]);
-  const [selectedListingIds, setSelectedListingIds] = useState<string[]>([]);
+  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const previousCartIdsRef = useRef<string[]>([]);
@@ -67,11 +67,20 @@ function CartPageContent() {
     const previousCartIds = previousCartIdsRef.current;
     const previousCartIdSet = new Set(previousCartIds);
 
-    setSelectedListingIds((current) => {
-      const currentSet = new Set(current);
-      return nextCartIds.filter(
-        (listingId) => currentSet.has(listingId) || !previousCartIdSet.has(listingId),
-      );
+    setSelectedQuantities((current) => {
+      const next: Record<string, number> = {};
+      for (const item of items) {
+        const listingId = String(item.listingId);
+        const previousValue = current[listingId];
+        const isExistingItem = previousCartIdSet.has(listingId);
+        const fallbackQuantity = isExistingItem ? previousValue ?? 0 : 1;
+        const safeQuantity = Math.max(
+          0,
+          Math.min(Number(item.quantity) || 0, Math.floor(Number(fallbackQuantity) || 0)),
+        );
+        next[listingId] = safeQuantity;
+      }
+      return next;
     });
 
     previousCartIdsRef.current = nextCartIds;
@@ -90,23 +99,24 @@ function CartPageContent() {
     [items],
   );
 
-  const selectedListingIdSet = useMemo(
-    () => new Set(selectedListingIds),
-    [selectedListingIds],
-  );
-
   const selectedItems = useMemo(
-    () => items.filter((item) => selectedListingIdSet.has(String(item.listingId))),
-    [items, selectedListingIdSet],
+    () =>
+      items
+        .map((item) => ({
+          item,
+          checkoutQuantity: Math.max(0, Math.min(item.quantity, selectedQuantities[String(item.listingId)] ?? 0)),
+        }))
+        .filter(({ checkoutQuantity }) => checkoutQuantity > 0),
+    [items, selectedQuantities],
   );
 
   const selectedCount = selectedItems.length;
   const selectedUnits = selectedItems.reduce(
-    (total, item) => total + item.quantity,
+    (total, entry) => total + entry.checkoutQuantity,
     0,
   );
   const selectedSubtotal = selectedItems.reduce(
-    (total, item) => total + item.totalPrice,
+    (total, entry) => total + entry.checkoutQuantity * entry.item.unitPrice,
     0,
   );
   const allSelected = items.length > 0 && selectedCount === items.length;
@@ -123,28 +133,49 @@ function CartPageContent() {
     setItems((current) =>
       current.filter((item) => String(item.listingId) !== String(listingId)),
     );
+    setSelectedQuantities((current) => {
+      const next = { ...current };
+      delete next[listingId];
+      return next;
+    });
   };
 
-  const toggleItemSelection = (listingId: string) => {
-    setSelectedListingIds((current) =>
-      current.includes(listingId)
-        ? current.filter((itemId) => itemId !== listingId)
-        : [...current, listingId],
-    );
+  const setSelectedQuantity = (listingId: string, quantity: number, maxQuantity: number) => {
+    setSelectedQuantities((current) => ({
+      ...current,
+      [listingId]: Math.max(0, Math.min(maxQuantity, Math.floor(quantity))),
+    }));
+  };
+
+  const toggleItemSelection = (listingId: string, maxQuantity: number) => {
+    setSelectedQuantities((current) => {
+      const currentQuantity = current[listingId] ?? 0;
+      const nextQuantity = currentQuantity > 0 ? 0 : Math.min(1, maxQuantity);
+      return {
+        ...current,
+        [listingId]: nextQuantity,
+      };
+    });
   };
 
   const setAllSelected = (checked: boolean) => {
-    setSelectedListingIds(checked ? items.map((item) => String(item.listingId)) : []);
+    setSelectedQuantities((current) => {
+      const next = { ...current };
+      for (const item of items) {
+        next[String(item.listingId)] = checked ? item.quantity : 0;
+      }
+      return next;
+    });
   };
 
-  const handleCheckout = async (checkoutItems: BuyerCartItem[]) => {
+  const handleCheckout = async (checkoutItems: Array<{ item: BuyerCartItem; checkoutQuantity: number }>) => {
     if (!checkoutItems.length || checkoutLoading) return;
 
     setCheckoutLoading(true);
     setCheckoutError(null);
 
     try {
-      const listingIds = checkoutItems.map((item) => String(item.listingId));
+      const listingIds = checkoutItems.map(({ item }) => String(item.listingId));
       const listingIdQuery = encodeURIComponent(listingIds.join(","));
       const returnUrl = `${window.location.origin}/payment/return?listingIds=${listingIdQuery}`;
       const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingIds=${listingIdQuery}`;
@@ -157,9 +188,9 @@ function CartPageContent() {
           "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify({
-          items: checkoutItems.map((item) => ({
+          items: checkoutItems.map(({ item, checkoutQuantity }) => ({
             listingId: item.listingId,
-            quantity: item.quantity,
+            quantity: checkoutQuantity,
           })),
           method: "mobile_money",
           returnUrl,
@@ -187,12 +218,19 @@ function CartPageContent() {
         paymentId,
         listingId: listingIds[0] ?? "",
         listingIds,
+        checkoutItems: checkoutItems.map(({ item, checkoutQuantity }) => ({
+          listingId: String(item.listingId),
+          quantity: checkoutQuantity,
+        })),
         listingTitle:
           checkoutItems.length === 1
-            ? checkoutItems[0].listingTitle
-            : `${checkoutItems[0].listingTitle} + ${checkoutItems.length - 1} more`,
-        quantity: checkoutItems.reduce((total, item) => total + item.quantity, 0),
-        totalPrice: checkoutItems.reduce((total, item) => total + item.totalPrice, 0),
+            ? checkoutItems[0].item.listingTitle
+            : `${checkoutItems[0].item.listingTitle} + ${checkoutItems.length - 1} more`,
+        quantity: checkoutItems.reduce((total, entry) => total + entry.checkoutQuantity, 0),
+        totalPrice: checkoutItems.reduce(
+          (total, entry) => total + entry.checkoutQuantity * entry.item.unitPrice,
+          0,
+        ),
         checkoutUrl,
         txRef: reference,
       });
@@ -282,7 +320,8 @@ function CartPageContent() {
                 <div className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/60">
                   {items.map((item) => {
                     const listingId = String(item.listingId);
-                    const isSelected = selectedListingIdSet.has(listingId);
+                    const selectedQuantity = Math.max(0, Math.min(item.quantity, selectedQuantities[listingId] ?? 0));
+                    const isSelected = selectedQuantity > 0;
 
                     return (
                       <div
@@ -298,14 +337,14 @@ function CartPageContent() {
                             navigateToListingDetails(String(item.listingId));
                           }
                         }}
-                        className="flex cursor-pointer items-center gap-4 px-0 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50"
+                        className={`flex cursor-pointer items-center gap-4 px-0 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
                       >
                         <div className="flex shrink-0 items-start pt-2 pl-3">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onClick={(event) => event.stopPropagation()}
-                            onChange={() => toggleItemSelection(listingId)}
+                            onChange={() => toggleItemSelection(listingId, item.quantity)}
                             className="h-5 w-5 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"
                             aria-label={`Select ${item.listingTitle}`}
                           />
@@ -337,25 +376,46 @@ function CartPageContent() {
                                   : "Open this item to review the full listing details."}
                               </p>
                             </div>
-
-                            <div className="shrink-0 text-right">
-                              <p className="text-base font-black text-zinc-950 sm:text-lg">
-                                {formatMoney(item.totalPrice)}
-                              </p>
-                              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.2em] text-zinc-400">
-                                Qty {item.quantity}
-                              </p>
-                            </div>
                           </div>
 
-                          <div className="mt-3 flex items-center justify-between gap-3">
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-2">
                               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
                                 {formatMoney(item.unitPrice)} each
                               </span>
+                              <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
+                                Available {item.quantity}
+                              </span>
                             </div>
 
                             <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedQuantity(listingId, selectedQuantity - 1, item.quantity);
+                                }}
+                                disabled={!isSelected}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label={`Decrease checkout quantity for ${item.listingTitle}`}
+                              >
+                                −
+                              </button>
+                              <span className="min-w-10 text-center text-sm font-black text-zinc-900">
+                                {selectedQuantity || 0}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setSelectedQuantity(listingId, selectedQuantity + 1, item.quantity);
+                                }}
+                                disabled={!isSelected && item.quantity <= 0}
+                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                aria-label={`Increase checkout quantity for ${item.listingTitle}`}
+                              >
+                                +
+                              </button>
                               <button
                                 type="button"
                                 onClick={(event) => {
