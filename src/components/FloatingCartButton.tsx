@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import { navigateToCart, navigateToLoginWithReturnPath } from "../lib/appNavigation";
-import { readBuyerCart, subscribeToBuyerCartChanges } from "../lib/buyerState";
+import { readBuyerCart, refreshBuyerCartFromServer, subscribeToBuyerCartChanges } from "../lib/buyerState";
 
 type FloatingCartButtonProps = {
   isLoggedIn: boolean;
@@ -27,21 +27,29 @@ export default function FloatingCartButton({
   const [topOffset, setTopOffset] = useState(96);
 
   useEffect(() => {
-    const updateCartCount = () => {
+    const updateCartCount = async () => {
+      if (!isLoggedIn) {
+        setCartCount(0);
+        return;
+      }
+
+      const refreshed = await refreshBuyerCartFromServer();
+      setCartCount(refreshed.length || readBuyerCart().length);
+    };
+
+    void updateCartCount();
+    const unsubscribe = subscribeToBuyerCartChanges(() => {
       if (!isLoggedIn) {
         setCartCount(0);
         return;
       }
       setCartCount(readBuyerCart().length);
-    };
-
-    updateCartCount();
-    const unsubscribe = subscribeToBuyerCartChanges(updateCartCount);
-    window.addEventListener("focus", updateCartCount);
+    });
+    window.addEventListener("focus", updateCartCount as unknown as EventListener);
 
     return () => {
       unsubscribe();
-      window.removeEventListener("focus", updateCartCount);
+      window.removeEventListener("focus", updateCartCount as unknown as EventListener);
     };
   }, [isLoggedIn]);
 
