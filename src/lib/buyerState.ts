@@ -13,6 +13,7 @@ export type BuyerCartItem = {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  availableQuantity?: number | null;
   addedAt: string;
 };
 
