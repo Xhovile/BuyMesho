@@ -317,11 +317,12 @@ function CartPageContent() {
           <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_340px]">
             <div className="w-full">
               {items.length ? (
-                <div className="divide-y divide-zinc-200 border-y border-zinc-200 bg-white/60">
+                <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white/60">
                   {items.map((item) => {
                     const listingId = String(item.listingId);
                     const selectedQuantity = Math.max(0, Math.min(item.quantity, selectedQuantities[listingId] ?? 0));
                     const isSelected = selectedQuantity > 0;
+                    const availableQuantity = item.availableQuantity ?? null;
 
                     return (
                       <div
@@ -337,9 +338,9 @@ function CartPageContent() {
                             navigateToListingDetails(String(item.listingId));
                           }
                         }}
-                        className={`flex cursor-pointer items-center gap-4 px-0 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
+                        className={`flex w-full cursor-pointer items-center gap-4 px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
                       >
-                        <div className="flex shrink-0 items-start pt-2 pl-3">
+                        <div className="flex shrink-0 items-start pt-1">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -364,7 +365,7 @@ function CartPageContent() {
                           )}
                         </div>
 
-                        <div className="min-w-0 flex-1 pr-3">
+                        <div className="min-w-0 flex-1 pr-1 sm:pr-3">
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0">
                               <p className="truncate text-base font-bold text-zinc-950 sm:text-lg">
@@ -379,12 +380,12 @@ function CartPageContent() {
                           </div>
 
                           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
                                 {formatMoney(item.unitPrice)} each
                               </span>
                               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
-                                Available {item.quantity}
+                                Available {availableQuantity ?? "—"}
                               </span>
                             </div>
 
