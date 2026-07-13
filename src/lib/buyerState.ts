@@ -24,6 +24,7 @@ export type BuyerPaymentRecord = {
   paymentId: string | null;
   listingId: string;
   listingIds?: string[];
+  checkoutItems?: Array<{ listingId: string; quantity: number }>;
   listingTitle: string;
   quantity: number;
   totalPrice: number;
@@ -114,6 +115,45 @@ export const removeBuyerCartItems = (listingIds: string[]) => {
     cartKey,
     current.filter((item) => !listingIdSet.has(String(item.listingId))),
   );
+  emitBuyerCartUpdated();
+};
+
+export const subtractBuyerCartItemQuantities = (
+  purchases: Array<{ listingId: string; quantity: number }>,
+) => {
+  const cartKey = getBuyerCartKey();
+  if (!cartKey || purchases.length === 0) return;
+
+  const purchaseMap = new Map<string, number>();
+  for (const purchase of purchases) {
+    const listingId = String(purchase.listingId);
+    const quantity = Math.max(0, Math.floor(Number(purchase.quantity)));
+    if (!listingId || quantity <= 0) continue;
+    purchaseMap.set(listingId, (purchaseMap.get(listingId) ?? 0) + quantity);
+  }
+
+  if (purchaseMap.size === 0) return;
+
+  const current = readBuyerCart();
+  const next = current.flatMap((item) => {
+    const purchasedQuantity = purchaseMap.get(String(item.listingId)) ?? 0;
+    if (purchasedQuantity <= 0) return [item];
+
+    const remainingQuantity = Math.max(0, Math.floor(item.quantity) - purchasedQuantity);
+    if (remainingQuantity <= 0) {
+      return [];
+    }
+
+    return [
+      {
+        ...item,
+        quantity: remainingQuantity,
+        totalPrice: remainingQuantity * Number(item.unitPrice),
+      },
+    ];
+  });
+
+  writeJson(cartKey, next);
   emitBuyerCartUpdated();
 };
 
