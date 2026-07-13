@@ -16,6 +16,7 @@ import {
 import {
   readBuyerCart,
   readBuyerPayments,
+  refreshBuyerCartFromServer,
   removeBuyerCartItem,
   touchBuyerPaymentFromCheckout,
   type BuyerCartItem,
@@ -45,20 +46,22 @@ function CartPageContent() {
   useEffect(() => {
     let mounted = true;
 
-    const sync = () => {
+    const sync = async () => {
       if (!mounted) return;
-      setItems(readBuyerCart());
+      const refreshed = await refreshBuyerCartFromServer();
+      if (!mounted) return;
+      setItems(refreshed.length ? refreshed : readBuyerCart());
       setPayments(readBuyerPayments());
     };
 
-    sync();
-    window.addEventListener("storage", sync);
-    window.addEventListener("focus", sync);
+    void sync();
+    window.addEventListener("storage", sync as unknown as EventListener);
+    window.addEventListener("focus", sync as unknown as EventListener);
 
     return () => {
       mounted = false;
-      window.removeEventListener("storage", sync);
-      window.removeEventListener("focus", sync);
+      window.removeEventListener("storage", sync as unknown as EventListener);
+      window.removeEventListener("focus", sync as unknown as EventListener);
     };
   }, []);
 
@@ -73,12 +76,9 @@ function CartPageContent() {
         const listingId = String(item.listingId);
         const previousValue = current[listingId];
         const isExistingItem = previousCartIdSet.has(listingId);
+        const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
         const fallbackQuantity = isExistingItem ? previousValue ?? 0 : 1;
-        const safeQuantity = Math.max(
-          0,
-          Math.min(Number(item.quantity) || 0, Math.floor(Number(fallbackQuantity) || 0)),
-        );
-        next[listingId] = safeQuantity;
+        next[listingId] = Math.max(0, Math.min(maxSelectable, Math.floor(Number(fallbackQuantity) || 0)));
       }
       return next;
     });
@@ -102,10 +102,13 @@ function CartPageContent() {
   const selectedItems = useMemo(
     () =>
       items
-        .map((item) => ({
-          item,
-          checkoutQuantity: Math.max(0, Math.min(item.quantity, selectedQuantities[String(item.listingId)] ?? 0)),
-        }))
+        .map((item) => {
+          const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
+          return {
+            item,
+            checkoutQuantity: Math.max(0, Math.min(maxSelectable, selectedQuantities[String(item.listingId)] ?? 0)),
+          };
+        })
         .filter(({ checkoutQuantity }) => checkoutQuantity > 0),
     [items, selectedQuantities],
   );
@@ -128,8 +131,8 @@ function CartPageContent() {
     }
   }, [someSelected]);
 
-  const handleRemoveItem = (listingId: string) => {
-    removeBuyerCartItem(listingId);
+  const handleRemoveItem = async (listingId: string) => {
+    await removeBuyerCartItem(listingId);
     setItems((current) =>
       current.filter((item) => String(item.listingId) !== String(listingId)),
     );
@@ -162,7 +165,8 @@ function CartPageContent() {
     setSelectedQuantities((current) => {
       const next = { ...current };
       for (const item of items) {
-        next[String(item.listingId)] = checked ? item.quantity : 0;
+        const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
+        next[String(item.listingId)] = checked ? maxSelectable : 0;
       }
       return next;
     });
@@ -320,7 +324,8 @@ function CartPageContent() {
                 <div className="overflow-hidden rounded-3xl border border-zinc-200 bg-white/60">
                   {items.map((item) => {
                     const listingId = String(item.listingId);
-                    const selectedQuantity = Math.max(0, Math.min(item.quantity, selectedQuantities[listingId] ?? 0));
+                    const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
+                    const selectedQuantity = Math.max(0, Math.min(maxSelectable, selectedQuantities[listingId] ?? 0));
                     const isSelected = selectedQuantity > 0;
                     const availableQuantity = item.availableQuantity ?? null;
 
@@ -329,23 +334,21 @@ function CartPageContent() {
                         key={`${item.listingId}-${item.addedAt}`}
                         role="button"
                         tabIndex={0}
-                        onClick={() =>
-                          navigateToListingDetails(String(item.listingId))
-                        }
+                        onClick={() => navigateToListingDetails(String(item.listingId))}
                         onKeyDown={(event) => {
                           if (event.key === "Enter" || event.key === " ") {
                             event.preventDefault();
                             navigateToListingDetails(String(item.listingId));
                           }
                         }}
-                        className={`flex w-full cursor-pointer items-center gap-4 px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
+                        className={`flex w-full cursor-pointer items-center gap-4 overflow-hidden px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
                       >
                         <div className="flex shrink-0 items-start pt-1">
                           <input
                             type="checkbox"
                             checked={isSelected}
                             onClick={(event) => event.stopPropagation()}
-                            onChange={() => toggleItemSelection(listingId, item.quantity)}
+                            onChange={() => toggleItemSelection(listingId, maxSelectable)}
                             className="h-5 w-5 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"
                             aria-label={`Select ${item.listingTitle}`}
                           />
@@ -394,7 +397,7 @@ function CartPageContent() {
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  setSelectedQuantity(listingId, selectedQuantity - 1, item.quantity);
+                                  setSelectedQuantity(listingId, selectedQuantity - 1, maxSelectable);
                                 }}
                                 disabled={!isSelected}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
@@ -409,9 +412,9 @@ function CartPageContent() {
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  setSelectedQuantity(listingId, selectedQuantity + 1, item.quantity);
+                                  setSelectedQuantity(listingId, selectedQuantity + 1, maxSelectable);
                                 }}
-                                disabled={!isSelected && item.quantity <= 0}
+                                disabled={selectedQuantity >= maxSelectable}
                                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
                                 aria-label={`Increase checkout quantity for ${item.listingTitle}`}
                               >
@@ -421,7 +424,7 @@ function CartPageContent() {
                                 type="button"
                                 onClick={(event) => {
                                   event.stopPropagation();
-                                  handleRemoveItem(listingId);
+                                  void handleRemoveItem(listingId);
                                 }}
                                 className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                               >
