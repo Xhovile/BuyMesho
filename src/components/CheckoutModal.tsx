@@ -120,6 +120,7 @@ export default function CheckoutModal({
         paymentId,
         listingId: String(listing.id),
         listingIds: [String(listing.id)],
+        checkoutItems: [{ listingId: String(listing.id), quantity }],
         listingTitle: listing.name,
         quantity,
         totalPrice: feeBreakdown.itemTotalAmount,
@@ -258,56 +259,42 @@ export default function CheckoutModal({
                   <div className="rounded-2xl border border-zinc-200 bg-white px-5 py-4">
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between gap-4 text-zinc-600">
-                        <span className="font-bold">Item total</span>
-                        <span className="font-extrabold text-zinc-900">
-                          {formatPrice(feeBreakdown.itemTotalAmount)}
-                        </span>
+                        <span>Item total</span>
+                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.itemTotalAmount)}</span>
                       </div>
-                      {feeBreakdown.buyerFeeAmount > 0 && (
-                        <div className="flex items-center justify-between gap-4 text-zinc-600">
-                          <span className="font-bold">BuyMesho fee</span>
-                          <span className="font-extrabold text-zinc-900">
-                            {formatPrice(feeBreakdown.buyerFeeAmount)}
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center justify-between gap-4 text-zinc-600">
+                        <span>Fees</span>
+                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.totalFees)}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-t border-zinc-200 pt-2 text-base font-black text-zinc-900">
+                        <span>Total</span>
+                        <span>{formatPrice(feeBreakdown.totalAmount)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-zinc-400 leading-5">
-                    Choose one of the payment routes below.
-                  </p>
-
-                  {step === "error" && error && (
+                  {error && (
                     <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                       {error}
                     </div>
                   )}
+
+                  <div className="space-y-3">
+                    {settlementOptions.map((option) => (
+                      <button
+                        key={option.route}
+                        type="button"
+                        onClick={() => void handleConfirm(option.route)}
+                        className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${option.buttonClassName}`}
+                      >
+                        <p className="text-sm font-extrabold">{option.label}</p>
+                        <p className="mt-1 text-xs opacity-80">{option.description}</p>
+                      </button>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
-
-            {(step === "form" || step === "error") && (
-              <div className="border-t border-zinc-100 px-6 pb-6 pt-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {settlementOptions.map((option) => (
-                    <button
-                      key={option.route}
-                      type="button"
-                      onClick={() => void handleConfirm(option.route)}
-                      className={`rounded-2xl border px-4 py-4 text-left transition-colors ${option.buttonClassName}`}
-                    >
-                      <div className="text-sm font-extrabold leading-tight">
-                        {option.label}
-                      </div>
-                      <div className={`mt-1 text-xs leading-5 ${option.route === "connect" ? "text-white/80" : "text-zinc-500"}`}>
-                        {option.description}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </motion.div>
         </div>
       )}
