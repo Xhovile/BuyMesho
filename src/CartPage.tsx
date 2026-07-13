@@ -341,7 +341,7 @@ function CartPageContent() {
                             navigateToListingDetails(String(item.listingId));
                           }
                         }}
-                        className={`flex w-full cursor-pointer items-center gap-4 overflow-hidden px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
+                        className={`flex w-full cursor-pointer items-start gap-4 overflow-hidden px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:items-center sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
                       >
                         <div className="flex shrink-0 items-start pt-1">
                           <input
@@ -382,7 +382,7 @@ function CartPageContent() {
                             </div>
                           </div>
 
-                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
                                 {formatMoney(item.unitPrice)} each
@@ -392,7 +392,7 @@ function CartPageContent() {
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
                               <button
                                 type="button"
                                 onClick={(event) => {
@@ -431,7 +431,7 @@ function CartPageContent() {
                                 <Trash2 className="h-4 w-4" />
                                 Remove
                               </button>
-                              <ChevronRight className="h-5 w-5 text-zinc-400" />
+                              <ChevronRight className="hidden h-5 w-5 text-zinc-400 sm:block" />
                             </div>
                           </div>
                         </div>
