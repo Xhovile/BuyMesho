@@ -13,7 +13,7 @@ import {
 import { apiFetch } from "./lib/api";
 import {
   readBuyerPayments,
-  removeBuyerCartItems,
+  subtractBuyerCartItemQuantities,
   updateBuyerPaymentStatus,
 } from "./lib/buyerState";
 
@@ -35,6 +35,7 @@ interface BuyerPaymentRecord {
   reference?: string | null;
   listingId?: string | null;
   listingIds?: string[];
+  checkoutItems?: Array<{ listingId: string; quantity: number }>;
   orderId?: string | null;
   paymentId?: string | null;
 }
@@ -47,10 +48,19 @@ const buildListingDetailsPath = (listingId: string | null) =>
 const normalizeStatus = (value: string | null | undefined) =>
   String(value ?? "").trim().toLowerCase();
 
-const getPurchasedListingIds = (payment: BuyerPaymentRecord | null): string[] => {
+const getPurchasedListingItems = (
+  payment: BuyerPaymentRecord | null,
+): Array<{ listingId: string; quantity: number }> => {
   if (!payment) return [];
-  if (payment.listingIds?.length) return payment.listingIds.map(String).filter(Boolean);
-  return payment.listingId ? [String(payment.listingId)] : [];
+  if (payment.checkoutItems?.length) {
+    return payment.checkoutItems
+      .map((item) => ({ listingId: String(item.listingId), quantity: Math.max(0, Math.floor(Number(item.quantity))) }))
+      .filter((item) => item.listingId && item.quantity > 0);
+  }
+  if (payment.listingIds?.length && payment.listingIds[0]) {
+    return [{ listingId: String(payment.listingIds[0]), quantity: 1 }];
+  }
+  return payment.listingId ? [{ listingId: String(payment.listingId), quantity: 1 }] : [];
 };
 
 export default function PaymentReturnPage() {
@@ -148,14 +158,14 @@ export default function PaymentReturnPage() {
             ) ?? latestPendingPayment;
 
           if (matchedPayment) {
+            const purchasedItems = getPurchasedListingItems(matchedPayment);
             updateBuyerPaymentStatus(matchedPayment.reference || txRef, {
               status: "captured",
               txRef,
               orderId: result.orderId ?? matchedPayment.orderId ?? null,
               paymentId: matchedPayment.paymentId,
             });
-
-            removeBuyerCartItems(getPurchasedListingIds(matchedPayment));
+            subtractBuyerCartItemQuantities(purchasedItems);
           }
 
           setOrderId(result.orderId ?? null);
