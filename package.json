@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "dev:server": "tsx server.ts",
     "build:server": "tsc -p tsconfig.server.json",
-    "start:server": "node dist-server/server.js",
+    "start:server": "node dist-server/server/entry.js",
     "test": "npm run test:integration",
     "reset:finance": "tsx scripts/reset-finance.ts",
     "lint": "node scripts/run-lint.mjs",
