@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { type ElementType, type FC } from "react";
+import { type ElementType, type FC, useEffect, useRef, useState } from "react";
 import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
@@ -20,6 +20,10 @@ type CategorySectionProps = {
   loading?: boolean;
 };
 
+const INITIAL_VISIBLE_COUNT_MOBILE = 2;
+const INITIAL_VISIBLE_COUNT_DESKTOP = 4;
+const LOAD_MORE_COUNT = 4;
+
 const CategorySection: FC<CategorySectionProps> = ({
   title,
   description,
@@ -28,12 +32,45 @@ const CategorySection: FC<CategorySectionProps> = ({
   listings,
   loading = false,
 }) => {
+  const [visibleCount, setVisibleCount] = useState(
+    () => (typeof window !== "undefined" && window.innerWidth < 640 ? INITIAL_VISIBLE_COUNT_MOBILE : INITIAL_VISIBLE_COUNT_DESKTOP)
+  );
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setVisibleCount(
+      typeof window !== "undefined" && window.innerWidth < 640
+        ? INITIAL_VISIBLE_COUNT_MOBILE
+        : INITIAL_VISIBLE_COUNT_DESKTOP,
+    );
+  }, [categoryKey]);
+
+  useEffect(() => {
+    if (!sentinelRef.current) return;
+    if (visibleCount >= listings.length) return;
+
+    const target = sentinelRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        setVisibleCount((current) => Math.min(listings.length, current + LOAD_MORE_COUNT));
+      },
+      { root: null, rootMargin: "0px 160px 0px 0px", threshold: 0.1 },
+    );
+
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [listings.length, visibleCount]);
+
   const liveCount = listings.length;
   const liveLabel = loading
     ? "Loading live listings"
     : liveCount > 0
       ? `${liveCount} live listing${liveCount === 1 ? "" : "s"}`
       : "No listings yet";
+
+  const visibleListings = listings.slice(0, visibleCount);
 
   return (
     <div className="group relative overflow-hidden rounded-[1.65rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
@@ -65,7 +102,7 @@ const CategorySection: FC<CategorySectionProps> = ({
           <p className="text-sm text-zinc-400">No listings yet</p>
         ) : (
           <>
-            {listings.slice(0, 10).map((item) => (
+            {visibleListings.map((item) => (
               <div
                 key={item.id}
                 className="snap-start shrink-0 w-[174px] sm:w-[260px]"
@@ -73,6 +110,16 @@ const CategorySection: FC<CategorySectionProps> = ({
                 <ListingPreviewCard item={item} />
               </div>
             ))}
+
+            {visibleCount < listings.length ? (
+              <div
+                ref={sentinelRef}
+                className="snap-start shrink-0 w-[174px] sm:w-[260px] rounded-2xl border border-dashed border-zinc-300 bg-white/80 p-3 text-left text-xs font-semibold text-zinc-500 sm:p-4"
+              >
+                Scroll to load more
+              </div>
+            ) : null}
+
             <button
               type="button"
               onClick={() => navigateToExploreWithCategory(categoryKey)}
