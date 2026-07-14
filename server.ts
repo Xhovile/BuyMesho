@@ -2248,11 +2248,12 @@ app.post("/api/listings/:id/view", (req, res) => {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
-    });
-  }
+  const staticDir = path.resolve(__dirname, "..", "dist");
+  app.use(express.static(staticDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(staticDir, "index.html"));
+  });
+}
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
