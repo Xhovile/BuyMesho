@@ -186,6 +186,8 @@ export default function ListingCard({
             <img
               src={firstPhoto}
               alt={titleLabel}
+              loading="lazy"
+              decoding="async"
               className={`h-full w-full object-cover ${performanceMode ? "" : "transition-transform duration-700 group-hover:scale-105"}`}
               referrerPolicy="no-referrer"
             />
