@@ -172,6 +172,10 @@ function buildUpsertedCartItem(db: any, buyerUid: string, listingId: number, qua
 export function createCartRouter(requireFirebaseUser: RequestHandler): express.Router {
   const router = express.Router();
 
+  // Ensure cart write/read payloads are parsed even if the router is mounted
+  // before the app-level JSON middleware.
+  router.use(express.json());
+
   router.get("/", requireFirebaseUser, async (req: any, res) => {
     try {
       const db: any = getPaymentDb();
