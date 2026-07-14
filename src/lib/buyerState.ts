@@ -129,15 +129,22 @@ export const readBuyerPayments = (): BuyerPaymentRecord[] => {
 
 export const refreshBuyerCartFromServer = async () => {
   const scopedKey = getBuyerCartKey();
-  if (!scopedKey) return readBuyerCart();
-
   const localItems = readBuyerCart();
-  const result = await apiFetch("/api/cart");
-  const serverItems = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
 
-  if (serverItems.length > 0) {
-    cacheBuyerCart(serverItems);
-    return serverItems;
+  if (!scopedKey) {
+    return localItems;
+  }
+
+  try {
+    const result = await apiFetch("/api/cart");
+    const serverItems = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
+
+    if (serverItems.length > 0) {
+      cacheBuyerCart(serverItems);
+      return serverItems;
+    }
+  } catch (error) {
+    console.warn("Cart refresh failed, using local snapshot:", error);
   }
 
   if (localItems.length > 0) {
