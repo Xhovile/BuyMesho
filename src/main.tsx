@@ -111,6 +111,7 @@ function clearCachedResponsesByPath(prefixes: string[]) {
 
 window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = getUrl(input);
+  const urlString = url.toString();
   const method = getMethod(input, init);
 
   if (url.origin === window.location.origin && method !== 'GET') {
@@ -148,7 +149,9 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 
   if (isCacheableGet(url, method) && response.ok) {
     try {
-      writeCachedResponse(url, response.clone(), await response.clone().text());
+      const cloned = response.clone();
+      const body = await cloned.text();
+      writeCachedResponse(url, response, body);
     } catch {
       // Ignore cache write failures.
     }
