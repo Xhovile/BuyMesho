@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowUp } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import ConfirmModal from "./components/ConfirmModal";
 import FeedbackModal from "./components/FeedbackModal";
 import Header from "./components/Header";
 import EditListingModal from "./components/EditListingModal";
 import ReportListingModal from "./components/ReportListingModal";
+import AppFooter from "./components/AppFooter";
+import ScrollToTopFab from "./components/ScrollToTopFab";
 import HeroSection from "./sections/HeroSection";
 import MarketSection, {
   type MarketSectionActions,
@@ -20,12 +20,7 @@ import {
   navigateToCreateListing,
   navigateToLogin,
   navigateToListingDetails,
-  navigateToPath,
   navigateToSellerProfile,
-  PRIVACY_PATH,
-  REPORT_PATH,
-  SAFETY_PATH,
-  TERMS_PATH,
   navigateToProfile,
   replaceExploreStateInUrl,
   pushExploreStateInUrl,
@@ -440,83 +435,71 @@ export default function App() {
       navigateToLogin();
       return;
     }
-
     setSavedListingIds((prev) => {
-      const next = prev.includes(listingId) ? prev.filter((id) => id !== listingId) : [...prev, listingId];
+      const next = prev.includes(listingId)
+        ? prev.filter((id) => id !== listingId)
+        : [...prev, listingId];
       localStorage.setItem(savedStorageKey, JSON.stringify(next));
       return next;
     });
   };
 
-  const performDeleteListing = async (listingId: number) => {
+  const handleUpdateListing = async (listingId: number, updates: Partial<Listing>) => {
     try {
-      await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
-      fetchListings();
-      showFeedback("success", "Listing deleted", "The listing was deleted successfully.");
-    } catch (err: any) {
-      showFeedback("error", "Delete failed", err?.message || "We could not delete the listing.");
+      const res = await apiFetch(`/api/listings/${listingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      await fetchListings();
+      setEditingListing(null);
+      showFeedback("success", "Listing updated", "Your changes were saved successfully.");
+    } catch (err) {
+      console.error("Update listing error:", err);
+      showFeedback("error", "Update failed", "We could not save your changes.");
     }
   };
 
-  const handleUpdateListing = async (listingId: number, updated: Partial<Listing>) => {
-    const existing = listings.find((l) => l.id === listingId);
-    if (!existing) {
-      showFeedback("error", "Listing not found", "Refresh the page and try again.");
-      return;
-    }
-
-    const payload = {
-      name: updated.name ?? existing.name,
-      price: Number(updated.price ?? existing.price),
-      description: updated.description ?? existing.description ?? "",
-      category: updated.category ?? existing.category,
-      subcategory: updated.subcategory ?? existing.subcategory ?? null,
-      item_type: updated.item_type ?? existing.item_type ?? null,
-      spec_values: updated.spec_values ?? existing.spec_values ?? {},
-      university: updated.university ?? existing.university,
-      photos: updated.photos ?? existing.photos ?? [],
-      video_url: updated.video_url ?? existing.video_url ?? null,
-      status: updated.status ?? existing.status ?? "available",
-      condition: updated.condition ?? existing.condition ?? "used",
-      quantity: Number(updated.quantity ?? existing.quantity ?? 1),
-      sold_quantity: Number(updated.sold_quantity ?? existing.sold_quantity ?? 0),
-    };
-
+  const performDeleteListing = async (listingId: number) => {
     try {
-      await apiFetch(`/api/listings/${listingId}`, { method: "PUT", body: JSON.stringify(payload) });
-      fetchListings();
-      showFeedback("success", "Listing updated", "Your listing was updated successfully.");
-      setEditingListing(null);
-    } catch (err: any) {
-      showFeedback("error", "Update failed", err?.message || "We could not update the listing.");
+      const res = await apiFetch(`/api/listings/${listingId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      await fetchListings();
+      showFeedback("success", "Listing deleted", "The listing was removed.");
+    } catch (err) {
+      console.error("Delete listing error:", err);
+      showFeedback("error", "Delete failed", "We could not delete the listing.");
     }
   };
 
   const marketFilters: MarketSectionFilters = {
+    search,
     selectedUniv,
     selectedCat,
     selectedSubcategory,
     selectedItemType,
-    selectedSpecFilters,
     selectedStatus,
     selectedCondition,
     hideSoldOut,
     minPrice,
     maxPrice,
+    selectedSpecFilters,
     sortBy,
   };
 
   const marketSetFilters: MarketSectionSetFilters = {
+    setSearch,
     setSelectedUniv,
-    setSelectedCat: handleCategoryChange,
+    setSelectedCat,
     setSelectedSubcategory,
     setSelectedItemType,
-    setSelectedSpecFilters,
     setSelectedStatus,
     setSelectedCondition,
     setHideSoldOut,
     setMinPrice,
     setMaxPrice,
+    setSelectedSpecFilters,
     setSortBy,
   };
 
@@ -586,24 +569,7 @@ export default function App() {
         />
       </main>
 
-      <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-8">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-red-900 rounded-xl flex items-center justify-center text-white font-extrabold text-sm">B</div>
-            <span className="text-sm font-bold text-zinc-900">
-              <span className="text-red-900">Buy</span>
-              <span className="text-zinc-700">Mesho</span> Malawi
-            </span>
-          </div>
-          <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-            <button type="button" onClick={() => navigateToPath(PRIVACY_PATH)} className="hover:text-primary transition-colors">Privacy</button>
-            <button type="button" onClick={() => navigateToPath(TERMS_PATH)} className="hover:text-primary transition-colors">Terms</button>
-            <button type="button" onClick={() => navigateToPath(SAFETY_PATH)} className="hover:text-primary transition-colors">Safety</button>
-            <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="hover:text-primary transition-colors">Report</button>
-          </div>
-          <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
-        </div>
-      </footer>
+      <AppFooter />
 
       {reportListingId !== null && <ReportListingModal listingId={reportListingId} onClose={() => setReportListingId(null)} />}
 
@@ -639,21 +605,10 @@ export default function App() {
         />
       )}
 
-      <AnimatePresence>
-        {showScrollTop && (
-          <motion.button
-            type="button"
-            initial={{ opacity: 0, y: 16, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.92 }}
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-[90] h-12 w-12 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center transition-all active:scale-95"
-            aria-label="Scroll to top"
-          >
-            <ArrowUp className="w-5 h-5" />
-          </motion.button>
-        )}
-      </AnimatePresence>
+      <ScrollToTopFab
+        show={showScrollTop}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      />
     </div>
   );
 }
