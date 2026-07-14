@@ -522,3 +522,144 @@ export default function ListingDetailsPage() {
       setRatingSubmitting(false);
     }
   };
+
+  return (
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
+      <ListingHeaderBar />
+
+      <main className="mx-auto max-w-[1500px] px-4 pb-12 pt-6 sm:pt-8">
+        {loading ? (
+          <ListingStatusPanel loading hasListing={!!listing} />
+        ) : !listing ? (
+          <ListingStatusPanel loading={false} hasListing={false} onRetry={() => navigateBackOrPath(EXPLORE_PATH)} />
+        ) : (
+          <>
+            <section className="grid gap-8 md:grid-cols-[minmax(165px,225px)_minmax(0,1fr)] md:items-stretch md:gap-7 lg:grid-cols-[minmax(182px,242px)_minmax(0,1fr)] lg:gap-9 xl:grid-cols-[minmax(194px,252px)_minmax(0,1fr)]">
+              <div className="min-w-0 md:min-h-[clamp(28rem,68vh,40rem)]">
+                <div className="md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:overflow-hidden md:self-start">
+                  <ListingGallery
+                    listingName={listing.name}
+                    galleryImages={galleryImages}
+                    currentGalleryIndex={currentGalleryIndex}
+                    currentImage={currentImage}
+                    videoUrl={listing.video_url}
+                    isFullscreen={isFullscreen}
+                    saved={saved}
+                    onToggleSaved={handleToggleSaved}
+                    onOpenFullscreen={() => setIsFullscreen(true)}
+                    onCloseFullscreen={() => setIsFullscreen(false)}
+                    onPrevImage={handlePrevImage}
+                    onNextImage={handleNextImage}
+                    onSelectImage={(idx) => {
+                      syncListingParamsInUrl(listing.id, idx);
+                      setRouteState((prev) => ({ ...prev, imageIndex: idx }));
+                    }}
+                    actionsMenu={
+                      <ListingActionsMenu
+                        listing={listing}
+                        currentUid={firebaseUser?.uid}
+                        isLoggedIn={!!firebaseUser}
+                        isSaved={saved}
+                        variant="detail"
+                        onReport={() => navigateToPath(`${REPORT_PATH}?listingId=${encodeURIComponent(listing.id)}`)}
+                        onEdit={handleDetailEdit}
+                        onDelete={handleDetailDelete}
+                        onHideSeller={handleDetailHideSeller}
+                        onHideListing={handleDetailHideListing}
+                        onToggleStatus={handleDetailToggleStatus}
+                        onRecordSale={handleDetailRecordSale}
+                        onRestock={handleDetailRestock}
+                      />
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="min-w-0 space-y-7 lg:space-y-8">
+                <ListingSummary
+                  listing={listing}
+                  seller={seller}
+                  availableQuantity={availableQuantity}
+                  isLoggedIn={!!firebaseUser}
+                  currentUserUid={firebaseUser?.uid}
+                  onMessageSeller={handleMessageSeller}
+                  onShare={handleShare}
+                  onBuyNow={handleBuyNow}
+                  onAddToCart={handleAddToCart}
+                />
+                {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
+                <ListingDetailsBlock
+                  description={listing.description}
+                  sellerNote={seller?.bio?.trim() || "No seller note has been added yet."}
+                  deliveryNote="Arrange collection, delivery, or campus handover directly through the in-app chat."
+                />
+              </div>
+            </section>
+
+            <ListingSectionTabs activeSection={activeSection} onNavigate={scrollToSection} />
+
+            <section ref={detailsRef} id="details" className="scroll-mt-32 pt-10">
+              <div className="space-y-6">
+                <ListingSpecsBlock groups={groupedSpecs} />
+              </div>
+            </section>
+
+            <section ref={exploreRef} id="explore" className="scroll-mt-32 pt-12">
+              <ListingExploreBlock sameCampusListings={sameCampusListings} sameCategoryListings={sameCategoryListings} sellerOtherListings={sellerOtherListings} />
+            </section>
+
+            <section className="scroll-mt-32 pt-12">
+              <div className="space-y-4">
+                <div className="space-y-2 border-b border-zinc-200 pb-4">
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-600">Seller Info</p>
+                  <h2 className="font-serif text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">Seller profile</h2>
+                  <p className="max-w-3xl text-sm leading-6 text-zinc-500">View the seller's profile and trust signals before reading reviews.</p>
+                </div>
+                <ListingTrustBlock listing={listing} seller={seller} ratingSummary={ratingSummary} />
+              </div>
+            </section>
+
+            <section ref={reviewsRef} id="reviews" className="scroll-mt-32 pt-12">
+              <ListingReviewsBlock ratingSummary={ratingSummary} listing={listing} seller={seller} />
+            </section>
+          </>
+        )}
+      </main>
+
+      <FeedbackModal open={shareNoticeOpen} type="info" title="Notice" message={shareNoticeMessage} onClose={() => setShareNoticeOpen(false)} />
+
+      <ConfirmModal
+        open={authPromptOpen}
+        title={
+          authPromptAction === "buy"
+            ? "Sign in to buy"
+            : authPromptAction === "cart"
+              ? "Sign in to use cart"
+              : "Sign in to message"
+        }
+        message={
+          authPromptAction === "buy"
+            ? "You need to sign in or create an account before you can buy this listing."
+            : authPromptAction === "cart"
+              ? "You need to sign in or create an account before adding this listing to your cart."
+              : "You need to sign in or create an account before you can message the seller."
+        }
+        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
+        cancelText="Cancel"
+        onCancel={closeAuthPrompt}
+        onConfirm={continueToAuth}
+      />
+
+      {listing && (
+        <CheckoutModal
+          listing={listing}
+          isOpen={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          buyerName={firebaseUser?.displayName}
+          buyerEmail={firebaseUser?.email}
+        />
+      )}
+    </div>
+  );
+}
