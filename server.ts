@@ -393,7 +393,7 @@ app.get("/api/db-test", (req, res) => {
           ORDER BY
             CASE WHEN l.subcategory = ? THEN 0 ELSE 1 END ASC,
             CASE WHEN l.item_type = ? THEN 0 ELSE 1 END ASC,
-            CASE WHEN l.sold_quantity >= l.quantity OR l.status = 'sold' THEN 1 ELSE 0 END ASC,
+            CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
             l.created_at DESC
           LIMIT ?
         `)
@@ -404,900 +404,1817 @@ app.get("/api/db-test", (req, res) => {
           currentListing.subcategory,
           currentListing.item_type,
           limit
-        ) as any[];
+        );
 
-      res.json({
-        items: rows.map((l) => serializeListingRow(l)),
-      });
+      res.json(
+        rows.map((l: any) => serializeListingRow(l))
+      );
     } catch (error) {
-      console.error("Related listings error:", error);
+      console.error("Fetch related listings error:", error);
       res.status(500).json({ error: "Failed to load related listings" });
     }
   });
-
-  app.get("/api/user-profile/:uid", requireFirebaseUser, async (req, res) => {
-    const uid = String(req.params.uid || "");
-
-    if (!uid) {
-      return res.status(400).json({ error: "Invalid user id" });
-    }
-
-    const viewerUid = req.user?.uid ?? null;
-    const isSelf = viewerUid === uid;
-
+  
+  app.post("/api/sellers", requireAuth, (req, res) => {
+    const uid = req.user!.uid; // secure UID from Firebase
+const {
+  email,
+  business_name,
+  university,
+  bio,
+  is_verified,
+  is_seller
+} = req.body;
     try {
-      const seller = db
-        .prepare(`
-          SELECT
-            uid,
-            email,
-            business_name,
-            university,
-            bio,
-            profile_picture,
-            business_logo,
-            shop_slug,
-            is_verified,
-            location,
-            whatsapp_number,
-            phone_number,
-            seller_type,
-            market_name,
-            avg_rating,
-            rating_count,
-            profile_views,
-            business_type,
-            business_category,
-            created_at,
-            updated_at,
-            seller_since,
-            deleted_at,
-            deleted_by,
-            delete_requested_at,
-            delete_effective_at,
-            delete_reason,
-            deletion_notice_sent_at,
-            deletion_notice_sent_by,
-            delete_notice_token,
-            delete_notice_sent_to,
-            restore_requested_at
+  // Convert incoming boolean to 0/1 safely
+const incomingVerified = (req.user as any).email_verified || is_verified ? 1 : 0;
+const incomingSeller = is_seller === true || is_seller === 1 ? 1 : 0;
+
+const safeBusinessName = typeof business_name === "string" && business_name.trim() ? business_name.trim() : null;
+const safeUniversity = typeof university === "string" && university.trim() ? university.trim() : null;
+const safeBio = typeof bio === "string" && bio.trim() ? bio.trim() : null;
+      
+db.prepare(`
+  INSERT INTO sellers (uid, email, business_name, university, bio, is_verified, is_seller)
+VALUES (?, ?, ?, ?, ?, ?, ?)
+  ON CONFLICT(uid) DO UPDATE SET
+    email = excluded.email,
+    business_name = excluded.business_name,
+    university = excluded.university,
+    is_seller = excluded.is_seller,
+    bio = excluded.bio,
+    -- important: only allow upgrading to verified, never downgrade
+    is_verified = CASE
+      WHEN excluded.is_verified = 1 THEN 1
+      ELSE sellers.is_verified
+    END
+`).run(
+  uid,
+  email,
+  safeBusinessName,
+  safeUniversity,
+  safeBio,
+  incomingVerified,
+  incomingSeller
+);
+  res.json({ success: true });
+} catch (error) {
+  console.error("Seller sync error:", error);
+  res.status(500).json({ error: "Failed to sync seller profile" });
+}
+  });
+
+  app.post("/api/profile/bootstrap", requireAuth, async (req, res) => {
+    const uid = req.user!.uid;
+    const email = req.user?.email || req.body?.email || "";
+    const requestedUniversity =
+      typeof req.body?.university === "string" ? req.body.university.trim() : "";
+    const safeUniversity = requestedUniversity || "University Not Set";
+    const nowIso = new Date().toISOString();
+    const hasExistingListings = !!db
+      .prepare(
+        `
+          SELECT 1
+          FROM listings
+          WHERE seller_uid = ?
+          LIMIT 1
+        `
+      )
+      .get(uid);
+
+    const existingSellerRow = db
+      .prepare(
+        `
+          SELECT is_seller
           FROM sellers
           WHERE uid = ?
           LIMIT 1
-        `)
-        .get(uid) as any;
+        `
+      )
+      .get(uid) as { is_seller?: number } | undefined;
 
-      if (!seller || seller.deleted_at) {
-        return res.status(404).json({ error: "Seller profile not found" });
-      }
+    const hasApprovedApplication = !!db
+      .prepare(
+        `
+          SELECT 1
+          FROM seller_applications
+          WHERE applicant_uid = ?
+            AND status = 'approved'
+          LIMIT 1
+        `
+      )
+      .get(uid);
 
-      const items = db
-        .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.is_verified
-          FROM listings l
-          JOIN sellers s ON l.seller_uid = s.uid
-          WHERE l.seller_uid = ?
-            AND l.is_hidden = 0
-            AND l.deleted_at IS NULL
-          ORDER BY
-            CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
-            l.created_at DESC
-        `)
-        .all(uid) as any[];
+    const recoveredIsSeller =
+      existingSellerRow?.is_seller === 1 || hasExistingListings || hasApprovedApplication;
 
-      const visibleItems = items.filter((item) => {
-        const isHiddenSeller = item.is_hidden === 1;
-        const isSoldOut = item.status === "sold" || item.sold_quantity >= item.quantity;
-        if (isSelf) return true;
-        return !isHiddenSeller && !isSoldOut;
-      });
-
-      res.json({
-        seller: {
-          uid: seller.uid,
-          email: seller.email ?? null,
-          business_name: seller.business_name ?? null,
-          university: seller.university ?? null,
-          bio: seller.bio ?? null,
-          profile_picture: seller.profile_picture ?? null,
-          business_logo: seller.business_logo ?? null,
-          shop_slug: seller.shop_slug ?? null,
-          is_verified: Boolean(seller.is_verified),
-          location: seller.location ?? null,
-          whatsapp_number: seller.whatsapp_number ?? null,
-          phone_number: seller.phone_number ?? null,
-          seller_type: seller.seller_type ?? null,
-          market_name: seller.market_name ?? null,
-          avg_rating: seller.avg_rating ?? null,
-          rating_count: seller.rating_count ?? null,
-          profile_views: seller.profile_views ?? null,
-          business_type: seller.business_type ?? null,
-          business_category: seller.business_category ?? null,
-          created_at: seller.created_at ?? null,
-          updated_at: seller.updated_at ?? null,
-          seller_since: seller.seller_since ?? null,
-        },
-        items: visibleItems.map((item) => serializeListingRow(item)),
-      });
-    } catch (error) {
-      console.error("User profile fetch error:", error);
-      res.status(500).json({ error: "Failed to load seller profile" });
-    }
-  });
-
-  app.patch("/api/user-profile/:uid", requireAuth, async (req, res) => {
-    const uid = String(req.params.uid || "");
-    const viewerUid = req.user?.uid ?? null;
-    const body = req.body as any;
-
-    if (!viewerUid || viewerUid !== uid) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
+    const fallbackProfile = {
+      uid,
+      email,
+      university: safeUniversity,
+      is_verified: !!req.user?.email_verified,
+      is_seller: recoveredIsSeller,
+      join_date: nowIso,
+    };
 
     try {
-      const existing = db
-        .prepare(`SELECT uid, deleted_at, business_name, profile_picture, bio, university, shop_slug, location, whatsapp_number, phone_number FROM sellers WHERE uid = ? LIMIT 1`)
-        .get(uid) as any;
-
-      if (!existing || existing.deleted_at) {
-        return res.status(404).json({ error: "Seller profile not found" });
-      }
-
-      const nextBusinessName = toTrimmedString(body.business_name ?? existing.business_name ?? "");
-      const nextProfilePicture = toTrimmedString(body.profile_picture ?? existing.profile_picture ?? "");
-      const nextBio = toTrimmedString(body.bio ?? existing.bio ?? "");
-      const nextUniversity = toTrimmedString(body.university ?? existing.university ?? "");
-      const nextShopSlug = toTrimmedString(body.shop_slug ?? existing.shop_slug ?? "");
-      const nextLocation = toTrimmedString(body.location ?? existing.location ?? "");
-      const nextWhatsapp = toTrimmedString(body.whatsapp_number ?? existing.whatsapp_number ?? "");
-      const nextPhone = toTrimmedString(body.phone_number ?? existing.phone_number ?? "");
-
-      if (!nextBusinessName) {
-        return res.status(400).json({ error: "Business name is required" });
-      }
-
-      db.prepare(`
-        UPDATE sellers
-        SET business_name = ?, profile_picture = ?, bio = ?, university = ?, shop_slug = ?, location = ?, whatsapp_number = ?, phone_number = ?, updated_at = CURRENT_TIMESTAMP
-        WHERE uid = ?
-      `).run(
-        nextBusinessName,
-        nextProfilePicture || null,
-        nextBio || null,
-        nextUniversity || null,
-        nextShopSlug || null,
-        nextLocation || null,
-        nextWhatsapp || null,
-        nextPhone || null,
-        uid
+      db.prepare(
+        `
+          INSERT INTO sellers (
+            uid, email, business_name, university, bio, is_verified, is_seller, join_date
+          ) VALUES (?, ?, NULL, ?, NULL, ?, ?, ?)
+          ON CONFLICT(uid) DO UPDATE SET
+            email = excluded.email,
+            university = COALESCE(sellers.university, excluded.university),
+            is_seller = CASE
+              WHEN sellers.is_seller = 1 THEN 1
+              WHEN excluded.is_seller = 1 THEN 1
+              ELSE 0
+            END,
+            is_verified = CASE
+              WHEN excluded.is_verified = 1 THEN 1
+              ELSE sellers.is_verified
+            END
+        `
+      ).run(
+        uid,
+        email,
+        safeUniversity,
+        req.user?.email_verified ? 1 : 0,
+        recoveredIsSeller ? 1 : 0,
+        nowIso
       );
 
-      return res.json({
-        success: true,
-        seller: {
-          ...existing,
-          business_name: nextBusinessName,
-          profile_picture: nextProfilePicture || null,
-          bio: nextBio || null,
-          university: nextUniversity || null,
-          shop_slug: nextShopSlug || null,
-          location: nextLocation || null,
-          whatsapp_number: nextWhatsapp || null,
-          phone_number: nextPhone || null,
-        },
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set(fallbackProfile, {
+        merge: true,
       });
+
+      return res.json({ ok: true, profile: fallbackProfile });
     } catch (error) {
-      console.error("User profile update error:", error);
-      res.status(500).json({ error: "Failed to update seller profile" });
+      console.error("Profile bootstrap failed:", error);
+      return res.status(500).json({ error: "Failed to bootstrap profile" });
     }
   });
 
-  app.delete("/api/user-profile/:uid", requireAuth, async (req, res) => {
-    const uid = String(req.params.uid || "");
-    const viewerUid = req.user?.uid ?? null;
+app.get("/api/profile", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
 
-    if (!viewerUid || viewerUid !== uid) {
-      return res.status(403).json({ error: "Forbidden" });
+  try {
+    const email = req.user?.email ?? "";
+    const safeUniversity = "Default"; // replace with your real fallback if needed
+    
+    const profile = db
+      .prepare(
+        "SELECT uid, email, business_name, business_logo, profile_picture, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+      )
+      .get(uid);
+
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json(profile);
+  } catch (e: any) {
+    console.error("GET /api/profile error:", e);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+  app.put("/api/profile", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+  const { business_name, business_logo, university, bio } = req.body;
+
+  if (!business_name || typeof business_name !== "string") {
+    return res.status(400).json({ error: "business_name is required" });
+  }
+
+  if (!university || typeof university !== "string") {
+    return res.status(400).json({ error: "university is required" });
+  }
+
+  try {
+    const existing = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Seller profile not found" });
     }
 
+    const safeLogoUrl = typeof business_logo === "string" && business_logo.trim() ? business_logo.trim() : null;
+
+    db.prepare(`
+      UPDATE sellers
+      SET business_name = ?, business_logo = ?, university = ?, bio = ?
+      WHERE uid = ?
+    `).run(
+      business_name,
+      safeLogoUrl,
+      university,
+      bio ?? null,
+      uid
+    );
+
+    // Sync profile fields to Firestore via Admin SDK (bypasses client-side security rules)
     try {
-      const seller = db
-        .prepare(`SELECT uid, deleted_at, delete_effective_at FROM sellers WHERE uid = ? LIMIT 1`)
-        .get(uid) as any;
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set({
+        business_name,
+        business_logo: safeLogoUrl,
+        university,
+        bio: bio ?? null,
+      }, { merge: true });
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync profile update to Firestore:", firestoreSyncError);
+    }
 
-      if (!seller || seller.deleted_at) {
-        return res.status(404).json({ error: "Seller profile not found" });
-      }
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Profile update error:", error);
+    res.status(500).json({ error: "Failed to update profile" });
+  }
+});
 
-      const existingOpenListings = db
-        .prepare(`SELECT COUNT(*) AS count FROM listings WHERE seller_uid = ? AND deleted_at IS NULL AND (status != 'sold' AND sold_quantity < quantity)`)
-        .get(uid) as { count?: number } | undefined;
+app.put("/api/account", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+  const { university, profile_picture } = req.body;
 
-      if ((existingOpenListings?.count ?? 0) > 0) {
-        return res.status(400).json({ error: "Please close or sell all listings before deleting your profile" });
-      }
+  if (!university || typeof university !== "string") {
+    return res.status(400).json({ error: "university is required" });
+  }
 
+  try {
+    const existing = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!existing) {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
+    const safePicture = typeof profile_picture === "string" && profile_picture.trim() ? profile_picture.trim() : null;
+
+    db.prepare(`
+      UPDATE sellers
+      SET university = ?, profile_picture = ?
+      WHERE uid = ?
+    `).run(university, safePicture, uid);
+
+    try {
+      const adminApp = getFirebaseAdmin();
+      await adminApp.firestore().collection("users").doc(uid).set({
+        university,
+        profile_picture: safePicture,
+      }, { merge: true });
+    } catch (firestoreSyncError) {
+      console.warn("Failed to sync account update to Firestore:", firestoreSyncError);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Account update error:", error);
+    res.status(500).json({ error: "Failed to update account" });
+  }
+});
+
+app.get("/api/profile/seller-application", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+
+  try {
+    const latestApplication = db.prepare(`
+      SELECT id, status, created_at, updated_at, reviewed_at, review_notes
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(uid);
+
+    res.json(latestApplication || null);
+  } catch (error) {
+    console.error("Get seller application error:", error);
+    res.status(500).json({ error: "Failed to load seller application status" });
+  }
+});
+
+ app.post("/api/profile/become-seller", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const email = (req.user as any)?.email || null;
+  const {
+    full_legal_name,
+    institution,
+    applicant_type,
+    institution_id_number,
+    whatsapp_number,
+    business_name,
+    what_to_sell,
+    business_description,
+    reason_for_applying,
+    proof_document_url,
+    agreed_to_rules,
+  } = req.body;
+
+  if (!full_legal_name || typeof full_legal_name !== "string") {
+    return res.status(400).json({ error: "full_legal_name is required" });
+  }
+
+  if (!institution || typeof institution !== "string") {
+    return res.status(400).json({ error: "institution is required" });
+  }
+
+  if (!applicant_type || typeof applicant_type !== "string") {
+    return res.status(400).json({ error: "applicant_type is required" });
+  }
+
+  if (!["student", "staff", "registered_business"].includes(applicant_type)) {
+    return res.status(400).json({ error: "Invalid applicant_type" });
+  }
+
+  if (!institution_id_number || typeof institution_id_number !== "string") {
+    return res.status(400).json({ error: "institution_id_number is required" });
+  }
+
+  if (!whatsapp_number || typeof whatsapp_number !== "string") {
+    return res.status(400).json({ error: "whatsapp_number is required" });
+  }
+
+  if (!business_name || typeof business_name !== "string") {
+    return res.status(400).json({ error: "business_name is required" });
+  }
+
+  if (!what_to_sell || typeof what_to_sell !== "string") {
+    return res.status(400).json({ error: "what_to_sell is required" });
+  }
+
+  if (!business_description || typeof business_description !== "string") {
+    return res.status(400).json({ error: "business_description is required" });
+  }
+
+  if (!reason_for_applying || typeof reason_for_applying !== "string") {
+    return res.status(400).json({ error: "reason_for_applying is required" });
+  }
+
+  if (!proof_document_url || typeof proof_document_url !== "string") {
+    return res.status(400).json({ error: "proof_document_url is required" });
+  }
+
+  if (agreed_to_rules !== true && agreed_to_rules !== 1) {
+    return res.status(400).json({ error: "You must agree to seller rules and prohibited-items policy" });
+  }
+
+  try {
+    const existing = db.prepare(`
+      SELECT id
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(uid) as { id: number } | undefined;
+
+    if (existing) {
       db.prepare(`
-        UPDATE sellers
-        SET deleted_at = CURRENT_TIMESTAMP,
-            delete_requested_at = CURRENT_TIMESTAMP,
-            delete_effective_at = DATETIME(CURRENT_TIMESTAMP, '+7 days'),
-            updated_at = CURRENT_TIMESTAMP
-        WHERE uid = ?
-      `).run(uid);
-
-      return res.json({ success: true });
-    } catch (error) {
-      console.error("User profile delete request error:", error);
-      res.status(500).json({ error: "Failed to delete seller profile" });
-    }
-  });
-
-  app.get("/api/listings/:id/ratings", (req, res) => {
-    const listingId = Number(req.params.id);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "Invalid listing id" });
-    }
-
-    try {
-      const listing = db
-        .prepare(`SELECT id, seller_uid FROM listings WHERE id = ? LIMIT 1`)
-        .get(listingId) as { id?: number; seller_uid?: string } | undefined;
-
-      if (!listing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-
-      const summary = db
-        .prepare(`
-          SELECT
-            AVG(rating) AS average_rating,
-            COUNT(*) AS rating_count
-          FROM seller_ratings
-          WHERE seller_uid = ? AND listing_id = ?
-        `)
-        .get(listing.seller_uid, listingId) as { average_rating?: number | null; rating_count?: number | null } | undefined;
-
-      const userRating = req.user?.uid
-        ? db
-            .prepare(`
-              SELECT rating
-              FROM seller_ratings
-              WHERE seller_uid = ? AND listing_id = ? AND rater_uid = ?
-              LIMIT 1
-            `)
-            .get(listing.seller_uid, listingId, req.user.uid) as { rating?: number } | undefined
-        : undefined;
-
-      res.json({
-        averageRating: summary?.average_rating ?? 0,
-        ratingCount: summary?.rating_count ?? 0,
-        myRating: userRating?.rating ?? null,
-      });
-    } catch (error) {
-      console.error("Listing ratings fetch error:", error);
-      res.status(500).json({ error: "Failed to load ratings" });
-    }
-  });
-
-  app.post("/api/listings/:id/ratings", requireFirebaseUser, async (req, res) => {
-    const listingId = Number(req.params.id);
-    const ratingValue = Number((req.body as any)?.rating);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "Invalid listing id" });
-    }
-
-    if (!Number.isFinite(ratingValue) || ratingValue < 1 || ratingValue > 5) {
-      return res.status(400).json({ error: "Rating must be between 1 and 5" });
-    }
-
-    try {
-      const listing = db
-        .prepare(`SELECT id, seller_uid FROM listings WHERE id = ? LIMIT 1`)
-        .get(listingId) as { id?: number; seller_uid?: string } | undefined;
-
-      if (!listing) {
-        return res.status(404).json({ error: "Listing not found" });
-      }
-
-      if (!req.user?.uid) {
-        return res.status(401).json({ error: "Authentication required" });
-      }
-
-      if (listing.seller_uid === req.user.uid) {
-        return res.status(400).json({ error: "You cannot rate your own listing" });
-      }
-
-      db.prepare(`
-        INSERT INTO seller_ratings (seller_uid, listing_id, rater_uid, rating)
-        VALUES (?, ?, ?, ?)
-        ON CONFLICT(seller_uid, listing_id, rater_uid) DO UPDATE SET
-          rating = excluded.rating,
+        UPDATE seller_applications
+        SET
+          applicant_email = ?,
+          full_legal_name = ?,
+          institution = ?,
+          applicant_type = ?,
+          institution_id_number = ?,
+          whatsapp_number = ?,
+          business_name = ?,
+          what_to_sell = ?,
+          business_description = ?,
+          reason_for_applying = ?,
+          proof_document_url = ?,
+          agreed_to_rules = 1,
+          status = 'pending',
+          reviewed_by_uid = NULL,
+          review_notes = NULL,
+          reviewed_at = NULL,
           updated_at = CURRENT_TIMESTAMP
-      `).run(listing.seller_uid, listingId, req.user.uid, ratingValue);
-
-      const summary = db
-        .prepare(`
-          SELECT AVG(rating) AS average_rating, COUNT(*) AS rating_count
-          FROM seller_ratings
-          WHERE seller_uid = ? AND listing_id = ?
-        `)
-        .get(listing.seller_uid, listingId) as { average_rating?: number | null; rating_count?: number | null } | undefined;
-
-      return res.json({
-        success: true,
-        averageRating: summary?.average_rating ?? ratingValue,
-        ratingCount: summary?.rating_count ?? 1,
-        myRating: ratingValue,
-      });
-    } catch (error) {
-      console.error("Listing rating save error:", error);
-      res.status(500).json({ error: "Failed to save rating" });
+        WHERE id = ?
+      `).run(
+        email,
+        full_legal_name.trim(),
+        institution.trim(),
+        applicant_type,
+        institution_id_number.trim(),
+        whatsapp_number.trim(),
+        business_name.trim(),
+        what_to_sell.trim(),
+        business_description.trim(),
+        reason_for_applying.trim(),
+        proof_document_url.trim(),
+        existing.id
+      );
+    } else {
+      db.prepare(`
+        INSERT INTO seller_applications (
+          applicant_uid,
+          applicant_email,
+          full_legal_name,
+          institution,
+          applicant_type,
+          institution_id_number,
+          whatsapp_number,
+          business_name,
+          what_to_sell,
+          business_description,
+          reason_for_applying,
+          proof_document_url,
+          agreed_to_rules,
+          status
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 'pending')
+      `).run(
+        uid,
+        email,
+        full_legal_name.trim(),
+        institution.trim(),
+        applicant_type,
+        institution_id_number.trim(),
+        whatsapp_number.trim(),
+        business_name.trim(),
+        what_to_sell.trim(),
+        business_description.trim(),
+        reason_for_applying.trim(),
+        proof_document_url.trim()
+      );
     }
-  });
 
-  app.get("/api/sellers", async (req, res) => {
-    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
-    const offset = Math.max(0, Number(req.query.offset) || 0);
-    const search = toTrimmedString(req.query.search);
+    const latestApplication = db.prepare(`
+      SELECT id, status, created_at, updated_at
+      FROM seller_applications
+      WHERE applicant_uid = ?
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).get(uid);
 
-    try {
-      let query = `
-        SELECT uid, business_name, university, business_logo, profile_picture, is_verified, shop_slug, location, seller_type,
-               avg_rating, rating_count, profile_views, business_type, business_category, created_at, updated_at
+    const seller = db.prepare("SELECT is_seller FROM sellers WHERE uid = ?").get(uid) as { is_seller?: number } | undefined;
+    if (!seller) {
+      db.prepare(`
+        INSERT INTO sellers (uid, email, is_verified, is_seller)
+        VALUES (?, ?, ?, 0)
+      `).run(uid, email, (req.user as any)?.email_verified ? 1 : 0);
+    }
+
+    res.json({
+      success: true,
+      application: latestApplication,
+      message: "Application submitted and pending review",
+    });
+  } catch (error) {
+    console.error("Become seller error:", error);
+    res.status(500).json({ error: "Failed to submit seller application" });
+  }
+});
+
+ app.post("/api/listings", requireAuth, (req, res) => { 
+// ✅ seller_uid MUST come from verified token
+  const seller_uid = req.user!.uid;
+   const seller = db
+     .prepare(`
+        SELECT is_verified, is_seller, is_suspended
         FROM sellers
-        WHERE deleted_at IS NULL
-      `;
-      const params: any[] = [];
-      if (search) {
-        query += ` AND (business_name LIKE ? OR university LIKE ? OR location LIKE ? OR seller_type LIKE ? OR business_type LIKE ? OR business_category LIKE ?)`;
-        const like = `%${search}%`;
-        params.push(like, like, like, like, like, like);
-      }
-      query += ` ORDER BY is_verified DESC, COALESCE(avg_rating, 0) DESC, rating_count DESC, COALESCE(profile_views, 0) DESC, business_name ASC LIMIT ? OFFSET ?`;
-      params.push(limit, offset);
+        WHERE uid = ?
+      `)
+      .get(seller_uid) as
+        | { is_verified?: number; is_seller?: number; is_suspended?: number }
+        | undefined;
+    
+if (!seller) {
+  return res.status(404).json({ error: "Seller profile not found" });
+}
 
-      const rows = db.prepare(query).all(...params) as any[];
-      res.json({ sellers: rows });
-    } catch (error) {
-      console.error("Seller list fetch error:", error);
-      res.status(500).json({ error: "Failed to load sellers" });
+if (seller.is_suspended === 1) {
+  return res.status(403).json({ error: "Seller account is suspended" });
+}
+
+const approvedApplication = db
+  .prepare(`
+    SELECT status
+    FROM seller_applications
+    WHERE applicant_uid = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `)
+  .get(seller_uid) as { status?: string } | undefined;
+
+const canPostListing =
+  seller.is_seller === 1 ||
+  seller.is_verified === 1 ||
+  approvedApplication?.status === "approved";
+
+if (!canPostListing) {
+  return res.status(403).json({ error: "Account not verified" });
+}
+
+// Optional safety sync for approved sellers
+if (approvedApplication?.status === "approved" && seller.is_seller !== 1) {
+  db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(seller_uid);
+}
+
+const {
+  name,
+  price,
+  description,
+  category,
+  subcategory,
+  item_type,
+  spec_values,
+  university,
+  photos,
+  video_url,
+  status,
+  condition,
+  quantity,
+  sold_quantity,
+  original_price,
+  discount_percent,
+  deal_label,
+  deal_expires_at,
+  can_sell_individually,
+  listing_mode,
+  is_wholesale,
+  pack_size,
+  bulk_units,
+} = req.body;
+const allowedConditions = ["new", "used", "refurbished"];
+const safeCondition = allowedConditions.includes(condition) ? condition : "used";
+const safeName = typeof name === "string" ? name.trim() : "";
+const safeCategory = typeof category === "string" ? category.trim() : "";
+const safeUniversity = typeof university === "string" ? university.trim() : "";
+const numericPrice = Number(price);
+
+    // ✅ Validate photos + video
+const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
+if (safePhotos.length < 1) {
+  return res.status(400).json({ error: "At least 1 photo is required" });
+}
+if (safePhotos.length > 5) {
+  return res.status(400).json({ error: "Max 5 photos allowed" });
+}
+
+const safeVideoUrl =
+  video_url && typeof video_url === "string" && video_url.trim().length > 0
+    ? video_url.trim()
+    : null;
+
+const safeStatus = status === "sold" ? "sold" : "available";
+const safeQuantity = Math.max(1, Number(quantity) || 1);
+const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
+const safeSubcategory =
+  typeof subcategory === "string" && subcategory.trim().length > 0
+    ? subcategory.trim()
+    : null;
+
+const safeItemType =
+  typeof item_type === "string" && item_type.trim().length > 0
+    ? item_type.trim()
+    : null;
+
+const safeSpecValues =
+  spec_values && typeof spec_values === "object" && !Array.isArray(spec_values)
+    ? JSON.stringify(spec_values)
+    : JSON.stringify({});
+
+if (!isMeaningfulTitle(safeName)) {
+  return res.status(400).json({ error: "Title is missing or not meaningful" });
+}
+
+if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+  return res.status(400).json({ error: "price must be greater than 0" });
+}
+
+if (!safeCategory) {
+  return res.status(400).json({ error: "category is required" });
+}
+
+if (!safeUniversity) {
+  return res.status(400).json({ error: "university is required" });
+}
+
+if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
+  return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
+}
+
+  const pricing = normalizeListingPricing(req.body);
+  const safeListingMode = pricing.listing_mode;
+  const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
+  const safePackSize = toFiniteNumber(pack_size);
+  const safeBulkUnits = toTrimmedString(bulk_units);
+  const safeDealExpiresAt = pricing.deal_expires_at;
+  const safeCanSellIndividually = pricing.can_sell_individually;
+
+  if (pricing.price <= 0) {
+    return res.status(400).json({ error: "Price must be greater than 0" });
+  }
+
+  if (
+    pricing.discount_percent !== null &&
+    (pricing.discount_percent <= 0 || pricing.discount_percent > 100)
+  ) {
+    return res.status(400).json({ error: "Discount percent must be between 1 and 100" });
+  }
+
+  if (isWholesale) {
+    if (!safePackSize || safePackSize < 1 || !Number.isInteger(safePackSize)) {
+      return res.status(400).json({ error: "Wholesale pack size must be a whole number of at least 1" });
     }
-  });
 
-  app.get("/api/sellers/:uid", async (req, res) => {
-    const uid = String(req.params.uid || "").trim();
-    if (!uid) {
-      return res.status(400).json({ error: "Invalid seller id" });
+    if (!safeBulkUnits) {
+      return res.status(400).json({ error: "Wholesale bulk units are required" });
+    }
+  }
+
+  try {
+    const info = db.prepare(`
+  INSERT INTO listings (
+    seller_uid,
+    name,
+    price,
+    original_price,
+    discount_percent,
+    deal_label,
+    deal_expires_at,
+    can_sell_individually,
+    single_item_price,
+    listing_mode,
+    is_wholesale,
+    pack_size,
+    bulk_units,
+    description,
+    category,
+    subcategory,
+    item_type,
+    spec_values,
+    university,
+    photos,
+    video_url,
+    status,
+    condition,
+    quantity,
+    sold_quantity
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+`).run(
+  seller_uid,
+  safeName,
+  pricing.price,
+  pricing.original_price,
+  pricing.discount_percent,
+  pricing.deal_label,
+  safeDealExpiresAt,
+  safeCanSellIndividually,
+  pricing.single_item_price,
+  safeListingMode,
+  isWholesale ? 1 : 0,
+  safePackSize ?? null,
+  safeBulkUnits ?? null,
+  description ?? null,
+  safeCategory,
+  safeSubcategory,
+  safeItemType,
+  safeSpecValues,
+  safeUniversity,
+  JSON.stringify(safePhotos),
+  safeVideoUrl,
+  safeStatus,
+  safeCondition,
+  safeQuantity,
+  safeSoldQuantity
+);
+    res.json({ id: info.lastInsertRowid });
+  } catch (error) {
+    console.error("Listing error:", error);
+    res.status(500).json({ error: "Failed to create listing" });
+  }
+});
+  // ✅ Public seller profile by uid
+app.get("/api/users/:uid", (req, res) => {
+  const { uid } = req.params;
+
+  try {
+    const seller = db
+      .prepare(
+        "SELECT uid, business_name, business_logo, university, bio, is_verified, is_seller, join_date FROM sellers WHERE uid = ?"
+      )
+      .get(uid);
+
+    if (!seller) return res.status(404).json({ error: "User not found" });
+
+    res.json(seller);
+  } catch (e: any) {
+    console.error("GET /api/users/:uid error:", e);
+    res.status(500).json({ error: "Failed to load profile" });
+  }
+});
+
+// ✅ Public listings for a seller
+app.get("/api/users/:uid/listings", (req, res) => {
+  const { uid } = req.params;
+
+  try {
+    const rows = db
+      .prepare(`
+        SELECT l.*, s.business_name, s.business_logo, s.is_verified
+        FROM listings l
+        JOIN sellers s ON l.seller_uid = s.uid
+        WHERE l.seller_uid = ? AND l.is_hidden = 0 AND l.deleted_at IS NULL
+        ORDER BY l.created_at DESC
+      `)
+      .all(uid);
+
+    res.json(
+      rows.map((l: any) => serializeListingRow(l))
+    );
+  } catch (e: any) {
+    console.error("GET /api/users/:uid/listings error:", e);
+    res.status(500).json({ error: "Failed to load user listings" });
+  }
+});
+
+app.get("/api/users/:uid/rating-summary", attachOptionalAuth, (req, res) => {
+  const { uid } = req.params;
+  const rater_uid = req.user?.uid ?? null;
+
+  try {
+    const seller = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    const summary = db
+      .prepare(`
+        SELECT 
+          COUNT(*) as ratingCount,
+          ROUND(AVG(stars), 1) as averageRating
+        FROM seller_ratings
+        WHERE seller_uid = ?
+      `)
+      .get(uid) as { ratingCount: number; averageRating: number | null };
+
+    const mine = rater_uid
+      ? (db
+          .prepare(`
+            SELECT stars
+            FROM seller_ratings
+            WHERE seller_uid = ? AND rater_uid = ?
+          `)
+          .get(uid, rater_uid) as { stars: number } | undefined)
+      : undefined;
+
+    const rows = db
+      .prepare(
+        `
+          SELECT stars, COUNT(*) as count
+          FROM seller_ratings
+          WHERE seller_uid = ?
+          GROUP BY stars
+        `
+      )
+      .all(uid) as Array<{ stars: number; count: number }>;
+
+    const distribution = [5, 4, 3, 2, 1].map((star) => {
+      const match = rows.find((row) => row.stars === star);
+      const count = match?.count ?? 0;
+      const ratingCount = summary?.ratingCount ?? 0;
+      const percentage = ratingCount > 0 ? Math.round((count / ratingCount) * 100) : 0;
+      return { stars: star, count, percentage };
+    });
+
+    return res.json({
+      averageRating: summary?.averageRating ?? 0,
+      ratingCount: summary?.ratingCount ?? 0,
+      myRating: mine?.stars ?? null,
+      distribution,
+    });
+  } catch (e: any) {
+    console.error("GET /api/users/:uid/rating-summary error:", e);
+    return res.status(500).json({ error: "Failed to load rating summary" });
+  }
+});
+
+app.post("/api/users/:uid/rating", requireAuth, (req, res) => {
+  const seller_uid = req.params.uid;
+  const rater_uid = req.user!.uid;
+  const { stars } = req.body;
+
+  const safeStars = Number(stars);
+
+  if (!Number.isInteger(safeStars) || safeStars < 1 || safeStars > 5) {
+    return res.status(400).json({ error: "stars must be an integer from 1 to 5" });
+  }
+
+  if (seller_uid === rater_uid) {
+    return res.status(400).json({ error: "You cannot rate yourself" });
+  }
+
+  try {
+    const seller = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(seller_uid) as { uid: string } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    db.prepare(`
+      INSERT INTO seller_ratings (seller_uid, rater_uid, stars)
+      VALUES (?, ?, ?)
+      ON CONFLICT(seller_uid, rater_uid)
+      DO UPDATE SET
+        stars = excluded.stars,
+        updated_at = CURRENT_TIMESTAMP
+    `).run(seller_uid, rater_uid, safeStars);
+
+    const summary = db
+      .prepare(`
+        SELECT 
+          COUNT(*) as ratingCount,
+          ROUND(AVG(stars), 1) as averageRating
+        FROM seller_ratings
+        WHERE seller_uid = ?
+      `)
+      .get(seller_uid) as { ratingCount: number; averageRating: number | null };
+
+    return res.json({
+      success: true,
+      averageRating: summary?.averageRating ?? 0,
+      ratingCount: summary?.ratingCount ?? 0,
+      myRating: safeStars,
+    });
+  } catch (e: any) {
+    console.error("POST /api/users/:uid/rating error:", e);
+    return res.status(500).json({ error: "Failed to save rating" });
+  }
+});
+
+app.delete("/api/users/:uid/rating", requireAuth, (req, res) => {
+  const seller_uid = req.params.uid;
+  const rater_uid = req.user!.uid;
+
+  try {
+    const seller = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(seller_uid) as { uid: string } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    db.prepare(`
+      DELETE FROM seller_ratings
+      WHERE seller_uid = ? AND rater_uid = ?
+    `).run(seller_uid, rater_uid);
+
+    const summary = db
+      .prepare(`
+        SELECT 
+          COUNT(*) as ratingCount,
+          ROUND(AVG(stars), 1) as averageRating
+        FROM seller_ratings
+        WHERE seller_uid = ?
+      `)
+      .get(seller_uid) as { ratingCount: number; averageRating: number | null };
+
+    return res.json({
+      success: true,
+      averageRating: summary?.averageRating ?? 0,
+      ratingCount: summary?.ratingCount ?? 0,
+      myRating: null,
+    });
+  } catch (e: any) {
+    console.error("DELETE /api/users/:uid/rating error:", e);
+    return res.status(500).json({ error: "Failed to remove rating" });
+  }
+});
+  
+  app.delete("/api/listings/:id", requireAuth, async (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    // Load listing row for ownership and soft-delete state
+    const listing = db
+      .prepare("SELECT id, seller_uid, deleted_at FROM listings WHERE id = ?")
+      .get(id) as { id: number; seller_uid: string; deleted_at?: string | null } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    // Ownership check (keep exactly as before)
+    if (listing.seller_uid !== uid) {
+      return res.status(403).json({ error: "Forbidden: not your listing" });
+    }
+
+    if (listing.deleted_at) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare(`
+      UPDATE listings
+      SET
+        deleted_at = CURRENT_TIMESTAMP,
+        deleted_by_uid = ?,
+        hard_delete_after = datetime('now', '+90 days'),
+        is_hidden = 1,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND deleted_at IS NULL
+    `).run(uid, id);
+
+    return res.json({ success: true, hard_delete_after_days: 90 });
+  } catch (error) {
+    console.error("Delete error:", error);
+    return res.status(500).json({ error: "Failed to delete listing" });
+  }
+});
+
+  app.put("/api/listings/:id", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  const v = db
+  .prepare("SELECT is_verified, is_seller, is_suspended FROM sellers WHERE uid = ?")
+  .get(uid) as { is_verified?: number; is_seller?: number; is_suspended?: number } | undefined;
+
+if (!v) {
+  return res.status(404).json({ error: "Seller profile not found" });
+}
+if (v.is_suspended === 1) {
+  return res.status(403).json({ error: "Seller account is suspended" });
+}
+
+const approvedApplication = db
+  .prepare(`
+    SELECT status
+    FROM seller_applications
+    WHERE applicant_uid = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `)
+  .get(uid) as { status?: string } | undefined;
+
+const canEditListing =
+  v.is_seller === 1 ||
+  v.is_verified === 1 ||
+  approvedApplication?.status === "approved";
+
+if (!canEditListing) {
+  return res.status(403).json({ error: "Seller approval required to edit listings" });
+}
+
+if (approvedApplication?.status === "approved" && v.is_seller !== 1) {
+  db.prepare(`UPDATE sellers SET is_seller = 1 WHERE uid = ?`).run(uid);
+}
+
+    const {
+      name,
+      price,
+      description,
+      category,
+      subcategory,
+      item_type,
+      spec_values,
+      university,
+      photos,
+      video_url,
+      status,
+      condition,
+      quantity,
+      sold_quantity,
+      original_price,
+      discount_percent,
+      deal_label,
+      deal_expires_at,
+      can_sell_individually,
+      listing_mode,
+      is_wholesale,
+      pack_size,
+      bulk_units,
+    } = req.body;
+    const allowedConditions = ["new", "used", "refurbished"];
+    const safeCondition = allowedConditions.includes(condition) ? condition : "used";
+    const safeName = typeof name === "string" ? name.trim() : "";
+    const safeCategory = typeof category === "string" ? category.trim() : "";
+    const safeUniversity = typeof university === "string" ? university.trim() : "";
+    const numericPrice = Number(price);
+    const safePhotos = Array.isArray(photos) ? photos.filter((x) => typeof x === "string") : [];
+if (safePhotos.length < 1) {
+  return res.status(400).json({ error: "At least 1 photo is required" });
+}
+if (safePhotos.length > 5) {
+  return res.status(400).json({ error: "Max 5 photos allowed" });
+}
+
+const safeVideoUrl =
+  video_url && typeof video_url === "string" && video_url.trim().length > 0
+    ? video_url.trim()
+    : null;
+
+const safeStatus = status === "sold" ? "sold" : "available";
+const safeQuantity = Math.max(1, Number(quantity) || 1);
+const safeSoldQuantity = Math.max(0, Math.min(safeQuantity, Number(sold_quantity) || 0));
+const safeSubcategory =
+  typeof subcategory === "string" && subcategory.trim().length > 0
+    ? subcategory.trim()
+    : null;
+
+const safeItemType =
+  typeof item_type === "string" && item_type.trim().length > 0
+    ? item_type.trim()
+    : null;
+
+const safeSpecValues =
+  spec_values && typeof spec_values === "object" && !Array.isArray(spec_values)
+    ? JSON.stringify(spec_values)
+    : JSON.stringify({});
+
+const existingListing = db
+  .prepare("SELECT id, seller_uid, listing_mode FROM listings WHERE id = ? AND deleted_at IS NULL")
+  .get(id) as { id: number; seller_uid: string; listing_mode: "normal" | "deal" | "wholesale" } | undefined;
+
+if (!existingListing) {
+  return res.status(404).json({ error: "Listing not found" });
+}
+
+if (existingListing.seller_uid !== uid) {
+  return res.status(403).json({ error: "Forbidden: not your listing" });
+}
+
+const pricing = normalizeListingPricing(req.body, existingListing.listing_mode);
+const safeListingMode = pricing.listing_mode;
+const isWholesale = safeListingMode === "wholesale" ? true : pricing.is_wholesale === 1;
+const safePackSize = toFiniteNumber(pack_size);
+const safeBulkUnits = toTrimmedString(bulk_units);
+const safeDealExpiresAt = pricing.deal_expires_at;
+const safeCanSellIndividually = pricing.can_sell_individually;
+
+  // Minimal validation
+  if (!isMeaningfulTitle(safeName)) {
+    return res.status(400).json({ error: "Title is missing or not meaningful" });
+  }
+
+  if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
+    return res.status(400).json({ error: "price must be greater than 0" });
+  }
+
+  if (!safeCategory) {
+    return res.status(400).json({ error: "category is required" });
+  }
+
+  if (!safeUniversity) {
+    return res.status(400).json({ error: "university is required" });
+  }
+
+  if (!isValidListingHierarchy(safeCategory, safeSubcategory, safeItemType)) {
+    return res.status(400).json({ error: "category/subcategory/item_type mismatch" });
+  }
+
+  if (pricing.price <= 0) {
+    return res.status(400).json({ error: "Price must be greater than 0" });
+  }
+
+  if (
+    pricing.discount_percent !== null &&
+    (pricing.discount_percent <= 0 || pricing.discount_percent > 100)
+  ) {
+    return res.status(400).json({ error: "Discount percent must be between 1 and 100" });
+  }
+
+  if (isWholesale) {
+    if (!safePackSize || safePackSize < 1 || !Number.isInteger(safePackSize)) {
+      return res.status(400).json({ error: "Wholesale pack size must be a whole number of at least 1" });
+    }
+
+    if (!safeBulkUnits) {
+      return res.status(400).json({ error: "Wholesale bulk units are required" });
+    }
+  }
+
+  try {
+    db.prepare(`
+      UPDATE listings
+      SET
+        name = ?,
+        price = ?,
+        original_price = ?,
+        discount_percent = ?,
+        deal_label = ?,
+        deal_expires_at = ?,
+        can_sell_individually = ?,
+        single_item_price = ?,
+        listing_mode = ?,
+        is_wholesale = ?,
+        pack_size = ?,
+        bulk_units = ?,
+        description = ?,
+        category = ?,
+        subcategory = ?,
+        item_type = ?,
+        spec_values = ?,
+        university = ?,
+        photos = ?,
+        video_url = ?,
+        status = ?,
+        condition = ?,
+        quantity = ?,
+        sold_quantity = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      safeName,
+      numericPrice,
+      pricing.original_price,
+      pricing.discount_percent,
+      pricing.deal_label,
+      safeDealExpiresAt,
+      safeCanSellIndividually,
+      pricing.single_item_price,
+      safeListingMode,
+      isWholesale ? 1 : 0,
+      safePackSize ?? null,
+      safeBulkUnits ?? null,
+      description ?? null,
+      safeCategory,
+      safeSubcategory,
+      safeItemType,
+      safeSpecValues,
+      safeUniversity,
+      JSON.stringify(safePhotos),
+      safeVideoUrl,
+      safeStatus,
+      safeCondition,
+      safeQuantity,
+      safeSoldQuantity,
+      id
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Update error:", error);
+    res.status(500).json({ error: "Failed to update listing" });
+  }
+});
+app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "Invalid listing id" });
+
+  const { status } = req.body;
+  const safeStatus = status === "sold" ? "sold" : "available";
+
+  try {
+    const listing = db
+      .prepare("SELECT id, seller_uid FROM listings WHERE id = ? AND deleted_at IS NULL")
+      .get(id) as { id: number; seller_uid: string } | undefined;
+
+    if (!listing) return res.status(404).json({ error: "Listing not found" });
+    if (listing.seller_uid !== uid) return res.status(403).json({ error: "Forbidden: not your listing" });
+
+    db.prepare("UPDATE listings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(safeStatus, id);
+
+    res.json({ success: true, status: safeStatus });
+  } catch (error) {
+    console.error("PATCH /api/listings/:id/status error:", error);
+    res.status(500).json({ error: "Failed to update listing status" });
+  }
+});
+
+app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  const quantity = Number(req.body?.quantity ?? 1);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be greater than 0" });
+  }
+
+  try {
+    const listing = db
+      .prepare(
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL"
+      )
+      .get(id) as
+      | {
+          id: number;
+          seller_uid: string;
+          quantity: number;
+          sold_quantity: number;
+          status: string;
+        }
+      | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    if (listing.seller_uid !== uid) {
+      return res.status(403).json({ error: "Forbidden: not your listing" });
+    }
+
+    const available = Math.max(0, Number(listing.quantity) - Number(listing.sold_quantity));
+    if (quantity > available) {
+      return res.status(400).json({
+        error: `Cannot record ${quantity} sale(s). Only ${available} item(s) available.`,
+      });
+    }
+
+    const nextSoldQuantity = Number(listing.sold_quantity) + quantity;
+    const nextStatus = nextSoldQuantity >= Number(listing.quantity) ? "sold" : listing.status;
+
+    db.prepare(`
+      UPDATE listings
+      SET
+        sold_quantity = ?,
+        status = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(nextSoldQuantity, nextStatus, id);
+
+    const updated = db
+      .prepare(
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL LIMIT 1"
+      )
+      .get(id);
+
+    return res.json({
+      success: true,
+      listing: updated,
+      available_quantity: Math.max(0, Number(listing.quantity) - nextSoldQuantity),
+    });
+  } catch (error) {
+    console.error("POST /api/listings/:id/record-sale error:", error);
+    return res.status(500).json({ error: "Failed to record sale" });
+  }
+});
+
+app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+  const id = Number(req.params.id);
+  const quantity = Number(req.body?.quantity ?? 1);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    return res.status(400).json({ error: "quantity must be greater than 0" });
+  }
+
+  try {
+    const listing = db
+      .prepare(
+        "SELECT id, seller_uid, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL"
+      )
+      .get(id) as
+      | {
+          id: number;
+          seller_uid: string;
+          quantity: number;
+          sold_quantity: number;
+          status: string;
+        }
+      | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    if (listing.seller_uid !== uid) {
+      return res.status(403).json({ error: "Forbidden: not your listing" });
+    }
+
+    const nextQuantity = Number(listing.quantity) + quantity;
+    const nextStatus =
+      listing.status === "sold" && Number(listing.sold_quantity) < nextQuantity
+        ? "available"
+        : listing.status;
+
+    db.prepare(`
+      UPDATE listings
+      SET
+        quantity = ?,
+        status = ?,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(nextQuantity, nextStatus, id);
+
+    const updated = db
+      .prepare(
+        "SELECT id, quantity, sold_quantity, status FROM listings WHERE id = ? AND deleted_at IS NULL LIMIT 1"
+      )
+      .get(id);
+
+    return res.json({
+      success: true,
+      listing: updated,
+      available_quantity: Math.max(0, nextQuantity - Number(listing.sold_quantity)),
+    });
+  } catch (error) {
+    console.error("POST /api/listings/:id/restock error:", error);
+    return res.status(500).json({ error: "Failed to restock listing" });
+  }
+});
+
+// --- helper: get Cloudinary public_id from a Cloudinary URL ---
+function cloudinaryPublicIdFromUrl(rawUrl: string): string | null {
+  try {
+    const u = new URL(rawUrl);
+    const parts = u.pathname.split("/").filter(Boolean);
+
+    // Find the "upload" segment
+    const uploadIndex = parts.findIndex(p => p === "upload");
+    if (uploadIndex === -1) return null;
+
+    // Everything after "upload"
+    let after = parts.slice(uploadIndex + 1);
+
+    // Remove transformations (they contain commas/underscores like c_fill,w_400)
+    // Keep skipping until we reach either v123 or the actual folder/file
+    while (after.length && !/^v\d+$/.test(after[0]) && after[0].includes(",")) {
+      after = after.slice(1);
+    }
+
+    // Drop version segment if present
+    if (after.length && /^v\d+$/.test(after[0])) after = after.slice(1);
+
+    if (!after.length) return null;
+
+    // Last part is filename.ext
+    const filename = after[after.length - 1];
+    const dot = filename.lastIndexOf(".");
+    if (dot === -1) return null;
+
+    // Replace last segment with filename without extension
+    after[after.length - 1] = filename.slice(0, dot);
+
+    // public_id is the remaining path
+    return after.join("/");
+  } catch {
+    return null;
+  }
+}
+
+type ExpiredListingRow = {
+  id: number;
+  photos: string | null;
+  video_url?: string | null;
+};
+
+async function purgeExpiredSoftDeletedListings() {
+  const expiredListings = db
+    .prepare(`
+      SELECT id, photos, video_url
+      FROM listings
+      WHERE deleted_at IS NOT NULL
+        AND hard_delete_after IS NOT NULL
+        AND hard_delete_after <= CURRENT_TIMESTAMP
+      LIMIT 50
+    `)
+    .all() as ExpiredListingRow[];
+
+  for (const listing of expiredListings) {
+    const mediaUrls: string[] = [];
+    try {
+      const parsedPhotos = JSON.parse(listing.photos || "[]");
+      if (Array.isArray(parsedPhotos)) {
+        mediaUrls.push(...parsedPhotos.filter((url) => typeof url === "string"));
+      }
+    } catch (error) {
+      console.warn("Failed to parse photos JSON for expired listing", listing.id, error);
+    }
+
+    if (listing.video_url && listing.video_url.trim().length > 0) {
+      mediaUrls.push(listing.video_url);
+    }
+
+    const publicIds = Array.from(
+      new Set(
+        mediaUrls
+          .map((url) => cloudinaryPublicIdFromUrl(url))
+          .filter((publicId): publicId is string => Boolean(publicId))
+      )
+    );
+
+    for (const publicId of publicIds) {
+      try {
+        let result = await cloudinary.uploader.destroy(publicId, { resource_type: "image" });
+        if (result?.result === "not found") {
+          result = await cloudinary.uploader.destroy(publicId, { resource_type: "video" });
+        }
+      } catch (error) {
+        console.warn("Failed to purge Cloudinary asset for expired listing", listing.id, publicId, error);
+      }
     }
 
     try {
-      const seller = db
-        .prepare(`
-          SELECT uid, email, business_name, university, bio, profile_picture, business_logo, shop_slug, is_verified,
-                 location, whatsapp_number, phone_number, seller_type, market_name, avg_rating, rating_count,
-                 profile_views, business_type, business_category, created_at, updated_at, seller_since, deleted_at
-          FROM sellers
-          WHERE uid = ?
-          LIMIT 1
-        `)
-        .get(uid) as any;
+      db.prepare("DELETE FROM reports WHERE listing_id = ?").run(listing.id);
+      db.prepare("DELETE FROM listings WHERE id = ? AND deleted_at IS NOT NULL").run(listing.id);
+    } catch (error) {
+      console.warn("Failed to purge expired listing row", listing.id, error);
+    }
+  }
+}
 
-      if (!seller || seller.deleted_at) {
-        return res.status(404).json({ error: "Seller profile not found" });
-      }
+let listingPurgeRunning = false;
+function scheduleExpiredListingPurge() {
+  const runPurge = () => {
+    if (listingPurgeRunning) return;
+    listingPurgeRunning = true;
+    purgeExpiredSoftDeletedListings()
+      .catch((error) => console.warn("Expired listing purge failed:", error))
+      .finally(() => {
+        listingPurgeRunning = false;
+      });
+  };
+
+  runPurge();
+  setInterval(runPurge, 24 * 60 * 60 * 1000).unref?.();
+}
+
+scheduleExpiredListingPurge();
+
+// ✅ Delete profile + all listings + all Cloudinary images
+app.delete(
+  "/api/profile",
+  (req, _res, next) => {
+    console.log("🔥 DELETE /api/profile request received");
+    next();
+  },
+  requireAuth,
+  async (req, res) => {
+    console.log("🔥 PROFILE DELETE ROUTE HIT (after auth)");
+
+    const uid = req.user!.uid;
+
+    try {
+      // 1) Load seller logo + listings
+      const seller = db
+        .prepare("SELECT business_logo, profile_picture FROM sellers WHERE uid = ?")
+        .get(uid) as { business_logo?: string | null; profile_picture?: string | null } | undefined;
 
       const listings = db
-        .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.is_verified
-          FROM listings l
-          JOIN sellers s ON l.seller_uid = s.uid
-          WHERE l.seller_uid = ?
-            AND l.is_hidden = 0
-            AND l.deleted_at IS NULL
-          ORDER BY
-            CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
-            l.created_at DESC
-        `)
-        .all(uid) as any[];
+  .prepare("SELECT id, photos, video_url FROM listings WHERE seller_uid = ?")
+  .all(uid) as { id: number; photos: string | null; video_url?: string | null }[];
 
-      res.json({
-        seller: {
-          uid: seller.uid,
-          email: seller.email ?? null,
-          business_name: seller.business_name ?? null,
-          university: seller.university ?? null,
-          bio: seller.bio ?? null,
-          profile_picture: seller.profile_picture ?? null,
-          business_logo: seller.business_logo ?? null,
-          shop_slug: seller.shop_slug ?? null,
-          is_verified: Boolean(seller.is_verified),
-          location: seller.location ?? null,
-          whatsapp_number: seller.whatsapp_number ?? null,
-          phone_number: seller.phone_number ?? null,
-          seller_type: seller.seller_type ?? null,
-          market_name: seller.market_name ?? null,
-          avg_rating: seller.avg_rating ?? null,
-          rating_count: seller.rating_count ?? null,
-          profile_views: seller.profile_views ?? null,
-          business_type: seller.business_type ?? null,
-          business_category: seller.business_category ?? null,
-          created_at: seller.created_at ?? null,
-          updated_at: seller.updated_at ?? null,
-          seller_since: seller.seller_since ?? null,
-        },
-        items: listings.map((item) => serializeListingRow(item)),
-      });
-    } catch (error) {
-      console.error("Seller profile fetch error:", error);
-      res.status(500).json({ error: "Failed to load seller profile" });
-    }
-  });
+const listingIds = listings.map((l) => l.id);
 
-  app.post("/api/sellers/:uid/increment-view", async (req, res) => {
-    const uid = String(req.params.uid || "").trim();
-    if (!uid) {
-      return res.status(400).json({ error: "Invalid seller id" });
-    }
+// 2) Collect media URLs (photos + video + seller logo)
+const photoUrls: string[] = [];
+for (const l of listings) {
+  // photos
+  try {
+    const arr = JSON.parse(l.photos || "[]");
+    if (Array.isArray(arr)) photoUrls.push(...arr);
+  } catch {}
 
-    try {
-      db.prepare(`UPDATE sellers SET profile_views = COALESCE(profile_views, 0) + 1, updated_at = CURRENT_TIMESTAMP WHERE uid = ?`).run(uid);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Seller view increment error:", error);
-      res.status(500).json({ error: "Failed to increment profile views" });
-    }
-  });
+  // video
+  if (l.video_url && typeof l.video_url === "string") {
+    photoUrls.push(l.video_url);
+  }
+}
 
-  app.post("/api/listings/:id/views", (req, res) => {
-    const listingId = Number(req.params.id);
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "Invalid listing id" });
-    }
+if (seller?.business_logo) {
+  photoUrls.push(seller.business_logo);
+}
 
-    try {
-      const result = db.prepare(`UPDATE listings SET views_count = COALESCE(views_count, 0) + 1 WHERE id = ?`).run(listingId);
-      if (result.changes === 0) {
-        return res.status(404).json({ error: "Listing not found" });
+if (seller?.profile_picture) {
+  photoUrls.push(seller.profile_picture);
+}
+
+      // 3) Convert to Cloudinary public_ids
+      const publicIds = Array.from(
+        new Set(
+          photoUrls
+            .map(u => (typeof u === "string" ? cloudinaryPublicIdFromUrl(u) : null))
+            .filter((x): x is string => Boolean(x))
+        )
+      );
+
+      // 4) Delete images from Cloudinary
+      const cloudinaryResults: any[] = [];
+      for (const pid of publicIds) {
+  // Try delete as image
+  try {
+    const rImg = await cloudinary.uploader.destroy(pid, { resource_type: "image" });
+    cloudinaryResults.push({ public_id: pid, type: "image", result: rImg });
+   } catch (e: any) {
+    cloudinaryResults.push({ public_id: pid, type: "image", error: e?.message || String(e) });
       }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Increment listing views error:", error);
-      res.status(500).json({ error: "Failed to increment listing views" });
-    }
-  });
 
-  // ✅ NEW: get all hidden sellers
-  app.get("/api/hidden-sellers", requireAuth, async (req, res) => {
-    try {
-      const rows = db
-        .prepare(`
-          SELECT seller_uid
-          FROM hidden_sellers
-          WHERE uid = ?
-          ORDER BY created_at DESC
-        `)
-        .all(req.user!.uid) as { seller_uid: string }[];
+  // Try delete as video
+  try {
+    const rVid = await cloudinary.uploader.destroy(pid, { resource_type: "video" });
+    cloudinaryResults.push({ public_id: pid, type: "video", result: rVid });
+      } catch (e: any) {
+    cloudinaryResults.push({ public_id: pid, type: "video", error: e?.message || String(e) });
+        }
+      }
 
-      res.json(rows.map((r) => r.seller_uid));
-    } catch (error) {
-      console.error("Hidden sellers fetch error:", error);
-      res.status(500).json({ error: "Failed to load hidden sellers" });
-    }
-  });
+      // 5) Delete DB rows
+      if (listingIds.length > 0) {
+        const placeholders = listingIds.map(() => "?").join(",");
+        db.prepare(`DELETE FROM reports WHERE listing_id IN (${placeholders})`).run(...listingIds);
+        db.prepare("DELETE FROM listings WHERE seller_uid = ?").run(uid);
+      }
 
-  // ✅ NEW: hide seller
-  app.post("/api/hidden-sellers", requireAuth, async (req, res) => {
-    const sellerUid = String((req.body as any)?.seller_uid || "").trim();
+      db.prepare("DELETE FROM seller_ratings WHERE seller_uid = ? OR rater_uid = ?").run(uid, uid);
+      db.prepare("DELETE FROM seller_applications WHERE applicant_uid = ?").run(uid);
 
-    if (!sellerUid) {
-      return res.status(400).json({ error: "seller_uid is required" });
-    }
-
-    try {
-      db.prepare(`
-        INSERT INTO hidden_sellers (uid, seller_uid)
-        VALUES (?, ?)
-        ON CONFLICT(uid, seller_uid) DO NOTHING
-      `).run(req.user!.uid, sellerUid);
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Hide seller error:", error);
-      res.status(500).json({ error: "Failed to hide seller" });
-    }
-  });
-
-  // ✅ NEW: unhide seller
-  app.delete("/api/hidden-sellers/:sellerUid", requireAuth, async (req, res) => {
-    const sellerUid = String(req.params.sellerUid || "").trim();
-
-    try {
-      db.prepare(`DELETE FROM hidden_sellers WHERE uid = ? AND seller_uid = ?`).run(req.user!.uid, sellerUid);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Unhide seller error:", error);
-      res.status(500).json({ error: "Failed to unhide seller" });
-    }
-  });
-
-  // ✅ NEW: get all hidden listing IDs
-  app.get("/api/hidden-listings", requireAuth, async (req, res) => {
-    try {
-      const rows = db
-        .prepare(`
-          SELECT listing_id
-          FROM hidden_listings
-          WHERE uid = ?
-          ORDER BY created_at DESC
-        `)
-        .all(req.user!.uid) as { listing_id: number }[];
-
-      res.json(rows.map((r) => r.listing_id));
-    } catch (error) {
-      console.error("Hidden listings fetch error:", error);
-      res.status(500).json({ error: "Failed to load hidden listings" });
-    }
-  });
-
-  // ✅ NEW: hide listing
-  app.post("/api/hidden-listings", requireAuth, async (req, res) => {
-    const listingId = Number((req.body as any)?.listing_id);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "listing_id must be a number" });
-    }
-
-    try {
-      db.prepare(`
-        INSERT INTO hidden_listings (uid, listing_id)
-        VALUES (?, ?)
-        ON CONFLICT(uid, listing_id) DO NOTHING
-      `).run(req.user!.uid, listingId);
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Hide listing error:", error);
-      res.status(500).json({ error: "Failed to hide listing" });
-    }
-  });
-
-  // ✅ NEW: unhide listing
-  app.delete("/api/hidden-listings/:listingId", requireAuth, async (req, res) => {
-    const listingId = Number(req.params.listingId);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "listingId must be a number" });
-    }
-
-    try {
-      db.prepare(`DELETE FROM hidden_listings WHERE uid = ? AND listing_id = ?`).run(req.user!.uid, listingId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Unhide listing error:", error);
-      res.status(500).json({ error: "Failed to unhide listing" });
-    }
-  });
-
-  // ✅ NEW: save listing
-  app.post("/api/saved-listings", requireAuth, async (req, res) => {
-    const listingId = Number((req.body as any)?.listing_id);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "listing_id must be a number" });
-    }
-
-    try {
-      db.prepare(`
-        INSERT INTO saved_listings (uid, listing_id)
-        VALUES (?, ?)
-        ON CONFLICT(uid, listing_id) DO NOTHING
-      `).run(req.user!.uid, listingId);
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Save listing error:", error);
-      res.status(500).json({ error: "Failed to save listing" });
-    }
-  });
-
-  // ✅ NEW: remove saved listing
-  app.delete("/api/saved-listings/:listingId", requireAuth, async (req, res) => {
-    const listingId = Number(req.params.listingId);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "listingId must be a number" });
-    }
-
-    try {
-      db.prepare(`DELETE FROM saved_listings WHERE uid = ? AND listing_id = ?`).run(req.user!.uid, listingId);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Remove saved listing error:", error);
-      res.status(500).json({ error: "Failed to remove saved listing" });
-    }
-  });
-
-  // ✅ NEW: get saved listings
-  app.get("/api/saved-listings", requireAuth, async (req, res) => {
-    try {
-      const rows = db
-        .prepare(`
-          SELECT listing_id
-          FROM saved_listings
-          WHERE uid = ?
-          ORDER BY created_at DESC
-        `)
-        .all(req.user!.uid) as { listing_id: number }[];
-
-      res.json(rows.map((r) => r.listing_id));
-    } catch (error) {
-      console.error("Saved listings fetch error:", error);
-      res.status(500).json({ error: "Failed to load saved listings" });
-    }
-  });
-
-  app.post("/api/reports", requireAuth, async (req, res) => {
-    const payload = req.body as any;
-    const listingId = Number(payload?.listing_id);
-    const reason = toTrimmedString(payload?.reason);
-    const details = toTrimmedString(payload?.details);
-
-    if (!Number.isInteger(listingId)) {
-      return res.status(400).json({ error: "listing_id must be a number" });
-    }
-
-    if (!reason) {
-      return res.status(400).json({ error: "reason is required" });
-    }
-
-    try {
-      const inserted = db
-        .prepare(`
-          INSERT INTO reports (
-            listing_id,
-            reporter_uid,
-            reason,
-            details,
-            status,
-            created_at,
-            updated_at
-          ) VALUES (?, ?, ?, ?, 'pending', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        `)
-        .run(listingId, req.user!.uid, reason, details || null);
-
-      res.json({ success: true, report_id: inserted.lastInsertRowid });
-    } catch (error) {
-      console.error("Create report error:", error);
-      res.status(500).json({ error: "Failed to submit report" });
-    }
-  });
-
-  app.get("/api/reports", requireAuth, async (req, res) => {
-    try {
-      const rows = db
-        .prepare(`
-          SELECT r.*, l.name AS listing_name, l.photos AS listing_photos, l.category AS listing_category
-          FROM reports r
-          LEFT JOIN listings l ON l.id = r.listing_id
-          WHERE r.reporter_uid = ?
-          ORDER BY r.created_at DESC
-        `)
-        .all(req.user!.uid) as any[];
+      db.prepare("DELETE FROM sellers WHERE uid = ?").run(uid);
 
       res.json({
-        reports: rows.map((row) => ({
-          id: row.id,
-          listing_id: row.listing_id,
-          listing_name: row.listing_name ?? null,
-          listing_photos: row.listing_photos ?? null,
-          listing_category: row.listing_category ?? null,
-          reason: row.reason,
-          details: row.details ?? null,
-          status: row.status,
-          created_at: row.created_at,
-          updated_at: row.updated_at,
-        })),
+        success: true,
+        deletedListings: listingIds.length,
+        deletedCloudinaryAssets: publicIds.length,
+        cloudinaryResults,
       });
-    } catch (error) {
-      console.error("Reports fetch error:", error);
-      res.status(500).json({ error: "Failed to load reports" });
+    } catch (error: any) {
+      console.error("Delete profile error:", error);
+      res.status(500).json({ error: "Failed to delete profile", details: error?.message || String(error) });
     }
-  });
+  }
+);
+  
+  app.post("/api/reports", requireAuth, (req, res) => {
+  const reporter_uid = req.user?.uid || null;
+  const reporter_email = (req.user as any)?.email || null;
 
-  app.get("/api/home-data", async (_req, res) => {
-    try {
-      const featuredListings = db
-        .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.is_verified
-          FROM listings l
-          JOIN sellers s ON l.seller_uid = s.uid
-          WHERE l.is_hidden = 0
-            AND l.deleted_at IS NULL
-          ORDER BY CASE WHEN l.status = 'sold' OR l.sold_quantity >= l.quantity THEN 1 ELSE 0 END ASC,
-                   l.views_count DESC,
-                   l.created_at DESC
-          LIMIT 12
-        `)
-        .all() as any[];
+  const {
+    type,
+    listing_id,
+    subject,
+    reason,
+    details,
+  } = req.body;
 
-      const topRatedSellers = db
-        .prepare(`
-          SELECT uid, business_name, university, business_logo, profile_picture, is_verified, avg_rating, rating_count, profile_views, business_type, business_category
-          FROM sellers
-          WHERE deleted_at IS NULL
-          ORDER BY is_verified DESC, COALESCE(avg_rating, 0) DESC, rating_count DESC, COALESCE(profile_views, 0) DESC, business_name ASC
-          LIMIT 8
-        `)
-        .all() as any[];
+  const safeType = type === "problem" ? "problem" : "listing";
+  const safeListingId =
+    listing_id !== undefined && listing_id !== null && listing_id !== ""
+      ? Number(listing_id)
+      : null;
 
-      const statsRow = db
-        .prepare(`
-          SELECT
-            COUNT(*) AS total_listings,
-            COUNT(DISTINCT seller_uid) AS total_sellers,
-            COUNT(CASE WHEN status = 'sold' OR sold_quantity >= quantity THEN 1 END) AS sold_listings,
-            COUNT(CASE WHEN deleted_at IS NULL AND is_hidden = 0 THEN 1 END) AS active_listings
-          FROM listings
-        `)
-        .get() as any;
+  const safeSubject =
+    typeof subject === "string" && subject.trim().length > 0
+      ? subject.trim()
+      : null;
 
-      res.json({
-        featuredListings: featuredListings.map((listing) => serializeListingRow(listing)),
-        topRatedSellers,
-        stats: {
-          totalListings: statsRow?.total_listings ?? 0,
-          totalSellers: statsRow?.total_sellers ?? 0,
-          soldListings: statsRow?.sold_listings ?? 0,
-          activeListings: statsRow?.active_listings ?? 0,
-        },
-      });
-    } catch (error) {
-      console.error("Home data fetch error:", error);
-      res.status(500).json({ error: "Failed to load home data" });
+  const safeReason =
+    typeof reason === "string" && reason.trim().length > 0
+      ? reason.trim()
+      : null;
+
+  const safeDetails =
+    typeof details === "string" && details.trim().length > 0
+      ? details.trim()
+      : null;
+
+  if (!safeReason) {
+    return res.status(400).json({ error: "reason is required" });
+  }
+
+  if (safeType === "listing") {
+    if (!safeListingId || Number.isNaN(safeListingId)) {
+      return res.status(400).json({ error: "listing_id is required for listing reports" });
     }
-  });
 
-  app.get("/api/user-summary", requireAuth, async (req, res) => {
-    try {
-      const user = db
-        .prepare(`
-          SELECT
-            uid,
-            business_name,
-            university,
-            email,
-            bio,
-            profile_picture,
-            business_logo,
-            shop_slug,
-            is_verified,
-            location,
-            whatsapp_number,
-            phone_number,
-            seller_type,
-            market_name,
-            avg_rating,
-            rating_count,
-            profile_views,
-            business_type,
-            business_category,
-            created_at,
-            updated_at,
-            seller_since
-          FROM sellers
-          WHERE uid = ?
-          LIMIT 1
-        `)
-        .get(req.user!.uid) as any;
+    const listing = db
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
+      .get(safeListingId);
 
-      const totals = db
-        .prepare(`
-          SELECT
-            COUNT(*) AS total_listings,
-            COUNT(CASE WHEN status = 'available' AND deleted_at IS NULL AND is_hidden = 0 THEN 1 END) AS active_listings,
-            COUNT(CASE WHEN status = 'sold' OR sold_quantity >= quantity THEN 1 END) AS sold_listings,
-            COUNT(CASE WHEN deleted_at IS NULL AND is_hidden = 0 THEN 1 END) AS visible_listings,
-            COALESCE(SUM(CASE WHEN deleted_at IS NULL AND is_hidden = 0 THEN price ELSE 0 END), 0) AS inventory_value,
-            COALESCE(SUM(views_count), 0) AS total_views,
-            COALESCE(SUM(whatsapp_clicks), 0) AS total_whatsapp_clicks
-          FROM listings
-          WHERE seller_uid = ?
-        `)
-        .get(req.user!.uid) as any;
-
-      const sellerRatings = db
-        .prepare(`
-          SELECT
-            COALESCE(AVG(rating), 0) AS average_rating,
-            COUNT(*) AS rating_count
-          FROM seller_ratings
-          WHERE seller_uid = ?
-        `)
-        .get(req.user!.uid) as any;
-
-      const recentListings = db
-        .prepare(`
-          SELECT l.*, s.business_name, s.business_logo, s.is_verified
-          FROM listings l
-          JOIN sellers s ON l.seller_uid = s.uid
-          WHERE l.seller_uid = ?
-          ORDER BY l.created_at DESC
-          LIMIT 5
-        `)
-        .all(req.user!.uid) as any[];
-
-      const ratingTotal = Number(sellerRatings?.rating_count ?? 0);
-      const repeatSellerActivity = ratingTotal >= 10 ? "strong" : ratingTotal >= 3 ? "developing" : "new";
-
-      const byCampusRows = db
-        .prepare(`
-          SELECT university, COUNT(*) AS count
-          FROM listings
-          WHERE seller_uid = ? AND deleted_at IS NULL
-          GROUP BY university
-          ORDER BY count DESC, university ASC
-        `)
-        .all(req.user!.uid) as { university: string; count: number }[];
-
-      const byCampus = byCampusRows.map((row) => ({
-        university: row.university,
-        count: row.count,
-      }));
-
-      const topListing = recentListings[0]
-        ? {
-            id: recentListings[0].id,
-            name: recentListings[0].name,
-            price: recentListings[0].price,
-            views_count: recentListings[0].views_count ?? 0,
-            whatsapp_clicks: recentListings[0].whatsapp_clicks ?? 0,
-          }
-        : null;
-
-      res.json({
-        profile: {
-          uid: user?.uid ?? req.user!.uid,
-          business_name: user?.business_name ?? null,
-          university: user?.university ?? null,
-          email: user?.email ?? null,
-          bio: user?.bio ?? null,
-          profile_picture: user?.profile_picture ?? null,
-          business_logo: user?.business_logo ?? null,
-          shop_slug: user?.shop_slug ?? null,
-          is_verified: Boolean(user?.is_verified),
-          location: user?.location ?? null,
-          whatsapp_number: user?.whatsapp_number ?? null,
-          phone_number: user?.phone_number ?? null,
-          seller_type: user?.seller_type ?? null,
-          market_name: user?.market_name ?? null,
-          avg_rating: user?.avg_rating ?? null,
-          rating_count: user?.rating_count ?? null,
-          profile_views: user?.profile_views ?? 0,
-          business_type: user?.business_type ?? null,
-          business_category: user?.business_category ?? null,
-          created_at: user?.created_at ?? null,
-          updated_at: user?.updated_at ?? null,
-          seller_since: user?.seller_since ?? null,
-        },
-        stats: {
-          total_listings: totals.total_listings ?? 0,
-          active_listings: totals.active_listings ?? 0,
-          sold_listings: totals.sold_listings ?? 0,
-          total_views: totals.total_views ?? 0,
-          total_whatsapp_clicks: totals.total_whatsapp_clicks ?? 0,
-          repeat_seller_activity: repeatSellerActivity,
-        },
-        byCampus,
-        top_listing: topListing || null,
-      });
-    } catch (error) {
-      console.error("Seller dashboard error:", error);
-      res.status(500).json({ error: "Failed to load seller dashboard" });
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
     }
-  });
+  }
+
+  try {
+    const result = db.prepare(`
+      INSERT INTO reports (
+        type,
+        listing_id,
+        subject,
+        reason,
+        details,
+        reporter_uid,
+        reporter_email,
+        status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'open')
+    `).run(
+      safeType,
+      safeListingId,
+      safeSubject,
+      safeReason,
+      safeDetails,
+      reporter_uid,
+      reporter_email
+    );
+
+    res.json({
+      success: true,
+      id: result.lastInsertRowid,
+      message:
+        safeType === "listing"
+          ? "Listing report submitted successfully."
+          : "Problem report submitted successfully.",
+    });
+  } catch (error) {
+    console.error("Submit report error:", error);
+    res.status(500).json({ error: "Failed to submit report" });
+  }
+});
+
+  // Admin routes moved to server/modules/admin/*.routes.ts
+
+app.post("/api/listings/:id/view", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
+      .get(id) as { id: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare(`
+      UPDATE listings
+      SET views_count = views_count + 1
+      WHERE id = ?
+    `).run(id);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Listing view tracking error:", error);
+    res.status(500).json({ error: "Failed to track listing view" });
+  }
+});
+
+  app.post("/api/listings/:id/whatsapp-click", (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id)) {
+    return res.status(400).json({ error: "Invalid listing id" });
+  }
+
+  try {
+    const listing = db
+      .prepare("SELECT id FROM listings WHERE id = ? AND is_hidden = 0 AND deleted_at IS NULL")
+      .get(id) as { id: number } | undefined;
+
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    db.prepare(`
+      UPDATE listings
+      SET whatsapp_clicks = whatsapp_clicks + 1
+      WHERE id = ?
+    `).run(id);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("WhatsApp click tracking error:", error);
+    res.status(500).json({ error: "Failed to track WhatsApp click" });
+  }
+});
+
+  app.post("/api/users/:uid/profile-view", (req, res) => {
+  const { uid } = req.params;
+  const viewerUid = req.body?.viewer_uid || null;
+
+  try {
+    const seller = db
+      .prepare("SELECT uid FROM sellers WHERE uid = ?")
+      .get(uid) as { uid: string } | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    if (viewerUid && viewerUid === uid) {
+      return res.json({ success: true, skipped: true });
+    }
+
+    db.prepare(`
+      UPDATE sellers
+      SET profile_views = profile_views + 1
+      WHERE uid = ?
+    `).run(uid);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Profile view tracking error:", error);
+    res.status(500).json({ error: "Failed to track profile view" });
+  }
+});
+
+  app.get("/api/seller/dashboard", requireAuth, (req, res) => {
+  const uid = req.user!.uid;
+
+  try {
+    const seller = db
+      .prepare(`
+        SELECT uid, business_name, profile_views
+        FROM sellers
+        WHERE uid = ?
+      `)
+      .get(uid) as
+      | { uid: string; business_name: string | null; profile_views: number }
+      | undefined;
+
+    if (!seller) {
+      return res.status(404).json({ error: "Seller not found" });
+    }
+
+    const listingStats = db
+      .prepare(`
+        SELECT
+          COUNT(*) as total_listings,
+          SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as active_listings,
+          SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) as sold_listings,
+          COALESCE(SUM(views_count), 0) as total_views,
+          COALESCE(SUM(whatsapp_clicks), 0) as total_whatsapp_clicks
+        FROM listings
+        WHERE seller_uid = ? AND deleted_at IS NULL
+      `)
+      .get(uid) as {
+      total_listings: number;
+      active_listings: number;
+      sold_listings: number;
+      total_views: number;
+      total_whatsapp_clicks: number;
+    };
+
+    const topListing = db
+      .prepare(`
+        SELECT
+          id,
+          name,
+          views_count,
+          status,
+          created_at
+        FROM listings
+        WHERE seller_uid = ? AND deleted_at IS NULL
+        ORDER BY views_count DESC, created_at DESC
+        LIMIT 1
+      `)
+      .get(uid);
+
+    const repeatSellerActivity = listingStats.total_listings > 1;
+
+    const byCampus = db
+      .prepare(`
+        SELECT
+          university,
+          COUNT(*) as count
+        FROM listings
+        WHERE seller_uid = ? AND deleted_at IS NULL
+        GROUP BY university
+        ORDER BY count DESC
+      `)
+      .all(uid);
+
+    res.json({
+      seller: {
+        uid: seller.uid,
+        business_name: seller.business_name,
+        profile_views: seller.profile_views ?? 0,
+      },
+      stats: {
+        total_listings: listingStats.total_listings ?? 0,
+        active_listings: listingStats.active_listings ?? 0,
+        sold_listings: listingStats.sold_listings ?? 0,
+        total_views: listingStats.total_views ?? 0,
+        total_whatsapp_clicks: listingStats.total_whatsapp_clicks ?? 0,
+        repeat_seller_activity: repeatSellerActivity,
+      },
+      byCampus,
+      top_listing: topListing || null,
+    });
+  } catch (error) {
+    console.error("Seller dashboard error:", error);
+    res.status(500).json({ error: "Failed to load seller dashboard" });
+  }
+});
 
   /**
    * Codespaces tunnel callback guard.
@@ -1331,10 +2248,9 @@ app.get("/api/db-test", (req, res) => {
     });
     app.use(vite.middlewares);
   } else {
-    const staticDir = path.resolve(__dirname, "..", "dist");
-    app.use(express.static(staticDir));
+    app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
-      res.sendFile(path.join(staticDir, "index.html"));
+      res.sendFile(path.join(__dirname, "dist", "index.html"));
     });
   }
 
