@@ -113,10 +113,21 @@ export const refreshBuyerCartFromServer = async () => {
   const key = getBuyerCartKey();
   if (!key) return [];
 
+  const localItems = readBuyerCart();
   const result = await apiFetch("/api/cart");
-  const items = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
-  cacheBuyerCart(items);
-  return items;
+  const serverItems = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
+
+  if (serverItems.length > 0) {
+    cacheBuyerCart(serverItems);
+    return serverItems;
+  }
+
+  if (localItems.length > 0) {
+    return localItems;
+  }
+
+  cacheBuyerCart([]);
+  return [];
 };
 
 export const setBuyerCartItem = async (item: BuyerCartItem) => {
