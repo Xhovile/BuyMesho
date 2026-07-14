@@ -23,7 +23,7 @@ export default function FloatingCartButton({
   stickyHeaderSelector = DEFAULT_STICKY_HEADER_SELECTOR,
 }: FloatingCartButtonProps) {
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [cartCount, setCartCount] = useState(() => readBuyerCart().length);
   const [topOffset, setTopOffset] = useState(96);
 
   useEffect(() => {
@@ -33,8 +33,14 @@ export default function FloatingCartButton({
         return;
       }
 
-      const refreshed = await refreshBuyerCartFromServer();
-      setCartCount(refreshed.length || readBuyerCart().length);
+      setCartCount(readBuyerCart().length);
+
+      try {
+        const refreshed = await refreshBuyerCartFromServer();
+        setCartCount(refreshed.length || readBuyerCart().length);
+      } catch {
+        setCartCount(readBuyerCart().length);
+      }
     };
 
     void updateCartCount();
