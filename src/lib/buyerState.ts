@@ -2,7 +2,9 @@ import { auth } from "../firebase";
 import { apiFetch } from "./api";
 
 const BUYER_CART_KEY = "__buymesho_buyer_cart";
+const BUYER_CART_FALLBACK_KEY = "__buymesho_buyer_cart_global";
 const BUYER_PAYMENTS_KEY = "__buymesho_buyer_payments";
+const BUYER_PAYMENTS_FALLBACK_KEY = "__buymesho_buyer_payments_global";
 const BUYER_CART_UPDATED_EVENT = "buymesho:buyer-cart-updated";
 
 export type BuyerCartItem = {
@@ -66,17 +68,31 @@ const getScopedStorageKey = (baseKey: string) => {
 const getBuyerCartKey = () => getScopedStorageKey(BUYER_CART_KEY);
 const getBuyerPaymentsKey = () => getScopedStorageKey(BUYER_PAYMENTS_KEY);
 
+const readCartFromKey = (key: string | null) => {
+  if (!key) return [] as BuyerCartItem[];
+  return readJson<BuyerCartItem[]>(key, []);
+};
+
+const readPaymentsFromKey = (key: string | null) => {
+  if (!key) return [] as BuyerPaymentRecord[];
+  return readJson<BuyerPaymentRecord[]>(key, []);
+};
+
 const cacheBuyerCart = (items: BuyerCartItem[]) => {
-  const key = getBuyerCartKey();
-  if (!key) return;
-  writeJson(key, items.slice(0, 20));
+  const scopedKey = getBuyerCartKey();
+  writeJson(BUYER_CART_FALLBACK_KEY, items.slice(0, 20));
+  if (scopedKey) {
+    writeJson(scopedKey, items.slice(0, 20));
+  }
   emitBuyerCartUpdated();
 };
 
 const cacheBuyerPayments = (records: BuyerPaymentRecord[]) => {
-  const key = getBuyerPaymentsKey();
-  if (!key) return;
-  writeJson(key, records.slice(0, 20));
+  const scopedKey = getBuyerPaymentsKey();
+  writeJson(BUYER_PAYMENTS_FALLBACK_KEY, records.slice(0, 20));
+  if (scopedKey) {
+    writeJson(scopedKey, records.slice(0, 20));
+  }
 };
 
 const upsertCartItemLocally = (item: BuyerCartItem) => {
@@ -98,20 +114,22 @@ const removeCartItemLocally = (listingId: string) => {
 };
 
 export const readBuyerCart = (): BuyerCartItem[] => {
-  const key = getBuyerCartKey();
-  if (!key) return [];
-  return readJson(key, []);
+  const scopedKey = getBuyerCartKey();
+  const scopedItems = readCartFromKey(scopedKey);
+  if (scopedItems.length > 0) return scopedItems;
+  return readCartFromKey(BUYER_CART_FALLBACK_KEY);
 };
 
 export const readBuyerPayments = (): BuyerPaymentRecord[] => {
-  const key = getBuyerPaymentsKey();
-  if (!key) return [];
-  return readJson(key, []);
+  const scopedKey = getBuyerPaymentsKey();
+  const scopedItems = readPaymentsFromKey(scopedKey);
+  if (scopedItems.length > 0) return scopedItems;
+  return readPaymentsFromKey(BUYER_PAYMENTS_FALLBACK_KEY);
 };
 
 export const refreshBuyerCartFromServer = async () => {
-  const key = getBuyerCartKey();
-  if (!key) return [];
+  const scopedKey = getBuyerCartKey();
+  if (!scopedKey) return readBuyerCart();
 
   const localItems = readBuyerCart();
   const result = await apiFetch("/api/cart");
@@ -131,8 +149,8 @@ export const refreshBuyerCartFromServer = async () => {
 };
 
 export const setBuyerCartItem = async (item: BuyerCartItem) => {
-  const key = getBuyerCartKey();
-  if (!key) {
+  const scopedKey = getBuyerCartKey();
+  if (!scopedKey) {
     throw new Error("Please log in again before using your cart.");
   }
 
@@ -154,8 +172,8 @@ export const setBuyerCartItem = async (item: BuyerCartItem) => {
 };
 
 export const updateBuyerCartItemQuantity = async (listingId: string, quantity: number) => {
-  const key = getBuyerCartKey();
-  if (!key) {
+  const scopedKey = getBuyerCartKey();
+  if (!scopedKey) {
     throw new Error("Please log in again before updating your cart.");
   }
 
@@ -183,8 +201,8 @@ export const updateBuyerCartItemQuantity = async (listingId: string, quantity: n
 };
 
 export const removeBuyerCartItem = async (listingId: string) => {
-  const key = getBuyerCartKey();
-  if (!key) {
+  const scopedKey = getBuyerCartKey();
+  if (!scopedKey) {
     throw new Error("Please log in again before updating your cart.");
   }
 
@@ -226,12 +244,13 @@ export const subtractBuyerCartItemQuantities = async (
 };
 
 export const clearBuyerCart = async () => {
-  const key = getBuyerCartKey();
-  if (!key) {
+  const scopedKey = getBuyerCartKey();
+  if (!scopedKey) {
     throw new Error("Please log in again before clearing your cart.");
   }
 
-  localStorage.removeItem(key);
+  localStorage.removeItem(scopedKey);
+  localStorage.removeItem(BUYER_CART_FALLBACK_KEY);
   emitBuyerCartUpdated();
 
   try {
@@ -243,7 +262,10 @@ export const clearBuyerCart = async () => {
 
 export const subscribeToBuyerCartChanges = (listener: () => void) => {
   const handleStorage = (event: StorageEvent) => {
-    if (event.key && event.key.startsWith(BUYER_CART_KEY)) {
+    if (
+      event.key &&
+      (event.key.startsWith(BUYER_CART_KEY) || event.key === BUYER_CART_FALLBACK_KEY)
+    ) {
       listener();
     }
   };
@@ -258,8 +280,8 @@ export const subscribeToBuyerCartChanges = (listener: () => void) => {
 };
 
 export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
-  const paymentsKey = getBuyerPaymentsKey();
-  if (!paymentsKey) return;
+  const scopedKey = getBuyerPaymentsKey();
+  if (!scopedKey) return;
 
   const current = readBuyerPayments();
   const index = current.findIndex(
@@ -276,9 +298,10 @@ export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
 };
 
 export const clearBuyerPaymentRecords = () => {
-  const key = getBuyerPaymentsKey();
-  if (!key) return;
-  localStorage.removeItem(key);
+  const scopedKey = getBuyerPaymentsKey();
+  if (!scopedKey) return;
+  localStorage.removeItem(scopedKey);
+  localStorage.removeItem(BUYER_PAYMENTS_FALLBACK_KEY);
 };
 
 export const touchBuyerPaymentFromCheckout = (
@@ -297,8 +320,8 @@ export const updateBuyerPaymentStatus = (
   reference: string,
   patch: Partial<BuyerPaymentRecord> & { status?: BuyerPaymentStatus },
 ) => {
-  const paymentsKey = getBuyerPaymentsKey();
-  if (!paymentsKey) return;
+  const scopedKey = getBuyerPaymentsKey();
+  if (!scopedKey) return;
 
   const current = readBuyerPayments();
   const next = current.map((item) =>
