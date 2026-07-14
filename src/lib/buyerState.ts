@@ -79,6 +79,24 @@ const cacheBuyerPayments = (records: BuyerPaymentRecord[]) => {
   writeJson(key, records.slice(0, 20));
 };
 
+const upsertCartItemLocally = (item: BuyerCartItem) => {
+  const current = readBuyerCart();
+  const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
+
+  if (index >= 0) {
+    current[index] = { ...current[index], ...item };
+  } else {
+    current.unshift(item);
+  }
+
+  cacheBuyerCart(current);
+};
+
+const removeCartItemLocally = (listingId: string) => {
+  const current = readBuyerCart();
+  cacheBuyerCart(current.filter((item) => String(item.listingId) !== String(listingId)));
+};
+
 export const readBuyerCart = (): BuyerCartItem[] => {
   const key = getBuyerCartKey();
   if (!key) return [];
@@ -107,15 +125,21 @@ export const setBuyerCartItem = async (item: BuyerCartItem) => {
     throw new Error("Please log in again before using your cart.");
   }
 
-  await apiFetch("/api/cart/items", {
-    method: "POST",
-    body: JSON.stringify({
-      listingId: item.listingId,
-      quantity: item.quantity,
-    }),
-  });
+  upsertCartItemLocally(item);
 
-  await refreshBuyerCartFromServer();
+  try {
+    await apiFetch("/api/cart/items", {
+      method: "POST",
+      body: JSON.stringify({
+        listingId: item.listingId,
+        quantity: item.quantity,
+      }),
+    });
+
+    await refreshBuyerCartFromServer();
+  } catch (error) {
+    console.warn("Cart sync failed, keeping local cart state:", error);
+  }
 };
 
 export const updateBuyerCartItemQuantity = async (listingId: string, quantity: number) => {
@@ -124,12 +148,27 @@ export const updateBuyerCartItemQuantity = async (listingId: string, quantity: n
     throw new Error("Please log in again before updating your cart.");
   }
 
-  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
-    method: "PATCH",
-    body: JSON.stringify({ quantity }),
-  });
+  const current = readBuyerCart();
+  const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
+  if (index >= 0) {
+    current[index] = {
+      ...current[index],
+      quantity,
+      totalPrice: quantity * Number(current[index].unitPrice),
+    };
+    cacheBuyerCart(current);
+  }
 
-  await refreshBuyerCartFromServer();
+  try {
+    await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ quantity }),
+    });
+
+    await refreshBuyerCartFromServer();
+  } catch (error) {
+    console.warn("Cart quantity sync failed, keeping local cart state:", error);
+  }
 };
 
 export const removeBuyerCartItem = async (listingId: string) => {
@@ -138,11 +177,17 @@ export const removeBuyerCartItem = async (listingId: string) => {
     throw new Error("Please log in again before updating your cart.");
   }
 
-  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
-    method: "DELETE",
-  });
+  removeCartItemLocally(listingId);
 
-  await refreshBuyerCartFromServer();
+  try {
+    await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+      method: "DELETE",
+    });
+
+    await refreshBuyerCartFromServer();
+  } catch (error) {
+    console.warn("Cart removal sync failed, keeping local cart state:", error);
+  }
 };
 
 export const removeBuyerCartItems = async (listingIds: string[]) => {
@@ -175,10 +220,14 @@ export const clearBuyerCart = async () => {
     throw new Error("Please log in again before clearing your cart.");
   }
 
-  await apiFetch("/api/cart", { method: "DELETE" });
-
   localStorage.removeItem(key);
   emitBuyerCartUpdated();
+
+  try {
+    await apiFetch("/api/cart", { method: "DELETE" });
+  } catch (error) {
+    console.warn("Cart clear sync failed, keeping local cart cleared:", error);
+  }
 };
 
 export const subscribeToBuyerCartChanges = (listener: () => void) => {
