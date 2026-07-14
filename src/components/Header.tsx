@@ -727,7 +727,11 @@ export default function Header({
                           setSelectedChip(chip);
                           onChipChange?.(chip);
                         }}
-                        className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-colors ${isActive ? "text-zinc-800" : "text-zinc-700 hover:text-zinc-800"}`}
+                        className={`inline-flex items-center whitespace-nowrap px-0 py-0.5 text-base font-bold font-sans leading-none transition-all ${
+                          isActive
+                          ? "text-red-900 drop-shadow-[0_0_6px_rgba(127,29,29,0.35)] border-b-2 border-red-900"
+                          : "text-zinc-700 hover:text-red-900 border-b-2 border-transparent"
+                        }`}
                         aria-pressed={isActive}
                         aria-label={chip}
                       >
