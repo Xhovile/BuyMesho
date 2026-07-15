@@ -17,15 +17,13 @@ import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } 
 import { navigateToConversation } from "../lib/messagesNavigation";
 import { startConversationFromListing } from "../lib/messages";
 import {
-  hideListingId,
-  hideSellerUid,
   readHiddenListingIds,
   readHiddenSellerUids,
-  type ListingActionResponse,
-  type SectionKey,
-  type SellerProfile,
-  specValue,
-} from "../components/listingDetails/listingDetailsUtils";
+  subscribeToHiddenCollectionsChanges,
+  hideListingId,
+  hideSellerUid,
+} from "../lib/hiddenCollections";
+import { type ListingActionResponse, type SectionKey, type SellerProfile, specValue } from "../components/listingDetails/listingDetailsUtils";
 import { readBuyerCart, setBuyerCartItem } from "../lib/buyerState";
 
 export type ListingDetailsPageState = {
