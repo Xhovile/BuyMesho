@@ -15,7 +15,6 @@ import ListingStatusPanel from "./ListingStatusPanel";
 import CheckoutModal from "../CheckoutModal";
 import FloatingCartButton from "../FloatingCartButton";
 import { navigateToPath } from "../../lib/appNavigation";
-import { REPORT_PATH } from "../../lib/appNavigation";
 import type { ListingDetailsPageState } from "../../hooks/useListingDetailsPage";
 
 type Props = {
@@ -66,7 +65,6 @@ export default function ListingDetailsContent({ page }: Props) {
     onSelectImage,
     onToggleFullscreen,
     scrollToSection,
-    openShareNotice,
     closeShareNotice,
     closeAuthPrompt,
     continueToAuth,
@@ -189,20 +187,20 @@ export default function ListingDetailsContent({ page }: Props) {
       <ConfirmModal
         open={authPromptOpen}
         title={
-          page.authPromptAction === "buy"
+          authPromptAction === "buy"
             ? "Sign in to buy"
-            : page.authPromptAction === "cart"
+            : authPromptAction === "cart"
               ? "Sign in to use cart"
               : "Sign in to message"
         }
         message={
-          page.authPromptAction === "buy"
+          authPromptAction === "buy"
             ? "You need to sign in or create an account before you can buy this listing."
-            : page.authPromptAction === "cart"
+            : authPromptAction === "cart"
               ? "You need to sign in or create an account before adding this listing to your cart."
               : "You need to sign in or create an account before you can message the seller."
         }
-        confirmText={page.authPromptAction === "cart" ? "Login" : "Continue"}
+        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
         cancelText="Cancel"
         onCancel={closeAuthPrompt}
         onConfirm={continueToAuth}
