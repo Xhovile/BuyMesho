@@ -1,6 +1,6 @@
 import { ArrowRight } from "lucide-react";
 
-import { navigateToListingDetails } from "../../lib/appNavigation";
+import { EXPLORE_PATH, navigateToListingDetails, navigateToPath } from "../../lib/appNavigation";
 import type { ListingStripVariant, SectionListing } from "../../home/home.types";
 
 export default function ListingStrip({
@@ -21,7 +21,7 @@ export default function ListingStrip({
   const isFeatured = variant === "featured";
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
       <div className="mb-6 flex items-end justify-between gap-4">
         <div>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
@@ -35,7 +35,7 @@ export default function ListingStrip({
         {isFeatured ? (
           <button
             type="button"
-            onClick={() => navigateToListingDetails("/explore")}
+            onClick={() => navigateToPath(EXPLORE_PATH)}
             className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 sm:inline-flex"
           >
             Browse all
