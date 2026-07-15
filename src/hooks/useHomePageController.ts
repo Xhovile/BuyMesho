@@ -14,17 +14,16 @@ import { auth } from "../firebase";
 import {
   BECOME_SELLER_PATH,
   CREATE_PATH,
+  HIDDEN_PATH,
   LOGIN_PATH,
   MESSAGES_PATH,
+  MY_LISTINGS_PATH,
   PAYMENTS_HUB_PATH,
   PROFILE_PATH,
   SAVED_PATH,
   SELLER_PAYOUTS_PATH,
   SETTINGS_PATH,
-  HIDDEN_PATH,
-  MY_LISTINGS_PATH,
   navigateToCreateListing,
-  navigateToMessages,
   navigateToPath,
 } from "../lib/appNavigation";
 import { fetchInbox } from "../lib/messages";
@@ -91,12 +90,8 @@ export function useHomePageController(): HomePageController {
   const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
   const desktopMenuRef = useRef<HTMLDivElement | null>(null);
-  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
-    readHiddenSellerUids()
-  );
-  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
-    readHiddenListingIds()
-  );
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => readHiddenSellerUids());
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => readHiddenListingIds());
   const { isAdmin } = useIsAdmin(firebaseUser);
   const {
     recommendedListings,
@@ -252,7 +247,7 @@ export function useHomePageController(): HomePageController {
         return;
       }
       afterClose?.();
-      navigateToMessages();
+      navigateToPath(MESSAGES_PATH);
     },
     [firebaseUser, openAuthGuard]
   );
