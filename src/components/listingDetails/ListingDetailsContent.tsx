@@ -17,61 +17,57 @@ import FloatingCartButton from "../FloatingCartButton";
 import { navigateToPath } from "../../lib/appNavigation";
 import type { ListingDetailsPageState } from "../../hooks/useListingDetailsPage";
 
-type Props = {
-  page: ListingDetailsPageState;
-};
-
-export default function ListingDetailsContent({ page }: Props) {
-  const {
-    firebaseUser,
-    listing,
-    seller,
-    ratingSummary,
-    loading,
-    isFullscreen,
-    saved,
-    shareNoticeOpen,
-    shareNoticeMessage,
-    activeSection,
-    checkoutOpen,
-    authPromptOpen,
-    detailsRef,
-    exploreRef,
-    reviewsRef,
-    galleryImages,
-    currentGalleryIndex,
-    currentImage,
-    availableQuantity,
-    groupedSpecs,
-    showOffersBlock,
-    sameCampusListings,
-    sameCategoryListings,
-    sellerOtherListings,
-    handleToggleSaved,
-    handleShare,
-    handleBuyNow,
-    handleAddToCart,
-    handleMessageSeller,
-    handleDetailEdit,
-    handleDetailDelete,
-    handleDetailHideSeller,
-    handleDetailHideListing,
-    handleDetailToggleStatus,
-    handleDetailRecordSale,
-    handleDetailRestock,
-    handlePrevImage,
-    handleNextImage,
-    onSelectImage,
-    onToggleFullscreen,
-    scrollToSection,
-    closeShareNotice,
-    closeAuthPrompt,
-    continueToAuth,
-    setCheckoutOpen,
-    reportPath,
-    isLoggedIn,
-  } = page;
-
+export default function ListingDetailsContent({
+  firebaseUser,
+  listing,
+  seller,
+  ratingSummary,
+  loading,
+  isFullscreen,
+  saved,
+  shareNoticeOpen,
+  shareNoticeMessage,
+  activeSection,
+  checkoutOpen,
+  authPromptOpen,
+  authPromptAction,
+  detailsRef,
+  exploreRef,
+  reviewsRef,
+  galleryImages,
+  currentGalleryIndex,
+  currentImage,
+  availableQuantity,
+  groupedSpecs,
+  showOffersBlock,
+  sameCampusListings,
+  sameCategoryListings,
+  sellerOtherListings,
+  handleToggleSaved,
+  handleShare,
+  handleBuyNow,
+  handleAddToCart,
+  handleMessageSeller,
+  handleDetailEdit,
+  handleDetailDelete,
+  handleDetailHideSeller,
+  handleDetailHideListing,
+  handleDetailToggleStatus,
+  handleDetailRecordSale,
+  handleDetailRestock,
+  handlePrevImage,
+  handleNextImage,
+  onSelectImage,
+  onToggleFullscreen,
+  scrollToSection,
+  closeShareNotice,
+  closeAuthPrompt,
+  continueToAuth,
+  setCheckoutOpen,
+  reportPath,
+  isLoggedIn,
+  onRetry,
+}: ListingDetailsPageState) {
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={isLoggedIn} />
@@ -81,7 +77,7 @@ export default function ListingDetailsContent({ page }: Props) {
         {loading ? (
           <ListingStatusPanel loading hasListing={!!listing} />
         ) : !listing ? (
-          <ListingStatusPanel loading={false} hasListing={false} onRetry={page.onRetry} />
+          <ListingStatusPanel loading={false} hasListing={false} onRetry={onRetry} />
         ) : (
           <>
             <section className="grid gap-8 md:grid-cols-[minmax(165px,225px)_minmax(0,1fr)] md:items-stretch md:gap-7 lg:grid-cols-[minmax(182px,242px)_minmax(0,1fr)] lg:gap-9 xl:grid-cols-[minmax(194px,252px)_minmax(0,1fr)]">
@@ -186,20 +182,20 @@ export default function ListingDetailsContent({ page }: Props) {
       <ConfirmModal
         open={authPromptOpen}
         title={
-          page.authPromptAction === "buy"
+          authPromptAction === "buy"
             ? "Sign in to buy"
-            : page.authPromptAction === "cart"
+            : authPromptAction === "cart"
               ? "Sign in to use cart"
               : "Sign in to message"
         }
         message={
-          page.authPromptAction === "buy"
+          authPromptAction === "buy"
             ? "You need to sign in or create an account before you can buy this listing."
-            : page.authPromptAction === "cart"
+            : authPromptAction === "cart"
               ? "You need to sign in or create an account before adding this listing to your cart."
               : "You need to sign in or create an account before you can message the seller."
         }
-        confirmText={page.authPromptAction === "cart" ? "Login" : "Continue"}
+        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
         cancelText="Cancel"
         onCancel={closeAuthPrompt}
         onConfirm={continueToAuth}
