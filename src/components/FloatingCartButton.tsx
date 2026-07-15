@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { ShoppingCart } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import { navigateToCart, navigateToLoginWithReturnPath } from "../lib/appNavigation";
-import { readBuyerCart, refreshBuyerCartFromServer, subscribeToBuyerCartChanges } from "../lib/buyerState";
+import { useBuyerCartSync } from "../hooks/useBuyerCartSync";
 
 type FloatingCartButtonProps = {
   isLoggedIn: boolean;
@@ -23,41 +23,10 @@ export default function FloatingCartButton({
   stickyHeaderSelector = DEFAULT_STICKY_HEADER_SELECTOR,
 }: FloatingCartButtonProps) {
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(() => readBuyerCart().length);
+  const { items: cartItems } = useBuyerCartSync();
   const [topOffset, setTopOffset] = useState(96);
 
-  useEffect(() => {
-    const updateCartCount = async () => {
-      if (!isLoggedIn) {
-        setCartCount(0);
-        return;
-      }
-
-      setCartCount(readBuyerCart().length);
-
-      try {
-        const refreshed = await refreshBuyerCartFromServer();
-        setCartCount(refreshed.length || readBuyerCart().length);
-      } catch {
-        setCartCount(readBuyerCart().length);
-      }
-    };
-
-    void updateCartCount();
-    const unsubscribe = subscribeToBuyerCartChanges(() => {
-      if (!isLoggedIn) {
-        setCartCount(0);
-        return;
-      }
-      setCartCount(readBuyerCart().length);
-    });
-    window.addEventListener("focus", updateCartCount as unknown as EventListener);
-
-    return () => {
-      unsubscribe();
-      window.removeEventListener("focus", updateCartCount as unknown as EventListener);
-    };
-  }, [isLoggedIn]);
+  const cartCount = isLoggedIn ? cartItems.length : 0;
 
   useEffect(() => {
     let rafId: number | null = null;
