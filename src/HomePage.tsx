@@ -119,20 +119,20 @@ export default function HomePage() {
               </section>
 
               <section className="border-t border-zinc-200 pt-6 sm:pt-8">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                <div className="grid gap-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 sm:p-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-end">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                       Why BuyMesho
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
-                      Cleaner than random campus group selling.
+                      A campus marketplace built for real sellers.
                     </h2>
                     <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                      Built to surface active listings, reduce noise, and make buying and selling on campus feel organized.
+                      List once, get discovered faster, and build trust through a structured marketplace designed for student commerce.
                     </p>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
                     {trustPills.map((item) => (
                       <span
                         key={item}
@@ -156,11 +156,10 @@ export default function HomePage() {
                   Seller call to action
                 </p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-                  Ready to sell more seriously on campus?
+                  Ready to sell with more structure?
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  Move from random posts to a cleaner marketplace presence with stronger listing structure,
-                  clearer discovery, and better buyer trust.
+                  Create a stronger storefront, reach the right buyers, and keep every listing organized in one place.
                 </p>
               </div>
 
