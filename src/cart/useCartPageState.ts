@@ -12,6 +12,7 @@ import {
 } from "../lib/buyerState";
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
+import { useAuthUser } from "../hooks/useAuthUser";
 
 export type CartCheckoutEntry = {
   item: BuyerCartItem;
@@ -19,6 +20,7 @@ export type CartCheckoutEntry = {
 };
 
 export function useCartPageState() {
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const [items, setItems] = useState<BuyerCartItem[]>(() => readBuyerCart());
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>(() => readBuyerPayments());
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
@@ -57,7 +59,7 @@ export function useCartPageState() {
       window.removeEventListener("storage", sync as unknown as EventListener);
       window.removeEventListener("focus", sync as unknown as EventListener);
     };
-  }, []);
+  }, [firebaseUser?.uid, authLoading]);
 
   useEffect(() => {
     const nextCartIds = items.map((item) => String(item.listingId));
