@@ -125,7 +125,7 @@ export default function HomePage() {
                       Why BuyMesho
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
-                      A campus marketplace built for real sellers.
+                      BuyMesho is a platform meant to enhance exposure of Student Entrepreneurship to the world and at the same time a marketplace for all sellers having student friendly products. Everyone can buy on BuyMesho. Restrictions are only seller based because the primary goal is to help student entrepreneurs develop.
                     </h2>
                     <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                       List once, get discovered faster, and build trust through a structured marketplace designed for student commerce.
