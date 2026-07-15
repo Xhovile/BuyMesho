@@ -1,3 +1,5 @@
+import { type ReactNode } from "react";
+
 import { AnimatePresence, motion } from "motion/react";
 import {
   Bookmark,
@@ -33,7 +35,7 @@ function MenuRow({
   onClick,
 }: {
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   onClick: () => void;
 }) {
   return (
