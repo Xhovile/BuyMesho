@@ -118,25 +118,28 @@ export default function HomePage() {
                 </div>
               </section>
 
-              <section>
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-                  <div className="max-w-3xl">
+              <section className="border-t border-zinc-200 pt-6 sm:pt-8">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+                  <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                       Why BuyMesho
                     </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
-                      More structure than random campus group selling.
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
+                      Cleaner than random campus group selling.
                     </h2>
+                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                      Built to surface active listings, reduce noise, and make buying and selling on campus feel organized.
+                    </p>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="flex flex-wrap gap-2 sm:justify-end">
                     {trustPills.map((item) => (
-                      <div
+                      <span
                         key={item}
-                        className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-center text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-600"
+                        className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600"
                       >
                         {item}
-                      </div>
+                      </span>
                     ))}
                   </div>
                 </div>
