@@ -51,6 +51,8 @@ export default function ListingGallery({
   onNextImage,
   onSelectImage,
 }: ListingGalleryProps) {
+  const showThumbRail = galleryImages.length > 1;
+
   const renderThumb = (url: string, idx: number, className = "") => (
     <button
       key={`${url}-${idx}`}
@@ -83,14 +85,22 @@ export default function ListingGallery({
         </div>
 
         <div className="min-w-0">
-          <div className="grid min-w-0 gap-2.5 md:grid-cols-[40px_minmax(0,1fr)] md:items-start md:gap-2">
-            {galleryImages.length > 1 ? (
+          <div
+            className={`grid min-w-0 gap-2.5 md:items-start md:gap-2 ${
+              showThumbRail ? "md:grid-cols-[40px_minmax(0,1fr)]" : "md:grid-cols-1"
+            }`}
+          >
+            {showThumbRail ? (
               <div className="hidden md:flex md:max-h-[330px] md:flex-col md:gap-1 md:overflow-y-auto md:pr-0.5">
                 {galleryImages.map((url, idx) => renderThumb(url, idx, "h-9 w-9 shrink-0 rounded-md"))}
               </div>
             ) : null}
 
-            <div className="relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-zinc-50 aspect-[4/5] max-h-[330px] lg:max-h-[350px]">
+            <div
+              className={`relative min-w-0 w-full max-w-full overflow-hidden rounded-xl bg-zinc-50 aspect-[4/5] max-h-[330px] lg:max-h-[350px] ${
+                showThumbRail ? "" : "md:max-h-[420px] lg:max-h-[460px]"
+              }`}
+            >
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
 
               <button
@@ -102,7 +112,7 @@ export default function ListingGallery({
                 <FullscreenToggleIcon isFullscreen={false} />
               </button>
 
-              {galleryImages.length > 1 ? (
+              {showThumbRail ? (
                 <>
                   <button
                     type="button"
@@ -129,7 +139,7 @@ export default function ListingGallery({
           </div>
         </div>
 
-        {galleryImages.length > 1 ? (
+        {showThumbRail ? (
           <div className="mt-3 flex gap-2 overflow-x-auto md:hidden">
             {galleryImages.map((url, idx) => renderThumb(url, idx, "h-14 w-14 shrink-0 rounded-xl"))}
           </div>
@@ -158,7 +168,7 @@ export default function ListingGallery({
 
             <div className="relative h-full overflow-hidden rounded-xl bg-black sm:rounded-2xl">
               <img src={currentImage} alt={listingName} className="h-full w-full object-contain" />
-              {galleryImages.length > 1 ? (
+              {showThumbRail ? (
                 <>
                   <button
                     type="button"
