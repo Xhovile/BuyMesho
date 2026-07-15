@@ -3,6 +3,7 @@ import { Menu, Plus, ShoppingBag, Store, UserRound, X } from "lucide-react";
 import BrandMark from "../BrandMark";
 import type { HomePageController } from "../../hooks/useHomePageController";
 import HomeDesktopMenu from "./HomeDesktopMenu";
+import { EXPLORE_PATH, navigateToPath } from "../../lib/appNavigation";
 
 const desktopProfileButtonClass =
   "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95";
@@ -75,10 +76,7 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
           <div className="flex flex-shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                const EXPLORE_PATH = "/explore";
-                window.location.href = EXPLORE_PATH;
-              }}
+              onClick={() => navigateToPath(EXPLORE_PATH)}
               className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800 md:hidden"
               aria-label="Go to Market"
             >
