@@ -287,15 +287,12 @@ function CartPageContent() {
         <section className="mt-6 w-full">
           <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400">
-                Cart
-              </p>
+              <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-400">Cart</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
                 Review your items
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-                Tap any item to open its listing details again. Remove anything
-                you do not want before buying.
+                Tap any item to open its listing details again. Remove anything you do not want before buying.
               </p>
             </div>
 
@@ -351,7 +348,7 @@ function CartPageContent() {
                             navigateToListingDetails(String(item.listingId));
                           }
                         }}
-                        className={`flex w-full cursor-pointer items-start gap-4 overflow-hidden px-4 py-4 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:items-center sm:px-5 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
+                        className={`flex w-full cursor-pointer gap-3 overflow-hidden px-4 py-3 transition hover:bg-zinc-50/80 focus:outline-none focus-visible:bg-zinc-50 sm:gap-4 sm:px-5 sm:py-4 ${isSelected ? "bg-zinc-50/70 ring-1 ring-inset ring-zinc-200" : ""}`}
                       >
                         <div className="flex shrink-0 items-start pt-1">
                           <input
@@ -378,8 +375,8 @@ function CartPageContent() {
                           )}
                         </div>
 
-                        <div className="min-w-0 flex-1 pr-1 sm:pr-3">
-                          <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="truncate text-base font-bold text-zinc-950 sm:text-lg">
                                 {item.listingTitle}
@@ -390,9 +387,11 @@ function CartPageContent() {
                                   : "Open this item to review the full listing details."}
                               </p>
                             </div>
+
+                            <ChevronRight className="mt-1 hidden h-5 w-5 shrink-0 text-zinc-400 sm:block" />
                           </div>
 
-                          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-500">
                                 {formatMoney(item.unitPrice)} each
@@ -410,12 +409,12 @@ function CartPageContent() {
                                   setSelectedQuantity(listingId, selectedQuantity - 1, maxSelectable);
                                 }}
                                 disabled={!isSelected}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-base font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
                                 aria-label={`Decrease checkout quantity for ${item.listingTitle}`}
                               >
                                 −
                               </button>
-                              <span className="min-w-10 text-center text-sm font-black text-zinc-900">
+                              <span className="min-w-8 text-center text-sm font-black text-zinc-900">
                                 {selectedQuantity || 0}
                               </span>
                               <button
@@ -425,7 +424,7 @@ function CartPageContent() {
                                   setSelectedQuantity(listingId, selectedQuantity + 1, maxSelectable);
                                 }}
                                 disabled={selectedQuantity >= maxSelectable}
-                                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-lg font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-base font-black text-zinc-700 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40"
                                 aria-label={`Increase checkout quantity for ${item.listingTitle}`}
                               >
                                 +
@@ -436,12 +435,11 @@ function CartPageContent() {
                                   event.stopPropagation();
                                   void handleRemoveItem(listingId);
                                 }}
-                                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+                                className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
                               >
                                 <Trash2 className="h-4 w-4" />
                                 Remove
                               </button>
-                              <ChevronRight className="hidden h-5 w-5 text-zinc-400 sm:block" />
                             </div>
                           </div>
                         </div>
@@ -454,12 +452,9 @@ function CartPageContent() {
                   <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-zinc-100 text-zinc-400">
                     <ShoppingCart className="h-6 w-6" />
                   </div>
-                  <h2 className="mt-4 text-2xl font-black text-zinc-950">
-                    Cart is empty
-                  </h2>
+                  <h2 className="mt-4 text-2xl font-black text-zinc-950">Cart is empty</h2>
                   <p className="mt-2 text-sm text-zinc-500">
-                    Add items from a listing page or from the market, then
-                    come back here to review them.
+                    Add items from a listing page or from the market, then come back here to review them.
                   </p>
                   <button
                     type="button"
@@ -475,28 +470,20 @@ function CartPageContent() {
             <aside className="w-full">
               <div className="sticky top-4 space-y-4">
                 <div className="border border-zinc-200 bg-white p-5">
-                  <h2 className="text-lg font-black text-zinc-950">
-                    Selection summary
-                  </h2>
+                  <h2 className="text-lg font-black text-zinc-950">Selection summary</h2>
 
                   <div className="mt-4 space-y-3 text-sm">
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Cart items</span>
-                      <span className="font-bold text-zinc-950">
-                        {items.length}
-                      </span>
+                      <span className="font-bold text-zinc-950">{items.length}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Selected items</span>
-                      <span className="font-bold text-zinc-950">
-                        {selectedCount}
-                      </span>
+                      <span className="font-bold text-zinc-950">{selectedCount}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-zinc-500">Selected units</span>
-                      <span className="font-bold text-zinc-950">
-                        {selectedUnits}
-                      </span>
+                      <span className="font-bold text-zinc-950">{selectedUnits}</span>
                     </div>
                     <div className="flex items-center justify-between border-t border-zinc-200 pt-3">
                       <span className="text-zinc-500">Selected total</span>
@@ -514,9 +501,7 @@ function CartPageContent() {
                 ) : null}
 
                 <div className="border border-zinc-200 bg-white p-5">
-                  <h2 className="text-lg font-black text-zinc-950">
-                    Payment status
-                  </h2>
+                  <h2 className="text-lg font-black text-zinc-950">Payment status</h2>
                   <p className="mt-2 text-sm leading-6 text-zinc-500">
                     {latestPendingCheckoutUrl
                       ? "A previous checkout attempt is still pending. Buying again starts a fresh secure checkout; your cart is only cleared after verified payment."
@@ -544,9 +529,7 @@ function CartPageContent() {
                   ? `Checkout Selected (${selectedCount})`
                   : "Select items to checkout"}
             </span>
-            <span className="text-base font-black">
-              {formatMoney(selectedSubtotal)}
-            </span>
+            <span className="text-base font-black">{formatMoney(selectedSubtotal)}</span>
           </button>
         </div>
       </div>
