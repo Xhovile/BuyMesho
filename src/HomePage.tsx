@@ -143,14 +143,11 @@ export default function HomePage() {
             <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                  Seller call to action
+                  Seller call
                 </p>
                 <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
-                  Ready to sell with more structure?
+                  Are you ready to sell?
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  Create a stronger storefront, reach the right buyers, and keep every listing organized in one place.
-                </p>
               </div>
 
               <div className="flex flex-wrap gap-3 lg:justify-end">
