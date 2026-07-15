@@ -35,7 +35,6 @@ export default function ListingDetailsContent({ page }: Props) {
     activeSection,
     checkoutOpen,
     authPromptOpen,
-    authPromptAction,
     detailsRef,
     exploreRef,
     reviewsRef,
@@ -187,20 +186,20 @@ export default function ListingDetailsContent({ page }: Props) {
       <ConfirmModal
         open={authPromptOpen}
         title={
-          authPromptAction === "buy"
+          page.authPromptAction === "buy"
             ? "Sign in to buy"
-            : authPromptAction === "cart"
+            : page.authPromptAction === "cart"
               ? "Sign in to use cart"
               : "Sign in to message"
         }
         message={
-          authPromptAction === "buy"
+          page.authPromptAction === "buy"
             ? "You need to sign in or create an account before you can buy this listing."
-            : authPromptAction === "cart"
+            : page.authPromptAction === "cart"
               ? "You need to sign in or create an account before adding this listing to your cart."
               : "You need to sign in or create an account before you can message the seller."
         }
-        confirmText={authPromptAction === "cart" ? "Login" : "Continue"}
+        confirmText={page.authPromptAction === "cart" ? "Login" : "Continue"}
         cancelText="Cancel"
         onCancel={closeAuthPrompt}
         onConfirm={continueToAuth}
