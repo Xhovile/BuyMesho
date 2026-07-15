@@ -4,6 +4,7 @@ import {
   ChevronRight,
   CreditCard,
   EyeOff,
+  LogOut,
   MessageSquareText,
   Settings,
   ShieldCheck,
@@ -316,7 +317,7 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
                     >
                       <span className="inline-flex items-center gap-3">
                         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500">
-                          <UserRound className="h-4 w-4 text-white" />
+                          <LogOut className="h-4 w-4 text-white" />
                         </span>
                         Log Out
                       </span>
