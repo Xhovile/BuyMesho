@@ -68,8 +68,6 @@ export default function ListingDetailsContent({
   isLoggedIn,
   onRetry,
 }: ListingDetailsPageState) {
-  const singleImage = galleryImages.length === 1;
-
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={isLoggedIn} />
@@ -82,7 +80,7 @@ export default function ListingDetailsContent({
           <ListingStatusPanel loading={false} hasListing={false} onRetry={onRetry} />
         ) : (
           <>
-            <section className={`grid gap-8 md:items-stretch md:gap-7 ${singleImage ? "md:grid-cols-[minmax(220px,320px)_minmax(0,1fr)] lg:grid-cols-[minmax(240px,360px)_minmax(0,1fr)] xl:grid-cols-[minmax(260px,380px)_minmax(0,1fr)]" : "md:grid-cols-[minmax(165px,225px)_minmax(0,1fr)] lg:grid-cols-[minmax(182px,242px)_minmax(0,1fr)] xl:grid-cols-[minmax(194px,252px)_minmax(0,1fr)]"}`}>
+            <section className="grid gap-8 md:grid-cols-[minmax(165px,225px)_minmax(0,1fr)] md:items-stretch md:gap-7 lg:grid-cols-[minmax(182px,242px)_minmax(0,1fr)] lg:gap-9 xl:grid-cols-[minmax(194px,252px)_minmax(0,1fr)]">
               <div className="min-w-0 md:min-h-[clamp(28rem,68vh,40rem)]">
                 <div className="md:sticky md:top-24 md:max-h-[calc(100vh-7rem)] md:overflow-hidden md:self-start">
                   <ListingGallery
