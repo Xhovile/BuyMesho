@@ -1,48 +1,1187 @@
-import { ArrowRight } from "lucide-react";
-
-import { navigateToLoginWithReturnPath, navigateToPath, EXPLORE_PATH, PRIVACY_PATH, REPORT_PATH, SAFETY_PATH, SIGNUP_PATH, TERMS_PATH } from "./lib/appNavigation";
+import { type ElementType, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  ChevronRight,
+  CreditCard,
+  LogOut,
+  Menu,
+  MessageSquareText,
+  Plus,
+  Settings,
+  ShoppingBag,
+  Bookmark,
+  EyeOff,
+  ShieldCheck,
+  Smartphone,
+  Store,
+  Sparkles,
+  UserRound,
+  UtensilsCrossed,
+  Wallet,
+  X,
+} from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  navigateToAdminModerationQueue,
+  BECOME_SELLER_PATH,
+  CREATE_PATH,
+  EXPLORE_PATH,
+  HOME_PATH,
+  PAYMENTS_HUB_PATH,
+  SELLER_PAYOUTS_PATH,
+  LOGIN_PATH,
+  MESSAGES_PATH,
+  PRIVACY_PATH,
+  PROFILE_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
+  SETTINGS_PATH,
+  SIGNUP_PATH,
+  SAVED_PATH,
+  HIDDEN_PATH,
+  MY_LISTINGS_PATH,
+  TERMS_PATH,
+  navigateToLoginWithReturnPath,
+  navigateToCreateListing,
+  navigateToListingDetails,
+  navigateToPath
+} from "./lib/appNavigation";
+import { navigateToMessages } from "./lib/messagesNavigation";
+import { fetchInbox } from "./lib/messages";
+import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useHomePageData } from "./hooks/useHomePageData";
+import { useIsAdmin } from "./hooks/useIsAdmin";
+import {
+  readHiddenListingIds,
+  readHiddenSellerUids,
+  subscribeToHiddenCollectionsChanges,
+} from "./lib/hiddenCollections";
+import CategorySection from "./components/home/CategorySection";
+import BrandMark from "./components/BrandMark";
 import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
-import CategorySection from "./components/home/CategorySection";
-import HomeHeader from "./components/home/HomeHeader";
-import HomeHero from "./components/home/HomeHero";
-import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
-import ListingStrip from "./components/home/ListingStrip";
-import { featuredSections, trustPills } from "./home/home.constants";
-import { useHomePageController } from "./hooks/useHomePageController";
+import { signOut } from "firebase/auth";
+import { auth } from "./firebase";
+import { getAvatarUrl } from "./lib/avatar";
+
+type FeaturedSection = {
+  key: string;
+  title: string;
+  description: string;
+  icon: ElementType;
+  apiCategory: string;
+};
+
+type SectionListing = {
+  id: number | string;
+  name: string;
+  price: number | string;
+  description?: string | null;
+  photos?: string[];
+  category?: string;
+  university?: string;
+  seller_uid?: string;
+};
+
+const HOME_CATEGORY_KEYS = {
+  phones: "phones",
+  fashion: "fashion",
+  books: "books",
+  food: "food",
+  beauty: "beauty",
+} as const;
+
+const featuredSections: FeaturedSection[] = [
+  {
+    key: HOME_CATEGORY_KEYS.phones,
+    title: "Featured Gadgets",
+    description: "Popular devices and accessories students check first.",
+    icon: Smartphone,
+    apiCategory: "Electronics & Gadgets",
+  },
+  {
+    key: HOME_CATEGORY_KEYS.fashion,
+    title: "Trending Fashion",
+    description: "Style items moving quickly inside campus communities.",
+    icon: ShoppingBag,
+    apiCategory: "Fashion & Clothing",
+  },
+  {
+    key: HOME_CATEGORY_KEYS.books,
+    title: "Study Essentials",
+    description: "Academic items useful for class, exams, and assignments.",
+    icon: BookOpen,
+    apiCategory: "Academic Services",
+  },
+  {
+    key: HOME_CATEGORY_KEYS.food,
+    title: "Eatery & Fast Foods",
+    description: "Quick meals, snacks, and drinks students check often.",
+    icon: UtensilsCrossed,
+    apiCategory: "Food & Snacks",
+  },
+  {
+    key: HOME_CATEGORY_KEYS.beauty,
+    title: "Beauty & Personal Care",
+    description: "Skincare, hair care, fragrances, and personal care essentials.",
+    icon: Sparkles,
+    apiCategory: "Beauty & Personal Care",
+  },
+];
+
+const trustPills = ["Campus-based", "Built for students"];
+
+type ListingStripVariant = "featured" | "supporting";
+
+function ListingStrip({
+  title,
+  description,
+  listings,
+  loading,
+  maxItems = 8,
+  variant = "featured",
+}: {
+  title: string;
+  description: string;
+  listings: SectionListing[];
+  loading: boolean;
+  maxItems?: number;
+  variant?: ListingStripVariant;
+}) {
+  const isFeatured = variant === "featured";
+
+  return (
+    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
+      <div className="flex items-end justify-between gap-4 mb-6">
+        <div>
+          <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
+            {title}
+          </h2>
+          {isFeatured ? <p className="mt-2 text-sm text-zinc-500 leading-relaxed">{description}</p> : null}
+        </div>
+
+        {isFeatured ? (
+          <button
+            type="button"
+            onClick={() => navigateToPath(EXPLORE_PATH)}
+            className="hidden sm:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            Browse all
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        ) : null}
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+        {loading ? (
+          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+            Loading listings...
+          </div>
+        ) : listings.length === 0 ? (
+          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
+            No listings yet
+          </div>
+        ) : (
+          listings.slice(0, maxItems).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => navigateToListingDetails(item.id)}
+              className="group snap-start shrink-0 w-[220px] sm:w-[260px] overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
+            >
+              <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+                <img
+                  src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+                  alt={item.name}
+                  className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+                />
+              </div>
+
+              <div className="p-4">
+                <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
+                  {item.name}
+                </p>
+                <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
+                  {item.description || item.university || "Tap to open the full listing details."}
+                </p>
+                <p className="mt-2 text-sm font-bold text-red-900">
+                  MWK {Number(item.price).toLocaleString()}
+                </p>
+                <div className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-red-900">
+                  Open listing <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
-  const controller = useHomePageController();
+  const { firebaseUser, profile, profileLoading } = useAccountProfile();
+  const isLoggedIn = !!firebaseUser;
+  const isGuest = !firebaseUser;
+  const isSeller = !!(isLoggedIn && profile?.is_seller);
+  const isSellerProfileLoading = isLoggedIn && profileLoading;
+  const fallbackLetter = (profile?.email || firebaseUser?.email || "?").charAt(0).toUpperCase();
+  const avatarUrl = getAvatarUrl(profile, firebaseUser);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [desktopMenuOpen, setDesktopMenuOpen] = useState(false);
+  const [authGuardOpen, setAuthGuardOpen] = useState(false);
+  const [authReturnPath, setAuthReturnPath] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const desktopMenuRef = useRef<HTMLDivElement | null>(null);
+  const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() =>
+    readHiddenSellerUids()
+  );
+  const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() =>
+    readHiddenListingIds()
+  );
+  const { isAdmin } = useIsAdmin(firebaseUser);
+  const {
+    recommendedListings,
+    newestListings,
+    featuredListings,
+    sectionListings,
+    loading,
+    error,
+  } = useHomePageData(featuredSections);
+
+  useEffect(() => {
+    const syncHiddenCollections = () => {
+      setHiddenSellerUids(readHiddenSellerUids());
+      setHiddenListingIds(readHiddenListingIds());
+    };
+
+    return subscribeToHiddenCollectionsChanges(syncHiddenCollections);
+  }, []);
+
+  const hiddenSellerSet = useMemo(
+    () => new Set(hiddenSellerUids),
+    [hiddenSellerUids]
+  );
+  const hiddenListingSet = useMemo(
+    () => new Set(hiddenListingIds),
+    [hiddenListingIds]
+  );
+
+  const filterHiddenListings = useCallback(
+    (items: SectionListing[]) =>
+      items.filter((item) => {
+        const id = Number(item.id);
+        const hiddenByListingId = Number.isInteger(id) && hiddenListingSet.has(id);
+        const hiddenBySeller = !!item.seller_uid && hiddenSellerSet.has(item.seller_uid);
+        return !hiddenByListingId && !hiddenBySeller;
+      }),
+    [hiddenListingSet, hiddenSellerSet]
+  );
+
+  const filteredRecommendedListings = useMemo(
+    () => filterHiddenListings(recommendedListings),
+    [recommendedListings, filterHiddenListings]
+  );
+  const filteredFeaturedListings = useMemo(
+    () => filterHiddenListings(featuredListings),
+    [featuredListings, filterHiddenListings]
+  );
+  const filteredNewestListings = useMemo(
+    () => filterHiddenListings(newestListings),
+    [newestListings, filterHiddenListings]
+  );
+  const filteredSectionListings = useMemo(() => {
+    const next: Record<string, SectionListing[]> = {};
+    for (const [key, items] of Object.entries(sectionListings)) {
+      next[key] = filterHiddenListings(items);
+    }
+    return next;
+  }, [sectionListings, filterHiddenListings]);
+
+  const openAuthGuard = (returnPath: string, afterClose?: () => void) => {
+    afterClose?.();
+    setAuthReturnPath(returnPath);
+    setAuthGuardOpen(true);
+  };
+
+  const handleStartSelling = () => {
+    if (!firebaseUser) {
+      openAuthGuard(CREATE_PATH);
+      return;
+    }
+
+    if (profileLoading) return;
+
+    if (!profile?.is_seller) {
+      navigateToPath(BECOME_SELLER_PATH);
+      return;
+    }
+
+    navigateToCreateListing();
+  };
+
+  const handleLogout = async (afterClose?: () => void) => {
+    afterClose?.();
+    try {
+      await signOut(auth);
+      navigateToPath(LOGIN_PATH);
+    } catch {
+      // Keep the UI usable even if sign-out fails briefly.
+    }
+  };
+
+  const handleSettingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SETTINGS_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SETTINGS_PATH);
+  };
+
+  const handleProfileClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(PROFILE_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(PROFILE_PATH);
+  };
+
+  const handleSavedClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SAVED_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SAVED_PATH);
+  };
+
+  const handleHiddenClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(HIDDEN_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(HIDDEN_PATH);
+  };
+
+  const handleMyListingsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(BECOME_SELLER_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH);
+  };
+  
+  const handleMessagesClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(MESSAGES_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToMessages();
+  };
+
+  const handleBuyerPaymentsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(PAYMENTS_HUB_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(PAYMENTS_HUB_PATH);
+  };
+
+  const handleSellerPayoutsClick = (afterClose?: () => void) => {
+    if (!firebaseUser) {
+      openAuthGuard(SELLER_PAYOUTS_PATH, afterClose);
+      return;
+    }
+    afterClose?.();
+    navigateToPath(SELLER_PAYOUTS_PATH);
+  };
+
+  useEffect(() => {
+    if (!firebaseUser) {
+      setUnreadCount(0);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadUnread = async () => {
+      try {
+        const inbox = await fetchInbox();
+
+        if (!mounted) return;
+
+        const unread = inbox.filter(
+          (c: any) => Number(c.unread_count || 0) > 0
+        ).length;
+
+        setUnreadCount(unread);
+      } catch {
+        if (mounted) {
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    void loadUnread();
+
+    return () => {
+      mounted = false;
+    };
+  }, [firebaseUser]);
+
+  const closeMenu = () => {
+    setMobileMenuOpen(false);
+    setDesktopMenuOpen(false);
+  };
+  const navButtonClass =
+    "w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+  const desktopProfileButtonClass =
+    "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95";
+  const desktopMenuButtonClass =
+    "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95";
+  const desktopMenuItemClass =
+    "w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors";
+  const marketDesktopIconClass = {
+    market: "w-4 h-4 text-rose-500",
+    payments: "w-4 h-4 text-amber-500",
+    messages: "w-4 h-4 text-teal-500",
+    admin: "w-4 h-4 text-slate-700",
+  } as const;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <FloatingCartButton isLoggedIn={controller.isLoggedIn} />
-      <HomeHeader controller={controller} />
-      <HomeMobileDrawer controller={controller} />
+      <FloatingCartButton isLoggedIn={isLoggedIn} />
+      <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm px-4 py-3">
+        <div className="max-w-7xl mx-auto flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <BrandMark />
+
+
+            <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleStartSelling}
+                disabled={isSellerProfileLoading}
+                className="hidden sm:flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white px-4 sm:px-5 py-2.5 rounded-2xl text-sm font-bold transition-all hover:shadow-lg hover:shadow-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-slate-900 disabled:hover:shadow-none"
+              >
+                {isSeller ? <Plus className="w-4 h-4" /> : <Store className="w-4 h-4" />}
+                <span className="hidden sm:inline">
+                  {isSellerProfileLoading ? "Loading..." : isSeller ? "List Item" : "Sell"}
+                </span>
+              </button>
+
+              <div className="hidden md:flex items-center gap-2 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!firebaseUser) {
+                      openAuthGuard(PROFILE_PATH);
+                      return;
+                    }
+                    handleProfileClick();
+                  }}
+                  className={desktopProfileButtonClass}
+                >
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                  ) : isLoggedIn ? (
+                    <div className="w-full h-full bg-red-900/5 flex items-center justify-center text-red-900 font-bold">
+                      {fallbackLetter}
+                    </div>
+                  ) : (
+                    <div className="w-full h-full bg-zinc-50 flex items-center justify-center text-zinc-500">
+                      <UserRound className="w-5 h-5" />
+                    </div>
+                  )}
+                </button>
+
+                <div ref={desktopMenuRef} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDesktopMenuOpen((value) => !value)}
+                    className={desktopMenuButtonClass}
+                    aria-label={desktopMenuOpen ? "Close menu" : "Open menu"}
+                    aria-expanded={desktopMenuOpen}
+                    aria-haspopup="menu"
+                  >
+                    {desktopMenuOpen ? <X className="w-5 h-5 text-zinc-700" /> : <Menu className="w-5 h-5 text-zinc-700" />}
+                  </button>
+
+                  <AnimatePresence>
+                    {desktopMenuOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                        transition={{ duration: 0.16 }}
+                        className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]"
+                        role="menu"
+                        aria-label="Homepage header menu"
+                      >
+                        <div className="px-4 pt-4 pb-3 border-b border-zinc-100">
+                          <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
+                          <h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2>
+                        </div>
+
+                        <div className="p-2 space-y-1">
+                          {isGuest ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToPath(EXPLORE_PATH);
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                                    <ShoppingBag className="w-4 h-4 text-white" />
+                                  </span>
+                                  Market
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToPath(BECOME_SELLER_PATH);
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                    <ShieldCheck className="w-4 h-4 text-white" />
+                                  </span>
+                                  Become Seller
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToPath(LOGIN_PATH);
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <UserRound className="w-4 h-4 text-white" />
+                                  </span>
+                                  Log In
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToPath(SIGNUP_PATH);
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <UserRound className="w-4 h-4 text-white" />
+                                  </span>
+                                  Create Account
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  navigateToPath(EXPLORE_PATH);
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                                    <ShoppingBag className="w-4 h-4 text-white" />
+                                  </span>
+                                  Market
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleMyListingsClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                    {isSeller ? <Store className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                                  </span>
+                                  {isSeller ? "My Listings" : "Become a Seller"}
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleMessagesClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                                    <MessageSquareText className="w-4 h-4 text-white" />
+                                  </span>
+                                  <span className="flex items-center gap-2">
+                                    <span>Messages</span>
+                                    {unreadCount > 0 ? (
+                                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                                        {unreadCount}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleSavedClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                                    <Bookmark className="w-4 h-4 text-white" />
+                                  </span>
+                                  Saved
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleHiddenClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                                    <EyeOff className="w-4 h-4 text-white" />
+                                  </span>
+                                  Hidden
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleBuyerPaymentsClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                                    <CreditCard className="w-4 h-4 text-white" />
+                                  </span>
+                                  Payments
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              {isSeller ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    handleSellerPayoutsClick();
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                                      <Wallet className="w-4 h-4 text-white" />
+                                    </span>
+                                    Seller Payouts
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+                              ) : null}
+
+                              {isAdmin ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    closeMenu();
+                                    navigateToAdminModerationQueue();
+                                  }}
+                                  className={desktopMenuItemClass}
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                                      <ShieldCheck className="w-4 h-4 text-white" />
+                                    </span>
+                                    ADMIN
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-zinc-400" />
+                                </button>
+                              ) : null}
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleSettingsClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                                    <Settings className="w-4 h-4 text-white" />
+                                  </span>
+                                  Settings
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  closeMenu();
+                                  handleProfileClick();
+                                }}
+                                className={desktopMenuItemClass}
+                                role="menuitem"
+                              >
+                                <span className="inline-flex items-center gap-3">
+                                  <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                                    <UserRound className="w-4 h-4 text-white" />
+                                  </span>
+                                  Profile
+                                </span>
+                                <ChevronRight className="w-4 h-4 text-zinc-400" />
+                              </button>
+
+                              {firebaseUser ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleLogout(closeMenu)}
+                                  className="w-full flex items-center justify-between gap-3 rounded-2xl px-4 py-3 text-left text-sm font-bold text-red-600 hover:bg-red-50 transition-colors"
+                                  role="menuitem"
+                                >
+                                  <span className="inline-flex items-center gap-3">
+                                    <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                                      <LogOut className="w-4 h-4 text-white" />
+                                    </span>
+                                    Logout
+                                  </span>
+                                  <ChevronRight className="w-4 h-4 text-red-300" />
+                                </button>
+                              ) : null}
+                            </>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="md:hidden inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-3 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+                aria-label="Go to Market"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Market
+              </button>
+
+              <button
+                onClick={() => setMobileMenuOpen((value) => !value)}
+                className="md:hidden w-11 h-11 rounded-2xl border border-slate-900 bg-slate-900 flex items-center justify-center hover:bg-slate-800 hover:border-slate-800 transition-all overflow-hidden active:scale-95"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-home-menu"
+              >
+                {mobileMenuOpen ? (
+                  <X className="w-5 h-5 text-white" />
+                ) : (
+                  <Menu className="w-5 h-5 text-white" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <AnimatePresence>
+        {mobileMenuOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              key="drawer-backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden fixed inset-0 z-[60] bg-zinc-900/50 backdrop-blur-sm"
+              onClick={closeMenu}
+              aria-hidden="true"
+            />
+
+            {/* Drawer */}
+            <motion.div
+              key="drawer-panel"
+              id="mobile-home-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="home-drawer-title"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 320, damping: 32 }}
+              className="md:hidden fixed top-0 right-0 z-[61] h-full w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col"
+            >
+              {/* Drawer header */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-zinc-100">
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                    Menu
+                  </p>
+                  <h2 id="home-drawer-title" className="mt-1 text-base font-black text-zinc-900">
+                    Start here
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeMenu}
+                  aria-label="Close menu"
+                  className="w-9 h-9 rounded-2xl border border-zinc-200 flex items-center justify-center hover:bg-zinc-50 transition-colors"
+                >
+                  <X className="w-4 h-4 text-zinc-600" />
+                </button>
+              </div>
+
+
+              {/* Drawer body */}
+              <div className="flex-1 overflow-y-auto px-4 py-4 space-y-[1px]">
+                {isGuest ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(EXPLORE_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                          <ShoppingBag className="w-4 h-4 text-white" />
+                        </span>
+                        Market
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(BECOME_SELLER_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                          <ShieldCheck className="w-4 h-4 text-white" />
+                        </span>
+                        Become Seller
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(LOGIN_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                          <UserRound className="w-4 h-4 text-white" />
+                        </span>
+                        Log In
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(SIGNUP_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                          <UserRound className="w-4 h-4 text-white" />
+                        </span>
+                        Create Account
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        closeMenu();
+                        navigateToPath(EXPLORE_PATH);
+                      }}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-rose-600 flex items-center justify-center flex-shrink-0">
+                          <ShoppingBag className="w-4 h-4 text-white" />
+                        </span>
+                        Market
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleMyListingsClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                          {isSeller ? <Store className="w-4 h-4 text-white" /> : <ShieldCheck className="w-4 h-4 text-white" />}
+                        </span>
+                        {isSeller ? "My Listings" : "Become a Seller"}
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleMessagesClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center flex-shrink-0">
+                          <MessageSquareText className="w-4 h-4 text-white" />
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span>Messages</span>
+                          {unreadCount > 0 ? (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-black text-white">
+                              {unreadCount}
+                            </span>
+                          ) : null}
+                        </div>
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleSavedClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                          <Bookmark className="w-4 h-4 text-white" />
+                        </span>
+                        Saved
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleHiddenClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center flex-shrink-0">
+                          <EyeOff className="w-4 h-4 text-white" />
+                        </span>
+                        Hidden
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleBuyerPaymentsClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0">
+                          <CreditCard className="w-4 h-4 text-white" />
+                        </span>
+                        Payments
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    {isSeller ? (
+                      <button
+                        type="button"
+                        onClick={() => handleSellerPayoutsClick(closeMenu)}
+                        className={navButtonClass}
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <span className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center flex-shrink-0">
+                            <Wallet className="w-4 h-4 text-white" />
+                          </span>
+                          Seller Payouts
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      </button>
+                    ) : null}
+
+                    {isAdmin ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMenu();
+                          navigateToAdminModerationQueue();
+                        }}
+                        className={navButtonClass}
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <span className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center flex-shrink-0">
+                            <ShieldCheck className="w-4 h-4 text-white" />
+                          </span>
+                          ADMIN
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      </button>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={() => handleSettingsClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-slate-500 flex items-center justify-center flex-shrink-0">
+                          <Settings className="w-4 h-4 text-white" />
+                        </span>
+                        Settings
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleProfileClick(closeMenu)}
+                      className={navButtonClass}
+                    >
+                      <span className="inline-flex items-center gap-3">
+                        <span className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
+                          <UserRound className="w-4 h-4 text-white" />
+                        </span>
+                        Profile
+                      </span>
+                      <ChevronRight className="w-4 h-4 text-zinc-400" />
+                    </button>
+
+                    {isLoggedIn ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          closeMenu();
+                          void handleLogout();
+                        }}
+                        className="w-full flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-bold text-zinc-800 hover:bg-zinc-50 transition-colors"
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <span className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center flex-shrink-0">
+                            <LogOut className="w-4 h-4 text-white" />
+                          </span>
+                          Log Out
+                        </span>
+                        <ChevronRight className="w-4 h-4 text-zinc-400" />
+                      </button>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       <FeedbackModal
-        open={controller.authGuardOpen}
+        open={authGuardOpen}
         type="error"
         title="Login required"
         message="You need to be logged in to access this page. Sign in or create an account to continue."
         onClose={() => {
-          controller.setAuthGuardOpen(false);
-          controller.setAuthReturnPath(null);
+          setAuthGuardOpen(false);
+          setAuthReturnPath(null);
         }}
         actions={[
           {
             label: "Log in",
             onClick: () => {
-              controller.setAuthGuardOpen(false);
-              navigateToLoginWithReturnPath(controller.authReturnPath ?? undefined);
-              controller.setAuthReturnPath(null);
+              setAuthGuardOpen(false);
+              navigateToLoginWithReturnPath(authReturnPath ?? undefined);
+              setAuthReturnPath(null);
             },
           },
           {
             label: "Cancel",
             onClick: () => {
-              controller.setAuthGuardOpen(false);
-              controller.setAuthReturnPath(null);
+              setAuthGuardOpen(false);
+              setAuthReturnPath(null);
             },
             variant: "secondary",
           },
@@ -50,18 +1189,77 @@ export default function HomePage() {
       />
 
       <main>
-        <HomeHero onBrowseMarket={() => navigateToPath(EXPLORE_PATH)} />
+        <section className="relative overflow-hidden pt-4 pb-6 sm:pt-8 sm:pb-14">
+          <div className="absolute inset-0 -z-10 pointer-events-none">
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[28rem] h-[28rem] bg-red-900/10 blur-3xl rounded-full" />
+            <div className="absolute bottom-0 right-0 w-56 h-56 bg-amber-200/25 blur-3xl rounded-full" />
+          </div>
 
-        {controller.error ? (
-          <section className="mx-auto max-w-7xl px-4 pb-2">
+          <div className="max-w-5xl mx-auto px-4">
+            <div className="max-w-3xl">
+              <motion.div
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-900/10 bg-white/85 text-[11px] font-extrabold uppercase tracking-[0.2em] text-red-900"
+              >
+                Student Marketplace • Malawi
+              </motion.div>
+
+              <motion.h1
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="mt-5 text-4xl sm:text-6xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950"
+              >
+                Buy and sell on campus
+              </motion.h1>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="mt-5 flex flex-wrap items-center gap-3"
+              >
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 hover:bg-red-800"
+                >
+                  Browse Market
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="mt-5 hidden sm:flex flex-wrap gap-2"
+              >
+                {trustPills.map((item) => (
+                  <span
+                    key={item}
+                    className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600 shadow-sm"
+                  >
+                    <Check className="w-3.5 h-3.5 text-red-900" />
+                    {item}
+                  </span>
+                ))}
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        {error ? (
+          <section className="max-w-7xl mx-auto px-4 pb-2">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              {controller.error}
+              {error}
             </div>
           </section>
         ) : null}
-
-        <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
+        
+        <section className="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
             <div className="space-y-6">
               <section>
                 <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 sm:text-4xl">
@@ -69,7 +1267,7 @@ export default function HomePage() {
                 </h2>
                 <div className="grid grid-cols-1 gap-4">
                   {featuredSections.map((section) => {
-                    const listings = controller.filteredSectionListings[section.key] || [];
+                    const listings = filteredSectionListings[section.key] || [];
                     return (
                       <CategorySection
                         key={section.key}
@@ -78,7 +1276,7 @@ export default function HomePage() {
                         categoryKey={section.key}
                         icon={section.icon}
                         listings={listings}
-                        loading={controller.loading}
+                        loading={loading}
                       />
                     );
                   })}
@@ -92,8 +1290,8 @@ export default function HomePage() {
                   <ListingStrip
                     title="Picked for you"
                     description="Campus-aware picks based on what is active and relevant now."
-                    listings={controller.filteredRecommendedListings}
-                    loading={controller.loading}
+                    listings={filteredRecommendedListings}
+                    loading={loading}
                     maxItems={8}
                     variant="featured"
                   />
@@ -101,8 +1299,8 @@ export default function HomePage() {
                   <ListingStrip
                     title="Trending now"
                     description=""
-                    listings={controller.filteredFeaturedListings}
-                    loading={controller.loading}
+                    listings={filteredFeaturedListings}
+                    loading={loading}
                     maxItems={6}
                     variant="supporting"
                   />
@@ -110,8 +1308,8 @@ export default function HomePage() {
                   <ListingStrip
                     title="New"
                     description=""
-                    listings={controller.filteredNewestListings}
-                    loading={controller.loading}
+                    listings={filteredNewestListings}
+                    loading={loading}
                     maxItems={6}
                     variant="supporting"
                   />
@@ -119,17 +1317,17 @@ export default function HomePage() {
               </section>
 
               <section>
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
                   <div className="max-w-3xl">
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                       Why BuyMesho
                     </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
+                    <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight text-zinc-900">
                       More structure than random campus group selling.
                     </h2>
                   </div>
 
-                  <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {trustPills.map((item) => (
                       <div
                         key={item}
@@ -145,32 +1343,32 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-7xl px-4 pt-10 pb-16">
-          <div className="rounded-[2rem] bg-zinc-900 p-6 text-white shadow-xl shadow-zinc-400/20 sm:p-8 lg:p-10">
-            <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <section className="max-w-7xl mx-auto px-4 pt-10 pb-16">
+          <div className="rounded-[2rem] bg-zinc-900 text-white p-6 sm:p-8 lg:p-10 shadow-xl shadow-zinc-400/20">
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto] gap-6 items-center">
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                   Seller call to action
                 </p>
-                <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                <h2 className="mt-2 text-2xl sm:text-3xl font-black tracking-tight">
                   Ready to sell more seriously on campus?
                 </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-300 leading-relaxed">
                   Move from random posts to a cleaner marketplace presence with stronger listing structure,
                   clearer discovery, and better buyer trust.
                 </p>
               </div>
 
               <div className="flex flex-wrap gap-3 lg:justify-end">
-                {controller.isLoggedIn ? (
+                {isLoggedIn ? (
                   <button
                     type="button"
-                    onClick={controller.handleStartSelling}
-                    disabled={controller.isSellerProfileLoading}
+                    onClick={handleStartSelling}
+                    disabled={isSellerProfileLoading}
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {controller.isSellerProfileLoading ? "Loading..." : "Get Started"}
-                    <ArrowRight className="h-4 w-4" />
+                    {isSellerProfileLoading ? "Loading..." : "Get Started"}
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
@@ -179,7 +1377,7 @@ export default function HomePage() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
                   >
                     Sign Up
-                    <ArrowRight className="h-4 w-4" />
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
 
@@ -196,10 +1394,10 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="mt-20 border-t border-zinc-100 bg-white py-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:flex-row">
+      <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-900 text-sm font-extrabold text-white">
+            <div className="w-8 h-8 bg-red-900 rounded-xl flex items-center justify-center text-white font-extrabold text-sm">
               B
             </div>
             <span className="text-sm font-bold text-zinc-900">
@@ -207,38 +1405,40 @@ export default function HomePage() {
             </span>
           </div>
 
-          <div className="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-400">
+          <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
             <button
               type="button"
               onClick={() => navigateToPath(PRIVACY_PATH)}
-              className="transition-colors hover:text-primary"
+              className="hover:text-primary transition-colors"
             >
               Privacy
             </button>
             <button
               type="button"
               onClick={() => navigateToPath(TERMS_PATH)}
-              className="transition-colors hover:text-primary"
+              className="hover:text-primary transition-colors"
             >
               Terms
             </button>
             <button
               type="button"
               onClick={() => navigateToPath(SAFETY_PATH)}
-              className="transition-colors hover:text-primary"
+              className="hover:text-primary transition-colors"
             >
               Safety
             </button>
             <button
               type="button"
               onClick={() => navigateToPath(REPORT_PATH)}
-              className="transition-colors hover:text-primary"
+              className="hover:text-primary transition-colors"
             >
               Report
             </button>
           </div>
 
-          <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
+          <div className="text-xs font-bold text-zinc-300">
+            © 2026 Crafted for Students
+          </div>
         </div>
       </footer>
     </div>
