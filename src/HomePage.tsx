@@ -1,9 +1,8 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 import { navigateToLoginWithReturnPath, navigateToPath, EXPLORE_PATH, PRIVACY_PATH, REPORT_PATH, SAFETY_PATH, SIGNUP_PATH, TERMS_PATH } from "./lib/appNavigation";
-import { FeedbackModal } from "./components/FeedbackModal";
+import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
-import BrandMark from "./components/BrandMark";
 import CategorySection from "./components/home/CategorySection";
 import HomeHeader from "./components/home/HomeHeader";
 import HomeHero from "./components/home/HomeHero";
