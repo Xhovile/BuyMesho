@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { RefObject } from "react";
 import type { Listing, RatingSummary } from "../types";
 import { apiFetch } from "../lib/api";
 import {
@@ -7,7 +8,6 @@ import {
   navigateBackOrPath,
   navigateToEditListing,
   navigateToLoginWithReturnPath,
-  navigateToPath,
 } from "../lib/appNavigation";
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "../lib/listingUrl";
 import { getListingItemConfig } from "../listingSchemas";
@@ -48,9 +48,9 @@ export type ListingDetailsPageState = {
   authPromptAction: "message" | "buy" | "cart" | null;
   hiddenSellerUids: string[];
   hiddenListingIds: number[];
-  detailsRef: React.RefObject<HTMLElement | null>;
-  exploreRef: React.RefObject<HTMLElement | null>;
-  reviewsRef: React.RefObject<HTMLElement | null>;
+  detailsRef: RefObject<HTMLElement | null>;
+  exploreRef: RefObject<HTMLElement | null>;
+  reviewsRef: RefObject<HTMLElement | null>;
   listingId: string;
   galleryImages: string[];
   currentGalleryIndex: number;
