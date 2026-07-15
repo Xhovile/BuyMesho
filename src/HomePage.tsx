@@ -8,7 +8,7 @@ import HomeHeader from "./components/home/HomeHeader";
 import HomeHero from "./components/home/HomeHero";
 import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
 import ListingStrip from "./components/home/ListingStrip";
-import { featuredSections, trustPills } from "./home/home.constants";
+import { featuredSections } from "./home/home.constants";
 import { useHomePageController } from "./hooks/useHomePageController";
 
 export default function HomePage() {
@@ -119,28 +119,20 @@ export default function HomePage() {
               </section>
 
               <section className="border-t border-zinc-200 pt-6 sm:pt-8">
-                <div className="grid gap-5 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 sm:p-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-end">
+                <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 sm:p-6">
                   <div>
                     <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                       Why BuyMesho
                     </p>
                     <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
-                      BuyMesho is a platform meant to enhance exposure of Student Entrepreneurship to the world and at the same time a marketplace for all sellers having student friendly products. Everyone can buy on BuyMesho. Restrictions are only seller based because the primary goal is to help student entrepreneurs develop.
+                      BuyMesho is a platform meant to enhance the exposure of student entrepreneurship while also serving as a marketplace for sellers offering student-friendly products and services.
                     </h2>
-                    <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                      Everyone can buy on BuyMesho. Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
+                    </p>
+                    <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-900 sm:text-base font-medium">
                       List once, get discovered faster, and build trust through a structured marketplace designed for student commerce.
                     </p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 lg:justify-end">
-                    {trustPills.map((item) => (
-                      <span
-                        key={item}
-                        className="inline-flex items-center rounded-full border border-zinc-200 bg-white px-3 py-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-600"
-                      >
-                        {item}
-                      </span>
-                    ))}
                   </div>
                 </div>
               </section>
@@ -154,6 +146,12 @@ export default function HomePage() {
               <div>
                 <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
                   Seller call to action
+                </p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+                  Ready to sell with more structure?
+                </h2>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+                  Create a stronger storefront, reach the right buyers, and keep every listing organized in one place.
                 </p>
               </div>
 
