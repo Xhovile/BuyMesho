@@ -26,8 +26,7 @@ import {
   type SellerProfile,
   specValue,
 } from "../components/listingDetails/listingDetailsUtils";
-import { useBuyerCartSync } from "./useBuyerCartSync";
-import { setBuyerCartItem } from "../lib/buyerState";
+import { readBuyerCart, setBuyerCartItem } from "../lib/buyerState";
 
 export type ListingDetailsPageState = {
   firebaseUser: ReturnType<typeof useAuthUser>["user"];
@@ -96,7 +95,6 @@ export type ListingDetailsPageState = {
 
 export function useListingDetailsPage(): ListingDetailsPageState {
   const { user: firebaseUser } = useAuthUser();
-  const { items: buyerCartItems } = useBuyerCartSync();
   const [routeState, setRouteState] = useState(() => getListingParamsFromUrl());
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
@@ -471,6 +469,7 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     const maxQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
     if (isOwner || listing.status === "sold" || maxQty <= 0) return;
 
+    const buyerCartItems = readBuyerCart();
     const existingItem = buyerCartItems.find((item) => String(item.listingId) === String(listing.id));
     const nextQuantity = Math.min(maxQty, (existingItem?.quantity ?? 0) + 1);
     const unitPrice = Number(listing.price);
