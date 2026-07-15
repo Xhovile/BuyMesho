@@ -119,21 +119,19 @@ export default function HomePage() {
               </section>
 
               <section className="border-t border-zinc-200 pt-6 sm:pt-8">
-                <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-zinc-200 sm:p-6">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                      Why BuyMesho
-                    </p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
-                      BuyMesho is a platform meant to enhance the exposure of student entrepreneurship while also serving as a marketplace for sellers offering student-friendly products and services.
-                    </h2>
-                    <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                      Everyone can buy on BuyMesho. Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
-                    </p>
-                    <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-900 sm:text-base font-medium">
-                      List once, get discovered faster, and build trust through a structured marketplace designed for student commerce.
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
+                    Why BuyMesho
+                  </p>
+                  <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
+                    BuyMesho is a platform meant to enhance the exposure of student entrepreneurship while also serving as a marketplace for sellers offering student-friendly products and services.
+                  </h2>
+                  <p className="mt-3 max-w-3xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                    Everyone can buy on BuyMesho. Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
+                  </p>
+                  <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-900 sm:text-base font-medium">
+                    List once, get discovered faster, and build trust through a structured marketplace designed for student commerce.
+                  </p>
                 </div>
               </section>
             </div>
