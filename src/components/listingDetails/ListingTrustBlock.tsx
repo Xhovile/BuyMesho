@@ -1,5 +1,6 @@
 import { ChevronRight, ShieldCheck, Star, Store } from "lucide-react";
 import type { Listing, RatingSummary } from "../../types";
+import { normalizeRatingSummary } from "../ratings/ratingSummaryUtils";
 import { navigateToSellerProfile } from "../../lib/appNavigation";
 import { formatDate } from "./ListingDetailsShared";
 
@@ -12,6 +13,7 @@ export type SellerProfile = {
   is_verified?: boolean;
   join_date?: string;
   profile_views?: number;
+  ratingSummary?: RatingSummary | null;
 };
 
 type ListingTrustBlockProps = {
@@ -21,21 +23,7 @@ type ListingTrustBlockProps = {
 };
 
 export default function ListingTrustBlock({ listing, seller, ratingSummary }: ListingTrustBlockProps) {
-  const distribution = [5, 4, 3, 2, 1].map((stars) => {
-    const matched = ratingSummary?.distribution?.find((row) => row.stars === stars);
-    return {
-      stars,
-      count: matched?.count ?? 0,
-      percentage: matched?.percentage ?? 0,
-    };
-  });
-  const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
-  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (ratingSummary?.ratingCount ?? 0);
-  const derivedAverage =
-    ratingCount > 0
-      ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
-      : 0;
-  const sellerRating = ratingCount > 0 ? derivedAverage.toFixed(1) : null;
+  const normalized = normalizeRatingSummary(seller?.ratingSummary ?? ratingSummary);
   const sellerUid = seller?.uid || listing.seller_uid;
   const sellerName = (seller?.business_name || listing.business_name || "Seller").trim() || "Seller";
 
@@ -81,11 +69,11 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
         </button>
 
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center md:w-auto md:justify-end">
-          {sellerRating ? (
+          {normalized.hasRatings ? (
             <div className="inline-flex items-center justify-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-extrabold text-zinc-900">
               <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-              {sellerRating}
-              <span className="text-xs font-semibold text-zinc-500">({ratingCount})</span>
+              {normalized.averageRating.toFixed(1)}
+              <span className="text-xs font-semibold text-zinc-500">({normalized.ratingCount})</span>
             </div>
           ) : null}
           <button
