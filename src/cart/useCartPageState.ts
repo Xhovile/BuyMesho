@@ -37,10 +37,20 @@ export function useCartPageState() {
       setItems(readBuyerCart());
       setPayments(readBuyerPayments());
 
-      const refreshed = await refreshBuyerCartFromServer();
-      if (!mounted) return;
-      setItems(refreshed.length ? refreshed : readBuyerCart());
-      setPayments(readBuyerPayments());
+      if (authLoading || !firebaseUser?.uid) {
+        return;
+      }
+
+      try {
+        const refreshed = await refreshBuyerCartFromServer();
+        if (!mounted) return;
+        setItems(refreshed);
+        setPayments(readBuyerPayments());
+      } catch {
+        if (!mounted) return;
+        setItems(readBuyerCart());
+        setPayments(readBuyerPayments());
+      }
     };
 
     void sync();
