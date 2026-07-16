@@ -65,6 +65,10 @@ export default function EditListingPage() {
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
 
   const listingId = useMemo(() => getEditListingIdFromUrl(), []);
+  const initialDraft = useMemo(() => {
+    if (!listing) return null;
+    return toDraft(listing, profile?.university);
+  }, [listing, profile?.university]);
 
   useEffect(() => {
     const loadListing = async () => {
@@ -226,16 +230,19 @@ export default function EditListingPage() {
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Edit your listing.</h1>
             </div>
 
-            <ListingStudioFormWide
-              mode="edit"
-              initialData={toDraft(listing, profile?.university)}
-              onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
-              onSubmit={handleSave}
-              showFeedback={showFeedback}
-              isSubmitting={submitting}
-              submitLabel="Save Changes"
-              submitBusyLabel="Saving..."
-            />
+            {initialDraft ? (
+              <ListingStudioFormWide
+                key={listing.id}
+                mode="edit"
+                initialData={initialDraft}
+                onCancel={() => navigateBackOrPath(EXPLORE_PATH)}
+                onSubmit={handleSave}
+                showFeedback={showFeedback}
+                isSubmitting={submitting}
+                submitLabel="Save Changes"
+                submitBusyLabel="Saving..."
+              />
+            ) : null}
           </div>
         ) : null}
       </main>
