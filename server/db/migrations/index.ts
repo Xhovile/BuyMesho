@@ -55,11 +55,47 @@ export function runMigrations() {
 
   try {
     postgresDb.exec(sql);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Migration step skipped because the schema could not be applied safely: ${message}`);
+  }
+
+  try {
     ensureBuyerCartTable();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`Buyer cart table migration failed: ${message}`);
+  }
+
+  try {
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`pack_size migration skipped: ${message}`);
+  }
+
+  try {
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`bulk_units migration skipped: ${message}`);
+  }
+
+  try {
     postgresDb.exec(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS profile_picture TEXT;`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`profile_picture migration skipped: ${message}`);
+  }
+
+  try {
     postgresDb.exec(`ALTER TABLE listings ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ USING NULLIF(hard_delete_after, '')::timestamptz;`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`hard_delete_after migration skipped: ${message}`);
+  }
+
+  try {
     postgresDb.exec(`
       CREATE OR REPLACE FUNCTION datetime(base text, modifier text)
       RETURNS TIMESTAMPTZ
@@ -109,7 +145,7 @@ export function runMigrations() {
     `);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.warn(`Migration step skipped because the schema could not be applied safely: ${message}`);
+    console.warn(`datetime helper migration skipped: ${message}`);
   }
 
   return postgresDb;
