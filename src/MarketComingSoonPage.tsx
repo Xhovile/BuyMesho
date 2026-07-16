@@ -1,12 +1,21 @@
-import { ArrowLeft, Sparkles } from "lucide-react";
-import { navigateBackOrPath, EXPLORE_PATH, HOME_PATH } from "./lib/appNavigation";
+import { ArrowLeft, Sparkles, X } from "lucide-react";
+import { navigateBackOrPath, EXPLORE_PATH } from "./lib/appNavigation";
 
 export default function MarketComingSoonPage() {
   const goBack = () => navigateBackOrPath(EXPLORE_PATH);
 
   return (
     <div className="min-h-screen bg-zinc-100 px-4 py-10 flex items-center justify-center">
-      <div className="w-full max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-10 shadow-xl shadow-zinc-200/60">
+      <div className="relative w-full max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-10 shadow-xl shadow-zinc-200/60">
+        <button
+          type="button"
+          onClick={goBack}
+          aria-label="Close and return to All"
+          className="absolute right-5 top-5 inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-600 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+        >
+          <X className="h-5 w-5" />
+        </button>
+
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
           <Sparkles className="h-8 w-8" />
         </div>
@@ -23,7 +32,7 @@ export default function MarketComingSoonPage() {
           </p>
         </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row gap-3 sm:justify-center">
+        <div className="mt-8 flex justify-center">
           <button
             type="button"
             onClick={goBack}
@@ -31,14 +40,6 @@ export default function MarketComingSoonPage() {
           >
             <ArrowLeft className="h-4 w-4" />
             Back
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigateBackOrPath(HOME_PATH)}
-            className="inline-flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-5 py-3.5 text-sm font-extrabold text-zinc-800 hover:bg-zinc-50 transition-colors"
-          >
-            Home
           </button>
         </div>
       </div>
