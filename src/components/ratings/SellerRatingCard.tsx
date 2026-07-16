@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import type { RatingSummary } from "../../types";
+import { normalizeRatingSummary } from "./ratingSummaryUtils";
 
 type SellerRatingCardProps = {
   ratingSummary: RatingSummary | null;
@@ -13,8 +14,6 @@ type SellerRatingCardProps = {
   onRate?: (stars: number) => Promise<void> | void;
   onRemoveRating?: () => Promise<void> | void;
 };
-
-const FULL_DISTRIBUTION = [5, 4, 3, 2, 1];
 
 function ratingTierLabel(averageRating: number) {
   if (averageRating >= 4.5) return "Excellent";
@@ -36,42 +35,24 @@ export default function SellerRatingCard({
   onRate,
   onRemoveRating,
 }: SellerRatingCardProps) {
-  const distribution = FULL_DISTRIBUTION.map((stars) => {
-    const matched = ratingSummary?.distribution?.find((row) => row.stars === stars);
-    const count = Number(matched?.count ?? 0);
-    const percentage = Number(matched?.percentage ?? 0);
-    return {
-      stars,
-      count: Number.isFinite(count) ? count : 0,
-      percentage: Number.isFinite(percentage) ? percentage : 0,
-    };
-  });
-  const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
-  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : Number(ratingSummary?.ratingCount ?? 0);
-  const derivedAverage =
-    ratingCount > 0
-      ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
-      : 0;
-  const rawAverage = Number(ratingSummary?.averageRating ?? 0);
-  const averageRating = ratingCount > 0 ? derivedAverage : Number.isFinite(rawAverage) ? rawAverage : 0;
-  const hasRatings = ratingCount > 0;
+  const normalized = normalizeRatingSummary(ratingSummary);
 
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
       <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Rating</p>
       <div className="mt-3 flex items-center gap-3 flex-wrap">
         <div className="text-4xl font-black tracking-tight text-zinc-900">
-          {ratingSummary || hasRatings ? averageRating.toFixed(1) : "—"}
+          {ratingSummary || normalized.hasRatings ? normalized.averageRating.toFixed(1) : "—"}
         </div>
         <div className="flex items-center gap-2 text-sm text-zinc-500 min-w-[160px]">
           <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
-          {ratingSummary || hasRatings
-            ? `${ratingCount} rating${ratingCount === 1 ? "" : "s"}`
+          {ratingSummary || normalized.hasRatings
+            ? `${normalized.ratingCount} rating${normalized.ratingCount === 1 ? "" : "s"}`
             : "No ratings yet"}
         </div>
-        {hasRatings ? (
+        {normalized.hasRatings ? (
           <span className="px-2.5 py-1 rounded-full bg-zinc-100 text-zinc-700 text-xs font-bold uppercase tracking-[0.1em]">
-            {ratingTierLabel(averageRating)}
+            {ratingTierLabel(normalized.averageRating)}
           </span>
         ) : null}
       </div>
@@ -80,7 +61,7 @@ export default function SellerRatingCard({
         <p className="mt-4 text-sm text-zinc-500">Loading rating...</p>
       ) : (
         <div className="mt-5 space-y-2">
-          {distribution.map((row) => (
+          {normalized.distribution.map((row) => (
             <div key={row.stars} className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2">
               <span className="text-xs font-bold text-zinc-600">{row.stars} ★</span>
               <div className="h-2 rounded-full bg-zinc-200 overflow-hidden">
@@ -89,7 +70,7 @@ export default function SellerRatingCard({
               <span className="text-xs text-zinc-500 text-right">{row.count}</span>
             </div>
           ))}
-          {!hasRatings ? <p className="pt-1 text-sm text-zinc-500">No ratings yet.</p> : null}
+          {!normalized.hasRatings ? <p className="pt-1 text-sm text-zinc-500">No ratings yet.</p> : null}
         </div>
       )}
 
@@ -104,7 +85,7 @@ export default function SellerRatingCard({
             <>
               <div className="mt-3 flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => {
-                  const active = (ratingSummary?.myRating ?? 0) >= star;
+                  const active = (normalized.myRating ?? 0) >= star;
                   return (
                     <button
                       key={star}
@@ -121,9 +102,9 @@ export default function SellerRatingCard({
                   );
                 })}
               </div>
-              {ratingSummary?.myRating ? (
+              {normalized.myRating ? (
                 <div className="mt-3 flex items-center justify-between gap-3">
-                  <p className="text-sm text-zinc-600">Your rating: {ratingSummary.myRating}/5</p>
+                  <p className="text-sm text-zinc-600">Your rating: {normalized.myRating}/5</p>
                   <button
                     type="button"
                     onClick={() => void onRemoveRating?.()}
