@@ -40,7 +40,7 @@ export function useBuyerCartSync(): BuyerCartSyncState {
       try {
         const refreshed = await refreshBuyerCartFromServer();
         if (!mounted) return;
-        setItems(refreshed.length ? refreshed : readBuyerCart());
+        setItems(refreshed);
         setPayments(readBuyerPayments());
       } catch {
         if (!mounted) return;
