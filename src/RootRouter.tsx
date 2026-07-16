@@ -234,7 +234,7 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" ? (
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" || locationPath === "/explore/sellers" || locationPath === "/explore/innovation" ? (
           <MarketComingSoonPage />
         ) : locationPath.startsWith("/market/coming-soon") ? (
           <MarketComingSoonPage />
@@ -258,91 +258,90 @@ export default function RootRouter() {
           <SellerPayoutsPage />
         ) : locationPath === "/cart" ? (
           <CartPage />
-        ) : route === "category" ? (
-          <CategoryPage />
-        ) : route === "explore" ? (
-          <App key={locationPath} />
-        ) : route === "saved" ? (
+        ) : locationPath === "/saved" ? (
           <SavedPage />
-        ) : route === "hidden" ? (
+        ) : locationPath === "/hidden" ? (
           <HiddenCollectionsPage />
-        ) : route === "settings" ? (
-          <SettingsPage />
-        ) : route === "privacy" ? (
-          <PrivacyPolicyPage onBack={() => window.history.back()} />
-        ) : route === "terms" ? (
-          <TermsPage onBack={() => window.history.back()} />
-        ) : route === "safety" ? (
-          <SafetyTipsPage onBack={() => window.history.back()} />
-        ) : route === "report" ? (
-          <ReportProblemPage onBack={() => window.history.back()} isLoggedIn={false} />
-        ) : route === "seller" ? (
-          <SellerProfilePage />
-        ) : route === "seller_dashboard" ? (
-          <SellerDashboardPage />
-        ) : route === "listing_details" ? (
-          <ListingDetailsPage />
-        ) : route === "messages" ? (
-          isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
-        ) : route === "create" ? (
-          <CreateListingPage />
-        ) : route === "edit" ? (
-          <EditListingPage />
-        ) : route === "login" ? (
+        ) : locationPath === "/messages" && isMessageThread ? (
+          <MessageThreadPage />
+        ) : locationPath === "/messages" ? (
+          <MessagesInboxPage />
+        ) : locationPath === "/" ? (
+          <HomePage />
+        ) : locationPath.startsWith("/explore") ? (
+          <App />
+        ) : locationPath.startsWith("/category") ? (
+          <CategoryPage />
+        ) : locationPath === "/login" ? (
           <LoginPage />
-        ) : route === "signup" ? (
+        ) : locationPath === "/signup" ? (
           <SignupPage />
-        ) : route === "forgot_password" ? (
+        ) : locationPath === "/forgot-password" ? (
           <ForgotPasswordPage />
-        ) : route === "profile" ? (
+        ) : locationPath === "/profile" ? (
           <ProfilePage />
-        ) : route === "verify_email" ? (
+        ) : locationPath === "/verify-email" ? (
           <VerifyEmailPage />
-        ) : route === "edit_profile" ? (
+        ) : locationPath === "/settings" ? (
+          <SettingsPage />
+        ) : locationPath === "/edit-profile" ? (
           <EditProfilePage />
-        ) : route === "edit_account" ? (
+        ) : locationPath === "/edit-account" ? (
           <EditAccountPage />
-        ) : route === "become_seller" ? (
+        ) : locationPath === "/become-seller" ? (
           <BecomeSellerPage />
-        ) : route === "change_password" ? (
+        ) : locationPath === "/change-password" ? (
           <ChangePasswordPage />
-        ) : route === "change_email" ? (
+        ) : locationPath === "/change_email" ? (
           <ChangeEmailPage />
-        ) : route === "email_action" ? (
-          <EmailActionPage />
-        ) : route === "my_listings" ? (
+        ) : locationPath === "/create" ? (
+          <CreateListingPage />
+        ) : locationPath === "/edit" ? (
+          <EditListingPage />
+        ) : locationPath === "/my-listings" ? (
           <MyListingsPage />
-        ) : route === "admin" ? (
-          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
-        ) : route === "admin_payments" ? (
-          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
-        ) : route === "admin_balance" ? (
-          <AdminRouteGuard><AdminBalancePage /></AdminRouteGuard>
-        ) : route === "admin_payouts" ? (
-          <AdminRouteGuard><DebugErrorBoundary><AdminPayoutsManager /></DebugErrorBoundary></AdminRouteGuard>
-        ) : route === "admin_reports" ? (
-          <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
-        ) : route === "admin_seller_applications" ? (
-          <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
-        ) : route === "admin_moderation_queue" || locationPath === ADMIN_MODERATION_QUEUE_PATH ? (
-          <AdminRouteGuard><AdminModerationQueuePage /></AdminRouteGuard>
-        ) : route === "admin_audit" || locationPath === ADMIN_AUDIT_PATH ? (
-          <AdminRouteGuard><AdminAuditLogPage /></AdminRouteGuard>
-        ) : route === "admin_setup" || locationPath === ADMIN_SETUP_PATH ? (
-          <AdminRouteGuard><AdminSetupPage /></AdminRouteGuard>
-        ) : route === "admin_payout_destinations" ? (
-          <AdminRouteGuard><AdminPayoutDestinationRequestsPage /></AdminRouteGuard>
-        ) : route === "payment_return" ? (
+        ) : locationPath === "/seller" ? (
+          <SellerProfilePage />
+        ) : locationPath === "/seller-dashboard" ? (
+          <SellerDashboardPage />
+        ) : locationPath === "/admin" ? (
+          <AdminRouteGuard>
+            <AdminHubPage />
+          </AdminRouteGuard>
+        ) : locationPath === "/admin/payments" ? (
+          <AdminPaymentsPage />
+        ) : locationPath === "/admin/payouts" ? (
+          <AdminPayoutsManager />
+        ) : locationPath === "/admin/reports" ? (
+          <AdminReportsPage />
+        ) : locationPath === "/admin/seller-applications" ? (
+          <AdminSellerApplicationsPage />
+        ) : locationPath === "/admin/moderation-queue" ? (
+          <AdminModerationQueuePage />
+        ) : locationPath === "/admin/audit" ? (
+          <AdminAuditLogPage />
+        ) : locationPath === "/admin/balance" ? (
+          <AdminBalancePage />
+        ) : locationPath === "/admin/setup" ? (
+          <AdminSetupPage />
+        ) : locationPath === "/admin/payouts/destinations" ? (
+          <AdminPayoutDestinationRequestsPage />
+        ) : locationPath === "/payment/return" ? (
           <PaymentReturnPage />
+        ) : locationPath === "/email-action" ? (
+          <EmailActionPage />
+        ) : locationPath === "/privacy" ? (
+          <PrivacyPolicyPage />
+        ) : locationPath === "/terms" ? (
+          <TermsPage />
+        ) : locationPath === "/safety" ? (
+          <SafetyTipsPage />
+        ) : locationPath === "/report" ? (
+          <ReportProblemPage />
         ) : (
           <HomePage />
         )}
       </Suspense>
-      <AnimatePresence>
-        {showScrollTop && (
-          <motion.button type="button" initial={{ opacity: 0, y: 16, scale: 0.92 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.92 }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 h-12 w-12 rounded-full bg-zinc-900 hover:bg-zinc-800 text-white shadow-xl shadow-zinc-400/30 flex items-center justify-center transition-all active:scale-95" aria-label="Scroll to top"><ArrowUp className="w-5 h-5" /></motion.button>
-        )}
-      </AnimatePresence>
     </>
   );
 }
