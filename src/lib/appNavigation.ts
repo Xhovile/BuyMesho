@@ -38,7 +38,7 @@ export type AppRoute =
   | "admin_seller_applications"
   | "admin_moderation_queue"
   | "admin_audit"
-  | "admin_balance" 
+  | "admin_balance"
   | "admin_setup"
   | "payment_return";
 
@@ -392,7 +392,7 @@ export const getAppRouteFromLocation = (
   }
 
   if (location.pathname === ADMIN_BALANCE_PATH) {
-  return "admin_balance";
+    return "admin_balance";
   }
 
   if (location.pathname === PAYMENT_RETURN_PATH) {
@@ -423,5 +423,245 @@ export const getAppRouteFromLocation = (
     return "settings";
   }
 
+  if (location.pathname === SAVED_PATH) {
+    return "saved";
+  }
+
+  if (location.pathname === HIDDEN_PATH) {
+    return "hidden";
+  }
+
+  if (location.pathname === EXPLORE_PATH || location.pathname.startsWith(`${EXPLORE_PATH}/`)) {
+    return "explore";
+  }
+  
+  if (location.pathname === ADMIN_PAYOUT_DESTINATIONS_PATH) {
+    return "admin_payout_destinations";
+  }
+
   return "home";
+};
+
+export const navigateToPath = (path: string, options?: { replace?: boolean }) => {
+  const url = new URL(path, window.location.href);
+
+  if (url.pathname !== EXPLORE_PATH && url.pathname !== LISTING_PATH) {
+    url.searchParams.delete("listing");
+    url.searchParams.delete("image");
+  }
+
+  if (url.pathname !== SELLER_PATH) {
+    url.searchParams.delete("uid");
+  }
+
+  if (url.pathname !== EDIT_PATH) {
+    url.searchParams.delete("id");
+  }
+
+  if (options?.replace) {
+    window.history.replaceState(markAppHistoryState(), "", url.toString());
+  } else {
+    window.history.pushState(markAppHistoryState(), "", url.toString());
+  }
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+/**
+ * Returns the post-authentication route and clears any one-time return target.
+ */
+export const consumeAuthReturnPath = (fallbackPath: string = PROFILE_PATH) => {
+  const params = new URLSearchParams(window.location.search);
+  const queryReturnPath = sanitizeInternalReturnPath(params.get("returnTo"));
+  if (queryReturnPath) {
+    params.delete("returnTo");
+    const cleaned = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash}`;
+    window.history.replaceState(window.history.state, "", cleaned);
+    sessionStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
+    return queryReturnPath;
+  }
+
+  const storedReturnPath = sanitizeInternalReturnPath(sessionStorage.getItem(AUTH_RETURN_PATH_STORAGE_KEY));
+  sessionStorage.removeItem(AUTH_RETURN_PATH_STORAGE_KEY);
+  return storedReturnPath ?? fallbackPath;
+};
+
+const getCurrentAppPath = () =>
+  `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+export const storeAuthReturnPath = (path?: string) => {
+  if (typeof window === "undefined") return;
+  const sanitized = sanitizeInternalReturnPath(path ?? getCurrentAppPath());
+  if (!sanitized) return;
+  sessionStorage.setItem(AUTH_RETURN_PATH_STORAGE_KEY, sanitized);
+};
+
+export const navigateToLoginWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(LOGIN_PATH);
+};
+
+export const navigateToSignupWithReturnPath = (returnPath?: string) => {
+  storeAuthReturnPath(returnPath);
+  navigateToPath(SIGNUP_PATH);
+};
+
+export const navigateToSellerDashboard = () => navigateToPath(SELLER_DASHBOARD_PATH);
+
+export type SettingsSection = "privacy" | "terms" | "safety" | "report";
+
+export const navigateToSettingsSection = (section: SettingsSection) => {
+  const url = new URL(window.location.href);
+  url.pathname = SETTINGS_PATH;
+  url.searchParams.set("section", section);
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateBackOrPath = (fallbackPath: string) => {
+  if (isAppHistoryState()) {
+    window.history.back();
+    return;
+  }
+
+  navigateToPath(fallbackPath);
+};
+
+export const navigateToExplore = (state?: Partial<ExploreQueryState>) => {
+  const url = new URL(window.location.href);
+  url.pathname = EXPLORE_PATH;
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  writeExploreStateToUrl(url, state || {});
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToExploreWithCategory = (category: string) => {
+  const url = new URL(window.location.href);
+  url.pathname = "/category";
+  url.searchParams.set("category", category);
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToListingDetails = (
+  listingId: string | number,
+  imageIndex: number = 0
+) => {
+  const url = new URL(window.location.href);
+  url.pathname = LISTING_PATH;
+  url.searchParams.set("listing", String(listingId));
+  url.searchParams.set("image", String(imageIndex));
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToSellerProfile = (uid: string) => {
+  const url = new URL(window.location.href);
+  url.pathname = SELLER_PATH;
+  url.searchParams.set("uid", uid);
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("id");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToSellerPayouts = () => navigateToPath(SELLER_PAYOUTS_PATH);
+
+export const navigateToCreateListing = () => {
+  const url = new URL(window.location.href);
+  url.pathname = CREATE_PATH;
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToEditListing = (listingId: string | number) => {
+  const url = new URL(window.location.href);
+  url.pathname = EDIT_PATH;
+  url.searchParams.set("id", String(listingId));
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+
+  window.history.pushState(markAppHistoryState(), "", url.toString());
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const navigateToProfile = () => navigateToPath(PROFILE_PATH);
+export const navigateToLogin = () => navigateToPath(LOGIN_PATH);
+export const navigateToSignup = () => navigateToPath(SIGNUP_PATH);
+export const navigateToForgotPassword = () => navigateToPath(FORGOT_PASSWORD_PATH);
+export const navigateToEditProfile = () => navigateToPath(EDIT_PROFILE_PATH);
+export const navigateToEditAccount = () => navigateToPath(EDIT_ACCOUNT_PATH);
+export const navigateToBecomeSeller = () => navigateToPath(BECOME_SELLER_PATH);
+export const navigateToChangePassword = () => navigateToPath(CHANGE_PASSWORD_PATH);
+export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
+export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
+export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
+export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
+export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
+export const navigateToAdminSellerApplications = () => navigateToPath(ADMIN_SELLER_APPLICATIONS_PATH);
+export const navigateToAdminModerationQueue = () => navigateToPath(ADMIN_MODERATION_QUEUE_PATH);
+export const navigateToAdminAudit = () => navigateToPath(ADMIN_AUDIT_PATH);
+export const navigateToAdminSetup = () => navigateToPath(ADMIN_SETUP_PATH);
+export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
+export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
+export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
+export const navigateToDisputes = () => navigateToPath(DISPUTES_PATH);
+export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
+export const navigateToCart = () => navigateToPath(CART_PATH);
+export const ORDER_TRACKING_BASE_PATH = "/orders";
+export const navigateToAdminPayoutDestinations = () => navigateToPath(ADMIN_PAYOUT_DESTINATIONS_PATH);
+
+export const buildOrderTrackingPath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`;
+
+export const buildOrderDisputePath = (reference: string) =>
+  `${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}/dispute`;
+
+export const navigateToOrderTracking = (reference: string) =>
+  navigateToPath(buildOrderTrackingPath(reference));
+
+export const navigateToOrderDispute = (reference: string) =>
+  navigateToPath(buildOrderDisputePath(reference));
+export const getSellerUidFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("uid");
+};
+
+export const getEditListingIdFromUrl = () => {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get("id");
+  return value ? Number(value) : null;
 };
