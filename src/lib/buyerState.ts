@@ -76,21 +76,23 @@ const readPaymentsFromKey = (key: string | null) => {
   return readJson<BuyerPaymentRecord[]>(key, []);
 };
 
-const cacheBuyerCart = (items: BuyerCartItem[]) => {
+const persistBuyerCart = (items: BuyerCartItem[]) => {
   const scopedKey = getBuyerCartKey();
   if (!scopedKey) return;
   writeJson(scopedKey, items.slice(0, 20));
   emitBuyerCartUpdated();
 };
 
-const cacheBuyerPayments = (records: BuyerPaymentRecord[]) => {
+const persistBuyerPayments = (records: BuyerPaymentRecord[]) => {
   const scopedKey = getBuyerPaymentsKey();
   if (!scopedKey) return;
   writeJson(scopedKey, records.slice(0, 20));
 };
 
+const readMutableBuyerCart = () => readBuyerCart();
+
 const upsertCartItemLocally = (item: BuyerCartItem) => {
-  const current = readBuyerCart();
+  const current = readMutableBuyerCart();
   const index = current.findIndex((entry) => String(entry.listingId) === String(item.listingId));
 
   if (index >= 0) {
@@ -99,12 +101,12 @@ const upsertCartItemLocally = (item: BuyerCartItem) => {
     current.unshift(item);
   }
 
-  cacheBuyerCart(current);
+  persistBuyerCart(current);
 };
 
 const removeCartItemLocally = (listingId: string) => {
-  const current = readBuyerCart();
-  cacheBuyerCart(current.filter((item) => String(item.listingId) !== String(listingId)));
+  const current = readMutableBuyerCart();
+  persistBuyerCart(current.filter((item) => String(item.listingId) !== String(listingId)));
 };
 
 export const readBuyerCart = (): BuyerCartItem[] => {
@@ -115,20 +117,28 @@ export const readBuyerPayments = (): BuyerPaymentRecord[] => {
   return readPaymentsFromKey(getBuyerPaymentsKey());
 };
 
+const normalizeServerCartItem = (item: BuyerCartItem, fallbackAddedAt = new Date().toISOString()): BuyerCartItem => ({
+  ...item,
+  listingId: String(item.listingId),
+  quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+  unitPrice: Number(item.unitPrice) || 0,
+  totalPrice: Number(item.totalPrice) || Math.max(1, Math.floor(Number(item.quantity) || 1)) * (Number(item.unitPrice) || 0),
+  addedAt: item.addedAt || fallbackAddedAt,
+});
+
 export const refreshBuyerCartFromServer = async () => {
   const scopedKey = getBuyerCartKey();
   if (!scopedKey) return [] as BuyerCartItem[];
 
-  const localItems = readBuyerCart();
-
   try {
     const result = await apiFetch("/api/cart");
     const serverItems = Array.isArray(result?.items) ? (result.items as BuyerCartItem[]) : [];
-    cacheBuyerCart(serverItems);
-    return serverItems;
+    const normalized = serverItems.map((item) => normalizeServerCartItem(item));
+    persistBuyerCart(normalized);
+    return normalized;
   } catch (error) {
     console.warn("Cart refresh failed, using local snapshot:", error);
-    return localItems;
+    return readBuyerCart();
   }
 };
 
@@ -138,15 +148,22 @@ export const setBuyerCartItem = async (item: BuyerCartItem) => {
     throw new Error("Please log in again before using your cart.");
   }
 
-  await apiFetch("/api/cart/items", {
+  const response = await apiFetch("/api/cart/items", {
     method: "POST",
     body: JSON.stringify({
       listingId: item.listingId,
       quantity: item.quantity,
     }),
-  });
+  }) as { item?: BuyerCartItem } | null;
 
-  await refreshBuyerCartFromServer();
+  const nextItem = normalizeServerCartItem(response?.item ?? item, item.addedAt);
+  upsertCartItemLocally(nextItem);
+
+  try {
+    await refreshBuyerCartFromServer();
+  } catch {
+    // Keep the authoritative response item cached locally.
+  }
 };
 
 export const updateBuyerCartItemQuantity = async (listingId: string, quantity: number) => {
@@ -155,12 +172,31 @@ export const updateBuyerCartItemQuantity = async (listingId: string, quantity: n
     throw new Error("Please log in again before updating your cart.");
   }
 
-  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+  const response = await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
     method: "PATCH",
     body: JSON.stringify({ quantity }),
-  });
+  }) as { item?: BuyerCartItem } | null;
 
-  await refreshBuyerCartFromServer();
+  if (response?.item) {
+    upsertCartItemLocally(normalizeServerCartItem(response.item));
+  } else {
+    const current = readMutableBuyerCart();
+    const index = current.findIndex((entry) => String(entry.listingId) === String(listingId));
+    if (index >= 0) {
+      current[index] = {
+        ...current[index],
+        quantity,
+        totalPrice: quantity * Number(current[index].unitPrice),
+      };
+      persistBuyerCart(current);
+    }
+  }
+
+  try {
+    await refreshBuyerCartFromServer();
+  } catch {
+    // Keep the locally updated cart snapshot if refresh fails.
+  }
 };
 
 export const removeBuyerCartItem = async (listingId: string) => {
@@ -173,7 +209,13 @@ export const removeBuyerCartItem = async (listingId: string) => {
     method: "DELETE",
   });
 
-  await refreshBuyerCartFromServer();
+  removeCartItemLocally(listingId);
+
+  try {
+    await refreshBuyerCartFromServer();
+  } catch {
+    // Keep the locally removed cart snapshot if refresh fails.
+  }
 };
 
 export const removeBuyerCartItems = async (listingIds: string[]) => {
@@ -247,7 +289,7 @@ export const upsertBuyerPayment = (record: BuyerPaymentRecord) => {
     current.unshift(record);
   }
 
-  cacheBuyerPayments(current);
+  persistBuyerPayments(current);
 };
 
 export const clearBuyerPaymentRecords = () => {
@@ -286,5 +328,5 @@ export const updateBuyerPaymentStatus = (
       : item,
   );
 
-  cacheBuyerPayments(next);
+  persistBuyerPayments(next);
 };
