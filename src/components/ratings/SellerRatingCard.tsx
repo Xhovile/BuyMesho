@@ -38,19 +38,22 @@ export default function SellerRatingCard({
 }: SellerRatingCardProps) {
   const distribution = FULL_DISTRIBUTION.map((stars) => {
     const matched = ratingSummary?.distribution?.find((row) => row.stars === stars);
+    const count = Number(matched?.count ?? 0);
+    const percentage = Number(matched?.percentage ?? 0);
     return {
       stars,
-      count: matched?.count ?? 0,
-      percentage: matched?.percentage ?? 0,
+      count: Number.isFinite(count) ? count : 0,
+      percentage: Number.isFinite(percentage) ? percentage : 0,
     };
   });
   const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
-  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (ratingSummary?.ratingCount ?? 0);
+  const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : Number(ratingSummary?.ratingCount ?? 0);
   const derivedAverage =
     ratingCount > 0
       ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
       : 0;
-  const averageRating = ratingCount > 0 ? derivedAverage : (ratingSummary?.averageRating ?? 0);
+  const rawAverage = Number(ratingSummary?.averageRating ?? 0);
+  const averageRating = ratingCount > 0 ? derivedAverage : Number.isFinite(rawAverage) ? rawAverage : 0;
   const hasRatings = ratingCount > 0;
 
   return (
