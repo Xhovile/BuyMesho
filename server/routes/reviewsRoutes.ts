@@ -429,19 +429,18 @@ async function saveSellerReplyHandler(req: Request, res: Response, review: Revie
     return reviewError(res, 403, "You cannot reply to this review");
   }
 
-  const reply = normalizeText(req.body?.reply, 2000);
-  if (reply === null) {
-    return reviewError(res, 400, "Reply is required");
-  }
+  const rawReply = typeof req.body?.reply === "string" ? req.body.reply : "";
+  const trimmedReply = rawReply.trim();
+  const normalizedReply = trimmedReply ? trimmedReply.slice(0, 2000) : null;
 
   try {
     db.prepare(
       `
         UPDATE listing_reviews
-        SET seller_reply = ?, seller_reply_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+        SET seller_reply = ?, seller_reply_at = CASE WHEN ? IS NULL THEN NULL ELSE CURRENT_TIMESTAMP END, updated_at = CURRENT_TIMESTAMP
         WHERE listing_id = ? AND reviewer_uid = ?
       `
-    ).run(reply, listingId, review.reviewer_uid);
+    ).run(normalizedReply, normalizedReply, listingId, review.reviewer_uid);
 
     const updated = getReviewByListingAndReviewer(listingId, review.reviewer_uid);
     return res.json({ success: true, review: updated ? serializeReview(updated) : null });
