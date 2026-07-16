@@ -12,7 +12,6 @@ import {
 import { buildListingShareUrl, getListingParamsFromUrl, syncListingParamsInUrl } from "../lib/listingUrl";
 import { getListingItemConfig } from "../listingSchemas";
 import { useAuthUser } from "./useAuthUser";
-import { fetchListingById } from "../lib/listings";
 import { isListingSaved, subscribeToSavedListingChanges, toggleSavedListingId } from "../lib/savedListings";
 import { navigateToConversation } from "../lib/messagesNavigation";
 import { startConversationFromListing } from "../lib/messages";
@@ -25,6 +24,7 @@ import {
 } from "../lib/hiddenCollections";
 import { type ListingActionResponse, type SectionKey, type SellerProfile, specValue } from "../components/listingDetails/listingDetailsUtils";
 import { readBuyerCart, setBuyerCartItem } from "../lib/buyerState";
+import { useListingDetailsData } from "./useListingDetailsData";
 
 export type ListingDetailsPageState = {
   firebaseUser: ReturnType<typeof useAuthUser>["user"];
@@ -94,13 +94,6 @@ export type ListingDetailsPageState = {
 export function useListingDetailsPage(): ListingDetailsPageState {
   const { user: firebaseUser } = useAuthUser();
   const [routeState, setRouteState] = useState(() => getListingParamsFromUrl());
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [seller, setSeller] = useState<SellerProfile | null>(null);
-  const [ratingSummary, setRatingSummary] = useState<RatingSummary | null>(null);
-  const [ratingLoading, setRatingLoading] = useState(false);
-  const [ratingSubmitting, setRatingSubmitting] = useState(false);
-  const [relatedListings, setRelatedListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [saved, setSaved] = useState(false);
   const [shareNoticeOpen, setShareNoticeOpen] = useState(false);
@@ -111,11 +104,23 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   const [authPromptAction, setAuthPromptAction] = useState<"message" | "buy" | "cart" | null>(null);
   const [hiddenSellerUids, setHiddenSellerUids] = useState<string[]>(() => readHiddenSellerUids());
   const [hiddenListingIds, setHiddenListingIds] = useState<number[]>(() => readHiddenListingIds());
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   const detailsRef = useRef<HTMLElement | null>(null);
   const exploreRef = useRef<HTMLElement | null>(null);
   const reviewsRef = useRef<HTMLElement | null>(null);
   const listingId = routeState.listing || "";
+
+  const {
+    listing,
+    setListing,
+    seller,
+    ratingSummary,
+    ratingLoading,
+    relatedListings,
+    loading,
+    refreshRatingSummary,
+  } = useListingDetailsData(listingId, firebaseUser?.uid);
 
   useEffect(() => {
     const syncRouteState = () => setRouteState(getListingParamsFromUrl());
@@ -135,66 +140,6 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     syncSavedState();
     return subscribeToSavedListingChanges(syncSavedState);
   }, [listingId, firebaseUser?.uid]);
-
-  useEffect(() => {
-    const loadListing = async () => {
-      if (!listingId) {
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const found = await fetchListingById(listingId);
-        setListing(found);
-
-        if (!found) {
-          setSeller(null);
-          setRatingSummary(null);
-          setRelatedListings([]);
-          return;
-        }
-
-        try {
-          await fetch(`/api/listings/${found.id}/view`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-          });
-        } catch (error) {
-          console.error("Failed to track listing view", error);
-        }
-
-        const [sellerResult, ratingResult, relatedResult] = await Promise.allSettled([
-          apiFetch(`/api/users/${found.seller_uid}`),
-          apiFetch(`/api/users/${found.seller_uid}/rating-summary`),
-          apiFetch(`/api/listings/${found.id}/related?limit=20`),
-        ]);
-
-        setSeller(sellerResult.status === "fulfilled" ? sellerResult.value : null);
-        setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
-        setRelatedListings(
-          relatedResult.status === "fulfilled" && Array.isArray(relatedResult.value)
-            ? relatedResult.value
-            : []
-        );
-      } catch (error) {
-        console.error("Failed to load listing details page", error);
-        setListing(null);
-        setSeller(null);
-        setRatingSummary(null);
-        setRelatedListings([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void loadListing();
-  }, [listingId]);
-
-  useEffect(() => {
-    if (!listing?.seller_uid) return;
-    void refreshRatingSummary(listing.seller_uid);
-  }, [listing?.seller_uid, firebaseUser?.uid]);
 
   useEffect(() => {
     const syncHiddenCollections = () => {
@@ -508,19 +453,6 @@ export function useListingDetailsPage(): ListingDetailsPageState {
       navigateToConversation(conversation.id);
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to open conversation.");
-    }
-  };
-
-  const refreshRatingSummary = async (sellerUid: string) => {
-    setRatingLoading(true);
-    try {
-      const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
-      setRatingSummary(summary);
-    } catch (error) {
-      console.error("Failed to load rating summary", error);
-      setRatingSummary(null);
-    } finally {
-      setRatingLoading(false);
     }
   };
 
