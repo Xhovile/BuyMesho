@@ -13,6 +13,11 @@ type ListingRow = {
   status: string;
 };
 
+type LiveListingRow = ListingRow & {
+  is_hidden: number;
+  deleted_at: string | null;
+};
+
 type CartRow = {
   buyer_uid: string;
   listing_id: number;
@@ -38,6 +43,17 @@ function normalizeQuantity(value: unknown) {
   return Math.max(1, Math.floor(parsed));
 }
 
+function parsePhotos(value: string | null | undefined) {
+  if (!value) return [] as string[];
+
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.map((entry) => String(entry)).filter(Boolean) : [];
+  } catch {
+    return [] as string[];
+  }
+}
+
 function toCartItem(row: CartRow) {
   return {
     listingId: String(row.listing_id),
@@ -49,6 +65,37 @@ function toCartItem(row: CartRow) {
     unitPrice: Number(row.unit_price ?? 0),
     totalPrice: Number(row.total_price ?? 0),
     availableQuantity: row.available_quantity ?? null,
+    addedAt: row.added_at,
+  };
+}
+
+function hydrateCartItemFromListing(db: any, row: CartRow) {
+  const listing = db.prepare(`
+    SELECT id, name, price, description, university, photos, quantity, sold_quantity, status, is_hidden, deleted_at
+    FROM listings
+    WHERE id = ?
+  `).get(row.listing_id) as LiveListingRow | undefined;
+
+  if (!listing || listing.is_hidden === 1 || listing.deleted_at) {
+    db.prepare(`DELETE FROM buyer_cart_items WHERE buyer_uid = ? AND listing_id = ?`).run(row.buyer_uid, row.listing_id);
+    return null;
+  }
+
+  const photos = parsePhotos(listing.photos);
+  const availableQuantity = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
+  const unitPrice = Number(listing.price ?? row.unit_price ?? 0);
+  const quantity = Math.max(1, Number(row.quantity ?? 1));
+
+  return {
+    listingId: String(row.listing_id),
+    listingTitle: listing.name,
+    listingImage: photos.length > 0 ? photos[0] : null,
+    listingDescription: listing.description ?? null,
+    university: listing.university ?? null,
+    quantity,
+    unitPrice,
+    totalPrice: unitPrice * quantity,
+    availableQuantity,
     addedAt: row.added_at,
   };
 }
@@ -85,15 +132,7 @@ function buildUpsertedCartItem(db: any, buyerUid: string, listingId: number, qua
     throw error;
   }
 
-  const photos = listing.photos ? (() => {
-    try {
-      const parsed = JSON.parse(listing.photos as unknown as string);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  })() : [];
-
+  const photos = listing.photos ? parsePhotos(listing.photos) : [];
   const listingImage = photos.length > 0 ? String(photos[0]) : null;
   const unitPrice = Number(listing.price ?? 0);
   const totalPrice = unitPrice * quantity;
@@ -166,7 +205,14 @@ function buildUpsertedCartItem(db: any, buyerUid: string, listingId: number, qua
     throw error;
   }
 
-  return toCartItem(row);
+  const hydrated = hydrateCartItemFromListing(db, row);
+  if (!hydrated) {
+    const error = new Error("Failed to hydrate cart item");
+    (error as Error & { statusCode?: number }).statusCode = 500;
+    throw error;
+  }
+
+  return hydrated;
 }
 
 export function createCartRouter(requireFirebaseUser: RequestHandler): express.Router {
@@ -187,7 +233,15 @@ export function createCartRouter(requireFirebaseUser: RequestHandler): express.R
         ORDER BY updated_at DESC, added_at DESC
       `).all(req.user.uid) as CartRow[];
 
-      return res.json({ success: true, items: rows.map(toCartItem) });
+      const items: Array<ReturnType<typeof toCartItem>> = [];
+      for (const row of rows) {
+        const item = hydrateCartItemFromListing(db, row);
+        if (item) {
+          items.push(item);
+        }
+      }
+
+      return res.json({ success: true, items });
     } catch (error) {
       return res.status(500).json(jsonError(error, "Failed to load cart"));
     }
