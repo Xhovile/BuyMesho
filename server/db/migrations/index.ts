@@ -28,12 +28,34 @@ function normalizeSchemaSql(sql: string): string {
     .replace(/\bDATETIME\b/gi, "TIMESTAMPTZ");
 }
 
+function ensureBuyerCartTable() {
+  postgresDb.exec(`
+    CREATE TABLE IF NOT EXISTS buyer_cart_items (
+      buyer_uid TEXT NOT NULL,
+      listing_id BIGINT NOT NULL,
+      listing_title TEXT NOT NULL,
+      listing_image TEXT,
+      listing_description TEXT,
+      university TEXT,
+      quantity INTEGER NOT NULL,
+      unit_price DOUBLE PRECISION NOT NULL,
+      total_price DOUBLE PRECISION NOT NULL,
+      available_quantity INTEGER,
+      added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (buyer_uid, listing_id),
+      FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+    );
+  `);
+}
+
 export function runMigrations() {
   const schemaPath = resolveSchemaPath();
   const sql = normalizeSchemaSql(fs.readFileSync(schemaPath, "utf8"));
 
   try {
     postgresDb.exec(sql);
+    ensureBuyerCartTable();
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS pack_size INTEGER;`);
     postgresDb.exec(`ALTER TABLE listings ADD COLUMN IF NOT EXISTS bulk_units TEXT;`);
     postgresDb.exec(`ALTER TABLE sellers ADD COLUMN IF NOT EXISTS profile_picture TEXT;`);
