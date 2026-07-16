@@ -47,38 +47,23 @@ export default function ListingStudioFormWide({
   submitLabel,
   submitBusyLabel,
 }: Props) {
-  const [form, setForm] = useState<ListingDraft>(() => {
-    if (initialData.listing_mode === undefined) {
-      const inferredMode: ListingMode =
-        initialData.is_wholesale
-          ? "wholesale"
-          : String(initialData.original_price ?? "").trim()
-            ? "deal"
-            : "normal";
-      return { ...initialData, listing_mode: inferredMode };
-    }
-    return initialData;
-  });
+const [form, setForm] = useState<ListingDraft>(() => {
+  if (initialData.listing_mode === undefined) {
+    const inferredMode: ListingMode =
+      initialData.is_wholesale
+        ? "wholesale"
+        : String(initialData.original_price ?? "").trim()
+          ? "deal"
+          : "normal";
+    return { ...initialData, listing_mode: inferredMode };
+  }
+  return initialData;
+});
+  
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const specFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  useEffect(() => {
-    if (initialData.listing_mode === undefined) {
-      const inferredMode: ListingMode =
-        initialData.is_wholesale
-          ? "wholesale"
-          : String(initialData.original_price ?? "").trim()
-            ? "deal"
-            : "normal";
-      setForm({ ...initialData, listing_mode: inferredMode });
-    } else {
-      setForm(initialData);
-    }
-    setFieldErrors({});
-    setShowAdvancedSpecs(false);
-  }, [initialData]);
 
   const isSchemaDrivenCategory = getListingSubcategories(form.category as Category).length > 0;
 
