@@ -1,5 +1,7 @@
 import type { Express } from "express";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
+import { PAYMENT_ENDPOINTS } from "../modules/payments/payment.endpoints.js";
+import { paymentWebhookHandler } from "../modules/payments/payment.webhooks.js";
 
 type RouteDeps = {
   db: any;
@@ -29,6 +31,13 @@ const REQUIRED_TABLES = [
   "escrow_events",
   "disputes",
   "payouts",
+  "payment_webhook_events",
+  "seller_payout_accounts",
+  "payout_attempts",
+  "payout_events",
+  "payout_adjustments",
+  "seller_payout_account_events",
+  "idempotency_keys",
 ] as const;
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
@@ -61,7 +70,79 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
     "proof_document_url",
     "status",
   ],
+  payment_webhook_events: [
+    "provider",
+    "reference",
+    "event_type",
+    "signature_valid",
+    "payload",
+    "created_at",
+  ],
+  payouts: [
+    "seller_id",
+    "order_id",
+    "escrow_id",
+    "status",
+    "currency",
+    "amount",
+    "destination_account_id",
+    "provider_ref_id",
+    "provider_transaction_id",
+    "provider_status",
+    "failure_reason",
+    "manual_review_reason",
+    "approved_by",
+    "sent_at",
+    "paid_at",
+    "failed_at",
+    "gross_amount",
+    "platform_fee_amount",
+    "processing_fee_amount",
+    "reserve_amount",
+    "reserve_cap_amount",
+    "manual_adjustment_amount",
+    "payout_fee_amount",
+    "seller_receives_amount",
+    "net_amount",
+    "formula_snapshot",
+    "last_adjustment_id",
+    "processed_by",
+    "raw_request",
+    "raw_response",
+  ],
+  seller_payout_accounts: [
+    "seller_uid",
+    "destination_type",
+    "provider_name",
+    "masked_account",
+    "destination_fingerprint",
+    "is_default",
+    "verification_status",
+    "is_active",
+    "created_at",
+    "updated_at",
+  ],
+  payout_attempts: [
+    "payout_id",
+    "attempt_no",
+    "provider",
+    "provider_charge_id",
+    "request_payload",
+    "status",
+    "created_at",
+    "updated_at",
+  ],
+  payout_events: ["payout_id", "seller_id", "event_type", "actor_type", "created_at"],
+  payout_adjustments: ["payout_id", "seller_id", "adjustment_type", "amount", "currency", "reason", "actor_type", "created_at"],
+  seller_payout_account_events: ["seller_uid", "account_id", "event_type", "actor_type", "created_at"],
 };
+
+const REQUIRED_PAYMENT_ENDPOINTS = {
+  initialize: "/api/payments/paychangu/initialize",
+  verify: "/api/payments/paychangu/verify/:txRef",
+  webhook: "/api/payments/paychangu/webhook",
+  payoutWebhook: "/api/payments/paychangu-payout/webhook",
+} as const;
 
 function statusWeight(status: CheckStatus) {
   if (status === "FAIL") return 2;
@@ -290,6 +371,140 @@ function checkFirebaseAdmin(): NamedCheck {
   }
 }
 
+function checkPaymentEndpointContract(): NamedCheck {
+  const actual = PAYMENT_ENDPOINTS.paychangu;
+  const mismatches: Record<string, { expected: string; actual: string | undefined }> = {};
+
+  for (const [key, expected] of Object.entries(REQUIRED_PAYMENT_ENDPOINTS)) {
+    const actualValue = (actual as Record<string, string | undefined>)[key];
+    if (actualValue !== expected) {
+      mismatches[key] = { expected, actual: actualValue };
+    }
+  }
+
+  return {
+    status: Object.keys(mismatches).length === 0 ? "PASS" : "FAIL",
+    message: Object.keys(mismatches).length === 0 ? "Payment endpoint contract matches" : "Payment endpoint contract mismatch",
+    details: mismatches,
+  };
+}
+
+async function checkPaymentWebhookHandler(): Promise<NamedCheck> {
+  const probe: { statusCode: number | null; body: unknown } = {
+    statusCode: null,
+    body: null,
+  };
+
+  const mockRes: any = {
+    status(code: number) {
+      probe.statusCode = code;
+      return this;
+    },
+    json(payload: unknown) {
+      probe.body = payload;
+      return this;
+    },
+  };
+
+  await paymentWebhookHandler({} as any, mockRes as any);
+
+  if (probe.statusCode === 501) {
+    return {
+      status: "FAIL",
+      message: "Payment webhook handler is still a stub",
+      details: probe,
+    };
+  }
+
+  return {
+    status: "PASS",
+    message: "Payment webhook handler is active",
+    details: probe,
+  };
+}
+
+function checkPaymentTables(db: any): NamedCheck {
+  const required = [
+    "payment_webhook_events",
+    "seller_payout_accounts",
+    "payout_attempts",
+    "payout_events",
+    "payout_adjustments",
+    "seller_payout_account_events",
+    "idempotency_keys",
+  ];
+
+  const missing = required.filter((table) => !isTablePresent(db, table));
+  return {
+    status: missing.length === 0 ? "PASS" : "FAIL",
+    message: missing.length === 0 ? "Payment lifecycle tables are present" : `Missing payment tables: ${missing.join(", ")}`,
+    details: { required_tables: required, missing_tables: missing },
+  };
+}
+
+function checkPaymentColumns(db: any): NamedCheck {
+  const tables = ["payment_webhook_events", "seller_payout_accounts", "payouts", "payout_attempts"];
+  const missingByTable: Record<string, string[]> = {};
+
+  for (const tableName of tables) {
+    const requiredColumns = REQUIRED_COLUMNS[tableName] ?? [];
+    if (!isTablePresent(db, tableName)) {
+      missingByTable[tableName] = [...requiredColumns];
+      continue;
+    }
+
+    const presentColumns = new Set(getColumns(db, tableName));
+    const missing = requiredColumns.filter((column) => !presentColumns.has(column));
+    if (missing.length > 0) missingByTable[tableName] = missing;
+  }
+
+  return {
+    status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL",
+    message: Object.keys(missingByTable).length === 0 ? "Payment columns are present" : "Missing payment columns",
+    details: missingByTable,
+  };
+}
+
+function checkPaymentSummarySurface(db: any): NamedCheck {
+  const summaryTables = ["payments", "orders", "payouts", "payment_webhook_events"];
+  const present = summaryTables.filter((table) => isTablePresent(db, table));
+  const missing = summaryTables.filter((table) => !isTablePresent(db, table));
+
+  return {
+    status: missing.length === 0 ? "PASS" : "FAIL",
+    message: missing.length === 0 ? "Payment summary surface is complete" : "Payment summary surface is incomplete",
+    details: { present, missing },
+  };
+}
+
+async function checkPaymentsStrict(db: any): Promise<NamedCheck> {
+  const [endpointContract, webhookHandler] = await Promise.all([
+    Promise.resolve(checkPaymentEndpointContract()),
+    checkPaymentWebhookHandler(),
+  ]);
+
+  const tableCheck = checkPaymentTables(db);
+  const columnCheck = checkPaymentColumns(db);
+  const summarySurfaceCheck = checkPaymentSummarySurface(db);
+  const combined = [endpointContract, webhookHandler, tableCheck, columnCheck, summarySurfaceCheck];
+  const status = combineStatus(combined);
+
+  return {
+    status,
+    message:
+      status === "PASS"
+        ? "Payments stack is structurally healthy"
+        : "Payments stack has one or more strict failures",
+    details: {
+      endpointContract,
+      webhookHandler,
+      tableCheck,
+      columnCheck,
+      summarySurfaceCheck,
+    },
+  };
+}
+
 export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
   const { db } = deps;
 
@@ -297,7 +512,9 @@ export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
     res.redirect("/api/diagnostics");
   });
 
-  app.get("/api/diagnostics", (_req, res) => {
+  app.get("/api/diagnostics", async (_req, res) => {
+    const payments = await checkPaymentsStrict(db);
+
     const checks = {
       database: checkDatabase(db),
       tables: checkTables(db),
@@ -310,6 +527,7 @@ export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
       paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
       database_url: checkEnvironment("DATABASE_URL", true),
       admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
+      payments,
     };
 
     const overall = combineStatus(Object.values(checks));
