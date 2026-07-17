@@ -135,24 +135,43 @@ function checkEnvironment(name: string, required = false): NamedCheck {
   };
 }
 
-function checkEnvironmentGroup(names: string[], label: string, required = false): NamedCheck {
+function checkEnvironmentGroup(names: string[], label: string, mode: "all" | "any" = "all"): NamedCheck {
   const configured = names.filter((name) => {
     const value = process.env[name];
     return typeof value === "string" && value.trim().length > 0;
   });
 
-  if (configured.length > 0) {
+  if (mode === "any") {
+    if (configured.length > 0) {
+      return {
+        status: "PASS",
+        message: `${label} is configured`,
+        details: { configured },
+      };
+    }
+
+    return {
+      status: "WARN",
+      message: `${label} is not configured`,
+      details: { expected_any_of: names },
+    };
+  }
+
+  if (configured.length === names.length) {
     return {
       status: "PASS",
-      message: `${label} is configured`,
+      message: `${label} is fully configured`,
       details: { configured },
     };
   }
 
   return {
-    status: required ? "FAIL" : "WARN",
-    message: `${label} is not configured`,
-    details: { expected: names },
+    status: "WARN",
+    message: `${label} is partially configured`,
+    details: {
+      configured,
+      missing: names.filter((name) => !configured.includes(name)),
+    },
   };
 }
 
@@ -290,7 +309,7 @@ export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
       smtp: checkEnvironmentGroup(["SMTP_HOST", "SMTP_USER", "SMTP_PASS"], "SMTP"),
       paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
       database_url: checkEnvironment("DATABASE_URL", true),
-      admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access"),
+      admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
     };
 
     const overall = combineStatus(Object.values(checks));
