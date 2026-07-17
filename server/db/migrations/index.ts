@@ -1,5 +1,6 @@
 import { postgresDb } from "../../db.js";
 import { initPaymentSchema } from "../../postgresCompat/schema.js";
+import { ensurePayoutLifecycleSchema } from "../payouts/payout.schema.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -96,6 +97,7 @@ function normalizeHardDeleteAfterColumn() {
 export function runMigrations() {
   initPaymentSchema(postgresDb);
   ensureExtraTables();
+  ensurePayoutLifecycleSchema();
 
   try {
     normalizeHardDeleteAfterColumn();
