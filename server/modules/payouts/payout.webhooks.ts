@@ -86,6 +86,18 @@ function readNumber(...values: unknown[]): number | null {
   return null;
 }
 
+function resolvePayoutRow(payoutId: string, chargeId: string): Record<string, unknown> | undefined {
+  const db = getPaymentDb();
+  return (
+    (payoutId
+      ? (db.prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`).get(payoutId) as Record<string, unknown> | undefined)
+      : undefined) ??
+    (chargeId
+      ? (db.prepare(`SELECT * FROM payouts WHERE provider_charge_id = ? LIMIT 1`).get(chargeId) as Record<string, unknown> | undefined)
+      : undefined)
+  );
+}
+
 async function handlePaychanguWebhookInternal(
   context: PayoutWebhookContext,
 ): Promise<PayoutWebhookResponse> {
@@ -137,24 +149,65 @@ async function handlePaychanguWebhookInternal(
     throw new Error("Invalid PayChangu payout webhook signature");
   }
 
+  const payoutRow = resolvePayoutRow(payoutId, chargeId);
+
   const duplicate = findPaymentWebhookDuplicate(webhookInput);
   if (duplicate) {
+    const db = getPaymentDb();
+    if (payoutRow) {
+      db.prepare(
+        `INSERT INTO payout_events (
+          payout_id,
+          seller_id,
+          event_type,
+          actor_type,
+          actor_id,
+          note,
+          payload,
+          created_at
+        ) VALUES (?, ?, 'payout_webhook_duplicate', 'system', NULL, ?, ?, ?)`,
+      ).run(
+        String(payoutRow.id),
+        String(payoutRow.seller_id ?? ""),
+        `Duplicate PayChangu payout webhook event ${eventId || chargeId || payoutId || "unknown"}`,
+        rawPayload,
+        new Date().toISOString(),
+      );
+    }
+
     recordPaymentWebhookDuplicateAttempt(webhookInput, duplicate.id);
     return { ok: true, status: "duplicate", payoutId: payoutId || null };
   }
 
   const inserted = insertPaymentWebhookEvent(webhookInput);
   if (!inserted.inserted) {
+    if (payoutRow) {
+      getPaymentDb().prepare(
+        `INSERT INTO payout_events (
+          payout_id,
+          seller_id,
+          event_type,
+          actor_type,
+          actor_id,
+          note,
+          payload,
+          created_at
+        ) VALUES (?, ?, 'payout_webhook_duplicate', 'system', NULL, ?, ?, ?)`,
+      ).run(
+        String(payoutRow.id),
+        String(payoutRow.seller_id ?? ""),
+        `Duplicate PayChangu payout webhook event ${eventId || chargeId || payoutId || "unknown"}`,
+        rawPayload,
+        new Date().toISOString(),
+      );
+    }
+
     recordPaymentWebhookDuplicateAttempt(webhookInput, inserted.existingId);
     return { ok: true, status: "duplicate", payoutId: payoutId || null };
   }
 
   const db = getPaymentDb();
-  const payout = payoutId
-    ? db.prepare(`SELECT * FROM payouts WHERE id = ? LIMIT 1`).get(payoutId) as Record<string, unknown> | undefined
-    : chargeId
-      ? db.prepare(`SELECT * FROM payouts WHERE provider_charge_id = ? LIMIT 1`).get(chargeId) as Record<string, unknown> | undefined
-      : undefined;
+  const payout = payoutRow;
 
   if (!payout) {
     updatePaymentWebhookEventStatus(inserted.id, "ignored", {
@@ -173,6 +226,9 @@ async function handlePaychanguWebhookInternal(
     : providerStatus === "failed"
       ? "failed"
       : "pending";
+  const payloadAmount = readNumber(transaction?.amount, parsedPayload.amount, extractNestedObject(parsedPayload.data)?.amount);
+  const payoutAmount = Number.isFinite(payloadAmount as number) ? Math.round(payloadAmount as number) : Number(payout.amount ?? 0);
+  const payoutCurrency = readString(transaction?.currency, parsedPayload.currency, String(payout.currency ?? "MWK")) || "MWK";
 
   db.prepare(
     `UPDATE payouts
@@ -180,6 +236,8 @@ async function handlePaychanguWebhookInternal(
          provider_status = ?,
          provider_ref_id = COALESCE(?, provider_ref_id),
          provider_transaction_id = COALESCE(?, provider_transaction_id),
+         amount = COALESCE(?, amount),
+         currency = COALESCE(?, currency),
          raw_response = ?,
          paid_at = CASE WHEN ? = 'paid' THEN COALESCE(paid_at, ?) ELSE paid_at END,
          failed_at = CASE WHEN ? = 'failed' THEN COALESCE(failed_at, ?) ELSE failed_at END,
@@ -191,6 +249,8 @@ async function handlePaychanguWebhookInternal(
     providerStatus,
     providerReference || null,
     providerTransactionId || null,
+    payoutAmount,
+    payoutCurrency,
     rawPayload,
     payoutState,
     now,
