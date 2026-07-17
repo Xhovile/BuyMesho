@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { PAYMENT_ENDPOINTS } from "../modules/payments/payment.endpoints.js";
 import { paymentWebhookHandler } from "../modules/payments/payment.webhooks.js";
+import { payoutWebhookHandler } from "../modules/payouts/payout.webhooks.js";
 
 type RouteDeps = {
   db: any;
@@ -70,14 +71,7 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
     "proof_document_url",
     "status",
   ],
-  payment_webhook_events: [
-    "provider",
-    "reference",
-    "event_type",
-    "signature_valid",
-    "payload",
-    "created_at",
-  ],
+  payment_webhook_events: ["provider", "reference", "event_type", "signature_valid", "payload", "created_at"],
   payouts: [
     "seller_id",
     "order_id",
@@ -122,16 +116,7 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
     "created_at",
     "updated_at",
   ],
-  payout_attempts: [
-    "payout_id",
-    "attempt_no",
-    "provider",
-    "provider_charge_id",
-    "request_payload",
-    "status",
-    "created_at",
-    "updated_at",
-  ],
+  payout_attempts: ["payout_id", "attempt_no", "provider", "provider_charge_id", "request_payload", "status", "created_at", "updated_at"],
   payout_events: ["payout_id", "seller_id", "event_type", "actor_type", "created_at"],
   payout_adjustments: ["payout_id", "seller_id", "adjustment_type", "amount", "currency", "reason", "actor_type", "created_at"],
   seller_payout_account_events: ["seller_uid", "account_id", "event_type", "actor_type", "created_at"],
@@ -144,7 +129,7 @@ const REQUIRED_PAYMENT_ENDPOINTS = {
   payoutWebhook: "/api/payments/paychangu-payout/webhook",
 } as const;
 
-function statusWeight(status: CheckStatus) {
+function statusWeight(status: CheckStatus): number {
   if (status === "FAIL") return 2;
   if (status === "WARN") return 1;
   return 0;
@@ -202,11 +187,7 @@ function getCount(db: any, tableName: string): number | null {
 function checkEnvironment(name: string, required = false): NamedCheck {
   const value = process.env[name];
   if (value && value.trim().length > 0) {
-    return {
-      status: "PASS",
-      message: `${name} is set`,
-      details: { configured: true },
-    };
+    return { status: "PASS", message: `${name} is set`, details: { configured: true } };
   }
 
   return {
@@ -223,36 +204,19 @@ function checkEnvironmentGroup(names: string[], label: string, mode: "all" | "an
   });
 
   if (mode === "any") {
-    if (configured.length > 0) {
-      return {
-        status: "PASS",
-        message: `${label} is configured`,
-        details: { configured },
-      };
-    }
-
-    return {
-      status: "WARN",
-      message: `${label} is not configured`,
-      details: { expected_any_of: names },
-    };
+    return configured.length > 0
+      ? { status: "PASS", message: `${label} is configured`, details: { configured } }
+      : { status: "WARN", message: `${label} is not configured`, details: { expected_any_of: names } };
   }
 
   if (configured.length === names.length) {
-    return {
-      status: "PASS",
-      message: `${label} is fully configured`,
-      details: { configured },
-    };
+    return { status: "PASS", message: `${label} is fully configured`, details: { configured } };
   }
 
   return {
     status: "WARN",
     message: `${label} is partially configured`,
-    details: {
-      configured,
-      missing: names.filter((name) => !configured.includes(name)),
-    },
+    details: { configured, missing: names.filter((name) => !configured.includes(name)) },
   };
 }
 
@@ -291,12 +255,11 @@ function checkColumns(db: any): NamedCheck {
     if (missing.length > 0) missingByTable[tableName] = missing;
   }
 
-  const tables = Object.keys(REQUIRED_COLUMNS);
   return {
     status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL",
     message: Object.keys(missingByTable).length === 0 ? "Required columns are present" : "Some required columns are missing",
     details: {
-      checked_tables: tables,
+      checked_tables: Object.keys(REQUIRED_COLUMNS),
       missing_columns: missingByTable,
     },
   };
@@ -305,24 +268,15 @@ function checkColumns(db: any): NamedCheck {
 function checkCounts(db: any): NamedCheck {
   const tablesToCount = ["sellers", "listings", "orders", "payments", "seller_applications", "messages", "conversations"];
   const counts: Record<string, number | null> = {};
-
   for (const table of tablesToCount) {
     counts[table] = isTablePresent(db, table) ? getCount(db, table) : null;
   }
-
-  return {
-    status: "PASS",
-    message: "Row counts collected",
-    details: counts,
-  };
+  return { status: "PASS", message: "Row counts collected", details: counts };
 }
 
 function checkHardDeleteColumn(db: any): NamedCheck {
   if (!isTablePresent(db, "listings")) {
-    return {
-      status: "FAIL",
-      message: "listings table is missing",
-    };
+    return { status: "FAIL", message: "listings table is missing" };
   }
 
   const row = db
@@ -339,10 +293,7 @@ function checkHardDeleteColumn(db: any): NamedCheck {
     .get() as { data_type?: string } | undefined;
 
   if (!row?.data_type) {
-    return {
-      status: "FAIL",
-      message: "hard_delete_after column is missing",
-    };
+    return { status: "FAIL", message: "hard_delete_after column is missing" };
   }
 
   const status = row.data_type === "timestamp with time zone" ? "PASS" : "WARN";
@@ -359,16 +310,29 @@ function checkFirebaseAdmin(): NamedCheck {
     return {
       status: "PASS",
       message: "Firebase Admin initialized",
-      details: {
-        apps: admin.apps.length,
-      },
+      details: { apps: admin.apps.length },
     };
   } catch (error) {
-    return {
-      status: "FAIL",
-      message: error instanceof Error ? error.message : String(error),
-    };
+    return { status: "FAIL", message: error instanceof Error ? error.message : String(error) };
   }
+}
+
+function checkWebhookExports(): NamedCheck {
+  const paymentWebhookOk =
+    typeof paymentWebhookHandler === "function" &&
+    typeof (paymentWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
+  const payoutWebhookOk =
+    typeof payoutWebhookHandler === "function" &&
+    typeof (payoutWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
+
+  return {
+    status: paymentWebhookOk && payoutWebhookOk ? "PASS" : "FAIL",
+    message: paymentWebhookOk && payoutWebhookOk ? "Webhook handlers are exported" : "Webhook handler exports are missing",
+    details: {
+      paymentWebhookHandler: paymentWebhookOk,
+      payoutWebhookHandler: payoutWebhookOk,
+    },
+  };
 }
 
 function checkPaymentEndpointContract(): NamedCheck {
@@ -389,40 +353,6 @@ function checkPaymentEndpointContract(): NamedCheck {
   };
 }
 
-async function checkPaymentWebhookHandler(): Promise<NamedCheck> {
-  const probe: { statusCode: number | null; body: unknown } = {
-    statusCode: null,
-    body: null,
-  };
-
-  const mockRes: any = {
-    status(code: number) {
-      probe.statusCode = code;
-      return this;
-    },
-    json(payload: unknown) {
-      probe.body = payload;
-      return this;
-    },
-  };
-
-  await paymentWebhookHandler({} as any, mockRes as any);
-
-  if (probe.statusCode === 501) {
-    return {
-      status: "FAIL",
-      message: "Payment webhook handler is still a stub",
-      details: probe,
-    };
-  }
-
-  return {
-    status: "PASS",
-    message: "Payment webhook handler is active",
-    details: probe,
-  };
-}
-
 function checkPaymentTables(db: any): NamedCheck {
   const required = [
     "payment_webhook_events",
@@ -433,7 +363,6 @@ function checkPaymentTables(db: any): NamedCheck {
     "seller_payout_account_events",
     "idempotency_keys",
   ];
-
   const missing = required.filter((table) => !isTablePresent(db, table));
   return {
     status: missing.length === 0 ? "PASS" : "FAIL",
@@ -443,7 +372,7 @@ function checkPaymentTables(db: any): NamedCheck {
 }
 
 function checkPaymentColumns(db: any): NamedCheck {
-  const tables = ["payment_webhook_events", "seller_payout_accounts", "payouts", "payout_attempts"];
+  const tables = ["payment_webhook_events", "seller_payout_accounts", "payouts", "payout_attempts", "payout_events", "payout_adjustments", "seller_payout_account_events"];
   const missingByTable: Record<string, string[]> = {};
 
   for (const tableName of tables) {
@@ -477,27 +406,21 @@ function checkPaymentSummarySurface(db: any): NamedCheck {
   };
 }
 
-async function checkPaymentsStrict(db: any): Promise<NamedCheck> {
-  const [endpointContract, webhookHandler] = await Promise.all([
-    Promise.resolve(checkPaymentEndpointContract()),
-    checkPaymentWebhookHandler(),
-  ]);
-
+function checkPaymentsStrict(db: any): NamedCheck {
+  const endpointContract = checkPaymentEndpointContract();
+  const webhookExports = checkWebhookExports();
   const tableCheck = checkPaymentTables(db);
   const columnCheck = checkPaymentColumns(db);
   const summarySurfaceCheck = checkPaymentSummarySurface(db);
-  const combined = [endpointContract, webhookHandler, tableCheck, columnCheck, summarySurfaceCheck];
+  const combined = [endpointContract, webhookExports, tableCheck, columnCheck, summarySurfaceCheck];
   const status = combineStatus(combined);
 
   return {
     status,
-    message:
-      status === "PASS"
-        ? "Payments stack is structurally healthy"
-        : "Payments stack has one or more strict failures",
+    message: status === "PASS" ? "Payments stack is structurally healthy" : "Payments stack has one or more strict failures",
     details: {
       endpointContract,
-      webhookHandler,
+      webhookExports,
       tableCheck,
       columnCheck,
       summarySurfaceCheck,
@@ -512,9 +435,8 @@ export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
     res.redirect("/api/diagnostics");
   });
 
-  app.get("/api/diagnostics", async (_req, res) => {
-    const payments = await checkPaymentsStrict(db);
-
+  app.get("/api/diagnostics", (_req, res) => {
+    const payments = checkPaymentsStrict(db);
     const checks = {
       database: checkDatabase(db),
       tables: checkTables(db),
