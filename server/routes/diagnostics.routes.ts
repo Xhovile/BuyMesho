@@ -118,48 +118,66 @@ function getCount(db: any, tableName: string): number | null {
   }
 }
 
-function checkEnvironment(name: string, required = false) {
+function checkEnvironment(name: string, required = false): NamedCheck {
   const value = process.env[name];
   if (value && value.trim().length > 0) {
     return {
-      status: "PASS" as CheckStatus,
+      status: "PASS",
       message: `${name} is set`,
       details: { configured: true },
     };
   }
 
   return {
-    status: required ? ("FAIL" as CheckStatus) : ("WARN" as CheckStatus),
+    status: required ? "FAIL" : "WARN",
     message: `${name} is not set`,
     details: { configured: false },
   };
 }
 
-function checkDatabase(db: any) {
+function checkEnvironmentGroup(names: string[], label: string, required = false): NamedCheck {
+  const configured = names.filter((name) => {
+    const value = process.env[name];
+    return typeof value === "string" && value.trim().length > 0;
+  });
+
+  if (configured.length > 0) {
+    return {
+      status: "PASS",
+      message: `${label} is configured`,
+      details: { configured },
+    };
+  }
+
+  return {
+    status: required ? "FAIL" : "WARN",
+    message: `${label} is not configured`,
+    details: { expected: names },
+  };
+}
+
+function checkDatabase(db: any): NamedCheck {
   const started = Date.now();
   const row = db.prepare("SELECT 1 AS ok").get() as { ok?: number } | undefined;
   const latencyMs = Date.now() - started;
 
   return {
-    status: row?.ok === 1 ? ("PASS" as CheckStatus) : ("FAIL" as CheckStatus),
+    status: row?.ok === 1 ? "PASS" : "FAIL",
     message: row?.ok === 1 ? "Database connection is healthy" : "Database query did not return the expected result",
     details: { latency_ms: latencyMs },
   };
 }
 
-function checkTables(db: any) {
+function checkTables(db: any): NamedCheck {
   const missing = REQUIRED_TABLES.filter((table) => !isTablePresent(db, table));
   return {
-    status: missing.length === 0 ? ("PASS" as CheckStatus) : ("FAIL" as CheckStatus),
-    message:
-      missing.length === 0
-        ? "All required tables are present"
-        : `Missing tables: ${missing.join(", ")}`,
+    status: missing.length === 0 ? "PASS" : "FAIL",
+    message: missing.length === 0 ? "All required tables are present" : `Missing tables: ${missing.join(", ")}`,
     details: { required_tables: REQUIRED_TABLES.length, missing_tables: missing },
   };
 }
 
-function checkColumns(db: any) {
+function checkColumns(db: any): NamedCheck {
   const missingByTable: Record<string, string[]> = {};
 
   for (const [tableName, columns] of Object.entries(REQUIRED_COLUMNS)) {
@@ -175,11 +193,8 @@ function checkColumns(db: any) {
 
   const tables = Object.keys(REQUIRED_COLUMNS);
   return {
-    status: Object.keys(missingByTable).length === 0 ? ("PASS" as CheckStatus) : ("FAIL" as CheckStatus),
-    message:
-      Object.keys(missingByTable).length === 0
-        ? "Required columns are present"
-        : "Some required columns are missing",
+    status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL",
+    message: Object.keys(missingByTable).length === 0 ? "Required columns are present" : "Some required columns are missing",
     details: {
       checked_tables: tables,
       missing_columns: missingByTable,
@@ -187,7 +202,7 @@ function checkColumns(db: any) {
   };
 }
 
-function checkCounts(db: any) {
+function checkCounts(db: any): NamedCheck {
   const tablesToCount = ["sellers", "listings", "orders", "payments", "seller_applications", "messages", "conversations"];
   const counts: Record<string, number | null> = {};
 
@@ -196,16 +211,16 @@ function checkCounts(db: any) {
   }
 
   return {
-    status: "PASS" as CheckStatus,
+    status: "PASS",
     message: "Row counts collected",
     details: counts,
   };
 }
 
-function checkHardDeleteColumn(db: any) {
+function checkHardDeleteColumn(db: any): NamedCheck {
   if (!isTablePresent(db, "listings")) {
     return {
-      status: "FAIL" as CheckStatus,
+      status: "FAIL",
       message: "listings table is missing",
     };
   }
@@ -225,7 +240,7 @@ function checkHardDeleteColumn(db: any) {
 
   if (!row?.data_type) {
     return {
-      status: "FAIL" as CheckStatus,
+      status: "FAIL",
       message: "hard_delete_after column is missing",
     };
   }
@@ -233,19 +248,16 @@ function checkHardDeleteColumn(db: any) {
   const status = row.data_type === "timestamp with time zone" ? "PASS" : "WARN";
   return {
     status,
-    message:
-      row.data_type === "timestamp with time zone"
-        ? "hard_delete_after is normalized to TIMESTAMPTZ"
-        : `hard_delete_after is still ${row.data_type}`,
+    message: row.data_type === "timestamp with time zone" ? "hard_delete_after is normalized to TIMESTAMPTZ" : `hard_delete_after is still ${row.data_type}`,
     details: { data_type: row.data_type },
   };
 }
 
-function checkFirebaseAdmin() {
+function checkFirebaseAdmin(): NamedCheck {
   try {
     const admin = getFirebaseAdmin();
     return {
-      status: "PASS" as CheckStatus,
+      status: "PASS",
       message: "Firebase Admin initialized",
       details: {
         apps: admin.apps.length,
@@ -253,7 +265,7 @@ function checkFirebaseAdmin() {
     };
   } catch (error) {
     return {
-      status: "FAIL" as CheckStatus,
+      status: "FAIL",
       message: error instanceof Error ? error.message : String(error),
     };
   }
@@ -274,38 +286,21 @@ export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
       counts: checkCounts(db),
       hard_delete_after: checkHardDeleteColumn(db),
       firebase: checkFirebaseAdmin(),
-      cloudinary: checkEnvironment("CLOUDINARY_CLOUD_NAME") && checkEnvironment("CLOUDINARY_API_KEY") && checkEnvironment("CLOUDINARY_API_SECRET"),
-      smtp: checkEnvironment("SMTP_HOST") && checkEnvironment("SMTP_USER") && checkEnvironment("SMTP_PASS"),
-      paychangu: checkEnvironment("PAYCHANGU_SECRET_KEY") && checkEnvironment("PAYCHANGU_WEBHOOK_SECRET"),
+      cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
+      smtp: checkEnvironmentGroup(["SMTP_HOST", "SMTP_USER", "SMTP_PASS"], "SMTP"),
+      paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
       database_url: checkEnvironment("DATABASE_URL", true),
-      admin_access: checkEnvironment("ADMIN_EMAILS") || checkEnvironment("ADMIN_UIDS"),
+      admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access"),
     };
 
-    const normalizedChecks: Record<string, NamedCheck> = Object.fromEntries(
-      Object.entries(checks).map(([key, value]) => {
-        if (typeof value === "object" && value && "status" in value) {
-          return [key, value as NamedCheck];
-        }
-
-        return [
-          key,
-          {
-            status: "FAIL" as CheckStatus,
-            message: "Invalid diagnostic result",
-          },
-        ];
-      })
-    );
-
-    const allChecks = Object.values(normalizedChecks);
-    const overall = combineStatus(allChecks);
+    const overall = combineStatus(Object.values(checks));
 
     res.setHeader("Cache-Control", "no-store");
     res.json({
       overall,
       timestamp: new Date().toISOString(),
       uptime_ms: Math.round(process.uptime() * 1000),
-      checks: normalizedChecks,
+      checks,
     });
   });
 }
