@@ -65,6 +65,7 @@ const SettingsPage = lazy(() => import("./SettingsPage"));
 const SellerProfilePage = lazy(() => import("./SellerProfilePage"));
 const SellerDashboardPage = lazy(() => import("./SellerDashboardPage"));
 const SellerPayoutsPage = lazy(() => import("./SellerPayoutsPage"));
+const SellersDirectoryPage = lazy(() => import("./SellersDirectoryPage"));
 const SignupPage = lazy(() => import("./SignupPage"));
 const TermsPage = lazy(() => import("./components/TermsPage"));
 const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
@@ -178,6 +179,7 @@ export default function RootRouter() {
       import("./OrderDisputePage"),
       import("./SellerPayoutsPage"),
       import("./ConnectCallbackPage"),
+      import("./SellersDirectoryPage"),
     ]);
   }, []);
 
@@ -234,8 +236,10 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" || locationPath === "/explore/sellers" || locationPath === "/explore/innovation" ? (
+        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
           <MarketComingSoonPage />
+        ) : locationPath === "/explore/sellers" ? (
+          <SellersDirectoryPage />
         ) : locationPath.startsWith("/market/coming-soon") ? (
           <MarketComingSoonPage />
         ) : locationPath === "/connect/callback" ? (
