@@ -8,6 +8,8 @@ import { paymentRepository } from "./payment.repository.js";
 import { escrowRepository } from "../escrow/escrow.repository.js";
 import { getPaymentDb } from "../../postgresCompat.js";
 import { calculateCustomerCheckoutFees } from "../payouts/payout.policy.js";
+import { paymentWebhookHandler } from "./payment.webhooks.js";
+import { payoutWebhookHandler } from "../payouts/payout.webhooks.js";
 
 const checkoutLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -207,5 +209,12 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     return res.json({ success: true, transaction: bundle });
   });
 
+  router.post("/paychangu/webhook", paymentWebhookHandler);
+  router.post("/paychangu-payout/webhook", payoutWebhookHandler);
+
   return router;
+}
+
+export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
+  app.use("/api/payments", createPaymentRouter(requireAuth));
 }
