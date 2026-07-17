@@ -1,4 +1,3 @@
-
 import { postgresDb } from "../../db.js";
 import { initPaymentSchema } from "../../postgresCompat/schema.js";
 
@@ -61,29 +60,45 @@ function ensureExtraTables() {
   `);
 }
 
+function normalizeHardDeleteAfterColumn() {
+  const column = postgresDb
+    .prepare(
+      `
+        SELECT data_type AS data_type
+        FROM information_schema.columns
+        WHERE table_schema = current_schema()
+          AND table_name = 'listings'
+          AND column_name = 'hard_delete_after'
+        LIMIT 1
+      `
+    )
+    .get() as { data_type?: string } | undefined;
+
+  if (!column?.data_type || column.data_type === 'timestamp with time zone') {
+    return;
+  }
+
+  postgresDb.exec(`
+    UPDATE listings
+    SET hard_delete_after = NULL
+    WHERE hard_delete_after IS NOT NULL
+      AND btrim(hard_delete_after) = '';
+
+    ALTER TABLE listings
+    ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ
+    USING CASE
+      WHEN hard_delete_after IS NULL OR btrim(hard_delete_after) = '' THEN NULL
+      ELSE hard_delete_after::timestamptz
+    END;
+  `);
+}
+
 export function runMigrations() {
   initPaymentSchema(postgresDb);
   ensureExtraTables();
 
   try {
-    postgresDb.exec(`
-      DO $$
-      DECLARE column_type text;
-      BEGIN
-        SELECT data_type
-        INTO column_type
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = 'listings'
-          AND column_name = 'hard_delete_after';
-
-        IF column_type IS NOT NULL
-           AND column_type <> 'timestamp with time zone' THEN
-          EXECUTE 'UPDATE listings SET hard_delete_after = NULL WHERE hard_delete_after IS NOT NULL AND btrim(hard_delete_after) = '''''';
-          EXECUTE 'ALTER TABLE listings ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ USING NULLIF(hard_delete_after, '''')::timestamptz';
-        END IF;
-      END $$;
-    `);
+    normalizeHardDeleteAfterColumn();
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`hard_delete_after migration skipped: ${message}`);
