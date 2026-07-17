@@ -6,6 +6,7 @@ import { createServer as createViteServer } from "vite";
 import { createApp } from "./app.js";
 import { runMigrations } from "./db/migrations/index.js";
 import { registerRoutes } from "./routes/index.js";
+import { registerMarketplaceRoutes } from "./routes/marketplace.routes.js";
 import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
@@ -52,6 +53,8 @@ export async function startServer() {
     requireFirebaseUser,
   });
 
+  registerMarketplaceRoutes(app, { db });
+
   registerFallbackHandlers(app);
 
   if (process.env.NODE_ENV !== "production") {
@@ -66,14 +69,14 @@ export async function startServer() {
     app.get("*", (_req, res) => {
       res.sendFile(path.join(staticDir, "index.html"));
     });
-   }
-  
- const PORT = Number(process.env.PORT ?? 3000);
-    app.listen(PORT, "0.0.0.0", () => {
-     console.log(`Server running on http://localhost:${PORT}`);
+  }
 
-  setImmediate(() => {
-    startPayoutReconciliationScheduler();
+  const PORT = Number(process.env.PORT ?? 3000);
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+
+    setImmediate(() => {
+      startPayoutReconciliationScheduler();
+    });
   });
-});
 }
