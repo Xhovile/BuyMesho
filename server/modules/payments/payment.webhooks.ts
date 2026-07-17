@@ -1,8 +1,6 @@
 import type { Request, Response } from "express";
 import { createHash } from "crypto";
-import { paymentController } from "./payment.controller.js";
 import { paymentRepository } from "./payment.repository.js";
-import { orderRepository } from "../orders/order.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import {
   isAcceptedPaychanguEventType,
