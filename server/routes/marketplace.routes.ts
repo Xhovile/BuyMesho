@@ -1,5 +1,5 @@
 import type { Express, NextFunction, Request, Response } from "express";
-import type multer from "multer";
+import multer from "multer";
 import { uploadBufferToCloudinary } from "../lib/cloudinaryUpload.js";
 import { parseSpecFilters, serializeListingRow } from "../lib/listingHelpers.js";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
@@ -7,11 +7,17 @@ import { requireAuth } from "../middleware/requireAuth.js";
 
 export type MarketplaceRouteDeps = {
   db: any;
-  upload: multer.Multer;
 };
 
 export function registerMarketplaceRoutes(app: Express, deps: MarketplaceRouteDeps) {
-  const { db, upload } = deps;
+  const { db } = deps;
+  const storage = multer.memoryStorage();
+  const upload = multer({
+    storage,
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+    },
+  });
 
   app.get("/api/db-test", (_req, res) => {
     try {
