@@ -1,9 +1,9 @@
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
 import { formatMoney, getListingPricing } from "../../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
-  getListingCardSpecs,
+  getListingCardHighlights,
   getListingConditionLabel,
 } from "../../lib/listingCardDisplay";
 import type { ListingSpecValues } from "../../types";
@@ -14,7 +14,6 @@ type ListingPreview = {
   price: number | string;
   photos?: string[];
   category?: string;
-  university?: string;
   subcategory?: string | null;
   item_type?: string | null;
   spec_values?: ListingSpecValues | null;
@@ -49,7 +48,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         ? formatMoney(pricing.price)
         : null;
 
-  const specs = getListingCardSpecs(item, 3);
+  const highlights = getListingCardHighlights(item, 3);
   const conditionLabel = getListingConditionLabel(item.condition);
   const availabilityLabel = getListingAvailabilityLabel(item.quantity, item.sold_quantity);
 
@@ -72,9 +71,9 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           {categoryLabel}
         </div>
 
-        {conditionLabel ? (
+        {offerLabel ? (
           <div className="absolute right-3 top-3 rounded-full bg-black/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white shadow-sm">
-            {conditionLabel}
+            {offerLabel}
           </div>
         ) : null}
       </div>
@@ -94,31 +93,22 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
                 <p className="text-sm font-bold text-red-900">{formatMoney(Number(item.price) || 0)}</p>
               )}
             </div>
-
-            {item.university ? (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
-                <MapPin className="h-3 w-3" />
-                {item.university}
-              </span>
-            ) : null}
           </div>
         </div>
 
-        {specs.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {specs.map((spec) => (
-              <span
-                key={spec.key}
-                className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold text-zinc-700"
-              >
-                <span className="whitespace-nowrap text-zinc-500">{spec.label}</span>
-                <span className="min-w-0 truncate font-bold text-zinc-900">{spec.value}</span>
-              </span>
-            ))}
-          </div>
+        {highlights.length > 0 ? (
+          <p className="line-clamp-2 text-xs leading-relaxed text-zinc-600">
+            {highlights.join(", ")}
+          </p>
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2">
+          {conditionLabel ? (
+            <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+              {conditionLabel}
+            </span>
+          ) : null}
+
           {availabilityLabel ? (
             <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
               {availabilityLabel}
