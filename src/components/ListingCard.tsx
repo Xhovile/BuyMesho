@@ -1,6 +1,11 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
 import { ShieldCheck } from "lucide-react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
+import {
+  getListingAvailabilityLabel,
+  getListingCardSpecs,
+  getListingConditionLabel,
+} from "../lib/listingCardDisplay";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -26,11 +31,6 @@ type ListingCardProps = {
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
 };
-
-function formatMWK(value: number): string {
-  const safeValue = Number.isFinite(value) ? Math.round(value) : 0;
-  return `MWK ${safeValue.toLocaleString()}`;
-}
 
 export default function ListingCard({
   listing,
@@ -60,16 +60,7 @@ export default function ListingCard({
     typeof listing.business_name === "string" && listing.business_name.trim()
       ? listing.business_name.trim()
       : "Seller";
-  const truncatedSellerName =
-    sellerName.length > 7 ? `${sellerName.slice(0, 7)}..` : sellerName;
-
-  const quantity = Number.isFinite(Number(listing.quantity)) ? Number(listing.quantity) : 1;
-  const soldQuantity = Number.isFinite(Number(listing.sold_quantity))
-    ? Number(listing.sold_quantity)
-    : 0;
-
-  const availableQuantity = Math.max(0, quantity - soldQuantity);
-  const statusLabel = availableQuantity > 0 ? `${availableQuantity} left` : "Sold out";
+  const truncatedSellerName = sellerName.length > 7 ? `${sellerName.slice(0, 7)}..` : sellerName;
 
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
@@ -77,9 +68,7 @@ export default function ListingCard({
       : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
   const titleLabel =
-    typeof listing.name === "string" && listing.name.trim()
-      ? listing.name
-      : "Untitled listing";
+    typeof listing.name === "string" && listing.name.trim() ? listing.name : "Untitled listing";
 
   const universityLabel =
     typeof listing.university === "string" && listing.university.trim()
@@ -89,13 +78,16 @@ export default function ListingCard({
   const listingMode = pricing.listingMode;
   const offerLabel =
     listingMode === "deal" ? "Discount" : listingMode === "wholesale" ? "Wholesale" : null;
-
   const offerValue =
     listingMode === "deal"
-      ? `${formatMWK(pricing.price)}${pricing.discountPercent !== null ? ` -${pricing.discountPercent}%` : ""}`
+      ? `${formatMoney(pricing.price)}${pricing.discountPercent !== null ? ` -${pricing.discountPercent}%` : ""}`
       : listingMode === "wholesale"
-        ? formatMWK(pricing.price)
+        ? formatMoney(pricing.price)
         : null;
+
+  const cardSpecs = getListingCardSpecs(listing, ultraCompact ? 2 : 3);
+  const conditionLabel = getListingConditionLabel(listing.condition);
+  const availabilityLabel = getListingAvailabilityLabel(listing.quantity, listing.sold_quantity);
 
   const handleOpenProfile = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
@@ -146,9 +138,7 @@ export default function ListingCard({
           <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
             <div className="inline-flex items-center gap-1.5 min-w-0">
               <p
-                className={`truncate ${
-                  ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"
-                } font-bold text-red-900`}
+                className={`truncate ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"} font-bold text-red-900`}
               >
                 {truncatedSellerName}
               </p>
@@ -226,9 +216,7 @@ export default function ListingCard({
               <div
                 className={`inline-flex flex-col gap-0.5 rounded-xl bg-white/92 px-2 py-1 shadow-sm ${
                   performanceMode ? "" : "backdrop-blur-md"
-                } ${
-                  ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"
-                }`}
+                } ${ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"}`}
               >
                 <span
                   className={`font-black uppercase tracking-[0.18em] text-red-600 ${
@@ -249,9 +237,7 @@ export default function ListingCard({
               <div
                 className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm ${
                   performanceMode ? "" : "backdrop-blur-md"
-                } ${
-                  ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"
-                } text-zinc-900`}
+                } ${ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-900`}
               >
                 <span>{formatMoney(Number(listing.price) || 0)}</span>
               </div>
@@ -260,28 +246,53 @@ export default function ListingCard({
         </div>
 
         <div className={ultraCompact ? "px-2 py-2" : compact ? "space-y-1.5 px-3 py-3" : "space-y-3 px-4 py-4"}>
-          <h3
-            className={
-              ultraCompact
-                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
-                : compact
-                  ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                  : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
-            }
-          >
-            {titleLabel}
-          </h3>
+          <div className="flex items-start justify-between gap-3">
+            <h3
+              className={
+                ultraCompact
+                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                  : compact
+                    ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                    : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+              }
+            >
+              {titleLabel}
+            </h3>
+          </div>
 
-          {!ultraCompact ? (
-            <div className="flex items-center justify-between gap-3">
+          {cardSpecs.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {cardSpecs.map((spec) => (
+                <span
+                  key={spec.key}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold text-zinc-700"
+                >
+                  <span className="whitespace-nowrap text-zinc-500">{spec.label}</span>
+                  <span className="min-w-0 truncate font-bold text-zinc-900">{spec.value}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            {conditionLabel ? (
               <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                {statusLabel}
+                {conditionLabel}
               </span>
+            ) : null}
+
+            {availabilityLabel ? (
+              <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+                {availabilityLabel}
+              </span>
+            ) : null}
+
+            {!ultraCompact ? (
               <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
                 {listing.category || "Uncategorized"}
               </span>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
       </div>
     </article>
