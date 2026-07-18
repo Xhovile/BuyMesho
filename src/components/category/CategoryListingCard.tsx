@@ -36,68 +36,52 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group overflow-hidden rounded-[1.9rem] border border-zinc-100 bg-white text-left shadow-[0_10px_30px_rgba(24,24,27,0.04)] transition-all duration-300 hover:-translate-y-0.5 hover:border-zinc-200 hover:shadow-[0_18px_45px_rgba(24,24,27,0.08)]"
+      className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
         <img
           src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
           alt={item.name}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/0 to-transparent opacity-70" />
-
-        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/92 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm backdrop-blur">
-            {categoryLabel}
-          </span>
-          {item.category ? (
-            <span className="rounded-full bg-white/92 px-3 py-1 text-[10px] font-semibold text-zinc-600 shadow-sm backdrop-blur">
-              {item.category}
-            </span>
-          ) : null}
+        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm">
+          {categoryLabel}
         </div>
       </div>
 
-      <div className="space-y-3 p-4 sm:p-5">
-        <div className="space-y-1.5">
-          <p className="line-clamp-1 text-[0.96rem] font-black tracking-tight text-zinc-950 sm:text-[1.05rem]">
-            {item.name}
-          </p>
+      <div className="p-4">
+        <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
 
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              {offerLabel ? (
-                <div className="inline-flex flex-col gap-0.5">
-                  <span className="text-[9px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
-                  <span className="text-[10px] font-bold leading-none text-red-700">{offerValue}</span>
-                </div>
-              ) : (
-                <p className="text-base font-black text-zinc-950">{formatMoney(Number(item.price) || 0)}</p>
-              )}
-            </div>
-
-            {item.university ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-zinc-50 px-2.5 py-1 text-[11px] font-medium text-zinc-500 ring-1 ring-zinc-200/70">
-                <MapPin className="h-3 w-3" />
-                <span className="max-w-[8.5rem] truncate">{item.university}</span>
-              </span>
-            ) : null}
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            {offerLabel ? (
+              <div className="mb-0.5 inline-flex flex-col gap-0.5">
+                <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
+                <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
+              </div>
+            ) : (
+              <p className="text-sm font-bold text-red-900">{formatMoney(Number(item.price) || 0)}</p>
+            )}
           </div>
 
-          <p className="line-clamp-2 text-sm leading-relaxed text-zinc-500">
-            {item.description || "Tap to open the full listing details."}
-          </p>
+          {item.university ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500">
+              <MapPin className="w-3 h-3" />
+              {item.university}
+            </span>
+          ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Curated listing</span>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-950 px-3 py-2 text-[11px] font-bold text-white transition-transform duration-300 group-hover:translate-x-0.5">
-            Open listing
-            <ArrowRight className="h-3.5 w-3.5" />
-          </div>
+        <p className="mt-2 text-xs text-zinc-500 line-clamp-2">
+          {item.description || "Tap to open the full listing details."}
+        </p>
+
+        <div className="mt-4 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
+          Open listing
+          <ArrowRight className="w-3.5 h-3.5" />
         </div>
       </div>
     </button>
