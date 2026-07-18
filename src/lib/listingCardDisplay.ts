@@ -33,56 +33,123 @@ const REDUNDANT_FIELD_KEY_PATTERNS = [
   /(^|_)(university|campus)(_|$)/i,
 ];
 
-const CATEGORY_FIELD_PRIORITY: Record<string, Array<[RegExp, number]>> = {
-  "Electronics & Gadgets": [
-    [/ram|memory/i, 140],
-    [/storage|internal_storage|ssd|hdd|disk/i, 135],
-    [/processor|cpu|chip|soc|snapdragon|mediatek|exynos|intel|ryzen|core/i, 130],
-    [/battery|mah|health/i, 125],
-    [/screen|display|refresh|hz|inch/i, 120],
-    [/condition|state|grade|quality/i, 110],
-    [/color|warranty|model/i, 90],
-  ],
-  "Fashion & Clothing": [
-    [/size|waist|length|fit/i, 140],
-    [/color|colour/i, 135],
-    [/material|fabric|cotton|denim|leather/i, 130],
-    [/condition|state|grade|quality/i, 120],
-    [/style|design|pattern/i, 100],
-  ],
-  "Food & Snacks": [
-    [/portion|pack|quantity|size/i, 140],
-    [/flavor|flavour|taste|type/i, 135],
-    [/ingredients|contents|menu/i, 125],
-    [/expiry|expires|freshness|date/i, 120],
-    [/delivery|pickup|location/i, 100],
-  ],
-  "Academic Services": [
-    [/service|type/i, 140],
-    [/duration|time|deadline/i, 135],
-    [/level|course|subject|topic/i, 130],
-    [/delivery|online|onsite|location/i, 120],
-    [/price|cost/i, 40],
-  ],
-  "Beauty & Personal Care": [
-    [/service|treatment|style/i, 140],
-    [/location|home service|salon/i, 135],
-    [/duration|time/i, 130],
-    [/availability|booking|appointment/i, 125],
-    [/gender|for men|for women/i, 90],
-  ],
-};
-
 const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
   [/ram|memory/i, 120],
   [/storage|internal_storage|disk|ssd|hdd/i, 120],
   [/processor|cpu|chip|soc|snapdragon|mediatek|exynos|intel|ryzen|core/i, 115],
   [/battery|mah|health/i, 110],
-  [/screen|display|refresh|hz|inch|size/i, 105],
+  [/screen|display|refresh|hz|inch/i, 105],
   [/condition|state|grade|quality/i, 100],
   [/color|size|fit|material|fabric|flavor|portion|type/i, 90],
   [/warranty|expiry|validity|delivery|duration|location/i, 85],
 ];
+
+const CATEGORY_PRIORITY: Record<string, string[]> = {
+  "Electronics & Gadgets": [
+    "model",
+    "processor",
+    "ram",
+    "storage",
+    "storage_capacity",
+    "storage_type",
+    "screen_size",
+    "refresh_rate",
+    "chipset",
+    "battery_health_percentage",
+    "battery_health",
+    "battery_capacity",
+    "network_type",
+    "body_condition",
+    "display_condition",
+    "condition",
+  ],
+  "Fashion & Clothing": [
+    "size",
+    "color",
+    "material",
+    "fit_type",
+    "gender",
+    "sleeve_length",
+    "neckline",
+    "collar_type",
+    "closure_type",
+    "shoe_size",
+    "body_condition",
+    "condition",
+  ],
+  "Food & Snacks": [
+    "portion_size",
+    "ingredients_summary",
+    "main_base",
+    "protein_type",
+    "fast_food_type",
+    "breakfast_type",
+    "traditional_meal_type",
+    "flavor",
+    "taste",
+    "availability",
+    "delivery_option",
+    "freshness_status",
+    "prepared_on",
+    "best_consumed_by",
+  ],
+  "Academic Services": [
+    "subject_areas",
+    "study_level",
+    "service_scope",
+    "delivery_mode",
+    "meeting_location",
+    "availability",
+    "session_length_minutes",
+    "booking_notice",
+    "guidance_type",
+    "coaching_focus",
+  ],
+  "Beauty & Personal Care": [
+    "service_location",
+    "availability",
+    "duration_estimate",
+    "provider_experience",
+    "braiding_type",
+    "cut_type",
+    "nail_service_type",
+    "makeup_service_type",
+    "facial_service_type",
+    "brand",
+    "size_value",
+    "size_unit",
+    "skin_type",
+    "product_condition",
+    "expiry_or_best_before",
+    "cleanser_type",
+    "moisturizer_type",
+    "treatment_type",
+    "sunscreen_type",
+  ],
+};
+
+const ITEM_PRIORITY: Record<string, string[]> = {
+  Smartphone: ["model", "ram", "storage", "network_type", "refresh_rate", "chipset", "screen_size", "battery_health_percentage", "body_condition"],
+  Laptop: ["model", "processor", "ram", "storage_capacity", "storage_type", "screen_size", "refresh_rate", "body_condition", "display_condition"],
+  Tablet: ["model", "storage", "ram", "screen_size", "network_type", "body_condition"],
+
+  "One-on-One Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes"],
+  "Group Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes", "max_group_size"],
+  "Exam Revision Sessions": ["subject_areas", "study_level", "delivery_mode", "availability", "service_scope"],
+  "Assignment Guidance": ["subject_areas", "study_level", "guidance_type", "delivery_mode", "availability", "service_scope"],
+  "Study Coaching": ["coaching_focus", "study_level", "delivery_mode", "availability", "session_length_minutes"],
+
+  "Hair Braiding": ["braiding_type", "service_location", "availability", "duration_estimate", "provider_experience", "hair_included"],
+  "Barber Cuts": ["cut_type", "service_location", "availability", "duration_estimate", "provider_experience", "beard_service_available"],
+  "Nail Services": ["nail_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "designs_available"],
+  "Makeup Services": ["makeup_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "lashes_included"],
+  "Facial & Skincare Services": ["facial_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "products_included"],
+
+  Cleansers: ["brand", "size_value", "size_unit", "skin_type", "cleanser_type", "product_condition", "expiry_or_best_before"],
+  Moisturizers: ["brand", "size_value", "size_unit", "skin_type", "moisturizer_type", "product_condition", "expiry_or_best_before"],
+  "Serums & Treatments": ["brand", "size_value", "size_unit", "skin_type", "treatment_type", "product_condition", "expiry_or_best_before"],
+  Sunscreen: ["brand", "size_value", "size_unit", "skin_type", "product_condition", "expiry_or_best_before"],
+};
 
 function toTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -154,7 +221,7 @@ function getSchemaFields(listing: ListingCardData): ListingSpecField[] {
   });
 }
 
-function getFieldPriority(field: ListingSpecField, category?: string | null): number {
+function getFieldPriority(field: ListingSpecField, category?: string | null, itemType?: string | null): number {
   const key = `${field.key} ${field.label}`;
   let score = field.advanced ? 0 : 20;
 
@@ -164,10 +231,19 @@ function getFieldPriority(field: ListingSpecField, category?: string | null): nu
     }
   }
 
-  const categoryBoosts = category ? CATEGORY_FIELD_PRIORITY[category] ?? [] : [];
-  for (const [pattern, weight] of categoryBoosts) {
-    if (pattern.test(key)) {
-      score += weight;
+  if (category) {
+    const keys = CATEGORY_PRIORITY[category] ?? [];
+    const categoryIndex = keys.indexOf(field.key);
+    if (categoryIndex >= 0) {
+      score += 200 - categoryIndex * 5;
+    }
+  }
+
+  if (itemType) {
+    const keys = ITEM_PRIORITY[itemType] ?? [];
+    const itemIndex = keys.indexOf(field.key);
+    if (itemIndex >= 0) {
+      score += 400 - itemIndex * 10;
     }
   }
 
@@ -193,17 +269,36 @@ function isRedundantValue(value: string, title: string | null): boolean {
   return false;
 }
 
+function collectPriorityKeys(listing: ListingCardData): string[] {
+  const keys: string[] = [];
+  const itemKeys = listing.item_type ? ITEM_PRIORITY[listing.item_type] ?? [] : [];
+  const categoryKeys = listing.category ? CATEGORY_PRIORITY[listing.category] ?? [] : [];
+
+  for (const key of [...itemKeys, ...categoryKeys]) {
+    if (!keys.includes(key)) {
+      keys.push(key);
+    }
+  }
+
+  return keys;
+}
+
 export function getListingCardHighlights(listing: ListingCardData, limit = 3): string[] {
   const specValues = listing.spec_values ?? {};
   const title = listing.title ?? listing.name ?? null;
-  const fields = getSchemaFields(listing)
-    .slice()
-    .sort((a, b) => getFieldPriority(b, listing.category) - getFieldPriority(a, listing.category));
+  const fields = getSchemaFields(listing).slice().sort((a, b) => {
+    return getFieldPriority(b, listing.category, listing.item_type) - getFieldPriority(a, listing.category, listing.item_type);
+  });
 
   const highlights: string[] = [];
   const seenValues = new Set<string>();
+  const priorityKeys = collectPriorityKeys(listing);
 
-  for (const field of fields) {
+  for (const key of priorityKeys) {
+    if (highlights.length >= limit) break;
+    const field = fields.find((entry) => entry.key === key);
+    if (!field) continue;
+
     const value = formatSpecValue(specValues[field.key]);
     if (!value) continue;
 
@@ -214,9 +309,22 @@ export function getListingCardHighlights(listing: ListingCardData, limit = 3): s
 
     seenValues.add(normalizedValue);
     highlights.push(value);
+  }
 
-    if (highlights.length >= limit) {
-      return highlights;
+  if (highlights.length < limit) {
+    for (const field of fields) {
+      if (highlights.length >= limit) break;
+
+      const value = formatSpecValue(specValues[field.key]);
+      if (!value) continue;
+
+      const normalizedValue = normalizeComparableText(value);
+      if (!normalizedValue) continue;
+      if (seenValues.has(normalizedValue)) continue;
+      if (isRedundantValue(value, title)) continue;
+
+      seenValues.add(normalizedValue);
+      highlights.push(value);
     }
   }
 
