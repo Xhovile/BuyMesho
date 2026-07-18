@@ -411,8 +411,8 @@ export default function SellerProfilePage() {
         ) : (
           <>
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] gap-6 items-start">
-                <div className="flex flex-col items-start gap-4">
+              <div className="flex flex-col gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-5">
                   <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm flex items-center justify-center">
                     {profile.business_logo ? (
                       <img
@@ -432,41 +432,50 @@ export default function SellerProfilePage() {
                     )}
                   </div>
 
-                  <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
-                    Joined {formatDate(profile.join_date)}
-                  </span>
+                  <div className="min-w-0">
+                    <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
+                      {profile.business_name || "Seller Profile"}
+                    </h1>
+
+                    <div className="mt-3 flex items-center gap-2 flex-wrap">
+                      {profile.is_verified ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
+                          <ShieldCheck className="w-4 h-4" />
+                          Verified
+                        </span>
+                      ) : null}
+                      {profile.university ? (
+                        <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
+                          {profile.university}
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="min-w-0">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
-                    {profile.business_name || "Seller Profile"}
-                  </h1>
-
-                  <div className="mt-3 flex items-center gap-2 flex-wrap">
-                    {profile.is_verified ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
-                        <ShieldCheck className="w-4 h-4" />
-                        Verified
-                      </span>
-                    ) : null}
-                    {profile.university ? (
-                      <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
-                        {profile.university}
-                      </span>
-                    ) : null}
-                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
-                      {listings.length} listing{listings.length === 1 ? "" : "s"}
-                    </span>
-                  </div>
-
-                  {profile.bio ? (
-                    <p className="mt-4 max-w-2xl text-sm sm:text-base leading-6 text-zinc-600 whitespace-pre-wrap">
-                      {profile.bio}
+                  <div className="space-y-2 text-sm sm:text-base leading-6 text-zinc-600">
+                    <p>
+                      <span className="font-black text-zinc-900">Joined:</span>{" "}
+                      {formatDate(profile.join_date)}
                     </p>
-                  ) : null}
 
-                  <div className="mt-1 text-sm text-zinc-500">
-                    Profile views: <span className="font-bold text-zinc-800">{profile.profile_views ?? 0}</span>
+                    {profile.bio ? (
+                      <p className="max-w-2xl whitespace-pre-wrap">
+                        <span className="font-black text-zinc-900">Description:</span>{" "}
+                        {profile.bio}
+                      </p>
+                    ) : null}
+
+                    <p>
+                      <span className="font-black text-zinc-900">Listings:</span>{" "}
+                      {listings.length} listing{listings.length === 1 ? "" : "s"}
+                    </p>
+
+                    <p>
+                      <span className="font-black text-zinc-900">Profile Views:</span>{" "}
+                      {profile.profile_views ?? 0}
+                    </p>
                   </div>
 
                   <SellerRatingBlock
