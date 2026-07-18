@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Loader2, Search, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
-import SellerRatingCard from "./components/ratings/SellerRatingCard";
+import {
+  normalizeRatingSummary,
+  type NormalizedRatingSummary,
+} from "./components/ratings/ratingSummaryUtils";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -32,11 +35,19 @@ function formatDate(value?: string) {
   return date.toLocaleDateString();
 }
 
+function ratingTierLabel(averageRating: number) {
+  if (averageRating >= 4.5) return "Excellent";
+  if (averageRating >= 4) return "Very good";
+  if (averageRating >= 3) return "Good";
+  if (averageRating >= 2) return "Fair";
+  return "Needs improvement";
+}
+
 async function fetchSellerProfile(sellerUid: string) {
   try {
-    return await apiFetch(`/api/sellers/${sellerUid}`) as SellerProfile;
+    return (await apiFetch(`/api/sellers/${sellerUid}`)) as SellerProfile;
   } catch {
-    return await apiFetch(`/api/users/${sellerUid}`) as SellerProfile;
+    return (await apiFetch(`/api/users/${sellerUid}`)) as SellerProfile;
   }
 }
 
@@ -98,6 +109,120 @@ async function deleteSellerRating(sellerUid: string) {
   }
 }
 
+function SellerRatingBlock({
+  ratingSummary,
+  isAuthenticated,
+  canRate,
+  ratingLoading,
+  ratingSubmitting,
+  onRate,
+  onRemoveRating,
+}: {
+  ratingSummary: RatingSummary | null;
+  isAuthenticated: boolean;
+  canRate: boolean;
+  ratingLoading: boolean;
+  ratingSubmitting: boolean;
+  onRate: (stars: number) => Promise<void> | void;
+  onRemoveRating: () => Promise<void> | void;
+}) {
+  const normalized = useMemo(() => normalizeRatingSummary(ratingSummary), [ratingSummary]);
+
+  return (
+    <div className="mt-6 border-t border-zinc-200 pt-5">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ratings</p>
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            <span className="text-4xl font-black tracking-tight text-zinc-900">
+              {normalized.hasRatings ? normalized.averageRating.toFixed(1) : "—"}
+            </span>
+            <span className="inline-flex items-center gap-1 text-sm font-semibold text-zinc-600">
+              <Star className="w-4 h-4 text-amber-500 fill-amber-400" />
+              {normalized.hasRatings
+                ? `${normalized.ratingCount} rating${normalized.ratingCount === 1 ? "" : "s"}`
+                : "No ratings yet"}
+            </span>
+            {normalized.hasRatings ? (
+              <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold uppercase tracking-[0.12em] text-zinc-700">
+                {ratingTierLabel(normalized.averageRating)}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="text-right">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Profile views</p>
+          <p className="mt-1 text-2xl font-black text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
+        </div>
+      </div>
+
+      {ratingLoading ? (
+        <p className="mt-4 text-sm text-zinc-500">Loading rating...</p>
+      ) : (
+        <div className="mt-5 space-y-2">
+          {normalized.distribution.map((row) => (
+            <div key={row.stars} className="grid grid-cols-[52px_minmax(0,1fr)_46px] items-center gap-2">
+              <span className="text-xs font-bold text-zinc-600">{row.stars} ★</span>
+              <div className="h-2 rounded-full bg-zinc-200 overflow-hidden">
+                <div className="h-full bg-amber-400" style={{ width: `${row.percentage}%` }} />
+              </div>
+              <span className="text-xs text-zinc-500 text-right">{row.count}</span>
+            </div>
+          ))}
+          {!normalized.hasRatings ? <p className="pt-1 text-sm text-zinc-500">No ratings yet.</p> : null}
+        </div>
+      )}
+
+      <div className="mt-5 border-t border-zinc-200 pt-4">
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">Your rating</p>
+        {!isAuthenticated ? (
+          <p className="mt-2 text-sm text-zinc-500">Log in to leave a seller rating.</p>
+        ) : !canRate ? (
+          <p className="mt-2 text-sm text-zinc-500">You cannot rate your own seller account.</p>
+        ) : (
+          <>
+            <div className="mt-3 flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((star) => {
+                const active = (normalized.myRating ?? 0) >= star;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => void onRate(star)}
+                    disabled={ratingSubmitting}
+                    className={`p-1 rounded-md ${active ? "text-amber-500" : "text-zinc-300"} ${
+                      ratingSubmitting ? "opacity-60" : "hover:text-amber-500"
+                    }`}
+                    aria-label={`Rate ${star} star${star === 1 ? "" : "s"}`}
+                  >
+                    <Star className={`w-5 h-5 ${active ? "fill-amber-400" : ""}`} />
+                  </button>
+                );
+              })}
+            </div>
+            {normalized.myRating ? (
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-zinc-600">Your rating: {normalized.myRating}/5</p>
+                <button
+                  type="button"
+                  onClick={() => void onRemoveRating()}
+                  disabled={ratingSubmitting}
+                  className="text-xs font-bold text-zinc-600 hover:text-zinc-900 underline underline-offset-2 disabled:opacity-50"
+                >
+                  Remove rating
+                </button>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-zinc-500">Select a star to rate this seller.</p>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SellerProfilePage() {
   const { user: firebaseUser } = useAuthUser();
   const [sellerUid, setSellerUid] = useState(() => getSellerUidFromUrl() || "");
@@ -140,7 +265,9 @@ export default function SellerProfilePage() {
         setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
 
         if (loadedProfile) {
-          const viewTrackResult = await trackSellerProfileView(sellerUid, firebaseUser?.uid ?? null).catch(() => null);
+          const viewTrackResult = await trackSellerProfileView(sellerUid, firebaseUser?.uid ?? null).catch(
+            () => null
+          );
 
           if (viewTrackResult && !viewTrackResult.skipped) {
             setProfile((prev) =>
@@ -193,6 +320,8 @@ export default function SellerProfilePage() {
     );
   }, [listings, listingSearch]);
 
+  const canRateSeller = !!firebaseUser && !!sellerUid && firebaseUser.uid !== sellerUid;
+
   const handleRateSeller = async (stars: number) => {
     if (!sellerUid || !firebaseUser) return;
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
@@ -237,9 +366,7 @@ export default function SellerProfilePage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Seller profile
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Seller profile</p>
             </div>
           </button>
 
@@ -271,9 +398,7 @@ export default function SellerProfilePage() {
         ) : !sellerUid || !profile ? (
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm text-center">
             <h1 className="text-2xl font-black tracking-tight text-zinc-900">Seller profile not found</h1>
-            <p className="mt-3 text-sm text-zinc-500">
-              This seller could not be loaded or may no longer be available.
-            </p>
+            <p className="mt-3 text-sm text-zinc-500">This seller could not be loaded or may no longer be available.</p>
             <button
               type="button"
               onClick={() => navigateBackOrPath(EXPLORE_PATH)}
@@ -286,45 +411,51 @@ export default function SellerProfilePage() {
         ) : (
           <>
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)_auto] gap-6 items-start">
-                <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm flex items-center justify-center">
-                  {profile.business_logo ? (
-                    <img
-                      src={profile.business_logo}
-                      alt={profile.business_name || "Seller"}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-500 px-3 text-center">
-                      {(profile.business_name || "Seller")
-                        .split(" ")
-                        .map((word) => word[0])
-                        .join("")
-                        .slice(0, 2)
-                        .toUpperCase()}
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 lg:grid-cols-[auto_minmax(0,1fr)] gap-6 items-start">
+                <div className="flex flex-col items-start gap-4">
+                  <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm flex items-center justify-center">
+                    {profile.business_logo ? (
+                      <img
+                        src={profile.business_logo}
+                        alt={profile.business_name || "Seller"}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-sm font-black text-zinc-500 px-3 text-center">
+                        {(profile.business_name || "Seller")
+                          .split(" ")
+                          .map((word) => word[0])
+                          .join("")
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+
+                  <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
+                    Joined {formatDate(profile.join_date)}
+                  </span>
                 </div>
 
-                <div>
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">
+                <div className="min-w-0">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
                     {profile.business_name || "Seller Profile"}
                   </h1>
 
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
                     {profile.is_verified ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-500">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-600">
                         <ShieldCheck className="w-4 h-4" />
                         Verified
                       </span>
                     ) : null}
                     {profile.university ? (
-                      <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
+                      <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
                         {profile.university}
                       </span>
                     ) : null}
-                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
-                      Joined {formatDate(profile.join_date)}
+                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
+                      {listings.length} listing{listings.length === 1 ? "" : "s"}
                     </span>
                   </div>
 
@@ -333,92 +464,80 @@ export default function SellerProfilePage() {
                       {profile.bio}
                     </p>
                   ) : null}
-                </div>
 
-                <div className="lg:text-right space-y-3">
-                  <div className="inline-flex rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left">
-                    <div>
-                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Profile views</p>
-                      <p className="mt-1 text-2xl font-black text-zinc-900">{profile.profile_views ?? 0}</p>
-                    </div>
+                  <div className="mt-1 text-sm text-zinc-500">
+                    Profile views: <span className="font-bold text-zinc-800">{profile.profile_views ?? 0}</span>
                   </div>
+
+                  <SellerRatingBlock
+                    ratingSummary={ratingSummary}
+                    isAuthenticated={!!firebaseUser}
+                    canRate={canRateSeller}
+                    ratingLoading={ratingLoading}
+                    ratingSubmitting={ratingSubmitting}
+                    onRate={handleRateSeller}
+                    onRemoveRating={handleRemoveRating}
+                  />
                 </div>
               </div>
             </section>
 
-            <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <div className="space-y-6">
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <h2 className="text-xl font-black text-zinc-900">Listings</h2>
-                      <p className="mt-1 text-sm text-zinc-500">
-                        All public listings from this seller.
-                      </p>
-                    </div>
-                    <div className="w-full max-w-xs">
-                      <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
-                        <Search className="w-4 h-4 text-zinc-400" />
-                        <input
-                          value={listingSearch}
-                          onChange={(e) => setListingSearch(e.target.value)}
-                          placeholder="Search listings"
-                          className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredListings.length > 0 ? (
-                      filteredListings.map((listing) => (
-                        <button
-                          key={listing.id}
-                          type="button"
-                          onClick={() => navigateToListingDetails(listing.id)}
-                          className="group rounded-3xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                          <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
-                            {listing.photos?.[0] ? (
-                              <img
-                                src={listing.photos[0]}
-                                alt={listing.name}
-                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
-                              />
-                            ) : null}
-                          </div>
-                          <div className="mt-3 space-y-1">
-                            <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900">{listing.name}</h3>
-                            <p className="text-sm font-bold text-red-900">
-                              MK{Number(listing.price).toLocaleString()}
-                            </p>
-                            <p className="text-xs text-zinc-500 line-clamp-2">{listing.description}</p>
-                          </div>
-                        </button>
-                      ))
-                    ) : (
-                      <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
-                        No listings found for this seller.
-                      </div>
-                    )}
-                  </div>
+            <section className="mt-6 space-y-4">
+              <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <Search className="w-4 h-4 text-zinc-400" />
+                  <input
+                    value={listingSearch}
+                    onChange={(e) => setListingSearch(e.target.value)}
+                    placeholder="Search seller listings"
+                    className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                  />
                 </div>
               </div>
 
-              <aside className="space-y-6">
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-                  <h2 className="text-xl font-black text-zinc-900">Rating</h2>
-                  <div className="mt-4">
-                    <SellerRatingCard
-                      ratingSummary={ratingSummary}
-                      submitting={ratingSubmitting}
-                      loading={ratingLoading}
-                      onRate={handleRateSeller}
-                      onRemoveRating={handleRemoveRating}
-                    />
+              <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                <div className="flex items-start justify-between gap-4 flex-wrap">
+                  <div>
+                    <h2 className="text-xl font-black text-zinc-900">Listings</h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}
+                      {listingSearch.trim() ? ` for “${listingSearch.trim()}”` : ""}
+                    </p>
                   </div>
                 </div>
-              </aside>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredListings.length > 0 ? (
+                    filteredListings.map((listing) => (
+                      <button
+                        key={listing.id}
+                        type="button"
+                        onClick={() => navigateToListingDetails(listing.id)}
+                        className="group rounded-3xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                      >
+                        <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
+                          {listing.photos?.[0] ? (
+                            <img
+                              src={listing.photos[0]}
+                              alt={listing.name}
+                              className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="mt-3 space-y-1">
+                          <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900">{listing.name}</h3>
+                          <p className="text-sm font-bold text-red-900">MK{Number(listing.price).toLocaleString()}</p>
+                          <p className="text-xs text-zinc-500 line-clamp-2">{listing.description}</p>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
+                      No listings found for this seller.
+                    </div>
+                  )}
+                </div>
+              </div>
             </section>
           </>
         )}
