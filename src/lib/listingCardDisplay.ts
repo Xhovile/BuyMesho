@@ -33,6 +33,8 @@ const REDUNDANT_FIELD_KEY_PATTERNS = [
   /(^|_)(university|campus)(_|$)/i,
 ];
 
+const DECISION_FIELD_TYPES = new Set<ListingSpecField["type"]>(["select", "multiselect", "boolean", "text", "number"]);
+
 const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
   [/ram|memory/i, 120],
   [/storage|internal_storage|disk|ssd|hdd/i, 120],
@@ -225,6 +227,14 @@ function getFieldPriority(field: ListingSpecField, category?: string | null, ite
   const key = `${field.key} ${field.label}`;
   let score = field.advanced ? 0 : 20;
 
+  if (field.required) {
+    score += 300;
+  }
+
+  if (DECISION_FIELD_TYPES.has(field.type)) {
+    score += 60;
+  }
+
   for (const [pattern, weight] of HIGH_VALUE_FIELD_KEY_PATTERNS) {
     if (pattern.test(key)) {
       score += weight;
@@ -283,60 +293,55 @@ function collectPriorityKeys(listing: ListingCardData): string[] {
   return keys;
 }
 
-export function getListingCardHighlights(listing: ListingCardData, limit = 3): string[] {
+function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCardSpec[] {
   const specValues = listing.spec_values ?? {};
   const title = listing.title ?? listing.name ?? null;
   const fields = getSchemaFields(listing).slice().sort((a, b) => {
     return getFieldPriority(b, listing.category, listing.item_type) - getFieldPriority(a, listing.category, listing.item_type);
   });
 
-  const highlights: string[] = [];
+  const specs: ListingCardSpec[] = [];
   const seenValues = new Set<string>();
   const priorityKeys = collectPriorityKeys(listing);
 
-  for (const key of priorityKeys) {
-    if (highlights.length >= limit) break;
-    const field = fields.find((entry) => entry.key === key);
-    if (!field) continue;
+  const addField = (field: ListingSpecField) => {
+    if (specs.length >= limit) return;
+    if (!DECISION_FIELD_TYPES.has(field.type)) return;
 
     const value = formatSpecValue(specValues[field.key]);
-    if (!value) continue;
+    if (!value) return;
 
     const normalizedValue = normalizeComparableText(value);
-    if (!normalizedValue) continue;
-    if (seenValues.has(normalizedValue)) continue;
-    if (isRedundantValue(value, title)) continue;
+    if (!normalizedValue) return;
+    if (seenValues.has(normalizedValue)) return;
+    if (isRedundantValue(value, title)) return;
 
     seenValues.add(normalizedValue);
-    highlights.push(value);
+    specs.push({ key: field.key, label: field.label, value });
+  };
+
+  for (const field of fields.filter((field) => field.required)) {
+    addField(field);
   }
 
-  if (highlights.length < limit) {
-    for (const field of fields) {
-      if (highlights.length >= limit) break;
-
-      const value = formatSpecValue(specValues[field.key]);
-      if (!value) continue;
-
-      const normalizedValue = normalizeComparableText(value);
-      if (!normalizedValue) continue;
-      if (seenValues.has(normalizedValue)) continue;
-      if (isRedundantValue(value, title)) continue;
-
-      seenValues.add(normalizedValue);
-      highlights.push(value);
-    }
+  for (const key of priorityKeys) {
+    const field = fields.find((entry) => entry.key === key);
+    if (field) addField(field);
   }
 
-  return highlights;
+  for (const field of fields) {
+    addField(field);
+  }
+
+  return specs;
+}
+
+export function getListingCardHighlights(listing: ListingCardData, limit = 3): string[] {
+  return collectListingCardSpecs(listing, limit).map((spec) => spec.value);
 }
 
 export function getListingCardSpecs(listing: ListingCardData, limit = 3): ListingCardSpec[] {
-  return getListingCardHighlights(listing, limit).map((value, index) => ({
-    key: `highlight-${index}`,
-    label: "",
-    value,
-  }));
+  return collectListingCardSpecs(listing, limit);
 }
 
 export function getListingConditionLabel(condition?: string | null): string | null {
