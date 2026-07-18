@@ -55,9 +55,9 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md"
+      className="group w-full max-w-[220px] max-h-[320px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
         <img
           src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
           alt={item.name}
@@ -77,7 +77,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         ) : null}
       </div>
 
-      <div className="space-y-3 p-4">
+      <div className="space-y-2 py-3">
         <div>
           <p className="line-clamp-1 text-sm font-extrabold text-zinc-900">{item.name}</p>
 
@@ -95,24 +95,12 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           </div>
         </div>
 
-        {cardSpecs.length > 0 ? (
-          <p className="line-clamp-2 text-xs leading-relaxed text-zinc-600">
-            {cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ")}
-          </p>
-        ) : null}
+        <p className="min-h-[2.5em] line-clamp-2 text-xs leading-relaxed text-zinc-600">
+          {cardSpecs.length > 0 ? cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ") : ""}
+        </p>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {conditionLabel ? (
-            <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
-              {conditionLabel}
-            </span>
-          ) : null}
-
-          {availabilityLabel ? (
-            <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
-              {availabilityLabel}
-            </span>
-          ) : null}
+        <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+          {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}
         </div>
       </div>
     </button>

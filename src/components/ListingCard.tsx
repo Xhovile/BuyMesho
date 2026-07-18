@@ -80,21 +80,12 @@ export default function ListingCard({
     onOpenDetails(listing);
   };
 
-  const cardRadius = ultraCompact ? "rounded-[18px]" : "rounded-[28px]";
-  const outerPadding = ultraCompact ? "px-2 pt-2" : "px-4 pt-4";
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardShadow = performanceMode
-    ? "shadow-[0_6px_18px_rgba(24,24,27,0.05)]"
-    : "shadow-[0_10px_30px_rgba(24,24,27,0.06)]";
-  const hoverShadow = performanceMode
-    ? "hover:shadow-[0_8px_22px_rgba(24,24,27,0.07)]"
-    : compact
-      ? "hover:shadow-[0_14px_40px_rgba(24,24,27,0.09)]"
-      : "hover:shadow-[0_16px_46px_rgba(24,24,27,0.12)]";
+  const cardSize = ultraCompact ? "max-h-[230px] max-w-[150px]" : compact ? "max-h-[300px] max-w-[220px]" : "max-h-[390px] max-w-[280px]";
 
   return (
     <article
-      className={`group relative ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
+      className={`group relative w-full overflow-hidden ${cardSize} ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
       onClick={clickable ? handleOpenDetails : undefined}
       onKeyDown={
         clickable
@@ -109,14 +100,8 @@ export default function ListingCard({
       tabIndex={clickable ? 0 : undefined}
       role={clickable ? "button" : undefined}
     >
-      {!performanceMode ? (
-        <div className="absolute -inset-1.5 rounded-[28px] bg-white/60 blur-xl opacity-0 transition pointer-events-none group-hover:opacity-100" />
-      ) : null}
-
-      <div
-        className={`relative overflow-hidden ${cardRadius} border border-zinc-200/80 bg-white ${cardShadow} transition-shadow ${hoverShadow}`}
-      >
-        <div className={`relative overflow-hidden bg-zinc-100 ${imageAspect}`}>
+      <div className="relative overflow-hidden">
+        <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${imageAspect}`}>
           <button
             type="button"
             onClick={(e) => {
@@ -197,7 +182,7 @@ export default function ListingCard({
           </div>
         </div>
 
-        <div className={ultraCompact ? "px-2 py-2" : compact ? "space-y-1.5 px-3 py-3" : "space-y-3 px-4 py-4"}>
+        <div className={ultraCompact ? "py-2" : compact ? "space-y-1.5 py-3" : "space-y-2 py-3"}>
           <h3
             className={
               ultraCompact
@@ -210,28 +195,16 @@ export default function ListingCard({
             {titleLabel}
           </h3>
 
-          {cardSpecs.length > 0 ? (
-            <p
-              className={`text-zinc-600 ${
-                ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
-              } line-clamp-2 leading-relaxed`}
-            >
-              {cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ")}
-            </p>
-          ) : null}
+          <p
+            className={`min-h-[2.5em] text-zinc-600 ${
+              ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
+            } line-clamp-2 leading-relaxed`}
+          >
+            {cardSpecs.length > 0 ? cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ") : ""}
+          </p>
 
-          <div className="flex flex-wrap items-center gap-2">
-            {conditionLabel ? (
-              <span className="inline-flex items-center rounded-md bg-primary/5 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                {conditionLabel}
-              </span>
-            ) : null}
-
-            {availabilityLabel ? (
-              <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
-                {availabilityLabel}
-              </span>
-            ) : null}
+          <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+            {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}
           </div>
         </div>
       </div>
