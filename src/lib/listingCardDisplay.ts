@@ -33,6 +33,46 @@ const REDUNDANT_FIELD_KEY_PATTERNS = [
   /(^|_)(university|campus)(_|$)/i,
 ];
 
+const CATEGORY_FIELD_PRIORITY: Record<string, Array<[RegExp, number]>> = {
+  "Electronics & Gadgets": [
+    [/ram|memory/i, 140],
+    [/storage|internal_storage|ssd|hdd|disk/i, 135],
+    [/processor|cpu|chip|soc|snapdragon|mediatek|exynos|intel|ryzen|core/i, 130],
+    [/battery|mah|health/i, 125],
+    [/screen|display|refresh|hz|inch/i, 120],
+    [/condition|state|grade|quality/i, 110],
+    [/color|warranty|model/i, 90],
+  ],
+  "Fashion & Clothing": [
+    [/size|waist|length|fit/i, 140],
+    [/color|colour/i, 135],
+    [/material|fabric|cotton|denim|leather/i, 130],
+    [/condition|state|grade|quality/i, 120],
+    [/style|design|pattern/i, 100],
+  ],
+  "Food & Snacks": [
+    [/portion|pack|quantity|size/i, 140],
+    [/flavor|flavour|taste|type/i, 135],
+    [/ingredients|contents|menu/i, 125],
+    [/expiry|expires|freshness|date/i, 120],
+    [/delivery|pickup|location/i, 100],
+  ],
+  "Academic Services": [
+    [/service|type/i, 140],
+    [/duration|time|deadline/i, 135],
+    [/level|course|subject|topic/i, 130],
+    [/delivery|online|onsite|location/i, 120],
+    [/price|cost/i, 40],
+  ],
+  "Beauty & Personal Care": [
+    [/service|treatment|style/i, 140],
+    [/location|home service|salon/i, 135],
+    [/duration|time/i, 130],
+    [/availability|booking|appointment/i, 125],
+    [/gender|for men|for women/i, 90],
+  ],
+};
+
 const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
   [/ram|memory/i, 120],
   [/storage|internal_storage|disk|ssd|hdd/i, 120],
@@ -114,11 +154,18 @@ function getSchemaFields(listing: ListingCardData): ListingSpecField[] {
   });
 }
 
-function getFieldPriority(field: ListingSpecField): number {
+function getFieldPriority(field: ListingSpecField, category?: string | null): number {
   const key = `${field.key} ${field.label}`;
   let score = field.advanced ? 0 : 20;
 
   for (const [pattern, weight] of HIGH_VALUE_FIELD_KEY_PATTERNS) {
+    if (pattern.test(key)) {
+      score += weight;
+    }
+  }
+
+  const categoryBoosts = category ? CATEGORY_FIELD_PRIORITY[category] ?? [] : [];
+  for (const [pattern, weight] of categoryBoosts) {
     if (pattern.test(key)) {
       score += weight;
     }
@@ -151,11 +198,7 @@ export function getListingCardHighlights(listing: ListingCardData, limit = 3): s
   const title = listing.title ?? listing.name ?? null;
   const fields = getSchemaFields(listing)
     .slice()
-    .sort((a, b) => {
-      const scoreDiff = getFieldPriority(b) - getFieldPriority(a);
-      if (scoreDiff !== 0) return scoreDiff;
-      return 0;
-    });
+    .sort((a, b) => getFieldPriority(b, listing.category) - getFieldPriority(a, listing.category));
 
   const highlights: string[] = [];
   const seenValues = new Set<string>();
