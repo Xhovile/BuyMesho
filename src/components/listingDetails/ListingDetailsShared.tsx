@@ -118,12 +118,6 @@ export function RelatedRailCard({
           </h3>
         </button>
 
-        {isDesktop ? (
-          <p className="text-sm leading-relaxed text-zinc-500 line-clamp-2">
-            {item.description || "Tap to open the full listing details."}
-          </p>
-        ) : null}
-
         <div className="flex items-center justify-between gap-2">
           <div className="min-w-0">
             {offerLabel ? (
