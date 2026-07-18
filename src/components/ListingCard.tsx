@@ -1,9 +1,8 @@
 import type { MouseEvent as ReactMouseEvent } from "react";
-import { ShieldCheck } from "lucide-react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
-  getListingCardSpecs,
+  getListingCardHighlights,
   getListingConditionLabel,
 } from "../lib/listingCardDisplay";
 import type { Listing } from "../types";
@@ -52,16 +51,9 @@ export default function ListingCard({
   showActionsMenu = true,
   performanceMode = false,
   onOpenDetails,
-  onOpenSeller,
+  onOpenSeller: _onOpenSeller,
 }: ListingCardProps) {
   const pricing = getListingPricing(listing);
-  const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
-  const sellerName =
-    typeof listing.business_name === "string" && listing.business_name.trim()
-      ? listing.business_name.trim()
-      : "Seller";
-  const truncatedSellerName = sellerName.length > 7 ? `${sellerName.slice(0, 7)}..` : sellerName;
-
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
       ? listing.photos[0]
@@ -69,11 +61,6 @@ export default function ListingCard({
 
   const titleLabel =
     typeof listing.name === "string" && listing.name.trim() ? listing.name : "Untitled listing";
-
-  const universityLabel =
-    typeof listing.university === "string" && listing.university.trim()
-      ? listing.university
-      : "Unknown campus";
 
   const listingMode = pricing.listingMode;
   const offerLabel =
@@ -85,14 +72,9 @@ export default function ListingCard({
         ? formatMoney(pricing.price)
         : null;
 
-  const cardSpecs = getListingCardSpecs(listing, ultraCompact ? 2 : 3);
+  const highlights = getListingCardHighlights(listing, ultraCompact ? 2 : 3);
   const conditionLabel = getListingConditionLabel(listing.condition);
   const availabilityLabel = getListingAvailabilityLabel(listing.quantity, listing.sold_quantity);
-
-  const handleOpenProfile = (event: ReactMouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    if (sellerUid) onOpenSeller(sellerUid);
-  };
 
   const handleOpenDetails = () => {
     onOpenDetails(listing);
@@ -134,37 +116,7 @@ export default function ListingCard({
       <div
         className={`relative overflow-hidden ${cardRadius} border border-zinc-200/80 bg-white ${cardShadow} transition-shadow ${hoverShadow}`}
       >
-        <div className={`${outerPadding} flex items-center justify-between gap-2`}>
-          <button type="button" onClick={handleOpenProfile} className="min-w-0 text-left">
-            <div className="inline-flex items-center gap-1.5 min-w-0">
-              <p
-                className={`truncate ${ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-sm"} font-bold text-red-900`}
-              >
-                {truncatedSellerName}
-              </p>
-              {listing.is_verified ? (
-                <ShieldCheck className="w-3.5 h-3.5 shrink-0 fill-blue-50 text-blue-500" />
-              ) : null}
-            </div>
-            {!ultraCompact ? <p className="text-[10px] font-medium text-zinc-400">Open seller page</p> : null}
-          </button>
-
-          <div className="flex flex-col items-end gap-1">
-            <span
-              className={`shrink-0 truncate rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
-                ultraCompact
-                  ? "max-w-[76px] px-2 py-0.5 text-[9px]"
-                  : compact
-                    ? "max-w-[104px] px-2.5 py-1 text-[10px]"
-                    : "max-w-[120px] px-3 py-1 text-[11px]"
-              }`}
-            >
-              {universityLabel}
-            </span>
-          </div>
-        </div>
-
-        <div className={`relative mt-3 overflow-hidden bg-zinc-100 ${imageAspect}`}>
+        <div className={`relative overflow-hidden bg-zinc-100 ${imageAspect}`}>
           <button
             type="button"
             onClick={(e) => {
@@ -246,32 +198,26 @@ export default function ListingCard({
         </div>
 
         <div className={ultraCompact ? "px-2 py-2" : compact ? "space-y-1.5 px-3 py-3" : "space-y-3 px-4 py-4"}>
-          <div className="flex items-start justify-between gap-3">
-            <h3
-              className={
-                ultraCompact
-                  ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
-                  : compact
-                    ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
-                    : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
-              }
-            >
-              {titleLabel}
-            </h3>
-          </div>
+          <h3
+            className={
+              ultraCompact
+                ? "line-clamp-1 text-[12px] font-extrabold tracking-tight text-zinc-900"
+                : compact
+                  ? "line-clamp-1 text-[14px] font-extrabold tracking-tight text-zinc-900 group-hover:text-primary"
+                  : "line-clamp-1 text-[17px] font-bold tracking-tight text-zinc-900 group-hover:text-primary"
+            }
+          >
+            {titleLabel}
+          </h3>
 
-          {cardSpecs.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {cardSpecs.map((spec) => (
-                <span
-                  key={spec.key}
-                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-semibold text-zinc-700"
-                >
-                  <span className="whitespace-nowrap text-zinc-500">{spec.label}</span>
-                  <span className="min-w-0 truncate font-bold text-zinc-900">{spec.value}</span>
-                </span>
-              ))}
-            </div>
+          {highlights.length > 0 ? (
+            <p
+              className={`text-zinc-600 ${
+                ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
+              } line-clamp-2 leading-relaxed`}
+            >
+              {highlights.join(", ")}
+            </p>
           ) : null}
 
           <div className="flex flex-wrap items-center gap-2">
@@ -284,12 +230,6 @@ export default function ListingCard({
             {availabilityLabel ? (
               <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
                 {availabilityLabel}
-              </span>
-            ) : null}
-
-            {!ultraCompact ? (
-              <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
-                {listing.category || "Uncategorized"}
               </span>
             ) : null}
           </div>
