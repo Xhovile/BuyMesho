@@ -1,5 +1,5 @@
 import { ChevronLeft } from "lucide-react";
-import { EXPLORE_PATH, HOME_PATH, SETTINGS_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
+import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
 
 export default function ListingHeaderBar() {
   return (
@@ -19,10 +19,10 @@ export default function ListingHeaderBar() {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigateToPath(SETTINGS_PATH)}
+            onClick={() => navigateToPath(EXPLORE_PATH)}
             className="hidden rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
           >
-            Settings
+            Market
           </button>
           <button
             type="button"
