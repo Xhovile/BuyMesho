@@ -2,7 +2,7 @@ import type { MouseEvent as ReactMouseEvent } from "react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
-  getListingCardHighlights,
+  getListingCardSpecs,
   getListingConditionLabel,
 } from "../lib/listingCardDisplay";
 import type { Listing } from "../types";
@@ -72,7 +72,7 @@ export default function ListingCard({
         ? formatMoney(pricing.price)
         : null;
 
-  const highlights = getListingCardHighlights(listing, ultraCompact ? 2 : 3);
+  const cardSpecs = getListingCardSpecs(listing, ultraCompact ? 2 : 3);
   const conditionLabel = getListingConditionLabel(listing.condition);
   const availabilityLabel = getListingAvailabilityLabel(listing.quantity, listing.sold_quantity);
 
@@ -210,13 +210,13 @@ export default function ListingCard({
             {titleLabel}
           </h3>
 
-          {highlights.length > 0 ? (
+          {cardSpecs.length > 0 ? (
             <p
               className={`text-zinc-600 ${
                 ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
               } line-clamp-2 leading-relaxed`}
             >
-              {highlights.join(", ")}
+              {cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ")}
             </p>
           ) : null}
 

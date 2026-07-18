@@ -1,9 +1,8 @@
-import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
 import { formatMoney, getListingPricing } from "../../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
-  getListingCardHighlights,
+  getListingCardSpecs,
   getListingConditionLabel,
 } from "../../lib/listingCardDisplay";
 import type { ListingSpecValues } from "../../types";
@@ -48,7 +47,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         ? formatMoney(pricing.price)
         : null;
 
-  const highlights = getListingCardHighlights(item, 3);
+  const cardSpecs = getListingCardSpecs(item, 3);
   const conditionLabel = getListingConditionLabel(item.condition);
   const availabilityLabel = getListingAvailabilityLabel(item.quantity, item.sold_quantity);
 
@@ -96,9 +95,9 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           </div>
         </div>
 
-        {highlights.length > 0 ? (
+        {cardSpecs.length > 0 ? (
           <p className="line-clamp-2 text-xs leading-relaxed text-zinc-600">
-            {highlights.join(", ")}
+            {cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ")}
           </p>
         ) : null}
 
@@ -114,15 +113,6 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
               {availabilityLabel}
             </span>
           ) : null}
-
-          <span className="inline-flex items-center rounded-md bg-zinc-100 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
-            Open listing
-          </span>
-        </div>
-
-        <div className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-700">
-          Open listing
-          <ArrowRight className="h-3.5 w-3.5" />
         </div>
       </div>
     </button>
