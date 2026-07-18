@@ -244,6 +244,8 @@ export default function RootRouter() {
           <MarketComingSoonPage />
         ) : locationPath === "/connect/callback" ? (
           <ConnectCallbackPage />
+        ) : route === "listing_details" ? (
+          <ListingDetailsPage />
         ) : locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute") ? (
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
