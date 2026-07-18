@@ -32,6 +32,72 @@ function formatDate(value?: string) {
   return date.toLocaleDateString();
 }
 
+async function fetchSellerProfile(sellerUid: string) {
+  try {
+    return await apiFetch(`/api/sellers/${sellerUid}`) as SellerProfile;
+  } catch {
+    return await apiFetch(`/api/users/${sellerUid}`) as SellerProfile;
+  }
+}
+
+async function fetchSellerListings(sellerUid: string) {
+  try {
+    const listings = await apiFetch(`/api/sellers/${sellerUid}/listings`);
+    return Array.isArray(listings) ? listings : [];
+  } catch {
+    const listings = await apiFetch(`/api/users/${sellerUid}/listings`);
+    return Array.isArray(listings) ? listings : [];
+  }
+}
+
+async function fetchSellerRatingSummary(sellerUid: string) {
+  try {
+    return (await apiFetch(`/api/sellers/${sellerUid}/rating-summary`)) as RatingSummary;
+  } catch {
+    return (await apiFetch(`/api/users/${sellerUid}/rating-summary`)) as RatingSummary;
+  }
+}
+
+async function trackSellerProfileView(sellerUid: string, viewerUid: string | null) {
+  try {
+    return await apiFetch(`/api/sellers/${sellerUid}/profile-view`, {
+      method: "POST",
+      body: JSON.stringify({ viewer_uid: viewerUid }),
+    });
+  } catch {
+    return await apiFetch(`/api/users/${sellerUid}/profile-view`, {
+      method: "POST",
+      body: JSON.stringify({ viewer_uid: viewerUid }),
+    });
+  }
+}
+
+async function saveSellerRating(sellerUid: string, stars: number) {
+  try {
+    return await apiFetch(`/api/sellers/${sellerUid}/rating`, {
+      method: "POST",
+      body: JSON.stringify({ stars }),
+    });
+  } catch {
+    return await apiFetch(`/api/users/${sellerUid}/rating`, {
+      method: "POST",
+      body: JSON.stringify({ stars }),
+    });
+  }
+}
+
+async function deleteSellerRating(sellerUid: string) {
+  try {
+    return await apiFetch(`/api/sellers/${sellerUid}/rating`, {
+      method: "DELETE",
+    });
+  } catch {
+    return await apiFetch(`/api/users/${sellerUid}/rating`, {
+      method: "DELETE",
+    });
+  }
+}
+
 export default function SellerProfilePage() {
   const { user: firebaseUser } = useAuthUser();
   const [sellerUid, setSellerUid] = useState(() => getSellerUidFromUrl() || "");
@@ -59,9 +125,9 @@ export default function SellerProfilePage() {
       setLoading(true);
       try {
         const [profileResult, listingsResult, ratingResult] = await Promise.allSettled([
-          apiFetch(`/api/users/${sellerUid}`),
-          apiFetch(`/api/users/${sellerUid}/listings`),
-          apiFetch(`/api/users/${sellerUid}/rating-summary`),
+          fetchSellerProfile(sellerUid),
+          fetchSellerListings(sellerUid),
+          fetchSellerRatingSummary(sellerUid),
         ]);
 
         const loadedProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
@@ -74,10 +140,7 @@ export default function SellerProfilePage() {
         setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
 
         if (loadedProfile) {
-          const viewTrackResult = await apiFetch(`/api/users/${sellerUid}/profile-view`, {
-            method: "POST",
-            body: JSON.stringify({ viewer_uid: firebaseUser?.uid ?? null }),
-          }).catch(() => null);
+          const viewTrackResult = await trackSellerProfileView(sellerUid, firebaseUser?.uid ?? null).catch(() => null);
 
           if (viewTrackResult && !viewTrackResult.skipped) {
             setProfile((prev) =>
@@ -107,7 +170,7 @@ export default function SellerProfilePage() {
     if (!sellerUid) return;
     setRatingLoading(true);
     try {
-      const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+      const summary = await fetchSellerRatingSummary(sellerUid);
       setRatingSummary(summary);
     } catch (error) {
       console.error("Failed to load rating summary", error);
@@ -135,10 +198,7 @@ export default function SellerProfilePage() {
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
     setRatingSubmitting(true);
     try {
-      await apiFetch(`/api/users/${sellerUid}/rating`, {
-        method: "POST",
-        body: JSON.stringify({ stars }),
-      });
+      await saveSellerRating(sellerUid, stars);
       await refreshRatingSummary();
     } catch (error) {
       console.error("Failed to save seller rating", error);
@@ -151,9 +211,7 @@ export default function SellerProfilePage() {
     if (!sellerUid || !firebaseUser) return;
     setRatingSubmitting(true);
     try {
-      await apiFetch(`/api/users/${sellerUid}/rating`, {
-        method: "DELETE",
-      });
+      await deleteSellerRating(sellerUid);
       await refreshRatingSummary();
     } catch (error) {
       console.error("Failed to remove seller rating", error);
@@ -260,132 +318,107 @@ export default function SellerProfilePage() {
                         Verified
                       </span>
                     ) : null}
+                    {profile.university ? (
+                      <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
+                        {profile.university}
+                      </span>
+                    ) : null}
+                    <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
+                      Joined {formatDate(profile.join_date)}
+                    </span>
                   </div>
 
                   {profile.bio ? (
-                    <p className="mt-4 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
+                    <p className="mt-4 max-w-2xl text-sm sm:text-base leading-6 text-zinc-600 whitespace-pre-wrap">
                       {profile.bio}
                     </p>
                   ) : null}
                 </div>
 
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 min-w-[220px]">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-zinc-400">Seller snapshot</p>
-                  <div className="mt-3 space-y-2 text-sm text-zinc-600">
-                    <p>
-                      <span className="font-bold text-zinc-900">Campus:</span> {profile.university || "Not set"}
-                    </p>
-                    <p>
-                      <span className="font-bold text-zinc-900">Joined:</span> {formatDate(profile.join_date)}
-                    </p>
-                    <p>
-                      <span className="font-bold text-zinc-900">Listings:</span> {listings.length}
-                    </p>
-                    <p>
-                      <span className="font-bold text-zinc-900">Profile views:</span> {profile.profile_views ?? 0}
-                    </p>
+                <div className="lg:text-right space-y-3">
+                  <div className="inline-flex rounded-3xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Profile views</p>
+                      <p className="mt-1 text-2xl font-black text-zinc-900">{profile.profile_views ?? 0}</p>
+                    </div>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="mt-6 grid grid-cols-1 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-6">
-              <SellerRatingCard
-                ratingSummary={ratingSummary}
-                ratingLoading={ratingLoading}
-                ratingSubmitting={ratingSubmitting}
-                isAuthenticated={!!firebaseUser}
-                canRate={!!firebaseUser && firebaseUser.uid !== profile.uid}
-                onRate={handleRateSeller}
-                onRemoveRating={handleRemoveRating}
-              />
-
-              <div className="p-0 sm:p-0">
-                <div className="mb-5 rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
-                    Search Seller Listings
-                  </p>
-                  <div className="relative mt-3">
-                    <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-                    <input
-                      type="text"
-                      value={listingSearch}
-                      onChange={(event) => setListingSearch(event.target.value)}
-                      placeholder="Search this seller's listings..."
-                      className="w-full rounded-2xl border border-zinc-300 bg-zinc-50 py-3 pl-11 pr-4 text-sm text-zinc-800 placeholder:text-zinc-400 shadow-sm outline-none transition-all focus:border-red-900 focus:ring-4 focus:ring-red-900/10 focus:shadow-md"
-                    />
+            <section className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+              <div className="space-y-6">
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <h2 className="text-xl font-black text-zinc-900">Listings</h2>
+                      <p className="mt-1 text-sm text-zinc-500">
+                        All public listings from this seller.
+                      </p>
+                    </div>
+                    <div className="w-full max-w-xs">
+                      <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2">
+                        <Search className="w-4 h-4 text-zinc-400" />
+                        <input
+                          value={listingSearch}
+                          onChange={(e) => setListingSearch(e.target.value)}
+                          placeholder="Search listings"
+                          className="w-full bg-transparent text-sm outline-none placeholder:text-zinc-400"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between gap-4 mb-5">
-                  <div>
-                    <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">Listings</p>
-                    <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900">Items from this seller</h2>
-                  </div>
-                  <div className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-extrabold uppercase tracking-[0.14em] text-zinc-600">
-                    {filteredListings.length} item{filteredListings.length === 1 ? "" : "s"}
-                  </div>
-                </div>
-
-                {filteredListings.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {filteredListings.map((listing) => {
-                      const availableQuantity = Math.max(
-                        0,
-                        Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0)
-                      );
-
-                      return (
+                  <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {filteredListings.length > 0 ? (
+                      filteredListings.map((listing) => (
                         <button
                           key={listing.id}
                           type="button"
-                          onClick={() => navigateToListingDetails(listing.id, 0)}
-                          className="text-left rounded-[1.5rem] border border-zinc-200 bg-zinc-50 p-4 hover:bg-zinc-100 transition-colors"
+                          onClick={() => navigateToListingDetails(listing.id)}
+                          className="group rounded-3xl border border-zinc-200 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                         >
-                          <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-zinc-100 border border-zinc-200 mb-4">
-                            <img
-                              src={listing.photos?.[0] || `https://picsum.photos/seed/${listing.id}/600/450`}
-                              alt={listing.name}
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
+                            {listing.photos?.[0] ? (
+                              <img
+                                src={listing.photos[0]}
+                                alt={listing.name}
+                                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                              />
+                            ) : null}
                           </div>
-
-                          <h3 className="text-lg font-extrabold text-zinc-900 line-clamp-1">{listing.name}</h3>
-                          <p className="mt-1 text-sm text-zinc-500 line-clamp-2">{listing.description}</p>
-                          <p className="mt-3 text-2xl font-black tracking-tight text-zinc-900">
-                            MK {Number(listing.price).toLocaleString()}
-                          </p>
-
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="px-3 py-1.5 rounded-full bg-white text-zinc-700 text-[11px] font-bold uppercase tracking-[0.12em] border border-zinc-200">
-                              {listing.category}
-                            </span>
-                            <span
-                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-[0.12em] ${
-                                availableQuantity > 0 && listing.status !== "sold"
-                                  ? "bg-emerald-50 text-emerald-700"
-                                  : "bg-zinc-200 text-zinc-600"
-                              }`}
-                            >
-                              {availableQuantity > 0 && listing.status !== "sold"
-                                ? `${availableQuantity} left`
-                                : "Sold out"}
-                            </span>
+                          <div className="mt-3 space-y-1">
+                            <h3 className="line-clamp-1 text-sm font-extrabold text-zinc-900">{listing.name}</h3>
+                            <p className="text-sm font-bold text-red-900">
+                              MK{Number(listing.price).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-zinc-500 line-clamp-2">{listing.description}</p>
                           </div>
                         </button>
-                      );
-                    })}
+                      ))
+                    ) : (
+                      <div className="col-span-full rounded-3xl border border-dashed border-zinc-200 bg-zinc-50 p-8 text-center text-sm text-zinc-500">
+                        No listings found for this seller.
+                      </div>
+                    )}
                   </div>
-                ) : listings.length > 0 ? (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                    No listings match your search. Try another keyword.
-                  </div>
-                ) : (
-                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500">
-                    This seller has no active listings to show right now.
-                  </div>
-                )}
+                </div>
               </div>
+
+              <aside className="space-y-6">
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+                  <h2 className="text-xl font-black text-zinc-900">Rating</h2>
+                  <div className="mt-4">
+                    <SellerRatingCard
+                      ratingSummary={ratingSummary}
+                      submitting={ratingSubmitting}
+                      loading={ratingLoading}
+                      onRate={handleRateSeller}
+                      onRemoveRating={handleRemoveRating}
+                    />
+                  </div>
+                </div>
+              </aside>
             </section>
           </>
         )}
