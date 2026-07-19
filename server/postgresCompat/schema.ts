@@ -230,6 +230,16 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "listings", "university", "TEXT");
   ensureColumn(db, "listings", "whatsapp_number", "TEXT");
   ensureColumn(db, "listings", "condition", "TEXT");
+  ensureColumn(db, "listings", "original_price", "REAL");
+  ensureColumn(db, "listings", "discount_percent", "INTEGER");
+  ensureColumn(db, "listings", "deal_label", "TEXT");
+  ensureColumn(db, "listings", "listing_mode", "TEXT NOT NULL DEFAULT 'normal'");
+  ensureColumn(db, "listings", "deal_expires_at", "TEXT");
+  ensureColumn(db, "listings", "is_wholesale", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(db, "listings", "pack_size", "INTEGER");
+  ensureColumn(db, "listings", "bulk_units", "TEXT");
+  ensureColumn(db, "listings", "can_sell_individually", "INTEGER");
+  ensureColumn(db, "listings", "single_item_price", "REAL");
   ensureColumn(db, "listings", "views_count", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "whatsapp_clicks", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "listings", "is_hidden", "INTEGER NOT NULL DEFAULT 0");

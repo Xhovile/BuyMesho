@@ -45,14 +45,16 @@ function toDraft(listing: Listing, fallbackUniversity?: string): ListingDraft {
     condition: listing.condition || "used",
     quantity: String(listing.quantity ?? 1),
     sold_quantity: String(listing.sold_quantity ?? 0),
-    listing_mode: listing.listing_mode || "normal",
+    listing_mode: listing.listing_mode || deriveListingMode(listing),
     original_price: listing.original_price ? String(listing.original_price) : "",
     discount_percent: listing.discount_percent ? String(listing.discount_percent) : "",
     deal_label: listing.deal_label || "",
     deal_expires_at: listing.deal_expires_at || "",
     is_wholesale: !!listing.is_wholesale,
+    can_sell_individually: listing.can_sell_individually ?? undefined,
     pack_size: listing.pack_size ? String(listing.pack_size) : "",
     bulk_units: listing.bulk_units || "",
+    single_item_price: listing.single_item_price ? String(listing.single_item_price) : "",
   };
 }
 

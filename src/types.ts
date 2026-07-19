@@ -12,7 +12,7 @@ export type Category =
 export type ListingMode = "normal" | "deal" | "wholesale";
 
 export type ListingStatus = "available" | "sold";
-export type ListingCondition = "new" | "used" | "refurbished";
+export type ListingCondition = string;
 export type VisibilitySetting = "everyone" | "students_only" | "only_me";
 export type ListingSpecValue = string | number | boolean | string[] | null;
 export type ListingSpecValues = Record<string, ListingSpecValue>;

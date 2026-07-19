@@ -29,6 +29,48 @@ function normalizeString(value: unknown): string {
 export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
   const { db } = deps;
 
+  function getEditableListing(
+    listingId: number,
+    uid: string,
+  ):
+    | { listing: { id: number; seller_uid: string; status: string; quantity: number; sold_quantity: number } }
+    | { error: 403 | 404; message: string } {
+    const existingListing = db
+      .prepare(
+        `
+          SELECT id, seller_uid, status, quantity, sold_quantity
+          FROM listings
+          WHERE id = ? AND deleted_at IS NULL
+          LIMIT 1
+        `
+      )
+      .get(listingId) as
+      | { id: number; seller_uid: string; status: string; quantity: number; sold_quantity: number }
+      | undefined;
+
+    if (!existingListing) return { error: 404 as const, message: "Listing not found" };
+    if (existingListing.seller_uid !== uid) {
+      return { error: 403 as const, message: "This listing does not belong to your account" };
+    }
+    return { listing: existingListing };
+  }
+
+  function getSerializedListing(listingId: number) {
+    const row = db
+      .prepare(
+        `
+          SELECT l.*, s.business_name, s.business_logo, s.is_verified
+          FROM listings l
+          JOIN sellers s ON l.seller_uid = s.uid
+          WHERE l.id = ?
+          LIMIT 1
+        `
+      )
+      .get(listingId) as any;
+
+    return row ? serializeListingRow(row) : null;
+  }
+
   app.post("/api/listings", requireAuth, (req, res) => {
     const uid = req.user!.uid;
     const seller = db
@@ -55,9 +97,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       const itemType = normalizeString(body.item_type) || null;
       const university = normalizeString(body.university);
       const status = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
-      const conditionRaw = normalizeString(body.condition).toLowerCase();
-      const condition =
-        conditionRaw === "new" || conditionRaw === "refurbished" ? conditionRaw : "used";
+      const condition = normalizeString(body.condition).toLowerCase() || "used";
       const photos = normalizeStringArray(body.photos, 5);
       const videoUrl = normalizeString(body.video_url) || null;
       const quantity = Number(body.quantity);
@@ -143,6 +183,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
               listing_mode,
               deal_expires_at,
               is_wholesale,
+              pack_size,
+              bulk_units,
               can_sell_individually,
               description,
               category,
@@ -158,7 +200,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
               quantity,
               sold_quantity,
               single_item_price
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `
         )
         .run(
@@ -171,6 +213,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
           pricing.listing_mode,
           pricing.deal_expires_at,
           pricing.is_wholesale,
+          pricing.pack_size,
+          pricing.bulk_units,
           pricing.can_sell_individually,
           description,
           category,
@@ -260,9 +304,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       const itemType = normalizeString(body.item_type) || null;
       const university = normalizeString(body.university);
       const status = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
-      const conditionRaw = normalizeString(body.condition).toLowerCase();
-      const condition =
-        conditionRaw === "new" || conditionRaw === "refurbished" ? conditionRaw : "used";
+      const condition = normalizeString(body.condition).toLowerCase() || "used";
       const photos = normalizeStringArray(body.photos, 5);
       const videoUrl = normalizeString(body.video_url) || null;
       const quantity = Number(body.quantity);
@@ -347,6 +389,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
             listing_mode = ?,
             deal_expires_at = ?,
             is_wholesale = ?,
+            pack_size = ?,
+            bulk_units = ?,
             can_sell_individually = ?,
             description = ?,
             category = ?,
@@ -373,6 +417,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
         pricing.listing_mode,
         pricing.deal_expires_at,
         pricing.is_wholesale,
+        pricing.pack_size,
+        pricing.bulk_units,
         pricing.can_sell_individually,
         description,
         category,
@@ -412,4 +458,70 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       return res.status(500).json({ error: "Failed to update listing" });
     }
   });
+
+
+  app.patch("/api/listings/:id/status", requireAuth, (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
+
+    const checked = getEditableListing(listingId, req.user!.uid);
+    if ("error" in checked) return res.status(checked.error).json({ error: checked.message });
+
+    const status = normalizeString(req.body?.status).toLowerCase() === "sold" ? "sold" : "available";
+    db.prepare("UPDATE listings SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(status, listingId);
+    return res.json({ success: true, listing: getSerializedListing(listingId) });
+  });
+
+  app.post("/api/listings/:id/record-sale", requireAuth, (req, res) => {
+    const listingId = Number(req.params.id);
+    const quantity = Number(req.body?.quantity);
+    if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ error: "Sale quantity must be a whole number of at least 1." });
+    }
+
+    const checked = getEditableListing(listingId, req.user!.uid);
+    if ("error" in checked) return res.status(checked.error).json({ error: checked.message });
+
+    const currentQuantity = Number(checked.listing.quantity ?? 0);
+    const nextSold = Number(checked.listing.sold_quantity ?? 0) + quantity;
+    if (nextSold > currentQuantity) {
+      return res.status(400).json({ error: "Sale quantity cannot exceed available stock." });
+    }
+
+    db.prepare("UPDATE listings SET sold_quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+      nextSold,
+      nextSold >= currentQuantity ? "sold" : "available",
+      listingId
+    );
+    return res.json({ success: true, listing: getSerializedListing(listingId) });
+  });
+
+  app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
+    const listingId = Number(req.params.id);
+    const quantity = Number(req.body?.quantity);
+    if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      return res.status(400).json({ error: "Restock quantity must be a whole number of at least 1." });
+    }
+
+    const checked = getEditableListing(listingId, req.user!.uid);
+    if ("error" in checked) return res.status(checked.error).json({ error: checked.message });
+
+    const nextQuantity = Number(checked.listing.quantity ?? 0) + quantity;
+    db.prepare("UPDATE listings SET quantity = ?, status = 'available', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextQuantity, listingId);
+    return res.json({ success: true, listing: getSerializedListing(listingId) });
+  });
+
+  app.delete("/api/listings/:id", requireAuth, (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) return res.status(400).json({ error: "Invalid listing id" });
+
+    const checked = getEditableListing(listingId, req.user!.uid);
+    if ("error" in checked) return res.status(checked.error).json({ error: checked.message });
+
+    db.prepare("UPDATE listings SET deleted_at = CURRENT_TIMESTAMP, deleted_by_uid = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.user!.uid, listingId);
+    return res.json({ success: true });
+  });
+
 }
