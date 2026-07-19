@@ -148,11 +148,6 @@ function SellerRatingBlock({
             ) : null}
           </div>
         </div>
-
-        <div className="text-right">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Profile views</p>
-          <p className="mt-1 text-2xl font-black text-zinc-900">{profileViews}</p>
-        </div>
       </div>
 
       {ratingLoading ? (
