@@ -62,7 +62,16 @@ export function buildSpecsFromProfile(listing: ListingCardData, profile: Display
 
   for (const field of profile) {
     const keys = field.valueKeys ?? [field.key];
-    const rawValue = keys.includes("item_type") ? listing.item_type : keys.map((key) => values[key]).find((value) => formatSpecValue(value));
+    let rawValue: ListingSpecValue | undefined;
+
+    for (const key of keys) {
+      const candidate = key === "item_type" ? listing.item_type : values[key];
+      if (formatSpecValue(candidate)) {
+        rawValue = candidate;
+        break;
+      }
+    }
+
     const value = formatSpecValue(rawValue);
     if (!value) continue;
 
