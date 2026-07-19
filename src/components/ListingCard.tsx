@@ -80,11 +80,10 @@ export default function ListingCard({
   };
 
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardSize = ultraCompact ? "max-h-[245px] max-w-[160px]" : compact ? "max-h-[320px] max-w-[235px]" : "max-h-[420px] max-w-[300px]";
 
   return (
     <article
-      className={`group relative w-full overflow-hidden ${cardSize} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      className="group relative w-full min-w-0 overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
       onClick={handleOpenDetails}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
