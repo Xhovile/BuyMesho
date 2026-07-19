@@ -9,7 +9,12 @@ const PROFILES: Record<string, DisplayFieldProfile> = {
   Computers: [
     { key: "brand", label: "Brand" },
     { key: "ram_storage", label: "RAM / Storage", valueKeys: ["ram", "storage_capacity", "storage"], joinWith: "/" },
-    { key: "resolution", label: "Screen Resolution", valueKeys: ["resolution", "panel_type"] },
+    { key: "resolution", label: "Screen Resolution", valueKeys: ["resolution"] },
+  ],
+  "Computers::Monitor": [
+    { key: "brand", label: "Brand" },
+    { key: "panel_type", label: "Panel Type" },
+    { key: "resolution", label: "Resolution", valueKeys: ["resolution"] },
   ],
   Audio: [
     { key: "audio_product_type", label: "Type", valueKeys: ["audio_product_type", "item_type"] },
@@ -43,21 +48,29 @@ const PROFILES: Record<string, DisplayFieldProfile> = {
   ],
 };
 
-function getPowerProfile(listing: ListingCardData): DisplayFieldProfile | null {
-  if (listing.subcategory !== "Power & Internet") return null;
+function getElectronicsProfile(listing: ListingCardData): DisplayFieldProfile | null {
+  if (listing.subcategory !== "Electronics & Gadgets" && listing.category !== "Electronics & Gadgets") return null;
 
-  if (listing.item_type === "Power Bank") {
-    return PROFILES["Power & Internet::Power Bank"];
+  if (listing.subcategory === "Computers" && listing.item_type === "Monitor") {
+    return PROFILES["Computers::Monitor"];
   }
 
-  if (listing.item_type === "Charger / Charging Adapter") {
-    return PROFILES["Power & Internet::Charger / Charging Adapter"];
+  if (listing.subcategory === "Power & Internet") {
+    if (listing.item_type === "Power Bank") {
+      return PROFILES["Power & Internet::Power Bank"];
+    }
+
+    if (listing.item_type === "Charger / Charging Adapter") {
+      return PROFILES["Power & Internet::Charger / Charging Adapter"];
+    }
+
+    return PROFILES["Power & Internet"];
   }
 
-  return PROFILES["Power & Internet"];
+  return listing.subcategory ? PROFILES[listing.subcategory] ?? null : null;
 }
 
 export function getElectronicsCardSpecs(listing: ListingCardData): ListingCardSpec[] | null {
-  const profile = getPowerProfile(listing) ?? (listing.subcategory ? PROFILES[listing.subcategory] : null);
+  const profile = getElectronicsProfile(listing);
   return profile ? buildSpecsFromProfile(listing, profile) : null;
 }
