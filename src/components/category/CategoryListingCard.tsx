@@ -55,7 +55,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group w-full max-w-[235px] max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+      className="group w-full min-w-0 max-h-[340px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
       aria-label={`Open listing details for ${item.name}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
