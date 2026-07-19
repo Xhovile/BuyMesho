@@ -4,7 +4,7 @@ import {
   getListingAvailabilityLabel,
   getListingCardSpecs,
   getListingConditionLabel,
-} from "../lib/listingCardDisplay";
+} from "../lib/listingCardHighlights";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
