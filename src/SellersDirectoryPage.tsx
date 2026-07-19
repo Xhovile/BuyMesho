@@ -120,10 +120,7 @@ export default function SellersDirectoryPage() {
               bucket.representativeListing.name?.trim() ||
               "Seller";
 
-            const description =
-              profile?.bio?.trim() ||
-              profile?.university?.trim() ||
-              "Approved seller on BuyMesho.";
+            const description = profile?.bio?.trim() || "Approved seller on BuyMesho.";
 
             return {
               uid,
