@@ -8,7 +8,6 @@ export type SellerProfile = {
   uid?: string;
   business_name?: string;
   business_logo?: string;
-  university?: string;
   bio?: string;
   is_verified?: boolean;
   join_date?: string;
@@ -26,6 +25,7 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
   const normalized = normalizeRatingSummary(seller?.ratingSummary ?? ratingSummary);
   const sellerUid = seller?.uid || listing.seller_uid;
   const sellerName = (seller?.business_name || listing.business_name || "Seller").trim() || "Seller";
+  const sellerDescription = seller?.bio?.trim();
 
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm sm:p-5">
@@ -37,11 +37,7 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
         >
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-100 sm:h-16 sm:w-16">
             {seller?.business_logo ? (
-              <img
-                src={seller.business_logo}
-                alt={sellerName}
-                className="h-full w-full object-cover"
-              />
+              <img src={seller.business_logo} alt={sellerName} className="h-full w-full object-cover" />
             ) : (
               <span className="px-2 text-sm font-black leading-none text-zinc-500 sm:text-base">
                 {sellerName
@@ -64,7 +60,9 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
                 <ShieldCheck className="h-4 w-4 shrink-0 text-blue-500" />
               ) : null}
             </div>
-            <p className="mt-1 text-sm text-zinc-500">{listing.university}</p>
+            {sellerDescription ? (
+              <p className="mt-1 line-clamp-3 text-sm leading-6 text-zinc-500">{sellerDescription}</p>
+            ) : null}
           </div>
         </button>
 
@@ -75,7 +73,11 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
               {normalized.averageRating.toFixed(1)}
               <span className="text-xs font-semibold text-zinc-500">({normalized.ratingCount})</span>
             </div>
-          ) : null}
+          ) : (
+            <div className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-extrabold text-zinc-500">
+              No ratings yet
+            </div>
+          )}
           <button
             type="button"
             onClick={() => navigateToSellerProfile(sellerUid)}
@@ -91,7 +93,9 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
         <div className="flex items-start justify-between gap-3 border-t border-zinc-200 pt-3 sm:border-t-0 sm:border-r sm:pr-4">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">Email status</p>
-            <p className="mt-1 text-base font-extrabold text-zinc-900">{seller?.is_verified || listing.is_verified ? "Email verified" : "Email not verified"}</p>
+            <p className="mt-1 text-base font-extrabold text-zinc-900">
+              {seller?.is_verified || listing.is_verified ? "Email verified" : "Email not verified"}
+            </p>
           </div>
           <Store className="h-4 w-4 shrink-0 text-zinc-400" />
         </div>
