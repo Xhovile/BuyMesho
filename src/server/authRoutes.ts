@@ -117,7 +117,7 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
     if (!record) return sendError(res, 404, "No pending TOTP enrollment found.");
 
     const result = verifyTotpCode({ secret: record.secret, code });
-    if (!result.ok) {
+    if (result.ok === false) {
       return sendError(res, 400, result.reason === "clock_skew" ? "That code has expired." : "Invalid TOTP code.");
     }
 

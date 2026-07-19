@@ -168,15 +168,7 @@ export default function ListingCard({
                   {offerValue}
                 </span>
               </div>
-            ) : (
-              <div
-                className={`rounded-xl border border-white/20 bg-white/85 font-extrabold shadow-sm ${
-                  performanceMode ? "" : "backdrop-blur-md"
-                } ${ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-900`}
-              >
-                <span>{formatMoney(Number(listing.price) || 0)}</span>
-              </div>
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -193,13 +185,17 @@ export default function ListingCard({
             {titleLabel}
           </h3>
 
-          <p
-            className={`min-h-[2.5em] text-zinc-600 ${
-              ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
-            } line-clamp-2 leading-relaxed`}
-          >
-            {cardSpecs.length > 0 ? cardSpecs.map((spec) => spec.value).join(" • ") : ""}
+          <p className={ultraCompact ? "text-[12px] font-bold text-red-900" : compact ? "text-sm font-bold text-red-900" : "text-base font-extrabold text-red-900"}>
+            {formatMoney(Number(listing.price) || 0)}
           </p>
+
+          <div className={`flex min-h-[2rem] flex-wrap gap-1 ${ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"}`}>
+            {cardSpecs.map((spec) => (
+              <span key={spec.key} className="rounded-full bg-zinc-100 px-2 py-0.5 font-semibold text-zinc-700">
+                {spec.label}: {spec.value}
+              </span>
+            ))}
+          </div>
 
           <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}

@@ -96,9 +96,13 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           </div>
         </div>
 
-        <p className="min-h-[2.5em] line-clamp-2 text-xs leading-relaxed text-zinc-600">
-          {cardSpecs.length > 0 ? cardSpecs.map((spec) => spec.value).join(" • ") : ""}
-        </p>
+        <div className="flex min-h-[2rem] flex-wrap gap-1 text-[10px]">
+          {cardSpecs.map((spec) => (
+            <span key={spec.key} className="rounded-full bg-zinc-100 px-2 py-0.5 font-semibold text-zinc-700">
+              {spec.label}: {spec.value}
+            </span>
+          ))}
+        </div>
 
         <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
           {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}
