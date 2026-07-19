@@ -219,7 +219,7 @@ function executeSync(sql: string, params: unknown[] = []): { rows: Record<string
     throw new Error("PostgreSQL worker response mismatch");
   }
 
-  if (!response.ok) {
+  if (response.ok === false) {
     throw new Error(`PostgreSQL query failed: ${response.error}`);
   }
 

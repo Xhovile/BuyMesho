@@ -337,13 +337,13 @@ export default function RootRouter() {
         ) : locationPath === "/email-action" ? (
           <EmailActionPage />
         ) : locationPath === "/privacy" ? (
-          <PrivacyPolicyPage />
+          <PrivacyPolicyPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : locationPath === "/terms" ? (
-          <TermsPage />
+          <TermsPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : locationPath === "/safety" ? (
-          <SafetyTipsPage />
+          <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : locationPath === "/report" ? (
-          <ReportProblemPage />
+          <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} isLoggedIn={!!firebaseUser} />
         ) : (
           <HomePage />
         )}

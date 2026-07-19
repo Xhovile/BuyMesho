@@ -80,7 +80,7 @@ export default function ListingCard({
   };
 
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardSize = ultraCompact ? "max-h-[230px] max-w-[150px]" : compact ? "max-h-[300px] max-w-[220px]" : "max-h-[390px] max-w-[280px]";
+  const cardSize = ultraCompact ? "max-h-[245px] max-w-[160px]" : compact ? "max-h-[320px] max-w-[235px]" : "max-h-[420px] max-w-[300px]";
 
   return (
     <article
@@ -149,9 +149,9 @@ export default function ListingCard({
           <div className="absolute bottom-3 left-3 max-w-[86%]">
             {offerLabel ? (
               <div
-                className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/10 bg-black/8 px-2 py-1 shadow-none ${
-                  performanceMode ? "" : "backdrop-blur-[1px]"
-                } ${ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"}`}
+                className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-black/45 px-2.5 py-1.5 shadow-lg ${
+                  performanceMode ? "" : "backdrop-blur-[2px]"
+                } ${ultraCompact ? "max-w-[100px]" : compact ? "max-w-[132px]" : "max-w-[165px]"}`}
               >
                 <span
                   className={`font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
@@ -161,7 +161,7 @@ export default function ListingCard({
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-red-500 drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
+                  className={`font-extrabold leading-none text-red-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)] ${
                     ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
                   }`}
                 >
@@ -170,9 +170,9 @@ export default function ListingCard({
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/20 bg-white/85 font-extrabold shadow-sm ${
+                className={`rounded-xl border border-white/25 bg-white/90 font-extrabold shadow-md ${
                   performanceMode ? "" : "backdrop-blur-md"
-                } ${ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-900`}
+                } ${ultraCompact ? "px-2 py-1 text-[11px]" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-950`}
               >
                 <span>{formatMoney(Number(listing.price) || 0)}</span>
               </div>
@@ -193,15 +193,15 @@ export default function ListingCard({
             {titleLabel}
           </h3>
 
-          <p
-            className={`min-h-[2.5em] text-zinc-600 ${
-              ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
-            } line-clamp-2 leading-relaxed`}
-          >
-            {cardSpecs.length > 0 ? cardSpecs.map((spec) => spec.value).join(" • ") : ""}
-          </p>
+          <div className={`flex min-h-[1.6rem] flex-wrap gap-0.5 ${ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"}`}>
+            {cardSpecs.map((spec) => (
+              <span key={spec.key} className="rounded-full bg-zinc-100 px-1.5 py-px font-semibold leading-tight text-zinc-700">
+                {spec.label}: {spec.value}
+              </span>
+            ))}
+          </div>
 
-          <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
+          <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}
           </div>
         </div>

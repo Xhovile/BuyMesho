@@ -264,11 +264,11 @@ export default function CheckoutModal({
                       </div>
                       <div className="flex items-center justify-between gap-4 text-zinc-600">
                         <span>Fees</span>
-                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.totalFees)}</span>
+                        <span className="font-bold text-zinc-900">{formatPrice(feeBreakdown.buyerFeeAmount)}</span>
                       </div>
                       <div className="flex items-center justify-between gap-4 border-t border-zinc-200 pt-2 text-base font-black text-zinc-900">
                         <span>Total</span>
-                        <span>{formatPrice(feeBreakdown.totalAmount)}</span>
+                        <span>{formatPrice(feeBreakdown.finalTotalAmount)}</span>
                       </div>
                     </div>
                   </div>

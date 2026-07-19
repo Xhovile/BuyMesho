@@ -8,6 +8,7 @@ import FloatingCartButton from "../components/FloatingCartButton";
 import type { HeaderChip } from "../constants";
 
 export type MarketSectionFilters = {
+  search: string;
   selectedUniv: string;
   selectedCat: string;
   selectedSubcategory: string;
@@ -22,6 +23,7 @@ export type MarketSectionFilters = {
 };
 
 export type MarketSectionSetFilters = {
+  setSearch: (v: string) => void;
   setSelectedUniv: (v: string) => void;
   setSelectedCat: (v: string) => void;
   setSelectedSubcategory: (v: string) => void;

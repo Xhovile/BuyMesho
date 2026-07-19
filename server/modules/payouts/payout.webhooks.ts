@@ -142,7 +142,7 @@ async function handlePaychanguWebhookInternal(
       error: "Invalid PayChangu payout webhook signature",
     });
 
-    if (!inserted.inserted && inserted.duplicate) {
+    if (inserted.inserted === false) {
       recordPaymentWebhookDuplicateAttempt(webhookInput, inserted.existingId);
     }
 
@@ -180,7 +180,7 @@ async function handlePaychanguWebhookInternal(
   }
 
   const inserted = insertPaymentWebhookEvent(webhookInput);
-  if (!inserted.inserted) {
+  if (inserted.inserted === false) {
     if (payoutRow) {
       getPaymentDb().prepare(
         `INSERT INTO payout_events (
@@ -326,7 +326,7 @@ async function payoutWebhookRouteHandler(req: Request, res: Response) {
       payload: req.body as Buffer | string | Record<string, unknown>,
     });
 
-    if (!result.ok) {
+    if (result.ok === false) {
       return res.status(401).json({ error: result.error });
     }
 
@@ -340,6 +340,17 @@ async function payoutWebhookRouteHandler(req: Request, res: Response) {
   }
 }
 
+function handlePaychanguWebhook(
+  contextOrSignature: PayoutWebhookContext | string | undefined,
+  payload?: PayoutWebhookContext["payload"],
+): Promise<PayoutWebhookResponse> {
+  if (typeof contextOrSignature !== "object") {
+    return handlePaychanguWebhookInternal({ signature: contextOrSignature, payload: payload ?? "" });
+  }
+
+  return handlePaychanguWebhookInternal(contextOrSignature);
+}
+
 export const payoutWebhookHandler = Object.assign(payoutWebhookRouteHandler, {
-  handlePaychanguWebhook: handlePaychanguWebhookInternal,
+  handlePaychanguWebhook,
 });
