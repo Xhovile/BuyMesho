@@ -33,7 +33,15 @@ const REDUNDANT_FIELD_KEY_PATTERNS = [
   /(^|_)(university|campus)(_|$)/i,
 ];
 
-const DECISION_FIELD_TYPES = new Set<ListingSpecField["type"]>(["select", "multiselect", "boolean", "text", "number"]);
+const CONDITION_FIELD_KEY_PATTERNS = [/condition|state|grade|quality/i];
+
+const DECISION_FIELD_TYPES = new Set<ListingSpecField["type"]>([
+  "select",
+  "multiselect",
+  "boolean",
+  "text",
+  "number",
+]);
 
 const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
   [/ram|memory/i, 120],
@@ -41,99 +49,14 @@ const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
   [/processor|cpu|chip|soc|snapdragon|mediatek|exynos|intel|ryzen|core/i, 115],
   [/battery|mah|health/i, 110],
   [/screen|display|refresh|hz|inch/i, 105],
-  [/condition|state|grade|quality/i, 100],
   [/color|size|fit|material|fabric|flavor|portion|type/i, 90],
   [/warranty|expiry|validity|delivery|duration|location/i, 85],
 ];
 
-const CATEGORY_PRIORITY: Record<string, string[]> = {
-  "Electronics & Gadgets": [
-    "model",
-    "processor",
-    "ram",
-    "storage",
-    "storage_capacity",
-    "storage_type",
-    "screen_size",
-    "refresh_rate",
-    "chipset",
-    "battery_health_percentage",
-    "battery_health",
-    "battery_capacity",
-    "network_type",
-    "body_condition",
-    "display_condition",
-    "condition",
-  ],
-  "Fashion & Clothing": [
-    "size",
-    "color",
-    "material",
-    "fit_type",
-    "gender",
-    "sleeve_length",
-    "neckline",
-    "collar_type",
-    "closure_type",
-    "shoe_size",
-    "body_condition",
-    "condition",
-  ],
-  "Food & Snacks": [
-    "portion_size",
-    "ingredients_summary",
-    "main_base",
-    "protein_type",
-    "fast_food_type",
-    "breakfast_type",
-    "traditional_meal_type",
-    "flavor",
-    "taste",
-    "availability",
-    "delivery_option",
-    "freshness_status",
-    "prepared_on",
-    "best_consumed_by",
-  ],
-  "Academic Services": [
-    "subject_areas",
-    "study_level",
-    "service_scope",
-    "delivery_mode",
-    "meeting_location",
-    "availability",
-    "session_length_minutes",
-    "booking_notice",
-    "guidance_type",
-    "coaching_focus",
-  ],
-  "Beauty & Personal Care": [
-    "service_location",
-    "availability",
-    "duration_estimate",
-    "provider_experience",
-    "braiding_type",
-    "cut_type",
-    "nail_service_type",
-    "makeup_service_type",
-    "facial_service_type",
-    "brand",
-    "size_value",
-    "size_unit",
-    "skin_type",
-    "product_condition",
-    "expiry_or_best_before",
-    "cleanser_type",
-    "moisturizer_type",
-    "treatment_type",
-    "sunscreen_type",
-  ],
-};
-
 const ITEM_PRIORITY: Record<string, string[]> = {
-  Smartphone: ["model", "ram", "storage", "network_type", "refresh_rate", "chipset", "screen_size", "battery_health_percentage", "body_condition"],
-  Laptop: ["model", "processor", "ram", "storage_capacity", "storage_type", "screen_size", "refresh_rate", "body_condition", "display_condition"],
-  Tablet: ["model", "storage", "ram", "screen_size", "network_type", "body_condition"],
+  Smartphone: ["brand", "model", "ram", "storage", "network_type", "refresh_rate", "chipset", "screen_size", "battery_health_percentage", "body_condition"],
+  Laptop: ["brand", "model", "processor", "ram", "storage_capacity", "storage_type", "screen_size", "refresh_rate", "body_condition", "display_condition"],
+  Tablet: ["brand", "model", "storage", "ram", "screen_size", "network_type", "body_condition"],
 
   "One-on-One Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes"],
   "Group Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes", "max_group_size"],
@@ -166,34 +89,21 @@ function toFiniteNumber(value: unknown): number | null {
 }
 
 function normalizeComparableText(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gi, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return value.toLowerCase().replace(/[^a-z0-9]+/gi, " ").replace(/\s+/g, " ").trim();
 }
 
 function formatSpecValue(value: ListingSpecValue): string | null {
   if (value === null || value === undefined) return null;
 
-  if (typeof value === "string") {
-    return toTrimmedString(value);
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value.toLocaleString() : null;
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
+  if (typeof value === "string") return toTrimmedString(value);
+  if (typeof value === "number") return Number.isFinite(value) ? value.toLocaleString() : null;
+  if (typeof value === "boolean") return value ? "Yes" : "No";
 
   if (Array.isArray(value)) {
     const cleaned = value
       .filter((entry): entry is string => typeof entry === "string")
       .map((entry) => entry.trim())
       .filter((entry) => entry.length > 0);
-
     return cleaned.length > 0 ? cleaned.join(", ") : null;
   }
 
@@ -201,14 +111,10 @@ function formatSpecValue(value: ListingSpecValue): string | null {
 }
 
 function getSchemaFields(listing: ListingCardData): ListingSpecField[] {
-  if (!listing.category || !listing.subcategory || !listing.item_type) {
-    return [];
-  }
+  if (!listing.category || !listing.subcategory || !listing.item_type) return [];
 
   const schema = getListingSchema(listing.category, listing.subcategory, listing.item_type);
-  if (!schema) {
-    return [];
-  }
+  if (!schema) return [];
 
   const fields = [
     ...getBasicListingFields(listing.category, listing.subcategory, listing.item_type),
@@ -223,44 +129,25 @@ function getSchemaFields(listing: ListingCardData): ListingSpecField[] {
   });
 }
 
-function getFieldPriority(field: ListingSpecField, category?: string | null, itemType?: string | null): number {
+function getFieldPriority(field: ListingSpecField, itemType?: string | null): number {
   const key = `${field.key} ${field.label}`;
   let score = field.advanced ? 0 : 20;
 
-  if (field.required) {
-    score += 300;
-  }
-
-  if (DECISION_FIELD_TYPES.has(field.type)) {
-    score += 60;
-  }
+  if (field.required) score += 300;
+  if (DECISION_FIELD_TYPES.has(field.type)) score += 60;
 
   for (const [pattern, weight] of HIGH_VALUE_FIELD_KEY_PATTERNS) {
-    if (pattern.test(key)) {
-      score += weight;
-    }
-  }
-
-  if (category) {
-    const keys = CATEGORY_PRIORITY[category] ?? [];
-    const categoryIndex = keys.indexOf(field.key);
-    if (categoryIndex >= 0) {
-      score += 200 - categoryIndex * 5;
-    }
+    if (pattern.test(key)) score += weight;
   }
 
   if (itemType) {
     const keys = ITEM_PRIORITY[itemType] ?? [];
     const itemIndex = keys.indexOf(field.key);
-    if (itemIndex >= 0) {
-      score += 400 - itemIndex * 10;
-    }
+    if (itemIndex >= 0) score += 400 - itemIndex * 10;
   }
 
   for (const pattern of REDUNDANT_FIELD_KEY_PATTERNS) {
-    if (pattern.test(key)) {
-      score -= 100;
-    }
+    if (pattern.test(key)) score -= 100;
   }
 
   return score;
@@ -282,12 +169,9 @@ function isRedundantValue(value: string, title: string | null): boolean {
 function collectPriorityKeys(listing: ListingCardData): string[] {
   const keys: string[] = [];
   const itemKeys = listing.item_type ? ITEM_PRIORITY[listing.item_type] ?? [] : [];
-  const categoryKeys = listing.category ? CATEGORY_PRIORITY[listing.category] ?? [] : [];
 
-  for (const key of [...itemKeys, ...categoryKeys]) {
-    if (!keys.includes(key)) {
-      keys.push(key);
-    }
+  for (const key of itemKeys) {
+    if (!keys.includes(key)) keys.push(key);
   }
 
   return keys;
@@ -296,9 +180,9 @@ function collectPriorityKeys(listing: ListingCardData): string[] {
 function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCardSpec[] {
   const specValues = listing.spec_values ?? {};
   const title = listing.title ?? listing.name ?? null;
-  const fields = getSchemaFields(listing).slice().sort((a, b) => {
-    return getFieldPriority(b, listing.category, listing.item_type) - getFieldPriority(a, listing.category, listing.item_type);
-  });
+  const fields = getSchemaFields(listing)
+    .slice()
+    .sort((a, b) => getFieldPriority(b, listing.item_type) - getFieldPriority(a, listing.item_type));
 
   const specs: ListingCardSpec[] = [];
   const seenValues = new Set<string>();
@@ -307,6 +191,7 @@ function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCa
   const addField = (field: ListingSpecField) => {
     if (specs.length >= limit) return;
     if (!DECISION_FIELD_TYPES.has(field.type)) return;
+    if (CONDITION_FIELD_KEY_PATTERNS.some((pattern) => pattern.test(field.key))) return;
 
     const value = formatSpecValue(specValues[field.key]);
     if (!value) return;
@@ -320,18 +205,12 @@ function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCa
     specs.push({ key: field.key, label: field.label, value });
   };
 
-  for (const field of fields.filter((field) => field.required)) {
-    addField(field);
-  }
-
+  for (const field of fields.filter((field) => field.required)) addField(field);
   for (const key of priorityKeys) {
     const field = fields.find((entry) => entry.key === key);
     if (field) addField(field);
   }
-
-  for (const field of fields) {
-    addField(field);
-  }
+  for (const field of fields) addField(field);
 
   return specs;
 }
@@ -360,9 +239,6 @@ export function getListingAvailabilityLabel(
   const safeSoldQuantity = Math.max(0, toFiniteNumber(soldQuantity) ?? 0);
   const availableQuantity = Math.max(0, safeQuantity - safeSoldQuantity);
 
-  if (availableQuantity <= 0) {
-    return "Sold out";
-  }
-
+  if (availableQuantity <= 0) return "Sold out";
   return `${availableQuantity.toLocaleString()} left`;
 }
