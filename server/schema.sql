@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS listings (
   listing_mode TEXT NOT NULL DEFAULT 'normal',
   deal_expires_at TEXT,
   is_wholesale INTEGER NOT NULL DEFAULT 0,
+  pack_size INTEGER,
+  bulk_units TEXT,
   can_sell_individually INTEGER,
   description TEXT,
   category TEXT NOT NULL,
