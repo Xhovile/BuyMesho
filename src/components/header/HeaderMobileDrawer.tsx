@@ -3,10 +3,10 @@ import {
   Bookmark,
   CreditCard,
   EyeOff,
-  House,
   LogOut,
   MessageSquareText,
   Package,
+  Plus,
   Settings,
   ShieldCheck,
   Store,
@@ -27,7 +27,7 @@ type HeaderMobileDrawerProps = {
   unreadCount: number;
   primaryDrawerLabel: string;
   onClose: () => void;
-  onPrimaryClick: () => void;
+  onListItemClick: () => void;
   onBecomeSellerClick: () => void;
   onMyListingsClick: () => void;
   onMessagesClick: () => void;
@@ -51,7 +51,7 @@ export default function HeaderMobileDrawer({
   unreadCount,
   primaryDrawerLabel,
   onClose,
-  onPrimaryClick,
+  onListItemClick,
   onBecomeSellerClick,
   onMyListingsClick,
   onMessagesClick,
@@ -114,11 +114,11 @@ export default function HeaderMobileDrawer({
               {isLoggedIn ? (
                 <>
                   <HeaderMenuItem
-                    label={primaryDrawerLabel}
+                    label="List Item"
                     icon={
-                      <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                        {primaryDrawerLabel === "Home" ? (
-                          <House className="w-4 h-4 text-white" />
+                      <span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">
+                        {isSeller ? (
+                          <Plus className="w-4 h-4 text-white" />
                         ) : (
                           <Store className="w-4 h-4 text-white" />
                         )}
@@ -126,7 +126,7 @@ export default function HeaderMobileDrawer({
                     }
                     onClick={() => {
                       onClose();
-                      onPrimaryClick();
+                      onListItemClick();
                     }}
                     className={navButtonClass}
                   />
@@ -293,11 +293,11 @@ export default function HeaderMobileDrawer({
               ) : (
                 <>
                   <HeaderMenuItem
-                    label={primaryDrawerLabel}
+                    label="List Item"
                     icon={
-                      <span className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center flex-shrink-0">
-                        {primaryDrawerLabel === "Home" ? (
-                          <House className="w-4 h-4 text-white" />
+                      <span className="w-8 h-8 rounded-full bg-zinc-900 flex items-center justify-center flex-shrink-0">
+                        {isSeller ? (
+                          <Plus className="w-4 h-4 text-white" />
                         ) : (
                           <Store className="w-4 h-4 text-white" />
                         )}
@@ -305,7 +305,7 @@ export default function HeaderMobileDrawer({
                     }
                     onClick={() => {
                       onClose();
-                      onPrimaryClick();
+                      onListItemClick();
                     }}
                     className={navButtonClass}
                   />
