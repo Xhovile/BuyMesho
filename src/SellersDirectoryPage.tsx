@@ -14,7 +14,7 @@ import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils"
 import type { Listing, RatingSummary } from "./types";
 
 type SellerDirectoryProfile = {
-  uid: string;
+  uid?: string;
   email?: string;
   business_name?: string | null;
   business_logo?: string | null;
@@ -100,6 +100,22 @@ function RatingStars({ rating }: { rating: number }) {
   );
 }
 
+async function fetchSellerProfile(sellerUid: string) {
+  try {
+    return (await apiFetch(`/api/sellers/${sellerUid}`)) as SellerDirectoryProfile;
+  } catch {
+    return (await apiFetch(`/api/users/${sellerUid}`)) as SellerDirectoryProfile;
+  }
+}
+
+async function fetchSellerRatingSummary(sellerUid: string) {
+  try {
+    return (await apiFetch(`/api/sellers/${sellerUid}/rating-summary`)) as RatingSummary;
+  } catch {
+    return (await apiFetch(`/api/users/${sellerUid}/rating-summary`)) as RatingSummary;
+  }
+}
+
 export default function SellersDirectoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -141,33 +157,28 @@ export default function SellersDirectoryPage() {
         const sellerEntries = await Promise.all(
           Array.from(sellerBuckets.entries()).map(async ([uid, bucket]) => {
             const [profileResult, ratingResult] = await Promise.allSettled([
-              apiFetch(`/api/users/${uid}`),
-              apiFetch(`/api/users/${uid}/rating-summary`),
+              fetchSellerProfile(uid),
+              fetchSellerRatingSummary(uid),
             ]);
 
-            const profile =
-              profileResult.status === "fulfilled" && profileResult.value
-                ? (profileResult.value as SellerDirectoryProfile)
-                : null;
+            const profile = profileResult.status === "fulfilled" ? profileResult.value : null;
             const ratingSummary =
-              ratingResult.status === "fulfilled" && ratingResult.value
+              ratingResult.status === "fulfilled"
                 ? normalizeRatingSummary(ratingResult.value as RatingSummary)
                 : normalizeRatingSummary(null);
 
             const sellerName =
               profile?.business_name?.trim() ||
-              bucket.representativeListing.business_name?.trim() ||
               profile?.email?.trim() ||
+              bucket.representativeListing.business_name?.trim() ||
               bucket.representativeListing.name?.trim() ||
               "Seller";
-
-            const description = profile?.bio?.trim() ?? "";
 
             return {
               uid,
               sellerName,
               logoUrl: profile?.business_logo || bucket.representativeListing.business_logo || null,
-              description,
+              description: profile?.bio?.trim() || "",
               rating: ratingSummary.averageRating,
               ratingCount: ratingSummary.ratingCount,
               joinedAt: profile?.join_date || bucket.representativeListing.created_at || null,
@@ -259,6 +270,10 @@ export default function SellersDirectoryPage() {
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
                 Approved sellers.
               </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                Sellers appear here after approval and public sync. Each card shows the seller logo,
+                a short description, rating, joining date, and how many listings they have.
+              </p>
             </div>
 
             <div className="w-full max-w-md">
@@ -311,11 +326,7 @@ export default function SellersDirectoryPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-zinc-100">
                       {card.logoUrl ? (
-                        <img
-                          src={card.logoUrl}
-                          alt="Seller logo"
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={card.logoUrl} alt="Seller logo" className="h-full w-full object-cover" />
                       ) : (
                         <div className="text-sm font-black tracking-tight text-zinc-500">
                           {fallbackInitials(card.uid, card.description)}
@@ -335,9 +346,7 @@ export default function SellersDirectoryPage() {
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-xs font-bold text-zinc-500">
-                        Joined {formatDate(card.joinedAt)}
-                      </p>
+                      <p className="mt-1 text-xs font-bold text-zinc-500">Joined {formatDate(card.joinedAt)}</p>
                     </div>
                   </div>
 
