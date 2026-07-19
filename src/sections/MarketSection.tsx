@@ -263,7 +263,7 @@ export default function MarketSection({
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid justify-start grid-cols-[repeat(auto-fit,160px)] gap-2">
+          <div className="grid justify-start grid-cols-[repeat(auto-fit,160px)] gap-4">
             {visibleListings.map((listing) => (
               <ListingCard
                 key={listing.id}
