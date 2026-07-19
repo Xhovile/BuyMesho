@@ -47,7 +47,6 @@ export default function ListingCard({
   isLoggedIn,
   compact = false,
   ultraCompact = false,
-  clickable = false,
   showActionsMenu = true,
   performanceMode = false,
   onOpenDetails,
@@ -85,20 +84,17 @@ export default function ListingCard({
 
   return (
     <article
-      className={`group relative w-full overflow-hidden ${cardSize} ${clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40" : ""}`}
-      onClick={clickable ? handleOpenDetails : undefined}
-      onKeyDown={
-        clickable
-          ? (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleOpenDetails();
-              }
-            }
-          : undefined
-      }
-      tabIndex={clickable ? 0 : undefined}
-      role={clickable ? "button" : undefined}
+      className={`group relative w-full overflow-hidden ${cardSize} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      onClick={handleOpenDetails}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          handleOpenDetails();
+        }
+      }}
+      tabIndex={0}
+      role="button"
+      aria-label={`Open listing details for ${titleLabel}`}
     >
       <div className="relative overflow-hidden">
         <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${imageAspect}`}>
@@ -132,38 +128,40 @@ export default function ListingCard({
           ) : null}
 
           {showActionsMenu ? (
-            <ListingActionsMenu
-              listing={listing}
-              currentUid={currentUid}
-              isLoggedIn={isLoggedIn}
-              isSaved={isSaved}
-              onReport={onReport}
-              onDelete={onDelete}
-              onEdit={onEdit}
-              onHideSeller={onHideSeller}
-              onHideListing={onHideListing}
-              onToggleStatus={onToggleStatus}
-              onRecordSale={onRecordSale}
-              onRestock={onRestock}
-            />
+            <div onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+              <ListingActionsMenu
+                listing={listing}
+                currentUid={currentUid}
+                isLoggedIn={isLoggedIn}
+                isSaved={isSaved}
+                onReport={onReport}
+                onDelete={onDelete}
+                onEdit={onEdit}
+                onHideSeller={onHideSeller}
+                onHideListing={onHideListing}
+                onToggleStatus={onToggleStatus}
+                onRecordSale={onRecordSale}
+                onRestock={onRestock}
+              />
+            </div>
           ) : null}
 
           <div className="absolute bottom-3 left-3 max-w-[86%]">
             {offerLabel ? (
               <div
-                className={`inline-flex flex-col gap-0.5 rounded-xl bg-white/92 px-2 py-1 shadow-sm ${
-                  performanceMode ? "" : "backdrop-blur-md"
+                className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-white/55 px-2 py-1 shadow-sm ${
+                  performanceMode ? "" : "backdrop-blur-sm"
                 } ${ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"}`}
               >
                 <span
-                  className={`font-black uppercase tracking-[0.18em] text-red-600 ${
+                  className={`font-black uppercase tracking-[0.18em] text-red-700 ${
                     ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
                   }`}
                 >
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-red-700 ${
+                  className={`font-extrabold leading-none text-red-800 ${
                     ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
                   }`}
                 >
@@ -172,7 +170,7 @@ export default function ListingCard({
               </div>
             ) : (
               <div
-                className={`rounded-xl border border-white/20 bg-white/92 font-extrabold shadow-sm ${
+                className={`rounded-xl border border-white/20 bg-white/85 font-extrabold shadow-sm ${
                   performanceMode ? "" : "backdrop-blur-md"
                 } ${ultraCompact ? "px-2 py-1 text-xs" : compact ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-sm"} text-zinc-900`}
               >
@@ -200,7 +198,7 @@ export default function ListingCard({
               ultraCompact ? "text-[10px]" : compact ? "text-[11px]" : "text-xs"
             } line-clamp-2 leading-relaxed`}
           >
-            {cardSpecs.length > 0 ? cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ") : ""}
+            {cardSpecs.length > 0 ? cardSpecs.map((spec) => spec.value).join(" • ") : ""}
           </p>
 
           <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
