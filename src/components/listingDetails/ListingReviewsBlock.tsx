@@ -82,12 +82,8 @@ export default function ListingReviewsBlock({
   const showComposer = !viewerReview || isEditingOwnReview;
 
   return (
-    <div className="space-y-6 border-t border-zinc-200 pt-6">
-      <SectionHeading
-        eyebrow="Reviews"
-        title="Trust and feedback"
-        description="Buyers can rate the listing, add an optional written review, and later see the most useful feedback first."
-      />
+    <div className="space-y-5 border-t border-zinc-200 pt-6">
+      <SectionHeading eyebrow="Reviews" title="Ratings & reviews" />
 
       {loading ? (
         <div className="flex items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
@@ -97,7 +93,7 @@ export default function ListingReviewsBlock({
       ) : error ? (
         <div className="rounded-[2rem] border border-red-200 bg-red-50 px-5 py-4 text-sm font-medium text-red-700">{error}</div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           <ListingReviewSummaryView summary={summary} />
 
           {showComposer ? (
@@ -112,7 +108,9 @@ export default function ListingReviewsBlock({
           ) : (
             <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
-              <p className="mt-2 text-sm text-zinc-500">Your review is pinned at the top. Tap <span className="font-bold text-zinc-900">Edit</span> on the review card to update it.</p>
+              <p className="mt-2 text-sm text-zinc-500">
+                Your review is pinned at the top. Tap <span className="font-bold text-zinc-900">Edit</span> on the review card to update it.
+              </p>
             </div>
           )}
 
