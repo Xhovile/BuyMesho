@@ -209,4 +209,207 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       return res.status(500).json({ error: "Failed to create listing" });
     }
   });
+
+  app.put("/api/listings/:id", requireAuth, (req, res) => {
+    const listingId = Number(req.params.id);
+    if (!Number.isInteger(listingId)) {
+      return res.status(400).json({ error: "Invalid listing id" });
+    }
+
+    const uid = req.user!.uid;
+    const existingListing = db
+      .prepare(
+        `
+          SELECT id, seller_uid
+          FROM listings
+          WHERE id = ? AND deleted_at IS NULL
+          LIMIT 1
+        `
+      )
+      .get(listingId) as { id: number; seller_uid: string } | undefined;
+
+    if (!existingListing) {
+      return res.status(404).json({ error: "Listing not found" });
+    }
+
+    if (existingListing.seller_uid !== uid) {
+      return res.status(403).json({ error: "This listing does not belong to your account" });
+    }
+
+    const seller = db
+      .prepare(
+        `
+          SELECT uid, is_seller
+          FROM sellers
+          WHERE uid = ?
+          LIMIT 1
+        `
+      )
+      .get(uid) as { uid: string; is_seller: number } | undefined;
+
+    if (!seller || Number(seller.is_seller) !== 1) {
+      return res.status(404).json({ error: "Seller profile not found" });
+    }
+
+    try {
+      const body = req.body ?? {};
+      const name = normalizeString(body.name);
+      const description = normalizeString(body.description);
+      const category = normalizeString(body.category);
+      const subcategory = normalizeString(body.subcategory) || null;
+      const itemType = normalizeString(body.item_type) || null;
+      const university = normalizeString(body.university);
+      const status = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
+      const conditionRaw = normalizeString(body.condition).toLowerCase();
+      const condition =
+        conditionRaw === "new" || conditionRaw === "refurbished" ? conditionRaw : "used";
+      const photos = normalizeStringArray(body.photos, 5);
+      const videoUrl = normalizeString(body.video_url) || null;
+      const quantity = Number(body.quantity);
+      const soldQuantity = Number(body.sold_quantity);
+      const specValues =
+        body.spec_values && typeof body.spec_values === "object" && !Array.isArray(body.spec_values)
+          ? body.spec_values
+          : {};
+
+      if (!isMeaningfulTitle(name)) {
+        return res.status(400).json({
+          error: "Please enter a clear listing title with at least 3 letters or numbers.",
+        });
+      }
+
+      if (description.length < 10) {
+        return res.status(400).json({
+          error: "Please enter a product description of at least 10 characters.",
+        });
+      }
+
+      if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
+        return res.status(400).json({ error: "Invalid category" });
+      }
+
+      if (!UNIVERSITIES.includes(university as (typeof UNIVERSITIES)[number])) {
+        return res.status(400).json({ error: "Invalid university" });
+      }
+
+      if (!isValidListingHierarchy(category, subcategory, itemType)) {
+        return res.status(400).json({ error: "Invalid listing details" });
+      }
+
+      if (!Number.isFinite(Number(body.price)) || Number(body.price) <= 0) {
+        return res.status(400).json({ error: "Please enter a valid price greater than 0." });
+      }
+
+      if (photos.length < 1) {
+        return res.status(400).json({ error: "Add at least 1 photo." });
+      }
+
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return res.status(400).json({ error: "Total quantity must be a whole number of at least 1." });
+      }
+
+      if (!Number.isInteger(soldQuantity) || soldQuantity < 0) {
+        return res.status(400).json({ error: "Sold quantity cannot be negative." });
+      }
+
+      if (soldQuantity > quantity) {
+        return res.status(400).json({ error: "Sold quantity cannot be greater than total quantity." });
+      }
+
+      const pricing = normalizeListingPricing(body);
+      if (pricing.listing_mode === "deal" && pricing.original_price === null) {
+        return res.status(400).json({ error: "Original price must be higher than current price." });
+      }
+
+      if (pricing.listing_mode === "wholesale") {
+        if (pricing.pack_size === null || !Number.isInteger(pricing.pack_size) || pricing.pack_size < 1) {
+          return res.status(400).json({ error: "Pack size must be a whole number of at least 1." });
+        }
+
+        if (!pricing.bulk_units) {
+          return res.status(400).json({ error: "Bulk units are required for wholesale listings." });
+        }
+
+        if (pricing.can_sell_individually === 1 && (pricing.single_item_price === null || pricing.single_item_price <= 0)) {
+          return res.status(400).json({ error: "Single item price must be greater than 0." });
+        }
+      }
+
+      db.prepare(
+        `
+          UPDATE listings
+          SET
+            name = ?,
+            price = ?,
+            original_price = ?,
+            discount_percent = ?,
+            deal_label = ?,
+            listing_mode = ?,
+            deal_expires_at = ?,
+            is_wholesale = ?,
+            can_sell_individually = ?,
+            description = ?,
+            category = ?,
+            subcategory = ?,
+            item_type = ?,
+            spec_values = ?,
+            university = ?,
+            photos = ?,
+            video_url = ?,
+            status = ?,
+            condition = ?,
+            quantity = ?,
+            sold_quantity = ?,
+            single_item_price = ?,
+            updated_at = CURRENT_TIMESTAMP
+          WHERE id = ? AND seller_uid = ?
+        `
+      ).run(
+        name,
+        pricing.price,
+        pricing.original_price,
+        pricing.discount_percent,
+        pricing.deal_label,
+        pricing.listing_mode,
+        pricing.deal_expires_at,
+        pricing.is_wholesale,
+        pricing.can_sell_individually,
+        description,
+        category,
+        subcategory,
+        itemType,
+        JSON.stringify(specValues),
+        university,
+        JSON.stringify(photos),
+        videoUrl,
+        status,
+        condition,
+        quantity,
+        soldQuantity,
+        pricing.single_item_price,
+        listingId,
+        uid
+      );
+
+      const row = db
+        .prepare(
+          `
+            SELECT l.*, s.business_name, s.business_logo, s.is_verified
+            FROM listings l
+            JOIN sellers s ON l.seller_uid = s.uid
+            WHERE l.id = ?
+            LIMIT 1
+          `
+        )
+        .get(listingId) as any;
+
+      return res.json({
+        success: true,
+        listing: row ? serializeListingRow(row) : null,
+      });
+    } catch (error) {
+      console.error("Failed to update listing", error);
+      return res.status(500).json({ error: "Failed to update listing" });
+    }
+  });
 }
