@@ -447,7 +447,7 @@ export default function CategoryPage() {
             </div>
           ) : null}
 
-          <div className="grid grid-cols-2 gap-x-0.5 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <div className="grid grid-cols-2 gap-x-0 gap-y-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {loading ? (
               <div className="col-span-full rounded-3xl border border-zinc-200 bg-white p-8 text-sm text-zinc-500 shadow-sm flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin" />
