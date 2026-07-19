@@ -17,9 +17,19 @@ const PROFILES: Record<string, DisplayFieldProfile> = {
     { key: "brand", label: "Brand" },
   ],
   "Power & Internet": [
-    { key: "power_output", label: "Power", valueKeys: ["power_output", "capacity"] },
-    { key: "network_support", label: "Network", valueKeys: ["network_support", "compatible_with"] },
-    { key: "charger_type", label: "Charger", valueKeys: ["charger_type", "input_port_type"] },
+    { key: "brand", label: "Brand" },
+    { key: "capacity", label: "Capacity" },
+    { key: "input_port_type", label: "Port Type" },
+  ],
+  "Power & Internet::Power Bank": [
+    { key: "brand", label: "Brand" },
+    { key: "capacity", label: "Capacity" },
+    { key: "input_port_type", label: "Port Type" },
+  ],
+  "Power & Internet::Charger / Charging Adapter": [
+    { key: "brand", label: "Brand" },
+    { key: "charger_type", label: "Charger Type" },
+    { key: "compatible_with", label: "Compatible With" },
   ],
   "Storage & Accessories": [
     { key: "storage_type", label: "Type", valueKeys: ["storage_type", "item_type"] },
@@ -33,7 +43,21 @@ const PROFILES: Record<string, DisplayFieldProfile> = {
   ],
 };
 
+function getPowerProfile(listing: ListingCardData): DisplayFieldProfile | null {
+  if (listing.subcategory !== "Power & Internet") return null;
+
+  if (listing.item_type === "Power Bank") {
+    return PROFILES["Power & Internet::Power Bank"];
+  }
+
+  if (listing.item_type === "Charger / Charging Adapter") {
+    return PROFILES["Power & Internet::Charger / Charging Adapter"];
+  }
+
+  return PROFILES["Power & Internet"];
+}
+
 export function getElectronicsCardSpecs(listing: ListingCardData): ListingCardSpec[] | null {
-  const profile = listing.subcategory ? PROFILES[listing.subcategory] : null;
+  const profile = getPowerProfile(listing) ?? (listing.subcategory ? PROFILES[listing.subcategory] : null);
   return profile ? buildSpecsFromProfile(listing, profile) : null;
 }
