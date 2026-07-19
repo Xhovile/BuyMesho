@@ -56,6 +56,5 @@ export function getListingAvailabilityLabel(
   const safeSoldQuantity = Math.max(0, toFiniteNumber(soldQuantity) ?? 0);
   const availableQuantity = Math.max(0, safeQuantity - safeSoldQuantity);
   if (availableQuantity <= 0) return "Sold out";
-  if (availableQuantity <= 3) return `${availableQuantity.toLocaleString()} left`;
-  return null;
+  return `${availableQuantity.toLocaleString()} Left`;
 }
