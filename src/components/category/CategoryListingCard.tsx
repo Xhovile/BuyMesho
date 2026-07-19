@@ -99,7 +99,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         </div>
 
         <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
-          {[conditionLabel, availabilityLabel].filter(Boolean).join(" • ")}
+          {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
         </div>
       </div>
     </button>
