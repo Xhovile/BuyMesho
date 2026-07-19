@@ -22,6 +22,7 @@ export type DisplayFieldProfile = Array<{
   key: string;
   label: string;
   valueKeys?: string[];
+  joinWith?: string;
 }>;
 
 export function toTrimmedString(value: unknown): string | null {
@@ -62,6 +63,26 @@ export function buildSpecsFromProfile(listing: ListingCardData, profile: Display
 
   for (const field of profile) {
     const keys = field.valueKeys ?? [field.key];
+
+    if (field.joinWith) {
+      const parts = keys
+        .map((key) => {
+          const candidate = key === "item_type" ? listing.item_type : values[key];
+          return formatSpecValue(candidate);
+        })
+        .filter((part): part is string => Boolean(part));
+
+      if (parts.length === 0) continue;
+
+      const value = parts.join(field.joinWith);
+      const normalizedValue = normalizeComparableText(value);
+      if (!normalizedValue || seenValues.has(normalizedValue)) continue;
+
+      seenValues.add(normalizedValue);
+      specs.push({ key: field.key, label: field.label, value });
+      continue;
+    }
+
     let rawValue: ListingSpecValue | undefined;
 
     for (const key of keys) {
