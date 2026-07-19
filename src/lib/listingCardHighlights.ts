@@ -1,9 +1,4 @@
-import {
-  getAdvancedListingFields,
-  getBasicListingFields,
-  getListingSchema,
-  type ListingSpecField,
-} from "../listingSchemas";
+import { getAdvancedListingFields, getBasicListingFields, getListingSchema, type ListingSpecField } from "../listingSchemas";
 
 export type ListingCardSpec = {
   key: string;
@@ -25,56 +20,8 @@ type ListingCardData = {
   sold_quantity?: number | string | null;
 };
 
-const REDUNDANT_FIELD_KEY_PATTERNS = [
-  /(^|_)(brand|make|manufacturer)(_|$)/i,
-  /(^|_)(name|title)(_|$)/i,
-  /(^|_)(product_name|item_name)(_|$)/i,
-  /(^|_)(seller|vendor|store)(_|$)/i,
-  /(^|_)(university|campus)(_|$)/i,
-];
-
-const CONDITION_FIELD_KEY_PATTERNS = [/condition|state|grade|quality/i];
-
-const DECISION_FIELD_TYPES = new Set<ListingSpecField["type"]>([
-  "select",
-  "multiselect",
-  "boolean",
-  "text",
-  "number",
-]);
-
-const HIGH_VALUE_FIELD_KEY_PATTERNS: Array<[RegExp, number]> = [
-  [/ram|memory/i, 120],
-  [/storage|internal_storage|disk|ssd|hdd/i, 120],
-  [/processor|cpu|chip|soc|snapdragon|mediatek|exynos|intel|ryzen|core/i, 115],
-  [/battery|mah|health/i, 110],
-  [/screen|display|refresh|hz|inch/i, 105],
-  [/color|size|fit|material|fabric|flavor|portion|type/i, 90],
-  [/warranty|expiry|validity|delivery|duration|location/i, 85],
-];
-
-const ITEM_PRIORITY: Record<string, string[]> = {
-  Smartphone: ["brand", "model", "ram", "storage", "network_type", "refresh_rate", "chipset", "screen_size", "battery_health_percentage", "body_condition"],
-  Laptop: ["brand", "model", "processor", "ram", "storage_capacity", "storage_type", "screen_size", "refresh_rate", "body_condition", "display_condition"],
-  Tablet: ["brand", "model", "storage", "ram", "screen_size", "network_type", "body_condition"],
-
-  "One-on-One Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes"],
-  "Group Tutoring": ["subject_areas", "study_level", "delivery_mode", "meeting_location", "availability", "session_length_minutes", "max_group_size"],
-  "Exam Revision Sessions": ["subject_areas", "study_level", "delivery_mode", "availability", "service_scope"],
-  "Assignment Guidance": ["subject_areas", "study_level", "guidance_type", "delivery_mode", "availability", "service_scope"],
-  "Study Coaching": ["coaching_focus", "study_level", "delivery_mode", "availability", "session_length_minutes"],
-
-  "Hair Braiding": ["braiding_type", "service_location", "availability", "duration_estimate", "provider_experience", "hair_included"],
-  "Barber Cuts": ["cut_type", "service_location", "availability", "duration_estimate", "provider_experience", "beard_service_available"],
-  "Nail Services": ["nail_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "designs_available"],
-  "Makeup Services": ["makeup_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "lashes_included"],
-  "Facial & Skincare Services": ["facial_service_type", "service_location", "availability", "duration_estimate", "provider_experience", "products_included"],
-
-  Cleansers: ["brand", "size_value", "size_unit", "skin_type", "cleanser_type", "product_condition", "expiry_or_best_before"],
-  Moisturizers: ["brand", "size_value", "size_unit", "skin_type", "moisturizer_type", "product_condition", "expiry_or_best_before"],
-  "Serums & Treatments": ["brand", "size_value", "size_unit", "skin_type", "treatment_type", "product_condition", "expiry_or_best_before"],
-  Sunscreen: ["brand", "size_value", "size_unit", "skin_type", "product_condition", "expiry_or_best_before"],
-};
+const CONDITION_KEY_PATTERN = /(^|_)(condition|state|grade|quality)(_|$)/i;
+const REDUNDANT_KEY_PATTERNS = [/^name$/i, /(^|_)(name|title)(_|$)/i, /(^|_)(seller|vendor|store)(_|$)/i];
 
 function toTrimmedString(value: unknown): string | null {
   if (typeof value !== "string") return null;
@@ -94,11 +41,9 @@ function normalizeComparableText(value: string): string {
 
 function formatSpecValue(value: ListingSpecValue): string | null {
   if (value === null || value === undefined) return null;
-
   if (typeof value === "string") return toTrimmedString(value);
   if (typeof value === "number") return Number.isFinite(value) ? value.toLocaleString() : null;
   if (typeof value === "boolean") return value ? "Yes" : "No";
-
   if (Array.isArray(value)) {
     const cleaned = value
       .filter((entry): entry is string => typeof entry === "string")
@@ -106,113 +51,171 @@ function formatSpecValue(value: ListingSpecValue): string | null {
       .filter((entry) => entry.length > 0);
     return cleaned.length > 0 ? cleaned.join(", ") : null;
   }
-
   return null;
 }
 
-function getSchemaFields(listing: ListingCardData): ListingSpecField[] {
-  if (!listing.category || !listing.subcategory || !listing.item_type) return [];
-
-  const schema = getListingSchema(listing.category, listing.subcategory, listing.item_type);
-  if (!schema) return [];
-
-  const fields = [
-    ...getBasicListingFields(listing.category, listing.subcategory, listing.item_type),
-    ...getAdvancedListingFields(listing.category, listing.subcategory, listing.item_type),
-  ];
-
-  const seen = new Set<string>();
-  return fields.filter((field) => {
-    if (seen.has(field.key)) return false;
-    seen.add(field.key);
-    return true;
-  });
-}
-
-function getFieldPriority(field: ListingSpecField, itemType?: string | null): number {
-  const key = `${field.key} ${field.label}`;
-  let score = field.advanced ? 0 : 20;
-
-  if (field.required) score += 300;
-  if (DECISION_FIELD_TYPES.has(field.type)) score += 60;
-
-  for (const [pattern, weight] of HIGH_VALUE_FIELD_KEY_PATTERNS) {
-    if (pattern.test(key)) score += weight;
-  }
-
-  if (itemType) {
-    const keys = ITEM_PRIORITY[itemType] ?? [];
-    const itemIndex = keys.indexOf(field.key);
-    if (itemIndex >= 0) score += 400 - itemIndex * 10;
-  }
-
-  for (const pattern of REDUNDANT_FIELD_KEY_PATTERNS) {
-    if (pattern.test(key)) score -= 100;
-  }
-
-  return score;
+function makeSpec(key: string, label: string, value: ListingSpecValue): ListingCardSpec | null {
+  const formatted = formatSpecValue(value);
+  if (!formatted) return null;
+  return { key, label, value: formatted };
 }
 
 function isRedundantValue(value: string, title: string | null): boolean {
   if (!title) return false;
-
   const normalizedValue = normalizeComparableText(value);
   const normalizedTitle = normalizeComparableText(title);
-
   if (!normalizedValue || !normalizedTitle) return false;
-  if (normalizedValue === normalizedTitle) return true;
-  if (normalizedTitle.includes(normalizedValue)) return true;
-  if (normalizedValue.includes(normalizedTitle)) return true;
-  return false;
+  return (
+    normalizedValue === normalizedTitle ||
+    normalizedTitle.includes(normalizedValue) ||
+    normalizedValue.includes(normalizedTitle)
+  );
 }
 
-function collectPriorityKeys(listing: ListingCardData): string[] {
-  const keys: string[] = [];
-  const itemKeys = listing.item_type ? ITEM_PRIORITY[listing.item_type] ?? [] : [];
+function getListingTitle(listing: ListingCardData): string | null {
+  return listing.title ?? listing.name ?? null;
+}
 
-  for (const key of itemKeys) {
-    if (!keys.includes(key)) keys.push(key);
+function getSpecValues(listing: ListingCardData): Record<string, ListingSpecValue> {
+  return listing.spec_values ?? {};
+}
+
+function getFieldFromSpecValues(
+  listing: ListingCardData,
+  key: string,
+  label: string,
+): ListingCardSpec | null {
+  return makeSpec(key, label, getSpecValues(listing)[key]);
+}
+
+function getExplicitCardSpecs(listing: ListingCardData, limit: number): ListingCardSpec[] | null {
+  const title = getListingTitle(listing);
+  const specs: ListingCardSpec[] = [];
+  const push = (spec: ListingCardSpec | null) => {
+    if (!spec || specs.length >= limit) return;
+    const normalizedValue = normalizeComparableText(spec.value);
+    if (!normalizedValue) return;
+    if (isRedundantValue(spec.value, title)) return;
+    if (specs.some((entry) => normalizeComparableText(entry.value) === normalizedValue)) return;
+    specs.push(spec);
+  };
+
+  const subcategorySpec = listing.subcategory ? { key: "subcategory", label: "Subcategory", value: listing.subcategory } : null;
+
+  if (listing.subcategory === "Computers" || listing.item_type === "Laptop") {
+    push(getFieldFromSpecValues(listing, "brand", "Brand"));
+    push(getFieldFromSpecValues(listing, "ram", "RAM"));
+    push(getFieldFromSpecValues(listing, "operating_system", "Operating System"));
+    return specs.length > 0 ? specs : null;
   }
 
-  return keys;
+  if (listing.subcategory === "Phones & Mobile Devices" || listing.item_type === "Smartphone") {
+    push(getFieldFromSpecValues(listing, "ram", "RAM"));
+    push(getFieldFromSpecValues(listing, "sim_type", "SIM Type"));
+    push(getFieldFromSpecValues(listing, "brand", "Brand"));
+    return specs.length > 0 ? specs : null;
+  }
+
+  if (listing.category === "Food & Snacks") {
+    const values = getSpecValues(listing);
+    push(subcategorySpec);
+
+    const cookingMethod = makeSpec("cooking_method", "Cooking Method", values.cooking_method);
+    const productTypeCandidates: Array<[string, string]> = [
+      ["product_type", "Product Type"],
+      ["fast_food_type", "Product Type"],
+      ["breakfast_type", "Product Type"],
+      ["traditional_meal_type", "Product Type"],
+      ["snack_type", "Product Type"],
+      ["sweet_type", "Product Type"],
+      ["nut_mix_type", "Product Type"],
+      ["pantry_type", "Product Type"],
+      ["oil_type", "Product Type"],
+      ["staple_type", "Product Type"],
+      ["spice_type", "Product Type"],
+    ];
+
+    push(cookingMethod);
+    for (const [key, label] of productTypeCandidates) {
+      const spec = makeSpec(key, label, values[key]);
+      if (spec) {
+        push(spec);
+        break;
+      }
+    }
+
+    return specs.length > 0 ? specs : null;
+  }
+
+  if (listing.subcategory === "Power & Internet") {
+    const values = getSpecValues(listing);
+
+    if (listing.item_type === "Power Bank") {
+      push(makeSpec("capacity", "Power Output", values.capacity));
+      push(makeSpec("compatible_with", "Network Support", values.compatible_with));
+      push(makeSpec("input_port_type", "Charger Type", values.input_port_type));
+      return specs.length > 0 ? specs : null;
+    }
+
+    if (listing.item_type === "Charger / Charging Adapter") {
+      push(makeSpec("charger_type", "Charger Type", values.charger_type));
+      push(makeSpec("brand", "Brand", values.brand));
+      push(makeSpec("model", "Model", values.model));
+      return specs.length > 0 ? specs : null;
+    }
+  }
+
+  return null;
 }
 
-function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCardSpec[] {
-  const specValues = listing.spec_values ?? {};
-  const title = listing.title ?? listing.name ?? null;
-  const fields = getSchemaFields(listing)
-    .slice()
-    .sort((a, b) => getFieldPriority(b, listing.item_type) - getFieldPriority(a, listing.item_type));
+function getGenericCardSpecs(listing: ListingCardData, limit: number): ListingCardSpec[] {
+  const specValues = getSpecValues(listing);
+  const title = getListingTitle(listing);
+  const schemaFields = listing.category && listing.subcategory && listing.item_type
+    ? [
+        ...getBasicListingFields(listing.category, listing.subcategory, listing.item_type),
+        ...getAdvancedListingFields(listing.category, listing.subcategory, listing.item_type),
+      ]
+    : [];
+
+  const fields: ListingSpecField[] = [];
+  const seenKeys = new Set<string>();
+  for (const field of schemaFields) {
+    if (!seenKeys.has(field.key)) {
+      seenKeys.add(field.key);
+      fields.push(field);
+    }
+  }
 
   const specs: ListingCardSpec[] = [];
   const seenValues = new Set<string>();
-  const priorityKeys = collectPriorityKeys(listing);
 
-  const addField = (field: ListingSpecField) => {
-    if (specs.length >= limit) return;
-    if (!DECISION_FIELD_TYPES.has(field.type)) return;
-    if (CONDITION_FIELD_KEY_PATTERNS.some((pattern) => pattern.test(field.key))) return;
+  for (const field of fields) {
+    if (specs.length >= limit) break;
+    if (CONDITION_KEY_PATTERN.test(field.key)) continue;
+    if (REDUNDANT_KEY_PATTERNS.some((pattern) => pattern.test(field.key))) continue;
 
-    const value = formatSpecValue(specValues[field.key]);
-    if (!value) return;
+    const spec = makeSpec(field.key, field.label, specValues[field.key]);
+    if (!spec) continue;
 
-    const normalizedValue = normalizeComparableText(value);
-    if (!normalizedValue) return;
-    if (seenValues.has(normalizedValue)) return;
-    if (isRedundantValue(value, title)) return;
+    const normalizedValue = normalizeComparableText(spec.value);
+    if (!normalizedValue) continue;
+    if (seenValues.has(normalizedValue)) continue;
+    if (isRedundantValue(spec.value, title)) continue;
 
     seenValues.add(normalizedValue);
-    specs.push({ key: field.key, label: field.label, value });
-  };
-
-  for (const field of fields.filter((field) => field.required)) addField(field);
-  for (const key of priorityKeys) {
-    const field = fields.find((entry) => entry.key === key);
-    if (field) addField(field);
+    specs.push(spec);
   }
-  for (const field of fields) addField(field);
 
   return specs;
+}
+
+function collectListingCardSpecs(listing: ListingCardData, limit = 3): ListingCardSpec[] {
+  const explicit = getExplicitCardSpecs(listing, limit);
+  if (explicit && explicit.length > 0) {
+    return explicit.slice(0, limit);
+  }
+  return getGenericCardSpecs(listing, limit);
 }
 
 export function getListingCardHighlights(listing: ListingCardData, limit = 3): string[] {
@@ -235,10 +238,8 @@ export function getListingAvailabilityLabel(
 ): string | null {
   const safeQuantity = toFiniteNumber(quantity);
   if (safeQuantity === null) return null;
-
   const safeSoldQuantity = Math.max(0, toFiniteNumber(soldQuantity) ?? 0);
   const availableQuantity = Math.max(0, safeQuantity - safeSoldQuantity);
-
   if (availableQuantity <= 0) return "Sold out";
   return `${availableQuantity.toLocaleString()} left`;
 }
