@@ -13,6 +13,7 @@ import { useAuthUser } from "./useAuthUser";
 import { useAccountProfile } from "./useAccountProfile";
 import { apiFetch } from "../lib/api";
 import { Listing } from "../types";
+import type { HeaderChip } from "../constants";
 import type {
   MarketSectionActions,
   MarketSectionFilters,
@@ -93,7 +94,7 @@ export type AppLegacyState = {
   setHiddenListingIds: Dispatch<SetStateAction<number[]>>;
   firebaseUser: ReturnType<typeof useAuthUser>["user"];
   userProfile: ReturnType<typeof useAccountProfile>["profile"];
-  activeChip: string;
+  activeChip: HeaderChip;
   handleListItem: () => void;
   showFeedback: (type: "success" | "error" | "info", title: string, message: string) => void;
   handleUpdateListing: (listingId: number, updates: Partial<Listing>) => Promise<void>;

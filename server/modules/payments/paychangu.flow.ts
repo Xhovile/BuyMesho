@@ -116,7 +116,7 @@ function findSellerDefaultPayoutDestination(sellerId: string): SellerPayoutDesti
        AND verification_status = 'verified'
      ORDER BY is_default DESC, updated_at DESC
      LIMIT 1`,
-  ).get(sellerId) as SellerPayoutDestination | undefined;
+  ).get(sellerId) as unknown as SellerPayoutDestination | undefined;
 }
 
 function derivePayoutMethod(destination: SellerPayoutDestination | undefined): ConnectPayoutMethod {

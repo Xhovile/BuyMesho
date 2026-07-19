@@ -155,7 +155,7 @@ async function handlePayChanguWebhookInternal(
       error: "Invalid PayChangu webhook signature",
     });
 
-    if (!inserted.inserted && inserted.duplicate) {
+    if (inserted.inserted === false) {
       recordPaymentWebhookDuplicateAttempt(webhookInput, inserted.existingId);
     }
 
@@ -169,7 +169,7 @@ async function handlePayChanguWebhookInternal(
   }
 
   const inserted = insertPaymentWebhookEvent(webhookInput);
-  if (!inserted.inserted) {
+  if (inserted.inserted === false) {
     recordPaymentWebhookDuplicateAttempt(webhookInput, inserted.existingId);
     return { ok: true, status: "duplicate", reference: txRef || null };
   }
@@ -262,7 +262,7 @@ async function paymentWebhookRouteHandler(req: Request, res: Response) {
       payload: req.body as Buffer | string | Record<string, unknown>,
     });
 
-    if (!result.ok) {
+    if (result.ok === false) {
       return res.status(401).json({ error: result.error });
     }
 
@@ -273,6 +273,17 @@ async function paymentWebhookRouteHandler(req: Request, res: Response) {
   }
 }
 
+function handlePaychanguWebhook(
+  contextOrSignature: PayChanguWebhookContext | string | undefined,
+  payload?: PayChanguWebhookContext["payload"],
+): Promise<PaymentWebhookResponse> {
+  if (typeof contextOrSignature !== "object") {
+    return handlePayChanguWebhookInternal({ signature: contextOrSignature, payload: payload ?? "" });
+  }
+
+  return handlePayChanguWebhookInternal(contextOrSignature);
+}
+
 export const paymentWebhookHandler = Object.assign(paymentWebhookRouteHandler, {
-  handlePaychanguWebhook: handlePayChanguWebhookInternal,
+  handlePaychanguWebhook,
 });
