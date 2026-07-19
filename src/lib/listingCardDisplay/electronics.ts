@@ -2,14 +2,14 @@ import { buildSpecsFromProfile, type DisplayFieldProfile, type ListingCardData, 
 
 const PROFILES: Record<string, DisplayFieldProfile> = {
   "Phones & Mobile Devices": [
-    { key: "ram", label: "RAM" },
-    { key: "sim_type", label: "SIM" },
     { key: "brand", label: "Brand" },
+    { key: "ram_storage", label: "RAM / Storage", valueKeys: ["ram", "storage"], joinWith: "/" },
+    { key: "sim_type", label: "SIM Type" },
   ],
   Computers: [
     { key: "brand", label: "Brand" },
-    { key: "ram", label: "RAM" },
-    { key: "operating_system", label: "OS" },
+    { key: "ram_storage", label: "RAM / Storage", valueKeys: ["ram", "storage_capacity", "storage"], joinWith: "/" },
+    { key: "resolution", label: "Screen Resolution", valueKeys: ["resolution", "panel_type"] },
   ],
   Audio: [
     { key: "audio_product_type", label: "Type", valueKeys: ["audio_product_type", "item_type"] },
