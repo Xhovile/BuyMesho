@@ -161,7 +161,7 @@ export default function ListingCard({
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
+                  className={`font-extrabold leading-none text-red-500 drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
                     ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
                   }`}
                 >
