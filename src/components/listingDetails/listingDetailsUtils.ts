@@ -1,4 +1,4 @@
-import type { Listing } from "../../types";
+import type { Listing, RatingSummary } from "../../types";
 
 export type SellerProfile = {
   uid?: string;
@@ -9,6 +9,7 @@ export type SellerProfile = {
   is_verified?: boolean;
   join_date?: string;
   profile_views?: number;
+  ratingSummary?: RatingSummary | null;
 };
 
 export type ListingActionResponse = {
