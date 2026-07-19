@@ -345,22 +345,23 @@ export default function SellersDirectoryPage() {
                       <p className="mt-1 text-xs font-bold text-zinc-500">Joined {formatDate(card.joinedAt)}</p>
                     </div>
                   </div>
-
-                  <div className="inline-flex flex-col items-end gap-1 rounded-2xl bg-amber-50 px-3 py-2 text-right text-xs font-black text-amber-700">
-                    <RatingStars rating={card.rating} />
-                    <span>
-                      {card.rating.toFixed(1)} ({card.ratingCount})
-                    </span>
-                  </div>
                 </div>
 
                 <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
                   {card.description || "—"}
                 </p>
 
-                <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4 text-xs font-bold text-zinc-500">
-                  <span>{card.listingCount} listing{card.listingCount === 1 ? "" : "s"}</span>
-                  <span>{card.ratingCount} rating{card.ratingCount === 1 ? "" : "s"}</span>
+                <div className="mt-5 flex items-end justify-between border-t border-zinc-100 pt-4">
+                  <span className="text-xs font-bold text-zinc-500">
+                    {card.listingCount} listing{card.listingCount === 1 ? "" : "s"}
+                  </span>
+
+                  <div className="inline-flex flex-col items-end gap-1 text-right text-xs font-black text-amber-700">
+                    <RatingStars rating={card.rating} />
+                    <span>
+                      {card.rating.toFixed(1)} ({card.ratingCount})
+                    </span>
+                  </div>
                 </div>
               </button>
             ))}
