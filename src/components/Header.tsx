@@ -69,9 +69,7 @@ export default function Header({
 
   const { isAdmin } = useIsAdmin(firebaseUser);
 
-  const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?")
-    .charAt(0)
-    .toUpperCase();
+  const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?").charAt(0).toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
   const isSeller = !!(firebaseUser && userProfile?.is_seller);
 
@@ -340,7 +338,7 @@ export default function Header({
                       unreadCount={unreadCount}
                       primaryDrawerLabel={primaryDrawerLabel}
                       onClose={closeMenu}
-                      onPrimaryClick={() => navigateToPath(primaryDrawerPath)}
+                      onPrimaryClick={() => handleSellClick()}
                       onBecomeSellerClick={() => navigateToPath(BECOME_SELLER_PATH)}
                       onMyListingsClick={() => navigateToPath(isSeller ? MY_LISTINGS_PATH : BECOME_SELLER_PATH)}
                       onMessagesClick={() => handleMessagesClick()}
