@@ -15,6 +15,30 @@ export type UseListingDetailsDataResult = {
   refreshRatingSummary: (sellerUid: string) => Promise<void>;
 };
 
+async function fetchSellerProfile(sellerUid: string) {
+  try {
+    return (await apiFetch(`/api/sellers/${sellerUid}`)) as SellerProfile;
+  } catch {
+    try {
+      return (await apiFetch(`/api/users/${sellerUid}`)) as SellerProfile;
+    } catch {
+      return null;
+    }
+  }
+}
+
+async function fetchSellerRatingSummary(sellerUid: string) {
+  try {
+    return (await apiFetch(`/api/sellers/${sellerUid}/rating-summary`)) as RatingSummary;
+  } catch {
+    try {
+      return (await apiFetch(`/api/users/${sellerUid}/rating-summary`)) as RatingSummary;
+    } catch {
+      return null;
+    }
+  }
+}
+
 export function useListingDetailsData(listingId: string, viewerUid?: string | null): UseListingDetailsDataResult {
   const [listing, setListing] = useState<Listing | null>(null);
   const [seller, setSeller] = useState<SellerProfile | null>(null);
@@ -59,14 +83,25 @@ export function useListingDetailsData(listingId: string, viewerUid?: string | nu
         }
 
         const [sellerResult, ratingResult, relatedResult] = await Promise.allSettled([
-          apiFetch(`/api/users/${found.seller_uid}`),
-          apiFetch(`/api/users/${found.seller_uid}/rating-summary`),
+          fetchSellerProfile(found.seller_uid),
+          fetchSellerRatingSummary(found.seller_uid),
           apiFetch(`/api/listings/${found.id}/related?limit=20`),
         ]);
 
         if (cancelled) return;
-        setSeller(sellerResult.status === "fulfilled" ? sellerResult.value : null);
-        setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
+
+        const sellerProfile = sellerResult.status === "fulfilled" ? sellerResult.value : null;
+        const sellerRating = ratingResult.status === "fulfilled" ? ratingResult.value : null;
+
+        setSeller(
+          sellerProfile
+            ? {
+                ...sellerProfile,
+                ratingSummary: sellerRating,
+              }
+            : null,
+        );
+        setRatingSummary(sellerRating);
         setRelatedListings(
           relatedResult.status === "fulfilled" && Array.isArray(relatedResult.value)
             ? relatedResult.value
@@ -102,9 +137,10 @@ export function useListingDetailsData(listingId: string, viewerUid?: string | nu
     const syncRatingSummary = async () => {
       setRatingLoading(true);
       try {
-        const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+        const summary = await fetchSellerRatingSummary(sellerUid);
         if (!cancelled) {
           setRatingSummary(summary);
+          setSeller((prev) => (prev ? { ...prev, ratingSummary: summary } : prev));
         }
       } catch (error) {
         if (!cancelled) {
@@ -127,8 +163,9 @@ export function useListingDetailsData(listingId: string, viewerUid?: string | nu
   const refreshRatingSummary = async (sellerUid: string) => {
     setRatingLoading(true);
     try {
-      const summary = await apiFetch(`/api/users/${sellerUid}/rating-summary`);
+      const summary = await fetchSellerRatingSummary(sellerUid);
       setRatingSummary(summary);
+      setSeller((prev) => (prev && prev.uid === sellerUid ? { ...prev, ratingSummary: summary } : prev));
     } catch (error) {
       console.error("Failed to load rating summary", error);
       setRatingSummary(null);
