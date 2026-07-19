@@ -6,9 +6,9 @@ import {
   EyeOff,
   LogOut,
   MessageSquareText,
+  Plus,
   Settings,
   ShieldCheck,
-  ShoppingBag,
   Store,
   UserRound,
   Wallet,
@@ -82,15 +82,19 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
                     type="button"
                     onClick={() => {
                       controller.closeMenu();
-                      navigateToPath(EXPLORE_PATH);
+                      controller.handleStartSelling();
                     }}
                     className={navButtonClass}
                   >
                     <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-600">
-                        <ShoppingBag className="h-4 w-4 text-white" />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">
+                        {controller.isSeller ? (
+                          <Plus className="h-4 w-4 text-white" />
+                        ) : (
+                          <Store className="h-4 w-4 text-white" />
+                        )}
                       </span>
-                      Market
+                      List Item
                     </span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
@@ -152,15 +156,19 @@ export default function HomeMobileDrawer({ controller }: { controller: HomePageC
                     type="button"
                     onClick={() => {
                       controller.closeMenu();
-                      navigateToPath(EXPLORE_PATH);
+                      controller.handleStartSelling();
                     }}
                     className={navButtonClass}
                   >
                     <span className="inline-flex items-center gap-3">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-600">
-                        <ShoppingBag className="h-4 w-4 text-white" />
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900">
+                        {controller.isSeller ? (
+                          <Plus className="h-4 w-4 text-white" />
+                        ) : (
+                          <Store className="h-4 w-4 text-white" />
+                        )}
                       </span>
-                      Market
+                      List Item
                     </span>
                     <ChevronRight className="h-4 w-4 text-zinc-400" />
                   </button>
