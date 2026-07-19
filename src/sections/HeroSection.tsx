@@ -71,7 +71,7 @@ export default function HeroSection({ onListItem }: HeroSectionProps) {
               transition={{ delay: 0.05 }}
               className="mt-2 text-3xl sm:text-4xl lg:text-5xl font-black tracking-[-0.06em] leading-[0.95] text-zinc-900"
             >
-              Browse products and services on {" "}
+              Everyone Can Buy On {" "}
               <span className="text-red-900">Buy</span>
               <span className="text-zinc-700">Mesho</span>.
             </motion.h1>
