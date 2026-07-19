@@ -22,6 +22,7 @@ type SellerDirectoryProfile = {
   is_verified?: boolean;
   join_date?: string | null;
   profile_views?: number;
+  ratingSummary?: RatingSummary | null;
 };
 
 type SellerCard = {
@@ -121,7 +122,7 @@ export default function SellersDirectoryPage() {
 
             const description =
               profile?.bio?.trim() ||
-              bucket.representativeListing.description?.trim() ||
+              profile?.university?.trim() ||
               "Approved seller on BuyMesho.";
 
             return {
@@ -129,8 +130,8 @@ export default function SellersDirectoryPage() {
               sellerName,
               logoUrl: profile?.business_logo || bucket.representativeListing.business_logo || null,
               description,
-              rating: ratingSummary?.averageRating || 0,
-              ratingCount: ratingSummary?.ratingCount || 0,
+              rating: profile?.ratingSummary?.averageRating ?? ratingSummary?.averageRating ?? 0,
+              ratingCount: profile?.ratingSummary?.ratingCount ?? ratingSummary?.ratingCount ?? 0,
               joinedAt: profile?.join_date || bucket.representativeListing.created_at || null,
               listingCount: bucket.listingCount,
               isVerified: !!(profile?.is_verified || bucket.representativeListing.is_verified),
@@ -197,9 +198,7 @@ export default function SellersDirectoryPage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                Sellers
-              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sellers</p>
             </div>
           </button>
 
@@ -290,9 +289,9 @@ export default function SellersDirectoryPage() {
                       )}
                     </div>
 
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400">
+                        <p className="truncate text-base font-black tracking-tight text-zinc-900">
                           {card.sellerName}
                         </p>
                         {card.isVerified ? (
