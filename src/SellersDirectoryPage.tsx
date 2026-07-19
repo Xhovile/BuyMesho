@@ -270,10 +270,6 @@ export default function SellersDirectoryPage() {
               <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
                 Approved sellers.
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                Sellers appear here after approval and public sync. Each card shows the seller logo,
-                a short description, rating, joining date, and how many listings they have.
-              </p>
             </div>
 
             <div className="w-full max-w-md">
