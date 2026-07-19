@@ -9,7 +9,7 @@ const PROFILES: Record<string, DisplayFieldProfile> = {
   Snacks: [
     { key: "snack_type", label: "Type", valueKeys: ["snack_type", "item_type"] },
     { key: "flavor", label: "Flavor" },
-    { key: "quantity_weight", label: "Qty", valueKeys: ["quantity_weight", "quantity"] },
+    { key: "quantity_or_weight", label: "Qty", valueKeys: ["quantity_or_weight", "quantity_weight", "quantity"] },
   ],
   Bakery: [
     { key: "bakery_product_type", label: "Type", valueKeys: ["bakery_product_type", "item_type"] },
