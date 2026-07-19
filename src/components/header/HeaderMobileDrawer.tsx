@@ -27,7 +27,7 @@ type HeaderMobileDrawerProps = {
   unreadCount: number;
   primaryDrawerLabel: string;
   onClose: () => void;
-  onListItemClick: () => void;
+  onPrimaryClick: () => void;
   onBecomeSellerClick: () => void;
   onMyListingsClick: () => void;
   onMessagesClick: () => void;
@@ -51,7 +51,7 @@ export default function HeaderMobileDrawer({
   unreadCount,
   primaryDrawerLabel,
   onClose,
-  onListItemClick,
+  onPrimaryClick,
   onBecomeSellerClick,
   onMyListingsClick,
   onMessagesClick,
@@ -126,7 +126,7 @@ export default function HeaderMobileDrawer({
                     }
                     onClick={() => {
                       onClose();
-                      onListItemClick();
+                      onPrimaryClick();
                     }}
                     className={navButtonClass}
                   />
@@ -305,7 +305,7 @@ export default function HeaderMobileDrawer({
                     }
                     onClick={() => {
                       onClose();
-                      onListItemClick();
+                      onPrimaryClick();
                     }}
                     className={navButtonClass}
                   />
