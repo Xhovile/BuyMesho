@@ -9,6 +9,7 @@ import {
   navigateToPath,
   navigateToSellerProfile,
 } from "./lib/appNavigation";
+import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 
 import type { Listing, RatingSummary } from "./types";
 
@@ -22,7 +23,6 @@ type SellerDirectoryProfile = {
   is_verified?: boolean;
   join_date?: string | null;
   profile_views?: number;
-  ratingSummary?: RatingSummary | null;
 };
 
 type SellerCard = {
@@ -57,6 +57,47 @@ function fallbackInitials(uid: string, description?: string | null) {
   const parts = seed.split(/\s+/).filter(Boolean);
   const initials = parts.length > 0 ? parts.map((part) => part[0]).join("") : uid.slice(0, 2);
   return initials.slice(0, 2).toUpperCase();
+}
+
+function getRatingDisplay(rating: number) {
+  const safeRating = Number.isFinite(rating) ? Math.max(0, Math.min(5, rating)) : 0;
+  const fullStars = Math.floor(safeRating);
+  const fraction = safeRating - fullStars;
+
+  if (fraction > 0.7) {
+    return { fullStars: Math.min(5, fullStars + 1), showHalfStar: false };
+  }
+
+  return { fullStars, showHalfStar: fraction > 0 };
+}
+
+function RatingStars({ rating }: { rating: number }) {
+  const { fullStars, showHalfStar } = useMemo(() => getRatingDisplay(rating), [rating]);
+
+  return (
+    <span className="inline-flex items-center gap-0.5" aria-label={`Rating ${rating.toFixed(1)} out of 5`}>
+      {Array.from({ length: 5 }, (_, index) => {
+        const starIndex = index + 1;
+        if (starIndex <= fullStars) {
+          return <Star key={starIndex} className="h-3.5 w-3.5 fill-amber-400 text-amber-500" />;
+        }
+
+        if (starIndex === fullStars + 1 && showHalfStar) {
+          return (
+            <span key={starIndex} className="relative inline-flex h-3.5 w-3.5">
+              <Star className="absolute inset-0 h-3.5 w-3.5 text-amber-500" />
+              <Star
+                className="absolute inset-0 h-3.5 w-3.5 fill-amber-400 text-amber-500"
+                style={{ clipPath: "inset(0 50% 0 0)" }}
+              />
+            </span>
+          );
+        }
+
+        return <Star key={starIndex} className="h-3.5 w-3.5 text-zinc-300" />;
+      })}
+    </span>
+  );
 }
 
 export default function SellersDirectoryPage() {
@@ -110,8 +151,8 @@ export default function SellersDirectoryPage() {
                 : null;
             const ratingSummary =
               ratingResult.status === "fulfilled" && ratingResult.value
-                ? (ratingResult.value as RatingSummary)
-                : null;
+                ? normalizeRatingSummary(ratingResult.value as RatingSummary)
+                : normalizeRatingSummary(null);
 
             const sellerName =
               profile?.business_name?.trim() ||
@@ -120,15 +161,15 @@ export default function SellersDirectoryPage() {
               bucket.representativeListing.name?.trim() ||
               "Seller";
 
-            const description = profile?.bio?.trim() || "Approved seller on BuyMesho.";
+            const description = profile?.bio?.trim() ?? "";
 
             return {
               uid,
               sellerName,
               logoUrl: profile?.business_logo || bucket.representativeListing.business_logo || null,
               description,
-              rating: profile?.ratingSummary?.averageRating ?? ratingSummary?.averageRating ?? 0,
-              ratingCount: profile?.ratingSummary?.ratingCount ?? ratingSummary?.ratingCount ?? 0,
+              rating: ratingSummary.averageRating,
+              ratingCount: ratingSummary.ratingCount,
               joinedAt: profile?.join_date || bucket.representativeListing.created_at || null,
               listingCount: bucket.listingCount,
               isVerified: !!(profile?.is_verified || bucket.representativeListing.is_verified),
@@ -167,7 +208,7 @@ export default function SellersDirectoryPage() {
     if (!term) return cards;
     return cards.filter((card) => {
       const joined = formatDate(card.joinedAt).toLowerCase();
-      const ratingText = `${card.rating.toFixed(1)} ${card.ratingCount}`.toLowerCase();
+      const ratingText = `${card.rating.toFixed(1)} (${card.ratingCount})`.toLowerCase();
       return (
         card.sellerName.toLowerCase().includes(term) ||
         card.description.toLowerCase().includes(term) ||
@@ -304,14 +345,16 @@ export default function SellersDirectoryPage() {
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-black text-amber-700">
-                    <Star className="h-3.5 w-3.5 fill-current" />
-                    {card.rating ? card.rating.toFixed(1) : "New"}
+                  <div className="inline-flex flex-col items-end gap-1 rounded-2xl bg-amber-50 px-3 py-2 text-right text-xs font-black text-amber-700">
+                    <RatingStars rating={card.rating} />
+                    <span>
+                      {card.rating.toFixed(1)} ({card.ratingCount})
+                    </span>
                   </div>
                 </div>
 
                 <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
-                  {card.description}
+                  {card.description || "—"}
                 </p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-zinc-100 pt-4 text-xs font-bold text-zinc-500">
