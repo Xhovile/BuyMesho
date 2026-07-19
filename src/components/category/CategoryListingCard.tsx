@@ -56,6 +56,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
       className="group w-full max-w-[220px] max-h-[320px] overflow-hidden bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
+      aria-label={`Open listing details for ${item.name}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
         <img
@@ -66,12 +67,12 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
 
-        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm">
+        <div className="absolute left-3 top-3 rounded-full bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm backdrop-blur-sm">
           {categoryLabel}
         </div>
 
         {offerLabel ? (
-          <div className="absolute right-3 top-3 rounded-full bg-black/70 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white shadow-sm">
+          <div className="absolute right-3 top-3 rounded-full border border-white/25 bg-white/55 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-red-800 shadow-sm backdrop-blur-sm">
             {offerLabel}
           </div>
         ) : null}
@@ -84,9 +85,9 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
           <div className="mt-1 flex items-start justify-between gap-3">
             <div className="min-w-0">
               {offerLabel ? (
-                <div className="inline-flex flex-col gap-0.5">
-                  <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-600">{offerLabel}</span>
-                  <span className="text-[9px] font-extrabold leading-none text-red-700">{offerValue}</span>
+                <div className="inline-flex flex-col gap-0.5 rounded-xl border border-white/25 bg-white/60 px-2 py-1 shadow-sm backdrop-blur-sm">
+                  <span className="text-[8px] font-black uppercase tracking-[0.18em] text-red-700">{offerLabel}</span>
+                  <span className="text-[9px] font-extrabold leading-none text-red-800">{offerValue}</span>
                 </div>
               ) : (
                 <p className="text-sm font-bold text-red-900">{formatMoney(Number(item.price) || 0)}</p>
@@ -96,7 +97,7 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
         </div>
 
         <p className="min-h-[2.5em] line-clamp-2 text-xs leading-relaxed text-zinc-600">
-          {cardSpecs.length > 0 ? cardSpecs.map((spec) => `${spec.label}: ${spec.value}`).join(" • ") : ""}
+          {cardSpecs.length > 0 ? cardSpecs.map((spec) => spec.value).join(" • ") : ""}
         </p>
 
         <div className="min-h-[1.25rem] text-[10px] font-extrabold uppercase tracking-wider text-zinc-600">
