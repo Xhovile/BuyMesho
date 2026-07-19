@@ -26,6 +26,7 @@ type SellerDirectoryProfile = {
 
 type SellerCard = {
   uid: string;
+  sellerName: string;
   logoUrl: string | null;
   description: string;
   rating: number;
@@ -111,6 +112,13 @@ export default function SellersDirectoryPage() {
                 ? (ratingResult.value as RatingSummary)
                 : null;
 
+            const sellerName =
+              profile?.business_name?.trim() ||
+              bucket.representativeListing.business_name?.trim() ||
+              profile?.email?.trim() ||
+              bucket.representativeListing.name?.trim() ||
+              "Seller";
+
             const description =
               profile?.bio?.trim() ||
               bucket.representativeListing.description?.trim() ||
@@ -118,6 +126,7 @@ export default function SellersDirectoryPage() {
 
             return {
               uid,
+              sellerName,
               logoUrl: profile?.business_logo || bucket.representativeListing.business_logo || null,
               description,
               rating: ratingSummary?.averageRating || 0,
@@ -162,6 +171,7 @@ export default function SellersDirectoryPage() {
       const joined = formatDate(card.joinedAt).toLowerCase();
       const ratingText = `${card.rating.toFixed(1)} ${card.ratingCount}`.toLowerCase();
       return (
+        card.sellerName.toLowerCase().includes(term) ||
         card.description.toLowerCase().includes(term) ||
         joined.includes(term) ||
         ratingText.includes(term) ||
@@ -283,7 +293,7 @@ export default function SellersDirectoryPage() {
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="text-sm font-black uppercase tracking-[0.18em] text-zinc-400">
-                          Seller
+                          {card.sellerName}
                         </p>
                         {card.isVerified ? (
                           <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
