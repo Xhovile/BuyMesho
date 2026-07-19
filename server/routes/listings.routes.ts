@@ -489,9 +489,10 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       return res.status(400).json({ error: "Sale quantity cannot exceed available stock." });
     }
 
+    const nextStatus = nextSold >= currentQuantity ? "sold" : checked.listing.status;
     db.prepare("UPDATE listings SET sold_quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
       nextSold,
-      nextSold >= currentQuantity ? "sold" : "available",
+      nextStatus,
       listingId
     );
     return res.json({ success: true, listing: getSerializedListing(listingId) });
