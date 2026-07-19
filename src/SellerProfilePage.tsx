@@ -3,10 +3,7 @@ import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
-import {
-  normalizeRatingSummary,
-  type NormalizedRatingSummary,
-} from "./components/ratings/ratingSummaryUtils";
+import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 import {
   EXPLORE_PATH,
   HOME_PATH,
@@ -21,7 +18,6 @@ type SellerProfile = {
   uid?: string;
   business_name?: string;
   business_logo?: string;
-  university?: string;
   bio?: string;
   is_verified?: boolean;
   join_date?: string;
@@ -111,6 +107,7 @@ async function deleteSellerRating(sellerUid: string) {
 
 function SellerRatingBlock({
   ratingSummary,
+  profileViews,
   isAuthenticated,
   canRate,
   ratingLoading,
@@ -119,6 +116,7 @@ function SellerRatingBlock({
   onRemoveRating,
 }: {
   ratingSummary: RatingSummary | null;
+  profileViews: number;
   isAuthenticated: boolean;
   canRate: boolean;
   ratingLoading: boolean;
@@ -153,7 +151,7 @@ function SellerRatingBlock({
 
         <div className="text-right">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-zinc-400">Profile views</p>
-          <p className="mt-1 text-2xl font-black text-zinc-900">{ratingSummary?.ratingCount ?? 0}</p>
+          <p className="mt-1 text-2xl font-black text-zinc-900">{profileViews}</p>
         </div>
       </div>
 
@@ -412,8 +410,8 @@ export default function SellerProfilePage() {
           <>
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 sm:p-8 shadow-sm">
               <div className="flex flex-col gap-6">
-                <div className="flex flex-col sm:flex-row sm:items-start gap-5">
-                  <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm flex items-center justify-center">
+                <div className="flex flex-row items-start gap-4 sm:gap-5">
+                  <div className="w-28 h-28 rounded-[2rem] overflow-hidden border border-zinc-200 bg-zinc-100 shadow-sm flex items-center justify-center shrink-0">
                     {profile.business_logo ? (
                       <img
                         src={profile.business_logo}
@@ -433,7 +431,7 @@ export default function SellerProfilePage() {
                   </div>
 
                   <div className="min-w-0">
-                    <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
+                    <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
                       {profile.business_name || "Seller Profile"}
                     </h1>
 
@@ -444,11 +442,6 @@ export default function SellerProfilePage() {
                           Verified
                         </span>
                       ) : null}
-                      {profile.university ? (
-                        <span className="inline-flex items-center rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-700">
-                          {profile.university}
-                        </span>
-                      ) : null}
                     </div>
                   </div>
                 </div>
@@ -456,30 +449,28 @@ export default function SellerProfilePage() {
                 <div className="min-w-0">
                   <div className="space-y-2 text-sm sm:text-base leading-6 text-zinc-600">
                     <p>
-                      <span className="font-black text-zinc-900">Joined:</span>{" "}
-                      {formatDate(profile.join_date)}
+                      <span className="font-black text-zinc-900">Joined:</span> {formatDate(profile.join_date)}
                     </p>
 
                     {profile.bio ? (
                       <p className="max-w-2xl whitespace-pre-wrap">
-                        <span className="font-black text-zinc-900">Description:</span>{" "}
-                        {profile.bio}
+                        <span className="font-black text-zinc-900">Description:</span> {profile.bio}
                       </p>
                     ) : null}
 
                     <p>
-                      <span className="font-black text-zinc-900">Listings:</span>{" "}
-                      {listings.length} listing{listings.length === 1 ? "" : "s"}
+                      <span className="font-black text-zinc-900">Listings:</span> {listings.length} listing
+                      {listings.length === 1 ? "" : "s"}
                     </p>
 
                     <p>
-                      <span className="font-black text-zinc-900">Profile Views:</span>{" "}
-                      {profile.profile_views ?? 0}
+                      <span className="font-black text-zinc-900">Profile Views:</span> {profile.profile_views ?? 0}
                     </p>
                   </div>
 
                   <SellerRatingBlock
                     ratingSummary={ratingSummary}
+                    profileViews={profile.profile_views ?? 0}
                     isAuthenticated={!!firebaseUser}
                     canRate={canRateSeller}
                     ratingLoading={ratingLoading}
