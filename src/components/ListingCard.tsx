@@ -149,19 +149,19 @@ export default function ListingCard({
           <div className="absolute bottom-3 left-3 max-w-[86%]">
             {offerLabel ? (
               <div
-                className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/30 bg-white/55 px-2 py-1 shadow-sm ${
-                  performanceMode ? "" : "backdrop-blur-sm"
+                className={`inline-flex flex-col gap-0.5 rounded-xl border border-white/10 bg-black/8 px-2 py-1 shadow-none ${
+                  performanceMode ? "" : "backdrop-blur-[1px]"
                 } ${ultraCompact ? "max-w-[92px]" : compact ? "max-w-[120px]" : "max-w-[150px]"}`}
               >
                 <span
-                  className={`font-black uppercase tracking-[0.18em] text-red-700 ${
+                  className={`font-black uppercase tracking-[0.18em] text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
                     ultraCompact ? "text-[8px]" : compact ? "text-[9px]" : "text-[10px]"
                   }`}
                 >
                   {offerLabel}
                 </span>
                 <span
-                  className={`font-extrabold leading-none text-red-800 ${
+                  className={`font-extrabold leading-none text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.60)] ${
                     ultraCompact ? "text-[9px]" : compact ? "text-[10px]" : "text-[11px]"
                   }`}
                 >
