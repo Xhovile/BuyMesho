@@ -97,24 +97,6 @@ export default function HomePage() {
                     maxItems={8}
                     variant="featured"
                   />
-
-                  <ListingStrip
-                    title="Trending now"
-                    description=""
-                    listings={controller.filteredFeaturedListings}
-                    loading={controller.loading}
-                    maxItems={6}
-                    variant="supporting"
-                  />
-
-                  <ListingStrip
-                    title="New"
-                    description=""
-                    listings={controller.filteredNewestListings}
-                    loading={controller.loading}
-                    maxItems={6}
-                    variant="supporting"
-                  />
                 </div>
               </section>
 
