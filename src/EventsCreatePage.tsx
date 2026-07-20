@@ -1,5 +1,5 @@
-import { useMemo, useState, type FormEvent } from "react";
-import { ArrowRight, ChevronDown, Ticket, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { ArrowRight, ChevronDown, Ticket } from "lucide-react";
 
 import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
@@ -32,6 +32,8 @@ type SavedEvent = {
   created_at: string;
   updated_at: string;
 };
+
+type DropdownOption = { value: string; label: string };
 
 const INITIAL_EVENT_TYPE = getEventItemTypes()[0] ?? "Concert";
 
@@ -87,6 +89,84 @@ function isTimeLikeField(field: EventSpecField) {
   return field.key.toLowerCase().includes("time");
 }
 
+function AppDropdown({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: DropdownOption[];
+  placeholder: string;
+  onChange: (nextValue: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  return (
+    <div ref={rootRef} className="relative mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-zinc-900 outline-none transition hover:border-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+      >
+        <span className={selected ? "font-medium" : "text-zinc-400"}>{selected?.label || placeholder}</span>
+        <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open ? (
+        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]">
+          <div className="max-h-64 overflow-auto p-2">
+            {options.map((option) => {
+              const active = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition ${
+                    active ? "bg-zinc-950 text-white" : "text-zinc-700 hover:bg-zinc-100"
+                  }`}
+                >
+                  <span>{option.label}</span>
+                  {active ? <span className="text-[10px] font-extrabold uppercase tracking-[0.18em]">Selected</span> : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function TimePicker({
   value,
   onChange,
@@ -95,42 +175,38 @@ function TimePicker({
   onChange: (nextValue: string) => void;
 }) {
   const current = parseTimeValue(value);
-  const hourOptions = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
-  const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
+  const hourOptions: DropdownOption[] = Array.from({ length: 24 }, (_, index) => {
+    const hour = String(index).padStart(2, "0");
+    return { value: hour, label: hour };
+  });
+  const minuteOptions: DropdownOption[] = Array.from({ length: 60 }, (_, index) => {
+    const minute = String(index).padStart(2, "0");
+    return { value: minute, label: minute };
+  });
 
   return (
     <div className="mt-2 grid grid-cols-2 gap-3">
-      <label className="block">
+      <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Hour</span>
-        <select
+        <AppDropdown
+          label="Hour"
           value={current.hour}
-          onChange={(e) => onChange(makeTimeValue(e.target.value, current.minute))}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-        >
-          <option value="">HH</option>
-          {hourOptions.map((hour) => (
-            <option key={hour} value={hour}>
-              {hour}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={hourOptions}
+          placeholder="HH"
+          onChange={(nextHour) => onChange(makeTimeValue(nextHour, current.minute))}
+        />
+      </div>
 
-      <label className="block">
+      <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Minute</span>
-        <select
+        <AppDropdown
+          label="Minute"
           value={current.minute}
-          onChange={(e) => onChange(makeTimeValue(current.hour, e.target.value))}
-          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-        >
-          <option value="">MM</option>
-          {minuteOptions.map((minute) => (
-            <option key={minute} value={minute}>
-              {minute}
-            </option>
-          ))}
-        </select>
-      </label>
+          options={minuteOptions}
+          placeholder="MM"
+          onChange={(nextMinute) => onChange(makeTimeValue(current.hour, nextMinute))}
+        />
+      </div>
     </div>
   );
 }
@@ -174,18 +250,13 @@ function RenderField({
           className={`${baseClass} min-h-[120px] resize-y`}
         />
       ) : field.type === "select" ? (
-        <select
+        <AppDropdown
+          label={field.label}
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          className={baseClass}
-        >
-          <option value="">Select {field.label.toLowerCase()}</option>
-          {(field.options || []).map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
+          options={(field.options || []).map((option) => ({ value: option, label: option }))}
+          placeholder={`Select ${field.label.toLowerCase()}`}
+          onChange={(nextValue) => onChange(nextValue)}
+        />
       ) : field.type === "number" ? (
         <input
           type="number"
@@ -353,20 +424,13 @@ export default function EventsCreatePage() {
               <div className="grid gap-6">
                 <label className="block">
                   <span className="text-sm font-bold text-zinc-900">Event type</span>
-                  <div className="relative mt-2">
-                    <select
-                      value={eventType}
-                      onChange={(e) => handleTypeChange(e.target.value)}
-                      className="w-full appearance-none rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-medium text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
-                    >
-                      {eventTypes.map((type) => (
-                        <option key={type} value={type}>
-                          {type}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                  </div>
+                  <AppDropdown
+                    label="Event type"
+                    value={eventType}
+                    options={eventTypes.map((type) => ({ value: type, label: type }))}
+                    placeholder="Select event type"
+                    onChange={handleTypeChange}
+                  />
                 </label>
 
                 {!config ? (
@@ -480,6 +544,7 @@ export default function EventsCreatePage() {
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-zinc-600">
                 <li>• Picks the event schema from the type you choose.</li>
                 <li>• Shows a real calendar for date fields.</li>
+                <li>• Uses in-app dropdowns for event type, ticket mode, and other select fields.</li>
                 <li>• Uses hour and minute dropdowns for time fields.</li>
                 <li>• Replaces the history entry after posting so Back will not reopen the form.</li>
               </ul>
