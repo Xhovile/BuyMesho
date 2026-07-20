@@ -18,7 +18,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
             animate={{ opacity: 1, y: 0 }}
             className="inline-flex items-center gap-2 rounded-full border border-red-900/10 bg-white/85 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-red-900"
           >
-            Student Marketplace • Malawi
+            Marketplace • Malawi
           </motion.div>
 
           <motion.h1
@@ -27,7 +27,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
             transition={{ delay: 0.05 }}
             className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl"
           >
-            Buy and sell on campus
+            Buy. Sell. Online. 
           </motion.h1>
 
           <motion.div
