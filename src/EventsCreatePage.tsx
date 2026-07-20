@@ -1,13 +1,7 @@
-import { useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, Ticket } from "lucide-react";
+import { useMemo, useState, type FormEvent } from "react";
+import { ArrowRight, CheckCircle2, ChevronDown, Ticket } from "lucide-react";
 
-import {
-  EVENTS_PATH,
-  EXPLORE_PATH,
-  HOME_PATH,
-  navigateBackOrPath,
-  navigateToPath,
-} from "./lib/appNavigation";
+import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import {
   createEmptyEventValues,
@@ -189,7 +183,7 @@ export default function EventsCreatePage() {
     setCreatedEvent(null);
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!config) {
       setFormError("No event schema is available for this selection.");
