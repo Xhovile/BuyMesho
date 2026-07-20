@@ -1,5 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
-import { ArrowRight, CheckCircle2, ChevronDown, Ticket } from "lucide-react";
+import { ArrowRight, ChevronDown, Ticket, X } from "lucide-react";
 
 import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
@@ -54,6 +54,87 @@ function FieldError({ message }: { message?: string }) {
   return <p className="mt-1 text-xs font-medium text-rose-600">{message}</p>;
 }
 
+function parseTimeValue(value: unknown): { hour: string; minute: string } {
+  if (typeof value !== "string" || !value.includes(":")) {
+    return { hour: "", minute: "" };
+  }
+
+  const [rawHour, rawMinute] = value.split(":");
+  const hour = rawHour?.trim();
+  const minute = rawMinute?.trim();
+
+  if (!hour || !minute) {
+    return { hour: "", minute: "" };
+  }
+
+  return {
+    hour: hour.padStart(2, "0"),
+    minute: minute.padStart(2, "0"),
+  };
+}
+
+function makeTimeValue(hour: string, minute: string) {
+  if (!hour || !minute) return "";
+  return `${hour}:${minute}`;
+}
+
+function isDateLikeField(field: EventSpecField) {
+  const key = field.key.toLowerCase();
+  return key.includes("date") || key.includes("deadline");
+}
+
+function isTimeLikeField(field: EventSpecField) {
+  return field.key.toLowerCase().includes("time");
+}
+
+function TimePicker({
+  value,
+  onChange,
+}: {
+  value: unknown;
+  onChange: (nextValue: string) => void;
+}) {
+  const current = parseTimeValue(value);
+  const hourOptions = Array.from({ length: 24 }, (_, index) => String(index).padStart(2, "0"));
+  const minuteOptions = Array.from({ length: 60 }, (_, index) => String(index).padStart(2, "0"));
+
+  return (
+    <div className="mt-2 grid grid-cols-2 gap-3">
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Hour</span>
+        <select
+          value={current.hour}
+          onChange={(e) => onChange(makeTimeValue(e.target.value, current.minute))}
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+        >
+          <option value="">HH</option>
+          {hourOptions.map((hour) => (
+            <option key={hour} value={hour}>
+              {hour}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="block">
+        <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Minute</span>
+        <select
+          value={current.minute}
+          onChange={(e) => onChange(makeTimeValue(current.hour, e.target.value))}
+          className="w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+        >
+          <option value="">MM</option>
+          {minuteOptions.map((minute) => (
+            <option key={minute} value={minute}>
+              {minute}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 function RenderField({
   field,
   value,
@@ -76,7 +157,16 @@ function RenderField({
       </span>
       {field.helpText ? <span className="mt-1 block text-xs text-zinc-500">{field.helpText}</span> : null}
 
-      {field.type === "textarea" ? (
+      {isDateLikeField(field) ? (
+        <input
+          type="date"
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          className={baseClass}
+        />
+      ) : isTimeLikeField(field) ? (
+        <TimePicker value={value} onChange={(nextValue) => onChange(nextValue)} />
+      ) : field.type === "textarea" ? (
         <textarea
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.target.value)}
@@ -163,7 +253,6 @@ export default function EventsCreatePage() {
   const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [createdEvent, setCreatedEvent] = useState<SavedEvent | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const config = getEventItemConfig(eventType) ?? getEventItemConfig(INITIAL_EVENT_TYPE);
@@ -180,7 +269,6 @@ export default function EventsCreatePage() {
     setValues(createEmptyEventValues(nextType));
     setFieldErrors({});
     setFormError(null);
-    setCreatedEvent(null);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -198,7 +286,6 @@ export default function EventsCreatePage() {
       });
       setFieldErrors(nextErrors);
       setFormError("Fix the highlighted fields and try again.");
-      setCreatedEvent(null);
       return;
     }
 
@@ -216,27 +303,20 @@ export default function EventsCreatePage() {
         throw new Error("The event was saved, but no event data was returned.");
       }
 
-      setFieldErrors({});
-      setFormError(null);
-      setCreatedEvent(response.event);
-      setValues(response.event.spec_values ?? values);
-      setEventType(response.event.event_type || eventType);
+      navigateToPath(EVENTS_PATH, { replace: true });
     } catch (err: any) {
       setFormError(err?.message || "Could not save the event.");
-      setCreatedEvent(null);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const previewSource = createdEvent?.spec_values ?? values;
-  const previewTitle = String(
-    createdEvent?.event_title || previewSource.event_title || previewSource.theme || previewSource.event_focus || eventType
-  );
-  const previewDate = createdEvent?.event_date || previewSource.event_date || previewSource.registration_deadline || previewSource.start_time;
-  const previewLocation = createdEvent?.location || previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization;
-  const previewTicketMode = createdEvent?.ticket_mode || previewSource.ticket_mode;
-  const previewPrice = formatMoney(createdEvent?.ticket_price ?? previewSource.ticket_price);
+  const previewSource = values;
+  const previewTitle = String(previewSource.event_title || previewSource.theme || previewSource.event_focus || eventType);
+  const previewDate = previewSource.event_date || previewSource.registration_deadline || previewSource.start_time;
+  const previewLocation = previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization;
+  const previewTicketMode = previewSource.ticket_mode;
+  const previewPrice = formatMoney(previewSource.ticket_price);
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -355,7 +435,6 @@ export default function EventsCreatePage() {
                     setValues(createEmptyEventValues(eventType));
                     setFieldErrors({});
                     setFormError(null);
-                    setCreatedEvent(null);
                   }}
                   className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
                 >
@@ -391,29 +470,18 @@ export default function EventsCreatePage() {
                 </div>
               </div>
 
-              {createdEvent ? (
-                <div className="mt-4 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                  <div className="flex items-center gap-2 font-extrabold">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Event saved
-                  </div>
-                  <p className="mt-2 leading-relaxed">
-                    The event has been posted to the database and is now ready for the Events directory flow.
-                  </p>
-                </div>
-              ) : (
-                <p className="mt-4 text-sm leading-relaxed text-zinc-600">
-                  When you post, the saved event will appear here using the server response.
-                </p>
-              )}
+              <p className="mt-4 text-sm leading-relaxed text-zinc-600">
+                When you post, the form will close immediately and return you to Events.
+              </p>
             </section>
 
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">What this page does</p>
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-zinc-600">
                 <li>• Picks the event schema from the type you choose.</li>
-                <li>• Shows the matching fields and validation rules.</li>
-                <li>• Saves the event to the backend and shows the persisted response.</li>
+                <li>• Shows a real calendar for date fields.</li>
+                <li>• Uses hour and minute dropdowns for time fields.</li>
+                <li>• Replaces the history entry after posting so Back will not reopen the form.</li>
               </ul>
             </section>
           </aside>
