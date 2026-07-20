@@ -8,6 +8,7 @@ import { registerMessagesRoutes } from "./messagesRoutes.js";
 import { registerReviewsRoutes } from "./reviewsRoutes.js";
 import { registerDiagnosticsRoutes } from "./diagnostics.routes.js";
 import { registerListingRoutes } from "./listings.routes.js";
+import { registerEventRoutes } from "./events.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
 import { createAdminModerationRouter } from "../modules/admin/admin.moderation.routes.js";
@@ -93,6 +94,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerReviewsRoutes(app);
   registerDiagnosticsRoutes(app, { db });
   registerListingRoutes(app, { db });
+  registerEventRoutes(app, { db });
   mountTotpRoutes(app);
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
