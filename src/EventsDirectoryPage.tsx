@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, Clock3, Loader2, MapPin, Ticket } from "lucide-react";
+import { ArrowRight, CalendarDays, Loader2, MapPin, Ticket } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
@@ -181,15 +181,6 @@ export default function EventsDirectoryPage() {
     };
   }, []);
 
-  const stats = useMemo(
-    () => [
-      { value: String(events.length || 0), label: "events" },
-      { value: "8", label: "types" },
-      { value: "Separate", label: "flow" },
-    ],
-    [events.length]
-  );
-
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
       <header className="border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
@@ -220,31 +211,26 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="overflow-hidden rounded-[2.25rem] bg-zinc-950 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.5)] sm:px-8 sm:py-10 lg:px-10">
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Event Tickets & Happenings</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Separate from Market All</span>
-            </div>
-
-            <div className="mt-5 grid gap-8 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:items-center">
+          <div className="rounded-[2.25rem] bg-zinc-950 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.5)] sm:px-8 sm:py-10 lg:px-10">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Events directory</p>
+            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Events directory</p>
-                <h1 className="mt-3 max-w-2xl text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">
-                  Browse events by card, not clutter.
+                <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">
+                  Browse events and happenings.
                 </h1>
-                <p className="mt-4 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
-                  BuyMesho Events stays separate from the main market feed so event listings can keep their own schema, layout, and browsing flow.
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+                  Don&apos;t miss!
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-4 text-center backdrop-blur-sm">
-                    <p className="text-2xl font-black tracking-tight text-white">{stat.value}</p>
-                    <p className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">{stat.label}</p>
-                  </div>
-                ))}
-              </div>
+              <button
+                type="button"
+                onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
+                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/10 hover:bg-zinc-100"
+              >
+                Create Event
+                <ArrowRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </section>
@@ -255,14 +241,6 @@ export default function EventsDirectoryPage() {
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Latest events</p>
               <h2 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 sm:text-4xl">Saved event listings</h2>
             </div>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-              className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50 sm:inline-flex"
-            >
-              Create an event
-              <ArrowRight className="h-4 w-4" />
-            </button>
           </div>
 
           {error ? (
