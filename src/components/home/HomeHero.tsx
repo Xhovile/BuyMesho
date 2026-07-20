@@ -72,7 +72,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="mt-5 flex flex-wrap justify-center gap-2"
+              className="mt-5 hidden flex-wrap justify-center gap-2 sm:flex"
             >
               {trustPills.map((item) => (
                 <span
