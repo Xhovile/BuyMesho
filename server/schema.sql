@@ -102,6 +102,29 @@ CREATE TABLE IF NOT EXISTS listings (
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS events (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  creator_uid TEXT,
+  event_type TEXT NOT NULL,
+  event_title TEXT NOT NULL,
+  organizer_name TEXT NOT NULL,
+  event_date TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  venue TEXT NOT NULL,
+  location TEXT NOT NULL,
+  ticket_mode TEXT NOT NULL,
+  ticket_price DOUBLE PRECISION,
+  ticket_link TEXT,
+  description TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  poster_alt TEXT,
+  spec_values TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published',
+  deleted_at TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS buyer_cart_items (
   buyer_uid TEXT NOT NULL,
   listing_id BIGINT NOT NULL,
@@ -258,22 +281,6 @@ CREATE TABLE IF NOT EXISTS payments (
   verification TEXT,
   raw_metadata TEXT,
   raw_response TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+  created_at TEXT,
+  updated_at TEXT
 );
-
-CREATE INDEX IF NOT EXISTS idx_payments_order_id
-ON payments (order_id, created_at DESC);
-
-CREATE TABLE IF NOT EXISTS orders (
-  id TEXT PRIMARY KEY,
-  buyer_id TEXT NOT NULL,
-  seller_id TEXT NOT NULL,
-  source TEXT NOT NULL,
-  status TEXT NOT NULL,
-  currency TEXT NOT NULL,
-  subtotal_amount DOUBLE PRECISION NOT NULL,
-  subtotal_currency TEXT NOT NULL,
-  fees_amount DOUBLE PRECISION,
-  fees_currency TEXT,
-  total_amount DOUBLE PRECISION NOT NULL,
