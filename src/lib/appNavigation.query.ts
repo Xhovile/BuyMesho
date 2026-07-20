@@ -217,6 +217,18 @@ export const navigateToMarketChip = (chip: HeaderChip) => {
   pushUrl(url);
 };
 
+export const navigateToExploreWithCategory = (category: string) => {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.pathname = "/category";
+  url.searchParams.set("category", category);
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  pushUrl(url);
+};
+
 export const getAppRouteFromLocation = (
   location: Pick<Location, "pathname" | "search">
 ): AppRoute => {
