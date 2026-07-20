@@ -3,12 +3,12 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, Ticket } from "lucide
 
 import {
   EVENTS_PATH,
-  EVENTS_CREATE_PATH,
   EXPLORE_PATH,
   HOME_PATH,
   navigateBackOrPath,
   navigateToPath,
 } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import {
   createEmptyEventValues,
   getEventItemConfig,
@@ -17,14 +17,29 @@ import {
   validateEventValues,
 } from "./eventSchemas";
 
-const INITIAL_EVENT_TYPE = getEventItemTypes()[0] ?? "Concert";
-
-type EventDraft = {
-  id: string;
-  eventType: string;
-  values: Record<string, unknown>;
-  submittedAt: string;
+type SavedEvent = {
+  id: number;
+  creator_uid: string | null;
+  event_type: string;
+  event_title: string;
+  organizer_name: string;
+  event_date: string;
+  start_time: string;
+  venue: string;
+  location: string;
+  ticket_mode: string;
+  ticket_price: number | null;
+  ticket_link: string | null;
+  description: string;
+  contact_whatsapp: string | null;
+  poster_alt: string | null;
+  spec_values: Record<string, unknown>;
+  status: string;
+  created_at: string;
+  updated_at: string;
 };
+
+const INITIAL_EVENT_TYPE = getEventItemTypes()[0] ?? "Concert";
 
 function fieldValueAsText(value: unknown) {
   if (Array.isArray(value)) return value.length > 0 ? value.join(", ") : "—";
@@ -154,7 +169,8 @@ export default function EventsCreatePage() {
   const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [createdEvent, setCreatedEvent] = useState<EventDraft | null>(null);
+  const [createdEvent, setCreatedEvent] = useState<SavedEvent | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const config = getEventItemConfig(eventType) ?? getEventItemConfig(INITIAL_EVENT_TYPE);
   const fieldMap = useMemo(() => {
@@ -173,7 +189,7 @@ export default function EventsCreatePage() {
     setCreatedEvent(null);
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!config) {
       setFormError("No event schema is available for this selection.");
@@ -192,21 +208,41 @@ export default function EventsCreatePage() {
       return;
     }
 
-    setFieldErrors({});
-    setFormError(null);
-    setCreatedEvent({
-      id: `event-${Date.now()}`,
-      eventType,
-      values: { ...values },
-      submittedAt: new Date().toISOString(),
-    });
+    setSubmitting(true);
+    try {
+      const response = (await apiFetch("/api/events", {
+        method: "POST",
+        body: JSON.stringify({
+          event_type: eventType,
+          spec_values: values,
+        }),
+      })) as { success?: boolean; event?: SavedEvent | null };
+
+      if (!response?.event) {
+        throw new Error("The event was saved, but no event data was returned.");
+      }
+
+      setFieldErrors({});
+      setFormError(null);
+      setCreatedEvent(response.event);
+      setValues(response.event.spec_values ?? values);
+      setEventType(response.event.event_type || eventType);
+    } catch (err: any) {
+      setFormError(err?.message || "Could not save the event.");
+      setCreatedEvent(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const previewTitle = String(values.event_title || values.theme || values.event_focus || eventType);
-  const previewDate = values.event_date || values.registration_deadline || values.start_time;
-  const previewLocation = values.location || values.venue || values.university_name || values.host_organization;
-  const previewTicketMode = values.ticket_mode;
-  const previewPrice = formatMoney(values.ticket_price);
+  const previewSource = createdEvent?.spec_values ?? values;
+  const previewTitle = String(
+    createdEvent?.event_title || previewSource.event_title || previewSource.theme || previewSource.event_focus || eventType
+  );
+  const previewDate = createdEvent?.event_date || previewSource.event_date || previewSource.registration_deadline || previewSource.start_time;
+  const previewLocation = createdEvent?.location || previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization;
+  const previewTicketMode = createdEvent?.ticket_mode || previewSource.ticket_mode;
+  const previewPrice = formatMoney(createdEvent?.ticket_price ?? previewSource.ticket_price);
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -312,9 +348,10 @@ export default function EventsCreatePage() {
               <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
                 >
-                  Post event
+                  {submitting ? "Posting..." : "Post event"}
                   <ArrowRight className="h-4 w-4" />
                 </button>
 
@@ -336,7 +373,7 @@ export default function EventsCreatePage() {
 
           <aside className="space-y-6">
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Temporary preview</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Saved preview</p>
               <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-zinc-950">How the event will look</h2>
 
               <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-950 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.35)]">
@@ -364,15 +401,15 @@ export default function EventsCreatePage() {
                 <div className="mt-4 rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
                   <div className="flex items-center gap-2 font-extrabold">
                     <CheckCircle2 className="h-4 w-4" />
-                    Temporary event posted
+                    Event saved
                   </div>
                   <p className="mt-2 leading-relaxed">
-                    This preview is now visible as a temporary event listing until the real posting flow is wired.
+                    The event has been posted to the database and is now ready for the Events directory flow.
                   </p>
                 </div>
               ) : (
                 <p className="mt-4 text-sm leading-relaxed text-zinc-600">
-                  When you post, this page will show a temporary event listing here first. Later, this can be connected to the live save/post flow.
+                  When you post, the saved event will appear here using the server response.
                 </p>
               )}
             </section>
@@ -382,7 +419,7 @@ export default function EventsCreatePage() {
               <ul className="mt-4 space-y-3 text-sm leading-relaxed text-zinc-600">
                 <li>• Picks the event schema from the type you choose.</li>
                 <li>• Shows the matching fields and validation rules.</li>
-                <li>• Builds a temporary event preview after posting.</li>
+                <li>• Saves the event to the backend and shows the persisted response.</li>
               </ul>
             </section>
           </aside>
