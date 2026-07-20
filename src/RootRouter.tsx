@@ -7,6 +7,8 @@ import {
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
   ADMIN_BALANCE_PATH,
+  EVENTS_CREATE_PATH,
+  EVENTS_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
   navigateToPath,
@@ -236,7 +238,7 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath === "/explore/lay-by" || locationPath === "/explore/events" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
+        {locationPath === EVENTS_PATH || locationPath === EVENTS_CREATE_PATH || locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
           <MarketComingSoonPage />
         ) : locationPath === "/explore/sellers" ? (
           <SellersDirectoryPage />
@@ -343,7 +345,9 @@ export default function RootRouter() {
         ) : locationPath === "/safety" ? (
           <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : locationPath === "/report" ? (
-          <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} isLoggedIn={!!firebaseUser} />
+          <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} />
+        ) : locationPath === "/connect/callback" ? (
+          <ConnectCallbackPage />
         ) : (
           <HomePage />
         )}
