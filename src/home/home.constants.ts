@@ -54,4 +54,4 @@ export const featuredSections: FeaturedSection[] = [
   },
 ];
 
-export const trustPills = ["For everyone", "Growing student entrepreneurs"] as const;
+export const trustPills = ["Everyone can shop", "Students can sell"] as const;
