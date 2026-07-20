@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
-import { motion, AnimatePresence } from "motion/react";
 import {
   DISPUTES_PATH,
   ADMIN_AUDIT_PATH,
