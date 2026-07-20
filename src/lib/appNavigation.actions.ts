@@ -35,6 +35,7 @@ import {
   PAYMENT_METHOD_PATH,
   PAYMENT_RETURN_PATH,
   PAYMENTS_HUB_PATH,
+  PRIVACY_PATH,
   PROFILE_PATH,
   REPORT_PATH,
   SAVED_PATH,
@@ -48,9 +49,8 @@ import {
   TRACK_ORDER_PATH,
   VERIFY_EMAIL_PATH,
   sanitizeInternalReturnPath,
-  type AppRoute,
 } from "./appNavigation.paths";
-import { getMarketPathFromLocation, writeExploreStateToUrl, type ExploreQueryState } from "./appNavigation.query";
+import { writeExploreStateToUrl, type ExploreQueryState } from "./appNavigation.query";
 
 const hasWindow = () => typeof window !== "undefined";
 
@@ -144,7 +144,7 @@ export const navigateToExplore = (state?: Partial<ExploreQueryState>) => {
 export const navigateToSaved = () => navigateToPath(SAVED_PATH);
 export const navigateToHidden = () => navigateToPath(HIDDEN_PATH);
 export const navigateToSettings = () => navigateToPath(SETTINGS_PATH);
-export const navigateToPrivacy = () => navigateToPath(SETTINGS_PATH);
+export const navigateToPrivacy = () => navigateToPath(PRIVACY_PATH);
 export const navigateToTerms = () => navigateToPath(TERMS_PATH);
 export const navigateToSafety = () => navigateToPath(SAFETY_PATH);
 export const navigateToReport = () => navigateToPath(REPORT_PATH);
