@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   DISPUTES_PATH,
@@ -22,6 +22,7 @@ import {
   navigateToLoginWithReturnPath,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import ScrollToTopFab from "./components/ScrollToTopFab";
 import loaderImage from "../photos/LoaderPic.png";
 
 const App = lazy(() => import("./App.new"));
@@ -352,6 +353,11 @@ export default function RootRouter() {
           <HomePage />
         )}
       </Suspense>
+
+      <ScrollToTopFab
+        show={showScrollTop}
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      />
     </>
   );
 }
