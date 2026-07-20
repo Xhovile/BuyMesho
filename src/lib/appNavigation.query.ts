@@ -21,7 +21,6 @@ import {
   EXPLORE_PATH,
   FORGOT_PASSWORD_PATH,
   HIDDEN_PATH,
-  HOME_PATH,
   LISTING_PATH,
   LOGIN_PATH,
   MARKET_CHIP_PATHS,
@@ -41,7 +40,6 @@ import {
   TERMS_PATH,
   VERIFY_EMAIL_PATH,
   type AppRoute,
-  isAppHistoryState,
 } from "./appNavigation.paths";
 
 export type ExploreQueryState = {
@@ -156,7 +154,7 @@ export const getMarketPathFromLocation = (pathname: string) => {
   return EXPLORE_PATH;
 };
 
-const writeExploreStateToUrl = (url: URL, state: Partial<ExploreQueryState>) => {
+export const writeExploreStateToUrl = (url: URL, state: Partial<ExploreQueryState>) => {
   EXPLORE_QUERY_KEYS.forEach((key) => url.searchParams.delete(key));
 
   if (state.search) url.searchParams.set("search", state.search);
@@ -176,6 +174,16 @@ const writeExploreStateToUrl = (url: URL, state: Partial<ExploreQueryState>) => 
   }
 };
 
+const pushUrl = (url: URL, replace = false) => {
+  if (replace) {
+    window.history.replaceState({ __buymesho: true }, "", url.toString());
+  } else {
+    window.history.pushState({ __buymesho: true }, "", url.toString());
+  }
+  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 const syncExploreStateInUrl = (
   state: Partial<ExploreQueryState>,
   mode: "replace" | "push" = "replace"
@@ -187,12 +195,7 @@ const syncExploreStateInUrl = (
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
   writeExploreStateToUrl(url, state);
-
-  if (mode === "push") {
-    window.history.pushState({ __buymesho: true }, "", url.toString());
-  } else {
-    window.history.replaceState({ __buymesho: true }, "", url.toString());
-  }
+  pushUrl(url, mode === "replace");
 };
 
 export const replaceExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
@@ -204,7 +207,14 @@ export const pushExploreStateInUrl = (state: Partial<ExploreQueryState>) => {
 };
 
 export const navigateToMarketChip = (chip: HeaderChip) => {
-  navigateToPath(MARKET_CHIP_PATHS[chip]);
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  url.pathname = MARKET_CHIP_PATHS[chip];
+  url.searchParams.delete("listing");
+  url.searchParams.delete("image");
+  url.searchParams.delete("uid");
+  url.searchParams.delete("id");
+  pushUrl(url);
 };
 
 export const getAppRouteFromLocation = (
