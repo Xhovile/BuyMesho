@@ -164,6 +164,12 @@ export const navigateToSellerProfile = (uid: string) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
+export const getSellerUidFromUrl = () => {
+  if (!hasWindow()) return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("uid");
+};
+
 export const navigateToSellerDashboard = () => navigateToPath(SELLER_DASHBOARD_PATH);
 export const navigateToSellerPayouts = () => navigateToPath(SELLER_PAYOUTS_PATH);
 export const navigateToListingDetails = (listingId: string | number, imageIndex: number = 0) => {
