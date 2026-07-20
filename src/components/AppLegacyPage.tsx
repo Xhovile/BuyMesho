@@ -50,7 +50,6 @@ export default function AppLegacyPage(props: AppLegacyState) {
         setConfirmState={props.setConfirmState}
         feedback={props.feedback}
         setFeedback={props.setFeedback}
-        showScrollTop={props.showScrollTop}
         handleUpdateListing={props.handleUpdateListing}
         showFeedback={props.showFeedback}
       />
