@@ -30,6 +30,29 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
       hard_delete_after TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      creator_uid TEXT,
+      event_type TEXT NOT NULL,
+      event_title TEXT NOT NULL,
+      organizer_name TEXT NOT NULL,
+      event_date TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      venue TEXT NOT NULL,
+      location TEXT NOT NULL,
+      ticket_mode TEXT NOT NULL,
+      ticket_price REAL,
+      ticket_link TEXT,
+      description TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      poster_alt TEXT,
+      spec_values TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'published',
+      deleted_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       order_id TEXT NOT NULL,
@@ -256,47 +279,21 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "listings", "deleted_at", "TEXT");
   ensureColumn(db, "listings", "deleted_by_uid", "TEXT");
   ensureColumn(db, "listings", "hard_delete_after", "TEXT");
-
-  db.exec(`
-    DROP INDEX IF EXISTS idx_payment_webhook_events_provider_event_id;
-    DROP INDEX IF EXISTS idx_payment_webhook_events_dedupe;
-
-    CREATE INDEX IF NOT EXISTS idx_listings_hard_delete_after
-    ON listings(hard_delete_after)
-    WHERE deleted_at IS NOT NULL;
-
-    CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_reference
-    ON payment_webhook_events(reference);
-
-    CREATE INDEX IF NOT EXISTS idx_payment_webhook_events_created_at
-    ON payment_webhook_events(created_at DESC);
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_provider_event_id_active
-    ON payment_webhook_events(provider, provider_event_id)
-    WHERE provider_event_id IS NOT NULL AND processing_status <> 'duplicate';
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_dedupe_active
-    ON payment_webhook_events(provider, tx_ref, event_type, payload_hash)
-    WHERE tx_ref IS NOT NULL
-      AND event_type IS NOT NULL
-      AND payload_hash IS NOT NULL
-      AND processing_status <> 'duplicate';
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_webhook_events_reference_event_active
-    ON payment_webhook_events(provider, reference, event_type)
-    WHERE reference IS NOT NULL
-      AND event_type IS NOT NULL
-      AND processing_status <> 'duplicate';
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_release_escrow
-    ON payouts(escrow_id)
-    WHERE escrow_id IS NOT NULL AND release_entry_id IS NOT NULL;
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_provider_charge_id
-    ON payouts(provider_charge_id)
-    WHERE provider_charge_id IS NOT NULL;
-
-    CREATE INDEX IF NOT EXISTS idx_payouts_status
-    ON payouts(status, created_at DESC);
-  `);
+  ensureColumn(db, "events", "creator_uid", "TEXT");
+  ensureColumn(db, "events", "event_type", "TEXT NOT NULL");
+  ensureColumn(db, "events", "event_title", "TEXT NOT NULL");
+  ensureColumn(db, "events", "organizer_name", "TEXT NOT NULL");
+  ensureColumn(db, "events", "event_date", "TEXT NOT NULL");
+  ensureColumn(db, "events", "start_time", "TEXT NOT NULL");
+  ensureColumn(db, "events", "venue", "TEXT NOT NULL");
+  ensureColumn(db, "events", "location", "TEXT NOT NULL");
+  ensureColumn(db, "events", "ticket_mode", "TEXT NOT NULL");
+  ensureColumn(db, "events", "ticket_price", "REAL");
+  ensureColumn(db, "events", "ticket_link", "TEXT");
+  ensureColumn(db, "events", "description", "TEXT NOT NULL");
+  ensureColumn(db, "events", "contact_whatsapp", "TEXT");
+  ensureColumn(db, "events", "poster_alt", "TEXT");
+  ensureColumn(db, "events", "spec_values", "TEXT NOT NULL");
+  ensureColumn(db, "events", "status", "TEXT NOT NULL DEFAULT 'published'");
+  ensureColumn(db, "events", "deleted_at", "TEXT");
 }
