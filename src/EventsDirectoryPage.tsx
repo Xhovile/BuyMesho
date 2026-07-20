@@ -1,6 +1,6 @@
 import { ArrowRight, Ticket } from "lucide-react";
 
-import { navigateToPath, HOME_PATH, EXPLORE_PATH } from "./lib/appNavigation";
+import { EVENTS_CREATE_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 
 export default function EventsDirectoryPage() {
   return (
@@ -44,8 +44,8 @@ export default function EventsDirectoryPage() {
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <button
               type="button"
-              disabled
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white opacity-70"
+              onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
+              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               Create an event
               <ArrowRight className="h-4 w-4" />
