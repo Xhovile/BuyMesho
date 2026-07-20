@@ -3,7 +3,6 @@ import ConfirmModal from "./ConfirmModal";
 import FeedbackModal from "./FeedbackModal";
 import EditListingModal from "./EditListingModal";
 import ReportListingModal from "./ReportListingModal";
-import ScrollToTopFab from "./ScrollToTopFab";
 import type { AppLegacyState } from "../hooks/useAppLegacyState";
 
 type AppLegacyOverlaysProps = Pick<
@@ -16,7 +15,6 @@ type AppLegacyOverlaysProps = Pick<
   | "setConfirmState"
   | "feedback"
   | "setFeedback"
-  | "showScrollTop"
   | "handleUpdateListing"
   | "showFeedback"
 >;
@@ -30,7 +28,6 @@ export default function AppLegacyOverlays({
   setConfirmState,
   feedback,
   setFeedback,
-  showScrollTop,
   handleUpdateListing,
   showFeedback,
 }: AppLegacyOverlaysProps) {
@@ -71,11 +68,6 @@ export default function AppLegacyOverlays({
           onClose={() => setFeedback(null)}
         />
       )}
-
-      <ScrollToTopFab
-        show={showScrollTop}
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      />
     </>
   );
 }
