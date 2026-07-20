@@ -58,6 +58,29 @@ function ensureExtraTables() {
       status TEXT NOT NULL DEFAULT 'open',
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS events (
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      creator_uid TEXT,
+      event_type TEXT NOT NULL,
+      event_title TEXT NOT NULL,
+      organizer_name TEXT NOT NULL,
+      event_date TEXT NOT NULL,
+      start_time TEXT NOT NULL,
+      venue TEXT NOT NULL,
+      location TEXT NOT NULL,
+      ticket_mode TEXT NOT NULL,
+      ticket_price DOUBLE PRECISION,
+      ticket_link TEXT,
+      description TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      poster_alt TEXT,
+      spec_values TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'published',
+      deleted_at TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 }
 
