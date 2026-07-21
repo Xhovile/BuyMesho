@@ -1,15 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  CalendarDays,
-  ChevronLeft,
-  ExternalLink,
-  Loader2,
-  MapPin,
-  MessageCircle,
-  Share2,
-  ShoppingBag,
-  Ticket,
-} from "lucide-react";
+import { ChevronDown, ChevronLeft, ExternalLink, Loader2, MessageCircle, Share2, ShoppingBag, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -205,13 +195,31 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
+function AccordionSection({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <section className="w-full">
-      <div className="pb-3">
-        <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">{title}</h2>
-      </div>
-      <div className="border-t border-zinc-200/70">{children}</div>
+    <section className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-zinc-50 sm:px-6"
+      >
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Accordion</p>
+          <h2 className="mt-1 text-lg font-black tracking-[-0.04em] text-zinc-950">{title}</h2>
+        </div>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? <div className="border-t border-zinc-200/70 px-5 sm:px-6">{children}</div> : null}
     </section>
   );
 }
@@ -234,6 +242,8 @@ export default function EventDetailsPage() {
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [coreOpen, setCoreOpen] = useState(true);
+  const [extraOpen, setExtraOpen] = useState(true);
 
   useEffect(() => {
     if (!eventId) {
@@ -362,6 +372,15 @@ export default function EventDetailsPage() {
     }
   };
 
+  const coreRows = [
+    ["Event title", event.event_title],
+    ["Organizer name", event.organizer_name],
+    ["Venue", event.venue || "—"],
+    ["Location", event.location || "—"],
+    ["Ticket mode", event.ticket_mode || "—"],
+    ["Contact WhatsApp", event.contact_whatsapp || "—"],
+  ] as const;
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
@@ -431,17 +450,14 @@ export default function EventDetailsPage() {
                 </div>
               </section>
 
-              <div className="grid gap-8 lg:grid-cols-2">
-                <SectionBox title="Core details">
-                  <DetailRow label="Event title" value={event.event_title} />
-                  <DetailRow label="Organizer name" value={event.organizer_name} />
-                  <DetailRow label="Venue" value={event.venue || "—"} />
-                  <DetailRow label="Location" value={event.location || "—"} />
-                  <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
-                  <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
-                </SectionBox>
+              <div className="grid gap-6 lg:grid-cols-2">
+                <AccordionSection title="Core details" open={coreOpen} onToggle={() => setCoreOpen((value) => !value)}>
+                  {coreRows.map(([label, value]) => (
+                    <DetailRow key={label} label={label} value={value} />
+                  ))}
+                </AccordionSection>
 
-                <SectionBox title="Event specific details">
+                <AccordionSection title="Event specific details" open={extraOpen} onToggle={() => setExtraOpen((value) => !value)}>
                   {extraSchemaFields.length > 0 ? (
                     extraSchemaFields.map((field) => {
                       const rawValue = resolveFieldValue(event, field);
@@ -451,7 +467,7 @@ export default function EventDetailsPage() {
                   ) : (
                     <div className="py-4 text-sm text-zinc-500">No extra event-specific fields.</div>
                   )}
-                </SectionBox>
+                </AccordionSection>
               </div>
 
               <div className="border-t border-zinc-200 pt-4">
