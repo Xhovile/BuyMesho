@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, Loader2, MapPin, Ticket } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import {
+  ArrowRight,
+  CalendarDays,
+  ExternalLink,
+  Loader2,
+  MapPin,
+  Ticket,
+  X,
+} from "lucide-react";
 
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
@@ -76,7 +85,171 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
-function DesktopEventCard({ item }: { item: EventRecord }) {
+function EventDetailsModal({
+  item,
+  onClose,
+}: {
+  item: EventRecord | null;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    if (!item) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [item, onClose]);
+
+  const price = formatMoney(item?.ticket_price);
+  const date = formatDate(item?.event_date || "");
+  const posterUrl = item ? getPosterUrl(item) : "";
+  const posterAlt = item ? getPosterAlt(item) : "";
+  const accent = item ? posterAccent(item.event_type) : "from-zinc-800 via-zinc-950 to-black";
+
+  return (
+    <AnimatePresence>
+      {item ? (
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-0 sm:items-center sm:p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-zinc-950/70 backdrop-blur-sm"
+          />
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 16 }}
+            className="relative w-full max-w-3xl overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2rem]"
+          >
+            <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4 sm:px-6">
+              <div>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+                  Event details
+                </p>
+                <h3 className="mt-1 text-lg font-black tracking-[-0.04em] text-zinc-950">
+                  {item.event_title}
+                </h3>
+              </div>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-full p-2 transition-colors hover:bg-zinc-100"
+                aria-label="Close event details"
+              >
+                <X className="h-5 w-5 text-zinc-500" />
+              </button>
+            </div>
+
+            <div className="grid gap-0 md:grid-cols-[1.05fr_0.95fr]">
+              <div className="relative min-h-[16rem] bg-zinc-100 md:min-h-full">
+                <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
+                {posterUrl ? (
+                  <img
+                    src={posterUrl}
+                    alt={posterAlt}
+                    className="relative h-full min-h-[16rem] w-full object-cover"
+                  />
+                ) : null}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/5" />
+                <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4">
+                  <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+                    {item.event_type}
+                  </span>
+                  <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+                    {item.ticket_mode}
+                  </span>
+                </div>
+                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">
+                    Organizer
+                  </p>
+                  <p className="mt-2 text-2xl font-black tracking-[-0.05em] leading-tight">
+                    {item.event_title}
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-5 sm:p-6">
+                <p className="text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  {item.description}
+                </p>
+
+                <div className="mt-5 grid gap-3 text-sm text-zinc-600">
+                  <div className="flex items-center gap-3">
+                    <CalendarDays className="h-4 w-4 text-red-900" />
+                    <span className="font-medium text-zinc-700">{date}</span>
+                    <span className="text-zinc-300">•</span>
+                    <span>{item.start_time}</span>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
+                    <span className="leading-relaxed text-zinc-700">
+                      {item.venue}
+                      {item.location ? ` • ${item.location}` : ""}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <div>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                        Ticket price
+                      </p>
+                      <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
+                    </div>
+                    <div className="min-w-0 text-right">
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                        Posted by
+                      </p>
+                      <p className="mt-1 truncate text-sm font-bold text-zinc-700">{item.organizer_name}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {item.ticket_link ? (
+                    <a
+                      href={item.ticket_link}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+                    >
+                      Open ticket link
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      ) : null}
+    </AnimatePresence>
+  );
+}
+
+function DesktopEventCard({
+  item,
+  onOpenDetails,
+}: {
+  item: EventRecord;
+  onOpenDetails: (item: EventRecord) => void;
+}) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
   const accent = posterAccent(item.event_type);
@@ -136,17 +309,22 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
             <span className="leading-relaxed text-zinc-700">
-              {item.venue}{item.location ? ` • ${item.location}` : ""}
+              {item.venue}
+              {item.location ? ` • ${item.location}` : ""}
             </span>
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket price</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                Ticket price
+              </p>
               <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
             </div>
             <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Posted by</p>
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+                Posted by
+              </p>
               <p className="mt-1 text-sm font-bold text-zinc-700">{item.organizer_name}</p>
             </div>
           </div>
@@ -155,8 +333,8 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-extrabold text-white opacity-70"
+            onClick={() => onOpenDetails(item)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
           >
             Details
             <ArrowRight className="h-4 w-4" />
@@ -177,7 +355,13 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
   );
 }
 
-function MobileEventCard({ item }: { item: EventRecord }) {
+function MobileEventCard({
+  item,
+  onOpenDetails,
+}: {
+  item: EventRecord;
+  onOpenDetails: (item: EventRecord) => void;
+}) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
   const accent = posterAccent(item.event_type);
@@ -185,7 +369,11 @@ function MobileEventCard({ item }: { item: EventRecord }) {
   const posterAlt = getPosterAlt(item);
 
   return (
-    <article className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]">
+    <button
+      type="button"
+      onClick={() => onOpenDetails(item)}
+      className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white text-left shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]"
+    >
       <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
         {posterUrl ? (
           <img
@@ -224,23 +412,28 @@ function MobileEventCard({ item }: { item: EventRecord }) {
           <div className="flex items-start gap-2">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
             <span className="leading-relaxed text-zinc-700 line-clamp-2">
-              {item.venue}{item.location ? ` • ${item.location}` : ""}
+              {item.venue}
+              {item.location ? ` • ${item.location}` : ""}
             </span>
           </div>
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
           <div>
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Ticket price</p>
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+              Ticket price
+            </p>
             <p className="mt-0.5 text-sm font-black tracking-tight text-zinc-950">{price}</p>
           </div>
           <div className="min-w-0 text-right">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Posted by</p>
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
+              Tap for details
+            </p>
             <p className="mt-0.5 truncate text-xs font-bold text-zinc-700">{item.organizer_name}</p>
           </div>
         </div>
       </div>
-    </article>
+    </button>
   );
 }
 
@@ -248,6 +441,7 @@ export default function EventsDirectoryPage() {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventRecord | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -273,6 +467,9 @@ export default function EventsDirectoryPage() {
       active = false;
     };
   }, []);
+
+  const openDetails = (item: EventRecord) => setSelectedEvent(item);
+  const closeDetails = () => setSelectedEvent(null);
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
@@ -351,13 +548,13 @@ export default function EventsDirectoryPage() {
             <>
               <div className="grid grid-cols-2 gap-3 md:hidden">
                 {events.map((item) => (
-                  <MobileEventCard key={item.id} item={item} />
+                  <MobileEventCard key={item.id} item={item} onOpenDetails={openDetails} />
                 ))}
               </div>
 
               <div className="hidden flex-wrap justify-center gap-4 md:flex">
                 {events.map((item) => (
-                  <DesktopEventCard key={item.id} item={item} />
+                  <DesktopEventCard key={item.id} item={item} onOpenDetails={openDetails} />
                 ))}
               </div>
             </>
@@ -382,6 +579,8 @@ export default function EventsDirectoryPage() {
           )}
         </section>
       </main>
+
+      <EventDetailsModal item={selectedEvent} onClose={closeDetails} />
     </div>
   );
 }
