@@ -1,9 +1,20 @@
 import { ArrowRight } from "lucide-react";
 
-import { navigateToLoginWithReturnPath, navigateToPath, EXPLORE_PATH, PRIVACY_PATH, REPORT_PATH, SAFETY_PATH, SIGNUP_PATH, TERMS_PATH } from "./lib/appNavigation";
+import {
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+  EXPLORE_PATH,
+  MARKET_CHIP_PATHS,
+  PRIVACY_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
+  SIGNUP_PATH,
+  TERMS_PATH,
+} from "./lib/appNavigation";
 import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
 import CategorySection from "./components/home/CategorySection";
+import EventsStrip from "./components/home/EventsStrip";
 import HomeHeader from "./components/home/HomeHeader";
 import HomeHero from "./components/home/HomeHero";
 import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
@@ -96,6 +107,21 @@ export default function HomePage() {
                     loading={controller.loading}
                     maxItems={8}
                     variant="featured"
+                    viewMorePath={EXPLORE_PATH}
+                  />
+                  <ListingStrip
+                    title="Deals"
+                    description="Discounted listings and special offers."
+                    listings={controller.filteredDealListings}
+                    loading={controller.loading}
+                    maxItems={8}
+                    variant="featured"
+                    viewMorePath={MARKET_CHIP_PATHS.Deals}
+                  />
+                  <EventsStrip
+                    events={controller.eventsListings}
+                    loading={controller.eventsLoading}
+                    viewMorePath={MARKET_CHIP_PATHS.Events}
                   />
                 </div>
               </section>
