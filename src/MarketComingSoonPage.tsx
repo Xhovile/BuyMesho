@@ -1,11 +1,16 @@
 import { ArrowLeft, Sparkles, X } from "lucide-react";
 
+import EventDetailsPage from "./EventDetailsPage";
 import EventsCreatePage from "./EventsCreatePage";
 import EventsDirectoryPage from "./EventsDirectoryPage";
 import { EVENTS_CREATE_PATH, EVENTS_PATH, EXPLORE_PATH, navigateBackOrPath } from "./lib/appNavigation";
 
 export default function MarketComingSoonPage() {
   if (window.location.pathname === EVENTS_PATH) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("event")) {
+      return <EventDetailsPage />;
+    }
     return <EventsDirectoryPage />;
   }
 
