@@ -63,28 +63,33 @@ export default function EventsStrip({
   viewMorePath?: string;
 }) {
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="mb-6 flex items-end justify-between gap-4">
-        <div>
-          <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
-            Events
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-            Browse events, happenings, and campus moments.
-          </p>
-        </div>
+    <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-red-950/10 bg-[radial-gradient(circle_at_top_left,rgba(127,29,29,0.14),transparent_35%),linear-gradient(135deg,rgba(24,24,27,1)_0%,rgba(39,39,42,1)_50%,rgba(255,255,255,1)_120%)] px-5 py-6 text-white sm:px-6 sm:py-7">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">
+              Live on BuyMesho
+            </p>
+            <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">
+              What is happening now.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+              See campus launches, workshops, parties, sports, and student moments before they fill up.
+            </p>
+          </div>
 
-        <button
-          type="button"
-          onClick={() => navigateToPath(viewMorePath)}
-          className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 sm:inline-flex"
-        >
-          Browse all
-          <ArrowRight className="h-4 w-4" />
-        </button>
+          <button
+            type="button"
+            onClick={() => navigateToPath(viewMorePath)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/10 hover:bg-zinc-100"
+          >
+            Open Events
+            <ArrowRight className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+      <div className="mt-6 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             Loading events...
@@ -130,7 +135,7 @@ export default function EventsStrip({
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
                     <div className="min-w-0">
                       <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">
-                        Organizer
+                        Featured event
                       </p>
                       <h3 className="mt-2 max-w-[12rem] truncate text-xl font-black tracking-[-0.05em] leading-none">
                         {item.event_title}
