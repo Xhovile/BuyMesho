@@ -27,6 +27,23 @@ type EventRecord = {
   updated_at: string;
 };
 
+const BASE_FIELD_KEYS = new Set([
+  "event_title",
+  "organizer_name",
+  "event_date",
+  "start_time",
+  "venue",
+  "location",
+  "ticket_mode",
+  "ticket_price",
+  "ticket_link",
+  "description",
+  "contact_whatsapp",
+  "poster_alt",
+]);
+
+const HIDDEN_EXTRA_KEYS = new Set(["poster_image_url", "poster_url", "poster"]);
+
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
   return `MK ${value.toLocaleString()}`;
@@ -124,12 +141,32 @@ function renderFieldValue(field: EventSpecField, value: unknown) {
   return normalizeValue(value);
 }
 
-function FieldCard({ label, value, fullWidth = false }: { label: string; value: string; fullWidth?: boolean }) {
+function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className={`rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 ${fullWidth ? "md:col-span-2" : ""}`}>
+    <div className="rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm shadow-zinc-200/20">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="mt-1 whitespace-pre-line text-sm font-bold tracking-tight text-zinc-950">{value}</p>
+      <p className="mt-1 break-words text-sm font-black tracking-tight text-zinc-950">{value}</p>
     </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 border-b border-zinc-200 px-4 py-3 last:border-b-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 sm:px-5">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="min-w-0 break-words text-sm font-semibold leading-relaxed text-zinc-950 whitespace-pre-line">{value}</p>
+    </div>
+  );
+}
+
+function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-[1.5rem] border border-zinc-200 bg-white overflow-hidden">
+      <div className="border-b border-zinc-200 px-4 py-3 sm:px-5">
+        <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">{title}</h2>
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -180,23 +217,11 @@ export default function EventDetailsPage() {
 
   const config = useMemo(() => (event ? getEventItemConfig(event.event_type) : null), [event?.event_type]);
   const schemaFields = config?.schema.fields ?? [];
-  const baseKeys = new Set([
-    "event_title",
-    "organizer_name",
-    "event_date",
-    "start_time",
-    "venue",
-    "location",
-    "ticket_mode",
-    "ticket_price",
-    "ticket_link",
-    "description",
-    "contact_whatsapp",
-    "poster_alt",
-  ]);
-  const extraSchemaFields = schemaFields.filter((field) => !baseKeys.has(field.key));
+  const extraSchemaFields = schemaFields.filter((field) => !BASE_FIELD_KEYS.has(field.key));
   const extraSpecEntries = event
-    ? Object.entries(event.spec_values ?? {}).filter(([key]) => !schemaFields.some((field) => field.key === key))
+    ? Object.entries(event.spec_values ?? {}).filter(
+        ([key]) => !schemaFields.some((field) => field.key === key) && !HIDDEN_EXTRA_KEYS.has(key),
+      )
     : [];
 
   if (loading) {
@@ -247,15 +272,15 @@ export default function EventDetailsPage() {
   const accent = posterAccent(event.event_type);
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen overflow-x-hidden bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex items-center gap-3 text-left">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
               <Ticket className="h-5 w-5" />
             </div>
-            <div>
-              <p className="text-lg font-black tracking-tight">
+            <div className="min-w-0">
+              <p className="truncate text-lg font-black tracking-tight">
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
@@ -266,7 +291,7 @@ export default function EventDetailsPage() {
           <button
             type="button"
             onClick={() => navigateBackOrPath(EVENTS_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
+            className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
           >
             Back to Events
             <ArrowRight className="h-4 w-4" />
@@ -274,10 +299,10 @@ export default function EventDetailsPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-        <section className="overflow-hidden rounded-[2.25rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
-          <div className="grid gap-0 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent} lg:aspect-auto lg:min-h-full`}>
+      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
+            <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent}`}>
               {posterUrl ? (
                 <img src={posterUrl} alt={posterAlt} className="absolute inset-0 h-full w-full object-cover" />
               ) : null}
@@ -292,51 +317,56 @@ export default function EventDetailsPage() {
               </div>
               <div className="absolute inset-x-0 bottom-0 p-5 text-white">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Event title</p>
-                <h1 className="mt-2 max-w-2xl text-3xl font-black tracking-[-0.06em] leading-[0.95] sm:text-5xl lg:text-6xl">
+                <h1 className="mt-2 break-words text-3xl font-black tracking-[-0.06em] leading-[0.95] sm:text-5xl lg:text-6xl">
                   {event.event_title}
                 </h1>
               </div>
             </div>
 
             <div className="p-5 sm:p-6 lg:p-8">
-              <div className="grid gap-3 md:grid-cols-2">
-                <FieldCard label="Event title" value={event.event_title} fullWidth />
-                <FieldCard label="Organizer name" value={event.organizer_name} fullWidth />
-                <FieldCard label="Event date" value={date} />
-                <FieldCard label="Start time" value={event.start_time || "—"} />
-                <FieldCard label="Venue" value={event.venue || "—"} />
-                <FieldCard label="Location" value={event.location || "—"} />
-                <FieldCard label="Ticket mode" value={event.ticket_mode || "—"} />
-                <FieldCard label="Ticket price" value={price} />
-                <FieldCard label="Contact WhatsApp" value={event.contact_whatsapp || "—"} fullWidth />
-                <FieldCard label="Poster alt text" value={event.poster_alt || "—"} fullWidth />
-                <FieldCard label="Description" value={event.description || "—"} fullWidth />
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <SummaryCard label="Event type" value={event.event_type} />
+                <SummaryCard label="Date" value={date} />
+                <SummaryCard label="Venue" value={event.venue || "—"} />
+                <SummaryCard label="Ticket price" value={price} />
               </div>
 
-              {extraSchemaFields.length > 0 ? (
-                <div className="mt-6">
-                  <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event-specific details</h2>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div className="mt-6 grid gap-3">
+                <SectionBox title="Core details">
+                  <DetailRow label="Event title" value={event.event_title} />
+                  <DetailRow label="Organizer name" value={event.organizer_name} />
+                  <DetailRow label="Start time" value={event.start_time || "—"} />
+                  <DetailRow label="Location" value={event.location || "—"} />
+                  <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
+                  <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
+                </SectionBox>
+
+                <SectionBox title="Description">
+                  <div className="px-4 py-4 sm:px-5">
+                    <p className="break-words text-sm leading-relaxed text-zinc-900 whitespace-pre-line">
+                      {event.description || "—"}
+                    </p>
+                  </div>
+                </SectionBox>
+
+                {extraSchemaFields.length > 0 ? (
+                  <SectionBox title="Event-specific details">
                     {extraSchemaFields.map((field) => {
                       const rawValue = resolveFieldValue(event, field);
                       const label = field.label || fieldLabelFromKey(field.key);
-                      const isFullWidth = field.type === "textarea" || field.type === "multiselect";
-                      return <FieldCard key={field.key} label={label} value={renderFieldValue(field, rawValue)} fullWidth={isFullWidth} />;
+                      return <DetailRow key={field.key} label={label} value={renderFieldValue(field, rawValue)} />;
                     })}
-                  </div>
-                </div>
-              ) : null}
+                  </SectionBox>
+                ) : null}
 
-              {extraSpecEntries.length > 0 ? (
-                <div className="mt-6">
-                  <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Additional stored details</h2>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                {extraSpecEntries.length > 0 ? (
+                  <SectionBox title="Additional stored details">
                     {extraSpecEntries.map(([key, value]) => (
-                      <FieldCard key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
+                      <DetailRow key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
                     ))}
-                  </div>
-                </div>
-              ) : null}
+                  </SectionBox>
+                ) : null}
+              </div>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {event.ticket_link ? (
@@ -367,6 +397,21 @@ export default function EventDetailsPage() {
               </div>
             </div>
           </div>
+
+          <aside className="space-y-4">
+            <SectionBox title="At a glance">
+              <DetailRow label="Event title" value={event.event_title} />
+              <DetailRow label="Event date" value={date} />
+              <DetailRow label="Venue" value={event.venue || "—"} />
+              <DetailRow label="Price" value={price} />
+            </SectionBox>
+
+            <SectionBox title="Status">
+              <DetailRow label="Published status" value={event.status} />
+              <DetailRow label="Created at" value={event.created_at} />
+              <DetailRow label="Updated at" value={event.updated_at} />
+            </SectionBox>
+          </aside>
         </section>
       </main>
     </div>
