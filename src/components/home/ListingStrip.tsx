@@ -10,6 +10,7 @@ export default function ListingStrip({
   loading,
   maxItems = 8,
   variant = "featured",
+  viewMorePath = EXPLORE_PATH,
 }: {
   title: string;
   description: string;
@@ -17,6 +18,7 @@ export default function ListingStrip({
   loading: boolean;
   maxItems?: number;
   variant?: ListingStripVariant;
+  viewMorePath?: string;
 }) {
   const isFeatured = variant === "featured";
 
@@ -35,7 +37,7 @@ export default function ListingStrip({
         {isFeatured ? (
           <button
             type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
+            onClick={() => navigateToPath(viewMorePath)}
             className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 sm:inline-flex"
           >
             Browse all
