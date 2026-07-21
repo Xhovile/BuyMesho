@@ -322,6 +322,7 @@ export default function EventsCreatePage() {
   const eventTypes = useMemo(() => getEventItemTypes(), []);
   const [eventType, setEventType] = useState(INITIAL_EVENT_TYPE);
   const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
+  const [posterImageUrl, setPosterImageUrl] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -338,6 +339,7 @@ export default function EventsCreatePage() {
   const handleTypeChange = (nextType: string) => {
     setEventType(nextType);
     setValues(createEmptyEventValues(nextType));
+    setPosterImageUrl("");
     setFieldErrors({});
     setFormError(null);
   };
@@ -362,11 +364,15 @@ export default function EventsCreatePage() {
 
     setSubmitting(true);
     try {
+      const posterUrl = posterImageUrl.trim();
       const response = (await apiFetch("/api/events", {
         method: "POST",
         body: JSON.stringify({
           event_type: eventType,
-          spec_values: values,
+          spec_values: {
+            ...values,
+            ...(posterUrl ? { poster_image_url: posterUrl } : {}),
+          },
         }),
       })) as { success?: boolean; event?: SavedEvent | null };
 
@@ -475,6 +481,24 @@ export default function EventsCreatePage() {
                     );
                   })
                 )}
+
+                <section className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">Poster</h2>
+                    <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
+                  </div>
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-600">
+                    Paste a poster image link. This will show on the event card.
+                  </p>
+                  <input
+                    type="url"
+                    inputMode="url"
+                    value={posterImageUrl}
+                    onChange={(e) => setPosterImageUrl(e.target.value)}
+                    placeholder="https://..."
+                    className="mt-3 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                  />
+                </section>
               </div>
 
               {formError ? (
@@ -497,6 +521,7 @@ export default function EventsCreatePage() {
                   type="button"
                   onClick={() => {
                     setValues(createEmptyEventValues(eventType));
+                    setPosterImageUrl("");
                     setFieldErrors({});
                     setFormError(null);
                   }}
