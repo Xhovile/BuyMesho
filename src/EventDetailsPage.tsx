@@ -3,7 +3,7 @@ import { ArrowRight, CalendarDays, ExternalLink, Loader2, MapPin, Ticket } from 
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
-import { EVENTS_PATH, EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
+import { EVENTS_PATH, EXPLORE_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 
 type EventRecord = {
   id: number;
@@ -57,6 +57,41 @@ function formatDate(value: string) {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatClock(value: string) {
+  const raw = (value || "").trim();
+  if (!raw) return "—";
+
+  const lower = raw.toLowerCase();
+  if (lower.includes("am") || lower.includes("pm")) {
+    return raw.replace(/\s+/g, " ").replace(/(am|pm)/i, (m) => m.toUpperCase());
+  }
+
+  const match = raw.match(/^(\d{1,2})(?::(\d{2}))?(?::\d{2})?$/);
+  if (!match) return raw;
+
+  const hours = Number(match[1]);
+  const minutes = match[2] || "00";
+  if (!Number.isFinite(hours) || hours < 0 || hours > 23) return raw;
+
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHour = hours % 12 || 12;
+  return `${displayHour}:${minutes} ${period}`;
+}
+
+function formatDateTime(value: string) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 }
 
@@ -138,6 +173,7 @@ function resolveFieldValue(item: EventRecord, field: EventSpecField) {
 
 function renderFieldValue(field: EventSpecField, value: unknown) {
   if (field.key === "ticket_price") return formatMoney(typeof value === "number" ? value : Number(value));
+  if (field.key === "start_time") return formatClock(typeof value === "string" ? value : String(value ?? ""));
   return normalizeValue(value);
 }
 
@@ -154,14 +190,14 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid gap-1 border-b border-zinc-200 px-4 py-3 last:border-b-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 sm:px-5">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      <p className="min-w-0 break-words text-sm font-semibold leading-relaxed text-zinc-950 whitespace-pre-line">{value}</p>
+      <p className="min-w-0 whitespace-pre-line break-words text-sm font-semibold leading-relaxed text-zinc-950">{value}</p>
     </div>
   );
 }
 
 function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-[1.5rem] border border-zinc-200 bg-white overflow-hidden">
+    <section className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
       <div className="border-b border-zinc-200 px-4 py-3 sm:px-5">
         <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">{title}</h2>
       </div>
@@ -270,6 +306,9 @@ export default function EventDetailsPage() {
   const posterUrl = getPosterUrl(event);
   const posterAlt = getPosterAlt(event);
   const accent = posterAccent(event.event_type);
+  const createdAt = formatDateTime(event.created_at);
+  const updatedAt = formatDateTime(event.updated_at);
+  const startTime = formatClock(event.start_time);
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-zinc-100 text-zinc-900">
@@ -327,7 +366,7 @@ export default function EventDetailsPage() {
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <SummaryCard label="Event type" value={event.event_type} />
                 <SummaryCard label="Date" value={date} />
-                <SummaryCard label="Venue" value={event.venue || "—"} />
+                <SummaryCard label="Start time" value={startTime} />
                 <SummaryCard label="Ticket price" value={price} />
               </div>
 
@@ -335,7 +374,7 @@ export default function EventDetailsPage() {
                 <SectionBox title="Core details">
                   <DetailRow label="Event title" value={event.event_title} />
                   <DetailRow label="Organizer name" value={event.organizer_name} />
-                  <DetailRow label="Start time" value={event.start_time || "—"} />
+                  <DetailRow label="Venue" value={event.venue || "—"} />
                   <DetailRow label="Location" value={event.location || "—"} />
                   <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
                   <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
@@ -343,7 +382,7 @@ export default function EventDetailsPage() {
 
                 <SectionBox title="Description">
                   <div className="px-4 py-4 sm:px-5">
-                    <p className="break-words text-sm leading-relaxed text-zinc-900 whitespace-pre-line">
+                    <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">
                       {event.description || "—"}
                     </p>
                   </div>
@@ -376,23 +415,16 @@ export default function EventDetailsPage() {
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                   >
-                    Ticket Link
+                    Buy Ticket
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 ) : null}
                 <button
                   type="button"
-                  onClick={() => navigateBackOrPath(EVENTS_PATH)}
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
                   className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
                 >
-                  Back to Events
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(HOME_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Home
+                  Market
                 </button>
               </div>
             </div>
@@ -402,14 +434,15 @@ export default function EventDetailsPage() {
             <SectionBox title="At a glance">
               <DetailRow label="Event title" value={event.event_title} />
               <DetailRow label="Event date" value={date} />
+              <DetailRow label="Start time" value={startTime} />
               <DetailRow label="Venue" value={event.venue || "—"} />
               <DetailRow label="Price" value={price} />
             </SectionBox>
 
             <SectionBox title="Status">
               <DetailRow label="Published status" value={event.status} />
-              <DetailRow label="Created at" value={event.created_at} />
-              <DetailRow label="Updated at" value={event.updated_at} />
+              <DetailRow label="Created at" value={createdAt} />
+              <DetailRow label="Updated at" value={updatedAt} />
             </SectionBox>
           </aside>
         </section>
