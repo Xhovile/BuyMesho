@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
