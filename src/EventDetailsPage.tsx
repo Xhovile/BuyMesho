@@ -1,5 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, MessageCircle, Share2, ShoppingBag, ShoppingCart, Ticket } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronLeft,
+  ExternalLink,
+  Loader2,
+  MapPin,
+  MessageCircle,
+  Share2,
+  ShoppingBag,
+  Ticket,
+} from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -79,6 +89,20 @@ function formatClock(value: string) {
   const period = hours >= 12 ? "PM" : "AM";
   const displayHour = hours % 12 || 12;
   return `${displayHour}:${minutes} ${period}`;
+}
+
+function formatDateTime(value: string) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
 }
 
 function posterAccent(eventType: string) {
@@ -315,7 +339,7 @@ export default function EventDetailsPage() {
         await navigator.clipboard.writeText(eventPageUrl);
       }
     } catch {
-      // Intentionally quiet. The UI should not break if sharing is unavailable.
+      // Keep silent if sharing is unavailable.
     }
   };
 
@@ -398,36 +422,37 @@ export default function EventDetailsPage() {
                 <SummaryCard label="Ticket price" value={price} />
               </div>
 
-              <SectionBox title="Core details">
-                <DetailRow label="Event title" value={event.event_title} />
-                <DetailRow label="Organizer name" value={event.organizer_name} />
-                <DetailRow label="Venue" value={event.venue || "—"} />
-                <DetailRow label="Location" value={event.location || "—"} />
-                <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
-                <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
-              </SectionBox>
+              <section className="w-full">
+                <div className="pb-3">
+                  <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Description</h2>
+                </div>
+                <div className="border-t border-zinc-200/70 pt-4">
+                  <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">{event.description || "—"}</p>
+                </div>
+              </section>
 
-              <SectionBox title="Description">
-                <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">{event.description || "—"}</p>
-              </SectionBox>
-
-              {extraSchemaFields.length > 0 ? (
-                <SectionBox title="Event-specific details">
-                  {extraSchemaFields.map((field) => {
-                    const rawValue = resolveFieldValue(event, field);
-                    const label = field.label || fieldLabelFromKey(field.key);
-                    return <DetailRow key={field.key} label={label} value={renderFieldValue(field, rawValue)} />;
-                  })}
+              <div className="grid gap-8 lg:grid-cols-2">
+                <SectionBox title="Core details">
+                  <DetailRow label="Event title" value={event.event_title} />
+                  <DetailRow label="Organizer name" value={event.organizer_name} />
+                  <DetailRow label="Venue" value={event.venue || "—"} />
+                  <DetailRow label="Location" value={event.location || "—"} />
+                  <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
+                  <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
                 </SectionBox>
-              ) : null}
 
-              {extraSpecEntries.length > 0 ? (
-                <SectionBox title="Additional stored details">
-                  {extraSpecEntries.map(([key, value]) => (
-                    <DetailRow key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
-                  ))}
+                <SectionBox title="Event specific details">
+                  {extraSchemaFields.length > 0 ? (
+                    extraSchemaFields.map((field) => {
+                      const rawValue = resolveFieldValue(event, field);
+                      const label = field.label || fieldLabelFromKey(field.key);
+                      return <DetailRow key={field.key} label={label} value={renderFieldValue(field, rawValue)} />;
+                    })
+                  ) : (
+                    <div className="py-4 text-sm text-zinc-500">No extra event-specific fields.</div>
+                  )}
                 </SectionBox>
-              ) : null}
+              </div>
 
               <div className="border-t border-zinc-200 pt-4">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
