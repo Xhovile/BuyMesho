@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
+import { ArrowRight, CalendarDays, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -311,7 +311,7 @@ export default function EventDetailsPage() {
   const startTime = formatClock(event.start_time);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
