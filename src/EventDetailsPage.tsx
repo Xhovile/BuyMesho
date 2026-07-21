@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -332,8 +332,8 @@ export default function EventDetailsPage() {
             onClick={() => navigateBackOrPath(EVENTS_PATH)}
             className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
           >
-            Back to Events
-            <ArrowRight className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
+            Back
           </button>
         </div>
       </header>
@@ -413,7 +413,7 @@ export default function EventDetailsPage() {
                     href={event.ticket_link}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-extrabold text-white hover:bg-orange-600"
                   >
                     Buy Ticket
                     <ExternalLink className="h-4 w-4" />
@@ -422,7 +422,7 @@ export default function EventDetailsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(EXPLORE_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                 >
                   Market
                 </button>
