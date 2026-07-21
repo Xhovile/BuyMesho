@@ -312,7 +312,7 @@ export default function EventDetailsPage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
@@ -338,7 +338,7 @@ export default function EventDetailsPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 sm:py-8">
+      <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-6 sm:pt-24 sm:pb-8">
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
           <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
             <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent}`}>
