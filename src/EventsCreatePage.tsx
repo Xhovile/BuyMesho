@@ -59,16 +59,17 @@ function FieldError({ message }: { message?: string }) {
 }
 
 function parseTimeValue(value: unknown): { hour: string; minute: string } {
-  if (typeof value !== "string" || !value.includes(":")) return { hour: "", minute: "" };
-  const [rawHour, rawMinute] = value.split(":");
-  const hour = rawHour?.trim();
-  const minute = rawMinute?.trim();
-  if (!hour || !minute) return { hour: "", minute: "" };
-  return { hour: hour.padStart(2, "0"), minute: minute.padStart(2, "0") };
+  if (typeof value !== "string") return { hour: "", minute: "" };
+  const [rawHour = "", rawMinute = ""] = value.split(":");
+  const hour = rawHour.trim();
+  const minute = rawMinute.trim();
+  return {
+    hour: hour ? hour.padStart(2, "0") : "",
+    minute: minute ? minute.padStart(2, "0") : "",
+  };
 }
 
 function makeTimeValue(hour: string, minute: string) {
-  if (!hour || !minute) return "";
   return `${hour}:${minute}`;
 }
 
@@ -79,6 +80,27 @@ function isDateLikeField(field: EventSpecField) {
 
 function isTimeLikeField(field: EventSpecField) {
   return field.key.toLowerCase().includes("time");
+}
+
+function normalizeNumberFields(fields: EventSpecField[], values: Record<string, unknown>) {
+  const nextValues: Record<string, unknown> = { ...values };
+
+  for (const field of fields) {
+    if (field.type !== "number") continue;
+    const rawValue = nextValues[field.key];
+
+    if (rawValue === null || rawValue === undefined || rawValue === "") {
+      nextValues[field.key] = null;
+      continue;
+    }
+
+    if (typeof rawValue === "number") continue;
+
+    const numericValue = Number(String(rawValue).trim());
+    nextValues[field.key] = Number.isNaN(numericValue) ? rawValue : numericValue;
+  }
+
+  return nextValues;
 }
 
 function AppDropdown({
@@ -144,6 +166,7 @@ function AppDropdown({
         type="button"
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
+        aria-label={label}
         className="flex w-full items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-zinc-900 outline-none transition hover:border-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
       >
         <span className={selected ? "font-medium" : "text-zinc-400"}>{selected?.label || placeholder}</span>
@@ -193,32 +216,67 @@ function AppDropdown({
 }
 
 function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue: string) => void }) {
-  const current = parseTimeValue(value);
+  const current = useMemo(() => parseTimeValue(value), [value]);
+  const [hour, setHour] = useState(current.hour);
+  const [minute, setMinute] = useState(current.minute);
+
+  useEffect(() => {
+    setHour(current.hour);
+    setMinute(current.minute);
+  }, [current.hour, current.minute]);
+
+  const commitTime = (nextHour: string, nextMinute: string) => {
+    if (nextHour && nextMinute) {
+      onChange(makeTimeValue(nextHour, nextMinute));
+    }
+  };
+
   const hourOptions: DropdownOption[] = Array.from({ length: 24 }, (_, index) => {
-    const hour = String(index).padStart(2, "0");
-    return { value: hour, label: hour };
+    const hourValue = String(index).padStart(2, "0");
+    return { value: hourValue, label: hourValue };
   });
+
   const minuteOptions: DropdownOption[] = Array.from({ length: 60 }, (_, index) => {
-    const minute = String(index).padStart(2, "0");
-    return { value: minute, label: minute };
+    const minuteValue = String(index).padStart(2, "0");
+    return { value: minuteValue, label: minuteValue };
   });
 
   return (
     <div className="mt-2 grid grid-cols-2 gap-3">
       <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Hour</span>
-        <AppDropdown label="Hour" value={current.hour} options={hourOptions} placeholder="HH" onChange={(nextHour) => onChange(makeTimeValue(nextHour, current.minute))} />
+        <AppDropdown
+          label="Hour"
+          value={hour}
+          options={hourOptions}
+          placeholder="HH"
+          onChange={(nextHour) => {
+            setHour(nextHour);
+            commitTime(nextHour, minute);
+          }}
+        />
       </div>
       <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Minute</span>
-        <AppDropdown label="Minute" value={current.minute} options={minuteOptions} placeholder="MM" onChange={(nextMinute) => onChange(makeTimeValue(current.hour, nextMinute))} />
+        <AppDropdown
+          label="Minute"
+          value={minute}
+          options={minuteOptions}
+          placeholder="MM"
+          onChange={(nextMinute) => {
+            setMinute(nextMinute);
+            commitTime(hour, nextMinute);
+          }}
+        />
       </div>
     </div>
   );
 }
 
 function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: unknown; error?: string; onChange: (nextValue: unknown) => void }) {
-  const baseClass = "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
+  const baseClass =
+    "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
+
   return (
     <label className="block">
       <span className="text-sm font-bold text-zinc-900">
@@ -226,19 +284,43 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
         {field.required ? <span className="ml-1 text-red-900">*</span> : null}
       </span>
       {field.helpText ? <span className="mt-1 block text-xs text-zinc-500">{field.helpText}</span> : null}
+
       {isDateLikeField(field) ? (
         <input type="date" value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} className={baseClass} />
       ) : isTimeLikeField(field) ? (
         <TimePicker value={value} onChange={(nextValue) => onChange(nextValue)} />
       ) : field.type === "textarea" ? (
-        <textarea value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={`${baseClass} min-h-[120px] resize-y`} />
+        <textarea
+          value={typeof value === "string" ? value : ""}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className={`${baseClass} min-h-[120px] resize-y`}
+        />
       ) : field.type === "select" ? (
-        <AppDropdown label={field.label} value={typeof value === "string" ? value : ""} options={(field.options || []).map((option) => ({ value: option, label: option }))} placeholder={`Select ${field.label.toLowerCase()}`} onChange={(nextValue) => onChange(nextValue)} />
+        <AppDropdown
+          label={field.label}
+          value={typeof value === "string" ? value : ""}
+          options={(field.options || []).map((option) => ({ value: option, label: option }))}
+          placeholder={`Select ${field.label.toLowerCase()}`}
+          onChange={(nextValue) => onChange(nextValue)}
+        />
       ) : field.type === "number" ? (
-        <input type="number" inputMode="numeric" value={value === null || value === undefined ? "" : String(value)} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={baseClass} />
+        <input
+          type="number"
+          inputMode="numeric"
+          value={value === null || value === undefined ? "" : String(value)}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className={baseClass}
+        />
       ) : field.type === "boolean" ? (
         <label className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
-          <input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900" />
+          <input
+            type="checkbox"
+            checked={value === true}
+            onChange={(e) => onChange(e.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900"
+          />
           <span>{field.helpText || "Toggle this option"}</span>
         </label>
       ) : field.type === "multiselect" ? (
@@ -264,6 +346,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
       ) : (
         <input type="text" value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={baseClass} />
       )}
+
       <FieldError message={error} />
     </label>
   );
@@ -290,10 +373,21 @@ export default function EventsCreatePage() {
   const uploadMediaFile = async (file: File) => {
     const formData = new FormData();
     formData.append("image", file);
+
     const res = await fetch("/api/upload/", { method: "POST", body: formData });
     const text = await res.text();
-    const data = text ? JSON.parse(text) : null;
+
+    let data: any = null;
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Upload returned an invalid response.");
+      }
+    }
+
     if (!res.ok) throw new Error(data?.error || "Upload failed");
+    if (!data?.url) throw new Error("Upload succeeded, but no file URL was returned.");
     return data.url as string;
   };
 
@@ -302,8 +396,10 @@ export default function EventsCreatePage() {
   const handlePosterChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
     setPosterUploading(true);
     setFormError(null);
+
     try {
       const uploadedUrl = await uploadMediaFile(file);
       setPosterAssetUrl(uploadedUrl);
@@ -325,6 +421,7 @@ export default function EventsCreatePage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     if (!config) {
       setFormError("No event schema is available for this selection.");
       return;
@@ -343,12 +440,13 @@ export default function EventsCreatePage() {
 
     setSubmitting(true);
     try {
+      const normalizedValues = normalizeNumberFields(config.schema.fields, values);
       const response = (await apiFetch("/api/events", {
         method: "POST",
         body: JSON.stringify({
           event_type: eventType,
           spec_values: {
-            ...values,
+            ...normalizedValues,
             ...(posterAssetUrl ? { poster_image_url: posterAssetUrl } : {}),
           },
         }),
@@ -377,11 +475,16 @@ export default function EventsCreatePage() {
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">B</div>
             <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight"><span className="text-red-900">Buy</span><span className="text-zinc-700">Mesho</span></p>
+              <p className="text-lg font-extrabold tracking-tight">
+                <span className="text-red-900">Buy</span>
+                <span className="text-zinc-700">Mesho</span>
+              </p>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Create event</p>
             </div>
           </button>
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">Back</button>
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
+            Back
+          </button>
         </div>
       </header>
 
@@ -418,6 +521,7 @@ export default function EventsCreatePage() {
                   config.fieldGroups.map((group) => {
                     const fields = group.keys.map((key) => fieldMap.get(key)).filter(Boolean) as EventSpecField[];
                     if (fields.length === 0) return null;
+
                     return (
                       <section key={group.title} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
@@ -487,7 +591,11 @@ export default function EventsCreatePage() {
               {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">{formError}</div> : null}
 
               <div className="flex flex-wrap gap-3">
-                <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+                >
                   {submitting ? "Posting..." : "Post event"}
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -524,10 +632,18 @@ export default function EventsCreatePage() {
                     </div>
                   </div>
                   <div className="mt-5 grid gap-2 text-sm text-zinc-100/90">
-                    <p><span className="font-bold text-white">Date:</span> {fieldValueAsText(previewDate)}</p>
-                    <p><span className="font-bold text-white">Venue:</span> {fieldValueAsText(previewLocation)}</p>
-                    <p><span className="font-bold text-white">Ticket mode:</span> {fieldValueAsText(previewTicketMode)}</p>
-                    <p><span className="font-bold text-white">Price:</span> {previewPrice}</p>
+                    <p>
+                      <span className="font-bold text-white">Date:</span> {fieldValueAsText(previewDate)}
+                    </p>
+                    <p>
+                      <span className="font-bold text-white">Venue:</span> {fieldValueAsText(previewLocation)}
+                    </p>
+                    <p>
+                      <span className="font-bold text-white">Ticket mode:</span> {fieldValueAsText(previewTicketMode)}
+                    </p>
+                    <p>
+                      <span className="font-bold text-white">Price:</span> {previewPrice}
+                    </p>
                   </div>
                 </div>
               </div>
