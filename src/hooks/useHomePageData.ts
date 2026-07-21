@@ -14,6 +14,29 @@ export type HomePreviewListing = {
   views_count?: number;
   created_at?: string | null;
   updated_at?: string | null;
+  listing_mode?: "normal" | "deal" | "wholesale";
+  original_price?: number | null;
+  discount_percent?: number | null;
+  deal_label?: string | null;
+  is_wholesale?: boolean;
+  pack_size?: number | null;
+};
+
+export type HomeEventPreview = {
+  id: number;
+  event_type: string;
+  event_title: string;
+  organizer_name: string;
+  event_date: string;
+  start_time: string;
+  venue: string;
+  location: string;
+  ticket_mode: string;
+  ticket_price: number | null;
+  ticket_link: string | null;
+  description: string;
+  poster_alt: string | null;
+  spec_values: Record<string, unknown>;
 };
 
 export type HomeFeaturedSection = {
@@ -232,6 +255,8 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
   const [sectionListings, setSectionListings] = useState<Record<string, HomePreviewListing[]>>(
     () => initialSnapshot.sectionListings,
   );
+  const [eventsListings, setEventsListings] = useState<HomeEventPreview[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
   const [loading, setLoading] = useState(() => !initialSnapshot.hasCache);
   const [error, setError] = useState<string | null>(null);
 
@@ -314,8 +339,45 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
     return () => controller.abort();
   }, [campus, featuredSections]);
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const loadEvents = async () => {
+      try {
+        setEventsLoading(true);
+        const response = await apiFetch("/api/events");
+        if (controller.signal.aborted) return;
+        const items = Array.isArray(response?.items) ? (response.items as HomeEventPreview[]) : [];
+        setEventsListings(items.slice(0, 6));
+      } catch (e: unknown) {
+        if (!controller.signal.aborted && !isAbortLikeError(e)) {
+          setEventsListings([]);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setEventsLoading(false);
+        }
+      }
+    };
+
+    void loadEvents();
+    return () => controller.abort();
+  }, []);
+
+  const dealListings = useMemo(
+    () =>
+      recommendedListings.filter((item) => {
+        if (item.listing_mode === "deal") return true;
+        return Boolean(item.original_price && Number(item.original_price) > Number(item.price));
+      }),
+    [recommendedListings]
+  );
+
   return {
     recommendedListings,
+    dealListings,
+    eventsListings,
+    eventsLoading,
     newestListings,
     featuredListings,
     sectionListings,
