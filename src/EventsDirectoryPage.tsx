@@ -158,7 +158,7 @@ function EventCard({ item }: { item: EventRecord }) {
             disabled
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-extrabold text-white opacity-70"
           >
-            Details soon
+            Details
             <ArrowRight className="h-4 w-4" />
           </button>
           {item.ticket_link ? (
