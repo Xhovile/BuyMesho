@@ -37,7 +37,7 @@ import { useAccountProfile } from "./useAccountProfile";
 import { useHomePageData } from "./useHomePageData";
 import { useIsAdmin } from "./useIsAdmin";
 import { featuredSections } from "../home/home.constants";
-import type { SectionListing } from "../home/home.types";
+import type { HomeEventPreview, SectionListing } from "../home/home.types";
 
 export type HomePageController = {
   isLoggedIn: boolean;
@@ -71,6 +71,9 @@ export type HomePageController = {
   loading: boolean;
   error: string | null;
   filteredRecommendedListings: SectionListing[];
+  filteredDealListings: SectionListing[];
+  eventsListings: HomeEventPreview[];
+  eventsLoading: boolean;
   filteredFeaturedListings: SectionListing[];
   filteredNewestListings: SectionListing[];
   filteredSectionListings: Record<string, SectionListing[]>;
@@ -95,6 +98,9 @@ export function useHomePageController(): HomePageController {
   const { isAdmin } = useIsAdmin(firebaseUser);
   const {
     recommendedListings,
+    dealListings,
+    eventsListings,
+    eventsLoading,
     newestListings,
     featuredListings,
     sectionListings,
@@ -128,6 +134,10 @@ export function useHomePageController(): HomePageController {
   const filteredRecommendedListings = useMemo(
     () => filterHiddenListings(recommendedListings),
     [recommendedListings, filterHiddenListings]
+  );
+  const filteredDealListings = useMemo(
+    () => filterHiddenListings(dealListings),
+    [dealListings, filterHiddenListings]
   );
   const filteredFeaturedListings = useMemo(
     () => filterHiddenListings(featuredListings),
@@ -343,6 +353,9 @@ export function useHomePageController(): HomePageController {
     loading,
     error,
     filteredRecommendedListings,
+    filteredDealListings,
+    eventsListings,
+    eventsLoading,
     filteredFeaturedListings,
     filteredNewestListings,
     filteredSectionListings,
