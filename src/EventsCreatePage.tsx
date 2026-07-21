@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { ArrowRight, ChevronDown, Ticket, Upload, X } from "lucide-react";
 
@@ -34,6 +35,12 @@ type SavedEvent = {
 };
 
 type DropdownOption = { value: string; label: string };
+
+type DropdownStyle = {
+  top: number;
+  left: number;
+  width: number;
+};
 
 const INITIAL_EVENT_TYPE = getEventItemTypes()[0] ?? "Concert";
 
@@ -103,10 +110,23 @@ function AppDropdown({
   onChange: (nextValue: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<DropdownStyle | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const selected = options.find((option) => option.value === value);
 
   useEffect(() => {
+    if (!open) return;
+
+    const updatePosition = () => {
+      const button = rootRef.current?.querySelector("button");
+      if (!button) return;
+      const rect = button.getBoundingClientRect();
+      const width = Math.min(rect.width, window.innerWidth - 16);
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+      const top = rect.bottom + 8;
+      setMenuStyle({ top, left, width });
+    };
+
     const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current) return;
       if (!rootRef.current.contains(event.target as Node)) {
@@ -118,13 +138,19 @@ function AppDropdown({
       if (event.key === "Escape") setOpen(false);
     };
 
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
     document.addEventListener("pointerdown", handlePointerDown);
     document.addEventListener("keydown", handleEscape);
+
     return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleEscape);
     };
-  }, []);
+  }, [open]);
 
   return (
     <div ref={rootRef} className="relative mt-2">
@@ -138,31 +164,42 @@ function AppDropdown({
         <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {open ? (
-        <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]">
-          <div className="max-h-64 overflow-auto p-2">
-            {options.map((option) => {
-              const active = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                  }}
-                  className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition ${
-                    active ? "bg-zinc-950 text-white" : "text-zinc-700 hover:bg-zinc-100"
-                  }`}
-                >
-                  <span>{option.label}</span>
-                  {active ? <span className="text-[10px] font-extrabold uppercase tracking-[0.18em]">Selected</span> : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
+      {open && menuStyle && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="z-[9999] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]"
+              style={{
+                position: "fixed",
+                top: menuStyle.top,
+                left: menuStyle.left,
+                width: menuStyle.width,
+              }}
+            >
+              <div className="max-h-64 overflow-auto p-2">
+                {options.map((option) => {
+                  const active = option.value === value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => {
+                        onChange(option.value);
+                        setOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition ${
+                        active ? "bg-zinc-950 text-white" : "text-zinc-700 hover:bg-zinc-100"
+                      }`}
+                    >
+                      <span>{option.label}</span>
+                      {active ? <span className="text-[10px] font-extrabold uppercase tracking-[0.18em]">Selected</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }
@@ -525,7 +562,6 @@ export default function EventsCreatePage() {
                     ref={posterInputRef}
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={handlePosterChange}
                     className="hidden"
                   />
