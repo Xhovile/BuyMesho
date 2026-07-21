@@ -24,7 +24,7 @@ export default function ListingStrip({
 
   return (
     <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-      <div className="mb-6 flex items-end justify-between gap-4">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
             {title}
@@ -34,16 +34,15 @@ export default function ListingStrip({
           ) : null}
         </div>
 
-        {isFeatured ? (
-          <button
-            type="button"
-            onClick={() => navigateToPath(viewMorePath)}
-            className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 sm:inline-flex"
-          >
-            Browse all
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        ) : null}
+        <button
+          type="button"
+          onClick={() => navigateToPath(viewMorePath)}
+          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-900 hover:bg-zinc-50 sm:px-4 sm:py-2.5 sm:text-sm sm:font-bold sm:normal-case sm:tracking-normal"
+        >
+          <span className="sm:hidden">All</span>
+          <span className="hidden sm:inline">Browse all</span>
+          <ArrowRight className="h-4 w-4" />
+        </button>
       </div>
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
