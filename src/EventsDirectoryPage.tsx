@@ -204,12 +204,6 @@ function EventDetailsModal({
                       </p>
                       <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
                     </div>
-                    <div className="min-w-0 text-right">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        Posted by
-                      </p>
-                      <p className="mt-1 truncate text-sm font-bold text-zinc-700">{item.organizer_name}</p>
-                    </div>
                   </div>
                 </div>
 
@@ -283,7 +277,6 @@ function DesktopEventCard({
 
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
             <div className="min-w-0">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Organizer</p>
               <h3 className="mt-2 max-w-[14rem] truncate text-xl font-black tracking-[-0.05em] leading-none sm:max-w-none sm:text-[1.9rem]">
                 {item.event_title}
               </h3>
@@ -314,18 +307,12 @@ function DesktopEventCard({
             </span>
           </div>
 
-          <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
             <div>
               <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                 Ticket price
               </p>
               <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
-            </div>
-            <div>
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                Posted by
-              </p>
-              <p className="mt-1 text-sm font-bold text-zinc-700">{item.organizer_name}</p>
             </div>
           </div>
         </div>
@@ -393,7 +380,6 @@ function MobileEventCard({
           </span>
         </div>
         <div className="absolute inset-x-0 bottom-0 p-3 text-white">
-          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/70">Organizer</p>
           <h3 className="mt-1 line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight">
             {item.event_title}
           </h3>
@@ -425,11 +411,8 @@ function MobileEventCard({
             </p>
             <p className="mt-0.5 text-sm font-black tracking-tight text-zinc-950">{price}</p>
           </div>
-          <div className="min-w-0 text-right">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">
-              Tap for details
-            </p>
-            <p className="mt-0.5 truncate text-xs font-bold text-zinc-700">{item.organizer_name}</p>
+          <div className="rounded-2xl bg-white px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">
+            Details
           </div>
         </div>
       </div>
