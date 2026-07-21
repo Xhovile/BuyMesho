@@ -139,28 +139,15 @@ function FieldCard({
   label,
   value,
   fullWidth = false,
-  link,
 }: {
   label: string;
   value: string;
   fullWidth?: boolean;
-  link?: string | null;
 }) {
   return (
     <div className={`rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 ${fullWidth ? "md:col-span-2" : ""}`}>
       <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-      {link ? (
-        <a
-          href={link}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-1 inline-flex break-all text-sm font-bold text-red-900 underline-offset-4 hover:underline"
-        >
-          {value}
-        </a>
-      ) : (
-        <p className="mt-1 text-sm font-bold tracking-tight text-zinc-950 whitespace-pre-line">{value}</p>
-      )}
+      <p className="mt-1 text-sm font-bold tracking-tight text-zinc-950 whitespace-pre-line">{value}</p>
     </div>
   );
 }
@@ -212,7 +199,7 @@ function EventDetailsModal({
             initial={{ opacity: 0, scale: 0.98, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.98, y: 16 }}
-            className="relative w-full max-w-3xl overflow-hidden rounded-t-[2rem] bg-white shadow-2xl sm:rounded-[2rem]"
+            className="relative w-full max-w-3xl overflow-hidden rounded-t-[1.5rem] bg-white shadow-2xl sm:rounded-[2rem] max-h-[88vh]"
           >
             <div className="flex items-center justify-between gap-4 border-b border-zinc-100 px-5 py-4 sm:px-6">
               <div>
@@ -234,15 +221,15 @@ function EventDetailsModal({
               </button>
             </div>
 
-            <div className="max-h-[90vh] overflow-y-auto">
+            <div className="max-h-[calc(88vh-4rem)] overflow-y-auto">
               <div className="grid gap-0 md:grid-cols-[1.05fr_0.95fr]">
-                <div className="relative min-h-[16rem] bg-zinc-100 md:min-h-full">
+                <div className="relative aspect-[16/10] bg-zinc-100 md:aspect-auto md:min-h-full">
                   <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
                   {posterUrl ? (
                     <img
                       src={posterUrl}
                       alt={posterAlt}
-                      className="relative h-full min-h-[16rem] w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/5" />
@@ -274,34 +261,54 @@ function EventDetailsModal({
                     <FieldCard label="Location" value={item.location || "—"} />
                     <FieldCard label="Ticket mode" value={item.ticket_mode || "—"} />
                     <FieldCard label="Ticket price" value={price} />
-                    <FieldCard label="Ticket link" value={item.ticket_link || "—"} link={item.ticket_link || null} fullWidth />
                     <FieldCard label="Contact WhatsApp" value={item.contact_whatsapp || "—"} fullWidth />
                     <FieldCard label="Poster alt text" value={item.poster_alt || "—"} fullWidth />
                     <FieldCard label="Description" value={item.description || "—"} fullWidth />
                   </div>
 
-                  {schemaFields.length > 0 ? (
+                  {schemaFields.some((field) => ![
+                    "event_title",
+                    "organizer_name",
+                    "event_date",
+                    "start_time",
+                    "venue",
+                    "location",
+                    "ticket_mode",
+                    "ticket_price",
+                    "ticket_link",
+                    "description",
+                    "contact_whatsapp",
+                    "poster_alt",
+                  ].includes(field.key)) ? (
                     <div className="mt-6">
-                      <div className="flex items-center justify-between gap-3">
-                        <h4 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
-                          {config?.fieldGroups.find((group) => group.title !== "Event Basics" && group.title !== "Venue & Access" && group.title !== "Extra Details")?.title ?? "Event-specific details"}
-                        </h4>
-                      </div>
-
+                      <h4 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+                        Event-specific details
+                      </h4>
                       <div className="mt-3 grid gap-3 md:grid-cols-2">
                         {schemaFields
-                          .filter((field) => !["event_title", "organizer_name", "event_date", "start_time", "venue", "location", "ticket_mode", "ticket_price", "ticket_link", "description", "contact_whatsapp", "poster_alt"].includes(field.key))
+                          .filter((field) => ![
+                            "event_title",
+                            "organizer_name",
+                            "event_date",
+                            "start_time",
+                            "venue",
+                            "location",
+                            "ticket_mode",
+                            "ticket_price",
+                            "ticket_link",
+                            "description",
+                            "contact_whatsapp",
+                            "poster_alt",
+                          ].includes(field.key))
                           .map((field) => {
                             const rawValue = resolveFieldValue(item, field);
                             const label = field.label || fieldLabelFromKey(field.key);
-                            const isLink = field.key === "ticket_link" && typeof rawValue === "string" && rawValue.trim().length > 0;
                             const isFullWidth = field.type === "textarea" || field.type === "multiselect";
                             return (
                               <FieldCard
                                 key={field.key}
                                 label={label}
                                 value={renderFieldValue(field, rawValue)}
-                                link={isLink ? String(rawValue) : undefined}
                                 fullWidth={isFullWidth}
                               />
                             );
@@ -331,7 +338,7 @@ function EventDetailsModal({
                         rel="noreferrer"
                         className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
                       >
-                        Open ticket link
+                        Ticket Link
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     ) : null}
@@ -450,7 +457,7 @@ function DesktopEventCard({
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
             >
-              Ticket link
+              Ticket Link
             </a>
           ) : null}
         </div>
