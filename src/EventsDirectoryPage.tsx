@@ -63,43 +63,71 @@ function posterAccent(eventType: string) {
   }
 }
 
+function getPosterUrl(item: EventRecord) {
+  const specValues = item.spec_values ?? {};
+  const posterValue = specValues.poster_image_url || specValues.poster_url || specValues.poster;
+  return typeof posterValue === "string" && posterValue.trim().length > 0 ? posterValue.trim() : "";
+}
+
+function getPosterAlt(item: EventRecord) {
+  const specValues = item.spec_values ?? {};
+  const posterAlt = item.poster_alt || specValues.poster_alt;
+  if (typeof posterAlt === "string" && posterAlt.trim().length > 0) return posterAlt.trim();
+  return `${item.event_type} poster for ${item.event_title}`;
+}
+
 function EventCard({ item }: { item: EventRecord }) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
   const accent = posterAccent(item.event_type);
-  const snippet = item.description.length > 110 ? `${item.description.slice(0, 110).trim()}…` : item.description;
+  const posterUrl = getPosterUrl(item);
+  const posterAlt = getPosterAlt(item);
+  const snippet = item.description.length > 96 ? `${item.description.slice(0, 96).trim()}…` : item.description;
 
   return (
-    <article className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5">
-      <div className={`relative min-h-[12rem] bg-gradient-to-br ${accent} px-5 py-5 text-white`}>
-        <div className="flex items-center justify-between gap-3">
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/85">
-            {item.event_type}
-          </span>
-          <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white/85">
-            {item.ticket_mode}
-          </span>
-        </div>
+    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_18px_50px_-32px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5">
+      <div className="relative">
+        <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
+          {posterUrl ? (
+            <img
+              src={posterUrl}
+              alt={posterAlt}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+          ) : null}
 
-        <div className="mt-8 flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-100/80">Organizer</p>
-            <h3 className="mt-2 max-w-[16rem] text-3xl font-black tracking-[-0.06em] leading-[0.92]">
-              {item.event_title}
-            </h3>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
+
+          <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 px-4 py-4">
+            <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+              {item.event_type}
+            </span>
+            <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+              {item.ticket_mode}
+            </span>
           </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
-            <Ticket className="h-5 w-5" />
+
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
+            <div className="min-w-0">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Organizer</p>
+              <h3 className="mt-2 max-w-[14rem] truncate text-2xl font-black tracking-[-0.06em] leading-none sm:max-w-none sm:text-[1.9rem]">
+                {item.event_title}
+              </h3>
+            </div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
+              <Ticket className="h-5 w-5" />
+            </div>
           </div>
         </div>
-
-        <p className="mt-4 max-w-[24rem] text-sm leading-relaxed text-white/80">
-          {snippet}
-        </p>
       </div>
 
-      <div className="p-5 sm:p-6">
-        <div className="grid gap-3 text-sm text-zinc-600">
+      <div className="p-4 sm:p-5">
+        <p className="text-sm leading-relaxed text-zinc-600">
+          {snippet}
+        </p>
+
+        <div className="mt-4 grid gap-3 text-sm text-zinc-600">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-4 w-4 text-red-900" />
             <span className="font-medium text-zinc-700">{date}</span>
@@ -255,7 +283,7 @@ export default function EventsDirectoryPage() {
               <span className="ml-3 text-sm font-medium">Loading events...</span>
             </div>
           ) : events.length > 0 ? (
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {events.map((item) => (
                 <EventCard key={item.id} item={item} />
               ))}
