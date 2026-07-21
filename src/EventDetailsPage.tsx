@@ -188,7 +188,7 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="grid gap-1 border-b border-zinc-200 px-4 py-3 last:border-b-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 sm:px-5">
+    <div className="grid gap-1 border-b border-zinc-200/70 py-4 last:border-b-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 sm:py-5">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
       <p className="min-w-0 whitespace-pre-line break-words text-sm font-semibold leading-relaxed text-zinc-950">{value}</p>
     </div>
@@ -197,11 +197,11 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 function SectionBox({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 px-4 py-3 sm:px-5">
+    <section className="w-full">
+      <div className="pb-3">
         <h2 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">{title}</h2>
       </div>
-      {children}
+      <div className="border-t border-zinc-200/70">{children}</div>
     </section>
   );
 }
@@ -338,9 +338,9 @@ export default function EventDetailsPage() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-6 sm:pt-24 sm:pb-8">
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-          <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
+      <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-10 sm:pt-24 sm:pb-12">
+        <div className="grid gap-8">
+          <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
             <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent}`}>
               {posterUrl ? (
                 <img src={posterUrl} alt={posterAlt} className="absolute inset-0 h-full w-full object-cover" />
@@ -354,15 +354,17 @@ export default function EventDetailsPage() {
                   {event.ticket_mode}
                 </span>
               </div>
-              <div className="absolute inset-x-0 bottom-0 p-5 text-white">
+              <div className="absolute inset-x-0 bottom-0 p-5 text-white sm:p-6 lg:p-8">
                 <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Event title</p>
                 <h1 className="mt-2 break-words text-3xl font-black tracking-[-0.06em] leading-[0.95] sm:text-5xl lg:text-6xl">
                   {event.event_title}
                 </h1>
               </div>
             </div>
+          </section>
 
-            <div className="p-5 sm:p-6 lg:p-8">
+          <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+            <div className="min-w-0">
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <SummaryCard label="Event type" value={event.event_type} />
                 <SummaryCard label="Date" value={date} />
@@ -370,7 +372,7 @@ export default function EventDetailsPage() {
                 <SummaryCard label="Ticket price" value={price} />
               </div>
 
-              <div className="mt-6 grid gap-3">
+              <div className="mt-8 space-y-8">
                 <SectionBox title="Core details">
                   <DetailRow label="Event title" value={event.event_title} />
                   <DetailRow label="Organizer name" value={event.organizer_name} />
@@ -381,11 +383,7 @@ export default function EventDetailsPage() {
                 </SectionBox>
 
                 <SectionBox title="Description">
-                  <div className="px-4 py-4 sm:px-5">
-                    <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">
-                      {event.description || "—"}
-                    </p>
-                  </div>
+                  <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">{event.description || "—"}</p>
                 </SectionBox>
 
                 {extraSchemaFields.length > 0 ? (
@@ -407,7 +405,7 @@ export default function EventDetailsPage() {
                 ) : null}
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-8 flex flex-wrap gap-3">
                 {event.ticket_link ? (
                   <a
                     href={event.ticket_link}
@@ -428,24 +426,24 @@ export default function EventDetailsPage() {
                 </button>
               </div>
             </div>
-          </div>
 
-          <aside className="space-y-4">
-            <SectionBox title="At a glance">
-              <DetailRow label="Event title" value={event.event_title} />
-              <DetailRow label="Event date" value={date} />
-              <DetailRow label="Start time" value={startTime} />
-              <DetailRow label="Venue" value={event.venue || "—"} />
-              <DetailRow label="Price" value={price} />
-            </SectionBox>
+            <aside className="space-y-4 lg:pt-1">
+              <SectionBox title="At a glance">
+                <DetailRow label="Event title" value={event.event_title} />
+                <DetailRow label="Event date" value={date} />
+                <DetailRow label="Start time" value={startTime} />
+                <DetailRow label="Venue" value={event.venue || "—"} />
+                <DetailRow label="Price" value={price} />
+              </SectionBox>
 
-            <SectionBox title="Status">
-              <DetailRow label="Published status" value={event.status} />
-              <DetailRow label="Created at" value={createdAt} />
-              <DetailRow label="Updated at" value={updatedAt} />
-            </SectionBox>
-          </aside>
-        </section>
+              <SectionBox title="Status">
+                <DetailRow label="Published status" value={event.status} />
+                <DetailRow label="Created at" value={createdAt} />
+                <DetailRow label="Updated at" value={updatedAt} />
+              </SectionBox>
+            </aside>
+          </section>
+        </div>
       </main>
     </div>
   );
