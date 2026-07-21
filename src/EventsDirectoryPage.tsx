@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { ArrowRight, CalendarDays, Loader2, MapPin, Ticket } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ArrowRight, CalendarDays, Loader2, MapPin, Search, Ticket } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
 import { EVENTS_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
@@ -74,6 +74,18 @@ function getPosterAlt(item: EventRecord) {
   const posterAlt = item.poster_alt || specValues.poster_alt;
   if (typeof posterAlt === "string" && posterAlt.trim().length > 0) return posterAlt.trim();
   return `${item.event_type} poster for ${item.event_title}`;
+}
+
+function matchesSearch(item: EventRecord, query: string) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const haystack = [item.event_title, item.event_type, item.organizer_name, item.venue, item.location, item.description]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(normalized);
 }
 
 function MobileEventCard({ item }: { item: EventRecord }) {
@@ -192,10 +204,34 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
   );
 }
 
+function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }) {
+  return (
+    <section className="pt-8">
+      <div className="mb-5 border-t border-zinc-200 pt-5">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Category</p>
+            <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950">{title}</h3>
+          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">{items.length} events</p>
+        </div>
+      </div>
+
+      <div className="flex gap-4 overflow-x-auto pb-2 pr-4 snap-x snap-mandatory">
+        {items.map((item) => (
+          <DesktopEventCard key={item.id} item={item} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function EventsDirectoryPage() {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All categories");
 
   useEffect(() => {
     let active = true;
@@ -220,6 +256,36 @@ export default function EventsDirectoryPage() {
       active = false;
     };
   }, []);
+
+  const categories = useMemo(() => {
+    const seen = new Set<string>();
+    const ordered: string[] = [];
+    for (const item of events) {
+      if (!item.event_type || seen.has(item.event_type)) continue;
+      seen.add(item.event_type);
+      ordered.push(item.event_type);
+    }
+    return ordered;
+  }, [events]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((item) => {
+      const categoryMatches = selectedCategory === "All categories" ? true : item.event_type === selectedCategory;
+      return categoryMatches && matchesSearch(item, searchTerm);
+    });
+  }, [events, searchTerm, selectedCategory]);
+
+  const groupedCategories = useMemo(() => {
+    const map = new Map<string, EventRecord[]>();
+    for (const item of filteredEvents) {
+      const list = map.get(item.event_type) || [];
+      list.push(item);
+      map.set(item.event_type, list);
+    }
+    return categories
+      .map((category) => ({ title: category, items: map.get(category) || [] }))
+      .filter((group) => group.items.length > 0);
+  }, [filteredEvents, categories]);
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
@@ -269,6 +335,36 @@ export default function EventsDirectoryPage() {
               </button>
             </div>
           </div>
+
+          <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white px-4 py-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:px-5">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
+              <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus-within:border-zinc-900">
+                <Search className="h-4 w-4 shrink-0 text-zinc-400" />
+                <input
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by title, place, host, or description"
+                  className="w-full bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Category</span>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-900"
+                >
+                  <option>All categories</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </div>
         </section>
 
         <section className="mx-auto max-w-7xl px-4 pb-4">
@@ -277,6 +373,7 @@ export default function EventsDirectoryPage() {
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Latest events</p>
               <h2 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950 sm:text-4xl">Saved event listings</h2>
             </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">{filteredEvents.length} shown</p>
           </div>
 
           {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
@@ -286,19 +383,23 @@ export default function EventsDirectoryPage() {
               <Loader2 className="h-5 w-5 animate-spin" />
               <span className="ml-3 text-sm font-medium">Loading events...</span>
             </div>
-          ) : events.length > 0 ? (
+          ) : filteredEvents.length > 0 ? (
             <>
               <div className="grid grid-cols-2 gap-3 md:hidden">
-                {events.map((item) => (
+                {filteredEvents.map((item) => (
                   <MobileEventCard key={item.id} item={item} />
                 ))}
               </div>
 
               <div className="hidden flex-wrap justify-center gap-4 md:flex">
-                {events.map((item) => (
+                {filteredEvents.map((item) => (
                   <DesktopEventCard key={item.id} item={item} />
                 ))}
               </div>
+
+              {groupedCategories.map((group) => (
+                <CategoryStrip key={group.title} title={group.title} items={group.items} />
+              ))}
             </>
           ) : (
             <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:p-10">
