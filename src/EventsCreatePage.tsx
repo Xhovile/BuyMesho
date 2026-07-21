@@ -35,12 +35,7 @@ type SavedEvent = {
 };
 
 type DropdownOption = { value: string; label: string };
-
-type DropdownStyle = {
-  top: number;
-  left: number;
-  width: number;
-};
+type DropdownStyle = { top: number; left: number; width: number };
 
 const INITIAL_EVENT_TYPE = getEventItemTypes()[0] ?? "Concert";
 
@@ -64,22 +59,12 @@ function FieldError({ message }: { message?: string }) {
 }
 
 function parseTimeValue(value: unknown): { hour: string; minute: string } {
-  if (typeof value !== "string" || !value.includes(":")) {
-    return { hour: "", minute: "" };
-  }
-
+  if (typeof value !== "string" || !value.includes(":")) return { hour: "", minute: "" };
   const [rawHour, rawMinute] = value.split(":");
   const hour = rawHour?.trim();
   const minute = rawMinute?.trim();
-
-  if (!hour || !minute) {
-    return { hour: "", minute: "" };
-  }
-
-  return {
-    hour: hour.padStart(2, "0"),
-    minute: minute.padStart(2, "0"),
-  };
+  if (!hour || !minute) return { hour: "", minute: "" };
+  return { hour: hour.padStart(2, "0"), minute: minute.padStart(2, "0") };
 }
 
 function makeTimeValue(hour: string, minute: string) {
@@ -112,6 +97,7 @@ function AppDropdown({
   const [open, setOpen] = useState(false);
   const [menuStyle, setMenuStyle] = useState<DropdownStyle | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const selected = options.find((option) => option.value === value);
 
   useEffect(() => {
@@ -128,10 +114,10 @@ function AppDropdown({
     };
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(event.target as Node)) {
-        setOpen(false);
-      }
+      const target = event.target as Node;
+      if (rootRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
 
     const handleEscape = (event: KeyboardEvent) => {
@@ -167,6 +153,7 @@ function AppDropdown({
       {open && menuStyle && typeof document !== "undefined"
         ? createPortal(
             <div
+              ref={menuRef}
               className="z-[9999] overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-[0_24px_70px_-35px_rgba(0,0,0,0.28)]"
               style={{
                 position: "fixed",
@@ -174,6 +161,7 @@ function AppDropdown({
                 left: menuStyle.left,
                 width: menuStyle.width,
               }}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <div className="max-h-64 overflow-auto p-2">
                 {options.map((option) => {
@@ -204,13 +192,7 @@ function AppDropdown({
   );
 }
 
-function TimePicker({
-  value,
-  onChange,
-}: {
-  value: unknown;
-  onChange: (nextValue: string) => void;
-}) {
+function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue: string) => void }) {
   const current = parseTimeValue(value);
   const hourOptions: DropdownOption[] = Array.from({ length: 24 }, (_, index) => {
     const hour = String(index).padStart(2, "0");
@@ -225,43 +207,18 @@ function TimePicker({
     <div className="mt-2 grid grid-cols-2 gap-3">
       <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Hour</span>
-        <AppDropdown
-          label="Hour"
-          value={current.hour}
-          options={hourOptions}
-          placeholder="HH"
-          onChange={(nextHour) => onChange(makeTimeValue(nextHour, current.minute))}
-        />
+        <AppDropdown label="Hour" value={current.hour} options={hourOptions} placeholder="HH" onChange={(nextHour) => onChange(makeTimeValue(nextHour, current.minute))} />
       </div>
-
       <div>
         <span className="mb-1 block text-[11px] font-bold uppercase tracking-[0.16em] text-zinc-400">Minute</span>
-        <AppDropdown
-          label="Minute"
-          value={current.minute}
-          options={minuteOptions}
-          placeholder="MM"
-          onChange={(nextMinute) => onChange(makeTimeValue(current.hour, nextMinute))}
-        />
+        <AppDropdown label="Minute" value={current.minute} options={minuteOptions} placeholder="MM" onChange={(nextMinute) => onChange(makeTimeValue(current.hour, nextMinute))} />
       </div>
     </div>
   );
 }
 
-function RenderField({
-  field,
-  value,
-  error,
-  onChange,
-}: {
-  field: EventSpecField;
-  value: unknown;
-  error?: string;
-  onChange: (nextValue: unknown) => void;
-}) {
-  const baseClass =
-    "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
-
+function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: unknown; error?: string; onChange: (nextValue: unknown) => void }) {
+  const baseClass = "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
   return (
     <label className="block">
       <span className="text-sm font-bold text-zinc-900">
@@ -269,48 +226,19 @@ function RenderField({
         {field.required ? <span className="ml-1 text-red-900">*</span> : null}
       </span>
       {field.helpText ? <span className="mt-1 block text-xs text-zinc-500">{field.helpText}</span> : null}
-
       {isDateLikeField(field) ? (
-        <input
-          type="date"
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          className={baseClass}
-        />
+        <input type="date" value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} className={baseClass} />
       ) : isTimeLikeField(field) ? (
         <TimePicker value={value} onChange={(nextValue) => onChange(nextValue)} />
       ) : field.type === "textarea" ? (
-        <textarea
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className={`${baseClass} min-h-[120px] resize-y`}
-        />
+        <textarea value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={`${baseClass} min-h-[120px] resize-y`} />
       ) : field.type === "select" ? (
-        <AppDropdown
-          label={field.label}
-          value={typeof value === "string" ? value : ""}
-          options={(field.options || []).map((option) => ({ value: option, label: option }))}
-          placeholder={`Select ${field.label.toLowerCase()}`}
-          onChange={(nextValue) => onChange(nextValue)}
-        />
+        <AppDropdown label={field.label} value={typeof value === "string" ? value : ""} options={(field.options || []).map((option) => ({ value: option, label: option }))} placeholder={`Select ${field.label.toLowerCase()}`} onChange={(nextValue) => onChange(nextValue)} />
       ) : field.type === "number" ? (
-        <input
-          type="number"
-          inputMode="numeric"
-          value={value === null || value === undefined ? "" : String(value)}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className={baseClass}
-        />
+        <input type="number" inputMode="numeric" value={value === null || value === undefined ? "" : String(value)} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={baseClass} />
       ) : field.type === "boolean" ? (
         <label className="mt-2 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
-          <input
-            type="checkbox"
-            checked={value === true}
-            onChange={(e) => onChange(e.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900"
-          />
+          <input type="checkbox" checked={value === true} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900" />
           <span>{field.helpText || "Toggle this option"}</span>
         </label>
       ) : field.type === "multiselect" ? (
@@ -318,20 +246,13 @@ function RenderField({
           {(field.options || []).map((option) => {
             const selected = Array.isArray(value) ? value.includes(option) : false;
             return (
-              <label
-                key={option}
-                className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700"
-              >
+              <label key={option} className="flex cursor-pointer items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700">
                 <input
                   type="checkbox"
                   checked={selected}
                   onChange={(e) => {
                     const current = Array.isArray(value) ? value.filter((item) => typeof item === "string") : [];
-                    onChange(
-                      e.target.checked
-                        ? [...current, option]
-                        : current.filter((item) => item !== option)
-                    );
+                    onChange(e.target.checked ? [...current, option] : current.filter((item) => item !== option));
                   }}
                   className="h-4 w-4 rounded border-zinc-300 text-red-900 focus:ring-red-900"
                 />
@@ -341,15 +262,8 @@ function RenderField({
           })}
         </div>
       ) : (
-        <input
-          type="text"
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={field.placeholder}
-          className={baseClass}
-        />
+        <input type="text" value={typeof value === "string" ? value : ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className={baseClass} />
       )}
-
       <FieldError message={error} />
     </label>
   );
@@ -369,9 +283,7 @@ export default function EventsCreatePage() {
   const config = getEventItemConfig(eventType) ?? getEventItemConfig(INITIAL_EVENT_TYPE);
   const fieldMap = useMemo(() => {
     const map = new Map<string, EventSpecField>();
-    config?.schema.fields.forEach((field) => {
-      map.set(field.key, field);
-    });
+    config?.schema.fields.forEach((field) => map.set(field.key, field));
     return map;
   }, [config]);
 
@@ -390,7 +302,6 @@ export default function EventsCreatePage() {
   const handlePosterChange = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setPosterUploading(true);
     setFormError(null);
     try {
@@ -443,10 +354,7 @@ export default function EventsCreatePage() {
         }),
       })) as { success?: boolean; event?: SavedEvent | null };
 
-      if (!response?.event) {
-        throw new Error("The event was saved, but no event data was returned.");
-      }
-
+      if (!response?.event) throw new Error("The event was saved, but no event data was returned.");
       navigateToPath(EVENTS_PATH, { replace: true });
     } catch (err: any) {
       setFormError(err?.message || "Could not save the event.");
@@ -484,9 +392,7 @@ export default function EventsCreatePage() {
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator</p>
                 <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] text-zinc-950 sm:text-5xl">Create an event</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                  Choose the event type first, then fill in the schema fields that appear for that type.
-                </p>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Choose the event type first, then fill in the schema fields that appear for that type.</p>
               </div>
               <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg shadow-zinc-900/15 sm:flex">
                 <Ticket className="h-5 w-5" />
@@ -507,24 +413,17 @@ export default function EventsCreatePage() {
                 </label>
 
                 {!config ? (
-                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    No schema is available for this event type yet.
-                  </div>
+                  <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">No schema is available for this event type yet.</div>
                 ) : (
                   config.fieldGroups.map((group) => {
-                    const fields = group.keys
-                      .map((key) => fieldMap.get(key))
-                      .filter(Boolean) as EventSpecField[];
-
+                    const fields = group.keys.map((key) => fieldMap.get(key)).filter(Boolean) as EventSpecField[];
                     if (fields.length === 0) return null;
-
                     return (
                       <section key={group.title} className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
                         <div className="flex items-center justify-between gap-4">
                           <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">{group.title}</h2>
                           <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
                         </div>
-
                         <div className="mt-4 grid gap-4">
                           {fields.map((field) => (
                             <RenderField
@@ -554,18 +453,8 @@ export default function EventsCreatePage() {
                     <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">Poster</h2>
                     <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
                   </div>
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-                    Pick a poster from your device gallery. It will upload immediately.
-                  </p>
-
-                  <input
-                    ref={posterInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handlePosterChange}
-                    className="hidden"
-                  />
-
+                  <p className="mt-3 text-sm leading-relaxed text-zinc-600">Pick a poster from your device gallery. It will upload immediately.</p>
+                  <input ref={posterInputRef} type="file" accept="image/*" onChange={handlePosterChange} className="hidden" />
                   <div className="mt-3 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
@@ -576,7 +465,6 @@ export default function EventsCreatePage() {
                       <Upload className="h-4 w-4" />
                       {posterUploading ? "Uploading..." : "Choose poster"}
                     </button>
-
                     {posterAssetUrl ? (
                       <button
                         type="button"
@@ -588,7 +476,6 @@ export default function EventsCreatePage() {
                       </button>
                     ) : null}
                   </div>
-
                   {posterAssetUrl ? (
                     <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white">
                       <img src={posterAssetUrl} alt="Selected event poster" className="h-44 w-full object-cover" />
@@ -597,18 +484,10 @@ export default function EventsCreatePage() {
                 </section>
               </div>
 
-              {formError ? (
-                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">
-                  {formError}
-                </div>
-              ) : null}
+              {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">{formError}</div> : null}
 
               <div className="flex flex-wrap gap-3">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
-                >
+                <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70">
                   {submitting ? "Posting..." : "Post event"}
                   <ArrowRight className="h-4 w-4" />
                 </button>
@@ -633,7 +512,6 @@ export default function EventsCreatePage() {
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
               <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Saved preview</p>
               <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-zinc-950">How the event will look</h2>
-
               <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-950 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.35)]">
                 <div className="bg-[radial-gradient(circle_at_top_left,rgba(220,38,38,0.28),transparent_35%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.22),transparent_28%)] px-5 py-5">
                   <div className="flex items-center justify-between gap-3">
@@ -645,7 +523,6 @@ export default function EventsCreatePage() {
                       <Ticket className="h-5 w-5 text-white" />
                     </div>
                   </div>
-
                   <div className="mt-5 grid gap-2 text-sm text-zinc-100/90">
                     <p><span className="font-bold text-white">Date:</span> {fieldValueAsText(previewDate)}</p>
                     <p><span className="font-bold text-white">Venue:</span> {fieldValueAsText(previewLocation)}</p>
