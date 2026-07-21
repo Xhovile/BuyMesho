@@ -90,22 +90,15 @@ function MobileEventCard({ item }: { item: EventRecord }) {
       className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white text-left shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]"
     >
       <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
-        {posterUrl ? (
-          <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" />
-        ) : null}
+        {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+        <div className="absolute inset-x-0 top-0 flex items-center justify-start gap-2 p-3">
           <span className="rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
             {item.event_type}
           </span>
-          <span className="rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
-            {item.ticket_mode}
-          </span>
         </div>
         <div className="absolute inset-x-0 bottom-0 p-3 text-white">
-          <h3 className="mt-1 line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight">
-            {item.event_title}
-          </h3>
+          <h3 className="mt-1 line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight">{item.event_title}</h3>
         </div>
       </div>
 
@@ -127,13 +120,10 @@ function MobileEventCard({ item }: { item: EventRecord }) {
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
-          <div>
+        <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Ticket price</p>
-            <p className="mt-0.5 text-sm font-black tracking-tight text-zinc-950">{price}</p>
-          </div>
-          <div className="rounded-2xl bg-white px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">
-            Details
+            <p className="text-sm font-black tracking-tight text-zinc-950">{price}</p>
           </div>
         </div>
       </div>
@@ -150,36 +140,32 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
   const snippet = item.description.length > 96 ? `${item.description.slice(0, 96).trim()}…` : item.description;
 
   return (
-    <article className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_18px_50px_-32px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5 sm:w-[260px]">
+    <button
+      type="button"
+      onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
+      className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white text-left shadow-[0_18px_50px_-32px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5 sm:w-[260px]"
+    >
       <div className="relative">
         <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
-          {posterUrl ? (
-            <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" />
-          ) : null}
+          {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" loading="lazy" /> : null}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
-          <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 px-4 py-4">
+          <div className="absolute inset-x-0 top-0 flex items-center justify-start gap-2 px-4 py-4">
             <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
               {item.event_type}
             </span>
-            <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
-              {item.ticket_mode}
-            </span>
           </div>
-          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
+          <div className="absolute inset-x-0 bottom-0 px-4 py-4 text-white">
             <div className="min-w-0">
               <h3 className="mt-2 max-w-[14rem] truncate text-xl font-black tracking-[-0.05em] leading-none sm:max-w-none sm:text-[1.9rem]">
                 {item.event_title}
               </h3>
-            </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
-              <Ticket className="h-4 w-4" />
             </div>
           </div>
         </div>
       </div>
 
       <div className="p-4">
-        <p className="text-sm leading-relaxed text-zinc-600 line-clamp-2">{snippet}</p>
+        <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
         <div className="mt-4 grid gap-3 text-sm text-zinc-600">
           <div className="flex items-center gap-3">
             <CalendarDays className="h-4 w-4 text-red-900" />
@@ -194,35 +180,15 @@ function DesktopEventCard({ item }: { item: EventRecord }) {
               {item.location ? ` • ${item.location}` : ""}
             </span>
           </div>
-          <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-            <div>
+          <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket price</p>
-              <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
+              <p className="text-base font-black tracking-tight text-zinc-950">{price}</p>
             </div>
           </div>
         </div>
-
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-extrabold text-white hover:bg-zinc-800"
-          >
-            Details
-            <ArrowRight className="h-4 w-4" />
-          </button>
-          {item.ticket_link ? (
-            <button
-              type="button"
-              onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-            >
-              Ticket Link
-            </button>
-          ) : null}
-        </div>
       </div>
-    </article>
+    </button>
   );
 }
 
@@ -289,12 +255,8 @@ export default function EventsDirectoryPage() {
             <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Events directory</p>
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">
-                  Browse events and happenings.
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
-                  Don&apos;t miss!
-                </p>
+                <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Don't miss!</p>
               </div>
 
               <button
@@ -317,9 +279,7 @@ export default function EventsDirectoryPage() {
             </div>
           </div>
 
-          {error ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div>
-          ) : null}
+          {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
           {loading ? (
             <div className="flex items-center justify-center rounded-[2rem] border border-zinc-200 bg-white px-6 py-20 text-zinc-500 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)]">
