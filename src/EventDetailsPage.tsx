@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, ChevronLeft, ExternalLink, Loader2, MapPin, MessageCircle, Share2, ShoppingBag, ShoppingCart, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -79,20 +79,6 @@ function formatClock(value: string) {
   const period = hours >= 12 ? "PM" : "AM";
   const displayHour = hours % 12 || 12;
   return `${displayHour}:${minutes} ${period}`;
-}
-
-function formatDateTime(value: string) {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
 }
 
 function posterAccent(eventType: string) {
@@ -215,6 +201,10 @@ function parseEventId() {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
+function normalizeWhatsappNumber(raw: string) {
+  return raw.replace(/[^\d]/g, "");
+}
+
 export default function EventDetailsPage() {
   const eventId = useMemo(() => parseEventId(), []);
   const [event, setEvent] = useState<EventRecord | null>(null);
@@ -306,9 +296,47 @@ export default function EventDetailsPage() {
   const posterUrl = getPosterUrl(event);
   const posterAlt = getPosterAlt(event);
   const accent = posterAccent(event.event_type);
-  const createdAt = formatDateTime(event.created_at);
-  const updatedAt = formatDateTime(event.updated_at);
   const startTime = formatClock(event.start_time);
+  const eventPageUrl = `${window.location.origin}${EVENTS_PATH}?event=${event.id}`;
+
+  const handleShare = async () => {
+    const shareData = {
+      title: event.event_title,
+      text: `${event.event_title} • ${price}`,
+      url: eventPageUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(eventPageUrl);
+      }
+    } catch {
+      // Intentionally quiet. The UI should not break if sharing is unavailable.
+    }
+  };
+
+  const handleMessage = () => {
+    if (!event.contact_whatsapp) return;
+    const number = normalizeWhatsappNumber(event.contact_whatsapp);
+    if (!number) return;
+    window.open(`https://wa.me/${number}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleAddToCart = () => {
+    if (typeof window === "undefined") return;
+
+    const storageKey = "__buymesho_event_cart";
+    const currentRaw = window.localStorage.getItem(storageKey);
+    const currentItems = currentRaw ? (JSON.parse(currentRaw) as Array<{ id: number; title: string; ticket_link: string | null }>) : [];
+    if (!currentItems.some((item) => item.id === event.id)) {
+      currentItems.push({ id: event.id, title: event.event_title, ticket_link: event.ticket_link });
+      window.localStorage.setItem(storageKey, JSON.stringify(currentItems));
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -342,9 +370,7 @@ export default function EventDetailsPage() {
         <div className="grid gap-8">
           <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
             <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent}`}>
-              {posterUrl ? (
-                <img src={posterUrl} alt={posterAlt} className="absolute inset-0 h-full w-full object-cover" />
-              ) : null}
+              {posterUrl ? <img src={posterUrl} alt={posterAlt} className="absolute inset-0 h-full w-full object-cover" /> : null}
               <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/5" />
               <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4">
                 <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
@@ -364,7 +390,7 @@ export default function EventDetailsPage() {
           </section>
 
           <section className="grid gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-            <div className="min-w-0">
+            <div className="min-w-0 space-y-8">
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <SummaryCard label="Event type" value={event.event_type} />
                 <SummaryCard label="Date" value={date} />
@@ -372,76 +398,82 @@ export default function EventDetailsPage() {
                 <SummaryCard label="Ticket price" value={price} />
               </div>
 
-              <div className="mt-8 space-y-8">
-                <SectionBox title="Core details">
-                  <DetailRow label="Event title" value={event.event_title} />
-                  <DetailRow label="Organizer name" value={event.organizer_name} />
-                  <DetailRow label="Venue" value={event.venue || "—"} />
-                  <DetailRow label="Location" value={event.location || "—"} />
-                  <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
-                  <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
+              <SectionBox title="Core details">
+                <DetailRow label="Event title" value={event.event_title} />
+                <DetailRow label="Organizer name" value={event.organizer_name} />
+                <DetailRow label="Venue" value={event.venue || "—"} />
+                <DetailRow label="Location" value={event.location || "—"} />
+                <DetailRow label="Ticket mode" value={event.ticket_mode || "—"} />
+                <DetailRow label="Contact WhatsApp" value={event.contact_whatsapp || "—"} />
+              </SectionBox>
+
+              <SectionBox title="Description">
+                <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">{event.description || "—"}</p>
+              </SectionBox>
+
+              {extraSchemaFields.length > 0 ? (
+                <SectionBox title="Event-specific details">
+                  {extraSchemaFields.map((field) => {
+                    const rawValue = resolveFieldValue(event, field);
+                    const label = field.label || fieldLabelFromKey(field.key);
+                    return <DetailRow key={field.key} label={label} value={renderFieldValue(field, rawValue)} />;
+                  })}
                 </SectionBox>
+              ) : null}
 
-                <SectionBox title="Description">
-                  <p className="whitespace-pre-line break-words text-sm leading-relaxed text-zinc-900">{event.description || "—"}</p>
+              {extraSpecEntries.length > 0 ? (
+                <SectionBox title="Additional stored details">
+                  {extraSpecEntries.map(([key, value]) => (
+                    <DetailRow key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
+                  ))}
                 </SectionBox>
+              ) : null}
 
-                {extraSchemaFields.length > 0 ? (
-                  <SectionBox title="Event-specific details">
-                    {extraSchemaFields.map((field) => {
-                      const rawValue = resolveFieldValue(event, field);
-                      const label = field.label || fieldLabelFromKey(field.key);
-                      return <DetailRow key={field.key} label={label} value={renderFieldValue(field, rawValue)} />;
-                    })}
-                  </SectionBox>
-                ) : null}
-
-                {extraSpecEntries.length > 0 ? (
-                  <SectionBox title="Additional stored details">
-                    {extraSpecEntries.map(([key, value]) => (
-                      <DetailRow key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
-                    ))}
-                  </SectionBox>
-                ) : null}
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                {event.ticket_link ? (
+              <div className="border-t border-zinc-200 pt-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
                   <a
-                    href={event.ticket_link}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-extrabold text-white hover:bg-orange-600"
+                    href={event.ticket_link || "#"}
+                    target={event.ticket_link ? "_blank" : undefined}
+                    rel={event.ticket_link ? "noreferrer" : undefined}
+                    onClick={event.ticket_link ? undefined : (e) => e.preventDefault()}
+                    className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-600"
                   >
-                    Buy Ticket
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Buy Ticket</span>
                   </a>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-                >
-                  Market
-                </button>
+
+                  <button
+                    type="button"
+                    onClick={handleMessage}
+                    disabled={!event.contact_whatsapp}
+                    aria-disabled={!event.contact_whatsapp}
+                    className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Message</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400"
+                  >
+                    <ShoppingBag className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Add to Cart</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                    aria-label="Share event"
+                    title="Share event"
+                  >
+                    <Share2 className="h-4 w-4 text-zinc-700" />
+                  </button>
+                </div>
               </div>
             </div>
-
-            <aside className="space-y-4 lg:pt-1">
-              <SectionBox title="At a glance">
-                <DetailRow label="Event title" value={event.event_title} />
-                <DetailRow label="Event date" value={date} />
-                <DetailRow label="Start time" value={startTime} />
-                <DetailRow label="Venue" value={event.venue || "—"} />
-                <DetailRow label="Price" value={price} />
-              </SectionBox>
-
-              <SectionBox title="Status">
-                <DetailRow label="Published status" value={event.status} />
-                <DetailRow label="Created at" value={createdAt} />
-                <DetailRow label="Updated at" value={updatedAt} />
-              </SectionBox>
-            </aside>
           </section>
         </div>
       </main>
