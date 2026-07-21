@@ -81,9 +81,10 @@ export default function EventsStrip({
           <button
             type="button"
             onClick={() => navigateToPath(viewMorePath)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/10 hover:bg-zinc-100"
+            className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.18em] text-zinc-950 shadow-lg shadow-black/10 hover:bg-zinc-100 sm:px-4 sm:py-2.5 sm:text-sm sm:font-extrabold sm:normal-case sm:tracking-normal"
           >
-            Open Events
+            <span className="sm:hidden">All</span>
+            <span className="hidden sm:inline">Open Events</span>
             <ArrowRight className="h-4 w-4" />
           </button>
         </div>
