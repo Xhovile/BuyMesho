@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   X,
 } from "lucide-react";
 
+import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 
@@ -85,6 +86,85 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
+function normalizeValue(value: unknown) {
+  if (Array.isArray(value)) return value.length > 0 ? value.join(", ") : "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+}
+
+function fieldLabelFromKey(key: string) {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (part) => part.toUpperCase());
+}
+
+function resolveFieldValue(item: EventRecord, field: EventSpecField) {
+  switch (field.key) {
+    case "event_title":
+      return item.event_title;
+    case "organizer_name":
+      return item.organizer_name;
+    case "event_date":
+      return item.event_date;
+    case "start_time":
+      return item.start_time;
+    case "venue":
+      return item.venue;
+    case "location":
+      return item.location;
+    case "ticket_mode":
+      return item.ticket_mode;
+    case "ticket_price":
+      return item.ticket_price;
+    case "ticket_link":
+      return item.ticket_link;
+    case "description":
+      return item.description;
+    case "contact_whatsapp":
+      return item.contact_whatsapp;
+    case "poster_alt":
+      return item.poster_alt;
+    default:
+      return item.spec_values?.[field.key];
+  }
+}
+
+function renderFieldValue(field: EventSpecField, value: unknown) {
+  if (field.key === "ticket_price") return formatMoney(typeof value === "number" ? value : Number(value));
+  return normalizeValue(value);
+}
+
+function FieldCard({
+  label,
+  value,
+  fullWidth = false,
+  link,
+}: {
+  label: string;
+  value: string;
+  fullWidth?: boolean;
+  link?: string | null;
+}) {
+  return (
+    <div className={`rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 ${fullWidth ? "md:col-span-2" : ""}`}>
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-1 inline-flex break-all text-sm font-bold text-red-900 underline-offset-4 hover:underline"
+        >
+          {value}
+        </a>
+      ) : (
+        <p className="mt-1 text-sm font-bold tracking-tight text-zinc-950 whitespace-pre-line">{value}</p>
+      )}
+    </div>
+  );
+}
+
 function EventDetailsModal({
   item,
   onClose,
@@ -108,6 +188,13 @@ function EventDetailsModal({
   const posterUrl = item ? getPosterUrl(item) : "";
   const posterAlt = item ? getPosterAlt(item) : "";
   const accent = item ? posterAccent(item.event_type) : "from-zinc-800 via-zinc-950 to-black";
+  const config = useMemo(() => (item ? getEventItemConfig(item.event_type) : null), [item]);
+
+  const schemaFields = config?.schema.fields ?? [];
+  const schemaKeys = new Set(schemaFields.map((field) => field.key));
+  const extraSpecEntries = item
+    ? Object.entries(item.spec_values ?? {}).filter(([key]) => !schemaKeys.has(key))
+    : [];
 
   return (
     <AnimatePresence>
@@ -147,86 +234,116 @@ function EventDetailsModal({
               </button>
             </div>
 
-            <div className="grid gap-0 md:grid-cols-[1.05fr_0.95fr]">
-              <div className="relative min-h-[16rem] bg-zinc-100 md:min-h-full">
-                <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
-                {posterUrl ? (
-                  <img
-                    src={posterUrl}
-                    alt={posterAlt}
-                    className="relative h-full min-h-[16rem] w-full object-cover"
-                  />
-                ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/5" />
-                <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4">
-                  <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
-                    {item.event_type}
-                  </span>
-                  <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
-                    {item.ticket_mode}
-                  </span>
-                </div>
-                <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">
-                    Organizer
-                  </p>
-                  <p className="mt-2 text-2xl font-black tracking-[-0.05em] leading-tight">
-                    {item.event_title}
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-5 sm:p-6">
-                <p className="text-sm leading-relaxed text-zinc-600 sm:text-base">
-                  {item.description}
-                </p>
-
-                <div className="mt-5 grid gap-3 text-sm text-zinc-600">
-                  <div className="flex items-center gap-3">
-                    <CalendarDays className="h-4 w-4 text-red-900" />
-                    <span className="font-medium text-zinc-700">{date}</span>
-                    <span className="text-zinc-300">•</span>
-                    <span>{item.start_time}</span>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
-                    <span className="leading-relaxed text-zinc-700">
-                      {item.venue}
-                      {item.location ? ` • ${item.location}` : ""}
+            <div className="max-h-[90vh] overflow-y-auto">
+              <div className="grid gap-0 md:grid-cols-[1.05fr_0.95fr]">
+                <div className="relative min-h-[16rem] bg-zinc-100 md:min-h-full">
+                  <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
+                  {posterUrl ? (
+                    <img
+                      src={posterUrl}
+                      alt={posterAlt}
+                      className="relative h-full min-h-[16rem] w-full object-cover"
+                    />
+                  ) : null}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-black/5" />
+                  <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 p-4">
+                    <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+                      {item.event_type}
+                    </span>
+                    <span className="rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+                      {item.ticket_mode}
                     </span>
                   </div>
-
-                  <div className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                    <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        Ticket price
-                      </p>
-                      <p className="mt-1 text-base font-black tracking-tight text-zinc-950">{price}</p>
-                    </div>
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <h4 className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">
+                      Event title
+                    </h4>
+                    <p className="mt-2 text-2xl font-black tracking-[-0.05em] leading-tight">
+                      {item.event_title}
+                    </p>
                   </div>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-3">
-                  {item.ticket_link ? (
-                    <a
-                      href={item.ticket_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-                    >
-                      Open ticket link
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
+                <div className="p-5 sm:p-6">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <FieldCard label="Event title" value={item.event_title} fullWidth />
+                    <FieldCard label="Organizer name" value={item.organizer_name} fullWidth />
+                    <FieldCard label="Event date" value={date} />
+                    <FieldCard label="Start time" value={item.start_time || "—"} />
+                    <FieldCard label="Venue" value={item.venue || "—"} />
+                    <FieldCard label="Location" value={item.location || "—"} />
+                    <FieldCard label="Ticket mode" value={item.ticket_mode || "—"} />
+                    <FieldCard label="Ticket price" value={price} />
+                    <FieldCard label="Ticket link" value={item.ticket_link || "—"} link={item.ticket_link || null} fullWidth />
+                    <FieldCard label="Contact WhatsApp" value={item.contact_whatsapp || "—"} fullWidth />
+                    <FieldCard label="Poster alt text" value={item.poster_alt || "—"} fullWidth />
+                    <FieldCard label="Description" value={item.description || "—"} fullWidth />
+                  </div>
+
+                  {schemaFields.length > 0 ? (
+                    <div className="mt-6">
+                      <div className="flex items-center justify-between gap-3">
+                        <h4 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+                          {config?.fieldGroups.find((group) => group.title !== "Event Basics" && group.title !== "Venue & Access" && group.title !== "Extra Details")?.title ?? "Event-specific details"}
+                        </h4>
+                      </div>
+
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        {schemaFields
+                          .filter((field) => !["event_title", "organizer_name", "event_date", "start_time", "venue", "location", "ticket_mode", "ticket_price", "ticket_link", "description", "contact_whatsapp", "poster_alt"].includes(field.key))
+                          .map((field) => {
+                            const rawValue = resolveFieldValue(item, field);
+                            const label = field.label || fieldLabelFromKey(field.key);
+                            const isLink = field.key === "ticket_link" && typeof rawValue === "string" && rawValue.trim().length > 0;
+                            const isFullWidth = field.type === "textarea" || field.type === "multiselect";
+                            return (
+                              <FieldCard
+                                key={field.key}
+                                label={label}
+                                value={renderFieldValue(field, rawValue)}
+                                link={isLink ? String(rawValue) : undefined}
+                                fullWidth={isFullWidth}
+                              />
+                            );
+                          })}
+                      </div>
+                    </div>
                   ) : null}
 
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                  >
-                    Close
-                  </button>
+                  {extraSpecEntries.length > 0 ? (
+                    <div className="mt-6">
+                      <h4 className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+                        Additional stored details
+                      </h4>
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        {extraSpecEntries.map(([key, value]) => (
+                          <FieldCard key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className="mt-6 flex flex-wrap gap-3">
+                    {item.ticket_link ? (
+                      <a
+                        href={item.ticket_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
+                      >
+                        Open ticket link
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      onClick={onClose}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
