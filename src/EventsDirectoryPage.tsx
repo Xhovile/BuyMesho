@@ -85,7 +85,7 @@ function EventCard({ item }: { item: EventRecord }) {
   const snippet = item.description.length > 96 ? `${item.description.slice(0, 96).trim()}…` : item.description;
 
   return (
-    <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_18px_50px_-32px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5">
+    <article className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-[0_18px_50px_-32px_rgba(0,0,0,0.22)] transition-transform duration-200 hover:-translate-y-0.5 sm:w-[260px]">
       <div className="relative">
         <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
           {posterUrl ? (
@@ -111,21 +111,19 @@ function EventCard({ item }: { item: EventRecord }) {
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
             <div className="min-w-0">
               <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Organizer</p>
-              <h3 className="mt-2 max-w-[14rem] truncate text-2xl font-black tracking-[-0.06em] leading-none sm:max-w-none sm:text-[1.9rem]">
+              <h3 className="mt-2 max-w-[14rem] truncate text-xl font-black tracking-[-0.05em] leading-none sm:max-w-none sm:text-[1.9rem]">
                 {item.event_title}
               </h3>
             </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
-              <Ticket className="h-5 w-5" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/12 backdrop-blur-sm">
+              <Ticket className="h-4 w-4" />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
-        <p className="text-sm leading-relaxed text-zinc-600">
-          {snippet}
-        </p>
+      <div className="p-4">
+        <p className="text-sm leading-relaxed text-zinc-600 line-clamp-2">{snippet}</p>
 
         <div className="mt-4 grid gap-3 text-sm text-zinc-600">
           <div className="flex items-center gap-3">
@@ -239,14 +237,14 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="rounded-[2.25rem] bg-zinc-950 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.5)] sm:px-8 sm:py-10 lg:px-10">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Events directory</p>
+          <div className="rounded-[2.25rem] bg-white px-5 py-8 text-zinc-900 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)] sm:px-8 sm:py-10 lg:px-10">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Events directory</p>
             <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">
                   Browse events and happenings.
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
                   Don&apos;t miss!
                 </p>
               </div>
@@ -254,7 +252,7 @@ export default function EventsDirectoryPage() {
               <button
                 type="button"
                 onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/10 hover:bg-zinc-100"
+                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
               >
                 Create Event
                 <ArrowRight className="h-4 w-4" />
@@ -283,7 +281,7 @@ export default function EventsDirectoryPage() {
               <span className="ml-3 text-sm font-medium">Loading events...</span>
             </div>
           ) : events.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="flex flex-wrap justify-center gap-4">
               {events.map((item) => (
                 <EventCard key={item.id} item={item} />
               ))}
