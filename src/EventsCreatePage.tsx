@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ChevronDown, Ticket } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { ArrowRight, ChevronDown, Ticket, Upload, X } from "lucide-react";
 
 import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
@@ -322,7 +322,9 @@ export default function EventsCreatePage() {
   const eventTypes = useMemo(() => getEventItemTypes(), []);
   const [eventType, setEventType] = useState(INITIAL_EVENT_TYPE);
   const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
-  const [posterImageUrl, setPosterImageUrl] = useState("");
+  const [posterAssetUrl, setPosterAssetUrl] = useState("");
+  const [posterUploading, setPosterUploading] = useState(false);
+  const posterInputRef = useRef<HTMLInputElement | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -336,10 +338,39 @@ export default function EventsCreatePage() {
     return map;
   }, [config]);
 
+  const uploadMediaFile = async (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await fetch("/api/upload/", { method: "POST", body: formData });
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+    if (!res.ok) throw new Error(data?.error || "Upload failed");
+    return data.url as string;
+  };
+
+  const handlePosterPick = () => posterInputRef.current?.click();
+
+  const handlePosterChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPosterUploading(true);
+    setFormError(null);
+    try {
+      const uploadedUrl = await uploadMediaFile(file);
+      setPosterAssetUrl(uploadedUrl);
+    } catch (err: any) {
+      setFormError(err?.message || "Could not upload the poster image.");
+    } finally {
+      setPosterUploading(false);
+      e.target.value = "";
+    }
+  };
+
   const handleTypeChange = (nextType: string) => {
     setEventType(nextType);
     setValues(createEmptyEventValues(nextType));
-    setPosterImageUrl("");
+    setPosterAssetUrl("");
     setFieldErrors({});
     setFormError(null);
   };
@@ -364,14 +395,13 @@ export default function EventsCreatePage() {
 
     setSubmitting(true);
     try {
-      const posterUrl = posterImageUrl.trim();
       const response = (await apiFetch("/api/events", {
         method: "POST",
         body: JSON.stringify({
           event_type: eventType,
           spec_values: {
             ...values,
-            ...(posterUrl ? { poster_image_url: posterUrl } : {}),
+            ...(posterAssetUrl ? { poster_image_url: posterAssetUrl } : {}),
           },
         }),
       })) as { success?: boolean; event?: SavedEvent | null };
@@ -488,16 +518,46 @@ export default function EventsCreatePage() {
                     <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
                   </div>
                   <p className="mt-3 text-sm leading-relaxed text-zinc-600">
-                    Paste a poster image link. This will show on the event card.
+                    Pick a poster from your device gallery. It will upload immediately.
                   </p>
+
                   <input
-                    type="url"
-                    inputMode="url"
-                    value={posterImageUrl}
-                    onChange={(e) => setPosterImageUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="mt-3 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10"
+                    ref={posterInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handlePosterChange}
+                    className="hidden"
                   />
+
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handlePosterPick}
+                      disabled={posterUploading}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      <Upload className="h-4 w-4" />
+                      {posterUploading ? "Uploading..." : "Choose poster"}
+                    </button>
+
+                    {posterAssetUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => setPosterAssetUrl("")}
+                        className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
+                      >
+                        <X className="h-4 w-4" />
+                        Remove poster
+                      </button>
+                    ) : null}
+                  </div>
+
+                  {posterAssetUrl ? (
+                    <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white">
+                      <img src={posterAssetUrl} alt="Selected event poster" className="h-44 w-full object-cover" />
+                    </div>
+                  ) : null}
                 </section>
               </div>
 
@@ -521,7 +581,7 @@ export default function EventsCreatePage() {
                   type="button"
                   onClick={() => {
                     setValues(createEmptyEventValues(eventType));
-                    setPosterImageUrl("");
+                    setPosterAssetUrl("");
                     setFieldErrors({});
                     setFormError(null);
                   }}
@@ -558,21 +618,6 @@ export default function EventsCreatePage() {
                   </div>
                 </div>
               </div>
-
-              <p className="mt-4 text-sm leading-relaxed text-zinc-600">
-                When you post, the form will close immediately and return you to Events.
-              </p>
-            </section>
-
-            <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">What this page does</p>
-              <ul className="mt-4 space-y-3 text-sm leading-relaxed text-zinc-600">
-                <li>• Picks the event schema from the type you choose.</li>
-                <li>• Shows a real calendar for date fields.</li>
-                <li>• Uses in-app dropdowns for event type, ticket mode, and other select fields.</li>
-                <li>• Uses hour and minute dropdowns for time fields.</li>
-                <li>• Replaces the history entry after posting so Back will not reopen the form.</li>
-              </ul>
             </section>
           </aside>
         </div>
