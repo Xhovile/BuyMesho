@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, CalendarDays, Loader2, MapPin, Ticket } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
@@ -76,7 +76,7 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
-function EventCard({ item }: { item: EventRecord }) {
+function DesktopEventCard({ item }: { item: EventRecord }) {
   const price = formatMoney(item.ticket_price);
   const date = formatDate(item.event_date);
   const accent = posterAccent(item.event_type);
@@ -177,6 +177,73 @@ function EventCard({ item }: { item: EventRecord }) {
   );
 }
 
+function MobileEventCard({ item }: { item: EventRecord }) {
+  const price = formatMoney(item.ticket_price);
+  const date = formatDate(item.event_date);
+  const accent = posterAccent(item.event_type);
+  const posterUrl = getPosterUrl(item);
+  const posterAlt = getPosterAlt(item);
+
+  return (
+    <article className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-[0_12px_30px_-24px_rgba(0,0,0,0.28)]">
+      <div className={`relative aspect-[4/3] bg-gradient-to-br ${accent}`}>
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt={posterAlt}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
+        <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 p-3">
+          <span className="rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+            {item.event_type}
+          </span>
+          <span className="rounded-full border border-white/15 bg-black/30 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+            {item.ticket_mode}
+          </span>
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-3 text-white">
+          <p className="text-[9px] font-extrabold uppercase tracking-[0.2em] text-white/70">Organizer</p>
+          <h3 className="mt-1 line-clamp-2 text-base font-black tracking-[-0.05em] leading-tight">
+            {item.event_title}
+          </h3>
+        </div>
+      </div>
+
+      <div className="p-3">
+        <div className="grid gap-2 text-xs text-zinc-600">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 text-red-900" />
+            <span className="font-semibold text-zinc-700">{date}</span>
+            <span className="text-zinc-300">•</span>
+            <span>{item.start_time}</span>
+          </div>
+
+          <div className="flex items-start gap-2">
+            <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-900" />
+            <span className="leading-relaxed text-zinc-700 line-clamp-2">
+              {item.venue}{item.location ? ` • ${item.location}` : ""}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+          <div>
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Ticket price</p>
+            <p className="mt-0.5 text-sm font-black tracking-tight text-zinc-950">{price}</p>
+          </div>
+          <div className="min-w-0 text-right">
+            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Posted by</p>
+            <p className="mt-0.5 truncate text-xs font-bold text-zinc-700">{item.organizer_name}</p>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function EventsDirectoryPage() {
   const [events, setEvents] = useState<EventRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,7 +276,7 @@ export default function EventsDirectoryPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
-      <header className="border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
+      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-3 text-left">
             <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
@@ -281,11 +348,19 @@ export default function EventsDirectoryPage() {
               <span className="ml-3 text-sm font-medium">Loading events...</span>
             </div>
           ) : events.length > 0 ? (
-            <div className="flex flex-wrap justify-center gap-4">
-              {events.map((item) => (
-                <EventCard key={item.id} item={item} />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3 md:hidden">
+                {events.map((item) => (
+                  <MobileEventCard key={item.id} item={item} />
+                ))}
+              </div>
+
+              <div className="hidden flex-wrap justify-center gap-4 md:flex">
+                {events.map((item) => (
+                  <DesktopEventCard key={item.id} item={item} />
+                ))}
+              </div>
+            </>
           ) : (
             <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:p-10">
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg shadow-zinc-900/15">
