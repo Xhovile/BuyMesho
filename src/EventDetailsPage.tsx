@@ -243,8 +243,8 @@ export default function EventDetailsPage() {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+    const handleKeyDown = (keyboardEvent: KeyboardEvent) => {
+      if (keyboardEvent.key === "Escape") {
         setIsFullscreen(false);
       }
     };
@@ -427,7 +427,7 @@ export default function EventDetailsPage() {
       <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-10 sm:pt-24 sm:pb-12">
         <div className="grid gap-8">
           <section>
-            <div className="mb-3 flex justify-end">
+            <div className="mb-3 flex justify-start">
               <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
             </div>
 
@@ -506,28 +506,30 @@ export default function EventDetailsPage() {
                   type="button"
                   onClick={handleMessage}
                   disabled={!event.contact_whatsapp}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-disabled={!event.contact_whatsapp}
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45"
                 >
-                  <MessageCircle className="h-4 w-4" />
+                  <MessageCircle className="h-4 w-4 shrink-0" />
                   <span className="truncate">Message</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleShare}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50"
+                  onClick={handleAddToCart}
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400"
                 >
-                  <Share2 className="h-4 w-4" />
-                  <span className="truncate">Share</span>
+                  <ShoppingBag className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Add to Cart</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleAddToCart}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+                  onClick={handleShare}
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                  aria-label="Share event"
+                  title="Share event"
                 >
-                  <ShoppingBag className="h-4 w-4" />
-                  <span className="truncate">Save</span>
+                  <Share2 className="h-4 w-4 text-zinc-700" />
                 </button>
               </div>
             </div>
