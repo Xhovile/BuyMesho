@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronLeft, ExternalLink, Loader2, MessageCircle, Maximize2, Minimize2, Share2, ShoppingBag, Ticket } from "lucide-react";
 
 import EventActionsMenu from "./components/eventDetails/EventActionsMenu";
@@ -80,20 +80,6 @@ function formatClock(value: string) {
   const period = hours >= 12 ? "PM" : "AM";
   const displayHour = hours % 12 || 12;
   return `${displayHour}:${minutes} ${period}`;
-}
-
-function formatDateTime(value: string) {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
 }
 
 function posterAccent(eventType: string) {
@@ -244,7 +230,6 @@ function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
 
 export default function EventDetailsPage() {
   const eventId = useMemo(() => parseEventId(), []);
-  const heroRef = useRef<HTMLDivElement | null>(null);
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -253,13 +238,23 @@ export default function EventDetailsPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(document.fullscreenElement === heroRef.current);
+    if (!isFullscreen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsFullscreen(false);
+      }
     };
 
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
-  }, []);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isFullscreen]);
 
   useEffect(() => {
     if (!eventId) {
@@ -349,16 +344,8 @@ export default function EventDetailsPage() {
   const startTime = formatClock(event.start_time);
   const eventPageUrl = `${window.location.origin}${EVENTS_PATH}?event=${event.id}`;
 
-  const toggleFullscreen = async () => {
-    try {
-      if (document.fullscreenElement === heroRef.current) {
-        await document.exitFullscreen();
-      } else {
-        await heroRef.current?.requestFullscreen();
-      }
-    } catch {
-      // ignore fullscreen errors
-    }
+  const toggleFullscreen = () => {
+    setIsFullscreen((current) => !current);
   };
 
   const handleShare = async () => {
@@ -440,10 +427,11 @@ export default function EventDetailsPage() {
       <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-10 sm:pt-24 sm:pb-12">
         <div className="grid gap-8">
           <section>
-            <div ref={heroRef} className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
-              <div className="absolute left-3 top-3 z-20">
-                <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
-              </div>
+            <div className="mb-3 flex justify-end">
+              <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
+            </div>
+
+            <div className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
               {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
               <button
                 type="button"
@@ -546,6 +534,32 @@ export default function EventDetailsPage() {
           </section>
         </div>
       </main>
+
+      {isFullscreen ? (
+        <div className="fixed inset-0 z-[100] bg-black/95" onClick={() => setIsFullscreen(false)} role="presentation">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              setIsFullscreen(false);
+            }}
+            className="absolute right-4 top-4 z-[101] inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-white backdrop-blur-sm hover:bg-white/20"
+          >
+            <Minimize2 className="h-4 w-4" />
+            Close
+          </button>
+
+          <div className="flex h-full w-full items-center justify-center p-4 sm:p-8" onClick={(event) => event.stopPropagation()}>
+            {posterUrl ? (
+              <img
+                src={posterUrl}
+                alt={posterAlt}
+                className="max-h-full max-w-full rounded-[1.5rem] object-contain shadow-2xl"
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
