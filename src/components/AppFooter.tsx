@@ -1,6 +1,7 @@
 import React from "react";
 import {
   navigateToPath,
+  ABOUT_PATH,
   PRIVACY_PATH,
   REPORT_PATH,
   SAFETY_PATH,
@@ -22,6 +23,13 @@ export default function AppFooter() {
         </div>
 
         <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
+          <button
+            type="button"
+            onClick={() => navigateToPath(ABOUT_PATH)}
+            className="hover:text-primary transition-colors"
+          >
+            About
+          </button>
           <button
             type="button"
             onClick={() => navigateToPath(PRIVACY_PATH)}
