@@ -413,21 +413,18 @@ export default function EventDetailsPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <div className="flex min-w-0 items-center gap-3">
-            <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
-            <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
-                <Ticket className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-lg font-black tracking-tight">
-                  <span className="text-red-900">Buy</span>
-                  <span className="text-zinc-700">Mesho</span>
-                </p>
-                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">Event details</p>
-              </div>
-            </button>
-          </div>
+          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
+              <Ticket className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-lg font-black tracking-tight">
+                <span className="text-red-900">Buy</span>
+                <span className="text-zinc-700">Mesho</span>
+              </p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">Event details</p>
+            </div>
+          </button>
 
           <button
             type="button"
@@ -444,6 +441,9 @@ export default function EventDetailsPage() {
         <div className="grid gap-8">
           <section>
             <div ref={heroRef} className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
+              <div className="absolute left-3 top-3 z-20">
+                <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
+              </div>
               {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
               <button
                 type="button"
@@ -518,30 +518,28 @@ export default function EventDetailsPage() {
                   type="button"
                   onClick={handleMessage}
                   disabled={!event.contact_whatsapp}
-                  aria-disabled={!event.contact_whatsapp}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <MessageCircle className="h-4 w-4 shrink-0" />
+                  <MessageCircle className="h-4 w-4" />
                   <span className="truncate">Message</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleAddToCart}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400"
+                  onClick={handleShare}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-50"
                 >
-                  <ShoppingBag className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Add to Cart</span>
+                  <Share2 className="h-4 w-4" />
+                  <span className="truncate">Share</span>
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleShare}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-                  aria-label="Share event"
-                  title="Share event"
+                  onClick={handleAddToCart}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
                 >
-                  <Share2 className="h-4 w-4 text-zinc-700" />
+                  <ShoppingBag className="h-4 w-4" />
+                  <span className="truncate">Save</span>
                 </button>
               </div>
             </div>
