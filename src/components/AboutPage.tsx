@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Globe, Sparkles, ShieldCheck, Target, Users, ShoppingBag, BadgeCheck } from "lucide-react";
 import LegalPageShell from "./LegalPageShell";
 import { HOME_PATH, navigateToPath } from "../lib/appNavigation";
@@ -5,7 +6,7 @@ import { HOME_PATH, navigateToPath } from "../lib/appNavigation";
 type Card = {
   title: string;
   body: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
 };
 
 const storyCards: Card[] = [
