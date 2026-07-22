@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { Wallet } from "lucide-react";
 import PayoutStatusBadge from "../../../components/payouts/PayoutStatusBadge";
 import {
@@ -15,7 +16,7 @@ function SectionTitle({
 }: {
   eyebrow: string;
   title: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-4">
