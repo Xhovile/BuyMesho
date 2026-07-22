@@ -1,0 +1,146 @@
+import type { ReactNode } from "react";
+import type {
+  PayoutDestination,
+  PayoutDestinationFormState,
+  PayoutDestinationPayload,
+  PayoutRecord,
+} from "../../modules/payouts/types";
+
+export const INITIAL_PAYOUT_DESTINATION_FORM: PayoutDestinationFormState = {
+  destinationType: "mobile_money",
+  providerName: "",
+  providerRefId: "",
+  currency: "MWK",
+  accountName: "",
+  accountNumber: "",
+  mobile: "",
+  isDefault: true,
+};
+
+export const REFRESH_INTERVAL_MS = 30_000;
+export const REMOVE_COUNTDOWN_SECONDS = 3;
+export const DEFAULT_CURRENCY = "MWK";
+export const DEFAULT_CONNECT_SCOPE = "payments:write payments:read";
+
+export function money(amount: number, currency = DEFAULT_CURRENCY) {
+  return new Intl.NumberFormat("en-MW", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount || 0);
+}
+
+export function payoutFeeNote(payout: PayoutRecord) {
+  const fee = Number(payout.payoutFeeAmount ?? 0);
+  if (fee > 0) {
+    return `Estimated PayChangu transfer fee: -${money(fee, payout.currency)}`;
+  }
+
+  return "A PayChangu payout transaction fee may also be deducted when funds are transferred to your account.";
+}
+
+export function formatDate(value: string | null) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+export function toEscrowSummaryRecord(value: unknown) {
+  if (!value || typeof value !== "object") return null;
+
+  const escrow = value as Record<string, unknown>;
+
+  const normalizeAmount = (input: unknown): number | string | null => {
+    if (input === null || input === undefined) return null;
+    if (typeof input === "number" || typeof input === "string") return input;
+    return null;
+  };
+
+  const readAmountField = (...keys: string[]) => {
+    for (const key of keys) {
+      const candidate = normalizeAmount(escrow[key]);
+      if (candidate !== null) return candidate;
+    }
+    return null;
+  };
+
+  return {
+    amount: readAmountField(
+      "amount",
+      "balanceAmount",
+      "balance_amount",
+      "totalAmount",
+      "total_amount",
+    ),
+    grossAmount: readAmountField(
+      "grossAmount",
+      "gross_amount",
+      "totalAmount",
+      "total_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
+    netAmount: readAmountField(
+      "netAmount",
+      "net_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
+    sellerAmount: readAmountField(
+      "sellerAmount",
+      "seller_amount",
+      "balanceAmount",
+      "balance_amount",
+    ),
+    status: typeof escrow.status === "string" ? escrow.status : undefined,
+    state: typeof escrow.state === "string" ? escrow.state : undefined,
+  };
+}
+
+export function validateDestinationForm(form: PayoutDestinationFormState) {
+  const providerName = form.providerName.trim();
+  const accountName = form.accountName.trim();
+  const providerRefId = form.providerRefId.trim();
+  const accountNumber = form.accountNumber.trim();
+  const mobile = form.mobile.trim();
+
+  if (!providerName || !accountName) {
+    return "Provider and account name are required.";
+  }
+
+  if (!providerRefId) {
+    return "Please select a supported payout provider from the list.";
+  }
+
+  if (form.destinationType === "bank" && !accountNumber) {
+    return "Bank account number is required.";
+  }
+
+  if (form.destinationType === "mobile_money" && !mobile) {
+    return "Mobile number is required.";
+  }
+
+  return null;
+}
+
+export function buildDestinationPayload(
+  sellerUid: string,
+  form: PayoutDestinationFormState,
+): PayoutDestinationPayload {
+  return {
+    sellerUid,
+    destinationType: form.destinationType,
+    providerName: form.providerName.trim(),
+    providerRefId: form.providerRefId.trim() || undefined,
+    currency: form.currency.trim() || DEFAULT_CURRENCY,
+    accountName: form.accountName.trim(),
+    accountNumber: form.destinationType === "bank" ? form.accountNumber.trim() : undefined,
+    mobile: form.destinationType === "mobile_money" ? form.mobile.trim() : undefined,
+    isDefault: form.isDefault,
+  };
+}
+
+export function statusPill(label: string, value: ReactNode) {
+  return { label, value };
+}
