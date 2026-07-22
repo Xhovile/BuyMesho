@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronLeft, ExternalLink, Loader2, MessageCircle, Share2, ShoppingBag, Ticket } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronLeft, ExternalLink, Loader2, Maximize2, MessageCircle, Minimize2, Share2, ShoppingBag, Ticket } from "lucide-react";
 
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
@@ -237,13 +237,28 @@ function normalizeWhatsappNumber(raw: string) {
   return raw.replace(/[^\d]/g, "");
 }
 
+function FullscreenToggleIcon({ isFullscreen }: { isFullscreen: boolean }) {
+  return isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />;
+}
+
 export default function EventDetailsPage() {
   const eventId = useMemo(() => parseEventId(), []);
+  const heroRef = useRef<HTMLDivElement | null>(null);
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [coreOpen, setCoreOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(document.fullscreenElement === heroRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     if (!eventId) {
@@ -333,6 +348,18 @@ export default function EventDetailsPage() {
   const startTime = formatClock(event.start_time);
   const eventPageUrl = `${window.location.origin}${EVENTS_PATH}?event=${event.id}`;
 
+  const toggleFullscreen = async () => {
+    try {
+      if (document.fullscreenElement === heroRef.current) {
+        await document.exitFullscreen();
+      } else {
+        await heroRef.current?.requestFullscreen();
+      }
+    } catch {
+      // ignore fullscreen errors
+    }
+  };
+
   const handleShare = async () => {
     const shareData = {
       title: event.event_title,
@@ -411,9 +438,18 @@ export default function EventDetailsPage() {
 
       <main className="mx-auto w-full max-w-7xl px-4 pt-24 pb-10 sm:pt-24 sm:pb-12">
         <div className="grid gap-8">
-          <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)]">
-            <div className={`relative aspect-[16/10] bg-gradient-to-br ${accent}`}>
+          <section>
+            <div ref={heroRef} className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
               {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
+              <button
+                type="button"
+                onClick={toggleFullscreen}
+                className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white/90 text-zinc-800 shadow-sm transition-transform duration-200 hover:scale-105 hover:bg-white active:scale-95"
+                aria-label={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}
+                title={isFullscreen ? "Exit fullscreen" : "Open fullscreen"}
+              >
+                <FullscreenToggleIcon isFullscreen={isFullscreen} />
+              </button>
             </div>
           </section>
 
@@ -422,7 +458,7 @@ export default function EventDetailsPage() {
               <h1 className="max-w-4xl text-4xl font-black tracking-[-0.06em] leading-[0.94] text-zinc-950 sm:text-5xl lg:text-6xl">
                 {event.event_title}
               </h1>
-              <p className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">{price}</p>
+              <p className="text-3xl font-black tracking-tight text-red-950 sm:text-4xl">{price}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
