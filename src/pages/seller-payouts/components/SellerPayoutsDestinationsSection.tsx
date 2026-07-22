@@ -1,7 +1,12 @@
+import { type ReactNode } from "react";
 import { Building2 } from "lucide-react";
 import PayoutDestinationCard from "../../../components/payouts/PayoutDestinationCard";
 import PayoutDestinationForm from "../../../components/payouts/PayoutDestinationForm";
-import type { PayoutDestinationFormState, PayoutDestination, PayoutProviderOption } from "../../../modules/payouts/types";
+import type {
+  PayoutDestination,
+  PayoutDestinationFormState,
+  PayoutProviderOption,
+} from "../../../modules/payouts/types";
 import { formatDate } from "../sellerPayouts.helpers";
 
 function SectionTitle({
@@ -11,7 +16,7 @@ function SectionTitle({
 }: {
   eyebrow: string;
   title: string;
-  action?: React.ReactNode;
+  action?: ReactNode;
 }) {
   return (
     <div className="flex items-start justify-between gap-4">
@@ -24,7 +29,7 @@ function SectionTitle({
   );
 }
 
-function EmptyState({ children }: { children: React.ReactNode }) {
+function EmptyState({ children }: { children: ReactNode }) {
   return (
     <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-5 text-sm text-zinc-600">
       {children}
