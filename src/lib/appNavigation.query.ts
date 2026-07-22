@@ -1,5 +1,6 @@
 import type { HeaderChip } from "../constants";
 import {
+  ABOUT_PATH,
   ADMIN_AUDIT_PATH,
   ADMIN_BALANCE_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
@@ -264,6 +265,7 @@ export const getAppRouteFromLocation = (
   if (location.pathname === ADMIN_BALANCE_PATH) return "admin_balance";
   if (location.pathname === PAYMENT_RETURN_PATH) return "payment_return";
   if (location.pathname === SELLER_PATH && params.has("uid")) return "seller";
+  if (location.pathname === ABOUT_PATH) return "about";
   if (location.pathname === PRIVACY_PATH) return "privacy";
   if (location.pathname === TERMS_PATH) return "terms";
   if (location.pathname === SAFETY_PATH) return "safety";
