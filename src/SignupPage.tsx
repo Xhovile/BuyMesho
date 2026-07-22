@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { GoogleAuthProvider, createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -92,34 +92,6 @@ const bootstrapProfile = async (profile: UserProfile) => {
     }),
   });
 };
-
-function GoogleMark() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 48 48"
-      className="w-5 h-5 shrink-0"
-      focusable="false"
-    >
-      <path
-        fill="#FFC107"
-        d="M43.611 20.083H42V20H24v8h11.303C33.658 32.962 29.315 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.042l5.657-5.657C34.051 6.053 29.291 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.651-.389-3.917Z"
-      />
-      <path
-        fill="#FF3D00"
-        d="M6.306 14.691 12.877 19.5C14.655 15.109 18.949 12 24 12c3.059 0 5.842 1.154 7.961 3.042l5.657-5.657C34.051 6.053 29.291 4 24 4c-7.727 0-14.438 4.348-17.694 10.691Z"
-      />
-      <path
-        fill="#4CAF50"
-        d="M24 44c5.194 0 9.91-1.984 13.48-5.219l-6.23-5.266C29.196 35.091 26.769 36 24 36c-5.294 0-9.623-3.024-11.28-7.454l-6.52 5.018C9.415 39.556 16.227 44 24 44Z"
-      />
-      <path
-        fill="#1976D2"
-        d="M43.611 20.083H42V20H24v8h11.303a12.06 12.06 0 0 1-4.053 5.515l.003-.002 6.23 5.266C36.042 38.262 44 32 44 24c0-1.341-.138-2.651-.389-3.917Z"
-      />
-    </svg>
-  );
-}
 
 export default function SignupPage() {
   const [form, setForm] = useState({
@@ -224,51 +196,6 @@ export default function SignupPage() {
       }
 
       showFeedback("error", "Signup failed", message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignUp = async () => {
-    setLoading(true);
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({ prompt: "select_account" });
-
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      const email = user.email?.trim() || form.email.trim();
-
-      if (!email) {
-        throw new Error("Google sign-in did not provide an email address.");
-      }
-
-      const profile: UserProfile = {
-        uid: user.uid,
-        email,
-        university: form.university,
-        is_verified: true,
-        is_seller: false,
-        join_date: new Date().toISOString(),
-      };
-
-      await bootstrapProfile(profile);
-      navigateToPath("/profile");
-    } catch (err: any) {
-      if (err?.code === "auth/popup-closed-by-user" || err?.code === "auth/cancelled-popup-request") {
-        return;
-      }
-
-      if (err?.code === "auth/account-exists-with-different-credential") {
-        showFeedback(
-          "error",
-          "Google sign-in failed",
-          "That email is already linked to another sign-in method. Use the original method to log in first."
-        );
-        return;
-      }
-
-      showFeedback("error", "Google sign-in failed", "Unable to continue with Google. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -395,22 +322,6 @@ export default function SignupPage() {
           className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
-        </button>
-
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-zinc-200" />
-          <span className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-400">Or</span>
-          <div className="h-px flex-1 bg-zinc-200" />
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGoogleSignUp}
-          disabled={loading}
-          className="w-full sm:w-auto min-w-[200px] border border-zinc-300 bg-white text-zinc-800 py-3 px-6 rounded-2xl font-bold hover:bg-zinc-50 transition-colors flex items-center justify-center gap-3 disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <GoogleMark />}
-          <span>{loading ? "Connecting..." : "Google"}</span>
         </button>
       </form>
 
