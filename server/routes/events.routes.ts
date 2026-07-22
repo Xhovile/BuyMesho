@@ -109,6 +109,44 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     }
   });
 
+  app.delete("/api/events/:id", (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    try {
+      const existing = db
+        .prepare(
+          `
+            SELECT id
+            FROM events
+            WHERE id = ? AND deleted_at IS NULL
+            LIMIT 1
+          `
+        )
+        .get(eventId) as { id: number } | undefined;
+
+      if (!existing) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      db.prepare(
+        `
+          UPDATE events
+          SET deleted_at = CURRENT_TIMESTAMP,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `
+      ).run(eventId);
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.error("Failed to delete event", error);
+      return res.status(500).json({ error: "Failed to delete event" });
+    }
+  });
+
   app.post("/api/events", (req, res) => {
     try {
       const body = req.body ?? {};
