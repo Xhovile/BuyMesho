@@ -137,8 +137,10 @@ function EventCard({ item }: { item: EventRecord }) {
 }
 
 function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }) {
+  const desktopRowCountClass = items.length === 1 ? "md:grid-rows-1" : "md:grid-rows-2";
+
   return (
-    <section className="pt-8">
+    <section className="mx-auto max-w-7xl px-4 pt-8">
       <div className="mb-5 border-t border-zinc-200 pt-5">
         <div className="flex items-end justify-between gap-4">
           <div>
@@ -149,7 +151,7 @@ function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }
         </div>
       </div>
 
-      <div className="grid grid-flow-col grid-rows-1 auto-cols-[220px] gap-4 overflow-x-auto pb-2 pr-4 md:grid-rows-2 md:auto-cols-[260px]">
+      <div className={`grid grid-flow-col grid-rows-1 auto-cols-[220px] gap-4 overflow-x-auto pb-2 pr-4 ${desktopRowCountClass} md:auto-cols-[260px]`}>
         {items.map((item) => (
           <EventCard key={item.id} item={item} />
         ))}
@@ -283,16 +285,6 @@ export default function EventsDirectoryPage() {
               <div className="flex flex-wrap gap-3 sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setViewAll((current) => !current)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold shadow-lg shadow-black/10 transition-colors ${
-                    viewAll ? "bg-zinc-950 text-white hover:bg-zinc-800" : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
-                  }`}
-                >
-                  {viewAll ? "Show Categories" : "View All"}
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => navigateToPath("/explore/events/create")}
                   className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
                 >
@@ -335,6 +327,23 @@ export default function EventsDirectoryPage() {
         </section>
 
         {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
+
+        {!loading && groupedCategories.length > 0 ? (
+          <div className="mx-auto mt-2 flex max-w-7xl items-center justify-between gap-4 px-4">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
+              {viewAll ? "All listings" : "Category display"}
+            </p>
+            <button
+              type="button"
+              onClick={() => setViewAll((current) => !current)}
+              className={`inline-flex shrink-0 items-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold shadow-lg shadow-black/10 transition-colors ${
+                viewAll ? "bg-zinc-950 text-white hover:bg-zinc-800" : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
+              }`}
+            >
+              {viewAll ? "Show Categories" : "View All"}
+            </button>
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex items-center justify-center rounded-[2rem] border border-zinc-200 bg-white px-6 py-20 text-zinc-500 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)]">
