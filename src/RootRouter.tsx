@@ -10,7 +10,6 @@ import {
   EVENTS_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
-  ABOUT_PATH,
   navigateToPath,
   PAYMENT_METHOD_PATH,
   TRACK_ORDER_PATH,
