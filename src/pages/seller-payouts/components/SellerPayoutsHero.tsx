@@ -1,6 +1,7 @@
 import { Building2 } from "lucide-react";
 import SellerEarningsSummary from "../../../components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "../../../components/payouts/PayoutTimeline";
+import type { SellerEarningsSummary as SellerEarningsSummaryModel } from "../../../modules/payouts/summary";
 import type { PayoutRecord, PayoutSummary } from "../../../modules/payouts/types";
 
 export default function SellerPayoutsHero({
@@ -10,7 +11,7 @@ export default function SellerPayoutsHero({
   canEditSettings,
 }: {
   summary: PayoutSummary;
-  earningsSummary: any;
+  earningsSummary: SellerEarningsSummaryModel;
   payouts: PayoutRecord[];
   canEditSettings: boolean;
 }) {
