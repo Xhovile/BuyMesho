@@ -29,6 +29,25 @@ type EventRow = {
   updated_at: string;
 };
 
+type ParsedEventInput = {
+  eventType: string;
+  specValues: Record<string, unknown>;
+  eventTitle: string;
+  organizerName: string;
+  eventDate: string;
+  startTime: string;
+  venue: string;
+  location: string;
+  ticketMode: string;
+  ticketPrice: number | null;
+  ticketLink: string | null;
+  description: string;
+  contactWhatsapp: string | null;
+  posterAlt: string | null;
+  creatorUid: string | null;
+  status: string;
+};
+
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -53,6 +72,65 @@ function serializeEventRow(row: EventRow) {
     ...row,
     ticket_price: row.ticket_price === null || row.ticket_price === undefined ? null : Number(row.ticket_price),
     spec_values: JSON.parse(row.spec_values || "{}"),
+  };
+}
+
+function parseEventInput(body: any): { data: ParsedEventInput } | { error: string; status: number; validation_errors?: unknown } {
+  const eventType = normalizeString(body.event_type);
+  const specValues = isPlainObject(body.spec_values) ? body.spec_values : {};
+  const config = getEventItemConfig(eventType);
+
+  if (!config) {
+    return { status: 400, error: "Invalid event type" };
+  }
+
+  const validation = validateEventValues(eventType, specValues);
+  if (!validation.isValid) {
+    return {
+      status: 400,
+      error: "Please fix the highlighted event fields.",
+      validation_errors: validation.errors,
+    };
+  }
+
+  const eventTitle = normalizeString(specValues.event_title);
+  const organizerName = normalizeString(specValues.organizer_name);
+  const eventDate = normalizeString(specValues.event_date);
+  const startTime = normalizeString(specValues.start_time);
+  const venue = normalizeString(specValues.venue);
+  const location = normalizeString(specValues.location);
+  const ticketMode = normalizeString(specValues.ticket_mode);
+  const ticketPrice = normalizeNumber(specValues.ticket_price);
+  const ticketLink = normalizeOptionalString(specValues.ticket_link);
+  const description = normalizeString(specValues.description);
+  const contactWhatsapp = normalizeOptionalString(specValues.contact_whatsapp);
+  const posterAlt = normalizeOptionalString(specValues.poster_alt);
+  const creatorUid = normalizeOptionalString(body.creator_uid);
+  const status = normalizeString(body.status).toLowerCase() === "draft" ? "draft" : "published";
+
+  if (!eventTitle || !organizerName || !eventDate || !startTime || !venue || !location || !ticketMode || !description) {
+    return { status: 400, error: "Event basics are required." };
+  }
+
+  return {
+    data: {
+      eventType,
+      specValues,
+      eventTitle,
+      organizerName,
+      eventDate,
+      startTime,
+      venue,
+      location,
+      ticketMode,
+      ticketPrice,
+      ticketLink,
+      description,
+      contactWhatsapp,
+      posterAlt,
+      creatorUid,
+      status,
+    },
   };
 }
 
@@ -109,6 +187,172 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     }
   });
 
+  const saveEvent = (req: any, res: any, eventId?: number) => {
+    try {
+      const parsed = parseEventInput(req.body ?? {});
+      if ("error" in parsed) {
+        return res.status(parsed.status).json(
+          parsed.validation_errors ? { error: parsed.error, validation_errors: parsed.validation_errors } : { error: parsed.error }
+        );
+      }
+
+      const { data } = parsed;
+
+      if (eventId !== undefined) {
+        const existing = db
+          .prepare(
+            `
+              SELECT id
+              FROM events
+              WHERE id = ? AND deleted_at IS NULL
+              LIMIT 1
+            `
+          )
+          .get(eventId) as { id: number } | undefined;
+
+        if (!existing) {
+          return res.status(404).json({ error: "Event not found" });
+        }
+
+        db.prepare(
+          `
+            UPDATE events
+            SET
+              event_type = ?,
+              event_title = ?,
+              organizer_name = ?,
+              event_date = ?,
+              start_time = ?,
+              venue = ?,
+              location = ?,
+              ticket_mode = ?,
+              ticket_price = ?,
+              ticket_link = ?,
+              description = ?,
+              contact_whatsapp = ?,
+              poster_alt = ?,
+              spec_values = ?,
+              status = ?,
+              updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `
+        ).run(
+          data.eventType,
+          data.eventTitle,
+          data.organizerName,
+          data.eventDate,
+          data.startTime,
+          data.venue,
+          data.location,
+          data.ticketMode,
+          data.ticketPrice,
+          data.ticketLink,
+          data.description,
+          data.contactWhatsapp,
+          data.posterAlt,
+          JSON.stringify(data.specValues),
+          data.status,
+          eventId
+        );
+
+        const row = db
+          .prepare(
+            `
+              SELECT *
+              FROM events
+              WHERE id = ?
+              LIMIT 1
+            `
+          )
+          .get(eventId) as EventRow | undefined;
+
+        return res.json({
+          success: true,
+          event: row ? serializeEventRow(row) : null,
+        });
+      }
+
+      const insert = db
+        .prepare(
+          `
+            INSERT INTO events (
+              creator_uid,
+              event_type,
+              event_title,
+              organizer_name,
+              event_date,
+              start_time,
+              venue,
+              location,
+              ticket_mode,
+              ticket_price,
+              ticket_link,
+              description,
+              contact_whatsapp,
+              poster_alt,
+              spec_values,
+              status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `
+        )
+        .run(
+          data.creatorUid,
+          data.eventType,
+          data.eventTitle,
+          data.organizerName,
+          data.eventDate,
+          data.startTime,
+          data.venue,
+          data.location,
+          data.ticketMode,
+          data.ticketPrice,
+          data.ticketLink,
+          data.description,
+          data.contactWhatsapp,
+          data.posterAlt,
+          JSON.stringify(data.specValues),
+          data.status
+        );
+
+      const row = db
+        .prepare(
+          `
+            SELECT *
+            FROM events
+            WHERE id = ?
+            LIMIT 1
+          `
+        )
+        .get(insert.lastInsertRowid) as EventRow | undefined;
+
+      return res.status(201).json({
+        success: true,
+        event: row ? serializeEventRow(row) : null,
+      });
+    } catch (error) {
+      console.error(eventId !== undefined ? "Failed to update event" : "Failed to create event", error);
+      return res.status(500).json({ error: eventId !== undefined ? "Failed to update event" : "Failed to create event" });
+    }
+  };
+
+  app.post("/api/events", (req, res) => saveEvent(req, res));
+  app.put("/api/events/:id", (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    return saveEvent(req, res, eventId);
+  });
+  app.patch("/api/events/:id", (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    return saveEvent(req, res, eventId);
+  });
+
   app.delete("/api/events/:id", (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isInteger(eventId)) {
@@ -144,107 +388,6 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     } catch (error) {
       console.error("Failed to delete event", error);
       return res.status(500).json({ error: "Failed to delete event" });
-    }
-  });
-
-  app.post("/api/events", (req, res) => {
-    try {
-      const body = req.body ?? {};
-      const eventType = normalizeString(body.event_type);
-      const specValues = isPlainObject(body.spec_values) ? body.spec_values : {};
-      const config = getEventItemConfig(eventType);
-
-      if (!config) {
-        return res.status(400).json({ error: "Invalid event type" });
-      }
-
-      const validation = validateEventValues(eventType, specValues);
-      if (!validation.isValid) {
-        return res.status(400).json({
-          error: "Please fix the highlighted event fields.",
-          validation_errors: validation.errors,
-        });
-      }
-
-      const eventTitle = normalizeString(specValues.event_title);
-      const organizerName = normalizeString(specValues.organizer_name);
-      const eventDate = normalizeString(specValues.event_date);
-      const startTime = normalizeString(specValues.start_time);
-      const venue = normalizeString(specValues.venue);
-      const location = normalizeString(specValues.location);
-      const ticketMode = normalizeString(specValues.ticket_mode);
-      const ticketPrice = normalizeNumber(specValues.ticket_price);
-      const ticketLink = normalizeOptionalString(specValues.ticket_link);
-      const description = normalizeString(specValues.description);
-      const contactWhatsapp = normalizeOptionalString(specValues.contact_whatsapp);
-      const posterAlt = normalizeOptionalString(specValues.poster_alt);
-      const creatorUid = normalizeOptionalString(body.creator_uid);
-      const status = normalizeString(body.status).toLowerCase() === "draft" ? "draft" : "published";
-
-      if (!eventTitle || !organizerName || !eventDate || !startTime || !venue || !location || !ticketMode || !description) {
-        return res.status(400).json({ error: "Event basics are required." });
-      }
-
-      const insert = db
-        .prepare(
-          `
-            INSERT INTO events (
-              creator_uid,
-              event_type,
-              event_title,
-              organizer_name,
-              event_date,
-              start_time,
-              venue,
-              location,
-              ticket_mode,
-              ticket_price,
-              ticket_link,
-              description,
-              contact_whatsapp,
-              poster_alt,
-              spec_values,
-              status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          `
-        )
-        .run(
-          creatorUid,
-          eventType,
-          eventTitle,
-          organizerName,
-          eventDate,
-          startTime,
-          venue,
-          location,
-          ticketMode,
-          ticketPrice,
-          ticketLink,
-          description,
-          contactWhatsapp,
-          posterAlt,
-          JSON.stringify(specValues),
-          status
-        );
-
-      const row = db
-        .prepare(
-          `
-            SELECT *
-            FROM events
-            WHERE id = ?
-            LIMIT 1
-          `
-        )
-        .get(insert.lastInsertRowid) as EventRow | undefined;
-
-      return res.status(201).json({
-        success: true,
-        event: row ? serializeEventRow(row) : null,
-      });
-    } catch (error) {
-      console.error("Failed to create event", error);
-      return res.status(500).json({ error: "Failed to create event" });
     }
   });
 }
