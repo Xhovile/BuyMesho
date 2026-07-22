@@ -2,6 +2,7 @@ import type { HeaderChip } from "../constants";
 
 export type AppRoute =
   | "home"
+  | "about"
   | "category"
   | "explore"
   | "saved"
@@ -44,6 +45,7 @@ export type AppRoute =
 
 export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
 export const HOME_PATH = "/";
+export const ABOUT_PATH = "/about";
 export const EXPLORE_PATH = "/explore";
 export const EVENTS_PATH = "/explore/events";
 export const EVENTS_CREATE_PATH = "/explore/events/create";
