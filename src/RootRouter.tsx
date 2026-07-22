@@ -10,6 +10,7 @@ import {
   EVENTS_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
+  ABOUT_PATH,
   navigateToPath,
   PAYMENT_METHOD_PATH,
   TRACK_ORDER_PATH,
@@ -50,6 +51,7 @@ const EmailActionPage = lazy(() => import("./EmailActionPage"));
 const ForgotPasswordPage = lazy(() => import("./ForgotPasswordPage"));
 const HiddenCollectionsPage = lazy(() => import("./HiddenCollectionsPage"));
 const HomePage = lazy(() => import("./HomePage"));
+const AboutPage = lazy(() => import("./components/AboutPage"));
 const ListingDetailsPage = lazy(() => import("./ListingDetailsPage"));
 const LoginPage = lazy(() => import("./LoginPage"));
 const MarketComingSoonPage = lazy(() => import("./MarketComingSoonPage"));
@@ -167,6 +169,7 @@ export default function RootRouter() {
     void Promise.allSettled([
       import("./App.new"),
       import("./HomePage"),
+      import("./components/AboutPage"),
       import("./CategoryPage"),
       import("./MessagesInboxPage"),
       import("./MessageThreadPage"),
@@ -285,6 +288,8 @@ export default function RootRouter() {
           <TrackOrderPage />
         ) : locationPath === "/payments/payment-method" ? (
           <PaymentMethodPage />
+        ) : route === "about" ? (
+          <AboutPage />
         ) : route === "home" ? (
           <HomePage />
         ) : route === "explore" ? (
