@@ -38,6 +38,7 @@ export default function SellerPayoutsPage() {
     setForm,
     resetForm,
     setRemoveTarget,
+    startEdit,
     handleConnectRefresh,
     handleConnect,
     handleDisconnect,
@@ -123,7 +124,7 @@ export default function SellerPayoutsPage() {
           activeDestinationCount={activeDestinations.length}
           activeDestinations={activeDestinations}
           providerOptions={providerOptions}
-          onReplace={handleRemoveDestination}
+          onReplace={startEdit}
           onRemove={handleRemoveDestination}
           onMakeDefault={handleMakeDefault}
         />
