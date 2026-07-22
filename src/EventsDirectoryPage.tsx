@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, CalendarDays, Loader2, MapPin, Search, Ticket } from "lucide-react";
 
-import { apiFetch } from "./lib/api";
+import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
 import { EVENTS_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
 
 type EventRecord = {
@@ -25,6 +25,9 @@ type EventRecord = {
   created_at: string;
   updated_at: string;
 };
+
+const EVENTS_API_URL = "/api/events";
+const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
@@ -86,6 +89,37 @@ function matchesSearch(item: EventRecord, query: string) {
     .toLowerCase();
 
   return haystack.includes(normalized);
+}
+
+function getCacheKey(url: string) {
+  return `${SHARED_API_CACHE_PREFIX}${url}`;
+}
+
+function writeCachedApiJson(url: string, body: unknown, response: Response) {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem(
+      getCacheKey(url),
+      JSON.stringify({
+        status: response.status,
+        statusText: response.statusText,
+        headers: Array.from(response.headers.entries()),
+        body: JSON.stringify(body),
+        timestamp: Date.now(),
+      })
+    );
+  } catch {
+    // Ignore cache write failures.
+  }
+}
+
+function readEventsSnapshot() {
+  const cached = readCachedApiJson<{ items?: EventRecord[] }>(EVENTS_API_URL);
+  return {
+    hasCache: cached !== null,
+    items: Array.isArray(cached?.items) ? cached.items : [],
+  };
 }
 
 function EventCard({ item }: { item: EventRecord }) {
@@ -183,34 +217,66 @@ function AllListingsPanel({ items }: { items: EventRecord[] }) {
 }
 
 export default function EventsDirectoryPage() {
-  const [events, setEvents] = useState<EventRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initialSnapshot = readEventsSnapshot();
+  const [events, setEvents] = useState<EventRecord[]>(() => initialSnapshot.items);
+  const [loading, setLoading] = useState(() => !initialSnapshot.hasCache);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [viewAll, setViewAll] = useState(false);
 
   useEffect(() => {
-    let active = true;
+    const controller = new AbortController();
 
     async function loadEvents() {
-      try {
-        setLoading(true);
-        const response = (await apiFetch("/api/events")) as { items?: EventRecord[] };
-        if (!active) return;
-        setEvents(Array.isArray(response?.items) ? response.items : []);
+      const cachedSnapshot = readEventsSnapshot();
+      if (cachedSnapshot.hasCache) {
+        setEvents(cachedSnapshot.items);
+      }
+
+      const shouldRefresh = !isCachedApiResponseFresh(EVENTS_API_URL, API_CACHE_TTL_MS);
+      if (!shouldRefresh) {
+        setLoading(false);
         setError(null);
-      } catch (err: any) {
-        if (!active) return;
-        setError(err?.message || "Could not load events.");
+        return;
+      }
+
+      if (!cachedSnapshot.hasCache) {
+        setLoading(true);
+      } else {
+        setLoading(false);
+      }
+
+      setError(null);
+
+      try {
+        const response = await fetch(EVENTS_API_URL, { signal: controller.signal });
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = (await response.json()) as { items?: EventRecord[] };
+        if (controller.signal.aborted) return;
+
+        const items = Array.isArray(data.items) ? data.items : [];
+        setEvents(items);
+        setError(null);
+        writeCachedApiJson(EVENTS_API_URL, { items }, response);
+      } catch (err: unknown) {
+        if (controller.signal.aborted) return;
+        if (!cachedSnapshot.hasCache) {
+          setError(err instanceof Error ? err.message : "Could not load events.");
+        }
       } finally {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
     void loadEvents();
     return () => {
-      active = false;
+      controller.abort();
     };
   }, []);
 
