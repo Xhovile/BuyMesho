@@ -103,6 +103,43 @@ function normalizeNumberFields(fields: EventSpecField[], values: Record<string, 
   return nextValues;
 }
 
+function parseEditingEventId() {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("edit");
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
+function getPosterAssetUrlFromEvent(event: SavedEvent) {
+  const specValues = event.spec_values ?? {};
+  const candidate = specValues.poster_image_url || specValues.poster_url || specValues.poster;
+  return typeof candidate === "string" && candidate.trim().length > 0 ? candidate.trim() : "";
+}
+
+function buildPrefilledValues(event: SavedEvent) {
+  const base = createEmptyEventValues(event.event_type);
+  const merged: Record<string, unknown> = {
+    ...base,
+    ...(event.spec_values ?? {}),
+    event_title: event.event_title,
+    organizer_name: event.organizer_name,
+    event_date: event.event_date,
+    start_time: event.start_time,
+    venue: event.venue,
+    location: event.location,
+    ticket_mode: event.ticket_mode,
+    ticket_price: event.ticket_price,
+    ticket_link: event.ticket_link,
+    description: event.description,
+    contact_whatsapp: event.contact_whatsapp,
+    poster_alt: event.poster_alt,
+  };
+
+  return merged;
+}
+
 function AppDropdown({
   label,
   value,
@@ -354,10 +391,15 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
 
 export default function EventsCreatePage() {
   const eventTypes = useMemo(() => getEventItemTypes(), []);
+  const editingEventId = useMemo(() => parseEditingEventId(), []);
+  const isEditing = editingEventId !== null;
+
   const [eventType, setEventType] = useState(INITIAL_EVENT_TYPE);
   const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
   const [posterAssetUrl, setPosterAssetUrl] = useState("");
   const [posterUploading, setPosterUploading] = useState(false);
+  const [loadingExistingEvent, setLoadingExistingEvent] = useState(isEditing);
+  const [existingEvent, setExistingEvent] = useState<SavedEvent | null>(null);
   const posterInputRef = useRef<HTMLInputElement | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -369,6 +411,43 @@ export default function EventsCreatePage() {
     config?.schema.fields.forEach((field) => map.set(field.key, field));
     return map;
   }, [config]);
+
+  useEffect(() => {
+    if (!editingEventId) return;
+
+    let active = true;
+
+    async function loadExistingEvent() {
+      try {
+        setLoadingExistingEvent(true);
+        const response = (await apiFetch(`/api/events/${editingEventId}`)) as { event?: SavedEvent };
+        if (!active) return;
+
+        if (!response?.event) {
+          setFormError("The event could not be loaded for editing.");
+          return;
+        }
+
+        const existing = response.event;
+        setExistingEvent(existing);
+        setEventType(existing.event_type || INITIAL_EVENT_TYPE);
+        setValues(buildPrefilledValues(existing));
+        setPosterAssetUrl(getPosterAssetUrlFromEvent(existing));
+        setFieldErrors({});
+        setFormError(null);
+      } catch (error: any) {
+        if (!active) return;
+        setFormError(error?.message || "Could not load the event for editing.");
+      } finally {
+        if (active) setLoadingExistingEvent(false);
+      }
+    }
+
+    void loadExistingEvent();
+    return () => {
+      active = false;
+    };
+  }, [editingEventId]);
 
   const uploadMediaFile = async (file: File) => {
     const formData = new FormData();
@@ -441,19 +520,24 @@ export default function EventsCreatePage() {
     setSubmitting(true);
     try {
       const normalizedValues = normalizeNumberFields(config.schema.fields, values);
-      const response = (await apiFetch("/api/events", {
-        method: "POST",
-        body: JSON.stringify({
-          event_type: eventType,
-          spec_values: {
-            ...normalizedValues,
-            ...(posterAssetUrl ? { poster_image_url: posterAssetUrl } : {}),
-          },
-        }),
+      const payload = {
+        event_type: eventType,
+        status: existingEvent?.status || "published",
+        spec_values: {
+          ...normalizedValues,
+          ...(posterAssetUrl ? { poster_image_url: posterAssetUrl } : {}),
+        },
+      };
+
+      const endpoint = editingEventId ? `/api/events/${editingEventId}` : "/api/events";
+      const method = editingEventId ? "PUT" : "POST";
+      const response = (await apiFetch(endpoint, {
+        method,
+        body: JSON.stringify(payload),
       })) as { success?: boolean; event?: SavedEvent | null };
 
       if (!response?.event) throw new Error("The event was saved, but no event data was returned.");
-      navigateToPath(EVENTS_PATH, { replace: true });
+      navigateToPath(editingEventId ? `${EVENTS_PATH}?event=${response.event.id}` : EVENTS_PATH, { replace: true });
     } catch (err: any) {
       setFormError(err?.message || "Could not save the event.");
     } finally {
@@ -468,6 +552,17 @@ export default function EventsCreatePage() {
   const previewTicketMode = previewSource.ticket_mode;
   const previewPrice = formatMoney(previewSource.ticket_price);
 
+  if (editingEventId && loadingExistingEvent) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 text-zinc-600">
+        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
+          <Ticket className="h-5 w-5 animate-pulse text-zinc-700" />
+          Loading event for editing...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
@@ -479,7 +574,7 @@ export default function EventsCreatePage() {
                 <span className="text-red-900">Buy</span>
                 <span className="text-zinc-700">Mesho</span>
               </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Create event</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">{isEditing ? "Edit event" : "Create event"}</p>
             </div>
           </button>
           <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
@@ -494,8 +589,17 @@ export default function EventsCreatePage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator</p>
-                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] text-zinc-950 sm:text-5xl">Create an event</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Choose the event type first, then fill in the schema fields that appear for that type.</p>
+                <h1 className="mt-2 text-3xl font-black tracking-[-0.06em] text-zinc-950 sm:text-5xl">{isEditing ? "Edit event" : "Create an event"}</h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  {isEditing
+                    ? "Update the existing event details, then save the changes."
+                    : "Choose the event type first, then fill in the schema fields that appear for that type."}
+                </p>
+                {isEditing && editingEventId ? (
+                  <p className="mt-4 inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-zinc-500">
+                    Editing event #{editingEventId}
+                  </p>
+                ) : null}
               </div>
               <div className="hidden h-12 w-12 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg shadow-zinc-900/15 sm:flex">
                 <Ticket className="h-5 w-5" />
@@ -558,93 +662,57 @@ export default function EventsCreatePage() {
                     <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
                   </div>
                   <p className="mt-3 text-sm leading-relaxed text-zinc-600">Pick a poster from your device gallery. It will upload immediately.</p>
-                  <input ref={posterInputRef} type="file" accept="image/*" onChange={handlePosterChange} className="hidden" />
-                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handlePosterChange} />
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
                     <button
                       type="button"
                       onClick={handlePosterPick}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={posterUploading}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       <Upload className="h-4 w-4" />
-                      {posterUploading ? "Uploading..." : "Choose poster"}
+                      {posterAssetUrl ? "Change poster" : "Upload poster"}
                     </button>
-                    {posterAssetUrl ? (
-                      <button
-                        type="button"
-                        onClick={() => setPosterAssetUrl("")}
-                        className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                      >
-                        <X className="h-4 w-4" />
-                        Remove poster
-                      </button>
-                    ) : null}
+                    {posterAssetUrl ? <button type="button" onClick={() => setPosterAssetUrl("")} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"> <X className="h-4 w-4" /> Remove poster </button> : null}
                   </div>
                   {posterAssetUrl ? (
-                    <div className="mt-4 overflow-hidden rounded-[1.25rem] border border-zinc-200 bg-white">
-                      <img src={posterAssetUrl} alt="Selected event poster" className="h-44 w-full object-cover" />
+                    <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
+                      <img src={posterAssetUrl} alt="Uploaded poster preview" className="h-56 w-full object-cover" />
                     </div>
                   ) : null}
                 </section>
-              </div>
 
-              {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-900">{formError}</div> : null}
+                {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
 
-              <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-900/15 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {submitting ? "Posting..." : "Post event"}
+                  {submitting ? "Saving..." : isEditing ? "Save changes" : "Publish event"}
                   <ArrowRight className="h-4 w-4" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setValues(createEmptyEventValues(eventType));
-                    setPosterAssetUrl("");
-                    setFieldErrors({});
-                    setFormError(null);
-                  }}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-6 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-                >
-                  Reset
                 </button>
               </div>
             </form>
           </section>
 
-          <aside className="space-y-6">
+          <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
             <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Saved preview</p>
-              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-zinc-950">How the event will look</h2>
-              <div className="mt-5 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-950 text-white shadow-[0_18px_50px_-28px_rgba(0,0,0,0.35)]">
-                <div className="bg-[radial-gradient(circle_at_top_left,rgba(220,38,38,0.28),transparent_35%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.22),transparent_28%)] px-5 py-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">{eventType}</p>
-                      <h3 className="mt-2 text-3xl font-black tracking-[-0.05em] leading-[0.95]">{previewTitle}</h3>
-                    </div>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm">
-                      <Ticket className="h-5 w-5 text-white" />
-                    </div>
-                  </div>
-                  <div className="mt-5 grid gap-2 text-sm text-zinc-100/90">
-                    <p>
-                      <span className="font-bold text-white">Date:</span> {fieldValueAsText(previewDate)}
-                    </p>
-                    <p>
-                      <span className="font-bold text-white">Venue:</span> {fieldValueAsText(previewLocation)}
-                    </p>
-                    <p>
-                      <span className="font-bold text-white">Ticket mode:</span> {fieldValueAsText(previewTicketMode)}
-                    </p>
-                    <p>
-                      <span className="font-bold text-white">Price:</span> {previewPrice}
-                    </p>
-                  </div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Live preview</p>
+              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-zinc-950">{previewTitle}</h2>
+              <p className="mt-2 text-sm text-zinc-600">{previewLocation || "Location preview"}</p>
+              <div className="mt-5 rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Date</p>
+                  <p className="text-sm font-semibold text-zinc-900">{fieldValueAsText(previewDate)}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket mode</p>
+                  <p className="text-sm font-semibold text-zinc-900">{fieldValueAsText(previewTicketMode)}</p>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-4">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket price</p>
+                  <p className="text-sm font-semibold text-red-900">{previewPrice}</p>
                 </div>
               </div>
             </section>
