@@ -242,8 +242,8 @@ export default function EventDetailsPage() {
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [coreOpen, setCoreOpen] = useState(true);
-  const [extraOpen, setExtraOpen] = useState(true);
+  const [coreOpen, setCoreOpen] = useState(false);
+  const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
@@ -450,7 +450,7 @@ export default function EventDetailsPage() {
                 </div>
               </section>
 
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-6 md:grid-cols-2">
                 <AccordionSection title="Core details" open={coreOpen} onToggle={() => setCoreOpen((value) => !value)}>
                   {coreRows.map(([label, value]) => (
                     <DetailRow key={label} label={label} value={value} />
