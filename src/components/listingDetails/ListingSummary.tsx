@@ -54,7 +54,7 @@ export default function ListingSummary({
           <h1 className="text-[1.7rem] font-black leading-tight tracking-tight text-zinc-900 sm:text-[2rem]">
             {listing.name}
           </h1>
-          <p className="text-[2rem] font-black tracking-tight text-zinc-900 sm:text-[2.25rem]">
+          <p className="text-[2rem] font-black tracking-tight text-red-950 sm:text-[2.25rem]">
             MK {Number(listing.price).toLocaleString()}
           </p>
         </div>
