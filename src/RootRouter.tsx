@@ -77,6 +77,9 @@ const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
 const PaymentMethodPage = lazy(() => import("./PaymentMethodPage"));
 const TrackOrderPage = lazy(() => import("./TrackOrderPage"));
 const DisputesPage = lazy(() => import("./DisputesPage"));
+const EventsDirectoryPage = lazy(() => import("./EventsDirectoryPage"));
+const EventDetailsPage = lazy(() => import("./EventDetailsPage"));
+const EventsCreatePage = lazy(() => import("./EventsCreatePage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -139,6 +142,9 @@ export default function RootRouter() {
   const isMessageThread = route === "messages" && !!threadConversationId;
   const isOrderDisputePath = locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute");
   const isOrderTrackingPath = locationPath.startsWith("/orders/") && !locationPath.endsWith("/dispute");
+  const isEventsCreatePath = locationPath === EVENTS_CREATE_PATH;
+  const isEventsDirectoryPath = locationPath === EVENTS_PATH && !new URLSearchParams(locationSearch).has("event");
+  const isEventDetailsPath = locationPath === EVENTS_PATH && new URLSearchParams(locationSearch).has("event");
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -182,6 +188,9 @@ export default function RootRouter() {
       import("./SellerPayoutsPage"),
       import("./ConnectCallbackPage"),
       import("./SellersDirectoryPage"),
+      import("./EventsDirectoryPage"),
+      import("./EventDetailsPage"),
+      import("./EventsCreatePage"),
     ]);
   }, []);
 
@@ -238,7 +247,13 @@ export default function RootRouter() {
   return (
     <>
       <Suspense fallback={<RouteLoader route={route} />}>
-        {locationPath === EVENTS_PATH || locationPath === EVENTS_CREATE_PATH || locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
+        {isEventsCreatePath ? (
+          <EventsCreatePage />
+        ) : isEventDetailsPath ? (
+          <EventDetailsPage />
+        ) : isEventsDirectoryPath ? (
+          <EventsDirectoryPage />
+        ) : locationPath === "/explore/lay-by" || locationPath === "/explore/accommodation" || locationPath === "/explore/innovation" ? (
           <MarketComingSoonPage />
         ) : locationPath === "/explore/sellers" ? (
           <SellersDirectoryPage />
@@ -258,105 +273,111 @@ export default function RootRouter() {
           <TrackOrderPage />
         ) : locationPath === DISPUTES_PATH ? (
           <DisputesPage />
-        ) : locationPath === "/payments" ? (
-          <PaymentsHubPage />
         ) : locationPath === "/buyer-payments" ? (
           <BuyerPaymentsPage />
-        ) : locationPath === SELLER_PAYOUTS_PATH ? (
-          <SellerPayoutsPage />
         ) : locationPath === "/cart" ? (
           <CartPage />
-        ) : locationPath === "/saved" ? (
-          <SavedPage />
-        ) : locationPath === "/hidden" ? (
-          <HiddenCollectionsPage />
-        ) : locationPath === "/messages" && isMessageThread ? (
-          <MessageThreadPage />
-        ) : locationPath === "/messages" ? (
-          <MessagesInboxPage />
-        ) : locationPath === "/" ? (
-          <HomePage />
-        ) : locationPath.startsWith("/explore") ? (
-          <App />
-        ) : locationPath.startsWith("/category") ? (
-          <CategoryPage />
-        ) : locationPath === "/login" ? (
-          <LoginPage />
-        ) : locationPath === "/signup" ? (
-          <SignupPage />
-        ) : locationPath === "/forgot-password" ? (
-          <ForgotPasswordPage />
-        ) : locationPath === "/profile" ? (
-          <ProfilePage />
-        ) : locationPath === "/verify-email" ? (
-          <VerifyEmailPage />
-        ) : locationPath === "/settings" ? (
-          <SettingsPage />
-        ) : locationPath === "/edit-profile" ? (
-          <EditProfilePage />
-        ) : locationPath === "/edit-account" ? (
-          <EditAccountPage />
-        ) : locationPath === "/become-seller" ? (
-          <BecomeSellerPage />
-        ) : locationPath === "/change-password" ? (
-          <ChangePasswordPage />
-        ) : locationPath === "/change_email" ? (
-          <ChangeEmailPage />
-        ) : locationPath === "/create" ? (
-          <CreateListingPage />
-        ) : locationPath === "/edit" ? (
-          <EditListingPage />
-        ) : locationPath === "/my-listings" ? (
-          <MyListingsPage />
-        ) : locationPath === "/seller" ? (
-          <SellerProfilePage />
-        ) : locationPath === "/seller-dashboard" ? (
-          <SellerDashboardPage />
-        ) : locationPath === "/admin" ? (
-          <AdminRouteGuard>
-            <AdminHubPage />
-          </AdminRouteGuard>
-        ) : locationPath === "/admin/payments" ? (
-          <AdminPaymentsPage />
-        ) : locationPath === "/admin/payouts" ? (
-          <AdminPayoutsManager />
-        ) : locationPath === "/admin/reports" ? (
-          <AdminReportsPage />
-        ) : locationPath === "/admin/seller-applications" ? (
-          <AdminSellerApplicationsPage />
-        ) : locationPath === "/admin/moderation-queue" ? (
-          <AdminModerationQueuePage />
-        ) : locationPath === "/admin/audit" ? (
-          <AdminAuditLogPage />
-        ) : locationPath === "/admin/balance" ? (
-          <AdminBalancePage />
-        ) : locationPath === "/admin/setup" ? (
-          <AdminSetupPage />
-        ) : locationPath === "/admin/payouts/destinations" ? (
-          <AdminPayoutDestinationRequestsPage />
-        ) : locationPath === "/payment/return" ? (
+        ) : locationPath === "/payments" ? (
+          <PaymentsHubPage />
+        ) : locationPath === "/payments/return" ? (
           <PaymentReturnPage />
-        ) : locationPath === "/email-action" ? (
+        ) : locationPath === "/payments/track-order" ? (
+          <TrackOrderPage />
+        ) : locationPath === "/payments/payment-method" ? (
+          <PaymentMethodPage />
+        ) : route === "home" ? (
+          <HomePage />
+        ) : route === "explore" ? (
+          <App />
+        ) : route === "category" ? (
+          <CategoryPage />
+        ) : route === "saved" ? (
+          <SavedPage />
+        ) : route === "hidden" ? (
+          <HiddenCollectionsPage />
+        ) : route === "profile" ? (
+          <ProfilePage />
+        ) : route === "settings" ? (
+          <SettingsPage />
+        ) : route === "privacy" ? (
+          <PrivacyPolicyPage />
+        ) : route === "terms" ? (
+          <TermsPage />
+        ) : route === "safety" ? (
+          <SafetyTipsPage />
+        ) : route === "report" ? (
+          <ReportProblemPage />
+        ) : route === "seller" ? (
+          <SellerProfilePage />
+        ) : route === "seller_dashboard" ? (
+          <SellerDashboardPage />
+        ) : route === "seller_payouts" ? (
+          <SellerPayoutsPage />
+        ) : route === "messages" ? (
+          isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
+        ) : route === "create" ? (
+          <CreateListingPage />
+        ) : route === "edit" ? (
+          <EditListingPage />
+        ) : route === "login" ? (
+          <LoginPage />
+        ) : route === "signup" ? (
+          <SignupPage />
+        ) : route === "forgot_password" ? (
+          <ForgotPasswordPage />
+        ) : route === "verify_email" ? (
+          <VerifyEmailPage />
+        ) : route === "edit_profile" ? (
+          <EditProfilePage />
+        ) : route === "edit_account" ? (
+          <EditAccountPage />
+        ) : route === "become_seller" ? (
+          <BecomeSellerPage />
+        ) : route === "change_password" ? (
+          <ChangePasswordPage />
+        ) : route === "change_email" ? (
+          <ChangeEmailPage />
+        ) : route === "email_action" ? (
           <EmailActionPage />
-        ) : locationPath === "/privacy" ? (
-          <PrivacyPolicyPage onBack={() => navigateToPath(HOME_PATH)} />
-        ) : locationPath === "/terms" ? (
-          <TermsPage onBack={() => navigateToPath(HOME_PATH)} />
-        ) : locationPath === "/safety" ? (
-          <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
-        ) : locationPath === "/report" ? (
-          <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} />
-        ) : locationPath === "/connect/callback" ? (
-          <ConnectCallbackPage />
+        ) : route === "my_listings" ? (
+          <MyListingsPage />
+        ) : route === "admin" ? (
+          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
+        ) : route === "admin_payments" ? (
+          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+        ) : route === "admin_payouts" ? (
+          <AdminRouteGuard><AdminPayoutsManager /></AdminRouteGuard>
+        ) : route === "admin_payout_destinations" ? (
+          <AdminRouteGuard><AdminPayoutDestinationRequestsPage /></AdminRouteGuard>
+        ) : route === "admin_reports" ? (
+          <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
+        ) : route === "admin_seller_applications" ? (
+          <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
+        ) : route === "admin_moderation_queue" ? (
+          <AdminRouteGuard><AdminModerationQueuePage /></AdminRouteGuard>
+        ) : route === "admin_audit" ? (
+          <AdminRouteGuard><AdminAuditLogPage /></AdminRouteGuard>
+        ) : route === "admin_balance" ? (
+          <AdminRouteGuard><AdminBalancePage /></AdminRouteGuard>
+        ) : route === "admin_setup" ? (
+          <AdminRouteGuard><AdminSetupPage /></AdminRouteGuard>
+        ) : route === "payment_return" ? (
+          <PaymentReturnPage />
+        ) : route === "payment_method" ? (
+          <PaymentMethodPage />
+        ) : route === "track_order" ? (
+          <TrackOrderPage />
+        ) : route === "disputes" ? (
+          <DisputesPage />
+        ) : route === "buyer_payments" ? (
+          <BuyerPaymentsPage />
+        ) : route === "cart" ? (
+          <CartPage />
         ) : (
           <HomePage />
         )}
       </Suspense>
-
-      <ScrollToTopFab
-        show={showScrollTop}
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      />
+      {showScrollTop ? <ScrollToTopFab /> : null}
     </>
   );
 }
