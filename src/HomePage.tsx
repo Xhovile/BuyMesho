@@ -3,6 +3,7 @@ import { ArrowRight } from "lucide-react";
 import {
   navigateToLoginWithReturnPath,
   navigateToPath,
+  ABOUT_PATH,
   EXPLORE_PATH,
   MARKET_CHIP_PATHS,
   PRIVACY_PATH,
@@ -187,6 +188,14 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-wrap gap-3 lg:justify-end">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(ABOUT_PATH)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
+                >
+                  About BuyMesho
+                  <ArrowRight className="h-4 w-4" />
+                </button>
                 {controller.isLoggedIn ? (
                   <button
                     type="button"
@@ -214,6 +223,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
                 >
                   Explore First
+                  <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
@@ -233,6 +243,13 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-400">
+            <button
+              type="button"
+              onClick={() => navigateToPath(ABOUT_PATH)}
+              className="transition-colors hover:text-primary"
+            >
+              About
+            </button>
             <button
               type="button"
               onClick={() => navigateToPath(PRIVACY_PATH)}
