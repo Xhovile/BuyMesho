@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronLeft, ExternalLink, Loader2, Maximize2, MessageCircle, Minimize2, Share2, ShoppingBag, Ticket } from "lucide-react";
+import { ChevronDown, ChevronLeft, ExternalLink, Loader2, MessageCircle, Maximize2, Minimize2, Share2, ShoppingBag, Ticket } from "lucide-react";
 
+import EventActionsMenu from "./components/eventDetails/EventActionsMenu";
 import { getEventItemConfig, type EventSpecField } from "./eventSchemas";
 import { apiFetch } from "./lib/api";
 import { EVENTS_PATH, EXPLORE_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
@@ -412,18 +413,21 @@ export default function EventDetailsPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
-              <Ticket className="h-5 w-5" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-lg font-black tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">Event details</p>
-            </div>
-          </button>
+          <div className="flex min-w-0 items-center gap-3">
+            <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
+            <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
+                <Ticket className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-lg font-black tracking-tight">
+                  <span className="text-red-900">Buy</span>
+                  <span className="text-zinc-700">Mesho</span>
+                </p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">Event details</p>
+              </div>
+            </button>
+          </div>
 
           <button
             type="button"
