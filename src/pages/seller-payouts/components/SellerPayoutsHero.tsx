@@ -1,4 +1,3 @@
-import { Building2 } from "lucide-react";
 import SellerEarningsSummary from "../../../components/payouts/SellerEarningsSummary";
 import PayoutTimeline from "../../../components/payouts/PayoutTimeline";
 import type { SellerEarningsSummary as SellerEarningsSummaryModel } from "../../../modules/payouts/summary";
