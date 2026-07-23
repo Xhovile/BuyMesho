@@ -5,22 +5,810 @@ import {
   listPayChanguMobileMoneyOperators,
   listPayChanguPayoutBanks,
 } from '../../modules/payouts/paychangu.payout.js';
-import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import {
-  type AdminOverrideAction,
   canApprovePayoutOverride,
   canEditPayoutSettings,
   canRequestPayoutRetry,
   canRequestWithdrawal,
   canViewPayoutHistory,
   canViewPayoutSettings,
-  payoutService,
   type PayoutPermissionActor,
 } from '../../modules/payouts/payout.service.js';
-import { PAYOUT_POLICY, isRetryableFailureCode } from '../../modules/payouts/payout.policy.js';
+import { PAYOUT_POLICY } from '../../modules/payouts/payout.policy.js';
 import { getRequestUser, jsonError, payoutLimiter } from './shared.js';
 
 const DEFAULT_CURRENCY = 'MWK';
 const PAYOUT_ENCRYPTION_SECRET = process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
 
-// ... keep the rest of the file unchanged ...
+type DestinationType = 'mobile_money' | 'bank';
+
+type SellerPayoutDestinationRow = {
+  id: string;
+  seller_uid: string;
+  destination_type: DestinationType;
+  provider_name: string;
+  provider_ref_id: string | null;
+  currency: string;
+  account_name: string;
+  account_number_encrypted: string | null;
+  mobile_encrypted: string | null;
+  masked_account: string;
+  destination_fingerprint: string;
+  is_default: number;
+  verification_status: string;
+  verification_attempts: number;
+  last_error: string | null;
+  verified_at: string | null;
+  replaced_from_id: string | null;
+  replaced_by_id: string | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+};
+
+type SellerPayoutDestinationRecord = {
+  id: string;
+  sellerId: string;
+  destinationType: DestinationType;
+  providerName: string;
+  providerRefId: string | null;
+  currency: string;
+  accountName: string;
+  maskedAccount: string;
+  isDefault: boolean;
+  verificationStatus: string;
+  verificationAttempts: number;
+  lastError: string | null;
+  verifiedAt: string | null;
+  replacedFromId: string | null;
+  replacedById: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type SellerPayoutPermissions = {
+  viewPayoutSettings: boolean;
+  editPayoutSettings: boolean;
+  requestWithdrawal: boolean;
+  viewPayoutHistory: boolean;
+  requestPayoutRetry: boolean;
+  approveOverride: boolean;
+};
+
+type NormalizedMobileMoneyOperator = { refId: string; name: string };
+type NormalizedPayoutBank = { uuid: string; name: string };
+
+function normalizeText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function normalizeCurrency(value: unknown): string {
+  const currency = normalizeText(value)?.toUpperCase() ?? DEFAULT_CURRENCY;
+  if (currency !== DEFAULT_CURRENCY) throw new Error('Only MWK payout destinations are supported right now');
+  return currency;
+}
+
+function normalizeProviderName(value: unknown): string {
+  const providerName = normalizeText(value);
+  if (!providerName) throw new Error('providerName is required');
+  return providerName;
+}
+
+function normalizeAccountName(value: unknown): string {
+  const accountName = normalizeText(value);
+  if (!accountName) throw new Error('accountName is required');
+  return accountName;
+}
+
+function normalizeProviderRefId(value: unknown): string | null {
+  return normalizeText(value);
+}
+
+function normalizeDestinationType(value: unknown): DestinationType {
+  const type = normalizeText(value)?.toLowerCase();
+  if (type === 'mobile_money' || type === 'bank') return type;
+  throw new Error('destinationType must be mobile_money or bank');
+}
+
+function normalizeDestinationId(value: unknown): string {
+  const id = normalizeText(value);
+  if (!id) throw new Error('Destination id is required');
+  return id;
+}
+
+function onlyDigits(value: string): string {
+  return value.replace(/\D+/g, '');
+}
+
+function maskValue(value: string): string {
+  const clean = onlyDigits(value);
+  if (!clean) return '****';
+  if (clean.length <= 4) return `****${clean}`;
+  return `****${clean.slice(-4)}`;
+}
+
+function requirePayoutEncryptionSecret(): string {
+  if (!PAYOUT_ENCRYPTION_SECRET) throw new Error('SELLER_PAYOUT_ENCRYPTION_KEY is not configured');
+  return PAYOUT_ENCRYPTION_SECRET;
+}
+
+function getDerivedEncryptionKey(): Buffer {
+  return scryptSync(requirePayoutEncryptionSecret(), 'BuyMesho seller payout', 32);
+}
+
+function encryptSensitiveValue(value: string): string {
+  const key = getDerivedEncryptionKey();
+  const iv = randomBytes(12);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
+  const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return `${iv.toString('base64')}:${tag.toString('base64')}:${encrypted.toString('base64')}`;
+}
+
+function decryptSensitiveValue(value: string | null): string | null {
+  if (!value) return null;
+  const parts = value.split(':');
+  if (parts.length !== 3) return value;
+
+  try {
+    const key = getDerivedEncryptionKey();
+    const iv = Buffer.from(parts[0], 'base64');
+    const tag = Buffer.from(parts[1], 'base64');
+    const encrypted = Buffer.from(parts[2], 'base64');
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(tag);
+    return `${decipher.update(encrypted, undefined, 'utf8')}${decipher.final('utf8')}`;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeAccountNumber(value: unknown): string {
+  const normalized = normalizeText(value);
+  if (!normalized) throw new Error('accountNumber is required');
+  return onlyDigits(normalized);
+}
+
+function normalizeMobileNumber(value: unknown): string {
+  const normalized = normalizeText(value);
+  if (!normalized) throw new Error('mobile is required');
+  const digits = onlyDigits(normalized);
+  if (digits.length === 10 && digits.startsWith('0')) return digits;
+  if (digits.length === 12 && digits.startsWith('265')) return `0${digits.slice(3)}`;
+  if (digits.length === 9) return `0${digits}`;
+  throw new Error('mobile must be a valid Malawi number');
+}
+
+function buildDestinationFingerprint(input: {
+  sellerId: string;
+  destinationType: DestinationType;
+  providerName: string;
+  providerRefId: string | null;
+  currency: string;
+  targetValue: string;
+}): string {
+  return createHash('sha256')
+    .update([
+      input.sellerId,
+      input.destinationType,
+      input.providerName.toLowerCase(),
+      input.providerRefId?.toLowerCase() ?? '',
+      input.currency.toUpperCase(),
+      input.targetValue,
+    ].join('|'))
+    .digest('hex');
+}
+
+function getActor(req: express.Request): PayoutPermissionActor | null {
+  const user = getRequestUser(req);
+  return user ? { uid: user.uid, is_admin: user.is_admin } : null;
+}
+
+function buildPermissions(sellerId: string, actor: PayoutPermissionActor | null): SellerPayoutPermissions {
+  const context = { sellerId, actor };
+  return {
+    viewPayoutSettings: canViewPayoutSettings(context),
+    editPayoutSettings: canEditPayoutSettings(context),
+    requestWithdrawal: canRequestWithdrawal(context),
+    viewPayoutHistory: canViewPayoutHistory(context),
+    requestPayoutRetry: canRequestPayoutRetry(context),
+    approveOverride: canApprovePayoutOverride(context),
+  };
+}
+
+function assertAllowed(req: express.Request, allowed: boolean, message: string): void {
+  if (!allowed) {
+    const user = getRequestUser(req);
+    if (!user) throw new Error('Unauthorized');
+    throw new Error(message);
+  }
+}
+
+function assertViewSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canViewPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout setting');
+}
+
+function assertEditSettingsAccess(req: express.Request, sellerId: string): void {
+  assertAllowed(req, canEditPayoutSettings({ actor: getActor(req), sellerId }), 'You are not allowed to edit this payout setting');
+}
+
+function assertProviderLookupAccess(req: express.Request): string {
+  const sellerId = getRequestSellerId(req, req.query.sellerUid);
+  assertViewSettingsAccess(req, sellerId);
+  return sellerId;
+}
+
+function getRequestSellerId(req: express.Request, sellerUid?: unknown): string {
+  const user = getRequestUser(req);
+  if (!user) throw new Error('Unauthorized');
+  if (user.is_admin && typeof sellerUid === 'string' && sellerUid.trim()) return sellerUid.trim();
+  return user.uid;
+}
+
+function findDestinationById(destinationId: string): SellerPayoutDestinationRow | undefined {
+  const db = getPaymentDb();
+  return db.prepare('SELECT * FROM seller_payout_accounts WHERE id = ? LIMIT 1').get(destinationId) as SellerPayoutDestinationRow | undefined;
+}
+
+function findDestinationDuplicate(sellerId: string, fingerprint: string, excludeId?: string): SellerPayoutDestinationRow | undefined {
+  const db = getPaymentDb();
+  const query = excludeId
+    ? 'SELECT * FROM seller_payout_accounts WHERE seller_uid = ? AND destination_fingerprint = ? AND id <> ? AND is_active = 1 LIMIT 1'
+    : 'SELECT * FROM seller_payout_accounts WHERE seller_uid = ? AND destination_fingerprint = ? AND is_active = 1 LIMIT 1';
+  return (excludeId ? db.prepare(query).get(sellerId, fingerprint, excludeId) : db.prepare(query).get(sellerId, fingerprint)) as SellerPayoutDestinationRow | undefined;
+}
+
+function rowToSellerPayoutDestination(row: SellerPayoutDestinationRow): SellerPayoutDestinationRecord {
+  return {
+    id: row.id,
+    sellerId: row.seller_uid,
+    destinationType: row.destination_type,
+    providerName: row.provider_name,
+    providerRefId: row.provider_ref_id,
+    currency: row.currency,
+    accountName: row.account_name,
+    maskedAccount: row.masked_account,
+    isDefault: row.is_default === 1,
+    verificationStatus: row.verification_status,
+    verificationAttempts: row.verification_attempts,
+    lastError: row.last_error,
+    verifiedAt: row.verified_at,
+    replacedFromId: row.replaced_from_id,
+    replacedById: row.replaced_by_id,
+    isActive: row.is_active === 1,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function listSellerDestinations(sellerId: string): SellerPayoutDestinationRecord[] {
+  const db = getPaymentDb();
+  const rows = db.prepare('SELECT * FROM seller_payout_accounts WHERE seller_uid = ? ORDER BY is_default DESC, created_at DESC').all(sellerId) as SellerPayoutDestinationRow[];
+  return rows.map(rowToSellerPayoutDestination);
+}
+
+function addDestinationEvent(input: {
+  sellerId: string;
+  accountId: string;
+  eventType: string;
+  actorType: 'seller' | 'admin' | 'system';
+  actorId?: string | null;
+  note?: string | null;
+  payload?: Record<string, unknown> | null;
+}): void {
+  const db = getPaymentDb();
+  db.prepare(`
+    INSERT INTO seller_payout_account_events (
+      seller_uid,
+      account_id,
+      event_type,
+      actor_type,
+      actor_id,
+      note,
+      payload,
+      created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    input.sellerId,
+    input.accountId,
+    input.eventType,
+    input.actorType,
+    input.actorId ?? null,
+    input.note ?? null,
+    input.payload ? JSON.stringify(input.payload) : null,
+    new Date().toISOString(),
+  );
+}
+
+function createDestinationRecord(input: {
+  sellerId: string;
+  destinationType: DestinationType;
+  providerName: string;
+  providerRefId: string | null;
+  currency: string;
+  accountName: string;
+  accountNumber?: string | null;
+  mobile?: string | null;
+  isDefault: boolean;
+  sourceId?: string | null;
+}): SellerPayoutDestinationRecord {
+  const db = getPaymentDb();
+  const id = randomUUID();
+  const now = new Date().toISOString();
+  const targetValue = input.destinationType === 'bank' ? normalizeAccountNumber(input.accountNumber ?? '') : normalizeMobileNumber(input.mobile ?? '');
+  const fingerprint = buildDestinationFingerprint({
+    sellerId: input.sellerId,
+    destinationType: input.destinationType,
+    providerName: input.providerName,
+    providerRefId: input.providerRefId,
+    currency: input.currency,
+    targetValue,
+  });
+
+  if (findDestinationDuplicate(input.sellerId, fingerprint)) {
+    throw new Error('That payout destination already exists for this seller');
+  }
+
+  const accountNumberEncrypted = input.destinationType === 'bank' ? encryptSensitiveValue(normalizeAccountNumber(input.accountNumber ?? '')) : null;
+  const mobileEncrypted = input.destinationType === 'mobile_money' ? encryptSensitiveValue(normalizeMobileNumber(input.mobile ?? '')) : null;
+  const maskedAccount = input.destinationType === 'bank' ? maskValue(normalizeAccountNumber(input.accountNumber ?? '')) : maskValue(normalizeMobileNumber(input.mobile ?? ''));
+
+  db.transaction(() => {
+    if (input.isDefault) {
+      db.prepare('UPDATE seller_payout_accounts SET is_default = 0, updated_at = ? WHERE seller_uid = ?').run(now, input.sellerId);
+    }
+
+    db.prepare(`
+      INSERT INTO seller_payout_accounts (
+        id,
+        seller_uid,
+        destination_type,
+        provider_name,
+        provider_ref_id,
+        currency,
+        account_name,
+        account_number_encrypted,
+        mobile_encrypted,
+        masked_account,
+        destination_fingerprint,
+        is_default,
+        verification_status,
+        verification_attempts,
+        last_error,
+        verified_at,
+        replaced_from_id,
+        replaced_by_id,
+        is_active,
+        created_at,
+        updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, NULL, NULL, ?, NULL, 1, ?, ?)
+    `).run(
+      id,
+      input.sellerId,
+      input.destinationType,
+      input.providerName,
+      input.providerRefId,
+      input.currency,
+      input.accountName,
+      accountNumberEncrypted,
+      mobileEncrypted,
+      maskedAccount,
+      fingerprint,
+      input.isDefault ? 1 : 0,
+      input.sourceId ?? null,
+      now,
+      now,
+    );
+  })();
+
+  const created = findDestinationById(id);
+  if (!created) throw new Error('Failed to create payout destination');
+  return rowToSellerPayoutDestination(created);
+}
+
+function updateDestinationRecord(existing: SellerPayoutDestinationRow, updates: {
+  destinationType?: DestinationType;
+  providerName?: string;
+  providerRefId?: string | null;
+  currency?: string;
+  accountName?: string;
+  accountNumber?: string | null;
+  mobile?: string | null;
+  isDefault?: boolean;
+}): SellerPayoutDestinationRecord {
+  const db = getPaymentDb();
+  const now = new Date().toISOString();
+
+  const destinationType = updates.destinationType ?? existing.destination_type;
+  const providerName = updates.providerName ?? existing.provider_name;
+  const providerRefId = updates.providerRefId ?? existing.provider_ref_id;
+  const currency = updates.currency ?? existing.currency;
+  const accountName = updates.accountName ?? existing.account_name;
+  const accountNumber = destinationType === 'bank' ? (updates.accountNumber ?? decryptSensitiveValue(existing.account_number_encrypted) ?? '') : null;
+  const mobile = destinationType === 'mobile_money' ? (updates.mobile ?? decryptSensitiveValue(existing.mobile_encrypted) ?? '') : null;
+  const targetValue = destinationType === 'bank' ? normalizeAccountNumber(accountNumber) : normalizeMobileNumber(mobile);
+  const fingerprint = buildDestinationFingerprint({
+    sellerId: existing.seller_uid,
+    destinationType,
+    providerName,
+    providerRefId,
+    currency,
+    targetValue,
+  });
+
+  if (findDestinationDuplicate(existing.seller_uid, fingerprint, existing.id)) {
+    throw new Error('That payout destination already exists for this seller');
+  }
+
+  const accountNumberEncrypted = destinationType === 'bank' ? encryptSensitiveValue(normalizeAccountNumber(accountNumber)) : null;
+  const mobileEncrypted = destinationType === 'mobile_money' ? encryptSensitiveValue(normalizeMobileNumber(mobile)) : null;
+  const maskedAccount = destinationType === 'bank' ? maskValue(normalizeAccountNumber(accountNumber)) : maskValue(normalizeMobileNumber(mobile));
+  const isDefault = updates.isDefault ?? existing.is_default === 1;
+  const shouldResetVerification = fingerprint !== existing.destination_fingerprint;
+
+  db.transaction(() => {
+    if (isDefault) {
+      db.prepare('UPDATE seller_payout_accounts SET is_default = 0, updated_at = ? WHERE seller_uid = ? AND id <> ?').run(now, existing.seller_uid, existing.id);
+    }
+
+    db.prepare(`
+      UPDATE seller_payout_accounts
+      SET destination_type = ?,
+          provider_name = ?,
+          provider_ref_id = ?,
+          currency = ?,
+          account_name = ?,
+          account_number_encrypted = ?,
+          mobile_encrypted = ?,
+          masked_account = ?,
+          destination_fingerprint = ?,
+          is_default = ?,
+          verification_status = ?,
+          verification_attempts = ?,
+          last_error = ?,
+          verified_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `).run(
+      destinationType,
+      providerName,
+      providerRefId,
+      currency,
+      accountName,
+      accountNumberEncrypted,
+      mobileEncrypted,
+      maskedAccount,
+      fingerprint,
+      isDefault ? 1 : 0,
+      shouldResetVerification ? 'pending' : existing.verification_status,
+      shouldResetVerification ? 0 : existing.verification_attempts,
+      shouldResetVerification ? null : existing.last_error,
+      shouldResetVerification ? null : existing.verified_at,
+      now,
+      existing.id,
+    );
+  })();
+
+  const updated = findDestinationById(existing.id);
+  if (!updated) throw new Error('Failed to update payout destination');
+  return rowToSellerPayoutDestination(updated);
+}
+
+function buildPayoutRecord(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? ''),
+    sellerId: String(row.sellerId ?? row.seller_id ?? ''),
+    orderId: (row.orderId ?? row.order_id ?? null) as string | null,
+    escrowId: (row.escrowId ?? row.escrow_id ?? null) as string | null,
+    releaseEntryId: (row.releaseEntryId ?? row.release_entry_id ?? null) as string | null,
+    amount: Number(row.amount ?? 0),
+    currency: String(row.currency ?? DEFAULT_CURRENCY),
+    grossAmount: row.grossAmount ?? row.gross_amount ?? null,
+    platformFeeAmount: row.platformFeeAmount ?? row.platform_fee_amount ?? null,
+    reserveAmount: row.reserveAmount ?? row.reserve_amount ?? null,
+    manualAdjustmentAmount: row.manualAdjustmentAmount ?? row.manual_adjustment_amount ?? null,
+    payoutFeeAmount: row.payoutFeeAmount ?? row.payout_fee_amount ?? null,
+    sellerReceivesAmount: row.sellerReceivesAmount ?? row.seller_receives_amount ?? null,
+    netAmount: row.netAmount ?? row.net_amount ?? null,
+    status: String(row.status ?? 'pending'),
+    provider: (row.provider ?? null) as string | null,
+    providerChargeId: (row.providerChargeId ?? row.provider_charge_id ?? null) as string | null,
+    providerStatus: (row.providerStatus ?? row.provider_status ?? null) as string | null,
+    destinationStatus: (row.destinationStatus ?? row.destination_status ?? null) as string | null,
+    holdReason: (row.holdReason ?? row.hold_reason ?? null) as string | null,
+    lastFailureReason: (row.lastFailureReason ?? row.last_failure_reason ?? null) as string | null,
+    retryAllowed: Boolean(row.retryAllowed ?? row.retry_allowed ?? false),
+    retryCount: Number(row.retryCount ?? row.retry_count ?? 0),
+    manualReviewPending: Boolean(row.manualReviewPending ?? row.manual_review_pending ?? false),
+    verificationBlockers: Array.isArray(row.verificationBlockers ?? row.verification_blockers)
+      ? (row.verificationBlockers ?? row.verification_blockers) as string[]
+      : [],
+    requestedBy: (row.requestedBy ?? row.requested_by ?? null) as string | null,
+    requestedAt: (row.requestedAt ?? row.requested_at ?? null) as string | null,
+    createdAt: String(row.createdAt ?? row.created_at ?? ''),
+    updatedAt: String(row.updatedAt ?? row.updated_at ?? ''),
+  };
+}
+
+function listSellerPayoutHistory(sellerId: string) {
+  const db = getPaymentDb();
+  const rows = db.prepare(`
+    SELECT
+      p.id,
+      p.seller_id AS sellerId,
+      p.order_id,
+      p.escrow_id,
+      p.release_entry_id,
+      p.amount,
+      p.currency,
+      p.gross_amount,
+      p.platform_fee_amount,
+      p.reserve_amount,
+      p.manual_adjustment_amount,
+      p.payout_fee_amount,
+      p.seller_receives_amount,
+      p.net_amount,
+      p.status,
+      p.provider,
+      p.provider_charge_id,
+      p.provider_status,
+      p.destination_status,
+      p.hold_reason,
+      p.failure_reason AS lastFailureReason,
+      p.retry_allowed AS retryAllowed,
+      p.retry_count AS retryCount,
+      p.manual_review_pending AS manualReviewPending,
+      p.verification_blockers AS verificationBlockers,
+      p.requested_by,
+      p.requested_at,
+      p.created_at,
+      p.updated_at
+    FROM payouts p
+    WHERE p.seller_id = ?
+    ORDER BY p.created_at DESC
+  `).all(sellerId) as Array<Record<string, unknown>>;
+
+  return rows.map(buildPayoutRecord);
+}
+
+function normalizeMobileMoneyProviderRecords(records: Array<{ refId: string; name: string }>): NormalizedMobileMoneyOperator[] {
+  return records.map((record) => ({ refId: record.refId, name: record.name }));
+}
+
+function normalizeBankProviderRecords(records: Array<{ uuid: string; name: string }>): NormalizedPayoutBank[] {
+  return records.map((record) => ({ uuid: record.uuid, name: record.name }));
+}
+
+export function createPayoutRouter(requireAuth: RequestHandler): express.Router {
+  const router = express.Router();
+
+  router.get('/permissions/:sellerId', requireAuth, (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      return res.json({ sellerId, permissions: buildPermissions(sellerId, getActor(req)) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout permissions';
+      return res.status(/Unauthorized/i.test(message) ? 401 : 400).json({ error: message });
+    }
+  });
+
+  router.get('/metadata', requireAuth, (_req, res) => {
+    return res.json({
+      mobileMoneyOperators: [],
+      banks: [],
+      currencies: [DEFAULT_CURRENCY],
+      launchPolicy: (PAYOUT_POLICY as { launchMode?: string }).launchMode ?? 'manual',
+    });
+  });
+
+  router.get('/provider/mobile-money-operators', requireAuth, async (req, res) => {
+    try {
+      assertViewSettingsAccess(req, assertProviderLookupAccess(req));
+      const operators = await listPayChanguMobileMoneyOperators();
+      return res.json({ operators: normalizeMobileMoneyProviderRecords(operators) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load mobile money operators';
+      const status = /Unauthorized/i.test(message) ? 401 : /not allowed/i.test(message) ? 403 : 502;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/provider/banks', requireAuth, async (req, res) => {
+    try {
+      assertViewSettingsAccess(req, assertProviderLookupAccess(req));
+      const currency = normalizeCurrency(req.query.currency);
+      const banks = await listPayChanguPayoutBanks(currency);
+      return res.json({ banks: normalizeBankProviderRecords(banks), currency });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout banks';
+      const status = /Unauthorized/i.test(message)
+        ? 401
+        : /not allowed/i.test(message)
+          ? 403
+          : /Only MWK payout provider lookups/i.test(message)
+            ? 400
+            : 502;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/destinations', requireAuth, (req, res) => {
+    try {
+      const sellerId = getRequestSellerId(req, req.query.sellerUid);
+      assertViewSettingsAccess(req, sellerId);
+      return res.json({ destinations: listSellerDestinations(sellerId) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout destinations';
+      return res.status(/Unauthorized/i.test(message) ? 401 : 403).json(jsonError(error, 'Failed to load payout destinations'));
+    }
+  });
+
+  router.post('/destinations', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const sellerId = getRequestSellerId(req, req.body.sellerUid);
+      assertEditSettingsAccess(req, sellerId);
+
+      const destinationType = normalizeDestinationType(req.body.destinationType);
+      const providerName = normalizeProviderName(req.body.providerName);
+      const providerRefId = normalizeProviderRefId(req.body.providerRefId);
+      const currency = normalizeCurrency(req.body.currency);
+      const accountName = normalizeAccountName(req.body.accountName);
+      const isDefault = req.body.isDefault === true;
+
+      const created = destinationType === 'bank'
+        ? createDestinationRecord({
+            sellerId,
+            destinationType,
+            providerName,
+            providerRefId,
+            currency,
+            accountName,
+            accountNumber: normalizeAccountNumber(req.body.accountNumber),
+            isDefault,
+          })
+        : createDestinationRecord({
+            sellerId,
+            destinationType,
+            providerName,
+            providerRefId,
+            currency,
+            accountName,
+            mobile: normalizeMobileNumber(req.body.mobile),
+            isDefault,
+          });
+
+      addDestinationEvent({
+        sellerId,
+        accountId: created.id,
+        eventType: 'destination_request_submitted',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { destinationType: created.destinationType, providerName: created.providerName },
+      });
+
+      return res.status(201).json({ destination: created });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create payout destination';
+      const status = /already exists/i.test(message) ? 409 : /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.patch('/destinations/:id', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const destinationId = normalizeDestinationId(req.params.id);
+      const existing = findDestinationById(destinationId);
+      if (!existing) return res.status(404).json({ error: 'Payout destination not found' });
+
+      const sellerId = getRequestSellerId(req, req.body.sellerUid ?? existing.seller_uid);
+      assertEditSettingsAccess(req, sellerId);
+
+      const updated = updateDestinationRecord(existing, {
+        destinationType: req.body.destinationType ? normalizeDestinationType(req.body.destinationType) : undefined,
+        providerName: req.body.providerName ? normalizeProviderName(req.body.providerName) : undefined,
+        providerRefId: req.body.providerRefId !== undefined ? normalizeProviderRefId(req.body.providerRefId) : undefined,
+        currency: req.body.currency ? normalizeCurrency(req.body.currency) : undefined,
+        accountName: req.body.accountName ? normalizeAccountName(req.body.accountName) : undefined,
+        accountNumber: req.body.accountNumber !== undefined ? normalizeAccountNumber(req.body.accountNumber) : undefined,
+        mobile: req.body.mobile !== undefined ? normalizeMobileNumber(req.body.mobile) : undefined,
+        isDefault: req.body.isDefault !== undefined ? req.body.isDefault === true : undefined,
+      });
+
+      addDestinationEvent({
+        sellerId,
+        accountId: updated.id,
+        eventType: 'destination_request_submitted',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { destinationType: updated.destinationType, providerName: updated.providerName },
+      });
+
+      return res.json({ destination: updated });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update payout destination';
+      const status = /already exists/i.test(message) ? 409 : /Unauthorized/i.test(message) ? 401 : /not found/i.test(message) ? 404 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.post('/destinations/:id/replace', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const destinationId = normalizeDestinationId(req.params.id);
+      const existing = findDestinationById(destinationId);
+      if (!existing) return res.status(404).json({ error: 'Payout destination not found' });
+
+      const sellerId = getRequestSellerId(req, req.body.sellerUid ?? existing.seller_uid);
+      assertEditSettingsAccess(req, sellerId);
+
+      const updated = updateDestinationRecord(existing, {
+        destinationType: req.body.destinationType ? normalizeDestinationType(req.body.destinationType) : undefined,
+        providerName: req.body.providerName ? normalizeProviderName(req.body.providerName) : undefined,
+        providerRefId: req.body.providerRefId !== undefined ? normalizeProviderRefId(req.body.providerRefId) : undefined,
+        currency: req.body.currency ? normalizeCurrency(req.body.currency) : undefined,
+        accountName: req.body.accountName ? normalizeAccountName(req.body.accountName) : undefined,
+        accountNumber: req.body.accountNumber !== undefined ? normalizeAccountNumber(req.body.accountNumber) : undefined,
+        mobile: req.body.mobile !== undefined ? normalizeMobileNumber(req.body.mobile) : undefined,
+        isDefault: req.body.isDefault !== undefined ? req.body.isDefault === true : undefined,
+      });
+
+      addDestinationEvent({
+        sellerId,
+        accountId: updated.id,
+        eventType: 'destination_request_submitted',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+        payload: { destinationType: updated.destinationType, providerName: updated.providerName, replaced: true },
+      });
+
+      return res.json({ destination: updated });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to replace payout destination';
+      const status = /already exists/i.test(message) ? 409 : /Unauthorized/i.test(message) ? 401 : /not found/i.test(message) ? 404 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.delete('/destinations/:id', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      const destinationId = normalizeDestinationId(req.params.id);
+      const existing = findDestinationById(destinationId);
+      if (!existing) return res.status(404).json({ error: 'Payout destination not found' });
+
+      const sellerId = getRequestSellerId(req, req.body?.sellerUid ?? existing.seller_uid);
+      assertEditSettingsAccess(req, sellerId);
+
+      const db = getPaymentDb();
+      const now = new Date().toISOString();
+      db.prepare('UPDATE seller_payout_accounts SET is_active = 0, updated_at = ? WHERE id = ?').run(now, destinationId);
+      addDestinationEvent({
+        sellerId,
+        accountId: destinationId,
+        eventType: 'destination_removed',
+        actorType: req.user?.is_admin ? 'admin' : 'seller',
+        actorId: req.user?.uid ?? null,
+      });
+      return res.status(204).send();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete payout destination';
+      const status = /Unauthorized/i.test(message) ? 401 : /not found/i.test(message) ? 404 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  router.get('/history/:sellerId', requireAuth, (req, res) => {
+    try {
+      const sellerId = normalizeDestinationId(req.params.sellerId);
+      assertAllowed(req, canViewPayoutHistory({ actor: getActor(req), sellerId }), 'You are not allowed to view this payout history');
+      return res.json({ payouts: listSellerPayoutHistory(sellerId) });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load payout history';
+      const status = /Unauthorized/i.test(message) ? 401 : 403;
+      return res.status(status).json({ error: message });
+    }
+  });
+
+  return router;
+}
