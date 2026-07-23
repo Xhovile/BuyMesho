@@ -62,7 +62,7 @@ export default function PayoutDestinationCard({
   const canRemove = Boolean(onRemove) && destination.isActive;
 
   return (
-    <article className="min-w-[360px] max-w-[360px] rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+    <article className="w-full min-w-0 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
@@ -74,8 +74,14 @@ export default function PayoutDestinationCard({
           <h3 className="mt-3 text-base font-black tracking-tight">{destination.providerName}</h3>
           <p className="mt-1 text-sm font-bold text-zinc-700">{destination.accountName}</p>
           <p className="mt-1 flex items-center gap-2 text-sm text-zinc-600">
-            {destination.destinationType === "bank" ? <Building2 className="w-4 h-4 shrink-0" /> : <Phone className="w-4 h-4 shrink-0" />}
-            <span className="truncate">{destination.destinationType === "bank" ? "Bank" : "Mobile money"} · {accountLabel}</span>
+            {destination.destinationType === "bank" ? (
+              <Building2 className="w-4 h-4 shrink-0" />
+            ) : (
+              <Phone className="w-4 h-4 shrink-0" />
+            )}
+            <span className="truncate">
+              {destination.destinationType === "bank" ? "Bank" : "Mobile money"} · {accountLabel}
+            </span>
           </p>
         </div>
 
