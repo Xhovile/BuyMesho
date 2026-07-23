@@ -51,7 +51,6 @@ export function createAdminSummaryRouter(params: {
       const limit = Number.isFinite(parsedLimit)
         ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 200)
         : 100;
-
       const offset = Number.isFinite(parsedOffset)
         ? Math.max(Math.trunc(parsedOffset), 0)
         : 0;
@@ -127,5 +126,89 @@ export function createAdminSummaryRouter(params: {
       });
     }
   });
+
+  router.post("/payouts/destinations/:destinationAccountId/verification", adminApiLimiter, requireAuth, (req, res) => {
+    if (!hasAdminAccess(req.user)) {
+      return res.status(403).json({ error: "Forbidden: admin access required" });
+    }
+
+    try {
+      const destinationAccountId = String(req.params.destinationAccountId ?? "").trim();
+      if (!destinationAccountId) {
+        return res.status(400).json({ error: "destinationAccountId is required" });
+      }
+
+      const status = String(req.body?.status ?? "").trim().toLowerCase();
+      if (status !== "verified" && status !== "failed") {
+        return res.status(400).json({ error: "status must be verified or failed" });
+      }
+
+      const reason = status === "failed" ? String(req.body?.reason ?? "").trim() : null;
+      if (status === "failed" && !reason) {
+        return res.status(400).json({ error: "reason is required when rejecting a destination" });
+      }
+
+      const existing = db.prepare(`
+        SELECT id, seller_uid
+        FROM seller_payout_accounts
+        WHERE id = ?
+      `).get(destinationAccountId) as { id: string; seller_uid: string } | undefined;
+
+      if (!existing) {
+        return res.status(404).json({ error: "Payout destination not found" });
+      }
+
+      const now = new Date().toISOString();
+
+      db.prepare(`
+        UPDATE seller_payout_accounts
+        SET verification_status = ?,
+            is_active = ?,
+            verified_at = ?,
+            last_error = ?,
+            updated_at = ?
+        WHERE id = ?
+      `).run(
+        status,
+        status === "verified" ? 1 : 0,
+        status === "verified" ? now : null,
+        status === "failed" ? reason : null,
+        now,
+        destinationAccountId,
+      );
+
+      db.prepare(`
+        INSERT INTO seller_payout_account_events (
+          seller_uid,
+          account_id,
+          event_type,
+          actor_type,
+          actor_id,
+          note,
+          payload,
+          created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        existing.seller_uid,
+        destinationAccountId,
+        "destination_verification_updated",
+        "admin",
+        req.user?.uid ?? null,
+        status === "failed" ? `Rejected: ${reason}` : "Destination verified",
+        JSON.stringify({ status, reason }),
+        now,
+      );
+
+      return res.status(200).json({
+        destinationAccountId,
+        verificationStatus: status,
+        updatedAt: now,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update destination verification";
+      return res.status(500).json({ error: message });
+    }
+  });
+
   return router;
 }
