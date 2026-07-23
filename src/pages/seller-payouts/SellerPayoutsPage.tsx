@@ -22,6 +22,7 @@ export default function SellerPayoutsPage() {
     connectDefaultMode,
     defaultConnectScope,
     notice,
+    lastSaveDiagnostic,
     form,
     selectedDestinationId,
     destinationFormError,
@@ -99,7 +100,13 @@ export default function SellerPayoutsPage() {
           canEditSettings={canEditSettings}
         />
 
-        {notice ? <SellerPayoutsNotice type={notice.type} message={notice.message} /> : null}
+        {notice ? (
+          <SellerPayoutsNotice
+            type={notice.type}
+            message={notice.message}
+            details={lastSaveDiagnostic?.reasons}
+          />
+        ) : null}
 
         <ConnectSettingsCard
           connectAccount={connectAccount}
