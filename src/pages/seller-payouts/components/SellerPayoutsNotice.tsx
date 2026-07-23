@@ -1,9 +1,11 @@
 export default function SellerPayoutsNotice({
   type,
   message,
+  details,
 }: {
   type: "success" | "error" | "info";
   message: string;
+  details?: string[];
 }) {
   return (
     <div
@@ -15,7 +17,14 @@ export default function SellerPayoutsNotice({
             : "border-amber-200 bg-amber-50 text-amber-800"
       }`}
     >
-      {message}
+      <div>{message}</div>
+      {details && details.length > 0 ? (
+        <ul className="mt-2 list-disc space-y-1 pl-5 text-xs font-medium opacity-90">
+          {details.map((detail) => (
+            <li key={detail}>{detail}</li>
+          ))}
+        </ul>
+      ) : null}
     </div>
   );
 }
