@@ -272,6 +272,7 @@ export function useSellerPayoutsPage() {
         "Seller disconnected from PayChangu Connect",
       );
       setConnectAccount(updated);
+      setLastSaveDiagnostic(null);
     } catch (error) {
       setConnectError(error instanceof Error ? error.message : "Failed to disconnect Connect.");
     } finally {
@@ -331,6 +332,7 @@ export function useSellerPayoutsPage() {
           type: "success",
           message: `${destination.providerName} is now your default payout destination.`,
         });
+        setLastSaveDiagnostic(null);
         await loadData({ silent: true });
       } catch (error) {
         setNotice({
@@ -353,6 +355,7 @@ export function useSellerPayoutsPage() {
           type: "info",
           message: "Default payout destination cannot be removed. Replace it in Payout Setup.",
         });
+        setLastSaveDiagnostic(null);
         return;
       }
 
@@ -374,6 +377,7 @@ export function useSellerPayoutsPage() {
         type: "success",
         message: `${removeTarget.providerName} payout destination removed.`,
       });
+      setLastSaveDiagnostic(null);
 
       if (selectedDestinationId === removeTarget.id) resetForm();
       setRemoveTarget(null);
