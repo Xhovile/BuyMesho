@@ -36,34 +36,34 @@ export async function getPayoutHistory(sellerUid: string): Promise<PayoutRecord[
   return Array.isArray(response?.payouts) ? response.payouts : [];
 }
 
-export async function createPayoutDestination(payload: PayoutDestinationPayload): Promise<PayoutDestination> {
+export async function createPayoutDestination(payload: PayoutDestinationPayload): Promise<Record<string, unknown>> {
   const response = await apiFetch("/api/payouts/destinations", {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  return response?.destination ?? response;
+  return response ?? {};
 }
 
 export async function updatePayoutDestination(
   destinationId: string,
   payload: Partial<PayoutDestinationPayload>
-): Promise<PayoutDestination> {
+): Promise<Record<string, unknown>> {
   const response = await apiFetch(`/api/payouts/destinations/${encodeURIComponent(destinationId)}`, {
     method: "PATCH",
     body: JSON.stringify(payload),
   });
-  return response?.destination ?? response;
+  return response ?? {};
 }
 
 export async function replacePayoutDestination(
   destinationId: string,
   payload: PayoutDestinationPayload
-): Promise<PayoutDestination> {
+): Promise<Record<string, unknown>> {
   const response = await apiFetch(`/api/payouts/destinations/${encodeURIComponent(destinationId)}/replace`, {
     method: "POST",
     body: JSON.stringify(payload),
   });
-  return response?.destination ?? response;
+  return response ?? {};
 }
 
 export async function getPayoutProviderMetadata(): Promise<PayoutProviderMetadata> {
