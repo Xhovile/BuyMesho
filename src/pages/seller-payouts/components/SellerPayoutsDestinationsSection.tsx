@@ -69,7 +69,10 @@ export default function SellerPayoutsDestinationsSection({
   onMakeDefault: (destination: PayoutDestination) => void;
 }) {
   return (
-    <section id="payout-destination-settings" className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+    <section
+      id="payout-destination-settings"
+      className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]"
+    >
       <PayoutDestinationForm
         value={form}
         onChange={onFormChange}
@@ -83,31 +86,29 @@ export default function SellerPayoutsDestinationsSection({
         providerOptions={providerOptions}
       />
 
-      <div className="rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
+      <div className="min-w-0 rounded-[28px] border border-zinc-200/80 bg-white p-6 shadow-[0_12px_30px_rgba(0,0,0,0.04)]">
         <SectionTitle
           eyebrow="Saved destinations"
           title="Active payout routes."
           action={<Building2 className="h-5 w-5 text-zinc-400" />}
         />
 
-        <div className="mt-5 overflow-x-auto">
-          <div className="flex min-w-max gap-3 pb-2">
-            {activeDestinations.length === 0 ? (
-              <EmptyState>No payout destination yet.</EmptyState>
-            ) : (
-              activeDestinations.map((destination) => (
-                <PayoutDestinationCard
-                  key={destination.id}
-                  destination={destination}
-                  onReplace={onReplace}
-                  onRemove={onRemove}
-                  onMakeDefault={onMakeDefault}
-                  formatDate={formatDate}
-                  actionsDisabled={!canEditSettings || saving}
-                />
-              ))
-            )}
-          </div>
+        <div className="mt-5 space-y-3">
+          {activeDestinations.length === 0 ? (
+            <EmptyState>No payout destination yet.</EmptyState>
+          ) : (
+            activeDestinations.map((destination) => (
+              <PayoutDestinationCard
+                key={destination.id}
+                destination={destination}
+                onReplace={onReplace}
+                onRemove={onRemove}
+                onMakeDefault={onMakeDefault}
+                formatDate={formatDate}
+                actionsDisabled={!canEditSettings || saving}
+              />
+            ))
+          )}
         </div>
       </div>
     </section>
