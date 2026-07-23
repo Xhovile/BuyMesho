@@ -22,6 +22,51 @@ export const REMOVE_COUNTDOWN_SECONDS = 3;
 export const DEFAULT_CURRENCY = "MWK";
 export const DEFAULT_CONNECT_SCOPE = "payments:write payments:read";
 
+export type DestinationQueueDiagnostic = {
+  shouldAppearInAdminQueue: boolean;
+  summary: string;
+  reasons: string[];
+};
+
+export function buildDestinationQueueDiagnostic(destination: PayoutDestination): DestinationQueueDiagnostic {
+  const verificationStatus = (destination.verificationStatus || "").trim().toLowerCase();
+  const reasons: string[] = [];
+
+  if (verificationStatus === "verified" && destination.isActive && !destination.lastError) {
+    return {
+      shouldAppearInAdminQueue: false,
+      summary:
+        "This destination is already verified and active, so the admin queue intentionally hides it.",
+      reasons: [
+        "verification_status is verified",
+        "is_active is true",
+        "last_error is empty",
+      ],
+    };
+  }
+
+  if (verificationStatus !== "verified") {
+    reasons.push(`verification_status = ${destination.verificationStatus || "pending"}`);
+  }
+
+  if (!destination.isActive) {
+    reasons.push("is_active = false");
+  }
+
+  if (destination.lastError) {
+    reasons.push(`last_error = ${destination.lastError}`);
+  }
+
+  return {
+    shouldAppearInAdminQueue: true,
+    summary:
+      reasons.length > 0
+        ? "This destination should appear in the admin queue because it still needs review."
+        : "This destination should appear in the admin queue. If it does not, the admin and seller APIs are likely reading different databases or environments.",
+    reasons,
+  };
+}
+
 export function money(amount: number, currency = DEFAULT_CURRENCY) {
   return new Intl.NumberFormat("en-MW", {
     style: "currency",
