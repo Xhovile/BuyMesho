@@ -32,6 +32,7 @@ import type {
 } from "../../modules/payouts/types";
 import {
   buildDestinationPayload,
+  buildDestinationQueueDiagnostic,
   DEFAULT_CONNECT_SCOPE,
   DEFAULT_CURRENCY,
   INITIAL_PAYOUT_DESTINATION_FORM,
@@ -39,6 +40,7 @@ import {
   REMOVE_COUNTDOWN_SECONDS,
   toEscrowSummaryRecord,
   validateDestinationForm,
+  type DestinationQueueDiagnostic,
 } from "./sellerPayouts.helpers";
 
 const CONNECT_DEFAULT_MODE: PayChanguConnectMode =
@@ -67,6 +69,7 @@ export function useSellerPayoutsPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [savingDestination, setSavingDestination] = useState(false);
   const [destinationFormError, setDestinationFormError] = useState<string | null>(null);
+  const [lastSaveDiagnostic, setLastSaveDiagnostic] = useState<DestinationQueueDiagnostic | null>(null);
 
   const [notice, setNotice] = useState<{
     type: "success" | "error" | "info";
@@ -283,6 +286,7 @@ export function useSellerPayoutsPage() {
     if (validationMessage) {
       setDestinationFormError(validationMessage);
       setNotice({ type: "info", message: validationMessage });
+      setLastSaveDiagnostic(null);
       return;
     }
 
@@ -291,18 +295,17 @@ export function useSellerPayoutsPage() {
 
     try {
       const payload = buildDestinationPayload(sellerId, form);
+      const response = selectedDestinationId
+        ? await replacePayoutDestination(selectedDestinationId, payload)
+        : await createPayoutDestination(payload);
 
-      if (selectedDestinationId) {
-        await replacePayoutDestination(selectedDestinationId, payload);
-      } else {
-        await createPayoutDestination(payload);
-      }
+      const destination = ((response as { destination?: PayoutDestination }).destination ?? response) as PayoutDestination;
+      const diagnostic = buildDestinationQueueDiagnostic(destination);
+      setLastSaveDiagnostic(diagnostic);
 
       setNotice({
-        type: "success",
-        message: selectedDestinationId
-          ? "Payout destination replaced safely."
-          : "Payout destination saved.",
+        type: diagnostic.shouldAppearInAdminQueue ? "success" : "info",
+        message: diagnostic.summary,
       });
 
       resetForm();
@@ -310,6 +313,7 @@ export function useSellerPayoutsPage() {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to save destination";
       setDestinationFormError(message);
+      setLastSaveDiagnostic(null);
       setNotice({ type: "error", message });
     } finally {
       setSavingDestination(false);
@@ -355,6 +359,7 @@ export function useSellerPayoutsPage() {
       setRemoveTarget(destination);
       setDestinationFormError(null);
       setNotice(null);
+      setLastSaveDiagnostic(null);
     },
     [startEdit],
   );
@@ -407,6 +412,7 @@ export function useSellerPayoutsPage() {
     savingDestination,
     destinationFormError,
     notice,
+    lastSaveDiagnostic,
     removeTarget,
     removeCountdown,
     summary,
@@ -418,9 +424,7 @@ export function useSellerPayoutsPage() {
     startEdit,
     resetForm,
     setForm,
-    setNotice,
     setRemoveTarget,
-    setRemoveCountdown,
     handleConnectRefresh,
     handleConnect,
     handleDisconnect,
@@ -429,7 +433,5 @@ export function useSellerPayoutsPage() {
     handleRemoveDestination,
     handleConfirmRemoveDestination,
     handleRefresh,
-    connectDefaultMode: CONNECT_DEFAULT_MODE,
-    defaultConnectScope: DEFAULT_CONNECT_SCOPE,
   };
 }
