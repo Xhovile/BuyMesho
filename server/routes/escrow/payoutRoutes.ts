@@ -1,4 +1,5 @@
 import express, { type RequestHandler } from 'express';
+import { randomUUID } from 'crypto';
 import { getPaymentDb } from '../../postgresCompat.js';
 import {
   listPayChanguMobileMoneyOperators,
@@ -41,7 +42,6 @@ import {
   normalizeProviderRefId,
   normalizeManualPayoutAmount,
   normalizeText,
-  normalizeDestinationValue,
   updateDestinationRecord,
 } from './payoutRoutes.helpers.js';
 
@@ -464,7 +464,7 @@ export function createPayoutRouter(requireAuth: RequestHandler): express.Router 
       const normalizedAmount = normalizeManualPayoutAmount(amount);
       const normalizedCurrency = normalizeCurrency(currency);
       const now = new Date().toISOString();
-      const id = crypto.randomUUID();
+      const id = randomUUID();
       const normalizedSellerId = normalizeDestinationId(sellerId);
       const normalizedDestinationAccountId = destinationAccountId === undefined ? null : normalizeDestinationId(destinationAccountId);
 
