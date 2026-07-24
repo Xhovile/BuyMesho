@@ -74,7 +74,7 @@ export default function ListingStrip({
           </div>
         ) : (
           listings.slice(0, maxItems).map((item) => {
-            const imageSrc = getOptimizedImageUrl(item.photos?.[0], 540) || `https://picsum.photos/seed/${item.id}/480/360`;
+            const imageSrc = getOptimizedImageUrl(item.photos?.[0], 420) || `https://picsum.photos/seed/${item.id}/420/315`;
 
             return (
               <button
