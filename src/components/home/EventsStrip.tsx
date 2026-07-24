@@ -1,6 +1,7 @@
 import { ArrowRight, CalendarDays, MapPin, Ticket } from "lucide-react";
 
 import { EVENTS_PATH, navigateToPath } from "../../lib/appNavigation";
+import { getOptimizedImageUrl } from "../../lib/imageUrl";
 import type { HomeEventPreview } from "../../home/home.types";
 
 function formatMoney(value: number | null | undefined) {
@@ -106,6 +107,7 @@ export default function EventsStrip({
             const accent = posterAccent(item.event_type);
             const posterUrl = getPosterUrl(item);
             const posterAlt = getPosterAlt(item);
+            const imageSrc = getOptimizedImageUrl(posterUrl, 640);
             const snippet =
               item.description.length > 88 ? `${item.description.slice(0, 88).trim()}…` : item.description;
 
@@ -116,12 +118,13 @@ export default function EventsStrip({
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
                   <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
-                  {posterUrl ? (
+                  {imageSrc ? (
                     <img
-                      src={posterUrl}
+                      src={imageSrc}
                       alt={posterAlt}
                       className="relative h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                       loading="lazy"
+                      decoding="async"
                     />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
