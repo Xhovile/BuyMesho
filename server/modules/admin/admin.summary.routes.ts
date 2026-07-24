@@ -70,29 +70,29 @@ export function createAdminSummaryRouter(params: {
 
       const rows = db.prepare(`
         SELECT
-          spa.id AS destinationAccountId,
-          spa.id,
-          spa.seller_uid AS sellerId,
-          s.email AS sellerEmail,
-          s.business_name AS sellerBusinessName,
-          s.university AS sellerUniversity,
-          spa.destination_type AS destinationType,
-          spa.masked_account AS destinationMaskedAccount,
-          spa.provider_name AS destinationProviderName,
-          spa.provider_ref_id AS destinationProviderRefId,
-          spa.verification_status AS destinationVerificationStatus,
-          spa.is_active AS destinationActive,
-          spa.last_error AS destinationLastError,
-          spa.verified_at AS verifiedAt,
-          spa.verification_attempts AS verificationAttempts,
-          spa.created_at AS createdAt,
-          spa.updated_at AS updatedAt,
-          COALESCE(s.is_suspended, 0) AS sellerSuspended,
+          spa.id AS "destinationAccountId",
+          spa.id AS "id",
+          spa.seller_uid AS "sellerId",
+          s.email AS "sellerEmail",
+          s.business_name AS "sellerBusinessName",
+          s.university AS "sellerUniversity",
+          spa.destination_type AS "destinationType",
+          spa.masked_account AS "destinationMaskedAccount",
+          spa.provider_name AS "destinationProviderName",
+          spa.provider_ref_id AS "destinationProviderRefId",
+          spa.verification_status AS "destinationVerificationStatus",
+          spa.is_active AS "destinationActive",
+          spa.last_error AS "destinationLastError",
+          spa.verified_at AS "verifiedAt",
+          spa.verification_attempts AS "verificationAttempts",
+          spa.created_at AS "createdAt",
+          spa.updated_at AS "updatedAt",
+          COALESCE(s.is_suspended, 0) AS "sellerSuspended",
           (
             SELECT COUNT(*)
             FROM payouts p
             WHERE p.destination_account_id = spa.id
-          ) AS payoutCount
+          ) AS "payoutCount"
         FROM seller_payout_accounts spa
         LEFT JOIN sellers s ON s.uid = spa.seller_uid
         WHERE spa.destination_type IS NOT NULL
