@@ -64,6 +64,26 @@ function buildOrderBundle(orderId: string): OrderBundle | null {
   return { order, payment, escrow, dispute };
 }
 
+function buildPublicPaymentStatus(reference: string) {
+  const normalizedReference = reference.trim();
+  const payment = paymentRepository.findByReference(normalizedReference);
+  const order =
+    orderRepository.findByPaymentReference(normalizedReference) ??
+    (payment ? orderRepository.findById(payment.orderId) : undefined) ??
+    orderRepository.findById(normalizedReference);
+  const escrow = order ? escrowRepository.findByOrderId(order.id) ?? null : null;
+
+  return {
+    success: true,
+    reference: payment?.reference ?? order?.paymentReference ?? normalizedReference,
+    orderId: order?.id ?? payment?.orderId ?? null,
+    orderStatus: order?.status ?? null,
+    paymentStatus: payment?.status ?? null,
+    paymentVerified: Boolean(payment?.verified),
+    escrowStatus: escrow?.state ?? null,
+  };
+}
+
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -200,6 +220,29 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       });
     } catch (error) {
       return res.status(500).json(jsonError(error, "Failed to initiate checkout"));
+    }
+  });
+
+  router.get("/public-status/:reference", orderLookupLimiter, (req, res) => {
+    try {
+      const reference = decodeURIComponent(req.params.reference ?? "").trim();
+      if (!reference) {
+        return res.status(400).json({ error: "Reference is required" });
+      }
+
+      const payment = paymentRepository.findByReference(reference);
+      const order =
+        orderRepository.findByPaymentReference(reference) ??
+        (payment ? orderRepository.findById(payment.orderId) : undefined) ??
+        orderRepository.findById(reference);
+
+      if (!payment && !order) {
+        return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      return res.json(buildPublicPaymentStatus(reference));
+    } catch (error) {
+      return res.status(500).json(jsonError(error, "Failed to fetch payment status"));
     }
   });
 
