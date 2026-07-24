@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
+import { getOptimizedImageUrl } from "../../lib/imageUrl";
 import type { HomePreviewListing } from "../../hooks/useHomePageData";
 
 type ListingPreviewCardProps = {
@@ -15,6 +16,7 @@ function truncateWords(text: string, maxWords: number) {
 export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
   const descriptionSource = item.description || item.category || "Tap to open the listing.";
   const description = truncateWords(descriptionSource, 8);
+  const imageSrc = getOptimizedImageUrl(item.photos?.[0], 480) || `https://picsum.photos/seed/${item.id}/480/360`;
 
   return (
     <button
@@ -24,7 +26,7 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
     >
       <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
         <img
-          src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+          src={imageSrc}
           alt={item.name}
           loading="lazy"
           decoding="async"
