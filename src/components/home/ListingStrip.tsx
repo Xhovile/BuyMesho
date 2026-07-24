@@ -4,6 +4,21 @@ import { EXPLORE_PATH, navigateToListingDetails, navigateToPath } from "../../li
 import { getOptimizedImageUrl } from "../../lib/imageUrl";
 import type { ListingStripVariant, SectionListing } from "../../home/home.types";
 
+function ListingCardSkeleton() {
+  return (
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
+      <div className="p-4 space-y-3">
+        <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-4 w-24 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-3 w-20 rounded-full bg-zinc-100 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function ListingStrip({
   title,
   description,
@@ -48,9 +63,11 @@ export default function ListingStrip({
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
-          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
-            Loading listings...
-          </div>
+          <>
+            <ListingCardSkeleton />
+            <ListingCardSkeleton />
+            <ListingCardSkeleton />
+          </>
         ) : listings.length === 0 ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             No listings yet
