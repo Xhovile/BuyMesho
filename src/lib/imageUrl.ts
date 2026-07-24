@@ -1,4 +1,4 @@
-export function getOptimizedImageUrl(src: string | null | undefined, width = 720) {
+export function getOptimizedImageUrl(src: string | null | undefined, width = 540) {
   if (!src) return "";
 
   // Cloudinary can resize/encode on the fly. Leave non-Cloudinary URLs untouched.
