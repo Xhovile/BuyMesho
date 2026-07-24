@@ -29,10 +29,10 @@ export default function ListingSummary({
   onBuyNow?: () => void;
   onAddToCart?: () => void;
 }) {
-  const isOwner = !!currentUserUid && currentUserUid === listing.seller_uid;
+  const isOwner = !!currentUserUid && String(currentUserUid).trim() === String(listing.seller_uid).trim();
   const listingMode = listing.listing_mode || "normal";
-  const canBuy = !!onBuyNow && availableQuantity > 0 && listing.status !== "sold";
-  const canAddToCart = !!onAddToCart && availableQuantity > 0 && listing.status !== "sold";
+  const hasBuyAction = !!onBuyNow;
+  const hasCartAction = !!onAddToCart;
 
   const modeLabel =
     listingMode === "deal"
@@ -90,8 +90,8 @@ export default function ListingSummary({
             <button
               type="button"
               onClick={isOwner ? undefined : onBuyNow}
-              disabled={isOwner || !canBuy}
-              aria-disabled={isOwner || !canBuy}
+              disabled={isOwner}
+              aria-disabled={isOwner}
               className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500 disabled:cursor-not-allowed disabled:opacity-45`}
               title={isOwner ? "Buying your own listing is disabled" : undefined}
             >
@@ -102,8 +102,8 @@ export default function ListingSummary({
             <button
               type="button"
               onClick={isOwner ? undefined : onAddToCart}
-              disabled={isOwner || !canAddToCart}
-              aria-disabled={isOwner || !canAddToCart}
+              disabled={isOwner}
+              aria-disabled={isOwner}
               className={`${actionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-45`}
               title={isOwner ? "Adding your own listing to cart is disabled" : undefined}
             >
