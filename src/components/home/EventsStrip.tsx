@@ -54,6 +54,24 @@ function getPosterAlt(item: HomeEventPreview) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
+function EventCardSkeleton() {
+  return (
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
+      <div className="p-4 space-y-3">
+        <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
+        <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
+        <div className="grid gap-2 pt-1">
+          <div className="h-3 w-2/3 rounded-full bg-zinc-100 animate-pulse" />
+          <div className="h-3 w-1/2 rounded-full bg-zinc-100 animate-pulse" />
+        </div>
+        <div className="h-10 w-full rounded-2xl bg-zinc-100 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function EventsStrip({
   events,
   loading,
@@ -93,9 +111,10 @@ export default function EventsStrip({
 
       <div className="mt-6 flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
-          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
-            Loading events...
-          </div>
+          <>
+            <EventCardSkeleton />
+            <EventCardSkeleton />
+          </>
         ) : events.length === 0 ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             No events yet
