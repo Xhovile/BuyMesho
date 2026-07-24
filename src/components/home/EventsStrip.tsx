@@ -126,7 +126,7 @@ export default function EventsStrip({
             const accent = posterAccent(item.event_type);
             const posterUrl = getPosterUrl(item);
             const posterAlt = getPosterAlt(item);
-            const imageSrc = getOptimizedImageUrl(posterUrl, 640);
+            const imageSrc = getOptimizedImageUrl(posterUrl, 480);
             const snippet =
               item.description.length > 88 ? `${item.description.slice(0, 88).trim()}…` : item.description;
 
