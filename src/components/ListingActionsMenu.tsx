@@ -300,7 +300,11 @@ export default function ListingActionsMenu({
 
         {open ? (
           <div
-            className={`absolute ${variant === "detail" ? "left-0 top-full mt-2 w-72 z-[70] md:left-0 md:right-auto" : "right-0 top-12 w-56"} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            className={`absolute ${
+              variant === "detail"
+                ? "right-0 top-full mt-2 w-72 max-w-[calc(100vw-1rem)] z-[70] md:right-0 md:left-auto"
+                : "right-0 top-12 w-56"
+            } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
           >
