@@ -393,10 +393,24 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   };
 
   const handleBuyNow = () => {
+    if (!listing) return;
+
+    const isOwner = !!firebaseUser?.uid && String(firebaseUser.uid).trim() === String(listing.seller_uid).trim();
+    if (isOwner) {
+      openShareNotice("You cannot buy your own listing.");
+      return;
+    }
+
+    if (listing.status === "sold" || availableQuantity <= 0) {
+      openShareNotice("This listing is out of stock.");
+      return;
+    }
+
     if (!firebaseUser) {
       openAuthPrompt("buy");
       return;
     }
+
     setCheckoutOpen(true);
   };
 
@@ -410,7 +424,14 @@ export function useListingDetailsPage(): ListingDetailsPageState {
 
     const isOwner = firebaseUser.uid === listing.seller_uid;
     const maxQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
-    if (isOwner || listing.status === "sold" || maxQty <= 0) return;
+    if (isOwner) {
+      openShareNotice("You cannot add your own listing to cart.");
+      return;
+    }
+    if (listing.status === "sold" || maxQty <= 0) {
+      openShareNotice("This listing is out of stock.");
+      return;
+    }
 
     const buyerCartItems = readBuyerCart();
     const existingItem = buyerCartItems.find((item) => String(item.listingId) === String(listing.id));
