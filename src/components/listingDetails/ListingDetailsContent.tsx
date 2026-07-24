@@ -68,6 +68,29 @@ export default function ListingDetailsContent({
   isLoggedIn,
   onRetry,
 }: ListingDetailsPageState) {
+  const isOwner =
+    !!firebaseUser?.uid &&
+    !!listing?.seller_uid &&
+    String(firebaseUser.uid).trim() === String(listing.seller_uid).trim();
+
+  const detailActionsMenu = listing ? (
+    <ListingActionsMenu
+      listing={listing}
+      currentUid={firebaseUser?.uid}
+      isLoggedIn={!!firebaseUser}
+      isSaved={saved}
+      variant="detail"
+      onReport={() => navigateToPath(reportPath)}
+      onEdit={handleDetailEdit}
+      onDelete={handleDetailDelete}
+      onHideSeller={handleDetailHideSeller}
+      onHideListing={handleDetailHideListing}
+      onToggleStatus={handleDetailToggleStatus}
+      onRecordSale={handleDetailRecordSale}
+      onRestock={handleDetailRestock}
+    />
+  ) : null;
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={isLoggedIn} />
@@ -97,23 +120,7 @@ export default function ListingDetailsContent({
                     onPrevImage={handlePrevImage}
                     onNextImage={handleNextImage}
                     onSelectImage={onSelectImage}
-                    actionsMenu={
-                      <ListingActionsMenu
-                        listing={listing}
-                        currentUid={firebaseUser?.uid}
-                        isLoggedIn={!!firebaseUser}
-                        isSaved={saved}
-                        variant="detail"
-                        onReport={() => navigateToPath(reportPath)}
-                        onEdit={handleDetailEdit}
-                        onDelete={handleDetailDelete}
-                        onHideSeller={handleDetailHideSeller}
-                        onHideListing={handleDetailHideListing}
-                        onToggleStatus={handleDetailToggleStatus}
-                        onRecordSale={handleDetailRecordSale}
-                        onRestock={handleDetailRestock}
-                      />
-                    }
+                    actionsMenu={isOwner ? null : detailActionsMenu}
                   />
                 </div>
               </div>
@@ -129,6 +136,7 @@ export default function ListingDetailsContent({
                   onShare={handleShare}
                   onBuyNow={handleBuyNow}
                   onAddToCart={handleAddToCart}
+                  ownerActionsMenu={isOwner ? detailActionsMenu : null}
                 />
                 {showOffersBlock ? <ListingOffersBlock listing={listing} /> : null}
                 <ListingDetailsBlock
