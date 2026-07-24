@@ -165,38 +165,6 @@ export default function RootRouter() {
   }, []);
 
   useEffect(() => {
-    void Promise.allSettled([
-      import("./App.new"),
-      import("./HomePage"),
-      import("./components/AboutPage"),
-      import("./CategoryPage"),
-      import("./MessagesInboxPage"),
-      import("./MessageThreadPage"),
-      import("./MarketComingSoonPage"),
-      import("./BuyerPaymentsPage"),
-      import("./PaymentsHubPage"),
-      import("./PaymentMethodPage"),
-      import("./TrackOrderPage"),
-      import("./DisputesPage"),
-      import("./CartPage"),
-      import("./AdminPaymentsConsole"),
-      import("./AdminPayoutsManager"),
-      import("./AdminBalancePage"),
-      import("./AdminModerationQueuePage"),
-      import("./AdminAuditLogPage"),
-      import("./AdminSetupPage"),
-      import("./OrderTrackingPage"),
-      import("./OrderDisputePage"),
-      import("./SellerPayoutsPage"),
-      import("./ConnectCallbackPage"),
-      import("./SellersDirectoryPage"),
-      import("./EventsDirectoryPage"),
-      import("./EventDetailsPage"),
-      import("./EventsCreatePage"),
-    ]);
-  }, []);
-
-  useEffect(() => {
     if (authLoading) return;
 
     const protectedRoutes: AppRoute[] = [
