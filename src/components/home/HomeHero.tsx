@@ -1,5 +1,4 @@
 import { ArrowRight, BadgeCheck, Check, Globe2, Users } from "lucide-react";
-import { motion } from "motion/react";
 
 import { trustPills } from "../../home/home.constants";
 
@@ -27,37 +26,23 @@ const heroCards = [
 export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => void }) {
   return (
     <section className="relative overflow-hidden pb-8 pt-4 sm:pb-14 sm:pt-8">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-10 h-[28rem] w-[28rem] -translate-x-1/2 rounded-full bg-red-900/10 blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-56 w-56 rounded-full bg-amber-200/25 blur-3xl" />
+      <div className="pointer-events-none absolute inset-0 -z-10" aria-hidden="true">
+        <div className="absolute left-1/2 top-10 h-[24rem] w-[24rem] -translate-x-1/2 rounded-full bg-red-900/10 blur-3xl" />
+        <div className="absolute bottom-0 right-0 h-44 w-44 rounded-full bg-amber-200/20 blur-3xl" />
       </div>
 
       <div className="mx-auto max-w-7xl px-4">
-        <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
+        <div className="grid items-center gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div className="mx-auto flex max-w-2xl flex-col items-center text-center lg:mx-0 lg:items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="inline-flex items-center gap-2 rounded-full border border-red-900/10 bg-white/85 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-red-900"
-            >
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-900/10 bg-white/85 px-4 py-2 text-[11px] font-extrabold uppercase tracking-[0.2em] text-red-900">
               Marketplace • Malawi
-            </motion.div>
+            </div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 }}
-              className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl lg:text-[4.75rem]"
-            >
+            <h1 className="mt-5 text-4xl font-black tracking-[-0.06em] leading-[0.92] text-zinc-950 sm:text-6xl lg:text-[4.75rem]">
               Buy. Sell. Online.
-            </motion.h1>
+            </h1>
 
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="mt-6 flex flex-wrap justify-center gap-3"
-            >
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
                 onClick={onBrowseMarket}
@@ -66,14 +51,9 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
                 Browse Market
                 <ArrowRight className="h-4 w-4" />
               </button>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-5 hidden flex-wrap justify-center gap-2 sm:flex"
-            >
+            <div className="mt-5 hidden flex-wrap justify-center gap-2 sm:flex">
               {trustPills.map((item) => (
                 <span
                   key={item}
@@ -83,21 +63,18 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
                   {item}
                 </span>
               ))}
-            </motion.div>
+            </div>
           </div>
 
-          <div className="relative hidden min-h-[30rem] lg:block">
+          <div className="relative hidden min-h-[30rem] lg:block" aria-hidden="true">
             <div className="pointer-events-none absolute inset-8 rounded-[2.5rem] bg-[radial-gradient(circle_at_top_left,rgba(127,29,29,0.12),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(245,158,11,0.14),transparent_30%)] blur-2xl" />
 
-            {heroCards.map((card, index) => {
+            {heroCards.map((card) => {
               const Icon = card.icon;
 
               return (
-                <motion.div
+                <div
                   key={card.title}
-                  initial={{ opacity: 0, y: 18, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: 0.12 + index * 0.08 }}
                   className={`absolute w-64 rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.3)] ${card.className}`}
                 >
                   <div className="flex items-center justify-between gap-3">
@@ -115,7 +92,7 @@ export default function HomeHero({ onBrowseMarket }: { onBrowseMarket: () => voi
                   <p className="mt-2 text-sm leading-relaxed text-zinc-600">
                     {card.description}
                   </p>
-                </motion.div>
+                </div>
               );
             })}
           </div>
