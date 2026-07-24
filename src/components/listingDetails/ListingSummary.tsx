@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { MessageCircle, Share2, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
 import type { Listing } from "../../types";
 import { InfoPill } from "./ListingDetailsShared";
@@ -18,6 +19,7 @@ export default function ListingSummary({
   onShare,
   onBuyNow,
   onAddToCart,
+  ownerActionsMenu,
 }: {
   listing: Listing;
   seller: SellerProfile | null;
@@ -28,11 +30,10 @@ export default function ListingSummary({
   onShare: () => void;
   onBuyNow?: () => void;
   onAddToCart?: () => void;
+  ownerActionsMenu?: ReactNode;
 }) {
   const isOwner = !!currentUserUid && String(currentUserUid).trim() === String(listing.seller_uid).trim();
   const listingMode = listing.listing_mode || "normal";
-  const hasBuyAction = !!onBuyNow;
-  const hasCartAction = !!onAddToCart;
 
   const modeLabel =
     listingMode === "deal"
@@ -73,61 +74,77 @@ export default function ListingSummary({
           ) : null}
         </div>
 
-        <div className="border-t border-zinc-200 pt-4">
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
-            <button
-              type="button"
-              onClick={isOwner ? undefined : onMessageSeller}
-              disabled={isOwner}
-              aria-disabled={isOwner}
-              className={`${actionButtonClass} bg-sky-500 text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-45`}
-              title={isOwner ? "Messaging your own listing is disabled" : undefined}
-            >
-              <MessageCircle className="h-4 w-4 shrink-0" />
-              <span className="truncate">Message</span>
-            </button>
+        {isOwner ? (
+          <div className="rounded-3xl border border-zinc-200 bg-gradient-to-br from-zinc-50 to-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500">
+                  Owner view
+                </p>
+                <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">
+                  Manage this listing
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-zinc-600">
+                  Use the tools here to edit details, update stock, record sales, or remove the listing.
+                </p>
+              </div>
 
-            <button
-              type="button"
-              onClick={isOwner ? undefined : onBuyNow}
-              disabled={isOwner}
-              aria-disabled={isOwner}
-              className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500 disabled:cursor-not-allowed disabled:opacity-45`}
-              title={isOwner ? "Buying your own listing is disabled" : undefined}
-            >
-              <ShoppingBag className="h-4 w-4 shrink-0" />
-              <span className="truncate">Buy</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={isOwner ? undefined : onAddToCart}
-              disabled={isOwner}
-              aria-disabled={isOwner}
-              className={`${actionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-45`}
-              title={isOwner ? "Adding your own listing to cart is disabled" : undefined}
-            >
-              <ShoppingCart className="h-4 w-4 shrink-0" />
-              <span className="truncate">Add to Cart</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={onShare}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-              aria-label="Share listing"
-              title="Share listing"
-            >
-              <Share2 className="h-4 w-4 text-zinc-700" />
-            </button>
+              <div className="flex shrink-0 items-center gap-2">
+                {ownerActionsMenu ? <div className="shrink-0">{ownerActionsMenu}</div> : null}
+                <button
+                  type="button"
+                  onClick={onShare}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                  aria-label="Share listing"
+                  title="Share listing"
+                >
+                  <Share2 className="h-4 w-4 text-zinc-700" />
+                </button>
+              </div>
+            </div>
           </div>
+        ) : (
+          <div className="border-t border-zinc-200 pt-4">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+              <button
+                type="button"
+                onClick={onMessageSeller}
+                className={`${actionButtonClass} bg-sky-500 text-white hover:bg-sky-600`}
+              >
+                <MessageCircle className="h-4 w-4 shrink-0" />
+                <span className="truncate">Message</span>
+              </button>
 
-          {isOwner ? (
-            <p className="mt-3 text-xs font-medium text-zinc-500">
-              You can still share this listing, but messaging and buying are disabled for the owner.
-            </p>
-          ) : null}
-        </div>
+              <button
+                type="button"
+                onClick={onBuyNow}
+                className={`${actionButtonClass} bg-lime-400 text-zinc-950 hover:bg-lime-500`}
+              >
+                <ShoppingBag className="h-4 w-4 shrink-0" />
+                <span className="truncate">Buy</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onAddToCart}
+                className={`${actionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400`}
+              >
+                <ShoppingCart className="h-4 w-4 shrink-0" />
+                <span className="truncate">Add to Cart</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={onShare}
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                aria-label="Share listing"
+                title="Share listing"
+              >
+                <Share2 className="h-4 w-4 text-zinc-700" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );
