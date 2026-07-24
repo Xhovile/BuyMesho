@@ -48,6 +48,10 @@ function jsonError(error: unknown, fallback: string) {
   return { error: error instanceof Error ? error.message : fallback };
 }
 
+function normalizeStatus(value: string | null | undefined): string {
+  return String(value ?? "").trim().toLowerCase();
+}
+
 function findOrderByParam(param: string) {
   return orderRepository.findById(param) ?? orderRepository.findByPaymentReference(param);
 }
@@ -64,7 +68,7 @@ function buildOrderBundle(orderId: string): OrderBundle | null {
   return { order, payment, escrow, dispute };
 }
 
-function buildPublicPaymentStatus(reference: string) {
+function resolvePublicPaymentState(reference: string) {
   const normalizedReference = reference.trim();
   const payment = paymentRepository.findByReference(normalizedReference);
   const order =
@@ -73,9 +77,14 @@ function buildPublicPaymentStatus(reference: string) {
     orderRepository.findById(normalizedReference);
   const escrow = order ? escrowRepository.findByOrderId(order.id) ?? null : null;
 
+  return { reference: payment?.reference ?? order?.paymentReference ?? normalizedReference, payment, order, escrow };
+}
+
+function buildPublicPaymentStatus(reference: string) {
+  const { payment, order, escrow, reference: resolvedReference } = resolvePublicPaymentState(reference);
   return {
     success: true,
-    reference: payment?.reference ?? order?.paymentReference ?? normalizedReference,
+    reference: resolvedReference,
     orderId: order?.id ?? payment?.orderId ?? null,
     orderStatus: order?.status ?? null,
     paymentStatus: payment?.status ?? null,
@@ -223,21 +232,37 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
     }
   });
 
-  router.get("/public-status/:reference", orderLookupLimiter, (req, res) => {
+  router.get("/public-status/:reference", orderLookupLimiter, async (req, res) => {
     try {
       const reference = decodeURIComponent(req.params.reference ?? "").trim();
       if (!reference) {
         return res.status(400).json({ error: "Reference is required" });
       }
 
-      const payment = paymentRepository.findByReference(reference);
-      const order =
-        orderRepository.findByPaymentReference(reference) ??
-        (payment ? orderRepository.findById(payment.orderId) : undefined) ??
-        orderRepository.findById(reference);
-
+      let { payment, order } = resolvePublicPaymentState(reference);
       if (!payment && !order) {
         return res.status(404).json({ error: "Transaction not found" });
+      }
+
+      const paymentStatus = normalizeStatus(payment?.status);
+      const orderStatus = normalizeStatus(order?.status);
+      const isAlreadySuccessful =
+        Boolean(payment?.verified) ||
+        ["captured", "paid"].includes(paymentStatus) ||
+        ["paid", "processing", "in_escrow"].includes(orderStatus);
+
+      if (!isAlreadySuccessful) {
+        try {
+          await serverPaymentService.verifyPaychanguPayment(
+            payment?.reference ?? order?.paymentReference ?? reference,
+          );
+          ({ payment, order } = resolvePublicPaymentState(reference));
+        } catch (verificationError) {
+          console.warn("Public payment status verification failed", {
+            reference,
+            error: verificationError instanceof Error ? verificationError.message : verificationError,
+          });
+        }
       }
 
       return res.json(buildPublicPaymentStatus(reference));
