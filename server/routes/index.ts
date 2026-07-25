@@ -11,6 +11,7 @@ import { registerListingRoutes } from "./listings.routes.js";
 import { registerEventRoutes } from "./events.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
+import { createPaymentAdminReconcileRouter } from "../modules/payments/payment.admin.reconcile.routes.js";
 import { createAdminModerationRouter } from "../modules/admin/admin.moderation.routes.js";
 import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.js";
 import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js";
@@ -24,7 +25,6 @@ import { getConfiguredAdminEmails } from "../auth/adminAccess.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
-import { PAYOUT_POLICY, isRetryableFailureCode } from "../modules/payouts/payout.policy.js";
 
 export type LogAdminActionArgs = {
   admin_uid?: string | null;
@@ -40,160 +40,6 @@ export type RouteDeps = {
   requireAuth: typeof requireAuth;
   requireFirebaseUser: typeof requireFirebaseUser;
 };
-
-function logAdminActionFallback(message: string, error: unknown) {
-  console.warn(message, error);
-}
-
-function findSellerVerifiedDefaultPayoutDestination(db: any, sellerId: string): {
-  id: string;
-  destination_type: string | null;
-  masked_account: string | null;
-  verification_status: string | null;
-  is_active: number | null;
-  last_error: string | null;
-} | null {
-  const row = db
-    .prepare(
-      `SELECT
-         id,
-         destination_type,
-         masked_account,
-         verification_status,
-         is_active,
-         last_error
-       FROM seller_payout_accounts
-       WHERE seller_uid = ?
-         AND is_active = 1
-         AND verification_status = 'verified'
-       ORDER BY is_default DESC, updated_at DESC, created_at DESC
-       LIMIT 1`,
-    )
-    .get(sellerId) as
-    | {
-        id: string;
-        destination_type: string | null;
-        masked_account: string | null;
-        verification_status: string | null;
-        is_active: number | null;
-        last_error: string | null;
-      }
-    | undefined;
-
-  return row ?? null;
-}
-
-function hydratePayoutDestinationRow(db: any, row: Record<string, unknown>): Record<string, unknown> {
-  const sellerId = String(row.sellerId ?? row.seller_id ?? "").trim();
-  if (!sellerId) return row;
-
-  const destinationAccountId = String(row.destinationAccountId ?? row.destination_account_id ?? "").trim();
-  const destinationVerificationStatus = String(row.destinationVerificationStatus ?? "missing").trim().toLowerCase();
-  const destinationActive = Number(row.destinationIsActive ?? row.destination_active ?? 0) === 1;
-  const destinationMissing = !destinationAccountId || destinationVerificationStatus === "missing";
-  const destinationUnavailable = destinationVerificationStatus === "disabled" || !destinationActive;
-  const shouldFallback = destinationMissing || destinationUnavailable;
-
-  if (!shouldFallback) return row;
-
-  const fallback = findSellerVerifiedDefaultPayoutDestination(db, sellerId);
-  if (!fallback) return row;
-
-  const currentStatus = String(row.status ?? "").trim().toLowerCase();
-  const sellerSuspended = Number(row.sellerSuspended ?? row.seller_suspended ?? 0) === 1;
-  const attemptCount = Number(row.attemptCount ?? row.attempt_count ?? 0);
-  const failureReason = (row.failureReason ?? row.failure_reason ?? null) as string | null;
-  const resolvedDestinationVerificationStatus = String(fallback.verification_status ?? "verified").trim().toLowerCase();
-  const resolvedDestinationActive = Number(fallback.is_active ?? 1) === 1;
-
-  const verificationBlockers: string[] = [];
-  if (sellerSuspended) {
-    verificationBlockers.push("Seller payouts are suspended");
-  }
-  if (resolvedDestinationVerificationStatus !== "verified" || !resolvedDestinationActive) {
-    verificationBlockers.push(
-      resolvedDestinationVerificationStatus === "failed"
-        ? "Destination verification failed"
-        : resolvedDestinationVerificationStatus === "disabled" || !resolvedDestinationActive
-          ? "Destination is disabled"
-          : "Destination pending verification",
-    );
-  }
-
-  const hasRetryableFailureContext =
-    currentStatus === "held"
-      ? !failureReason || isRetryableFailureCode(failureReason)
-      : isRetryableFailureCode(failureReason);
-
-  const retryEligible =
-    (currentStatus === "failed" || currentStatus === "held") &&
-    attemptCount < PAYOUT_POLICY.maxRetryCount &&
-    hasRetryableFailureContext &&
-    !sellerSuspended &&
-    resolvedDestinationVerificationStatus === "verified" &&
-    resolvedDestinationActive;
-
-  return {
-    ...row,
-    destinationAccountId: fallback.id,
-    destinationMaskedAccount: fallback.masked_account ?? row.destinationMaskedAccount ?? null,
-    destinationType: fallback.destination_type ?? row.destinationType ?? null,
-    destinationVerificationStatus: resolvedDestinationVerificationStatus,
-    destinationIsActive: resolvedDestinationActive ? 1 : 0,
-    destinationLastError: fallback.last_error ?? row.destinationLastError ?? null,
-    verificationBlockers,
-    retryEligible,
-    retryBlockedReason: retryEligible
-      ? null
-      : sellerSuspended
-        ? "Seller payouts are suspended"
-        : resolvedDestinationVerificationStatus !== "verified" || !resolvedDestinationActive
-          ? "Destination pending verification"
-          : currentStatus !== "failed"
-            ? `Retry unavailable while payout is ${currentStatus}`
-            : "Retry unavailable due to policy gate",
-    destinationRecoveredFromFallback: true,
-  };
-}
-
-function hydratePayoutDestinationResponse(db: any, body: unknown): unknown {
-  if (Array.isArray(body)) {
-    return body.map((row) => (row && typeof row === "object" && !Array.isArray(row) ? hydratePayoutDestinationRow(db, row as Record<string, unknown>) : row));
-  }
-
-  if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return body;
-  }
-
-  const payload = body as Record<string, unknown>;
-  if (Array.isArray(payload.rows)) {
-    return {
-      ...payload,
-      rows: payload.rows.map((row) => (row && typeof row === "object" && !Array.isArray(row) ? hydratePayoutDestinationRow(db, row as Record<string, unknown>) : row)),
-    };
-  }
-
-  return body;
-}
-
-function installPayoutDestinationHydrator(app: Express, db: any) {
-  app.use("/api/admin", (req: Request, res: Response, next: NextFunction) => {
-    const originalJson = res.json.bind(res);
-    res.json = ((body: unknown) => {
-      try {
-        if (req.originalUrl.startsWith("/api/admin/payouts")) {
-          body = hydratePayoutDestinationResponse(db, body);
-        }
-      } catch (error) {
-        logAdminActionFallback("Failed to hydrate payout destination fallback", error);
-      }
-
-      return originalJson(body as never);
-    }) as typeof res.json;
-
-    next();
-  });
-}
 
 export function registerRoutes(app: Express, deps: RouteDeps) {
   const { db, requireAuth, requireFirebaseUser } = deps;
@@ -252,12 +98,11 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerEventRoutes(app, { db });
   mountTotpRoutes(app);
 
-  installPayoutDestinationHydrator(app, db);
-
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
 
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
+  app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
