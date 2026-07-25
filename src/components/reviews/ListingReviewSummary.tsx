@@ -32,21 +32,21 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
   const latestReviewLabel = formatDateTime(summary?.latestReviewAt);
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-5 shadow-sm ring-1 ring-blue-100/60 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Review summary</p>
+          <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Review summary</p>
           <div className="mt-3 flex items-end gap-4">
-            <div className="text-5xl font-black tracking-tight text-zinc-950">{averageRating}</div>
+            <div className="text-5xl font-black tracking-tight text-blue-950">{averageRating}</div>
             <div className="pb-1">
-              <div className="flex flex-wrap items-center gap-1 text-sm font-bold text-zinc-700">
+              <div className="flex flex-wrap items-center gap-1 text-sm font-bold text-blue-900">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
                 <span>
                   {ratingCount > 0 ? `${ratingCount} review${ratingCount === 1 ? "" : "s"}` : "No reviews yet"}
                 </span>
               </div>
-              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                Latest review <span className="text-zinc-600 normal-case tracking-normal">{latestReviewLabel}</span>
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700/60">
+                Latest review <span className="text-blue-700 normal-case tracking-normal">{latestReviewLabel}</span>
               </p>
             </div>
           </div>
@@ -56,17 +56,17 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
       <div className="mt-5 space-y-3">
         {distribution.map((row) => (
           <div key={row.stars} className="grid grid-cols-[44px_minmax(0,1fr)_42px] items-center gap-3">
-            <span className="text-xs font-extrabold text-zinc-600">{row.stars}★</span>
-            <div className="h-2 overflow-hidden rounded-full bg-zinc-200">
-              <div className="h-full rounded-full bg-zinc-900" style={{ width: `${row.percentage}%` }} />
+            <span className="text-xs font-extrabold text-blue-700/80">{row.stars}★</span>
+            <div className="h-2 overflow-hidden rounded-full bg-blue-100">
+              <div className="h-full rounded-full bg-blue-600" style={{ width: `${row.percentage}%` }} />
             </div>
-            <span className="text-right text-xs font-semibold text-zinc-500">{row.count}</span>
+            <span className="text-right text-xs font-semibold text-blue-700/70">{row.count}</span>
           </div>
         ))}
       </div>
 
       {!ratingCount ? (
-        <div className="mt-5 rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+        <div className="mt-5 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm text-blue-700/70">
           No written reviews yet. Be the first to rate this listing.
         </div>
       ) : null}
