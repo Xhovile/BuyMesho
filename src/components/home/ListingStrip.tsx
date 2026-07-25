@@ -39,7 +39,7 @@ export default function ListingStrip({
   const isFeatured = variant === "featured";
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="mx-[-1rem] w-[calc(100%+2rem)] rounded-none border-x-0 border-y border-zinc-200 bg-white px-4 py-6 shadow-sm sm:mx-0 sm:w-auto sm:rounded-[2rem] sm:border sm:p-8">
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-900 sm:text-3xl">
