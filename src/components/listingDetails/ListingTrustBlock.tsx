@@ -55,10 +55,12 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
             <h3 className="min-w-0 break-words text-base font-black tracking-tight text-blue-800 sm:text-xl">
               {sellerName}
             </h3>
-            <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700 sm:text-xs">
-              <ShieldCheck className="h-3.5 w-3.5" />
-              Verified
-            </div>
+            {verified ? (
+              <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700 sm:text-xs">
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Verified
+              </div>
+            ) : null}
           </div>
         </button>
 
