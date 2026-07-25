@@ -1,4 +1,4 @@
-import { ChevronRight, ShieldCheck, Star, Store } from "lucide-react";
+import { ChevronRight, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "../../types";
 import { normalizeRatingSummary } from "../ratings/ratingSummaryUtils";
 import { navigateToSellerProfile } from "../../lib/appNavigation";
@@ -25,15 +25,15 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
   const normalized = normalizeRatingSummary(seller?.ratingSummary ?? ratingSummary);
   const sellerUid = seller?.uid || listing.seller_uid;
   const sellerName = (seller?.business_name || listing.business_name || "Seller").trim() || "Seller";
-  const sellerDescription = seller?.bio?.trim();
+  const verified = Boolean(seller?.is_verified || listing.is_verified);
 
   return (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60 sm:p-5">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+      <div className="flex flex-col gap-4">
         <button
           type="button"
           onClick={() => navigateToSellerProfile(sellerUid)}
-          className="flex w-full min-w-0 items-center gap-3 rounded-[1.5rem] text-left transition md:flex-1 md:min-w-0"
+          className="flex w-full min-w-0 items-center gap-3 rounded-[1.5rem] text-left transition"
         >
           <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-blue-200 bg-white sm:h-16 sm:w-16">
             {seller?.business_logo ? (
@@ -52,21 +52,17 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <h3 className="min-w-0 break-words text-base font-black tracking-tight text-blue-800 sm:text-xl">
-                {sellerName}
-              </h3>
-              {seller?.is_verified || listing.is_verified ? (
-                <ShieldCheck className="h-4 w-4 shrink-0 text-blue-600" />
-              ) : null}
+            <h3 className="min-w-0 break-words text-base font-black tracking-tight text-blue-800 sm:text-xl">
+              {sellerName}
+            </h3>
+            <div className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-700 sm:text-xs">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verified
             </div>
-            {sellerDescription ? (
-              <p className="mt-1 line-clamp-3 text-sm leading-6 text-zinc-600">{sellerDescription}</p>
-            ) : null}
           </div>
         </button>
 
-        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center md:w-auto md:justify-end">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           {normalized.hasRatings ? (
             <div className="inline-flex items-center justify-center gap-1 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-extrabold text-blue-900">
               <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
@@ -78,6 +74,7 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
               No ratings yet
             </div>
           )}
+
           <button
             type="button"
             onClick={() => navigateToSellerProfile(sellerUid)}
@@ -87,31 +84,10 @@ export default function ListingTrustBlock({ listing, seller, ratingSummary }: Li
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
-      </div>
 
-      <div className="mt-5 grid gap-3 sm:grid-cols-3 sm:gap-0">
-        <div className="flex items-start justify-between gap-3 border-t border-blue-100 pt-3 sm:border-t-0 sm:border-r sm:pr-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600/70">Email status</p>
-            <p className="mt-1 text-base font-extrabold text-blue-950">
-              {seller?.is_verified || listing.is_verified ? "Email verified" : "Email not verified"}
-            </p>
-          </div>
-          <Store className="h-4 w-4 shrink-0 text-blue-400" />
-        </div>
-        <div className="flex items-start justify-between gap-3 border-t border-blue-100 pt-3 sm:border-t-0 sm:border-r sm:px-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600/70">Joined</p>
-            <p className="mt-1 text-base font-extrabold text-blue-950">{formatDate(seller?.join_date)}</p>
-          </div>
-          <Store className="h-4 w-4 shrink-0 text-blue-400" />
-        </div>
-        <div className="flex items-start justify-between gap-3 border-t border-blue-100 pt-3 sm:border-t-0 sm:pl-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600/70">Profile views</p>
-            <p className="mt-1 text-base font-extrabold text-blue-950">{seller?.profile_views ?? 0}</p>
-          </div>
-          <Store className="h-4 w-4 shrink-0 text-blue-400" />
+        <div className="border-t border-blue-100 pt-3">
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600/70">Joined</p>
+          <p className="mt-1 text-base font-extrabold text-blue-950">{formatDate(seller?.join_date)}</p>
         </div>
       </div>
     </div>
