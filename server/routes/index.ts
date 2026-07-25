@@ -1,4 +1,4 @@
-import type { Express, NextFunction, Request, Response } from "express";
+import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
@@ -11,7 +11,7 @@ import { registerListingRoutes } from "./listings.routes.js";
 import { registerEventRoutes } from "./events.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
-import { createPaymentAdminDetailRouter } from "../modules/payments/payment.admin.detail.routes.js";
+import { createPaymentAdminDetailRouter, hydrateAdminPayoutResponse } from "../modules/payments/payment.admin.detail.routes.js";
 import { createPaymentAdminReconcileRouter } from "../modules/payments/payment.admin.reconcile.routes.js";
 import { createAdminModerationRouter } from "../modules/admin/admin.moderation.routes.js";
 import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.js";
@@ -98,6 +98,21 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerListingRoutes(app, { db });
   registerEventRoutes(app, { db });
   mountTotpRoutes(app);
+
+  app.use("/api/admin", (req, res, next) => {
+    const originalJson = res.json.bind(res);
+    res.json = ((body: unknown) => {
+      try {
+        if (req.originalUrl.startsWith("/api/admin/payouts")) {
+          body = hydrateAdminPayoutResponse(db, body);
+        }
+      } catch (error) {
+        console.warn("Failed to hydrate payout admin response", error);
+      }
+      return originalJson(body as never);
+    }) as typeof res.json;
+    next();
+  });
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
