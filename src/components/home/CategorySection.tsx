@@ -90,7 +90,7 @@ const CategorySection: FC<CategorySectionProps> = ({
     <div className="group relative border-y border-zinc-200 bg-gradient-to-b from-white to-zinc-50 py-4 sm:py-5">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-70" />
 
-      <div className="flex items-start justify-between gap-3 px-3 sm:px-5 sm:gap-4">
+      <div className="flex items-start justify-between gap-3 px-4 sm:px-5 sm:gap-4">
         <div className="min-w-0">
           <h3 className="text-[1rem] font-black tracking-tight text-zinc-950 sm:text-2xl">
             {title}
@@ -105,13 +105,13 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 px-3 sm:px-5">
+      <div className="mt-3 px-4 sm:px-5">
         <div className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white sm:px-3 sm:py-1.5 sm:text-[11px]">
           {liveLabel}
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto px-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:px-5">
+      <div className="mt-3 flex gap-2 overflow-x-auto pl-4 pr-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:pl-5 sm:pr-5">
         {loading ? (
           <>
             <PreviewSkeleton />
@@ -155,7 +155,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         )}
       </div>
 
-      <div className="px-3 sm:px-5">
+      <div className="px-4 sm:px-5">
         <button
           type="button"
           onClick={() => navigateToExploreWithCategory(categoryKey)}
