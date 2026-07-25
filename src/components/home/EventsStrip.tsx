@@ -82,7 +82,7 @@ export default function EventsStrip({
   viewMorePath?: string;
 }) {
   return (
-    <section className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+    <section className="mx-[-1rem] w-[calc(100%+2rem)] overflow-hidden rounded-none border-x-0 border-y border-zinc-200 bg-white px-4 py-6 shadow-sm sm:mx-0 sm:w-auto sm:rounded-[2rem] sm:border sm:p-8">
       <div className="relative overflow-hidden rounded-[1.75rem] border border-red-950/10 bg-[radial-gradient(circle_at_top_left,rgba(127,29,29,0.14),transparent_35%),linear-gradient(135deg,rgba(24,24,27,1)_0%,rgba(39,39,42,1)_50%,rgba(255,255,255,1)_120%)] px-5 py-6 text-white sm:px-6 sm:py-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
