@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { MessageCircle, Share2, ShieldCheck, ShoppingBag, ShoppingCart } from "lucide-react";
 import type { Listing } from "../../types";
+import { InfoPill } from "./ListingDetailsShared";
 
 type SellerProfile = {
   business_name?: string;
@@ -32,6 +33,14 @@ export default function ListingSummary({
   ownerActionsMenu?: ReactNode;
 }) {
   const isOwner = !!currentUserUid && String(currentUserUid).trim() === String(listing.seller_uid).trim();
+  const listingMode = listing.listing_mode || "normal";
+
+  const modeLabel =
+    listingMode === "deal"
+      ? "Deal"
+      : listingMode === "wholesale"
+        ? "Wholesale"
+        : "Normal";
 
   const actionButtonClass =
     "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
@@ -49,6 +58,20 @@ export default function ListingSummary({
           <p className="text-[2rem] font-black tracking-tight text-red-950 sm:text-[2.25rem]">
             MK {Number(listing.price).toLocaleString()}
           </p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
+          <InfoPill>{listing.university}</InfoPill>
+          <InfoPill>{modeLabel}</InfoPill>
+          <InfoPill>{listing.status === "sold" ? "Sold" : "Available"}</InfoPill>
+          <InfoPill>{listing.condition || "Used"}</InfoPill>
+          <InfoPill>{Math.max(0, availableQuantity)} left</InfoPill>
+          {seller?.is_verified || listing.is_verified ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-700">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verified seller
+            </span>
+          ) : null}
         </div>
 
         {isOwner ? (
