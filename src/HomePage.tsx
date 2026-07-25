@@ -152,11 +152,11 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [showDeferredContent]);
 
-  const visibleFeaturedSections = featuredSections.filter((section) =>
-    isMobileViewport
-      ? [HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.beauty].includes(section.key)
-      : [HOME_CATEGORY_KEYS.food, HOME_CATEGORY_KEYS.books].includes(section.key),
-  );
+  const visibleFeaturedSections = isMobileViewport
+    ? featuredSections.filter((section) =>
+        [HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.food, HOME_CATEGORY_KEYS.beauty].includes(section.key),
+      )
+    : featuredSections;
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
