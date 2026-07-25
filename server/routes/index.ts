@@ -11,6 +11,7 @@ import { registerListingRoutes } from "./listings.routes.js";
 import { registerEventRoutes } from "./events.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
+import { createPaymentAdminDetailRouter } from "../modules/payments/payment.admin.detail.routes.js";
 import { createPaymentAdminReconcileRouter } from "../modules/payments/payment.admin.reconcile.routes.js";
 import { createAdminModerationRouter } from "../modules/admin/admin.moderation.routes.js";
 import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.js";
@@ -103,6 +104,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
