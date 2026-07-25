@@ -117,6 +117,168 @@ function normalizeHardDeleteAfterColumn() {
   `);
 }
 
+function backfillPayoutRecords() {
+  const payouts = postgresDb.prepare(`
+    SELECT
+      id,
+      seller_id,
+      order_id,
+      escrow_id,
+      destination_account_id,
+      requested_by,
+      provider,
+      provider_charge_id,
+      provider_ref_id,
+      provider_transaction_id,
+      provider_status,
+      sent_at,
+      paid_at,
+      failed_at,
+      status
+    FROM payouts
+  `).all() as Array<Record<string, unknown>>;
+
+  const latestAttemptStmt = postgresDb.prepare(`
+    SELECT
+      provider,
+      provider_charge_id,
+      provider_reference,
+      provider_transaction_id,
+      status,
+      sent_at,
+      completed_at,
+      failure_reason
+    FROM payout_attempts
+    WHERE payout_id = ?
+    ORDER BY attempt_no DESC, created_at DESC
+    LIMIT 1
+  `);
+
+  const firstEventStmt = postgresDb.prepare(`
+    SELECT seller_id, actor_id
+    FROM payout_events
+    WHERE payout_id = ?
+    ORDER BY created_at ASC, id ASC
+    LIMIT 1
+  `);
+
+  const escrowLookupStmt = postgresDb.prepare(`
+    SELECT e.id AS escrow_id, o.id AS order_id, o.seller_id AS seller_id
+    FROM escrows e
+    LEFT JOIN orders o ON o.id = e.order_id
+    WHERE e.id = ?
+    LIMIT 1
+  `);
+
+  const defaultDestinationStmt = postgresDb.prepare(`
+    SELECT id
+    FROM seller_payout_accounts
+    WHERE seller_uid = ?
+      AND is_active = 1
+      AND verification_status = 'verified'
+    ORDER BY is_default DESC, updated_at DESC, created_at DESC
+    LIMIT 1
+  `);
+
+  const updateStmt = postgresDb.prepare(`
+    UPDATE payouts
+    SET seller_id = COALESCE(?, seller_id),
+        order_id = COALESCE(?, order_id),
+        escrow_id = COALESCE(?, escrow_id),
+        destination_account_id = COALESCE(?, destination_account_id),
+        requested_by = COALESCE(?, requested_by),
+        provider = COALESCE(?, provider),
+        provider_charge_id = COALESCE(?, provider_charge_id),
+        provider_ref_id = COALESCE(?, provider_ref_id),
+        provider_transaction_id = COALESCE(?, provider_transaction_id),
+        provider_status = COALESCE(?, provider_status),
+        sent_at = COALESCE(?, sent_at),
+        paid_at = COALESCE(?, paid_at),
+        failed_at = COALESCE(?, failed_at),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `);
+
+  let repaired = 0;
+
+  for (const row of payouts) {
+    const payoutId = String(row.id ?? '').trim();
+    if (!payoutId) continue;
+
+    const latestAttempt = latestAttemptStmt.get(payoutId) as Record<string, unknown> | undefined;
+    const firstEvent = firstEventStmt.get(payoutId) as Record<string, unknown> | undefined;
+    const escrowLink = row.escrow_id ? escrowLookupStmt.get(String(row.escrow_id)) as Record<string, unknown> | undefined : undefined;
+
+    const currentSellerId = String(row.seller_id ?? '').trim() || null;
+    const inferredSellerId = currentSellerId
+      ?? String(escrowLink?.seller_id ?? '').trim() || null
+      ?? String(firstEvent?.seller_id ?? '').trim() || null;
+
+    const inferredOrderId = String(row.order_id ?? '').trim() || String(escrowLink?.order_id ?? '').trim() || null;
+    const inferredEscrowId = String(row.escrow_id ?? '').trim() || String(escrowLink?.escrow_id ?? '').trim() || null;
+    const inferredRequestedBy = String(row.requested_by ?? '').trim() || String(firstEvent?.actor_id ?? '').trim() || null;
+
+    const inferredDestinationAccountId = (() => {
+      const currentDestination = String(row.destination_account_id ?? '').trim();
+      if (currentDestination) return currentDestination;
+      if (!inferredSellerId) return null;
+      const destination = defaultDestinationStmt.get(inferredSellerId) as { id?: string } | undefined;
+      return String(destination?.id ?? '').trim() || null;
+    })();
+
+    const inferredProvider = String(row.provider ?? latestAttempt?.provider ?? '').trim() || null;
+    const inferredProviderChargeId = String(row.provider_charge_id ?? latestAttempt?.provider_charge_id ?? '').trim() || null;
+    const inferredProviderReference = String(row.provider_ref_id ?? latestAttempt?.provider_reference ?? '').trim() || null;
+    const inferredProviderTransactionId = String(row.provider_transaction_id ?? latestAttempt?.provider_transaction_id ?? '').trim() || null;
+    const inferredProviderStatus = String(row.provider_status ?? latestAttempt?.status ?? '').trim() || null;
+    const inferredSentAt = String(row.sent_at ?? latestAttempt?.sent_at ?? '').trim() || null;
+    const inferredPaidAt = String(row.paid_at ?? (String(latestAttempt?.status ?? '').toLowerCase() === 'paid' ? latestAttempt?.completed_at : '') ?? '').trim() || null;
+    const inferredFailedAt = String(row.failed_at ?? (String(latestAttempt?.status ?? '').toLowerCase() === 'failed' ? latestAttempt?.completed_at : '') ?? '').trim() || null;
+
+    const shouldRepair =
+      inferredSellerId !== currentSellerId ||
+      inferredOrderId !== String(row.order_id ?? '').trim() ||
+      inferredEscrowId !== String(row.escrow_id ?? '').trim() ||
+      inferredRequestedBy !== String(row.requested_by ?? '').trim() ||
+      inferredDestinationAccountId !== String(row.destination_account_id ?? '').trim() ||
+      inferredProvider !== String(row.provider ?? '').trim() ||
+      inferredProviderChargeId !== String(row.provider_charge_id ?? '').trim() ||
+      inferredProviderReference !== String(row.provider_ref_id ?? '').trim() ||
+      inferredProviderTransactionId !== String(row.provider_transaction_id ?? '').trim() ||
+      inferredProviderStatus !== String(row.provider_status ?? '').trim() ||
+      inferredSentAt !== String(row.sent_at ?? '').trim() ||
+      inferredPaidAt !== String(row.paid_at ?? '').trim() ||
+      inferredFailedAt !== String(row.failed_at ?? '').trim();
+
+    if (!shouldRepair) {
+      continue;
+    }
+
+    updateStmt.run(
+      inferredSellerId,
+      inferredOrderId,
+      inferredEscrowId,
+      inferredDestinationAccountId,
+      inferredRequestedBy,
+      inferredProvider,
+      inferredProviderChargeId,
+      inferredProviderReference,
+      inferredProviderTransactionId,
+      inferredProviderStatus,
+      inferredSentAt,
+      inferredPaidAt,
+      inferredFailedAt,
+      payoutId,
+    );
+
+    repaired += 1;
+  }
+
+  if (repaired > 0) {
+    console.log(`[payout-migration] repaired ${repaired} payout row(s)`);
+  }
+}
+
 export function runMigrations() {
   initPaymentSchema(postgresDb);
   ensureExtraTables();
@@ -127,6 +289,13 @@ export function runMigrations() {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.warn(`hard_delete_after migration skipped: ${message}`);
+  }
+
+  try {
+    backfillPayoutRecords();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`payout backfill skipped: ${message}`);
   }
 
   return postgresDb;
