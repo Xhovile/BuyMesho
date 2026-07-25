@@ -125,7 +125,7 @@ export default function EventsStrip({
             return (
               <article
                 key={item.id}
-                className="group flex h-[420px] w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:h-[440px] sm:w-[260px]"
+                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
                   <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
@@ -152,7 +152,7 @@ export default function EventsStrip({
                   </div>
                 </div>
 
-                <div className="flex flex-1 flex-col p-4">
+                <div className="p-4">
                   <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
 
                   <div className="mt-4 grid gap-2 text-sm text-zinc-600">
@@ -172,19 +172,17 @@ export default function EventsStrip({
                     </div>
                   </div>
 
-                  <div className="mt-auto pt-4">
-                    <div className="overflow-hidden rounded-2xl border border-orange-200 bg-white">
-                      <div className="flex items-stretch">
-                        <button
-                          type="button"
-                          onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
-                          className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
-                        >
-                          Buy Ticket
-                        </button>
-                        <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
-                          {price}
-                        </div>
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
+                    <div className="flex items-stretch">
+                      <button
+                        type="button"
+                        onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
+                        className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
+                      >
+                        Buy Ticket
+                      </button>
+                      <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+                        {price}
                       </div>
                     </div>
                   </div>
