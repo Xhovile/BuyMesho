@@ -25,9 +25,7 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
   const derivedRatingCount = distribution.reduce((total, row) => total + row.count, 0);
   const ratingCount = derivedRatingCount > 0 ? derivedRatingCount : (summary?.ratingCount ?? 0);
   const derivedAverage =
-    ratingCount > 0
-      ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount
-      : 0;
+    ratingCount > 0 ? distribution.reduce((total, row) => total + row.stars * row.count, 0) / ratingCount : 0;
   const averageRating = ratingCount > 0 ? derivedAverage.toFixed(1) : (summary?.averageRating ?? 0).toFixed(1);
   const latestReviewLabel = formatDateTime(summary?.latestReviewAt);
 
@@ -41,9 +39,7 @@ export default function ListingReviewSummary({ summary }: { summary: ListingRevi
             <div className="pb-1">
               <div className="flex flex-wrap items-center gap-1 text-sm font-bold text-blue-900">
                 <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
-                <span>
-                  {ratingCount > 0 ? `${ratingCount} review${ratingCount === 1 ? "" : "s"}` : "No reviews yet"}
-                </span>
+                <span>{ratingCount > 0 ? `${ratingCount} review${ratingCount === 1 ? "" : "s"}` : "No reviews yet"}</span>
               </div>
               <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700/60">
                 Latest review <span className="text-blue-700 normal-case tracking-normal">{latestReviewLabel}</span>
