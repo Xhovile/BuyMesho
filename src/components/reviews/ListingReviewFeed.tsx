@@ -89,7 +89,7 @@ export default function ListingReviewFeed({
 
   if (loading) {
     return (
-      <div className="flex items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
+      <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading reviews...
       </div>
@@ -126,7 +126,7 @@ export default function ListingReviewFeed({
           ))}
         </div>
       ) : !ownReview ? (
-        <div className="rounded-[2rem] border border-dashed border-zinc-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">No written reviews yet.</div>
+        <div className="rounded-[2rem] border border-dashed border-blue-200 bg-white px-5 py-6 text-sm text-zinc-500 shadow-sm">No written reviews yet.</div>
       ) : null}
 
       {canShowMore ? (
@@ -135,7 +135,7 @@ export default function ListingReviewFeed({
             type="button"
             onClick={handleLoadMore}
             disabled={loadingMore}
-            className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loadingMore ? (
               <span className="inline-flex items-center gap-2">
@@ -150,7 +150,9 @@ export default function ListingReviewFeed({
       ) : null}
 
       {compact && summary ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">Showing {Math.min(items.length, total)} of {total} reviews</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400">
+          Showing {Math.min(items.length, total)} of {total} reviews
+        </p>
       ) : null}
     </section>
   );
