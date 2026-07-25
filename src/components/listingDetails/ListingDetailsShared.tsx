@@ -93,7 +93,7 @@ export function RelatedRailCard({
 
   return (
     <article
-      className={`group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
+      className={`group overflow-hidden rounded-3xl border border-blue-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${
         isDesktop ? "h-full" : ""
       }`}
     >
