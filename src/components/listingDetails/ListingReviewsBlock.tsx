@@ -82,11 +82,11 @@ export default function ListingReviewsBlock({
   const showComposer = !viewerReview || isEditingOwnReview;
 
   return (
-    <div className="space-y-5 border-t border-zinc-200 pt-6">
+    <div className="space-y-5 border-t border-blue-100 pt-6">
       <SectionHeading eyebrow="Reviews" title="Ratings & reviews" />
 
       {loading ? (
-        <div className="flex items-center gap-3 rounded-[2rem] border border-zinc-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
+        <div className="flex items-center gap-3 rounded-[2rem] border border-blue-200 bg-white px-5 py-4 text-sm text-zinc-500 shadow-sm">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading reviews...
         </div>
@@ -106,7 +106,7 @@ export default function ListingReviewsBlock({
               onCancel={viewerReview ? () => setIsEditingOwnReview(false) : undefined}
             />
           ) : (
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+            <div className="rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
               <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your review</p>
               <p className="mt-2 text-sm text-zinc-500">
                 Your review is pinned at the top. Tap <span className="font-bold text-zinc-900">Edit</span> on the review card to update it.
