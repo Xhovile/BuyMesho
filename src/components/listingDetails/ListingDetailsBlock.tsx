@@ -16,17 +16,17 @@ export default function ListingDetailsBlock({
 
       <div className="space-y-0">
         <div className="space-y-3 pb-5">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500">Listing description</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Listing description</p>
           <ListingDescriptionExcerpt description={typeof description === "string" ? description : String(description ?? "")} />
         </div>
 
         <div className="border-t border-zinc-200 pt-5">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500">Seller Bio</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Seller Bio</p>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-zinc-600">{sellerNote}</p>
         </div>
 
         <div className="border-t border-zinc-200 pt-5">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-500">Delivery and collection</p>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Delivery and collection</p>
           <p className="mt-3 text-sm leading-7 text-zinc-600">{deliveryNote}</p>
         </div>
       </div>
