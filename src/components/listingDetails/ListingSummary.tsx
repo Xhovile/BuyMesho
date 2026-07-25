@@ -34,6 +34,9 @@ export default function ListingSummary({
 }) {
   const isOwner = !!currentUserUid && String(currentUserUid).trim() === String(listing.seller_uid).trim();
   const listingMode = listing.listing_mode || "normal";
+  const stockCount = Math.max(0, availableQuantity);
+  const isSold = listing.status === "sold";
+  const isLowStock = !isSold && stockCount < 10;
 
   const modeLabel =
     listingMode === "deal"
@@ -44,6 +47,16 @@ export default function ListingSummary({
 
   const actionButtonClass =
     "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
+
+  const stockPillClass = isSold
+    ? "border-red-200 bg-red-600 text-white"
+    : isLowStock
+      ? "border-red-200 bg-red-50 text-red-700"
+      : "border-zinc-200 bg-white text-zinc-600";
+
+  const statusPillClass = isSold
+    ? "border-red-200 bg-red-600 text-white"
+    : "border-zinc-200 bg-white text-zinc-600";
 
   return (
     <aside>
@@ -63,9 +76,13 @@ export default function ListingSummary({
         <div className="flex flex-wrap gap-2 border-t border-zinc-200 pt-4">
           <InfoPill>{listing.university}</InfoPill>
           <InfoPill>{modeLabel}</InfoPill>
-          <InfoPill>{listing.status === "sold" ? "Sold" : "Available"}</InfoPill>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] ${statusPillClass}`}>
+            {isSold ? "Sold" : "Available"}
+          </span>
           <InfoPill>{listing.condition || "Used"}</InfoPill>
-          <InfoPill>{Math.max(0, availableQuantity)} left</InfoPill>
+          <span className={`inline-flex items-center rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] ${stockPillClass}`}>
+            {isSold ? "Sold" : `${stockCount} left`}
+          </span>
           {seller?.is_verified || listing.is_verified ? (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-emerald-700">
               <ShieldCheck className="h-3.5 w-3.5" />
