@@ -1,4 +1,3 @@
-import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
@@ -21,7 +20,7 @@ import HomeHeader from "./components/home/HomeHeader";
 import HomeHero from "./components/home/HomeHero";
 import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
 import ListingStrip from "./components/home/ListingStrip";
-import { featuredSections } from "./home/home.constants";
+import { HOME_CATEGORY_KEYS, featuredSections } from "./home/home.constants";
 import { useHomePageController } from "./hooks/useHomePageController";
 
 function DeferredHomeSkeleton() {
@@ -112,6 +111,20 @@ export default function HomePage() {
   const controller = useHomePageController();
   const deferredAnchorRef = useRef<HTMLDivElement | null>(null);
   const [showDeferredContent, setShowDeferredContent] = useState(false);
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth < 768;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileViewport(window.innerWidth < 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     const target = deferredAnchorRef.current;
@@ -138,6 +151,16 @@ export default function HomePage() {
     observer.observe(target);
     return () => observer.disconnect();
   }, [showDeferredContent]);
+
+  const visibleFeaturedSections = featuredSections.filter((section) =>
+    isMobileViewport
+      ? [
+          HOME_CATEGORY_KEYS.phones,
+          HOME_CATEGORY_KEYS.food,
+          HOME_CATEGORY_KEYS.beauty,
+        ].includes(section.key)
+      : [HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.books].includes(section.key),
+  );
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -193,7 +216,7 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            {featuredSections.map((section) => {
+            {visibleFeaturedSections.map((section) => {
               const listings = controller.filteredSectionListings[section.key] || [];
               return (
                 <CategorySection
