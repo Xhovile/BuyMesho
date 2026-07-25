@@ -113,10 +113,14 @@ export function EventCard({ item }: { item: EventRecord }) {
           </div>
         </div>
 
-        <div className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-[9px] font-extrabold uppercase tracking-[0.16em] text-zinc-400">Ticket price</p>
-            <p className="text-sm font-black tracking-tight text-zinc-950">{price}</p>
+        <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
+          <div className="flex items-stretch">
+            <div className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white">
+              Buy Ticket
+            </div>
+            <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+              {price}
+            </div>
           </div>
         </div>
       </div>
