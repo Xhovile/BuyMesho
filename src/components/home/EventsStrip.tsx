@@ -57,16 +57,16 @@ function getPosterAlt(item: HomeEventPreview) {
 function EventCardSkeleton() {
   return (
     <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-      <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
-      <div className="p-4 space-y-3">
-        <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
-        <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
+      <div className="aspect-[4/3] animate-pulse bg-zinc-100" />
+      <div className="space-y-3 p-4">
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100" />
         <div className="grid gap-2 pt-1">
-          <div className="h-3 w-2/3 rounded-full bg-zinc-100 animate-pulse" />
-          <div className="h-3 w-1/2 rounded-full bg-zinc-100 animate-pulse" />
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100" />
+          <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100" />
         </div>
-        <div className="h-10 w-full rounded-2xl bg-zinc-100 animate-pulse" />
+        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100" />
       </div>
     </div>
   );
@@ -88,12 +88,8 @@ export default function EventsStrip({
       <div className="relative overflow-hidden rounded-[1.75rem] border border-red-950/10 bg-[radial-gradient(circle_at_top_left,rgba(127,29,29,0.14),transparent_35%),linear-gradient(135deg,rgba(24,24,27,1)_0%,rgba(39,39,42,1)_50%,rgba(255,255,255,1)_120%)] px-5 py-6 text-white sm:px-6 sm:py-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">
-              Live on BuyMesho
-            </p>
-            <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">
-              What is happening now.
-            </h2>
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-red-200/80">Live on BuyMesho</p>
+            <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-white sm:text-3xl">What is happening now.</h2>
             <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-300 sm:text-base">
               See campus launches, workshops, parties, sports, and student moments before they fill up.
             </p>
@@ -115,9 +111,7 @@ export default function EventsStrip({
         {loading ? (
           Array.from({ length: skeletonCount }).map((_, index) => <EventCardSkeleton key={index} />)
         ) : events.length === 0 ? (
-          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
-            No events yet
-          </div>
+          <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">No events yet</div>
         ) : (
           events.map((item) => {
             const price = formatMoney(item.ticket_price);
@@ -126,8 +120,7 @@ export default function EventsStrip({
             const posterUrl = getPosterUrl(item);
             const posterAlt = getPosterAlt(item);
             const imageSrc = getOptimizedImageUrl(posterUrl, 480);
-            const snippet =
-              item.description.length > 88 ? `${item.description.slice(0, 88).trim()}…` : item.description;
+            const snippet = item.description.length > 88 ? `${item.description.slice(0, 88).trim()}…` : item.description;
 
             return (
               <article
@@ -146,19 +139,9 @@ export default function EventsStrip({
                     />
                   ) : null}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5" />
-                  <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-3 px-4 py-4">
-                    <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
-                      {item.event_type}
-                    </span>
-                    <span className="rounded-full border border-white/15 bg-black/25 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
-                      {item.ticket_mode}
-                    </span>
-                  </div>
                   <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 px-4 py-4 text-white">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">
-                        Featured event
-                      </p>
+                      <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/75">Featured event</p>
                       <h3 className="mt-2 max-w-[12rem] truncate text-xl font-black tracking-[-0.05em] leading-none">
                         {item.event_title}
                       </h3>
@@ -170,7 +153,7 @@ export default function EventsStrip({
                 </div>
 
                 <div className="p-4">
-                  <p className="text-sm leading-relaxed text-zinc-600 line-clamp-2">{snippet}</p>
+                  <p className="line-clamp-2 text-sm leading-relaxed text-zinc-600">{snippet}</p>
 
                   <div className="mt-4 grid gap-2 text-sm text-zinc-600">
                     <div className="flex items-center gap-2">
@@ -182,25 +165,25 @@ export default function EventsStrip({
 
                     <div className="flex items-start gap-2">
                       <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-red-900" />
-                      <span className="leading-relaxed text-zinc-700 line-clamp-2">
+                      <span className="line-clamp-2 leading-relaxed text-zinc-700">
                         {item.venue}
                         {item.location ? ` • ${item.location}` : ""}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
-                    <div>
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        Ticket price
-                      </p>
-                      <p className="mt-1 text-sm font-black tracking-tight text-zinc-950">{price}</p>
-                    </div>
-                    <div className="min-w-0 text-right">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
-                        Posted by
-                      </p>
-                      <p className="mt-1 truncate text-sm font-bold text-zinc-700">{item.organizer_name}</p>
+                  <div className="mt-3 overflow-hidden rounded-2xl border border-orange-200 bg-white">
+                    <div className="flex items-stretch">
+                      <button
+                        type="button"
+                        onClick={() => navigateToPath(`${EVENTS_PATH}?event=${item.id}`)}
+                        className="flex flex-1 items-center justify-center bg-orange-700 px-4 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-800"
+                      >
+                        Buy Ticket
+                      </button>
+                      <div className="flex min-w-[6.5rem] items-center justify-center border-l border-orange-200 bg-white px-4 py-3 text-sm font-black tracking-tight text-zinc-950">
+                        {price}
+                      </div>
                     </div>
                   </div>
                 </div>
