@@ -147,7 +147,7 @@ export default function ListingGallery({
 
         {videoUrl ? (
           <div className="mt-3">
-            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-black">
+            <div className="overflow-hidden rounded-2xl border border-blue-200 bg-black">
               <video src={videoUrl} controls className="w-full" />
             </div>
           </div>
