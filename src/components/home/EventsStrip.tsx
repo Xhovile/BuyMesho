@@ -125,7 +125,7 @@ export default function EventsStrip({
             return (
               <article
                 key={item.id}
-                className="group flex h-[480px] w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:h-[500px] sm:w-[260px]"
+                className="group flex h-[420px] w-[220px] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:h-[440px] sm:w-[260px]"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
                   <div className={`absolute inset-0 bg-gradient-to-br ${accent}`} />
