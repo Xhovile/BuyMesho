@@ -87,10 +87,10 @@ const CategorySection: FC<CategorySectionProps> = ({
   const visibleListings = listings.slice(0, visibleCount);
 
   return (
-    <div className="group relative overflow-hidden rounded-[1.65rem] border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-3 sm:p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+    <div className="group relative border-y border-zinc-200 bg-gradient-to-b from-white to-zinc-50 py-4 sm:py-5">
       <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-red-900 via-red-700 to-amber-300 opacity-70" />
 
-      <div className="flex items-start justify-between gap-3 sm:gap-4">
+      <div className="flex items-start justify-between gap-3 px-3 sm:px-5 sm:gap-4">
         <div className="min-w-0">
           <h3 className="text-[1rem] font-black tracking-tight text-zinc-950 sm:text-2xl">
             {title}
@@ -105,18 +105,20 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white sm:mt-4 sm:px-3 sm:py-1.5 sm:text-[11px]">
-        {liveLabel}
+      <div className="mt-3 px-3 sm:px-5">
+        <div className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white sm:px-3 sm:py-1.5 sm:text-[11px]">
+          {liveLabel}
+        </div>
       </div>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3">
+      <div className="mt-3 flex gap-2 overflow-x-auto px-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:px-5">
         {loading ? (
           <>
             <PreviewSkeleton />
             <PreviewSkeleton />
           </>
         ) : listings.length === 0 ? (
-          <p className="text-sm text-zinc-400">No listings yet</p>
+          <p className="px-1 text-sm text-zinc-400">No listings yet</p>
         ) : (
           <>
             {visibleListings.map((item) => (
@@ -153,14 +155,16 @@ const CategorySection: FC<CategorySectionProps> = ({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={() => navigateToExploreWithCategory(categoryKey)}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
-      >
-        View more
-        <ArrowRight className="w-4 h-4" />
-      </button>
+      <div className="px-3 sm:px-5">
+        <button
+          type="button"
+          onClick={() => navigateToExploreWithCategory(categoryKey)}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+        >
+          View more
+          <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 };
