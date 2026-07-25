@@ -37,6 +37,7 @@ export default function ListingStrip({
   viewMorePath?: string;
 }) {
   const isFeatured = variant === "featured";
+  const skeletonCount = typeof window !== "undefined" && window.innerWidth >= 640 ? 4 : 2;
 
   return (
     <section className="mx-[-1rem] w-[calc(100%+2rem)] rounded-none border-x-0 border-y border-zinc-200 bg-white px-4 py-6 shadow-sm sm:mx-0 sm:w-auto sm:rounded-[2rem] sm:border sm:p-8">
@@ -63,11 +64,7 @@ export default function ListingStrip({
 
       <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
         {loading ? (
-          <>
-            <ListingCardSkeleton />
-            <ListingCardSkeleton />
-            <ListingCardSkeleton />
-          </>
+          Array.from({ length: skeletonCount }).map((_, index) => <ListingCardSkeleton key={index} />)
         ) : listings.length === 0 ? (
           <div className="w-full rounded-3xl border border-zinc-200 bg-white p-6 text-sm text-zinc-500 shadow-sm">
             No listings yet
