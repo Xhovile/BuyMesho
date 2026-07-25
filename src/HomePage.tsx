@@ -154,12 +154,8 @@ export default function HomePage() {
 
   const visibleFeaturedSections = featuredSections.filter((section) =>
     isMobileViewport
-      ? [
-          HOME_CATEGORY_KEYS.phones,
-          HOME_CATEGORY_KEYS.food,
-          HOME_CATEGORY_KEYS.beauty,
-        ].includes(section.key)
-      : [HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.books].includes(section.key),
+      ? [HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.beauty].includes(section.key)
+      : [HOME_CATEGORY_KEYS.food, HOME_CATEGORY_KEYS.books].includes(section.key),
   );
 
   return (
