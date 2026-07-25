@@ -80,7 +80,7 @@ export default function ListingReviewComposer({
   };
 
   return (
-    <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <section className="rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm sm:p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-400">Leave a rating</p>
@@ -150,7 +150,7 @@ export default function ListingReviewComposer({
             type="button"
             onClick={onCancel}
             disabled={submitting}
-            className="inline-flex items-center justify-center rounded-full border border-zinc-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex items-center justify-center rounded-full border border-blue-200 bg-white px-5 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Cancel edit
           </button>
