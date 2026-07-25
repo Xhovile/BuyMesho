@@ -49,14 +49,22 @@ const CategorySection: FC<CategorySectionProps> = ({
   const [visibleCount, setVisibleCount] = useState(
     () => (typeof window !== "undefined" && window.innerWidth < 640 ? INITIAL_VISIBLE_COUNT_MOBILE : INITIAL_VISIBLE_COUNT_DESKTOP)
   );
+  const [isDesktopViewport, setIsDesktopViewport] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth >= 640;
+  });
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setVisibleCount(
-      typeof window !== "undefined" && window.innerWidth < 640
-        ? INITIAL_VISIBLE_COUNT_MOBILE
-        : INITIAL_VISIBLE_COUNT_DESKTOP,
-    );
+    const handleResize = () => {
+      const desktop = window.innerWidth >= 640;
+      setIsDesktopViewport(desktop);
+      setVisibleCount(desktop ? INITIAL_VISIBLE_COUNT_DESKTOP : INITIAL_VISIBLE_COUNT_MOBILE);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [categoryKey]);
 
   useEffect(() => {
@@ -85,6 +93,7 @@ const CategorySection: FC<CategorySectionProps> = ({
       : "No listings yet";
 
   const visibleListings = listings.slice(0, visibleCount);
+  const skeletonCount = isDesktopViewport ? 4 : 2;
 
   return (
     <div className="group relative border-y border-zinc-200 bg-gradient-to-b from-white to-zinc-50 py-4 sm:py-5">
@@ -113,10 +122,7 @@ const CategorySection: FC<CategorySectionProps> = ({
 
       <div className="mt-3 flex gap-2 overflow-x-auto pl-5 pr-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:pl-5 sm:pr-5">
         {loading ? (
-          <>
-            <PreviewSkeleton />
-            <PreviewSkeleton />
-          </>
+          Array.from({ length: skeletonCount }).map((_, index) => <PreviewSkeleton key={index} />)
         ) : listings.length === 0 ? (
           <p className="px-1 text-sm text-zinc-400">No listings yet</p>
         ) : (
