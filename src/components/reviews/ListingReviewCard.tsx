@@ -26,18 +26,18 @@ export default function ListingReviewCard({
   const showReplyComposer = Boolean(canReply && !isOwnReview);
 
   return (
-    <article className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm">
+    <article className="rounded-[2rem] border border-blue-200 bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h4 className="truncate text-sm font-extrabold text-zinc-950">{review.reviewer_name}</h4>
             {badge ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-500">
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-100 bg-blue-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-blue-600">
                 {badge}
               </span>
             ) : null}
             {isOwnReview ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-950 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
+              <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-zinc-950 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-white">
                 Your review
               </span>
             ) : null}
@@ -46,7 +46,7 @@ export default function ListingReviewCard({
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm font-extrabold text-zinc-900">
+          <div className="flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-extrabold text-zinc-900">
             <Star className="h-4 w-4 fill-amber-400 text-amber-500" />
             {review.rating.toFixed(1)}
           </div>
@@ -54,7 +54,7 @@ export default function ListingReviewCard({
             <button
               type="button"
               onClick={onEdit}
-              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
+              className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3 py-1.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
             >
               <Edit3 className="h-4 w-4" />
               Edit
@@ -72,7 +72,7 @@ export default function ListingReviewCard({
       </div>
 
       {review.seller_reply ? (
-        <div className="mt-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+        <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-500">
             <MessageSquareReply className="h-4 w-4" />
             Seller reply
@@ -85,7 +85,7 @@ export default function ListingReviewCard({
       {showReplyComposer ? <ReviewReplyComposer listingId={listingId} review={review} canReply={showReplyComposer} onSaved={onReviewChanged} /> : null}
 
       {!review.body ? (
-        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-500">
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-dashed border-blue-200 px-3 py-1.5 text-xs font-semibold text-zinc-500">
           <ShieldAlert className="h-4 w-4" />
           Rating only
         </div>
