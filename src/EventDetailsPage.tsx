@@ -9,14 +9,14 @@ import {
   ShoppingBag,
   Ticket,
   Trash2,
+  BarChart3,
 } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
-import { EVENTS_CREATE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
+import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
 import { startConversationFromEvent } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
-
 
 type EventRecord = {
   id: number;
@@ -131,10 +131,6 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
-function normalizeWhatsappNumber(raw: string) {
-  return raw.replace(/[^\d]/g, "");
-}
-
 function readEventCart(userUid: string) {
   try {
     const raw = window.localStorage.getItem(`${EVENT_CART_KEY}_${userUid}`);
@@ -160,6 +156,17 @@ function upsertEventCartItem(userUid: string, item: EventCartItem) {
   const next = current.filter((entry) => entry.eventId !== item.eventId);
   next.unshift(item);
   writeEventCart(userUid, next);
+}
+
+async function recordEventActivity(eventId: number, activity_type: "ticket_added_to_cart" | "ticket_link_clicked") {
+  try {
+    await apiFetch(`/api/events/${eventId}/activity`, {
+      method: "POST",
+      body: JSON.stringify({ activity_type }),
+    });
+  } catch {
+    // Analytics should never block the user flow.
+  }
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }) {
@@ -224,8 +231,10 @@ export default function EventDetailsPage() {
   const accent = posterAccent(event?.event_type || "");
   const startTime = formatClock(event?.start_time || "");
   const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
+  const isPublished = event?.status === "published";
   const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
-  const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid;
+  const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid && isPublished;
+  const canBuyOrCart = isPublished;
 
   const clearNotice = () => setNotice(null);
 
@@ -259,8 +268,8 @@ export default function EventDetailsPage() {
       return;
     }
 
-    if (!event.creator_uid) {
-      setNotice("This older event does not yet have an owner profile for messaging.");
+    if (!canMessageEvent) {
+      setNotice(event.creator_uid ? "This event is inactive right now." : "This older event does not yet have an owner profile for messaging.");
       return;
     }
 
@@ -272,10 +281,15 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleBuyTicket = () => {
+  const handleBuyTicket = async () => {
     if (!event) return;
+    if (!canBuyOrCart) {
+      setNotice("This event is inactive right now.");
+      return;
+    }
 
     if (event.ticket_link) {
+      await recordEventActivity(event.id, "ticket_link_clicked");
       window.open(event.ticket_link, "_blank", "noopener,noreferrer");
       return;
     }
@@ -290,16 +304,21 @@ export default function EventDetailsPage() {
 
     try {
       await apiFetch(`/api/events/${event.id}`, { method: "DELETE" });
-      navigateToPath(EVENTS_PATH, { replace: true });
+      navigateToPath(EVENTS_MANAGE_PATH, { replace: true });
     } catch (error: any) {
       setNotice(error?.message || "Could not cancel this event.");
     }
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!event) return;
     if (!firebaseUser?.uid) {
       navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      return;
+    }
+
+    if (!canBuyOrCart) {
+      setNotice("This event is inactive right now.");
       return;
     }
 
@@ -324,6 +343,7 @@ export default function EventDetailsPage() {
       addedAt: new Date().toISOString(),
     });
 
+    void recordEventActivity(event.id, "ticket_added_to_cart");
     setNotice("Ticket added to cart.");
   };
 
@@ -405,6 +425,12 @@ export default function EventDetailsPage() {
               </div>
             ) : null}
 
+            {!isPublished ? (
+              <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                This event is currently {event.status}. Buyers cannot message, buy tickets, or add it to cart until it is published again.
+              </div>
+            ) : null}
+
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <h1 className="max-w-4xl text-4xl font-black tracking-[-0.06em] leading-[0.94] text-zinc-950 sm:text-5xl lg:text-6xl">
                 {event.event_title}
@@ -461,6 +487,10 @@ export default function EventDetailsPage() {
             <div className="border-t border-zinc-200 pt-4">
               {canManageEvent ? (
                 <div className="mb-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+                    <BarChart3 className="h-4 w-4" />
+                    Creator dashboard
+                  </button>
                   <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
                     <Pencil className="h-4 w-4" />
                     Edit event
@@ -474,8 +504,9 @@ export default function EventDetailsPage() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
                 <button
                   type="button"
-                  onClick={handleBuyTicket}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-600"
+                  onClick={() => void handleBuyTicket()}
+                  disabled={!canBuyOrCart}
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <ExternalLink className="h-4 w-4 shrink-0" />
                   <span className="truncate">Buy Ticket</span>
@@ -483,10 +514,10 @@ export default function EventDetailsPage() {
 
                 <button
                   type="button"
-                  onClick={handleMessage}
+                  onClick={() => void handleMessage()}
                   disabled={!canMessageEvent}
                   className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
-                  title={!canMessageEvent ? "This event does not yet have an owner profile for messaging." : "Message event owner"}
+                  title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" />
                   <span className="truncate">Message</span>
@@ -494,8 +525,9 @@ export default function EventDetailsPage() {
 
                 <button
                   type="button"
-                  onClick={handleAddToCart}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400"
+                  onClick={() => void handleAddToCart()}
+                  disabled={!canBuyOrCart}
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <ShoppingBag className="h-4 w-4 shrink-0" />
                   <span className="truncate">Add to Cart</span>
