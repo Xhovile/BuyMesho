@@ -2,9 +2,9 @@ import "dotenv/config";
 
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
-const connectionString = process.env.DATABASE_URL?.trim();
+const rawConnectionString = process.env.DATABASE_URL?.trim();
 
-if (!connectionString) {
+if (!rawConnectionString) {
   throw new Error("DATABASE_URL is missing");
 }
 
@@ -16,6 +16,21 @@ function parseBoolean(value: string | undefined): boolean | undefined {
   return undefined;
 }
 
+function stripSslQueryParams(connectionString: string) {
+  try {
+    const url = new URL(connectionString);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("ssl");
+    url.searchParams.delete("sslcert");
+    url.searchParams.delete("sslkey");
+    url.searchParams.delete("sslrootcert");
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
+const connectionString = stripSslQueryParams(rawConnectionString);
 const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
