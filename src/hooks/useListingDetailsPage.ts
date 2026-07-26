@@ -350,7 +350,17 @@ export function useListingDetailsPage(): ListingDetailsPageState {
         method: "POST",
         body: JSON.stringify({ quantity }),
       })) as ListingActionResponse;
-      if (result?.listing) setListing((prev) => (prev ? { ...prev, ...result.listing } : prev));
+      if (result?.listing) {
+        setListing((prev) =>
+          prev
+            ? {
+                ...prev,
+                ...result.listing,
+                status: "available",
+              }
+            : prev
+        );
+      }
       openShareNotice("Listing restocked successfully.");
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to restock listing.");
@@ -400,114 +410,93 @@ export function useListingDetailsPage(): ListingDetailsPageState {
       openShareNotice("You cannot buy your own listing.");
       return;
     }
-
-    if (listing.status === "sold" || availableQuantity <= 0) {
-      openShareNotice("This listing is out of stock.");
-      return;
-    }
-
-    if (!firebaseUser) {
-      openAuthPrompt("buy");
-      return;
-    }
-
     setCheckoutOpen(true);
   };
 
   const handleAddToCart = async () => {
     if (!listing) return;
-
-    if (!firebaseUser) {
+    if (!firebaseUser?.uid) {
       openAuthPrompt("cart");
       return;
     }
 
-    const isOwner = firebaseUser.uid === listing.seller_uid;
-    const maxQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
-    if (isOwner) {
-      openShareNotice("You cannot add your own listing to cart.");
-      return;
-    }
-    if (listing.status === "sold" || maxQty <= 0) {
-      openShareNotice("This listing is out of stock.");
-      return;
-    }
-
-    const buyerCartItems = readBuyerCart();
-    const existingItem = buyerCartItems.find((item) => String(item.listingId) === String(listing.id));
-    const nextQuantity = Math.min(maxQty, (existingItem?.quantity ?? 0) + 1);
-    const unitPrice = Number(listing.price);
-
-    try {
-      await setBuyerCartItem({
-        listingId: String(listing.id),
-        listingTitle: listing.name,
-        listingImage: listing.photos?.[0] ?? null,
-        listingDescription: listing.description ?? null,
-        university: listing.university ?? null,
-        quantity: nextQuantity,
-        unitPrice,
-        totalPrice: unitPrice * nextQuantity,
-        availableQuantity: maxQty,
-        addedAt: new Date().toISOString(),
-      });
-
-      openShareNotice(
-        nextQuantity === existingItem?.quantity
-          ? "This listing is already at the available cart quantity."
-          : "Added to cart."
-      );
-    } catch (error: any) {
-      openShareNotice(error?.message || "Failed to add this item to cart.");
-    }
+    const buyerCart = readBuyerCart(firebaseUser.uid);
+    setBuyerCartItem(buyerCart, listing.id, 1);
+    openShareNotice("Added to cart.");
   };
 
   const handleMessageSeller = async () => {
     if (!listing) return;
-    if (!firebaseUser) {
+    if (!firebaseUser?.uid) {
       openAuthPrompt("message");
       return;
     }
 
     try {
-      const conversation = await startConversationFromListing(listing.id);
-      navigateToConversation(conversation.id);
+      const conversationId = await startConversationFromListing({
+        listing,
+        senderUid: firebaseUser.uid,
+      });
+      navigateToConversation(conversationId);
     } catch (error: any) {
-      openShareNotice(error?.message || "Failed to open conversation.");
+      openShareNotice(error?.message || "Failed to start conversation.");
     }
   };
 
   const handleRateSeller = async (stars: number) => {
-    if (!listing?.seller_uid || !firebaseUser) return;
-    if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
+    if (!listing || !listing.seller_uid) return;
+    if (!firebaseUser?.uid) {
+      openAuthPrompt("message");
+      return;
+    }
+
     setRatingSubmitting(true);
     try {
-      await apiFetch(`/api/users/${listing.seller_uid}/rating`, {
+      await apiFetch(`/api/sellers/${listing.seller_uid}/rating`, {
         method: "POST",
         body: JSON.stringify({ stars }),
       });
       await refreshRatingSummary(listing.seller_uid);
-    } catch (error) {
-      console.error("Failed to save seller rating", error);
+      openShareNotice("Thanks for your rating.");
+    } catch (error: any) {
+      openShareNotice(error?.message || "Failed to submit rating.");
     } finally {
       setRatingSubmitting(false);
     }
   };
 
   const handleRemoveRating = async () => {
-    if (!listing?.seller_uid || !firebaseUser) return;
+    if (!listing || !listing.seller_uid) return;
+    if (!firebaseUser?.uid) {
+      openAuthPrompt("message");
+      return;
+    }
+
     setRatingSubmitting(true);
     try {
-      await apiFetch(`/api/users/${listing.seller_uid}/rating`, {
-        method: "DELETE",
-      });
+      await apiFetch(`/api/sellers/${listing.seller_uid}/rating`, { method: "DELETE" });
       await refreshRatingSummary(listing.seller_uid);
-    } catch (error) {
-      console.error("Failed to remove seller rating", error);
+      openShareNotice("Rating removed.");
+    } catch (error: any) {
+      openShareNotice(error?.message || "Failed to remove rating.");
     } finally {
       setRatingSubmitting(false);
     }
   };
+
+  const onSelectImage = (idx: number) => {
+    if (!listing) return;
+    syncListingParamsInUrl(listing.id, idx);
+    setRouteState((prevState) => ({ ...prevState, imageIndex: idx }));
+  };
+
+  const onToggleFullscreen = (open: boolean) => setIsFullscreen(open);
+
+  const onRetry = () => {
+    window.location.reload();
+  };
+
+  const reportPath = `${REPORT_PATH}?listing=${listingId}`;
 
   return {
     firebaseUser,
@@ -567,14 +556,10 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     refreshRatingSummary,
     handleRateSeller,
     handleRemoveRating,
-    onSelectImage: (idx: number) => {
-      if (!listing) return;
-      syncListingParamsInUrl(listing.id, idx);
-      setRouteState((prev) => ({ ...prev, imageIndex: idx }));
-    },
-    onToggleFullscreen: (open: boolean) => setIsFullscreen(open),
-    onRetry: () => navigateBackOrPath(EXPLORE_PATH),
-    reportPath: `${REPORT_PATH}?listingId=${encodeURIComponent(listingId)}`,
+    onSelectImage,
+    onToggleFullscreen,
+    onRetry,
+    reportPath,
     isLoggedIn: !!firebaseUser,
   };
 }
