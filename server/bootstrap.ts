@@ -12,7 +12,6 @@ import { getConfiguredAdminEmails } from "./auth/adminAccess.js";
 import { requireAuth } from "./middleware/requireAuth.js";
 import { requireFirebaseUser } from "./middleware/requireFirebaseUser.js";
 import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.reconciliation.scheduler.js";
-import { clearLegacyEventsOnce } from "./modules/events/legacyEventCleanup.js";
 
 dotenv.config();
 
@@ -42,35 +41,6 @@ function registerFallbackHandlers(app: express.Express) {
 export async function startServer() {
   const app = createApp();
   const db: any = runMigrations();
-
-  clearLegacyEventsOnce(db);
-
-  app.get("/api/event-creator/dashboard", requireAuth, (req, res, next) => {
-    try {
-      const creator = db
-        .prepare(
-          `
-            SELECT uid, status, active_until
-            FROM event_creators
-            WHERE uid = ?
-            LIMIT 1
-          `
-        )
-        .get(req.user?.uid) as { uid?: string; status?: string; active_until?: string | null } | undefined;
-
-      const isApproved = creator?.status === "approved";
-      const isActiveUntilValid = !creator?.active_until || new Date(creator.active_until).getTime() >= Date.now();
-
-      if (!isApproved || !isActiveUntilValid) {
-        return res.status(403).json({ error: "Event creator access required" });
-      }
-
-      return next();
-    } catch (error) {
-      console.error("Event creator dashboard access check failed:", error);
-      return res.status(500).json({ error: "Failed to verify event creator access" });
-    }
-  });
 
   if (getConfiguredAdminEmails().length === 0) {
     console.warn(
