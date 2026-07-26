@@ -4,13 +4,15 @@ import {
   ExternalLink,
   Loader2,
   MessageCircle,
+  Pencil,
   Share2,
   ShoppingBag,
   Ticket,
+  Trash2,
 } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
-import { EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToMessages } from "./lib/appNavigation";
+import { EVENTS_CREATE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToMessages, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 
 
@@ -212,6 +214,7 @@ export default function EventDetailsPage() {
   const accent = posterAccent(event?.event_type || "");
   const startTime = formatClock(event?.start_time || "");
   const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
+  const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
 
   const clearNotice = () => setNotice(null);
 
@@ -257,6 +260,19 @@ export default function EventDetailsPage() {
     }
 
     setNotice("This event does not have a ticket link yet.");
+  };
+
+  const handleCancelEvent = async () => {
+    if (!event || !canManageEvent) return;
+    const confirmed = window.confirm("Cancel this event? It will be removed from public event listings.");
+    if (!confirmed) return;
+
+    try {
+      await apiFetch(`/api/events/${event.id}`, { method: "DELETE" });
+      navigateToPath(EVENTS_PATH, { replace: true });
+    } catch (error: any) {
+      setNotice(error?.message || "Could not cancel this event.");
+    }
   };
 
   const handleAddToCart = () => {
@@ -415,6 +431,18 @@ export default function EventDetailsPage() {
             </div>
 
             <div className="border-t border-zinc-200 pt-4">
+              {canManageEvent ? (
+                <div className="mb-3 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+                    <Pencil className="h-4 w-4" />
+                    Edit event
+                  </button>
+                  <button type="button" onClick={handleCancelEvent} className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">
+                    <Trash2 className="h-4 w-4" />
+                    Cancel event
+                  </button>
+                </div>
+              ) : null}
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
                 <button
                   type="button"

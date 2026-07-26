@@ -1,4 +1,5 @@
 import type { Express } from "express";
+import { requireAuth } from "../middleware/requireAuth.js";
 
 import { validateEventValues, getEventItemConfig } from "../../src/eventSchemas/index.js";
 
@@ -28,6 +29,8 @@ type EventRow = {
   created_at: string;
   updated_at: string;
 };
+
+type EventCreatorRow = { uid: string; status: string; active_until: string | null };
 
 type ParsedEventInput = {
   eventType: string;
@@ -105,7 +108,7 @@ function parseEventInput(body: any): { data: ParsedEventInput } | { error: strin
   const description = normalizeString(specValues.description);
   const contactWhatsapp = normalizeOptionalString(specValues.contact_whatsapp);
   const posterAlt = normalizeOptionalString(specValues.poster_alt);
-  const creatorUid = normalizeOptionalString(body.creator_uid);
+  const creatorUid = null;
   const status = normalizeString(body.status).toLowerCase() === "draft" ? "draft" : "published";
 
   if (!eventTitle || !organizerName || !eventDate || !startTime || !venue || !location || !ticketMode || !description) {
@@ -134,8 +137,84 @@ function parseEventInput(body: any): { data: ParsedEventInput } | { error: strin
   };
 }
 
+
+function addDaysIso(days: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function isEventCreatorActive(row: EventCreatorRow | undefined) {
+  if (!row || row.status !== "approved") return false;
+  if (!row.active_until) return true;
+  return new Date(row.active_until).getTime() >= Date.now();
+}
+
 export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
   const { db } = deps;
+
+  app.get("/api/event-creators/me", requireAuth, (req, res) => {
+    const uid = req.user!.uid;
+    try {
+      const creator = db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid);
+      const latestSubmission = db
+        .prepare(`SELECT * FROM event_creator_applications WHERE applicant_uid = ? ORDER BY created_at DESC, id DESC LIMIT 1`)
+        .get(uid);
+      return res.json({ creator: creator ?? null, latestSubmission: latestSubmission ?? null, canCreateEvents: isEventCreatorActive(creator) });
+    } catch (error) {
+      console.error("Failed to load event creator profile", error);
+      return res.status(500).json({ error: "Failed to load event creator profile" });
+    }
+  });
+
+  app.post("/api/event-creators", requireAuth, (req, res) => {
+    const uid = req.user!.uid;
+    const email = req.user?.email || normalizeString(req.body?.email);
+    const displayName = normalizeString(req.body?.display_name);
+    const organizationName = normalizeString(req.body?.organization_name);
+    const organizationType = normalizeString(req.body?.organization_type);
+    const contactWhatsapp = normalizeOptionalString(req.body?.contact_whatsapp);
+    const eventTypes = normalizeString(req.body?.event_types);
+    const reason = normalizeString(req.body?.reason);
+    const activeUntil = addDaysIso(30);
+
+    if (!displayName || !organizationName || !organizationType || !eventTypes || reason.length < 10) {
+      return res.status(400).json({ error: "Please complete the event creator onboarding form." });
+    }
+
+    try {
+      db.prepare(`
+        INSERT INTO event_creator_applications (
+          applicant_uid, applicant_email, display_name, organization_name, organization_type,
+          contact_whatsapp, event_types, reason, status, reviewed_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'approved', CURRENT_TIMESTAMP)
+      `).run(uid, email, displayName, organizationName, organizationType, contactWhatsapp, eventTypes, reason);
+
+      db.prepare(`
+        INSERT INTO event_creators (
+          uid, email, display_name, organization_name, organization_type, contact_whatsapp,
+          event_types, status, active_until, approved_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 'approved', ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT(uid) DO UPDATE SET
+          email = excluded.email,
+          display_name = excluded.display_name,
+          organization_name = excluded.organization_name,
+          organization_type = excluded.organization_type,
+          contact_whatsapp = excluded.contact_whatsapp,
+          event_types = excluded.event_types,
+          status = 'approved',
+          active_until = excluded.active_until,
+          approved_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+      `).run(uid, email, displayName, organizationName, organizationType, contactWhatsapp, eventTypes, activeUntil);
+
+      const creator = db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid);
+      return res.status(201).json({ success: true, creator, canCreateEvents: true });
+    } catch (error) {
+      console.error("Failed to save event creator onboarding", error);
+      return res.status(500).json({ error: "Failed to save event creator onboarding" });
+    }
+  });
 
   app.get("/api/events", (_req, res) => {
     try {
@@ -197,21 +276,29 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
       }
 
       const { data } = parsed;
+      const uid = req.user!.uid;
+      const creator = db.prepare(`SELECT uid, status, active_until FROM event_creators WHERE uid = ? LIMIT 1`).get(uid) as EventCreatorRow | undefined;
+      if (!isEventCreatorActive(creator)) {
+        return res.status(403).json({ error: "Approved event creator access is required to publish events." });
+      }
 
       if (eventId !== undefined) {
         const existing = db
           .prepare(
             `
-              SELECT id
+              SELECT id, creator_uid
               FROM events
               WHERE id = ? AND deleted_at IS NULL
               LIMIT 1
             `
           )
-          .get(eventId) as { id: number } | undefined;
+          .get(eventId) as { id: number; creator_uid: string | null } | undefined;
 
         if (!existing) {
           return res.status(404).json({ error: "Event not found" });
+        }
+        if (existing.creator_uid !== uid) {
+          return res.status(403).json({ error: "Only the event creator can edit this event." });
         }
 
         db.prepare(
@@ -296,7 +383,7 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
           `
         )
         .run(
-          data.creatorUid,
+          uid,
           data.eventType,
           data.eventTitle,
           data.organizerName,
@@ -335,8 +422,8 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     }
   };
 
-  app.post("/api/events", (req, res) => saveEvent(req, res));
-  app.put("/api/events/:id", (req, res) => {
+  app.post("/api/events", requireAuth, (req, res) => saveEvent(req, res));
+  app.put("/api/events/:id", requireAuth, (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isInteger(eventId)) {
       return res.status(400).json({ error: "Invalid event id" });
@@ -344,7 +431,7 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
 
     return saveEvent(req, res, eventId);
   });
-  app.patch("/api/events/:id", (req, res) => {
+  app.patch("/api/events/:id", requireAuth, (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isInteger(eventId)) {
       return res.status(400).json({ error: "Invalid event id" });
@@ -353,7 +440,7 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     return saveEvent(req, res, eventId);
   });
 
-  app.delete("/api/events/:id", (req, res) => {
+  app.delete("/api/events/:id", requireAuth, (req, res) => {
     const eventId = Number(req.params.id);
     if (!Number.isInteger(eventId)) {
       return res.status(400).json({ error: "Invalid event id" });
@@ -363,16 +450,19 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
       const existing = db
         .prepare(
           `
-            SELECT id
+            SELECT id, creator_uid
             FROM events
             WHERE id = ? AND deleted_at IS NULL
             LIMIT 1
           `
         )
-        .get(eventId) as { id: number } | undefined;
+        .get(eventId) as { id: number; creator_uid: string | null } | undefined;
 
       if (!existing) {
         return res.status(404).json({ error: "Event not found" });
+      }
+      if (existing.creator_uid !== req.user!.uid) {
+        return res.status(403).json({ error: "Only the event creator can cancel this event." });
       }
 
       db.prepare(

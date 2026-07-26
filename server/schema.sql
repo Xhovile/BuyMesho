@@ -102,6 +102,36 @@ CREATE TABLE IF NOT EXISTS listings (
   FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS event_creators (
+  uid TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  active_until TIMESTAMPTZ,
+  approved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_creator_applications (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  applicant_uid TEXT NOT NULL,
+  applicant_email TEXT,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS events (
   id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   creator_uid TEXT,
