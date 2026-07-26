@@ -211,7 +211,7 @@ function backfillPayoutRecords() {
 
     const currentSellerId = String(row.seller_id ?? '').trim() || null;
     const inferredSellerId =
-      currentSellerId ?? String(escrowLink?.seller_id ?? '').trim() || null ?? String(firstEvent?.seller_id ?? '').trim() || null;
+      currentSellerId ?? (String(escrowLink?.seller_id ?? '').trim() || null) ?? (String(firstEvent?.seller_id ?? '').trim() || null);
 
     const inferredOrderId = String(row.order_id ?? '').trim() || String(escrowLink?.order_id ?? '').trim() || null;
     const inferredEscrowId = String(row.escrow_id ?? '').trim() || String(escrowLink?.escrow_id ?? '').trim() || null;
