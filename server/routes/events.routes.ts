@@ -51,6 +51,20 @@ type ParsedEventInput = {
   status: string;
 };
 
+type EventActivitySummaryRow = {
+  event_id: number;
+  cart_adds: number;
+  ticket_clicks: number;
+  last_activity_at: string | null;
+};
+
+type EventMessageSummaryRow = {
+  event_id: number;
+  message_threads: number;
+  unread_messages: number;
+  last_message_at: string | null;
+};
+
 function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -159,7 +173,7 @@ function isEventCreatorActive(row: EventCreatorRow | undefined) {
   return new Date(row.active_until).getTime() >= Date.now();
 }
 
-function ensureEventCreatorSchema(db: any) {
+function ensureEventManagementSchema(db: any) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS event_creators (
       uid TEXT PRIMARY KEY,
@@ -190,13 +204,60 @@ function ensureEventCreatorSchema(db: any) {
       reviewed_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS event_activity (
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      event_id BIGINT NOT NULL,
+      actor_uid TEXT,
+      activity_type TEXT NOT NULL,
+      metadata TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+    );
   `);
+}
+
+function loadEventMessageSummaries(db: any, creatorUid: string) {
+  return db
+    .prepare(
+      `
+        SELECT
+          c.event_id AS event_id,
+          COUNT(*) AS message_threads,
+          COALESCE(SUM(CASE WHEN c.seller_unread_count > 0 THEN c.seller_unread_count ELSE 0 END), 0) AS unread_messages,
+          MAX(c.updated_at) AS last_message_at
+        FROM conversations c
+        WHERE c.event_id IS NOT NULL
+          AND c.seller_uid = ?
+        GROUP BY c.event_id
+      `
+    )
+    .all(creatorUid) as EventMessageSummaryRow[];
+}
+
+function loadEventActivitySummaries(db: any, creatorUid: string) {
+  return db
+    .prepare(
+      `
+        SELECT
+          e.id AS event_id,
+          COALESCE(SUM(CASE WHEN a.activity_type = 'ticket_added_to_cart' THEN 1 ELSE 0 END), 0) AS cart_adds,
+          COALESCE(SUM(CASE WHEN a.activity_type = 'ticket_link_clicked' THEN 1 ELSE 0 END), 0) AS ticket_clicks,
+          MAX(a.created_at) AS last_activity_at
+        FROM events e
+        LEFT JOIN event_activity a ON a.event_id = e.id
+        WHERE e.creator_uid = ?
+          AND e.deleted_at IS NULL
+        GROUP BY e.id
+      `
+    )
+    .all(creatorUid) as EventActivitySummaryRow[];
 }
 
 export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
   const { db } = deps;
 
-  ensureEventCreatorSchema(db);
+  ensureEventManagementSchema(db);
 
   app.get("/api/event-creators/me", requireAuth, (req, res) => {
     const uid = req.user!.uid;
@@ -261,6 +322,49 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     }
   });
 
+  app.get("/api/event-creator/dashboard", requireAuth, (req, res) => {
+    const uid = req.user!.uid;
+    try {
+      const creator = db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid);
+      const events = db
+        .prepare(
+          `
+            SELECT *
+            FROM events
+            WHERE creator_uid = ?
+              AND deleted_at IS NULL
+            ORDER BY created_at DESC, id DESC
+          `
+        )
+        .all(uid) as EventRow[];
+
+      const messageSummaries = loadEventMessageSummaries(db, uid);
+      const activitySummaries = loadEventActivitySummaries(db, uid);
+      const messageMap = new Map(messageSummaries.map((row) => [row.event_id, row]));
+      const activityMap = new Map(activitySummaries.map((row) => [row.event_id, row]));
+
+      return res.json({
+        creator: creator ?? null,
+        events: events.map((event) => {
+          const messages = messageMap.get(event.id);
+          const activity = activityMap.get(event.id);
+          return {
+            ...serializeEventRow(event),
+            message_threads: Number(messages?.message_threads || 0),
+            unread_messages: Number(messages?.unread_messages || 0),
+            last_message_at: messages?.last_message_at || null,
+            cart_adds: Number(activity?.cart_adds || 0),
+            ticket_clicks: Number(activity?.ticket_clicks || 0),
+            last_activity_at: activity?.last_activity_at || null,
+          };
+        }),
+      });
+    } catch (error) {
+      console.error("Failed to load event creator dashboard", error);
+      return res.status(500).json({ error: "Failed to load event creator dashboard" });
+    }
+  });
+
   app.get("/api/events", (_req, res) => {
     try {
       const items = db
@@ -269,6 +373,7 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
             SELECT *
             FROM events
             WHERE deleted_at IS NULL
+              AND status = 'published'
             ORDER BY created_at DESC, id DESC
             LIMIT 100
           `
@@ -308,6 +413,54 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     } catch (error) {
       console.error("Failed to load event", error);
       return res.status(500).json({ error: "Failed to load event" });
+    }
+  });
+
+  app.post("/api/events/:id/activity", (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    const activityType = normalizeString(req.body?.activity_type);
+    const allowedTypes = new Set(["ticket_added_to_cart", "ticket_link_clicked"]);
+    if (!allowedTypes.has(activityType)) {
+      return res.status(400).json({ error: "Invalid activity type" });
+    }
+
+    try {
+      const event = db
+        .prepare(
+          `
+            SELECT id
+            FROM events
+            WHERE id = ? AND deleted_at IS NULL
+            LIMIT 1
+          `
+        )
+        .get(eventId);
+
+      if (!event) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+
+      const metadata = isPlainObject(req.body?.metadata) ? JSON.stringify(req.body.metadata) : null;
+      db.prepare(
+        `
+          INSERT INTO event_activity (
+            event_id,
+            actor_uid,
+            activity_type,
+            metadata,
+            created_at
+          ) VALUES (?, NULL, ?, ?, CURRENT_TIMESTAMP)
+        `
+      ).run(eventId, activityType, metadata);
+
+      return res.status(201).json({ success: true });
+    } catch (error) {
+      console.error("Failed to record event activity", error);
+      return res.status(500).json({ error: "Failed to record event activity" });
     }
   });
 
@@ -483,6 +636,63 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
     }
 
     return saveEvent(req, res, eventId);
+  });
+
+  app.patch("/api/event-creator/events/:id/status", requireAuth, (req, res) => {
+    const eventId = Number(req.params.id);
+    if (!Number.isInteger(eventId)) {
+      return res.status(400).json({ error: "Invalid event id" });
+    }
+
+    const status = normalizeString(req.body?.status).toLowerCase();
+    if (!["published", "inactive"].includes(status)) {
+      return res.status(400).json({ error: "Invalid event status" });
+    }
+
+    try {
+      const existing = db
+        .prepare(
+          `
+            SELECT id, creator_uid
+            FROM events
+            WHERE id = ? AND deleted_at IS NULL
+            LIMIT 1
+          `
+        )
+        .get(eventId) as { id: number; creator_uid: string | null } | undefined;
+
+      if (!existing) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      if (existing.creator_uid !== req.user!.uid) {
+        return res.status(403).json({ error: "Only the event creator can update this event." });
+      }
+
+      db.prepare(
+        `
+          UPDATE events
+          SET status = ?,
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `
+      ).run(status, eventId);
+
+      const row = db
+        .prepare(
+          `
+            SELECT *
+            FROM events
+            WHERE id = ?
+            LIMIT 1
+          `
+        )
+        .get(eventId) as EventRow | undefined;
+
+      return res.json({ success: true, event: row ? serializeEventRow(row) : null });
+    } catch (error) {
+      console.error("Failed to update event status", error);
+      return res.status(500).json({ error: "Failed to update event status" });
+    }
   });
 
   app.delete("/api/events/:id", requireAuth, (req, res) => {
