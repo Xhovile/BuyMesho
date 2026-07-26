@@ -289,7 +289,7 @@ export default function EventDetailsPage() {
     }
 
     if (event.ticket_link) {
-      await recordEventActivity(event.id, "ticket_link_clicked");
+      void recordEventActivity(event.id, "ticket_link_clicked");
       window.open(event.ticket_link, "_blank", "noopener,noreferrer");
       return;
     }
