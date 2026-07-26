@@ -41,18 +41,33 @@ function parseBoolean(value: string | undefined): boolean | undefined {
   return undefined;
 }
 
+function stripSslQueryParams(connectionString: string) {
+  try {
+    const url = new URL(connectionString);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("ssl");
+    url.searchParams.delete("sslcert");
+    url.searchParams.delete("sslkey");
+    url.searchParams.delete("sslrootcert");
+    return url.toString();
+  } catch {
+    return connectionString;
+  }
+}
+
 function createPgPool() {
   const connectionString = process.env.DATABASE_URL?.trim();
   if (!connectionString) {
     throw new Error("DATABASE_URL is missing");
   }
 
+  const normalizedConnectionString = stripSslQueryParams(connectionString);
   const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
   const sslEnabled = sslMode !== "disable";
   const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 
   return new Pool({
-    connectionString,
+    connectionString: normalizedConnectionString,
     ssl: sslEnabled
       ? {
           rejectUnauthorized: sslRejectUnauthorized,
@@ -258,20 +273,3 @@ export class PgCompatDatabase {
   }
 
   pragma(_statement: string): void {}
-  transaction<T extends (...args: any[]) => any>(fn: T): T {
-    return ((...args: any[]) => fn(...args)) as T;
-  }
-  close(): void {
-    void closePool();
-  }
-}
-
-export const postgresDb = new PgCompatDatabase();
-export function getPaymentDb() {
-  return postgresDb;
-}
-export async function getDatabaseClient(): Promise<PoolClient> {
-  return getClient();
-}
-export { pool, query, closePool, getClient, withTransaction };
-export type { QueryResultRow };
