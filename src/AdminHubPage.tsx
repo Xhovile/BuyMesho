@@ -1,11 +1,13 @@
-import { ClipboardList, ShieldCheck, Webhook } from "lucide-react";
+import { CalendarDays, ClipboardList, ShieldCheck, Webhook } from "lucide-react";
 import type { ComponentType, MouseEvent } from "react";
 import {
+  ADMIN_EVENTS_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PAYMENTS_PATH,
   ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
+  navigateToAdminEvents,
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
   navigateToAdminPayoutDestinations,
@@ -89,6 +91,16 @@ export default function AdminHubPage() {
           }}
         />
         <AdminOverviewCard
+          title="Event Moderation"
+          description="Review event creators, posted events, and moderation activity."
+          icon={CalendarDays}
+          path={ADMIN_EVENTS_PATH}
+          onClick={(event) => {
+            event.preventDefault();
+            navigateToAdminEvents();
+          }}
+        />
+        <AdminOverviewCard
           title="Payments & Webhooks"
           description="Inspect payment events and webhook activity."
           icon={Webhook}
@@ -119,10 +131,10 @@ export default function AdminHubPage() {
         </p>
         <button
           type="button"
-          onClick={() => navigateToPath(ADMIN_MODERATION_QUEUE_PATH)}
+          onClick={() => navigateToPath(ADMIN_EVENTS_PATH)}
           className="mt-4 inline-flex items-center rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
         >
-          Open Moderation Queue
+          Open Event Moderation
         </button>
       </section>
     </AdminWorkspaceLayout>
