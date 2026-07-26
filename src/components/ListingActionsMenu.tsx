@@ -276,6 +276,12 @@ export default function ListingActionsMenu({
   };
 
   const menuLabel = useMemo(() => (isOwner ? "Listing actions" : "More options"), [isOwner]);
+  const dropdownPosition =
+    variant === "detail"
+      ? isOwner
+        ? "right-0 top-full mt-2 w-72 max-w-[calc(100vw-1rem)] z-[70] md:right-0 md:left-auto origin-top-right"
+        : "left-0 top-full mt-2 w-72 max-w-[calc(100vw-1rem)] z-[70] md:left-0 md:right-auto origin-top-left"
+      : "right-0 top-12 w-56";
 
   return (
     <>
@@ -300,11 +306,7 @@ export default function ListingActionsMenu({
 
         {open ? (
           <div
-            className={`absolute ${
-              variant === "detail"
-                ? "right-0 top-full mt-2 w-72 max-w-[calc(100vw-1rem)] z-[70] md:right-0 md:left-auto"
-                : "right-0 top-12 w-56"
-            } overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
+            className={`absolute ${dropdownPosition} overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl`}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
           >
@@ -338,7 +340,8 @@ export default function ListingActionsMenu({
                   className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50"
                 >
                   Report listing
-                </button>                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
+                </button>
+                <button type="button" onClick={handleShare} className="block w-full px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
                   <span className="inline-flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
                     Share listing
