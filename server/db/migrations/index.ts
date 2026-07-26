@@ -281,7 +281,7 @@ export function runMigrations() {
   normalizeHardDeleteAfterColumn();
   backfillPayoutRecords();
   backfillPaymentRecords();
-  ensurePayoutLifecycleSchema(postgresDb);
+  ensurePayoutLifecycleSchema();
   updateSellerPayoutAccountColumns();
   initPaymentSchema(postgresDb);
 }
