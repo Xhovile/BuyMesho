@@ -200,8 +200,7 @@ function ListingRow({
 }
 
 export default function MyListingsPage() {
-  const { firebaseUser, authLoading, profile, profileLoading } =
-    useAccountProfile();
+  const { firebaseUser, authLoading, profile, profileLoading } = useAccountProfile();
   const [listings, setListings] = useState<Listing[]>([]);
   const [loadingListings, setLoadingListings] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
@@ -326,7 +325,7 @@ export default function MyListingsPage() {
       if (result?.listing) {
         setListings((prev) =>
           prev.map((item) =>
-            item.id === result.listing.id ? { ...item, ...result.listing } : item,
+            item.id === result.listing.id ? { ...item, ...result.listing, status: "available" } : item,
           ),
         );
       }
@@ -418,42 +417,3 @@ export default function MyListingsPage() {
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                  Seller performance
-                </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">
-                  My Listings
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-700 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
-              >
-                Open Dashboard
-              </button>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {listings.map((listing) => (
-              <div key={listing.id} className="min-w-0">
-                <ListingRow
-                  listing={listing}
-                  currentUid={firebaseUser?.uid}
-                  onEdit={(item) => navigateToEditListing(item.id)}
-                  onDelete={(id) => void handleDeleteListing(id)}
-                  onToggleStatus={(item) => void handleToggleStatus(item)}
-                  onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
-                  onRestock={(item, quantity) => void handleRestock(item, quantity)}
-                  onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
-                  onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </AccountPageShell>
-  );
-}
