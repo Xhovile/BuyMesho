@@ -443,10 +443,10 @@ export default function EventsCreatePage() {
         if (!active) return;
         setCanCreateEvents(response?.canCreateEvents === true);
         setCreatorError(null);
-      } catch (error: any) {
+      } catch {
         if (!active) return;
-        setCreatorError(error?.message || "Could not verify event creator access.");
         setCanCreateEvents(false);
+        setCreatorError(null);
       } finally {
         if (active) setCreatorLoading(false);
       }
@@ -780,64 +780,67 @@ export default function EventsCreatePage() {
 
                 <section className="rounded-[1.75rem] border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
                   <div className="flex items-center justify-between gap-4">
-                    <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">Poster</h2>
-                    <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-zinc-600">Pick a poster from your device gallery. It will upload immediately.</p>
-                  <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handlePosterChange} />
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    <h2 className="text-sm font-extrabold uppercase tracking-[0.2em] text-zinc-500">Poster image</h2>
                     <button
                       type="button"
                       onClick={handlePosterPick}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={posterUploading}
+                      className="inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-bold text-zinc-900 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <Upload className="h-4 w-4" />
-                      {posterAssetUrl ? "Change poster" : "Upload poster"}
+                      <Upload className="h-3.5 w-3.5" />
+                      {posterUploading ? "Uploading..." : posterAssetUrl ? "Replace poster" : "Upload poster"}
                     </button>
-                    {posterAssetUrl ? <button type="button" onClick={() => setPosterAssetUrl("")} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"> <X className="h-4 w-4" /> Remove poster </button> : null}
                   </div>
-                  {posterAssetUrl ? (
-                    <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white">
-                      <img src={posterAssetUrl} alt="Uploaded poster preview" className="h-56 w-full object-cover" />
-                    </div>
-                  ) : null}
+                  <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                    The poster is optional, but it helps the event stand out in the directory and details page.
+                  </p>
+                  <input ref={posterInputRef} type="file" accept="image/*" className="hidden" onChange={handlePosterChange} />
+                  {posterAssetUrl ? <p className="mt-3 break-words text-xs font-medium text-zinc-600">Poster URL: {posterAssetUrl}</p> : null}
                 </section>
+              </div>
 
-                {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
+              {formError ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{formError}</div> : null}
 
+              <div className="flex flex-wrap gap-3">
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-red-900/20 transition-colors hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-zinc-950/10 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Saving..." : isEditing ? "Save changes" : "Publish event"}
-                  <ArrowRight className="h-4 w-4" />
+                  {!submitting ? <ArrowRight className="h-4 w-4" /> : null}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateBackOrPath(EVENTS_PATH)}
+                  className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-900 transition hover:bg-zinc-50"
+                >
+                  Cancel
                 </button>
               </div>
             </form>
           </section>
 
-          <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6">
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Live preview</p>
-              <h2 className="mt-2 text-2xl font-black tracking-[-0.05em] text-zinc-950">{previewTitle}</h2>
-              <p className="mt-2 text-sm text-zinc-600">{previewLocation || "Location preview"}</p>
-              <div className="mt-5 rounded-[1.75rem] border border-zinc-200 bg-zinc-50 p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Date</p>
-                  <p className="text-sm font-semibold text-zinc-900">{fieldValueAsText(previewDate)}</p>
+          <aside className="self-start rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(0,0,0,0.15)] sm:p-6 lg:sticky lg:top-24">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Live preview</p>
+            <div className="mt-4 overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-zinc-50">
+              <div className="aspect-[4/3] bg-gradient-to-br from-red-900 via-zinc-950 to-black">
+                {posterAssetUrl ? <img src={posterAssetUrl} alt={previewTitle} className="h-full w-full object-cover" /> : null}
+              </div>
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-lg font-black tracking-[-0.04em] text-zinc-950">{previewTitle}</h3>
+                    <p className="mt-1 text-sm font-semibold text-zinc-600">{previewDate ? fieldValueAsText(previewDate) : "Date to be announced"}</p>
+                  </div>
+                  <p className="shrink-0 text-right text-base font-extrabold text-red-900">{previewPrice}</p>
                 </div>
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket mode</p>
-                  <p className="text-sm font-semibold text-zinc-900">{fieldValueAsText(previewTicketMode)}</p>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-4">
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Ticket price</p>
-                  <p className="text-sm font-semibold text-red-900">{previewPrice}</p>
+                <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-zinc-600">
+                  {previewLocation ? <span className="rounded-full bg-white px-3 py-1 shadow-sm">{previewLocation}</span> : null}
+                  {previewTicketMode ? <span className="rounded-full bg-white px-3 py-1 shadow-sm">{fieldValueAsText(previewTicketMode)}</span> : null}
                 </div>
               </div>
-            </section>
+            </div>
           </aside>
         </div>
       </main>
