@@ -225,6 +225,7 @@ export default function EventDetailsPage() {
   const startTime = formatClock(event?.start_time || "");
   const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
   const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
+  const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid;
 
   const clearNotice = () => setNotice(null);
 
@@ -255,6 +256,11 @@ export default function EventDetailsPage() {
     if (!event) return;
     if (!firebaseUser?.uid) {
       navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      return;
+    }
+
+    if (!event.creator_uid) {
+      setNotice("This older event does not yet have an owner profile for messaging.");
       return;
     }
 
@@ -478,7 +484,9 @@ export default function EventDetailsPage() {
                 <button
                   type="button"
                   onClick={handleMessage}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600"
+                  disabled={!canMessageEvent}
+                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  title={!canMessageEvent ? "This event does not yet have an owner profile for messaging." : "Message event owner"}
                 >
                   <MessageCircle className="h-4 w-4 shrink-0" />
                   <span className="truncate">Message</span>
