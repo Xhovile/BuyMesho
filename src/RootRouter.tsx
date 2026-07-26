@@ -7,6 +7,7 @@ import {
   ADMIN_SETUP_PATH,
   ADMIN_BALANCE_PATH,
   EVENTS_CREATE_PATH,
+  EVENTS_MANAGE_PATH,
   EVENTS_PATH,
   getAppRouteFromLocation,
   HOME_PATH,
@@ -81,6 +82,7 @@ const DisputesPage = lazy(() => import("./DisputesPage"));
 const EventsDirectoryPage = lazy(() => import("./EventsDirectoryPage"));
 const EventDetailsPage = lazy(() => import("./EventDetailsPage"));
 const EventsCreatePage = lazy(() => import("./EventsCreatePage"));
+const EventCreatorDashboardPage = lazy(() => import("./EventCreatorDashboardPage"));
 
 function RouteLoader({ route }: { route: AppRoute }) {
   const useBarLoader = route === "home" || route === "explore";
@@ -144,6 +146,7 @@ export default function RootRouter() {
   const isOrderDisputePath = locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute");
   const isOrderTrackingPath = locationPath.startsWith("/orders/") && !locationPath.endsWith("/dispute");
   const isEventsCreatePath = locationPath === EVENTS_CREATE_PATH;
+  const isEventsManagePath = locationPath === EVENTS_MANAGE_PATH;
   const isEventsDirectoryPath = locationPath === EVENTS_PATH && !new URLSearchParams(locationSearch).has("event");
   const isEventDetailsPath = locationPath === EVENTS_PATH && new URLSearchParams(locationSearch).has("event");
 
@@ -179,6 +182,7 @@ export default function RootRouter() {
       "seller_dashboard",
       "seller_payouts",
       "messages",
+      "event_creator_dashboard",
       "admin",
       "admin_payments",
       "admin_payouts",
@@ -193,6 +197,7 @@ export default function RootRouter() {
 
     const requiresAuth =
       locationPath === EVENTS_CREATE_PATH ||
+      locationPath === EVENTS_MANAGE_PATH ||
       locationPath.startsWith("/payments") ||
       locationPath === "/buyer-payments" ||
       locationPath === "/cart" ||
@@ -220,6 +225,8 @@ export default function RootRouter() {
       <Suspense fallback={<RouteLoader route={route} />}>
         {isEventsCreatePath ? (
           <EventsCreatePage />
+        ) : isEventsManagePath ? (
+          <EventCreatorDashboardPage />
         ) : isEventDetailsPath ? (
           <EventDetailsPage />
         ) : isEventsDirectoryPath ? (
@@ -258,18 +265,28 @@ export default function RootRouter() {
           <PaymentMethodPage />
         ) : route === "about" ? (
           <AboutPage />
-        ) : route === "home" ? (
-          <HomePage />
-        ) : route === "explore" ? (
-          <App />
         ) : route === "category" ? (
           <CategoryPage />
+        ) : route === "explore" ? (
+          <App />
         ) : route === "saved" ? (
           <SavedPage />
         ) : route === "hidden" ? (
           <HiddenCollectionsPage />
+        ) : route === "login" ? (
+          <LoginPage />
+        ) : route === "signup" ? (
+          <SignupPage />
+        ) : route === "forgot_password" ? (
+          <ForgotPasswordPage />
         ) : route === "profile" ? (
           <ProfilePage />
+        ) : route === "verify_email" ? (
+          <VerifyEmailPage />
+        ) : route === "edit_profile" ? (
+          <EditProfilePage />
+        ) : route === "edit_account" ? (
+          <EditAccountPage />
         ) : route === "settings" ? (
           <SettingsPage />
         ) : route === "privacy" ? (
@@ -286,66 +303,58 @@ export default function RootRouter() {
           <SellerDashboardPage />
         ) : route === "seller_payouts" ? (
           <SellerPayoutsPage />
+        ) : route === "my_listings" ? (
+          <MyListingsPage />
         ) : route === "messages" ? (
-          isMessageThread ? <MessageThreadPage /> : <MessagesInboxPage />
+          isMessageThread ? (
+            <MessageThreadPage />
+          ) : (
+            <MessagesInboxPage />
+          )
         ) : route === "create" ? (
           <CreateListingPage />
         ) : route === "edit" ? (
           <EditListingPage />
-        ) : route === "login" ? (
-          <LoginPage />
-        ) : route === "signup" ? (
-          <SignupPage />
-        ) : route === "forgot_password" ? (
-          <ForgotPasswordPage />
-        ) : route === "verify_email" ? (
-          <VerifyEmailPage />
-        ) : route === "edit_profile" ? (
-          <EditProfilePage />
-        ) : route === "edit_account" ? (
-          <EditAccountPage />
-        ) : route === "become_seller" ? (
-          <BecomeSellerPage />
-        ) : route === "change_password" ? (
-          <ChangePasswordPage />
-        ) : route === "change_email" ? (
-          <ChangeEmailPage />
-        ) : route === "email_action" ? (
-          <EmailActionPage />
-        ) : route === "my_listings" ? (
-          <MyListingsPage />
         ) : route === "admin" ? (
-          <AdminRouteGuard><AdminHubPage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminHubPage />
+          </AdminRouteGuard>
         ) : route === "admin_payments" ? (
-          <AdminRouteGuard><AdminPaymentsPage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminPaymentsPage />
+          </AdminRouteGuard>
         ) : route === "admin_payouts" ? (
-          <AdminRouteGuard><AdminPayoutsManager /></AdminRouteGuard>
-        ) : route === "admin_payout_destinations" ? (
-          <AdminRouteGuard><AdminPayoutDestinationRequestsPage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminPayoutsManager />
+          </AdminRouteGuard>
         ) : route === "admin_reports" ? (
-          <AdminRouteGuard><AdminReportsPage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminReportsPage />
+          </AdminRouteGuard>
         ) : route === "admin_seller_applications" ? (
-          <AdminRouteGuard><AdminSellerApplicationsPage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminSellerApplicationsPage />
+          </AdminRouteGuard>
         ) : route === "admin_moderation_queue" ? (
-          <AdminRouteGuard><AdminModerationQueuePage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminModerationQueuePage />
+          </AdminRouteGuard>
         ) : route === "admin_audit" ? (
-          <AdminRouteGuard><AdminAuditLogPage /></AdminRouteGuard>
-        ) : route === "admin_balance" ? (
-          <AdminRouteGuard><AdminBalancePage /></AdminRouteGuard>
+          <AdminRouteGuard>
+            <AdminAuditLogPage />
+          </AdminRouteGuard>
         ) : route === "admin_setup" ? (
-          <AdminRouteGuard><AdminSetupPage /></AdminRouteGuard>
-        ) : route === "payment_return" ? (
-          <PaymentReturnPage />
-        ) : route === "payment_method" ? (
-          <PaymentMethodPage />
-        ) : route === "track_order" ? (
-          <TrackOrderPage />
-        ) : route === "disputes" ? (
-          <DisputesPage />
-        ) : route === "buyer_payments" ? (
-          <BuyerPaymentsPage />
-        ) : route === "cart" ? (
-          <CartPage />
+          <AdminRouteGuard>
+            <AdminSetupPage />
+          </AdminRouteGuard>
+        ) : route === "admin_balance" ? (
+          <AdminRouteGuard>
+            <AdminBalancePage />
+          </AdminRouteGuard>
+        ) : route === "admin_payout_destinations" ? (
+          <AdminRouteGuard>
+            <AdminPayoutDestinationRequestsPage />
+          </AdminRouteGuard>
         ) : (
           <HomePage />
         )}
