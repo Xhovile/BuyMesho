@@ -273,13 +273,13 @@ export default function RootRouter() {
         ) : route === "settings" ? (
           <SettingsPage />
         ) : route === "privacy" ? (
-          <PrivacyPolicyPage />
+          <PrivacyPolicyPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : route === "terms" ? (
-          <TermsPage />
+          <TermsPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : route === "safety" ? (
-          <SafetyTipsPage />
+          <SafetyTipsPage onBack={() => navigateToPath(HOME_PATH)} />
         ) : route === "report" ? (
-          <ReportProblemPage />
+          <ReportProblemPage onBack={() => navigateToPath(HOME_PATH)} isLoggedIn={!!firebaseUser} />
         ) : route === "seller" ? (
           <SellerProfilePage />
         ) : route === "seller_dashboard" ? (
@@ -350,7 +350,7 @@ export default function RootRouter() {
           <HomePage />
         )}
       </Suspense>
-      {showScrollTop ? <ScrollToTopFab /> : null}
+      <ScrollToTopFab show={showScrollTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
     </>
   );
 }

@@ -7,6 +7,7 @@ import type {
   ListingSpecValidationResult,
   ListingSpecValues,
 } from "../listingSchemas/core.js";
+export type { EventSpecField, EventSpecValue } from "./core.js";
 import {
   EVENT_CATEGORY,
   EVENT_DELIVERY_MODE_OPTIONS,

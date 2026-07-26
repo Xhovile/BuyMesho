@@ -9,7 +9,8 @@ function initSchema() {
   db.exec(`
     CREATE TABLE IF NOT EXISTS conversations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      listing_id INTEGER NOT NULL,
+      listing_id INTEGER,
+      event_id INTEGER,
       buyer_uid TEXT NOT NULL,
       seller_uid TEXT NOT NULL,
       last_message_preview TEXT,
@@ -17,9 +18,16 @@ function initSchema() {
       buyer_unread_count INTEGER NOT NULL DEFAULT 0,
       seller_unread_count INTEGER NOT NULL DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (listing_id, buyer_uid, seller_uid)
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_listing_thread
+    ON conversations (listing_id, buyer_uid, seller_uid)
+    WHERE listing_id IS NOT NULL;
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_event_thread
+    ON conversations (event_id, buyer_uid, seller_uid)
+    WHERE event_id IS NOT NULL;
 
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

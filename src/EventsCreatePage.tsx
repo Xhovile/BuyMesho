@@ -10,6 +10,7 @@ import {
   getEventItemConfig,
   getEventItemTypes,
   type EventSpecField,
+  type EventSpecValue,
   validateEventValues,
 } from "./eventSchemas";
 
@@ -29,7 +30,7 @@ type SavedEvent = {
   description: string;
   contact_whatsapp: string | null;
   poster_alt: string | null;
-  spec_values: Record<string, unknown>;
+  spec_values: Record<string, EventSpecValue>;
   status: string;
   created_at: string;
   updated_at: string;
@@ -83,7 +84,7 @@ function isTimeLikeField(field: EventSpecField) {
   return field.key.toLowerCase().includes("time");
 }
 
-function normalizeNumberFields(fields: EventSpecField[], values: Record<string, unknown>) {
+function normalizeNumberFields(fields: EventSpecField[], values: Record<string, EventSpecValue>) {
   const nextValues: Record<string, unknown> = { ...values };
 
   for (const field of fields) {
@@ -121,7 +122,7 @@ function getPosterAssetUrlFromEvent(event: SavedEvent) {
 
 function buildPrefilledValues(event: SavedEvent) {
   const base = createEmptyEventValues(event.event_type);
-  const merged: Record<string, unknown> = {
+  const merged: Record<string, EventSpecValue> = {
     ...base,
     ...(event.spec_values ?? {}),
     event_title: event.event_title,
@@ -311,7 +312,7 @@ function TimePicker({ value, onChange }: { value: unknown; onChange: (nextValue:
   );
 }
 
-function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: unknown; error?: string; onChange: (nextValue: unknown) => void }) {
+function RenderField({ field, value, error, onChange }: { field: EventSpecField; value: EventSpecValue; error?: string; onChange: (nextValue: EventSpecValue) => void }) {
   const baseClass =
     "mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10";
 
@@ -397,7 +398,7 @@ export default function EventsCreatePage() {
   const isEditing = editingEventId !== null;
 
   const [eventType, setEventType] = useState(INITIAL_EVENT_TYPE);
-  const [values, setValues] = useState<Record<string, unknown>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
+  const [values, setValues] = useState<Record<string, EventSpecValue>>(() => createEmptyEventValues(INITIAL_EVENT_TYPE));
   const [posterAssetUrl, setPosterAssetUrl] = useState("");
   const [posterUploading, setPosterUploading] = useState(false);
   const [loadingExistingEvent, setLoadingExistingEvent] = useState(isEditing);
@@ -611,7 +612,7 @@ export default function EventsCreatePage() {
   const previewSource = values;
   const previewTitle = String(previewSource.event_title || previewSource.theme || previewSource.event_focus || eventType);
   const previewDate = previewSource.event_date || previewSource.registration_deadline || previewSource.start_time;
-  const previewLocation = previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization;
+  const previewLocation = fieldValueAsText(previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization);
   const previewTicketMode = previewSource.ticket_mode;
   const previewPrice = formatMoney(previewSource.ticket_price);
 

@@ -235,7 +235,9 @@ export interface ListingReviewFeedResponse {
 
 export interface Conversation {
   id: number;
-  listing_id: number;
+  listing_id: number | null;
+  event_id?: number | null;
+  thread_type?: "listing" | "event";
   buyer_uid: string;
   seller_uid: string;
   last_message_preview: string | null;
@@ -252,6 +254,15 @@ export interface Conversation {
     photos: string[];
     university: string;
   };
+  event?: {
+    id: number;
+    title: string;
+    organizer_name: string;
+    price: number;
+    status: string;
+    location: string;
+    type: string;
+  } | null;
   seller: {
     uid: string;
     business_name: string;

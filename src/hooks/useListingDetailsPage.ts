@@ -23,7 +23,7 @@ import {
   hideSellerUid,
 } from "../lib/hiddenCollections";
 import { type ListingActionResponse, type SectionKey, type SellerProfile, specValue } from "../components/listingDetails/listingDetailsUtils";
-import { readBuyerCart, setBuyerCartItem } from "../lib/buyerState";
+import { setBuyerCartItem } from "../lib/buyerState";
 import { useListingDetailsData } from "./useListingDetailsData";
 
 export type ListingDetailsPageState = {
@@ -420,8 +420,18 @@ export function useListingDetailsPage(): ListingDetailsPageState {
       return;
     }
 
-    const buyerCart = readBuyerCart(firebaseUser.uid);
-    setBuyerCartItem(buyerCart, listing.id, 1);
+    await setBuyerCartItem({
+      listingId: String(listing.id),
+      listingTitle: listing.name,
+      listingImage: listing.photos?.[0] ?? null,
+      listingDescription: listing.description ?? null,
+      university: listing.university ?? null,
+      quantity: 1,
+      unitPrice: Number(listing.price || 0),
+      totalPrice: Number(listing.price || 0),
+      availableQuantity,
+      addedAt: new Date().toISOString(),
+    });
     openShareNotice("Added to cart.");
   };
 
@@ -433,11 +443,8 @@ export function useListingDetailsPage(): ListingDetailsPageState {
     }
 
     try {
-      const conversationId = await startConversationFromListing({
-        listing,
-        senderUid: firebaseUser.uid,
-      });
-      navigateToConversation(conversationId);
+      const conversation = await startConversationFromListing(listing.id);
+      navigateToConversation(conversation.id);
     } catch (error: any) {
       openShareNotice(error?.message || "Failed to start conversation.");
     }
