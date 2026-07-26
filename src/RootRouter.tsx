@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import {
   DISPUTES_PATH,
   ADMIN_AUDIT_PATH,
+  ADMIN_EVENTS_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
   ADMIN_BALANCE_PATH,
@@ -36,6 +37,7 @@ const AdminModerationQueuePage = lazy(() => import("./AdminModerationQueuePage")
 const AdminAuditLogPage = lazy(() => import("./AdminAuditLogPage"));
 const AdminSetupPage = lazy(() => import("./AdminSetupPage"));
 const AdminPayoutDestinationRequestsPage = lazy(() => import("./AdminPayoutDestinationRequestsPage"));
+const AdminEventModerationPage = lazy(() => import("./AdminEventModerationPage"));
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
 const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
 const BuyerPaymentsPage = lazy(() => import("./BuyerPaymentsPage"));
@@ -184,6 +186,7 @@ export default function RootRouter() {
       "messages",
       "event_creator_dashboard",
       "admin",
+      "admin_events",
       "admin_payments",
       "admin_payouts",
       "admin_reports",
@@ -318,6 +321,10 @@ export default function RootRouter() {
         ) : route === "admin" ? (
           <AdminRouteGuard>
             <AdminHubPage />
+          </AdminRouteGuard>
+        ) : route === "admin_events" ? (
+          <AdminRouteGuard>
+            <AdminEventModerationPage />
           </AdminRouteGuard>
         ) : route === "admin_payments" ? (
           <AdminRouteGuard>
