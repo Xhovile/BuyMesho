@@ -117,7 +117,7 @@ export function useSellerPayoutsPage() {
         if (escrowsRes.status === "fulfilled") {
           const escrowRecords = escrowsRes.value
             .map((entry) => toEscrowSummaryRecord(entry))
-            .filter((entry): entry is EscrowSummaryRecord => entry !== null);
+            .filter((entry): entry is NonNullable<ReturnType<typeof toEscrowSummaryRecord>> => entry !== null);
           setEscrows(escrowRecords);
         } else {
           setEscrows([]);
@@ -409,6 +409,8 @@ export function useSellerPayoutsPage() {
     connectAccount,
     connectLoading,
     connectError,
+    connectDefaultMode: CONNECT_DEFAULT_MODE,
+    defaultConnectScope: DEFAULT_CONNECT_SCOPE,
     selectedDestinationId,
     form,
     loading,

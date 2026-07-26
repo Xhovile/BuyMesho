@@ -152,10 +152,9 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [showDeferredContent]);
 
+  const mobileFeaturedKeys = new Set<string>([HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.beauty]);
   const visibleFeaturedSections = isMobileViewport
-    ? featuredSections.filter((section) =>
-        [HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.beauty].includes(section.key),
-      )
+    ? featuredSections.filter((section) => mobileFeaturedKeys.has(section.key))
     : featuredSections;
 
   return (

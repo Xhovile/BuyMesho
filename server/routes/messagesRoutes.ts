@@ -14,7 +14,8 @@ type VerifiedRequestUser = {
 
 type ConversationRow = {
   id: number;
-  listing_id: number;
+  listing_id: number | null;
+  event_id: number | null;
   buyer_uid: string;
   seller_uid: string;
   last_message_preview: string | null;
@@ -28,6 +29,12 @@ type ConversationRow = {
   listing_status?: string | null;
   listing_photos?: string | null;
   listing_university?: string | null;
+  event_title?: string | null;
+  event_price?: number | null;
+  event_status?: string | null;
+  event_location?: string | null;
+  event_type?: string | null;
+  organizer_name?: string | null;
   seller_business_name?: string | null;
   seller_logo?: string | null;
   seller_is_verified?: number | null;
@@ -55,7 +62,8 @@ function ensureMessagesSchema() {
     db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        listing_id INTEGER NOT NULL,
+        listing_id INTEGER,
+        event_id INTEGER,
         buyer_uid TEXT NOT NULL,
         seller_uid TEXT NOT NULL,
         last_message_preview TEXT,
@@ -64,7 +72,6 @@ function ensureMessagesSchema() {
         seller_unread_count INTEGER NOT NULL DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE (listing_id, buyer_uid, seller_uid),
         FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
       );
 
@@ -79,8 +86,21 @@ function ensureMessagesSchema() {
         FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
       );
 
+    `);
+
+    ensureConversationEventColumns();
+
+    db.exec(`
       CREATE INDEX IF NOT EXISTS idx_conversations_listing
       ON conversations (listing_id, updated_at DESC);
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_listing_thread
+      ON conversations (listing_id, buyer_uid, seller_uid)
+      WHERE listing_id IS NOT NULL;
+
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_event_thread
+      ON conversations (event_id, buyer_uid, seller_uid)
+      WHERE event_id IS NOT NULL;
 
       CREATE INDEX IF NOT EXISTS idx_conversations_buyer
       ON conversations (buyer_uid, updated_at DESC);
@@ -91,7 +111,6 @@ function ensureMessagesSchema() {
       CREATE INDEX IF NOT EXISTS idx_messages_conversation
       ON messages (conversation_id, created_at ASC, id ASC);
     `);
-
     messagesSchemaEnsured = true;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -115,6 +134,17 @@ function sanitizeBody(value: unknown) {
 
 function requireConversationAccess(conversation: ConversationRow, user: VerifiedRequestUser) {
   return isAdmin(user) || conversation.buyer_uid === user.uid || conversation.seller_uid === user.uid;
+}
+
+function ensureConversationEventColumns() {
+  try {
+    const columns = db.prepare(`PRAGMA table_info(conversations)`).all() as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "event_id")) {
+      db.exec(`ALTER TABLE conversations ADD COLUMN event_id INTEGER`);
+    }
+  } catch {
+    // Best-effort migration for existing local SQLite databases.
+  }
 }
 
 function getListingById(listingId: number) {
@@ -142,6 +172,29 @@ function getListingById(listingId: number) {
     | undefined;
 }
 
+function getEventById(eventId: number) {
+  return db
+    .prepare(
+      `SELECT id, creator_uid, event_title, organizer_name, ticket_price, ticket_link, status, location, event_type
+       FROM events
+       WHERE id = ? AND deleted_at IS NULL
+       LIMIT 1`
+    )
+    .get(eventId) as
+    | {
+        id: number;
+        creator_uid: string | null;
+        event_title: string;
+        organizer_name: string;
+        ticket_price: number | null;
+        ticket_link: string | null;
+        status: string;
+        location: string;
+        event_type: string;
+      }
+    | undefined;
+}
+
 function getConversationById(conversationId: number) {
   return db
     .prepare(
@@ -152,6 +205,12 @@ function getConversationById(conversationId: number) {
         l.status AS listing_status,
         l.photos AS listing_photos,
         l.university AS listing_university,
+        e.event_title AS event_title,
+        e.ticket_price AS event_price,
+        e.status AS event_status,
+        e.location AS event_location,
+        e.event_type AS event_type,
+        e.organizer_name AS organizer_name,
         sb.business_name AS seller_business_name,
         sb.business_logo AS seller_logo,
         sb.is_verified AS seller_is_verified,
@@ -159,13 +218,25 @@ function getConversationById(conversationId: number) {
         bb.business_logo AS buyer_logo,
         bb.is_verified AS buyer_is_verified
       FROM conversations c
-      JOIN listings l ON l.id = c.listing_id
+      LEFT JOIN listings l ON l.id = c.listing_id
+      LEFT JOIN events e ON e.id = c.event_id
       LEFT JOIN sellers sb ON sb.uid = c.seller_uid
       LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
       WHERE c.id = ?
       LIMIT 1`
     )
     .get(conversationId) as ConversationRow | undefined;
+}
+
+function getConversationForEventThread(eventId: number, buyerUid: string, sellerUid: string) {
+  return db
+    .prepare(
+      `SELECT *
+       FROM conversations
+       WHERE event_id = ? AND buyer_uid = ? AND seller_uid = ?
+       LIMIT 1`
+    )
+    .get(eventId, buyerUid, sellerUid) as ConversationRow | undefined;
 }
 
 function getConversationForThread(listingId: number, buyerUid: string, sellerUid: string) {
@@ -191,11 +262,13 @@ function serializeConversation(conversation: ConversationRow) {
     seller_unread_count: Number(conversation.seller_unread_count || 0),
     created_at: conversation.created_at,
     updated_at: conversation.updated_at,
+    thread_type: conversation.event_id ? "event" : "listing",
+    event_id: conversation.event_id,
     listing: {
-      id: conversation.listing_id,
-      name: conversation.listing_name || "Listing",
-      price: Number(conversation.listing_price || 0),
-      status: conversation.listing_status || "available",
+      id: conversation.listing_id || 0,
+      name: conversation.listing_name || conversation.event_title || "Listing",
+      price: Number(conversation.listing_price ?? conversation.event_price ?? 0),
+      status: conversation.listing_status || conversation.event_status || "available",
       photos: (() => {
         try {
           return JSON.parse(conversation.listing_photos || "[]") as string[];
@@ -203,8 +276,19 @@ function serializeConversation(conversation: ConversationRow) {
           return [] as string[];
         }
       })(),
-      university: conversation.listing_university || "",
+      university: conversation.listing_university || conversation.event_location || "",
     },
+    event: conversation.event_id
+      ? {
+          id: conversation.event_id,
+          title: conversation.event_title || "Event",
+          organizer_name: conversation.organizer_name || "Organizer",
+          price: Number(conversation.event_price || 0),
+          status: conversation.event_status || "published",
+          location: conversation.event_location || "",
+          type: conversation.event_type || "Event",
+        }
+      : null,
     seller: {
       uid: conversation.seller_uid,
       business_name: conversation.seller_business_name || "Seller",
@@ -287,6 +371,12 @@ async function listInbox(req: Request, res: Response) {
         l.status AS listing_status,
         l.photos AS listing_photos,
         l.university AS listing_university,
+        e.event_title AS event_title,
+        e.ticket_price AS event_price,
+        e.status AS event_status,
+        e.location AS event_location,
+        e.event_type AS event_type,
+        e.organizer_name AS organizer_name,
         sb.business_name AS seller_business_name,
         sb.business_logo AS seller_logo,
         sb.is_verified AS seller_is_verified,
@@ -294,7 +384,8 @@ async function listInbox(req: Request, res: Response) {
         bb.business_logo AS buyer_logo,
         bb.is_verified AS buyer_is_verified
        FROM conversations c
-       JOIN listings l ON l.id = c.listing_id
+       LEFT JOIN listings l ON l.id = c.listing_id
+       LEFT JOIN events e ON e.id = c.event_id
        LEFT JOIN sellers sb ON sb.uid = c.seller_uid
        LEFT JOIN sellers bb ON bb.uid = c.buyer_uid
        WHERE c.buyer_uid = ? OR c.seller_uid = ? OR ? = 1
@@ -362,7 +453,7 @@ async function startConversationFromListing(req: Request, res: Response) {
   const sellerUid = listing.seller_uid;
   const existing = getConversationForThread(listingId, buyerUid, sellerUid);
   if (existing) {
-    return res.json({ conversation: serializeConversation(existing) });
+    return res.json({ conversation: serializeConversation(getConversationById(existing.id) || existing) });
   }
 
   const result = db
@@ -379,6 +470,59 @@ async function startConversationFromListing(req: Request, res: Response) {
       ) VALUES (?, ?, ?, NULL, NULL, 0, 0, CURRENT_TIMESTAMP)`
     )
     .run(listingId, buyerUid, sellerUid);
+
+  const created = getConversationById(Number(result.lastInsertRowid));
+  if (!created) {
+    return res.status(500).json({ error: "Failed to create conversation" });
+  }
+
+  res.status(201).json({ conversation: serializeConversation(created) });
+}
+
+async function startConversationFromEvent(req: Request, res: Response) {
+  const user = getUser(req);
+  if (!user) return res.status(401).json({ error: "Authentication required" });
+
+  const eventId = Number(req.params.eventId);
+  if (!Number.isInteger(eventId)) {
+    return res.status(400).json({ error: "Invalid event id" });
+  }
+
+  const event = getEventById(eventId);
+  if (!event) {
+    return res.status(404).json({ error: "Event not found" });
+  }
+
+  if (!event.creator_uid) {
+    return res.status(400).json({ error: "Event owner is unavailable" });
+  }
+
+  if (event.creator_uid === user.uid && !user.is_admin) {
+    return res.status(403).json({ error: "Event owners should reply from their inbox" });
+  }
+
+  const buyerUid = user.uid;
+  const sellerUid = event.creator_uid;
+  const existing = getConversationForEventThread(eventId, buyerUid, sellerUid);
+  if (existing) {
+    return res.json({ conversation: serializeConversation(getConversationById(existing.id) || existing) });
+  }
+
+  const result = db
+    .prepare(
+      `INSERT INTO conversations (
+        listing_id,
+        event_id,
+        buyer_uid,
+        seller_uid,
+        last_message_preview,
+        last_message_at,
+        buyer_unread_count,
+        seller_unread_count,
+        updated_at
+      ) VALUES (NULL, ?, ?, ?, NULL, NULL, 0, 0, CURRENT_TIMESTAMP)`
+    )
+    .run(eventId, buyerUid, sellerUid);
 
   const created = getConversationById(Number(result.lastInsertRowid));
   if (!created) {
@@ -502,6 +646,7 @@ export function registerMessagesRoutes(app: Express) {
   app.get("/api/messages/inbox", requireAuth, (req, res) => void listInbox(req, res));
   app.get("/api/messages/:conversationId", requireAuth, (req, res) => void getConversation(req, res));
   app.post("/api/listings/:listingId/messages/start", requireAuth, (req, res) => void startConversationFromListing(req, res));
+  app.post("/api/events/:eventId/messages/start", requireAuth, (req, res) => void startConversationFromEvent(req, res));
   app.post("/api/messages/:conversationId/messages", requireAuth, (req, res) => void sendMessage(req, res));
   app.post("/api/messages/:conversationId/read", requireAuth, (req, res) => void markRead(req, res));
 

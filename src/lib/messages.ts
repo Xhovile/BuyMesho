@@ -51,6 +51,18 @@ export async function startConversationFromListing(listingId: number): Promise<C
   return data.conversation;
 }
 
+export async function startConversationFromEvent(eventId: number): Promise<Conversation> {
+  const result = await apiFetch(`/api/events/${eventId}/messages/start`, {
+    method: "POST",
+  });
+
+  const data = unwrapData<{ conversation: Conversation }>(result, {
+    conversation: null as unknown as Conversation,
+  });
+
+  return data.conversation;
+}
+
 export async function sendMessage(
   conversationId: number,
   body: string

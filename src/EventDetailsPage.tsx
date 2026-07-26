@@ -12,7 +12,9 @@ import {
 } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
-import { EVENTS_CREATE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToMessages, navigateToPath } from "./lib/appNavigation";
+import { EVENTS_CREATE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
+import { startConversationFromEvent } from "./lib/messages";
+import { navigateToConversation } from "./lib/messagesNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 
 
@@ -39,15 +41,19 @@ type EventRecord = {
 };
 
 type EventCartItem = {
+  itemType: "event_ticket";
   eventId: number;
   eventTitle: string;
   organizerName: string;
+  organizerUid: string | null;
   eventDate: string;
   startTime: string;
   venue: string;
   location: string;
   ticketPrice: number | null;
   ticketLink: string | null;
+  unitPrice: number;
+  totalPrice: number;
   quantity: number;
   addedAt: string;
 };
@@ -145,8 +151,12 @@ function writeEventCart(userUid: string, items: EventCartItem[]) {
   window.dispatchEvent(new CustomEvent("buymesho:event-cart-updated"));
 }
 
+function isEventTicketCartItem(item: { itemType?: string }) {
+  return item.itemType === "event_ticket";
+}
+
 function upsertEventCartItem(userUid: string, item: EventCartItem) {
-  const current = readEventCart(userUid);
+  const current = readEventCart(userUid).filter(isEventTicketCartItem);
   const next = current.filter((entry) => entry.eventId !== item.eventId);
   next.unshift(item);
   writeEventCart(userUid, next);
@@ -241,14 +251,19 @@ export default function EventDetailsPage() {
     }
   };
 
-  const handleMessage = () => {
+  const handleMessage = async () => {
     if (!event) return;
     if (!firebaseUser?.uid) {
       navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
       return;
     }
 
-    navigateToMessages();
+    try {
+      const conversation = await startConversationFromEvent(event.id);
+      navigateToConversation(conversation.id);
+    } catch (error: any) {
+      setNotice(error?.message || "Failed to start event conversation.");
+    }
   };
 
   const handleBuyTicket = () => {
@@ -282,17 +297,24 @@ export default function EventDetailsPage() {
       return;
     }
 
+    const unitPrice = Number(event.ticket_price || 0);
+    const quantity = 1;
+
     upsertEventCartItem(firebaseUser.uid, {
+      itemType: "event_ticket",
       eventId: event.id,
       eventTitle: event.event_title,
       organizerName: event.organizer_name,
+      organizerUid: event.creator_uid,
       eventDate: event.event_date,
       startTime: event.start_time,
       venue: event.venue,
       location: event.location,
       ticketPrice: event.ticket_price,
       ticketLink: event.ticket_link,
-      quantity: 1,
+      unitPrice,
+      quantity,
+      totalPrice: unitPrice * quantity,
       addedAt: new Date().toISOString(),
     });
 

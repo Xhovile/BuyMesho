@@ -15,13 +15,19 @@ export const MESSAGE_SCHEMA_SQL = `
     buyer_uid TEXT NOT NULL,
     seller_uid TEXT NOT NULL,
     listing_id INTEGER,
+    event_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
   CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
-  ON conversations (buyer_uid, seller_uid, COALESCE(listing_id, 0));
+  ON conversations (buyer_uid, seller_uid, listing_id)
+  WHERE listing_id IS NOT NULL;
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_event
+  ON conversations (buyer_uid, seller_uid, event_id)
+  WHERE event_id IS NOT NULL;
 
   CREATE TABLE IF NOT EXISTS conversation_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -104,12 +110,17 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
     buyer_uid TEXT NOT NULL,
     seller_uid TEXT NOT NULL,
     listing_id INTEGER,
+    event_id INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
-   ON conversations (buyer_uid, seller_uid, COALESCE(listing_id, 0))`,
+   ON conversations (buyer_uid, seller_uid, listing_id)
+   WHERE listing_id IS NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_event
+   ON conversations (buyer_uid, seller_uid, event_id)
+   WHERE event_id IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS conversation_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id INTEGER NOT NULL,
@@ -213,6 +224,7 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   db.exec(MESSAGE_SCHEMA_SQL);
 
   ensureColumn(db, "conversations", "listing_id", "INTEGER");
+  ensureColumn(db, "conversations", "event_id", "INTEGER");
   ensureColumn(db, "conversations", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "conversations", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "conversations", "last_message_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
@@ -258,6 +270,9 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_conversations_pair_listing
     ON conversations (listing_id, buyer_uid, seller_uid);
+
+    CREATE INDEX IF NOT EXISTS idx_conversations_pair_event
+    ON conversations (event_id, buyer_uid, seller_uid);
 
     CREATE INDEX IF NOT EXISTS idx_conversations_buyer_updated_at
     ON conversations (buyer_uid, updated_at DESC);

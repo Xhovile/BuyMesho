@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Loader2, Paperclip, SendHorizontal, ShieldAlert } from "lucide-react";
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { navigateToLogin, navigateToListingDetails, navigateToSellerProfile } from "./lib/appNavigation";
+import { EVENTS_PATH, navigateToLogin, navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
 import { navigateToMessages } from "./lib/messagesNavigation";
 import { getConversationIdFromUrl } from "./lib/messagesNavigation";
 import { deleteConversation, fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
@@ -219,9 +219,10 @@ export default function MessageThreadPage() {
 
   const blocked = hasBlockedState(conversation);
   const canReply = conversation.can_reply !== false && !blocked;
-  const listingName = conversation.listing?.name || "Listing";
-  const sellerName = conversation.seller?.business_name || "Seller";
-  const listingPrice = Number(conversation.listing?.price || 0);
+  const isEventThread = conversation.thread_type === "event" && !!conversation.event;
+  const listingName = conversation.listing?.name || conversation.event?.title || "Listing";
+  const sellerName = conversation.seller?.business_name || conversation.event?.organizer_name || "Seller";
+  const listingPrice = Number(conversation.listing?.price || conversation.event?.price || 0);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 text-zinc-900">
@@ -237,11 +238,15 @@ export default function MessageThreadPage() {
           </button>
 
           <a
-            href={`/listing?listing=${conversation.listing.id}`}
+            href={isEventThread ? `${EVENTS_PATH}?event=${conversation.event?.id}` : `/listing?listing=${conversation.listing.id}`}
             onClick={(event) => {
               if (!isPlainLeftClick(event)) return;
               event.preventDefault();
-              navigateToListingDetails(conversation.listing.id, 0);
+              if (isEventThread && conversation.event) {
+                navigateToPath(`${EVENTS_PATH}?event=${conversation.event.id}`);
+              } else {
+                navigateToListingDetails(conversation.listing.id, 0);
+              }
             }}
             className="min-w-0 flex-1 text-left"
           >
@@ -249,7 +254,7 @@ export default function MessageThreadPage() {
               {listingName}
             </p>
             <p className="text-sm font-semibold text-zinc-500">
-              {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}
+              {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : isEventThread ? "Free event" : "Price unavailable"}
             </p>
           </a>
 
@@ -263,7 +268,7 @@ export default function MessageThreadPage() {
             className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]"
           >
             <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
-            <p className="text-[11px] font-semibold text-zinc-500">Seller profile</p>
+            <p className="text-[11px] font-semibold text-zinc-500">{isEventThread ? "Event owner" : "Seller profile"}</p>
           </a>
 
           <ConversationActionsMenu
