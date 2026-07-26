@@ -2,7 +2,7 @@ import express, { type RequestHandler } from 'express';
 import { hasAdminAccess } from '../../auth/adminAccess.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { payoutLimiter } from '../../routes/escrow/shared.js';
-import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
+import { PAYOUT_POLICY, isRetryableFailureCode } from '../payouts/payout.policy.js';
 
 function requireAdmin(req: express.Request, res: express.Response): boolean {
   if (!hasAdminAccess(req.user)) {
