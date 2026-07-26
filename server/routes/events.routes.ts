@@ -70,11 +70,21 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function safeParseJsonObject(value: string | null | undefined): Record<string, unknown> {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    return isPlainObject(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
 function serializeEventRow(row: EventRow) {
   return {
     ...row,
     ticket_price: row.ticket_price === null || row.ticket_price === undefined ? null : Number(row.ticket_price),
-    spec_values: JSON.parse(row.spec_values || "{}"),
+    spec_values: safeParseJsonObject(row.spec_values),
   };
 }
 
@@ -137,7 +147,6 @@ function parseEventInput(body: any): { data: ParsedEventInput } | { error: strin
   };
 }
 
-
 function addDaysIso(days: number) {
   const date = new Date();
   date.setDate(date.getDate() + days);
@@ -150,8 +159,44 @@ function isEventCreatorActive(row: EventCreatorRow | undefined) {
   return new Date(row.active_until).getTime() >= Date.now();
 }
 
+function ensureEventCreatorSchema(db: any) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS event_creators (
+      uid TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      active_until TIMESTAMPTZ,
+      approved_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS event_creator_applications (
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      applicant_uid TEXT NOT NULL,
+      applicant_email TEXT,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      reviewed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+}
+
 export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
   const { db } = deps;
+
+  ensureEventCreatorSchema(db);
 
   app.get("/api/event-creators/me", requireAuth, (req, res) => {
     const uid = req.user!.uid;
@@ -162,8 +207,8 @@ export function registerEventRoutes(app: Express, deps: EventRouteDeps) {
         .get(uid);
       return res.json({ creator: creator ?? null, latestSubmission: latestSubmission ?? null, canCreateEvents: isEventCreatorActive(creator) });
     } catch (error) {
-      console.error("Failed to load event creator profile", error);
-      return res.status(500).json({ error: "Failed to load event creator profile" });
+      console.warn("Failed to load event creator profile", error);
+      return res.json({ creator: null, latestSubmission: null, canCreateEvents: false });
     }
   });
 
