@@ -15,6 +15,13 @@ export const ADMIN_ACTION_TYPES = {
   ADMIN_MARK_FAILED: "admin_mark_failed",
   ADMIN_CANCEL_PAYOUT: "admin_cancel",
   ADMIN_HOLD_PAYOUT: "admin_hold",
+
+  SUSPEND_EVENT_CREATOR: "suspend_event_creator",
+  UNSUSPEND_EVENT_CREATOR: "unsuspend_event_creator",
+  PUBLISH_EVENT: "publish_event",
+  HIDE_EVENT: "hide_event",
+  CANCEL_EVENT: "cancel_event",
+  DELETE_EVENT: "delete_event",
 } as const;
 
 export const ADMIN_TARGET_TYPES = {
@@ -24,6 +31,9 @@ export const ADMIN_TARGET_TYPES = {
 
   PAYOUT_DESTINATION: "payout_destination",
   PAYOUT: "payout",
+
+  EVENT_CREATOR: "event_creator",
+  EVENT: "event",
 } as const;
 
 export type AdminActionType =
@@ -74,6 +84,24 @@ export const ADMIN_ACTION_LABELS: Record<AdminActionType, string> = {
 
   [ADMIN_ACTION_TYPES.ADMIN_HOLD_PAYOUT]:
     "Held payout",
+
+  [ADMIN_ACTION_TYPES.SUSPEND_EVENT_CREATOR]:
+    "Suspended event creator",
+
+  [ADMIN_ACTION_TYPES.UNSUSPEND_EVENT_CREATOR]:
+    "Unsuspended event creator",
+
+  [ADMIN_ACTION_TYPES.PUBLISH_EVENT]:
+    "Published event",
+
+  [ADMIN_ACTION_TYPES.HIDE_EVENT]:
+    "Hid event",
+
+  [ADMIN_ACTION_TYPES.CANCEL_EVENT]:
+    "Cancelled event",
+
+  [ADMIN_ACTION_TYPES.DELETE_EVENT]:
+    "Deleted event",
 };
 
 export const ADMIN_TARGET_LABELS: Record<AdminTargetType, string> = {
@@ -91,6 +119,12 @@ export const ADMIN_TARGET_LABELS: Record<AdminTargetType, string> = {
 
   [ADMIN_TARGET_TYPES.PAYOUT]:
     "Payout",
+
+  [ADMIN_TARGET_TYPES.EVENT_CREATOR]:
+    "Event creator",
+
+  [ADMIN_TARGET_TYPES.EVENT]:
+    "Event",
 };
 
 export function isAdminActionType(
