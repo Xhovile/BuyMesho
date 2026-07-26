@@ -157,115 +157,6 @@ function normalizeHardDeleteAfterColumn() {
   `);
 }
 
-function backfillPayoutRecords() {
-  const payouts = postgresDb.prepare(`
-    SELECT
-      id,
-      seller_id,
-      order_id,
-      escrow_id,
-      destination_account_id,
-      requested_by,
-      provider,
-      provider_charge_id,
-      provider_ref_id,
-      provider_transaction_id,
-      provider_status,
-      sent_at,
-      paid_at,
-      failed_at,
-      status
-    FROM payouts
-  `).all() as Array<Record<string, unknown>>;
-
-  const latestAttemptStmt = postgresDb.prepare(`
-    SELECT
-      provider,
-      provider_charge_id,
-      provider_reference,
-      provider_transaction_id,
-      status,
-      sent_at,
-      completed_at,
-      failure_reason
-    FROM payout_attempts
-    WHERE payout_id = ?
-    ORDER BY COALESCE(completed_at, sent_at, created_at) DESC, id DESC
-    LIMIT 1
-  `);
-
-  for (const payout of payouts) {
-    const latestAttempt = latestAttemptStmt.get(payout.id) as Record<string, unknown> | undefined;
-    if (!latestAttempt) continue;
-
-    postgresDb
-      .prepare(`
-        UPDATE payouts
-        SET provider = COALESCE(?, provider),
-            provider_charge_id = COALESCE(?, provider_charge_id),
-            provider_ref_id = COALESCE(?, provider_ref_id),
-            provider_transaction_id = COALESCE(?, provider_transaction_id),
-            provider_status = COALESCE(?, provider_status),
-            sent_at = COALESCE(?, sent_at),
-            paid_at = COALESCE(?, paid_at),
-            failed_at = COALESCE(?, failed_at),
-            status = COALESCE(?, status)
-        WHERE id = ?
-      `)
-      .run(
-        latestAttempt.provider ?? null,
-        latestAttempt.provider_charge_id ?? null,
-        latestAttempt.provider_reference ?? null,
-        latestAttempt.provider_transaction_id ?? null,
-        latestAttempt.status ?? null,
-        latestAttempt.sent_at ?? null,
-        latestAttempt.completed_at ?? null,
-        latestAttempt.failure_reason ? latestAttempt.completed_at ?? null : null,
-        latestAttempt.status ?? null,
-        payout.id,
-      );
-  }
-}
-
-function backfillPaymentRecords() {
-  const payments = postgresDb.prepare(`
-    SELECT
-      id,
-      reference,
-      provider_reference,
-      provider_transaction_id,
-      status,
-      paid_at,
-      verified,
-      verification,
-      raw_response
-    FROM payments
-  `).all() as Array<Record<string, unknown>>;
-
-  for (const payment of payments) {
-    postgresDb
-      .prepare(`
-        UPDATE payments
-        SET provider_reference = COALESCE(provider_reference, ?),
-            status = COALESCE(status, ?),
-            paid_at = COALESCE(paid_at, ?),
-            verified = COALESCE(verified, ?),
-            verification = COALESCE(verification, ?),
-            raw_response = COALESCE(raw_response, ?)
-        WHERE id = ?
-      `)
-      .run(
-        payment.provider_reference ?? null,
-        payment.status ?? null,
-        payment.paid_at ?? null,
-        payment.verified ?? null,
-        payment.verification ?? null,
-        payment.raw_response ?? null,
-        payment.id,
-      );
-  }
-}
-
 function updateSellerPayoutAccountColumns() {
   postgresDb.exec(`
     ALTER TABLE seller_payout_accounts
@@ -279,9 +170,7 @@ function updateSellerPayoutAccountColumns() {
 export function runMigrations() {
   ensureExtraTables();
   normalizeHardDeleteAfterColumn();
-  backfillPayoutRecords();
-  backfillPaymentRecords();
-  ensurePayoutLifecycleSchema();
   updateSellerPayoutAccountColumns();
+  ensurePayoutLifecycleSchema();
   initPaymentSchema(postgresDb);
 }
