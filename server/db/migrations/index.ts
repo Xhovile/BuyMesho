@@ -60,36 +60,36 @@ function ensureExtraTables() {
     );
 
     CREATE TABLE IF NOT EXISTS event_creators (
-  uid TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  display_name TEXT NOT NULL,
-  organization_name TEXT NOT NULL,
-  organization_type TEXT NOT NULL,
-  contact_whatsapp TEXT,
-  event_types TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'approved',
-  active_until TIMESTAMPTZ,
-  approved_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+      uid TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      active_until TIMESTAMPTZ,
+      approved_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
 
-CREATE TABLE IF NOT EXISTS event_creator_applications (
-  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  applicant_uid TEXT NOT NULL,
-  applicant_email TEXT,
-  display_name TEXT NOT NULL,
-  organization_name TEXT NOT NULL,
-  organization_type TEXT NOT NULL,
-  contact_whatsapp TEXT,
-  event_types TEXT NOT NULL,
-  reason TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'approved',
-  reviewed_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+    CREATE TABLE IF NOT EXISTS event_creator_applications (
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      applicant_uid TEXT NOT NULL,
+      applicant_email TEXT,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      reviewed_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
 
-CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE IF NOT EXISTS events (
       id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
       creator_uid TEXT,
       event_type TEXT NOT NULL,
@@ -110,6 +110,16 @@ CREATE TABLE IF NOT EXISTS events (
       deleted_at TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS event_activity (
+      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+      event_id BIGINT NOT NULL,
+      actor_uid TEXT,
+      activity_type TEXT NOT NULL,
+      metadata TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
     );
   `);
 }
@@ -180,152 +190,98 @@ function backfillPayoutRecords() {
       failure_reason
     FROM payout_attempts
     WHERE payout_id = ?
-    ORDER BY attempt_no DESC, created_at DESC
+    ORDER BY COALESCE(completed_at, sent_at, created_at) DESC, id DESC
     LIMIT 1
   `);
 
-  const firstEventStmt = postgresDb.prepare(`
-    SELECT seller_id, actor_id
-    FROM payout_events
-    WHERE payout_id = ?
-    ORDER BY created_at ASC, id ASC
-    LIMIT 1
-  `);
+  for (const payout of payouts) {
+    const latestAttempt = latestAttemptStmt.get(payout.id) as Record<string, unknown> | undefined;
+    if (!latestAttempt) continue;
 
-  const escrowLookupStmt = postgresDb.prepare(`
-    SELECT e.id AS escrow_id, o.id AS order_id, o.seller_id AS seller_id
-    FROM escrows e
-    LEFT JOIN orders o ON o.id = e.order_id
-    WHERE e.id = ?
-    LIMIT 1
-  `);
-
-  const defaultDestinationStmt = postgresDb.prepare(`
-    SELECT id
-    FROM seller_payout_accounts
-    WHERE seller_uid = ?
-      AND is_active = 1
-      AND verification_status = 'verified'
-    ORDER BY is_default DESC, updated_at DESC, created_at DESC
-    LIMIT 1
-  `);
-
-  const updateStmt = postgresDb.prepare(`
-    UPDATE payouts
-    SET seller_id = COALESCE(?, seller_id),
-        order_id = COALESCE(?, order_id),
-        escrow_id = COALESCE(?, escrow_id),
-        destination_account_id = COALESCE(?, destination_account_id),
-        requested_by = COALESCE(?, requested_by),
-        provider = COALESCE(?, provider),
-        provider_charge_id = COALESCE(?, provider_charge_id),
-        provider_ref_id = COALESCE(?, provider_ref_id),
-        provider_transaction_id = COALESCE(?, provider_transaction_id),
-        provider_status = COALESCE(?, provider_status),
-        sent_at = COALESCE(?, sent_at),
-        paid_at = COALESCE(?, paid_at),
-        failed_at = COALESCE(?, failed_at),
-        updated_at = CURRENT_TIMESTAMP
-    WHERE id = ?
-  `);
-
-  let repaired = 0;
-
-  for (const row of payouts) {
-    const payoutId = String(row.id ?? '').trim();
-    if (!payoutId) continue;
-
-    const latestAttempt = latestAttemptStmt.get(payoutId) as Record<string, unknown> | undefined;
-    const firstEvent = firstEventStmt.get(payoutId) as Record<string, unknown> | undefined;
-    const escrowLink = row.escrow_id ? escrowLookupStmt.get(String(row.escrow_id)) as Record<string, unknown> | undefined : undefined;
-
-    const currentSellerId = String(row.seller_id ?? '').trim() || null;
-    const inferredSellerId =
-      currentSellerId ?? (String(escrowLink?.seller_id ?? '').trim() || null) ?? (String(firstEvent?.seller_id ?? '').trim() || null);
-
-    const inferredOrderId = String(row.order_id ?? '').trim() || String(escrowLink?.order_id ?? '').trim() || null;
-    const inferredEscrowId = String(row.escrow_id ?? '').trim() || String(escrowLink?.escrow_id ?? '').trim() || null;
-    const inferredRequestedBy = String(row.requested_by ?? '').trim() || String(firstEvent?.actor_id ?? '').trim() || null;
-
-    const inferredDestinationAccountId = (() => {
-      const currentDestination = String(row.destination_account_id ?? '').trim();
-      if (currentDestination) return currentDestination;
-      if (!inferredSellerId) return null;
-      const destination = defaultDestinationStmt.get(inferredSellerId) as { id?: string } | undefined;
-      return String(destination?.id ?? '').trim() || null;
-    })();
-
-    const inferredProvider = String(row.provider ?? latestAttempt?.provider ?? '').trim() || null;
-    const inferredProviderChargeId = String(row.provider_charge_id ?? latestAttempt?.provider_charge_id ?? '').trim() || null;
-    const inferredProviderReference = String(row.provider_ref_id ?? latestAttempt?.provider_reference ?? '').trim() || null;
-    const inferredProviderTransactionId = String(row.provider_transaction_id ?? latestAttempt?.provider_transaction_id ?? '').trim() || null;
-    const inferredProviderStatus = String(row.provider_status ?? latestAttempt?.status ?? '').trim() || null;
-    const inferredSentAt = String(row.sent_at ?? latestAttempt?.sent_at ?? '').trim() || null;
-    const inferredPaidAt = String(row.paid_at ?? (String(latestAttempt?.status ?? '').toLowerCase() === 'paid' ? latestAttempt?.completed_at : '') ?? '').trim() || null;
-    const inferredFailedAt = String(row.failed_at ?? (String(latestAttempt?.status ?? '').toLowerCase() === 'failed' ? latestAttempt?.completed_at : '') ?? '').trim() || null;
-
-    const shouldRepair =
-      inferredSellerId !== currentSellerId ||
-      inferredOrderId !== String(row.order_id ?? '').trim() ||
-      inferredEscrowId !== String(row.escrow_id ?? '').trim() ||
-      inferredRequestedBy !== String(row.requested_by ?? '').trim() ||
-      inferredDestinationAccountId !== String(row.destination_account_id ?? '').trim() ||
-      inferredProvider !== String(row.provider ?? '').trim() ||
-      inferredProviderChargeId !== String(row.provider_charge_id ?? '').trim() ||
-      inferredProviderReference !== String(row.provider_ref_id ?? '').trim() ||
-      inferredProviderTransactionId !== String(row.provider_transaction_id ?? '').trim() ||
-      inferredProviderStatus !== String(row.provider_status ?? '').trim() ||
-      inferredSentAt !== String(row.sent_at ?? '').trim() ||
-      inferredPaidAt !== String(row.paid_at ?? '').trim() ||
-      inferredFailedAt !== String(row.failed_at ?? '').trim();
-
-    if (!shouldRepair) {
-      continue;
-    }
-
-    updateStmt.run(
-      inferredSellerId,
-      inferredOrderId,
-      inferredEscrowId,
-      inferredDestinationAccountId,
-      inferredRequestedBy,
-      inferredProvider,
-      inferredProviderChargeId,
-      inferredProviderReference,
-      inferredProviderTransactionId,
-      inferredProviderStatus,
-      inferredSentAt,
-      inferredPaidAt,
-      inferredFailedAt,
-      payoutId,
-    );
-
-    repaired += 1;
-  }
-
-  if (repaired > 0) {
-    console.log(`[payout-migration] repaired ${repaired} payout row(s)`);
+    postgresDb
+      .prepare(`
+        UPDATE payouts
+        SET provider = COALESCE(?, provider),
+            provider_charge_id = COALESCE(?, provider_charge_id),
+            provider_ref_id = COALESCE(?, provider_ref_id),
+            provider_transaction_id = COALESCE(?, provider_transaction_id),
+            provider_status = COALESCE(?, provider_status),
+            sent_at = COALESCE(?, sent_at),
+            paid_at = COALESCE(?, paid_at),
+            failed_at = COALESCE(?, failed_at),
+            status = COALESCE(?, status)
+        WHERE id = ?
+      `)
+      .run(
+        latestAttempt.provider ?? null,
+        latestAttempt.provider_charge_id ?? null,
+        latestAttempt.provider_reference ?? null,
+        latestAttempt.provider_transaction_id ?? null,
+        latestAttempt.status ?? null,
+        latestAttempt.sent_at ?? null,
+        latestAttempt.completed_at ?? null,
+        latestAttempt.failure_reason ? latestAttempt.completed_at ?? null : null,
+        latestAttempt.status ?? null,
+        payout.id,
+      );
   }
 }
 
+function backfillPaymentRecords() {
+  const payments = postgresDb.prepare(`
+    SELECT
+      id,
+      reference,
+      provider_reference,
+      provider_transaction_id,
+      status,
+      paid_at,
+      verified,
+      verification,
+      raw_response
+    FROM payments
+  `).all() as Array<Record<string, unknown>>;
+
+  for (const payment of payments) {
+    postgresDb
+      .prepare(`
+        UPDATE payments
+        SET provider_reference = COALESCE(provider_reference, ?),
+            status = COALESCE(status, ?),
+            paid_at = COALESCE(paid_at, ?),
+            verified = COALESCE(verified, ?),
+            verification = COALESCE(verification, ?),
+            raw_response = COALESCE(raw_response, ?)
+        WHERE id = ?
+      `)
+      .run(
+        payment.provider_reference ?? null,
+        payment.status ?? null,
+        payment.paid_at ?? null,
+        payment.verified ?? null,
+        payment.verification ?? null,
+        payment.raw_response ?? null,
+        payment.id,
+      );
+  }
+}
+
+function updateSellerPayoutAccountColumns() {
+  postgresDb.exec(`
+    ALTER TABLE seller_payout_accounts
+    ALTER COLUMN account_number_encrypted DROP NOT NULL;
+
+    ALTER TABLE seller_payout_accounts
+    ALTER COLUMN mobile_encrypted DROP NOT NULL;
+  `);
+}
+
 export function runMigrations() {
-  initPaymentSchema(postgresDb);
   ensureExtraTables();
-  ensurePayoutLifecycleSchema();
-
-  try {
-    normalizeHardDeleteAfterColumn();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`hard_delete_after migration skipped: ${message}`);
-  }
-
-  try {
-    backfillPayoutRecords();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`payout backfill skipped: ${message}`);
-  }
-
-  return postgresDb;
+  normalizeHardDeleteAfterColumn();
+  backfillPayoutRecords();
+  backfillPaymentRecords();
+  ensurePayoutLifecycleSchema(postgresDb);
+  updateSellerPayoutAccountColumns();
+  initPaymentSchema(postgresDb);
 }
