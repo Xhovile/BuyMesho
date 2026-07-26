@@ -192,6 +192,7 @@ export default function RootRouter() {
     ];
 
     const requiresAuth =
+      locationPath === EVENTS_CREATE_PATH ||
       locationPath.startsWith("/payments") ||
       locationPath === "/buyer-payments" ||
       locationPath === "/cart" ||

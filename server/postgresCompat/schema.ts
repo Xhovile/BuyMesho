@@ -30,7 +30,37 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
       hard_delete_after TEXT
     );
 
-    CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE IF NOT EXISTS event_creators (
+  uid TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  active_until TEXT,
+  approved_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_creator_applications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  applicant_uid TEXT NOT NULL,
+  applicant_email TEXT,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  reviewed_at TEXT,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       creator_uid TEXT,
       event_type TEXT NOT NULL,

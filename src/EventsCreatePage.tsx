@@ -4,6 +4,7 @@ import { ArrowRight, ChevronDown, Ticket, Upload, X } from "lucide-react";
 
 import { EVENTS_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { useAuthUser } from "./hooks/useAuthUser";
 import {
   createEmptyEventValues,
   getEventItemConfig,
@@ -390,6 +391,7 @@ function RenderField({ field, value, error, onChange }: { field: EventSpecField;
 }
 
 export default function EventsCreatePage() {
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const eventTypes = useMemo(() => getEventItemTypes(), []);
   const editingEventId = useMemo(() => parseEditingEventId(), []);
   const isEditing = editingEventId !== null;
@@ -404,6 +406,18 @@ export default function EventsCreatePage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [creatorLoading, setCreatorLoading] = useState(true);
+  const [canCreateEvents, setCanCreateEvents] = useState(false);
+  const [creatorForm, setCreatorForm] = useState({
+    display_name: "",
+    organization_name: "",
+    organization_type: "",
+    contact_whatsapp: "",
+    event_types: "",
+    reason: "",
+  });
+  const [creatorSubmitting, setCreatorSubmitting] = useState(false);
+  const [creatorError, setCreatorError] = useState<string | null>(null);
 
   const config = getEventItemConfig(eventType) ?? getEventItemConfig(INITIAL_EVENT_TYPE);
   const fieldMap = useMemo(() => {
@@ -413,7 +427,38 @@ export default function EventsCreatePage() {
   }, [config]);
 
   useEffect(() => {
-    if (!editingEventId) return;
+    if (authLoading) return;
+    if (!firebaseUser) {
+      setCreatorLoading(false);
+      setCanCreateEvents(false);
+      return;
+    }
+
+    let active = true;
+    async function loadCreatorAccess() {
+      try {
+        setCreatorLoading(true);
+        const response = (await apiFetch("/api/event-creators/me")) as { canCreateEvents?: boolean };
+        if (!active) return;
+        setCanCreateEvents(response?.canCreateEvents === true);
+        setCreatorError(null);
+      } catch (error: any) {
+        if (!active) return;
+        setCreatorError(error?.message || "Could not verify event creator access.");
+        setCanCreateEvents(false);
+      } finally {
+        if (active) setCreatorLoading(false);
+      }
+    }
+
+    void loadCreatorAccess();
+    return () => {
+      active = false;
+    };
+  }, [authLoading, firebaseUser]);
+
+  useEffect(() => {
+    if (!editingEventId || !canCreateEvents) return;
 
     let active = true;
 
@@ -448,6 +493,24 @@ export default function EventsCreatePage() {
       active = false;
     };
   }, [editingEventId]);
+
+  const handleCreatorOnboarding = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreatorSubmitting(true);
+    setCreatorError(null);
+
+    try {
+      const response = (await apiFetch("/api/event-creators", {
+        method: "POST",
+        body: JSON.stringify(creatorForm),
+      })) as { canCreateEvents?: boolean };
+      setCanCreateEvents(response?.canCreateEvents === true);
+    } catch (error: any) {
+      setCreatorError(error?.message || "Could not submit event creator onboarding.");
+    } finally {
+      setCreatorSubmitting(false);
+    }
+  };
 
   const uploadMediaFile = async (file: File) => {
     const formData = new FormData();
@@ -551,6 +614,64 @@ export default function EventsCreatePage() {
   const previewLocation = previewSource.location || previewSource.venue || previewSource.university_name || previewSource.host_organization;
   const previewTicketMode = previewSource.ticket_mode;
   const previewPrice = formatMoney(previewSource.ticket_price);
+
+  if (authLoading || creatorLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4 text-zinc-600">
+        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-lg shadow-zinc-200/50">
+          <Ticket className="h-5 w-5 animate-pulse text-zinc-700" />
+          Checking event creator access...
+        </div>
+      </div>
+    );
+  }
+
+  if (!firebaseUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
+        <div className="max-w-lg rounded-[2rem] border border-zinc-200 bg-white p-6 text-center shadow-lg shadow-zinc-200/50">
+          <h1 className="text-2xl font-black tracking-tight text-zinc-950">Sign in to create events</h1>
+          <p className="mt-3 text-sm text-zinc-600">Event publishing is limited to logged-in approved event creators.</p>
+          <button type="button" onClick={() => navigateToPath(EVENTS_PATH)} className="mt-5 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-bold text-white">Back to events</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canCreateEvents) {
+    return (
+      <div className="min-h-screen bg-zinc-100 px-4 py-10 text-zinc-900">
+        <form onSubmit={handleCreatorOnboarding} className="mx-auto max-w-2xl rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-lg shadow-zinc-200/50 sm:p-8">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event creator onboarding</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Register as an event creator</h1>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-600">Event creator access is separate from seller approval. Submissions are auto-approved, saved for admin audit, and stay active for 30 days before you need to renew.</p>
+          <div className="mt-6 grid gap-4">
+            {[
+              ["display_name", "Your name"],
+              ["organization_name", "Organization or host name"],
+              ["organization_type", "Organization type"],
+              ["contact_whatsapp", "WhatsApp contact (optional)"],
+              ["event_types", "Types of events you host"],
+            ].map(([key, label]) => (
+              <label key={key} className="block">
+                <span className="text-sm font-bold text-zinc-900">{label}</span>
+                <input value={creatorForm[key as keyof typeof creatorForm]} onChange={(e) => setCreatorForm((current) => ({ ...current, [key]: e.target.value }))} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
+              </label>
+            ))}
+            <label className="block">
+              <span className="text-sm font-bold text-zinc-900">Why are you publishing events?</span>
+              <textarea value={creatorForm.reason} onChange={(e) => setCreatorForm((current) => ({ ...current, reason: e.target.value }))} rows={4} className="mt-2 w-full rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10" />
+            </label>
+          </div>
+          {creatorError ? <div className="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{creatorError}</div> : null}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button type="submit" disabled={creatorSubmitting} className="rounded-2xl bg-red-900 px-5 py-3 text-sm font-extrabold text-white disabled:opacity-60">{creatorSubmitting ? "Submitting..." : "Submit and continue"}</button>
+            <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-bold text-zinc-900">Cancel</button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   if (editingEventId && loadingExistingEvent) {
     return (
