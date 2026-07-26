@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Loader2, Ticket } from "lucide-react";
 
+import FormDropdown from "./components/FormDropdown";
 import Header from "./components/Header";
 import { EventCard, type EventRecord } from "./components/events/EventCard";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
@@ -250,27 +251,14 @@ export default function EventsDirectoryPage() {
           </div>
 
           <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white px-4 py-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:px-5">
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
-                Search is in the shared header. Use it to filter events by title, place, host, or description.
-              </div>
-
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Category</span>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-900 outline-none focus:border-zinc-900"
-                >
-                  <option>All categories</option>
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <FormDropdown
+              label="Filter by category"
+              value={selectedCategory}
+              onChange={setSelectedCategory}
+              placeholder="All categories"
+              options={["All categories", ...categories]}
+              searchable={false}
+            />
           </div>
         </section>
 
