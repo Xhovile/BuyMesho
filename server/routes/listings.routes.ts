@@ -71,6 +71,10 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
     return row ? serializeListingRow(row) : null;
   }
 
+  function getAvailableQuantity(quantity: number, soldQuantity: number) {
+    return Math.max(0, Number(quantity ?? 0) - Number(soldQuantity ?? 0));
+  }
+
   app.post("/api/listings", requireAuth, (req, res) => {
     const uid = req.user!.uid;
     const seller = db
@@ -321,9 +325,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       }
 
       if (description.length < 10) {
-        return res.status(400).json({
-          error: "Please enter a product description of at least 10 characters.",
-        });
+        return res.status(400).json({ error: "Please enter a product description of at least 10 characters." });
       }
 
       if (!CATEGORIES.includes(category as (typeof CATEGORIES)[number])) {
@@ -489,13 +491,14 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       return res.status(400).json({ error: "Sale quantity cannot exceed available stock." });
     }
 
-    const nextStatus = nextSold >= currentQuantity ? "sold" : checked.listing.status;
+    const nextStatus = nextSold >= currentQuantity ? "sold" : "available";
+    const nextAvailableQuantity = getAvailableQuantity(currentQuantity, nextSold);
     db.prepare("UPDATE listings SET sold_quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
       nextSold,
       nextStatus,
       listingId
     );
-    return res.json({ success: true, listing: getSerializedListing(listingId) });
+    return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
   app.post("/api/listings/:id/restock", requireAuth, (req, res) => {
@@ -510,8 +513,16 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
     if ("error" in checked) return res.status(checked.error).json({ error: checked.message });
 
     const nextQuantity = Number(checked.listing.quantity ?? 0) + quantity;
-    db.prepare("UPDATE listings SET quantity = ?, status = 'available', updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(nextQuantity, listingId);
-    return res.json({ success: true, listing: getSerializedListing(listingId) });
+    const soldQuantity = Number(checked.listing.sold_quantity ?? 0);
+    const nextStatus = nextQuantity > soldQuantity ? "available" : "sold";
+    const nextAvailableQuantity = getAvailableQuantity(nextQuantity, soldQuantity);
+
+    db.prepare("UPDATE listings SET quantity = ?, status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(
+      nextQuantity,
+      nextStatus,
+      listingId
+    );
+    return res.json({ success: true, listing: getSerializedListing(listingId), available_quantity: nextAvailableQuantity });
   });
 
   app.delete("/api/listings/:id", requireAuth, (req, res) => {
