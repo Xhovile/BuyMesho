@@ -1,9 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Loader2, Search, Ticket } from "lucide-react";
+import { ArrowRight, Loader2, Ticket } from "lucide-react";
 
-import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
-import { EVENTS_PATH, EXPLORE_PATH, HOME_PATH, navigateToPath } from "./lib/appNavigation";
+import Header from "./components/Header";
 import { EventCard, type EventRecord } from "./components/events/EventCard";
+import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
+import {
+  EVENTS_CREATE_PATH,
+  EXPLORE_PATH,
+  getMarketChipFromLocation,
+  navigateToCreateListing,
+  navigateToMarketChip,
+  navigateToPath,
+} from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useAuthUser } from "./hooks/useAuthUser";
 
 const EVENTS_API_URL = "/api/events";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
@@ -106,6 +116,10 @@ export default function EventsDirectoryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [viewAll, setViewAll] = useState(false);
 
+  const { user: firebaseUser } = useAuthUser();
+  const { profile: userProfile } = useAccountProfile();
+  const activeChip = getMarketChipFromLocation(window.location);
+
   useEffect(() => {
     const controller = new AbortController();
 
@@ -193,31 +207,16 @@ export default function EventsDirectoryPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
-          <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="flex items-center gap-3 text-left">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-900 text-white shadow-lg shadow-red-900/20">
-              <Ticket className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-lg font-black tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-zinc-400">Events</p>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigateToPath(EXPLORE_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 shadow-sm hover:bg-zinc-50"
-          >
-            Back to Market
-            <ArrowRight className="h-4 w-4" />
-          </button>
-        </div>
-      </header>
+      <Header
+        searchValue={searchTerm}
+        onSearch={setSearchTerm}
+        onAddListing={navigateToCreateListing}
+        onProfileClick={() => navigateToPath("/profile")}
+        userProfile={userProfile}
+        firebaseUser={firebaseUser}
+        activeChip={activeChip}
+        onChipChange={navigateToMarketChip}
+      />
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
@@ -232,7 +231,15 @@ export default function EventsDirectoryPage() {
               <div className="flex flex-wrap gap-3 sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => navigateToPath("/explore/events/create")}
+                  onClick={() => navigateToPath(EXPLORE_PATH)}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50"
+                >
+                  Back to Market
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
                   className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
                 >
                   Create Event
@@ -244,15 +251,9 @@ export default function EventsDirectoryPage() {
 
           <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white px-4 py-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:px-5">
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-center">
-              <label className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 focus-within:border-zinc-900">
-                <Search className="h-4 w-4 shrink-0 text-zinc-400" />
-                <input
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search by title, place, host, or description"
-                  className="w-full bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
-                />
-              </label>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-500">
+                Search is in the shared header. Use it to filter events by title, place, host, or description.
+              </div>
 
               <label className="block">
                 <span className="mb-1 block text-[11px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Category</span>
@@ -318,7 +319,7 @@ export default function EventsDirectoryPage() {
             </p>
             <button
               type="button"
-              onClick={() => navigateToPath("/explore/events/create")}
+              onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
               className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
             >
               Create an event
