@@ -1,6 +1,7 @@
 import {
   ADMIN_AUDIT_PATH,
   ADMIN_BALANCE_PATH,
+  ADMIN_EVENTS_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PATH,
   ADMIN_PAYOUT_DESTINATIONS_PATH,
@@ -222,6 +223,7 @@ export const navigateToChangeEmail = () => navigateToPath(CHANGE_EMAIL_PATH);
 export const navigateToEmailAction = () => navigateToPath(EMAIL_ACTION_PATH);
 export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
 export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
+export const navigateToAdminEvents = () => navigateToPath(ADMIN_EVENTS_PATH);
 export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
 export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
 export const navigateToAdminPayoutDestinations = () => navigateToPath(ADMIN_PAYOUT_DESTINATIONS_PATH);
