@@ -123,7 +123,7 @@ function ActionButton({
   variant = "default",
   disabled,
 }: {
-  children: React.ReactNode;
+  children: any;
   onClick: () => void;
   variant?: "default" | "danger" | "ghost";
   disabled?: boolean;
