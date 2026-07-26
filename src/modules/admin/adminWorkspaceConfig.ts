@@ -1,8 +1,9 @@
-import { ClipboardList, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
+import { CalendarDays, ClipboardList, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
 import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
   ADMIN_BALANCE_PATH,
+  ADMIN_EVENTS_PATH,
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_PATH,
   ADMIN_PAYMENTS_PATH,
@@ -40,6 +41,12 @@ export const ADMIN_HUB_ACTIONS: AdminWorkspaceItem[] = [
     path: ADMIN_SELLER_APPLICATIONS_PATH,
     icon: ShieldCheck,
     description: "Approve or reject seller onboarding requests.",
+  },
+  {
+    label: "Event Moderation",
+    path: ADMIN_EVENTS_PATH,
+    icon: CalendarDays,
+    description: "Review event creators, event status, and event activity.",
   },
   {
     label: "Payments & Webhooks",
@@ -82,6 +89,11 @@ export const ADMIN_WORKSPACE_NAV_ITEMS: AdminWorkspaceItem[] = [
     label: "Seller Applications",
     path: ADMIN_SELLER_APPLICATIONS_PATH,
     icon: ShieldCheck,
+  },
+  {
+    label: "Event Moderation",
+    path: ADMIN_EVENTS_PATH,
+    icon: CalendarDays,
   },
   {
     label: "Payments",
