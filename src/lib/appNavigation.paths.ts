@@ -33,6 +33,7 @@ export type AppRoute =
   | "my_listings"
   | "event_creator_dashboard"
   | "admin"
+  | "admin_events"
   | "admin_payments"
   | "admin_payouts"
   | "admin_payout_destinations"
@@ -45,6 +46,7 @@ export type AppRoute =
   | "payment_return";
 
 export const ADMIN_PAYOUT_DESTINATIONS_PATH = "/admin/payouts/destinations";
+export const ADMIN_EVENTS_PATH = "/admin/events";
 export const HOME_PATH = "/";
 export const ABOUT_PATH = "/about";
 export const EXPLORE_PATH = "/explore";
