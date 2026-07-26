@@ -7,6 +7,7 @@ import { EventCard, type EventRecord } from "./components/events/EventCard";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
 import {
   EVENTS_CREATE_PATH,
+  EVENTS_MANAGE_PATH,
   EXPLORE_PATH,
   getMarketChipFromLocation,
   navigateToCreateListing,
@@ -230,6 +231,16 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="flex flex-wrap gap-3 sm:justify-end">
+                {firebaseUser ? (
+                  <button
+                    type="button"
+                    onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50"
+                  >
+                    Manage Events
+                    <ArrowRight className="h-4 w-4" />
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => navigateToPath(EXPLORE_PATH)}
@@ -260,61 +271,24 @@ export default function EventsDirectoryPage() {
               searchable={false}
             />
           </div>
-        </section>
 
-        {error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
-
-        {!loading && groupedCategories.length > 0 ? (
-          <div className="mx-auto mt-2 flex max-w-7xl items-center justify-between gap-4 px-4">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">
-              {viewAll ? "All listings" : "Category display"}
-            </p>
-            <button
-              type="button"
-              onClick={() => setViewAll((current) => !current)}
-              className={`inline-flex shrink-0 items-center gap-2 rounded-2xl px-5 py-3 text-sm font-extrabold shadow-lg shadow-black/10 transition-colors ${
-                viewAll ? "bg-zinc-950 text-white hover:bg-zinc-800" : "border border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
-              }`}
-            >
-              {viewAll ? "Show Categories" : "View All"}
-            </button>
-          </div>
-        ) : null}
-
-        {loading ? (
-          <div className="flex items-center justify-center rounded-[2rem] border border-zinc-200 bg-white px-6 py-20 text-zinc-500 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)]">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="ml-3 text-sm font-medium">Loading events...</span>
-          </div>
-        ) : groupedCategories.length > 0 ? (
-          <>
-            {viewAll ? (
-              <section className="mx-auto max-w-7xl px-4 pb-10">
-                <AllListingsPanel items={filteredEvents} />
-              </section>
-            ) : (
-              groupedCategories.map((group) => <CategoryStrip key={group.title} title={group.title} items={group.items} />)
-            )}
-          </>
-        ) : (
-          <div className="rounded-[2rem] border border-zinc-200 bg-white p-8 text-center shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:p-10">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-lg shadow-zinc-900/15">
-              <Ticket className="h-6 w-6" />
+          {loading ? (
+            <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white py-10 text-sm font-medium text-zinc-600 shadow-sm">
+              <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
+              Loading events...
             </div>
-            <h3 className="mt-5 text-2xl font-black tracking-[-0.05em] text-zinc-950">No events yet</h3>
-            <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-zinc-600">
-              Start with the create form. Once an event is posted, it will show up here as a saved card.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-              className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white hover:bg-zinc-800"
-            >
-              Create an event
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </div>
-        )}
+          ) : error ? (
+            <div className="rounded-[2rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900 shadow-sm">{error}</div>
+          ) : viewAll ? (
+            <AllListingsPanel items={filteredEvents} />
+          ) : (
+            <div className="pb-12">
+              {groupedCategories.map((group) => (
+                <CategoryStrip key={group.title} title={group.title} items={group.items} />
+              ))}
+            </div>
+          )}
+        </section>
       </main>
     </div>
   );
