@@ -20,6 +20,19 @@ export type BuyerCartItem = {
 
 export type BuyerPaymentStatus = "pending" | "captured" | "failed" | "refunded" | "cancelled";
 
+export type BuyerPaymentEventDetail = {
+  eventId: string;
+  title: string;
+  organizerName: string;
+  eventDate: string;
+  startTime: string;
+  venue: string;
+  location: string;
+  ticketPrice?: number | null;
+  ticketLink?: string | null;
+  quantity: number;
+};
+
 export type BuyerPaymentRecord = {
   reference: string;
   orderId: string | null;
@@ -27,6 +40,7 @@ export type BuyerPaymentRecord = {
   listingId: string;
   listingIds?: string[];
   eventIds?: string[];
+  eventDetails?: BuyerPaymentEventDetail[];
   checkoutItems?: Array<{ listingId?: string; eventId?: string; quantity: number }>;
   listingTitle: string;
   quantity: number;
