@@ -41,6 +41,7 @@ import {
   TERMS_PATH,
   VERIFY_EMAIL_PATH,
   EVENTS_MANAGE_PATH,
+  EVENTS_DASHBOARD_PATH,
   ADMIN_EVENTS_PATH,
   type AppRoute,
 } from "./appNavigation.paths";
@@ -256,6 +257,7 @@ export const getAppRouteFromLocation = (
   if (location.pathname === MY_LISTINGS_PATH) return "my_listings";
   if (location.pathname === SELLER_PAYOUTS_PATH) return "seller_payouts";
   if (location.pathname === SELLER_DASHBOARD_PATH) return "seller_dashboard";
+  if (location.pathname === EVENTS_DASHBOARD_PATH) return "event_creator_overview";
   if (location.pathname === EVENTS_MANAGE_PATH) return "event_creator_dashboard";
   if (location.pathname === ADMIN_PATH) return "admin";
   if (location.pathname === ADMIN_EVENTS_PATH) return "admin_events";
