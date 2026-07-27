@@ -171,15 +171,9 @@ function readHomeSnapshot(featuredSections: HomeFeaturedSection[], campus: strin
   };
 }
 
-function fetchListings(path: string, signal?: AbortSignal) {
-  return fetch(path, { signal }).then(async (response) => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return Array.isArray(data.items) ? (data.items as HomePreviewListing[]) : [];
-  });
+async function fetchListings(path: string, signal?: AbortSignal) {
+  const data = await apiFetch(path, { signal });
+  return Array.isArray(data?.items) ? (data.items as HomePreviewListing[]) : [];
 }
 
 function hasFreshHomeCache(featuredSections: HomeFeaturedSection[]) {
@@ -303,24 +297,48 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
       setError(null);
 
       try {
-        const [newest, featured] = await Promise.all([
+        const [newestResult, featuredResult] = await Promise.allSettled([
           fetchListings(NEWEST_LISTINGS_URL, controller.signal),
           fetchListings(FEATURED_LISTINGS_URL, controller.signal),
         ]);
 
-        const sections: Record<string, HomePreviewListing[]> = {};
-        await Promise.all(
+        const newest = newestResult.status === "fulfilled" ? newestResult.value : [];
+        const featured = featuredResult.status === "fulfilled" ? featuredResult.value : [];
+
+        const sectionPairs = await Promise.allSettled(
           featuredSections.map(async (section) => {
             const items = await fetchListings(buildSectionUrl(section), controller.signal);
-            sections[section.key] = items;
+            return { key: section.key, items };
           })
         );
+
+        const sections: Record<string, HomePreviewListing[]> = {};
+        for (const section of featuredSections) {
+          sections[section.key] = cachedSnapshot.sectionListings[section.key] || [];
+        }
+        for (const result of sectionPairs) {
+          if (result.status === "fulfilled") {
+            sections[result.value.key] = result.value.items;
+          }
+        }
 
         const snapshot = buildRankedSnapshot(campus, featuredSections, newest, featured, sections);
         setRecommendedListings(snapshot.recommendedListings);
         setNewestListings(snapshot.newestListings);
         setFeaturedListings(snapshot.featuredListings);
         setSectionListings(snapshot.sectionListings);
+
+        const loadedSomething =
+          snapshot.recommendedListings.length > 0 ||
+          snapshot.newestListings.length > 0 ||
+          snapshot.featuredListings.length > 0 ||
+          Object.values(snapshot.sectionListings).some((items) => items.length > 0);
+
+        if (!loadedSomething && !cachedSnapshot.hasCache) {
+          setError("Unable to load homepage listings. Please try again.");
+        } else {
+          setError(null);
+        }
       } catch (e: unknown) {
         if (controller.signal.aborted || isAbortLikeError(e)) {
           return;
@@ -335,7 +353,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
       }
     };
 
-    load();
+    void load();
     return () => controller.abort();
   }, [campus, featuredSections]);
 
@@ -345,7 +363,7 @@ export function useHomePageData(featuredSections: HomeFeaturedSection[]) {
     const loadEvents = async () => {
       try {
         setEventsLoading(true);
-        const response = await apiFetch("/api/events");
+        const response = await apiFetch("/api/events", { signal: controller.signal });
         if (controller.signal.aborted) return;
         const items = Array.isArray(response?.items) ? (response.items as HomeEventPreview[]) : [];
         setEventsListings(items.slice(0, 6));
