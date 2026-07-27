@@ -25,7 +25,9 @@ export type OrderBundle = {
     paymentReference?: string | null;
     total?: { amount?: number; currency?: string };
     items?: Array<{
+      kind?: "listing" | "event_ticket";
       listingId?: string;
+      eventId?: string;
       title?: string;
       quantity?: number;
       unitPrice?: { amount?: number; currency?: string };
