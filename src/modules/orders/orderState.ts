@@ -2,10 +2,12 @@ import type { EntityId, ISODateString, MoneyValue, Timestamped } from '../../sha
 import type { CheckoutSettlementRoute, PaymentProviderKey } from '../../shared/types/payment.js';
 
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_escrow' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed' | 'closed';
-export type OrderSource = 'listing' | 'layby' | 'event' | 'accommodation' | 'wholesale';
+export type OrderSource = 'listing' | 'layby' | 'event' | 'mixed' | 'accommodation' | 'wholesale';
 
 export interface OrderItem {
-  listingId: EntityId;
+  kind?: 'listing' | 'event_ticket';
+  listingId?: EntityId;
+  eventId?: EntityId;
   title: string;
   quantity: number;
   unitPrice: MoneyValue;
