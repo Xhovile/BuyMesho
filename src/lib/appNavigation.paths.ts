@@ -32,6 +32,7 @@ export type AppRoute =
   | "email_action"
   | "my_listings"
   | "event_creator_dashboard"
+  | "event_creator_overview"
   | "admin"
   | "admin_events"
   | "admin_payments"
@@ -53,6 +54,7 @@ export const EXPLORE_PATH = "/explore";
 export const EVENTS_PATH = "/explore/events";
 export const EVENTS_CREATE_PATH = "/explore/events/create";
 export const EVENTS_MANAGE_PATH = "/explore/events/manage";
+export const EVENTS_DASHBOARD_PATH = "/explore/events/dashboard";
 export const SAVED_PATH = "/saved";
 export const HIDDEN_PATH = "/hidden";
 export const SETTINGS_PATH = "/settings";
