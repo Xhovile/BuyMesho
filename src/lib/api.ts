@@ -4,7 +4,7 @@ import { getTotpVerifiedSessionToken } from "./totpSession";
 async function authHeader() {
   const user = auth.currentUser;
   if (!user) return {} as Record<string, string>;
-  const token = await user.getIdToken(true);
+  const token = await user.getIdToken();
   const headers: Record<string, string> = { Authorization: `Bearer ${token}` };
 
   const totpSessionToken = getTotpVerifiedSessionToken();
