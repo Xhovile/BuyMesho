@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
+
+import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
 import { formatMoney } from "./shared/utils/formatMoney";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
+import { buildBuyerTickets, type BuyerTicketRecord } from "./lib/buyerTickets";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
@@ -22,6 +25,16 @@ const FILTERS: Array<{ key: Exclude<PaymentFilter, "all">; label: string }> = [
   { key: "rejected", label: "Rejected" },
   { key: "error", label: "Error" },
 ];
+
+function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
+  return (
+    <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
+      <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
+      {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
+    </div>
+  );
+}
 
 export default function BuyerPaymentsPage() {
   const ready = useRequireVerifiedUser();
@@ -68,11 +81,17 @@ function BuyerPaymentsPageContent() {
   }, []);
 
   const summary = useMemo(() => summarizePayments(orders, paymentRecords), [orders, paymentRecords]);
+  const tickets = useMemo<BuyerTicketRecord[]>(() => buildBuyerTickets(orders, paymentRecords), [orders, paymentRecords]);
 
   const visibleRecords = useMemo(() => {
     if (activeFilter === "all") return summary.records;
     return summary.records.filter((record) => record.status === activeFilter);
   }, [activeFilter, summary.records]);
+
+  const visibleTickets = useMemo(() => {
+    if (activeFilter === "all") return tickets;
+    return tickets.filter((ticket) => ticket.status === activeFilter);
+  }, [activeFilter, tickets]);
 
   const handleClearLogs = () => {
     const confirmed = window.confirm("Clear the buyer payment logs on this device? This only resets the local view.");
@@ -90,6 +109,9 @@ function BuyerPaymentsPageContent() {
   };
 
   const currentSortLabel = activeFilter === "all" ? "All" : activeFilter;
+  const ticketCount = tickets.length;
+  const paidTicketCount = tickets.filter((ticket) => ticket.status === "paid").length;
+  const pendingTicketCount = tickets.filter((ticket) => ticket.status === "pending").length;
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -115,17 +137,53 @@ function BuyerPaymentsPageContent() {
         </div>
 
         <div className="mt-8 border-b border-zinc-200 pb-6">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer analytics</p>
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer wallet</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-            Buyer payments and order flow
+            Tickets and payment activity
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-            Review payment outcomes, open order tracking, and monitor escrow-related activity from one continuous page.
+            Review event tickets, open the ticket order, and track payment outcomes from one continuous screen.
           </p>
         </div>
 
-        <div className="mt-6">
-          <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-500">Click to Sort</p>
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <StatTile label="Tickets" value={String(ticketCount)} hint="Purchased event passes" />
+          <StatTile label="Paid tickets" value={String(paidTicketCount)} hint="Ready to open" />
+          <StatTile label="Pending tickets" value={String(pendingTicketCount)} hint="Awaiting confirmation" />
+        </div>
+
+        <div className="mt-8 flex items-end justify-between gap-4 border-b border-zinc-200 pb-4">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Ticket wallet</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">Your event passes</h2>
+          </div>
+          <p className="text-sm text-zinc-500">
+            Showing <span className="font-bold text-zinc-800">{visibleTickets.length}</span> of <span className="font-bold text-zinc-800">{tickets.length}</span>
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          {loading ? (
+            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
+              Loading tickets…
+            </p>
+          ) : visibleTickets.length ? (
+            visibleTickets.map((ticket) => (
+              <BuyerTicketCard
+                key={ticket.key}
+                ticket={ticket}
+                onOpenOrder={() => navigateToOrderTracking(ticket.reference)}
+              />
+            ))
+          ) : (
+            <p className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600 md:col-span-2">
+              No event tickets yet.
+            </p>
+          )}
+        </div>
+
+        <div className="mt-10">
+          <p className="text-sm font-black uppercase tracking-[0.2em] text-zinc-500">Click to sort</p>
           <p className="mt-1 text-sm text-zinc-600">
             Current sort: <span className="font-bold text-zinc-900">{currentSortLabel}</span>
           </p>
