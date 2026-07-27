@@ -365,7 +365,7 @@ export function useAppLegacyState(): AppLegacyState {
     maxPrice,
     sortBy,
     currentPage,
-    serializedSpecFilters,
+    selectedSpecFilters,
   ]);
 
   useEffect(() => {
@@ -406,13 +406,11 @@ export function useAppLegacyState(): AppLegacyState {
       params.append("page", String(currentPage));
       params.append("pageSize", String(pageSize));
 
-      const res = await fetch(`/api/listings?${params.toString()}`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      setListings(Array.isArray(data.items) ? data.items : []);
+      const data = await apiFetch(`/api/listings?${params.toString()}`);
+      setListings(Array.isArray(data?.items) ? data.items : []);
 
-      const parsedTotal = Number(data.total || 0);
-      const parsedTotalPages = Number(data.totalPages || 1);
+      const parsedTotal = Number(data?.total || 0);
+      const parsedTotalPages = Number(data?.totalPages || 1);
       setTotalResults(Number.isFinite(parsedTotal) && parsedTotal >= 0 ? parsedTotal : 0);
       setTotalPages(Number.isFinite(parsedTotalPages) && parsedTotalPages >= 1 ? parsedTotalPages : 1);
     } catch (err) {
@@ -523,8 +521,8 @@ export function useAppLegacyState(): AppLegacyState {
     hideSoldOut,
     minPrice,
     maxPrice,
-    selectedSpecFilters,
     sortBy,
+    selectedSpecFilters,
   };
 
   const marketSetFilters: MarketSectionSetFilters = {
@@ -538,43 +536,30 @@ export function useAppLegacyState(): AppLegacyState {
     setHideSoldOut,
     setMinPrice,
     setMaxPrice,
-    setSelectedSpecFilters,
     setSortBy,
+    setSelectedSpecFilters,
   };
 
   const marketPagination: MarketSectionPagination = {
     currentPage,
     setCurrentPage,
-    totalPages,
-    totalListingsCount: totalResults,
     pageSize,
+    totalResults,
+    totalPages,
   };
 
   const marketActions: MarketSectionActions = {
-    onReport: (listingId) => setReportListingId(listingId),
-    onDelete: (listingId) => {
-      askConfirm({
-        title: "Delete listing",
-        message: "Are you sure you want to delete this listing?",
-        confirmText: "Delete",
-        danger: true,
-        onConfirm: () => {
-          setConfirmState(null);
-          void performDeleteListing(listingId);
-        },
-      });
-    },
-    onEdit: setEditingListing,
-    onHideSeller: hideSellerLocal,
-    onHideListing: hideListingLocal,
-    onToggleStatus: (listing) =>
-      void handleUpdateListing(listing.id, {
-        ...listing,
-        status: listing.status === "sold" ? "available" : "sold",
-      }),
-    onToggleSave: toggleSavedListing,
-    onOpenDetails: (listing) => navigateToListingDetails(listing.id),
-    onOpenSeller: (uid) => navigateToSellerProfile(uid),
+    handleListItem,
+    handleUpdateListing,
+    navigateToListingDetails,
+    navigateToSellerProfile,
+    hideSellerLocal,
+    hideListingLocal,
+    toggleSavedListing,
+    showFeedback,
+    askConfirm,
+    setEditingListing,
+    setReportListingId,
   };
 
   return {
