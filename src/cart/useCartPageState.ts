@@ -13,20 +13,70 @@ import {
 import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
 import { useAuthUser } from "../hooks/useAuthUser";
+import {
+  readEventCart,
+  removeEventCartItem,
+  subscribeToEventCartChanges,
+  type EventCartItem,
+} from "../lib/eventCart";
+import { getCartItemKey, type CartCheckoutItem, type CartItemKind, type CartItemViewModel } from "./cartTypes";
 
 export type CartCheckoutEntry = {
-  item: BuyerCartItem;
+  item: CartItemViewModel;
   checkoutQuantity: number;
 };
 
+function mapBuyerCartItem(item: BuyerCartItem): CartItemViewModel {
+  return {
+    kind: "listing",
+    cartKey: getCartItemKey("listing", String(item.listingId)),
+    itemId: String(item.listingId),
+    title: item.listingTitle,
+    subtitle: item.university ?? null,
+    description: item.listingDescription ?? null,
+    image: item.listingImage ?? null,
+    quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+    unitPrice: Number(item.unitPrice) || 0,
+    totalPrice: Number(item.totalPrice) || 0,
+    availableQuantity: item.availableQuantity ?? null,
+    addedAt: item.addedAt,
+  };
+}
+
+function mapEventCartItem(item: EventCartItem): CartItemViewModel {
+  return {
+    kind: "event_ticket",
+    cartKey: getCartItemKey("event_ticket", String(item.eventId)),
+    itemId: String(item.eventId),
+    title: item.eventTitle,
+    subtitle: item.organizerName ?? null,
+    description: [item.eventDate, item.startTime, item.venue, item.location].filter(Boolean).join(" • "),
+    image: null,
+    quantity: Math.max(1, Math.floor(Number(item.quantity) || 1)),
+    unitPrice: Number(item.unitPrice) || 0,
+    totalPrice: Number(item.totalPrice) || 0,
+    availableQuantity: null,
+    addedAt: item.addedAt,
+  };
+}
+
+function mergeCartItems(listingItems: BuyerCartItem[], eventItems: EventCartItem[]): CartItemViewModel[] {
+  return [
+    ...listingItems.map(mapBuyerCartItem),
+    ...eventItems.map(mapEventCartItem),
+  ].sort((a, b) => new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime());
+}
+
 export function useCartPageState() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const [items, setItems] = useState<BuyerCartItem[]>(() => readBuyerCart());
+  const [items, setItems] = useState<CartItemViewModel[]>(() =>
+    mergeCartItems(readBuyerCart(), readEventCart(firebaseUser?.uid ?? null)),
+  );
   const [payments, setPayments] = useState<BuyerPaymentRecord[]>(() => readBuyerPayments());
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const previousCartIdsRef = useRef<string[]>([]);
+  const previousCartKeysRef = useRef<string[]>([]);
   const selectAllRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -34,30 +84,38 @@ export function useCartPageState() {
 
     const sync = async () => {
       if (!mounted) return;
-      setItems(readBuyerCart());
       setPayments(readBuyerPayments());
+
+      const localListingItems = readBuyerCart();
+      const localEventItems = readEventCart(firebaseUser?.uid ?? null);
+      setItems(mergeCartItems(localListingItems, localEventItems));
 
       if (authLoading || !firebaseUser?.uid) {
         return;
       }
 
       try {
-        const refreshed = await refreshBuyerCartFromServer();
+        const refreshedListings = await refreshBuyerCartFromServer();
         if (!mounted) return;
-        setItems(refreshed);
+        const refreshedEventItems = readEventCart(firebaseUser.uid);
+        setItems(mergeCartItems(refreshedListings, refreshedEventItems));
         setPayments(readBuyerPayments());
       } catch {
         if (!mounted) return;
-        setItems(readBuyerCart());
+        setItems(mergeCartItems(readBuyerCart(), readEventCart(firebaseUser.uid)));
         setPayments(readBuyerPayments());
       }
     };
 
     void sync();
-    const unsubscribe = subscribeToBuyerCartChanges(() => {
+    const unsubscribeListings = subscribeToBuyerCartChanges(() => {
       if (!mounted) return;
-      setItems(readBuyerCart());
+      setItems(mergeCartItems(readBuyerCart(), readEventCart(firebaseUser?.uid ?? null)));
       setPayments(readBuyerPayments());
+    });
+    const unsubscribeEvents = subscribeToEventCartChanges(() => {
+      if (!mounted) return;
+      setItems(mergeCartItems(readBuyerCart(), readEventCart(firebaseUser?.uid ?? null)));
     });
 
     window.addEventListener("storage", sync as unknown as EventListener);
@@ -65,33 +123,33 @@ export function useCartPageState() {
 
     return () => {
       mounted = false;
-      unsubscribe();
+      unsubscribeListings();
+      unsubscribeEvents();
       window.removeEventListener("storage", sync as unknown as EventListener);
       window.removeEventListener("focus", sync as unknown as EventListener);
     };
   }, [firebaseUser?.uid, authLoading]);
 
   useEffect(() => {
-    const nextCartIds = items.map((item) => String(item.listingId));
-    const previousCartIdSet = new Set(previousCartIdsRef.current);
+    const nextCartKeys = items.map((item) => item.cartKey);
+    const previousCartKeySet = new Set(previousCartKeysRef.current);
 
     setSelectedQuantities((current) => {
       const next: Record<string, number> = {};
 
       for (const item of items) {
-        const listingId = String(item.listingId);
-        const previousValue = current[listingId];
-        const isExistingItem = previousCartIdSet.has(listingId);
+        const previousValue = current[item.cartKey];
+        const isExistingItem = previousCartKeySet.has(item.cartKey);
         const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
-        const fallbackQuantity = isExistingItem ? previousValue ?? 0 : 1;
+        const fallbackQuantity = isExistingItem ? previousValue ?? 0 : item.quantity;
 
-        next[listingId] = Math.max(0, Math.min(maxSelectable, Math.floor(Number(fallbackQuantity) || 0)));
+        next[item.cartKey] = Math.max(0, Math.min(maxSelectable, Math.floor(Number(fallbackQuantity) || 0)));
       }
 
       return next;
     });
 
-    previousCartIdsRef.current = nextCartIds;
+    previousCartKeysRef.current = nextCartKeys;
   }, [items]);
 
   const latestPendingCheckoutUrl = useMemo(
@@ -109,7 +167,7 @@ export function useCartPageState() {
           const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
           return {
             item,
-            checkoutQuantity: Math.max(0, Math.min(maxSelectable, selectedQuantities[String(item.listingId)] ?? 0)),
+            checkoutQuantity: Math.max(0, Math.min(maxSelectable, selectedQuantities[item.cartKey] ?? 0)),
           };
         })
         .filter(({ checkoutQuantity }) => checkoutQuantity > 0),
@@ -131,18 +189,18 @@ export function useCartPageState() {
     }
   }, [someSelected]);
 
-  const setSelectedQuantity = (listingId: string, quantity: number, maxQuantity: number) => {
+  const setSelectedQuantity = (cartKey: string, quantity: number, maxQuantity: number) => {
     setSelectedQuantities((current) => ({
       ...current,
-      [listingId]: Math.max(0, Math.min(maxQuantity, Math.floor(quantity))),
+      [cartKey]: Math.max(0, Math.min(maxQuantity, Math.floor(quantity))),
     }));
   };
 
-  const toggleItemSelection = (listingId: string, maxQuantity: number) => {
+  const toggleItemSelection = (cartKey: string, maxQuantity: number) => {
     setSelectedQuantities((current) => {
-      const currentQuantity = current[listingId] ?? 0;
+      const currentQuantity = current[cartKey] ?? 0;
       const nextQuantity = currentQuantity > 0 ? 0 : Math.min(1, maxQuantity);
-      return { ...current, [listingId]: nextQuantity };
+      return { ...current, [cartKey]: nextQuantity };
     });
   };
 
@@ -151,18 +209,29 @@ export function useCartPageState() {
       const next = { ...current };
       for (const item of items) {
         const maxSelectable = Math.max(0, Number(item.availableQuantity ?? item.quantity) || 0);
-        next[String(item.listingId)] = checked ? maxSelectable : 0;
+        next[item.cartKey] = checked ? maxSelectable : 0;
       }
       return next;
     });
   };
 
-  const handleRemoveItem = async (listingId: string) => {
-    await removeBuyerCartItem(listingId);
-    setItems((current) => current.filter((item) => String(item.listingId) !== String(listingId)));
+  const handleRemoveItem = async (cartKey: string) => {
+    const item = items.find((entry) => entry.cartKey === cartKey);
+    if (!item) return;
+
+    if (item.kind === "listing") {
+      await removeBuyerCartItem(item.itemId);
+    } else {
+      const uid = firebaseUser?.uid;
+      if (uid) {
+        removeEventCartItem(uid, item.itemId);
+      }
+    }
+
+    setItems((current) => current.filter((entry) => entry.cartKey !== cartKey));
     setSelectedQuantities((current) => {
       const next = { ...current };
-      delete next[listingId];
+      delete next[cartKey];
       return next;
     });
   };
@@ -174,11 +243,20 @@ export function useCartPageState() {
     setCheckoutError(null);
 
     try {
-      const listingIds = checkoutItems.map(({ item }) => String(item.listingId));
-      const listingIdQuery = encodeURIComponent(listingIds.join(","));
-      const returnUrl = `${window.location.origin}/payment/return?listingIds=${listingIdQuery}`;
-      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingIds=${listingIdQuery}`;
+      const listingIds = checkoutItems
+        .filter(({ item }) => item.kind === "listing")
+        .map(({ item }) => item.itemId);
+      const eventIds = checkoutItems
+        .filter(({ item }) => item.kind === "event_ticket")
+        .map(({ item }) => item.itemId);
+      const returnUrl = `${window.location.origin}/payment/return`;
+      const cancelUrl = `${window.location.origin}/payment/return?cancelled=1`;
       const idempotencyKey = crypto.randomUUID();
+      const payloadItems: CartCheckoutItem[] = checkoutItems.map(({ item, checkoutQuantity }) =>
+        item.kind === "listing"
+          ? { listingId: item.itemId, quantity: checkoutQuantity }
+          : { eventId: item.itemId, quantity: checkoutQuantity },
+      );
 
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
@@ -187,10 +265,7 @@ export function useCartPageState() {
           "Idempotency-Key": idempotencyKey,
         },
         body: JSON.stringify({
-          items: checkoutItems.map(({ item, checkoutQuantity }) => ({
-            listingId: item.listingId,
-            quantity: checkoutQuantity,
-          })),
+          items: payloadItems,
           method: "mobile_money",
           returnUrl,
           cancelUrl,
@@ -210,29 +285,30 @@ export function useCartPageState() {
       const checkoutUrl = result.checkoutUrl ?? result.payment?.checkoutUrl ?? null;
       const paymentId = result.paymentId ?? result.payment?.id ?? "";
       const reference = result.reference ?? result.payment?.reference ?? "";
+      const totalQuantity = checkoutItems.reduce((total, entry) => total + entry.checkoutQuantity, 0);
+      const totalPrice = checkoutItems.reduce(
+        (total, entry) => total + entry.checkoutQuantity * entry.item.unitPrice,
+        0,
+      );
+      const displayTitle =
+        checkoutItems.length === 1
+          ? checkoutItems[0].item.title
+          : `${checkoutItems[0].item.title} + ${checkoutItems.length - 1} more`;
 
       touchBuyerPaymentFromCheckout({
         reference,
         orderId: result.orderId,
         paymentId,
-        listingId: listingIds[0] ?? "",
-        listingIds,
-        checkoutItems: checkoutItems.map(({ item, checkoutQuantity }) => ({
-          listingId: String(item.listingId),
-          quantity: checkoutQuantity,
-        })),
-        listingTitle:
-          checkoutItems.length === 1
-            ? checkoutItems[0].item.listingTitle
-            : `${checkoutItems[0].item.listingTitle} + ${checkoutItems.length - 1} more`,
-        quantity: checkoutItems.reduce((total, entry) => total + entry.checkoutQuantity, 0),
-        totalPrice: checkoutItems.reduce(
-          (total, entry) => total + entry.checkoutQuantity * entry.item.unitPrice,
-          0,
-        ),
+        listingId: listingIds[0] ?? eventIds[0] ?? "",
+        listingIds: listingIds.length ? listingIds : undefined,
+        eventIds: eventIds.length ? eventIds : undefined,
+        checkoutItems: payloadItems,
+        listingTitle: displayTitle,
+        quantity: totalQuantity,
+        totalPrice,
         checkoutUrl,
         txRef: reference,
-      });
+      } as any);
 
       if (checkoutUrl) {
         window.location.href = checkoutUrl;
