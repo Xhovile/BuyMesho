@@ -16,6 +16,7 @@ import {
 } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { apiFetch } from "./lib/api";
 
 const EVENTS_API_URL = "/api/events";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
@@ -147,18 +148,15 @@ export default function EventsDirectoryPage() {
       setError(null);
 
       try {
-        const response = await fetch(EVENTS_API_URL, { signal: controller.signal });
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = (await response.json()) as { items?: EventRecord[] };
+        const data = await apiFetch(EVENTS_API_URL, { signal: controller.signal });
         if (controller.signal.aborted) return;
 
-        const items = Array.isArray(data.items) ? data.items : [];
+        const items = Array.isArray((data as { items?: EventRecord[] } | null)?.items)
+          ? ((data as { items?: EventRecord[] }).items as EventRecord[])
+          : [];
         setEvents(items);
         setError(null);
-        writeCachedApiJson(EVENTS_API_URL, { items }, response);
+        writeCachedApiJson(EVENTS_API_URL, { items }, new Response(JSON.stringify({ items }), { status: 200 }));
       } catch (err: unknown) {
         if (controller.signal.aborted) return;
         if (!cachedSnapshot.hasCache) {
