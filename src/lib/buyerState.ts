@@ -26,7 +26,8 @@ export type BuyerPaymentRecord = {
   paymentId: string | null;
   listingId: string;
   listingIds?: string[];
-  checkoutItems?: Array<{ listingId: string; quantity: number }>;
+  eventIds?: string[];
+  checkoutItems?: Array<{ listingId?: string; eventId?: string; quantity: number }>;
   listingTitle: string;
   quantity: number;
   totalPrice: number;
