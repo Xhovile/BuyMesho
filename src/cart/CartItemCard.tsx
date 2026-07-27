@@ -1,10 +1,10 @@
 import { ChevronRight, ShoppingCart, Trash2 } from "lucide-react";
 
 import { formatMoney } from "../shared/utils/formatMoney";
-import type { BuyerCartItem } from "../lib/buyerState";
+import type { CartItemViewModel } from "./cartTypes";
 
 type CartItemCardProps = {
-  item: BuyerCartItem;
+  item: CartItemViewModel;
   isSelected: boolean;
   selectedQuantity: number;
   maxSelectable: number;
@@ -27,7 +27,9 @@ export function CartItemCard({
   onRemove,
 }: CartItemCardProps) {
   const availableQuantity = item.availableQuantity ?? null;
-  const description = item.listingDescription?.trim();
+  const description = item.description?.trim();
+  const subtitle = item.subtitle?.trim();
+  const kindLabel = item.kind === "event_ticket" ? "Event ticket" : "Listing";
 
   return (
     <div
@@ -52,11 +54,11 @@ export function CartItemCard({
             onClick={(event) => event.stopPropagation()}
             onChange={onToggleSelection}
             className="absolute left-2 top-2 z-10 h-4 w-4 rounded border-zinc-300 text-zinc-950 focus:ring-zinc-900"
-            aria-label={`Select ${item.listingTitle}`}
+            aria-label={`Select ${item.title}`}
           />
 
-          {item.listingImage ? (
-            <img src={item.listingImage} alt={item.listingTitle} className="h-full w-full object-cover" />
+          {item.image ? (
+            <img src={item.image} alt={item.title} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-zinc-500">
               <ShoppingCart className="h-6 w-6" />
@@ -67,15 +69,15 @@ export function CartItemCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-zinc-950 sm:text-base">{item.listingTitle}</p>
-              <p className="mt-0.5 text-xs font-semibold text-zinc-500 sm:text-sm">
-                {formatMoney(item.unitPrice)} each
-              </p>
+              <p className="truncate text-sm font-bold text-zinc-950 sm:text-base">{item.title}</p>
+              <p className="mt-0.5 text-xs font-semibold text-zinc-500 sm:text-sm">{formatMoney(item.unitPrice)} each</p>
+              <p className="mt-0.5 text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">{kindLabel}</p>
             </div>
 
             <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
           </div>
 
+          {subtitle ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 sm:text-sm">{subtitle}</p> : null}
           {description ? <p className="mt-1 line-clamp-1 text-xs text-zinc-500 sm:text-sm">{description}</p> : null}
 
           <div className="mt-2 flex flex-wrap gap-1.5">
@@ -99,7 +101,7 @@ export function CartItemCard({
             }}
             disabled={!isSelected}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-black text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={`Decrease checkout quantity for ${item.listingTitle}`}
+            aria-label={`Decrease checkout quantity for ${item.title}`}
           >
             −
           </button>
@@ -116,7 +118,7 @@ export function CartItemCard({
             }}
             disabled={selectedQuantity >= maxSelectable}
             className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-sm font-black text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
-            aria-label={`Increase checkout quantity for ${item.listingTitle}`}
+            aria-label={`Increase checkout quantity for ${item.title}`}
           >
             +
           </button>
