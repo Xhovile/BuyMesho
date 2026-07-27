@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
+  BarChart3,
   ChevronLeft,
   ExternalLink,
   Loader2,
@@ -9,14 +10,21 @@ import {
   ShoppingBag,
   Ticket,
   Trash2,
-  BarChart3,
 } from "lucide-react";
 
 import { apiFetch } from "./lib/api";
-import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateBackOrPath, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
+import {
+  EVENTS_CREATE_PATH,
+  EVENTS_MANAGE_PATH,
+  EVENTS_PATH,
+  navigateBackOrPath,
+  navigateToLoginWithReturnPath,
+  navigateToPath,
+} from "./lib/appNavigation";
 import { startConversationFromEvent } from "./lib/messages";
 import { navigateToConversation } from "./lib/messagesNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { upsertEventCartItem } from "./lib/eventCart";
 
 type EventRecord = {
   id: number;
@@ -39,26 +47,6 @@ type EventRecord = {
   created_at: string;
   updated_at: string;
 };
-
-type EventCartItem = {
-  itemType: "event_ticket";
-  eventId: number;
-  eventTitle: string;
-  organizerName: string;
-  organizerUid: string | null;
-  eventDate: string;
-  startTime: string;
-  venue: string;
-  location: string;
-  ticketPrice: number | null;
-  ticketLink: string | null;
-  unitPrice: number;
-  totalPrice: number;
-  quantity: number;
-  addedAt: string;
-};
-
-const EVENT_CART_KEY = "__buymesho_event_cart";
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
@@ -131,44 +119,6 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
-function readEventCart(userUid: string) {
-  try {
-    const raw = window.localStorage.getItem(`${EVENT_CART_KEY}_${userUid}`);
-    if (!raw) return [] as EventCartItem[];
-    const parsed = JSON.parse(raw) as EventCartItem[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [] as EventCartItem[];
-  }
-}
-
-function writeEventCart(userUid: string, items: EventCartItem[]) {
-  window.localStorage.setItem(`${EVENT_CART_KEY}_${userUid}`, JSON.stringify(items.slice(0, 20)));
-  window.dispatchEvent(new CustomEvent("buymesho:event-cart-updated"));
-}
-
-function isEventTicketCartItem(item: { itemType?: string }) {
-  return item.itemType === "event_ticket";
-}
-
-function upsertEventCartItem(userUid: string, item: EventCartItem) {
-  const current = readEventCart(userUid).filter(isEventTicketCartItem);
-  const next = current.filter((entry) => entry.eventId !== item.eventId);
-  next.unshift(item);
-  writeEventCart(userUid, next);
-}
-
-async function recordEventActivity(eventId: number, activity_type: "ticket_added_to_cart" | "ticket_link_clicked") {
-  try {
-    await apiFetch(`/api/events/${eventId}/activity`, {
-      method: "POST",
-      body: JSON.stringify({ activity_type }),
-    });
-  } catch {
-    // Analytics should never block the user flow.
-  }
-}
-
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm shadow-zinc-200/20">
@@ -191,6 +141,7 @@ export default function EventDetailsPage() {
 
   const [event, setEvent] = useState<EventRecord | null>(null);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -234,7 +185,7 @@ export default function EventDetailsPage() {
   const isPublished = event?.status === "published";
   const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
   const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid && isPublished;
-  const canBuyOrCart = isPublished;
+  const canBuyOrCart = !!event && isPublished;
 
   const clearNotice = () => setNotice(null);
 
@@ -269,7 +220,7 @@ export default function EventDetailsPage() {
     }
 
     if (!canMessageEvent) {
-      setNotice(event.creator_uid ? "This event is inactive right now." : "This older event does not yet have an owner profile for messaging.");
+      setNotice(event.creator_uid ? "This event is inactive right now." : "This event does not yet have an owner profile for messaging.");
       return;
     }
 
@@ -283,18 +234,77 @@ export default function EventDetailsPage() {
 
   const handleBuyTicket = async () => {
     if (!event) return;
+    if (!firebaseUser?.uid) {
+      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      return;
+    }
     if (!canBuyOrCart) {
       setNotice("This event is inactive right now.");
       return;
     }
 
-    if (event.ticket_link) {
-      void recordEventActivity(event.id, "ticket_link_clicked");
-      window.open(event.ticket_link, "_blank", "noopener,noreferrer");
+    try {
+      setCheckoutLoading(true);
+      setNotice(null);
+
+      const result = (await apiFetch("/api/payments/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Idempotency-Key": crypto.randomUUID(),
+        },
+        body: JSON.stringify({
+          items: [{ eventId: String(event.id), quantity: 1 }],
+          method: "mobile_money",
+          returnUrl: `${window.location.origin}/payment/return`,
+          cancelUrl: `${window.location.origin}/payment/return?cancelled=1`,
+        }),
+      })) as { checkoutUrl?: string | null; payment?: { checkoutUrl?: string | null } };
+
+      const checkoutUrl = result.checkoutUrl ?? result.payment?.checkoutUrl ?? null;
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+        return;
+      }
+
+      throw new Error("Payment gateway did not return a checkout URL.");
+    } catch (error: any) {
+      setNotice(error?.message || "Failed to start ticket checkout.");
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleAddToCart = async () => {
+    if (!event) return;
+    if (!firebaseUser?.uid) {
+      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
+      return;
+    }
+    if (!canBuyOrCart) {
+      setNotice("This event is inactive right now.");
       return;
     }
 
-    setNotice("This event does not have a ticket link yet.");
+    upsertEventCartItem(firebaseUser.uid, {
+      itemType: "event_ticket",
+      eventId: String(event.id),
+      eventTitle: event.event_title,
+      organizerName: event.organizer_name,
+      organizerUid: event.creator_uid,
+      eventDate: event.event_date,
+      startTime: event.start_time,
+      venue: event.venue,
+      location: event.location,
+      ticketPrice: event.ticket_price,
+      ticketLink: event.ticket_link,
+      unitPrice: Number(event.ticket_price || 0),
+      quantity: 1,
+      totalPrice: Number(event.ticket_price || 0),
+      addedAt: new Date().toISOString(),
+    });
+
+    setNotice("Ticket added to cart.");
   };
 
   const handleCancelEvent = async () => {
@@ -308,43 +318,6 @@ export default function EventDetailsPage() {
     } catch (error: any) {
       setNotice(error?.message || "Could not cancel this event.");
     }
-  };
-
-  const handleAddToCart = async () => {
-    if (!event) return;
-    if (!firebaseUser?.uid) {
-      navigateToLoginWithReturnPath(eventPageUrl || `${EVENTS_PATH}?event=${event.id}`);
-      return;
-    }
-
-    if (!canBuyOrCart) {
-      setNotice("This event is inactive right now.");
-      return;
-    }
-
-    const unitPrice = Number(event.ticket_price || 0);
-    const quantity = 1;
-
-    upsertEventCartItem(firebaseUser.uid, {
-      itemType: "event_ticket",
-      eventId: event.id,
-      eventTitle: event.event_title,
-      organizerName: event.organizer_name,
-      organizerUid: event.creator_uid,
-      eventDate: event.event_date,
-      startTime: event.start_time,
-      venue: event.venue,
-      location: event.location,
-      ticketPrice: event.ticket_price,
-      ticketLink: event.ticket_link,
-      unitPrice,
-      quantity,
-      totalPrice: unitPrice * quantity,
-      addedAt: new Date().toISOString(),
-    });
-
-    void recordEventActivity(event.id, "ticket_added_to_cart");
-    setNotice("Ticket added to cart.");
   };
 
   if (loading) {
@@ -505,11 +478,11 @@ export default function EventDetailsPage() {
                 <button
                   type="button"
                   onClick={() => void handleBuyTicket()}
-                  disabled={!canBuyOrCart}
+                  disabled={!canBuyOrCart || checkoutLoading}
                   className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <ExternalLink className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Buy Ticket</span>
+                  <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
                 </button>
 
                 <button
