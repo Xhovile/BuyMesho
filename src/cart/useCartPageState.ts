@@ -8,6 +8,7 @@ import {
   subscribeToBuyerCartChanges,
   touchBuyerPaymentFromCheckout,
   type BuyerCartItem,
+  type BuyerPaymentEventDetail,
   type BuyerPaymentRecord,
 } from "../lib/buyerState";
 import { apiFetch } from "../lib/api";
@@ -249,6 +250,7 @@ export function useCartPageState() {
       const eventIds = checkoutItems
         .filter(({ item }) => item.kind === "event_ticket")
         .map(({ item }) => item.itemId);
+      const eventCartById = new Map((readEventCart(firebaseUser?.uid ?? null) || []).map((event) => [String(event.eventId), event]));
       const returnUrl = `${window.location.origin}/payment/return`;
       const cancelUrl = `${window.location.origin}/payment/return?cancelled=1`;
       const idempotencyKey = crypto.randomUUID();
@@ -257,6 +259,32 @@ export function useCartPageState() {
           ? { listingId: item.itemId, quantity: checkoutQuantity }
           : { eventId: item.itemId, quantity: checkoutQuantity },
       );
+      const eventDetails: BuyerPaymentEventDetail[] = checkoutItems
+        .filter(({ item }) => item.kind === "event_ticket")
+        .map(({ item, checkoutQuantity }) => {
+          const event = eventCartById.get(item.itemId);
+          const title = event?.eventTitle ?? item.title;
+          const organizerName = event?.organizerName ?? item.subtitle ?? "Event organizer";
+          const eventDate = event?.eventDate ?? "";
+          const startTime = event?.startTime ?? "";
+          const venue = event?.venue ?? "";
+          const location = event?.location ?? "";
+          const ticketPrice = event?.ticketPrice ?? item.unitPrice;
+          const ticketLink = event?.ticketLink ?? null;
+
+          return {
+            eventId: item.itemId,
+            title,
+            organizerName,
+            eventDate,
+            startTime,
+            venue,
+            location,
+            ticketPrice,
+            ticketLink,
+            quantity: checkoutQuantity,
+          };
+        });
 
       const result = (await apiFetch(ENDPOINTS.payments.checkout, {
         method: "POST",
@@ -302,6 +330,7 @@ export function useCartPageState() {
         listingId: listingIds[0] ?? eventIds[0] ?? "",
         listingIds: listingIds.length ? listingIds : undefined,
         eventIds: eventIds.length ? eventIds : undefined,
+        eventDetails: eventDetails.length ? eventDetails : undefined,
         checkoutItems: payloadItems,
         listingTitle: displayTitle,
         quantity: totalQuantity,
