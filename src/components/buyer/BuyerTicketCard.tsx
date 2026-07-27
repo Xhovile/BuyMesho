@@ -68,7 +68,7 @@ export default function BuyerTicketCard({ ticket, onOpenOrder }: BuyerTicketCard
           </div>
           <div className="text-right">
             <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Amount</p>
-            <p className="mt-1 text-sm font-black text-zinc-950">{formatMoney({ amount: ticket.amount, currency: ticket.currency } as any)}</p>
+            <p className="mt-1 text-sm font-black text-zinc-950">{formatMoney(ticket.amount, ticket.currency)}</p>
           </div>
         </div>
 
