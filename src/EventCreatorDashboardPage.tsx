@@ -217,10 +217,6 @@ export default function EventCreatorDashboardPage() {
     void loadDashboard();
   }, [authLoading, firebaseUser, isOverviewView]);
 
-  if (isOverviewView) {
-    return <EventCreatorOverviewPage />;
-  }
-
   const events = dashboard?.events ?? [];
   const selectedEvent = useMemo(() => {
     if (events.length === 0) return null;
@@ -324,7 +320,9 @@ export default function EventCreatorDashboardPage() {
   const creatorProfile = dashboard?.creator ?? null;
   const activeUntil = creatorProfile?.active_until ? formatDateTime(creatorProfile.active_until) : null;
 
-  return (
+  return isOverviewView ? (
+    <EventCreatorOverviewPage />
+  ) : (
     <AccountPageShell
       eyebrow="Event creator"
       title="Creator dashboard"
