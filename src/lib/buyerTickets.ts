@@ -79,6 +79,25 @@ function getEventTicketKey(reference: string, eventId: string) {
   return `${reference}:${eventId}`;
 }
 
+function readString(source: Record<string, unknown> | undefined, ...fields: string[]) {
+  if (!source) return "";
+  for (const field of fields) {
+    const value = source[field];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function readNumber(source: Record<string, unknown> | undefined, ...fields: string[]) {
+  if (!source) return null;
+  for (const field of fields) {
+    const value = source[field];
+    const numeric = typeof value === "number" ? value : Number(value);
+    if (Number.isFinite(numeric)) return numeric;
+  }
+  return null;
+}
+
 export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPaymentRecord[]): BuyerTicketRecord[] {
   const paymentByReference = new Map<string, BuyerPaymentRecord>();
   const paymentByOrderId = new Map<string, BuyerPaymentRecord>();
@@ -117,29 +136,40 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
     (bundle.order?.items ?? [])
       .filter((item) => item?.kind === "event_ticket" || item?.eventId)
       .forEach((item) => {
-        const eventId = String(item.eventId ?? "");
+        const itemData = item as Record<string, unknown>;
+        const eventId = String(itemData.eventId ?? "");
         if (!eventId) return;
         const reference = String(bundle.order?.paymentReference ?? bundle.order?.id ?? `event-${eventId}`);
+        const paymentEvent = payment?.eventDetails?.find((entry) => String(entry.eventId) === eventId);
+        const eventDate = readString(itemData, "eventDate") || paymentEvent?.eventDate || "";
+        const startTime = readString(itemData, "startTime") || paymentEvent?.startTime || "";
+        const venue = readString(itemData, "venue") || paymentEvent?.venue || "";
+        const location = readString(itemData, "location") || paymentEvent?.location || "";
+        const organizerName = readString(itemData, "organizerName") || paymentEvent?.organizerName || "Event organizer";
+        const ticketLink = readString(itemData, "ticketLink") || paymentEvent?.ticketLink || "";
+        const ticketPrice = readNumber(itemData, "ticketPrice") ?? paymentEvent?.ticketPrice ?? null;
+        const quantity = Math.max(1, Number(item.quantity ?? paymentEvent?.quantity ?? 1) || 1);
+        const amount = ticketPrice !== null ? Number(ticketPrice) * quantity : Number(bundle.order?.total?.amount ?? 0);
 
         pushTicket({
           key: `${reference}:${eventId}`,
           reference,
           orderId: String(bundle.order?.id ?? reference),
           eventId,
-          title: String(item.title ?? `Event ${eventId}`),
-          organizerName: String((bundle.order as Record<string, unknown> | undefined)?.organizerName ?? "Event organizer"),
-          eventDate: String((bundle.order as Record<string, unknown> | undefined)?.eventDate ?? ""),
-          startTime: String((bundle.order as Record<string, unknown> | undefined)?.startTime ?? ""),
-          venue: String((bundle.order as Record<string, unknown> | undefined)?.venue ?? ""),
-          location: String((bundle.order as Record<string, unknown> | undefined)?.location ?? ""),
-          quantity: Math.max(1, Number(item.quantity ?? 1) || 1),
-          amount: Number(bundle.order?.total?.amount ?? 0),
+          title: String(item.title ?? paymentEvent?.title ?? `Event ${eventId}`),
+          organizerName,
+          eventDate,
+          startTime,
+          venue,
+          location,
+          quantity,
+          amount,
           currency: String(bundle.order?.total?.currency ?? "MWK"),
           status: ticketStatus,
           paymentStatus,
           orderStatus,
           ticketCode: formatTicketCode(reference, eventId),
-          detail: buildDetail(String((bundle.order as Record<string, unknown> | undefined)?.eventDate ?? ""), String((bundle.order as Record<string, unknown> | undefined)?.startTime ?? ""), String((bundle.order as Record<string, unknown> | undefined)?.venue ?? ""), String((bundle.order as Record<string, unknown> | undefined)?.location ?? ""), "order"),
+          detail: buildDetail(eventDate, startTime, venue, location, "order"),
           updatedAt,
           source: "order",
         });
@@ -156,6 +186,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       ...checkoutItems
         .filter((item) => item.eventId)
         .map((item) => String(item.eventId)),
+      ...(payment.eventDetails ?? []).map((entry) => String(entry.eventId)),
     ].filter(Boolean);
 
     if (!fallbackEventIds.length) return;
@@ -167,25 +198,31 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       if (seen.has(dedupeKey)) return;
       seen.add(dedupeKey);
 
-      tickets.push({
+      const eventDetail = payment.eventDetails?.find((entry) => String(entry.eventId) === eventId);
+      const checkoutItem = checkoutItems.find((entry) => String(entry.eventId) === eventId);
+      const title = eventDetail?.title || payment.listingTitle || `Event ${eventId}`;
+      const quantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? payment.quantity ?? 1) || 1);
+      const amount = Number(payment.totalPrice ?? 0);
+
+      pushTicket({
         key: dedupeKey,
         reference,
         orderId: String(payment.orderId ?? reference),
         eventId,
-        title: payment.listingTitle || `Event ${eventId}`,
-        organizerName: "Event organizer",
-        eventDate: "",
-        startTime: "",
-        venue: "",
-        location: "",
-        quantity: Math.max(1, Number(payment.quantity ?? 1) || 1),
-        amount: Number(payment.totalPrice ?? 0),
+        title,
+        organizerName: eventDetail?.organizerName || "Event organizer",
+        eventDate: eventDetail?.eventDate || "",
+        startTime: eventDetail?.startTime || "",
+        venue: eventDetail?.venue || "",
+        location: eventDetail?.location || "",
+        quantity,
+        amount,
         currency: "MWK",
         status: ticketStatus,
         paymentStatus: payment.status,
         orderStatus: payment.status,
         ticketCode: formatTicketCode(reference, eventId),
-        detail: buildDetail("", "", "", "", "payment"),
+        detail: buildDetail(eventDetail?.eventDate || "", eventDetail?.startTime || "", eventDetail?.venue || "", eventDetail?.location || "", "payment"),
         updatedAt: payment.updatedAt ?? payment.createdAt ?? null,
         source: "payment",
       });
