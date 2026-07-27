@@ -19,6 +19,7 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api";
 
 const EVENTS_API_URL = "/api/events";
+const EVENT_CREATOR_ACCESS_URL = "/api/event-creators/me";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
 
 function matchesSearch(item: EventRecord, query: string) {
@@ -118,8 +119,10 @@ export default function EventsDirectoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [viewAll, setViewAll] = useState(false);
+  const [canCreateEvents, setCanCreateEvents] = useState(false);
+  const [creatorAccessLoading, setCreatorAccessLoading] = useState(true);
 
-  const { user: firebaseUser } = useAuthUser();
+  const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const { profile: userProfile } = useAccountProfile();
   const activeChip = getMarketChipFromLocation(window.location);
 
@@ -175,6 +178,37 @@ export default function EventsDirectoryPage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (authLoading) return;
+
+    let active = true;
+    async function loadCreatorAccess() {
+      if (!firebaseUser) {
+        if (!active) return;
+        setCanCreateEvents(false);
+        setCreatorAccessLoading(false);
+        return;
+      }
+
+      try {
+        setCreatorAccessLoading(true);
+        const data = (await apiFetch(EVENT_CREATOR_ACCESS_URL)) as { canCreateEvents?: boolean };
+        if (!active) return;
+        setCanCreateEvents(data?.canCreateEvents === true);
+      } catch {
+        if (!active) return;
+        setCanCreateEvents(false);
+      } finally {
+        if (active) setCreatorAccessLoading(false);
+      }
+    }
+
+    void loadCreatorAccess();
+    return () => {
+      active = false;
+    };
+  }, [authLoading, firebaseUser]);
+
   const categories = useMemo(() => {
     const seen = new Set<string>();
     const ordered: string[] = [];
@@ -229,7 +263,7 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="flex flex-wrap gap-3 sm:justify-end">
-                {firebaseUser ? (
+                {creatorAccessLoading ? null : canCreateEvents ? (
                   <button
                     type="button"
                     onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
