@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BarChart3, Clock3, ExternalLink, Loader2, MessageCircle, Pencil, RefreshCw, Ticket, Trash2, Eye } from "lucide-react";
 
 import AccountPageShell from "./components/AccountPageShell";
+import EventCreatorOverviewPage from "./EventCreatorOverviewPage";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
 import { fetchInbox } from "./lib/messages";
@@ -154,6 +155,12 @@ export default function EventCreatorDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const isOverviewView = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get("view") === "dashboard";
+  }, []);
+
   const selectedEventId = useMemo(() => {
     if (typeof window === "undefined") return null;
     const params = new URLSearchParams(window.location.search);
@@ -203,8 +210,16 @@ export default function EventCreatorDashboardPage() {
       setLoading(false);
       return;
     }
+    if (isOverviewView) {
+      setLoading(false);
+      return;
+    }
     void loadDashboard();
-  }, [authLoading, firebaseUser]);
+  }, [authLoading, firebaseUser, isOverviewView]);
+
+  if (isOverviewView) {
+    return <EventCreatorOverviewPage />;
+  }
 
   const events = dashboard?.events ?? [];
   const selectedEvent = useMemo(() => {
@@ -334,19 +349,29 @@ export default function EventCreatorDashboardPage() {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-4 shadow-sm shadow-zinc-200/30">
-            <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your events</p>
                 <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">Manage</h2>
               </div>
-              <button
-                type="button"
-                onClick={loadDashboard}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-                Refresh
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`)}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={loadDashboard}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 space-y-3">
