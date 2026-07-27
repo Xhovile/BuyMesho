@@ -19,7 +19,7 @@ import {
   subscribeToEventCartChanges,
   type EventCartItem,
 } from "../lib/eventCart";
-import { getCartItemKey, type CartCheckoutItem, type CartItemKind, type CartItemViewModel } from "./cartTypes";
+import { getCartItemKey, type CartCheckoutItem, type CartItemViewModel } from "./cartTypes";
 
 export type CartCheckoutEntry = {
   item: CartItemViewModel;
