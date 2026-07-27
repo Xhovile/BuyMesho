@@ -42,6 +42,12 @@ type EventRow = {
   creator_uid: string | null;
   event_title: string;
   ticket_price: number | null;
+  ticket_link: string | null;
+  event_date: string | null;
+  start_time: string | null;
+  venue: string | null;
+  location: string | null;
+  organizer_name: string | null;
   status: string;
 };
 
@@ -138,6 +144,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const orderItems: any[] = [];
       const listingIds: string[] = [];
       const eventIds: string[] = [];
+      const eventDetails: Array<Record<string, unknown>> = [];
       const sellerIds = new Set<string>();
       let total = 0;
       let hasListing = false;
@@ -182,11 +189,29 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           total += unitPrice * safeQty;
           hasEvent = true;
           eventIds.push(String(event.id));
+          eventDetails.push({
+            eventId: String(event.id),
+            title: event.event_title,
+            organizerName: event.organizer_name ?? "Event organizer",
+            eventDate: event.event_date ?? "",
+            startTime: event.start_time ?? "",
+            venue: event.venue ?? "",
+            location: event.location ?? "",
+            ticketPrice: unitPrice,
+            ticketLink: event.ticket_link ?? null,
+            quantity: safeQty,
+          });
           sellerIds.add(String(event.creator_uid ?? `event:${event.id}`));
           orderItems.push({
             kind: "event_ticket",
             eventId: String(event.id),
             title: event.event_title,
+            organizerName: event.organizer_name ?? "Event organizer",
+            eventDate: event.event_date ?? "",
+            startTime: event.start_time ?? "",
+            venue: event.venue ?? "",
+            location: event.location ?? "",
+            ticketLink: event.ticket_link ?? null,
             quantity: safeQty,
             unitPrice: { amount: unitPrice, currency },
             reference: `${orderId}-EVENT-${String(orderItems.length + 1).padStart(2, "0")}`,
@@ -263,6 +288,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         metadata: {
           listingIds,
           eventIds,
+          eventDetails,
           buyerId: buyerUid,
           buyerEmail: buyerEmail || undefined,
           settlementRoute,
