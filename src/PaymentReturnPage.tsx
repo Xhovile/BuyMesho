@@ -7,15 +7,16 @@ import {
 } from "lucide-react";
 import {
   EXPLORE_PATH,
-  LISTING_PATH,
   navigateToPath,
 } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
+import { auth } from "./firebase";
 import {
   readBuyerPayments,
   subtractBuyerCartItemQuantities,
   updateBuyerPaymentStatus,
 } from "./lib/buyerState";
+import { subtractEventCartItemQuantities } from "./lib/eventCart";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -35,31 +36,37 @@ interface BuyerPaymentRecord {
   reference?: string | null;
   listingId?: string | null;
   listingIds?: string[];
-  checkoutItems?: Array<{ listingId: string; quantity: number }>;
+  eventIds?: string[];
+  checkoutItems?: Array<{ listingId?: string; eventId?: string; quantity: number }>;
   orderId?: string | null;
   paymentId?: string | null;
 }
 
-const buildListingDetailsPath = (listingId: string | null) =>
-  listingId
-    ? `${LISTING_PATH}?listing=${encodeURIComponent(listingId)}&image=0`
-    : EXPLORE_PATH;
-
 const normalizeStatus = (value: string | null | undefined) =>
   String(value ?? "").trim().toLowerCase();
 
-const getPurchasedListingItems = (
+const getPurchasedItems = (
   payment: BuyerPaymentRecord | null,
-): Array<{ listingId: string; quantity: number }> => {
+): Array<{ listingId?: string; eventId?: string; quantity: number }> => {
   if (!payment) return [];
   if (payment.checkoutItems?.length) {
     return payment.checkoutItems
-      .map((item) => ({ listingId: String(item.listingId), quantity: Math.max(0, Math.floor(Number(item.quantity))) }))
-      .filter((item) => item.listingId && item.quantity > 0);
+      .map((item) => ({
+        listingId: item.listingId ? String(item.listingId) : undefined,
+        eventId: item.eventId ? String(item.eventId) : undefined,
+        quantity: Math.max(0, Math.floor(Number(item.quantity))),
+      }))
+      .filter((item) => (item.listingId || item.eventId) && item.quantity > 0);
   }
+
   if (payment.listingIds?.length && payment.listingIds[0]) {
     return [{ listingId: String(payment.listingIds[0]), quantity: 1 }];
   }
+
+  if (payment.eventIds?.length && payment.eventIds[0]) {
+    return [{ eventId: String(payment.eventIds[0]), quantity: 1 }];
+  }
+
   return payment.listingId ? [{ listingId: String(payment.listingId), quantity: 1 }] : [];
 };
 
@@ -68,9 +75,6 @@ export default function PaymentReturnPage() {
   const [reference, setReference] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [fallbackListingId, setFallbackListingId] = useState<string | null>(
-    null,
-  );
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -80,9 +84,6 @@ export default function PaymentReturnPage() {
     const paymentStatusFromUrl = normalizeStatus(
       params.get("payment_status") ?? params.get("paymentStatus") ?? params.get("status"),
     );
-    const listingIdFromReturn = params.get("listingId");
-
-    setFallbackListingId(listingIdFromReturn);
 
     if (
       cancelled === "1" ||
@@ -157,15 +158,29 @@ export default function PaymentReturnPage() {
               (payment) => payment.txRef === txRef || payment.reference === txRef,
             ) ?? latestPendingPayment;
 
+          const currentUid = auth.currentUser?.uid ?? null;
           if (matchedPayment) {
-            const purchasedItems = getPurchasedListingItems(matchedPayment);
+            const purchasedItems = getPurchasedItems(matchedPayment);
+            const listingPurchases = purchasedItems
+              .filter((item): item is { listingId: string; quantity: number } => !!item.listingId)
+              .map((item) => ({ listingId: item.listingId, quantity: item.quantity }));
+            const eventPurchases = purchasedItems
+              .filter((item): item is { eventId: string; quantity: number } => !!item.eventId)
+              .map((item) => ({ eventId: item.eventId, quantity: item.quantity }));
+
             updateBuyerPaymentStatus(matchedPayment.reference || txRef, {
               status: "captured",
               txRef,
               orderId: result.orderId ?? matchedPayment.orderId ?? null,
               paymentId: matchedPayment.paymentId,
             });
-            subtractBuyerCartItemQuantities(purchasedItems);
+
+            if (listingPurchases.length) {
+              await subtractBuyerCartItemQuantities(listingPurchases);
+            }
+            if (currentUid && eventPurchases.length) {
+              await subtractEventCartItemQuantities(currentUid, eventPurchases);
+            }
           }
 
           setOrderId(result.orderId ?? null);
@@ -248,7 +263,7 @@ export default function PaymentReturnPage() {
           <div className="flex flex-col items-center gap-4 text-center">
             <CheckCircle2 className="h-16 w-16 text-emerald-500" />
             <h1 className="text-2xl font-black text-zinc-900">Payment received!</h1>
-            <p className="text-sm text-zinc-600 leading-6">
+            <p className="text-sm leading-6 text-zinc-600">
               Your payment was received successfully. Opening your order tracking page.
             </p>
 
@@ -259,89 +274,44 @@ export default function PaymentReturnPage() {
             )}
 
             {orderId && (
-              <p className="rounded-xl bg-zinc-50 px-4 py-2 text-xs font-mono text-zinc-400">
-                Order: {orderId}
-              </p>
+              <p className="text-xs text-zinc-400">Order: {orderId}</p>
             )}
-
-            <button
-              type="button"
-              onClick={() =>
-                reference
-                  ? navigateToPath(`/orders/${encodeURIComponent(reference)}`)
-                  : navigateToPath(EXPLORE_PATH)
-              }
-              className="mt-2 w-full rounded-2xl bg-zinc-900 py-3 text-sm font-extrabold text-white hover:bg-zinc-800 transition-colors"
-            >
-              Open order tracking
-            </button>
           </div>
         )}
 
         {status === "failed" && (
           <div className="flex flex-col items-center gap-4 text-center">
-            <AlertTriangle className="h-14 w-14 text-red-500" />
-            <h1 className="text-2xl font-black text-zinc-900">Payment status unavailable</h1>
-            <p className="text-sm text-zinc-600 leading-6">
-              {errorMessage ?? "We could not verify your payment status. Please try again or contact support!"}
+            <AlertTriangle className="h-16 w-16 text-amber-500" />
+            <h1 className="text-2xl font-black text-zinc-900">Payment not completed</h1>
+            <p className="max-w-xl text-sm leading-6 text-zinc-600">
+              {errorMessage || "We could not confirm your payment."}
             </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  navigateToPath(buildListingDetailsPath(fallbackListingId))
-                }
-                className="inline-flex items-center justify-center gap-2 bg-zinc-100 px-5 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-200"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Go back
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="bg-transparent px-5 py-3 text-sm font-bold text-zinc-700 underline-offset-4 hover:underline"
-              >
-                Browse listings
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to market
+            </button>
           </div>
         )}
 
         {status === "cancelled" && (
-          <div className="w-full py-10 sm:py-14">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-8 w-8 text-amber-500" />
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-                Payment cancelled
-              </h1>
-            </div>
-
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-zinc-600">
-              You cancelled the payment. Your order was not charged.
+          <div className="flex flex-col items-center gap-4 text-center">
+            <AlertTriangle className="h-16 w-16 text-zinc-400" />
+            <h1 className="text-2xl font-black text-zinc-900">Payment cancelled</h1>
+            <p className="max-w-xl text-sm leading-6 text-zinc-600">
+              You cancelled the checkout before it completed.
             </p>
-
-            <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={() =>
-                  navigateToPath(buildListingDetailsPath(fallbackListingId))
-                }
-                className="inline-flex items-center justify-center gap-2 bg-zinc-100 px-5 py-3 text-sm font-extrabold text-zinc-900 transition-colors hover:bg-zinc-200"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Go back
-              </button>
-
-              <button
-                type="button"
-                onClick={() => navigateToPath(EXPLORE_PATH)}
-                className="bg-transparent px-5 py-3 text-sm font-bold text-zinc-700 underline-offset-4 hover:underline"
-              >
-                Browse listings
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Back to market
+            </button>
           </div>
         )}
       </div>
