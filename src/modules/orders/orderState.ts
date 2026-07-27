@@ -12,6 +12,12 @@ export interface OrderItem {
   quantity: number;
   unitPrice: MoneyValue;
   reference?: string;
+  organizerName?: string;
+  eventDate?: string;
+  startTime?: string;
+  venue?: string;
+  location?: string;
+  ticketLink?: string | null;
 }
 
 export interface OrderState extends Timestamped {
