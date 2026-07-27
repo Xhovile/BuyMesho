@@ -75,6 +75,10 @@ function buildDetail(eventDate: string, startTime: string, venue: string, locati
   return `${prefix}: ${parts.join(" • ")}`;
 }
 
+function getEventTicketKey(reference: string, eventId: string) {
+  return `${reference}:${eventId}`;
+}
+
 export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPaymentRecord[]): BuyerTicketRecord[] {
   const paymentByReference = new Map<string, BuyerPaymentRecord>();
   const paymentByOrderId = new Map<string, BuyerPaymentRecord>();
@@ -86,6 +90,13 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
 
   const tickets: BuyerTicketRecord[] = [];
   const seen = new Set<string>();
+
+  const pushTicket = (ticket: BuyerTicketRecord) => {
+    const dedupeKey = getEventTicketKey(ticket.reference, ticket.eventId);
+    if (seen.has(dedupeKey)) return;
+    seen.add(dedupeKey);
+    tickets.push(ticket);
+  };
 
   orders.forEach((bundle) => {
     const payment = paymentByReference.get(getOrderReference(bundle)) ?? paymentByOrderId.get(String(bundle.order?.id ?? ""));
@@ -105,16 +116,13 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
 
     (bundle.order?.items ?? [])
       .filter((item) => item?.kind === "event_ticket" || item?.eventId)
-      .forEach((item, index) => {
+      .forEach((item) => {
         const eventId = String(item.eventId ?? "");
         if (!eventId) return;
         const reference = String(bundle.order?.paymentReference ?? bundle.order?.id ?? `event-${eventId}`);
-        const key = `${reference}:${eventId}:${index}`;
-        if (seen.has(key)) return;
-        seen.add(key);
 
-        tickets.push({
-          key,
+        pushTicket({
+          key: `${reference}:${eventId}`,
           reference,
           orderId: String(bundle.order?.id ?? reference),
           eventId,
@@ -153,14 +161,14 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
     if (!fallbackEventIds.length) return;
 
     const ticketStatus = classifyOrderStatus(payment.status, payment.status);
-    fallbackEventIds.forEach((eventId, index) => {
+    fallbackEventIds.forEach((eventId) => {
       const reference = String(payment.reference ?? payment.txRef ?? `event-${eventId}`);
-      const key = `${reference}:${eventId}:payment:${index}`;
-      if (seen.has(key)) return;
-      seen.add(key);
+      const dedupeKey = getEventTicketKey(reference, eventId);
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
 
       tickets.push({
-        key,
+        key: dedupeKey,
         reference,
         orderId: String(payment.orderId ?? reference),
         eventId,
