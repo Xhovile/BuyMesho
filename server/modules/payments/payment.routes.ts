@@ -37,6 +37,20 @@ type ListingRow = {
   sold_quantity: number;
 };
 
+type EventRow = {
+  id: number;
+  creator_uid: string | null;
+  event_title: string;
+  ticket_price: number | null;
+  status: string;
+};
+
+type CheckoutItemInput = {
+  listingId?: unknown;
+  eventId?: unknown;
+  quantity?: unknown;
+};
+
 type OrderBundle = {
   order: ReturnType<typeof orderRepository.findById>;
   payment: ReturnType<typeof paymentRepository.findByReference> | null;
@@ -101,14 +115,15 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const body = req.body ?? {};
       const listingId = body.listingId;
       const quantity = body.quantity ?? 1;
-      const items = Array.isArray(body.items) ? body.items : [];
+      const items = Array.isArray(body.items) ? (body.items as CheckoutItemInput[]) : [];
       const method = body.method ?? "mobile_money";
       const settlementRoute = body.settlementRoute ?? "escrow";
       const returnUrl = body.returnUrl;
       const cancelUrl = body.cancelUrl;
       const buyerName = body.buyerName;
       const buyerPhone = body.buyerPhone;
-      const requestedItems = items.length > 0 ? items : (listingId ? [{ listingId, quantity }] : []);
+      const hasLegacyListingId = listingId !== undefined && listingId !== null && String(listingId).trim() !== "";
+      const requestedItems = items.length > 0 ? items : (hasLegacyListingId ? [{ listingId, quantity }] : []);
 
       if (requestedItems.length === 0) {
         return res.status(400).json({ error: "listingId or items are required" });
@@ -122,11 +137,64 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const orderId = `ord_${randomUUID()}`;
       const orderItems: any[] = [];
       const listingIds: string[] = [];
+      const eventIds: string[] = [];
       const sellerIds = new Set<string>();
       let total = 0;
+      let hasListing = false;
+      let hasEvent = false;
 
       for (const item of requestedItems) {
-        const numericListingId = Number(item.listingId);
+        const rawListingId = item.listingId;
+        const rawEventId = item.eventId;
+        const hasItemListingId = rawListingId !== undefined && rawListingId !== null && String(rawListingId).trim() !== "";
+        const hasItemEventId = rawEventId !== undefined && rawEventId !== null && String(rawEventId).trim() !== "";
+
+        if (!hasItemListingId && !hasItemEventId) {
+          return res.status(400).json({ error: "Each checkout item requires a listingId or eventId" });
+        }
+        if (hasItemListingId && hasItemEventId) {
+          return res.status(400).json({ error: "A checkout item cannot contain both listingId and eventId" });
+        }
+
+        const parsedQty = Number(item.quantity ?? 1);
+        if (!Number.isFinite(parsedQty) || parsedQty <= 0) {
+          return res.status(400).json({ error: "Invalid quantity for checkout item" });
+        }
+
+        const safeQty = Math.max(1, Math.floor(parsedQty));
+
+        if (hasItemEventId) {
+          const eventId = Number(rawEventId);
+          if (!Number.isInteger(eventId) || eventId <= 0) {
+            return res.status(400).json({ error: `Invalid eventId ${String(rawEventId)}` });
+          }
+
+          const event = db.prepare("SELECT * FROM events WHERE id = ? AND deleted_at IS NULL").get(eventId) as EventRow | undefined;
+          if (!event) {
+            return res.status(404).json({ error: `Event ${eventId} not found` });
+          }
+
+          if (String(event.status ?? "").toLowerCase() !== "published") {
+            return res.status(400).json({ error: `${event.event_title} is not available for checkout` });
+          }
+
+          const unitPrice = Number(event.ticket_price ?? 0);
+          total += unitPrice * safeQty;
+          hasEvent = true;
+          eventIds.push(String(event.id));
+          sellerIds.add(String(event.creator_uid ?? `event:${event.id}`));
+          orderItems.push({
+            kind: "event_ticket",
+            eventId: String(event.id),
+            title: event.event_title,
+            quantity: safeQty,
+            unitPrice: { amount: unitPrice, currency },
+            reference: `${orderId}-EVENT-${String(orderItems.length + 1).padStart(2, "0")}`,
+          });
+          continue;
+        }
+
+        const numericListingId = Number(rawListingId);
         if (!Number.isInteger(numericListingId) || numericListingId <= 0) {
           return res.status(400).json({ error: "Each checkout item requires a valid listingId" });
         }
@@ -140,21 +208,17 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           return res.status(400).json({ error: `${listing.name} is no longer available` });
         }
 
-        const parsedQty = Number(item.quantity ?? 1);
-        if (!Number.isFinite(parsedQty) || parsedQty <= 0) {
-          return res.status(400).json({ error: `Invalid quantity for ${listing.name}` });
-        }
-
-        const safeQty = Math.max(1, Math.floor(parsedQty));
         const availableQty = Math.max(0, Number(listing.quantity ?? 1) - Number(listing.sold_quantity ?? 0));
         if (availableQty === 0) return res.status(400).json({ error: `${listing.name} is out of stock` });
         if (safeQty > availableQty) return res.status(400).json({ error: `Only ${availableQty} unit(s) available for ${listing.name}` });
 
         const unitPrice = Number(listing.price);
         total += unitPrice * safeQty;
+        hasListing = true;
         sellerIds.add(listing.seller_uid);
         listingIds.push(String(numericListingId));
         orderItems.push({
+          kind: "listing",
           listingId: String(numericListingId),
           title: listing.name,
           quantity: safeQty,
@@ -163,6 +227,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         });
       }
 
+      const source = hasListing && hasEvent ? "mixed" : hasEvent ? "event" : "listing";
       const primarySellerId = sellerIds.values().next().value ?? "multiple-sellers";
       const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
 
@@ -170,7 +235,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         id: orderId,
         buyerId: buyerUid,
         sellerId: primarySellerId,
-        source: "listing",
+        source,
         status: "pending_payment",
         currency,
         subtotal: { amount: total, currency },
@@ -197,11 +262,13 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         },
         metadata: {
           listingIds,
+          eventIds,
           buyerId: buyerUid,
           buyerEmail: buyerEmail || undefined,
           settlementRoute,
           returnUrl,
           cancelUrl,
+          source,
         },
         returnUrl,
         cancelUrl,
@@ -258,31 +325,66 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           );
           ({ payment, order } = resolvePublicPaymentState(reference));
         } catch (verificationError) {
-          console.warn("Public payment status verification failed", {
-            reference,
-            error: verificationError instanceof Error ? verificationError.message : verificationError,
-          });
+          const message = verificationError instanceof Error ? verificationError.message : "Payment verification failed";
+          return res.status(400).json({ error: message });
         }
       }
 
       return res.json(buildPublicPaymentStatus(reference));
     } catch (error) {
-      return res.status(500).json(jsonError(error, "Failed to fetch payment status"));
+      return res.status(500).json(jsonError(error, "Failed to fetch public status"));
     }
   });
 
-  router.get("/transaction/:id", orderLookupLimiter, async (req, res) => {
-    const bundle = buildOrderBundle(req.params.id);
-    if (!bundle) return res.status(404).json({ error: "Transaction not found" });
-    return res.json({ success: true, transaction: bundle });
+  router.post("/webhooks/paychangu", async (req, res) => {
+    await paymentWebhookHandler(req, res, { paymentService: serverPaymentService, paymentRepository, orderRepository, escrowRepository });
   });
 
-  router.post("/paychangu/webhook", paymentWebhookHandler);
-  router.post("/paychangu-payout/webhook", payoutWebhookHandler);
+  router.post("/webhooks/payouts", async (req, res) => {
+    await payoutWebhookHandler(req, res, { paymentRepository, orderRepository, escrowRepository });
+  });
+
+  router.get("/orders/by-reference/:reference", requireAuth, async (req, res) => {
+    try {
+      const reference = decodeURIComponent(req.params.reference ?? "").trim();
+      if (!reference) {
+        return res.status(400).json({ error: "Reference is required" });
+      }
+      const order = findOrderByParam(reference);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      return res.json(buildOrderBundle(order.id));
+    } catch (error) {
+      return res.status(500).json(jsonError(error, "Failed to fetch order"));
+    }
+  });
+
+  router.get("/orders/:id", requireAuth, async (req, res) => {
+    try {
+      const id = decodeURIComponent(req.params.id ?? "").trim();
+      if (!id) {
+        return res.status(400).json({ error: "Order id is required" });
+      }
+      const order = findOrderByParam(id);
+      if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+      }
+      return res.json(buildOrderBundle(order.id));
+    } catch (error) {
+      return res.status(500).json(jsonError(error, "Failed to fetch order"));
+    }
+  });
+
+  router.get("/orders/me", requireAuth, async (req: any, res) => {
+    try {
+      const db: any = getPaymentDb();
+      const rows = db.prepare("SELECT id FROM orders WHERE buyer_id = ? ORDER BY created_at DESC").all(req.user.uid) as Array<{ id: string }>;
+      return res.json(rows.map((row) => buildOrderBundle(row.id)).filter(Boolean));
+    } catch (error) {
+      return res.status(500).json(jsonError(error, "Failed to fetch orders"));
+    }
+  });
 
   return router;
-}
-
-export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
-  app.use("/api/payments", createPaymentRouter(requireAuth));
 }
