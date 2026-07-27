@@ -6,7 +6,6 @@ import { CartSummarySidebar } from "./cart/CartSummarySidebar";
 import { useCartPageState } from "./cart/useCartPageState";
 import {
   navigateBackOrPath,
-  navigateToListingDetails,
   navigateToPath,
   EXPLORE_PATH,
 } from "./lib/appNavigation";
@@ -66,7 +65,7 @@ function CartPageContent() {
                 Review your items
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-500 sm:text-base">
-                Tap any item to open its listing details again. Remove anything you do not want before buying.
+                Tap any item to open it again. Remove anything you do not want before buying.
               </p>
             </div>
 
@@ -104,33 +103,38 @@ function CartPageContent() {
               {items.length ? (
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {items.map((item) => {
-                    const listingId = String(item.listingId);
                     const maxSelectable = Math.max(
                       0,
                       Number(item.availableQuantity ?? item.quantity) || 0,
                     );
                     const selectedQuantity = Math.max(
                       0,
-                      Math.min(maxSelectable, selectedQuantities[listingId] ?? 0),
+                      Math.min(maxSelectable, selectedQuantities[item.cartKey] ?? 0),
                     );
                     const isSelected = selectedQuantity > 0;
 
                     return (
                       <CartItemCard
-                        key={`${item.listingId}-${item.addedAt}`}
+                        key={item.cartKey}
                         item={item}
                         isSelected={isSelected}
                         selectedQuantity={selectedQuantity}
                         maxSelectable={maxSelectable}
-                        onOpen={() => navigateToListingDetails(String(item.listingId))}
-                        onToggleSelection={() => toggleItemSelection(listingId, maxSelectable)}
+                        onOpen={() => {
+                          if (item.kind === "listing") {
+                            navigateToPath(`/listing?listing=${encodeURIComponent(item.itemId)}&image=0`);
+                            return;
+                          }
+                          navigateToPath(`/events?event=${encodeURIComponent(item.itemId)}`);
+                        }}
+                        onToggleSelection={() => toggleItemSelection(item.cartKey, maxSelectable)}
                         onDecrease={() =>
-                          setSelectedQuantity(listingId, selectedQuantity - 1, maxSelectable)
+                          setSelectedQuantity(item.cartKey, selectedQuantity - 1, maxSelectable)
                         }
                         onIncrease={() =>
-                          setSelectedQuantity(listingId, selectedQuantity + 1, maxSelectable)
+                          setSelectedQuantity(item.cartKey, selectedQuantity + 1, maxSelectable)
                         }
-                        onRemove={() => void handleRemoveItem(listingId)}
+                        onRemove={() => void handleRemoveItem(item.cartKey)}
                       />
                     );
                   })}
@@ -142,7 +146,7 @@ function CartPageContent() {
                   </div>
                   <h2 className="mt-4 text-2xl font-black text-zinc-950">Cart is empty</h2>
                   <p className="mt-2 text-sm text-zinc-500">
-                    Add items from a listing page or from the market, then come back here to review them.
+                    Add items from a listing page or from the events page, then come back here to review them.
                   </p>
                   <button
                     type="button"
