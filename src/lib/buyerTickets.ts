@@ -146,7 +146,6 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
         const venue = readString(itemData, "venue") || paymentEvent?.venue || "";
         const location = readString(itemData, "location") || paymentEvent?.location || "";
         const organizerName = readString(itemData, "organizerName") || paymentEvent?.organizerName || "Event organizer";
-        const ticketLink = readString(itemData, "ticketLink") || paymentEvent?.ticketLink || "";
         const ticketPrice = readNumber(itemData, "ticketPrice") ?? paymentEvent?.ticketPrice ?? null;
         const quantity = Math.max(1, Number(item.quantity ?? paymentEvent?.quantity ?? 1) || 1);
         const amount = ticketPrice !== null ? Number(ticketPrice) * quantity : Number(bundle.order?.total?.amount ?? 0);
