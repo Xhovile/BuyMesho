@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CreditCard, Truck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CreditCard, MapPin, Ticket, Truck } from "lucide-react";
 import {
   EVENTS_PATH,
   PAYMENTS_HUB_PATH,
@@ -24,13 +24,21 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 import { buildSellerOrderPayoutViewModel } from "./modules/payouts/orderPayoutViewModel";
 
-const stages = [
+const listingStages = [
   "Order placed",
   "Payment pending",
   "Payment confirmed",
   "Funds in escrow",
   "Delivered",
   "Funds released",
+];
+
+const eventStages = [
+  "Ticket ordered",
+  "Payment confirmed",
+  "Ticket issued",
+  "Ready for event",
+  "Event day",
 ];
 
 export default function OrderTrackingPage() {
@@ -109,8 +117,23 @@ function OrderTrackingPageContent() {
       ? String(bundle?.escrow?.state)
       : "initiated";
 
+  const firstItem = order?.items?.[0] ?? null;
+  const firstItemTitle = firstItem?.title ?? "—";
+  const firstItemKind = firstItem?.kind ?? (firstItem?.eventId ? "event_ticket" : "listing");
+  const isEventOrder = firstItemKind === "event_ticket";
+  const activeStages = isEventOrder ? eventStages : listingStages;
+
   const activeIndex = useMemo(() => {
     if (!order) return 0;
+
+    if (isEventOrder) {
+      if (order.status === "fulfilled" || order.status === "closed") return 4;
+      if (order.status === "in_escrow") return 3;
+      if (order.status === "paid") return 2;
+      if (order.status === "pending_payment") return 0;
+      if (order.status === "refunded" || order.status === "cancelled") return 0;
+      return 1;
+    }
 
     if (
       escrowState === "released" ||
@@ -142,7 +165,7 @@ function OrderTrackingPageContent() {
     }
 
     return 0;
-  }, [escrowState, order]);
+  }, [escrowState, isEventOrder, order]);
 
   const paidAt =
     typeof bundle?.payment?.paidAt === "string"
@@ -167,19 +190,26 @@ function OrderTrackingPageContent() {
 
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
-  const firstItem = order?.items?.[0] ?? null;
-  const firstItemTitle = firstItem?.title ?? "—";
-  const firstItemKind = firstItem?.kind ?? (firstItem?.eventId ? "event_ticket" : "listing");
+  const eventDetails = isEventOrder
+    ? {
+        eventDate: String((firstItem as Record<string, unknown> | null)?.eventDate ?? ""),
+        startTime: String((firstItem as Record<string, unknown> | null)?.startTime ?? ""),
+        venue: String((firstItem as Record<string, unknown> | null)?.venue ?? ""),
+        location: String((firstItem as Record<string, unknown> | null)?.location ?? ""),
+        organizerName: String((firstItem as Record<string, unknown> | null)?.organizerName ?? "Event organizer"),
+      }
+    : null;
 
   const canConfirmDelivery =
+    !isEventOrder &&
     order?.status === "in_escrow" &&
     escrowState !== "released" &&
     escrowState !== "refunded" &&
     escrowState !== "closed" &&
     nowMs >= releaseAvailableAt;
 
-  const handleBackToListing = () => {
-    if (firstItemKind === "event_ticket" && firstItem?.eventId) {
+  const handleBack = () => {
+    if (isEventOrder && firstItem?.eventId) {
       navigateToPath(`${EVENTS_PATH}?event=${encodeURIComponent(String(firstItem.eventId))}`);
       return;
     }
@@ -194,7 +224,7 @@ function OrderTrackingPageContent() {
   };
 
   const handleConfirmDelivery = async () => {
-    if (!order) return;
+    if (!order || isEventOrder) return;
 
     try {
       setSubmitting("release");
@@ -210,7 +240,7 @@ function OrderTrackingPageContent() {
   };
 
   const handleOpenDispute = async () => {
-    if (!order) return;
+    if (!order || isEventOrder) return;
 
     if (!disputeReason.trim()) {
       setError("Please provide a dispute reason.");
@@ -237,31 +267,33 @@ function OrderTrackingPageContent() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             type="button"
-            onClick={handleBackToListing}
+            onClick={handleBack}
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
+            {isEventOrder ? "Back to event" : "Back"}
           </button>
         </div>
 
         <div className="mt-8 border-b border-zinc-200 pb-6">
           <div className="flex flex-wrap items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-900">
-              <Truck className="h-5 w-5" />
+              {isEventOrder ? <Ticket className="h-5 w-5" /> : <Truck className="h-5 w-5" />}
             </div>
 
             <div className="max-w-3xl space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-                BUYER ORDER TRACKING
+                {isEventOrder ? "BUYER TICKET TRACKING" : "BUYER ORDER TRACKING"}
               </p>
 
               <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-                ORDER STATUS OVERVIEW
+                {isEventOrder ? "TICKET STATUS OVERVIEW" : "ORDER STATUS OVERVIEW"}
               </h1>
 
               <p className="text-sm leading-7 text-zinc-600 sm:text-base">
-                Monitor payment, escrow, and delivery progress in one place.
+                {isEventOrder
+                  ? "Review your ticket status and event details in one place."
+                  : "Monitor payment, escrow, and delivery progress in one place."}
               </p>
             </div>
           </div>
@@ -278,18 +310,55 @@ function OrderTrackingPageContent() {
         ) : order ? (
           <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div className="space-y-6">
-              <EscrowProtectionCard
-                state={{
-                  orderStatus: order.status,
-                  paymentStatus,
-                  escrowState,
-                }}
-                paidAt={paidAt}
-                escrowUpdatedAt={escrowUpdatedAt}
-                viewer={isSellerViewer ? "seller" : "buyer"}
-              />
+              {isEventOrder ? (
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Event ticket</p>
+                      <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{eventDetails?.organizerName || firstItemTitle}</h2>
+                      <p className="mt-2 text-sm text-zinc-600">{firstItemTitle}</p>
+                    </div>
+                    <div className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                      {paymentStatus}
+                    </div>
+                  </div>
 
-              <OrderProgressTracker stages={stages} activeIndex={activeIndex} />
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Date</p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-900">{eventDetails?.eventDate || "—"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Time</p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-900">{eventDetails?.startTime || "—"}</p>
+                    </div>
+                    <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Venue</p>
+                      <p className="mt-1 text-sm font-semibold text-zinc-900">
+                        {[eventDetails?.venue, eventDetails?.location].filter(Boolean).join(" • ") || "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
+                    <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{reference}</p>
+                  </div>
+                </div>
+              ) : (
+                <EscrowProtectionCard
+                  state={{
+                    orderStatus: order.status,
+                    paymentStatus,
+                    escrowState,
+                  }}
+                  paidAt={paidAt}
+                  escrowUpdatedAt={escrowUpdatedAt}
+                  viewer={isSellerViewer ? "seller" : "buyer"}
+                />
+              )}
+
+              <OrderProgressTracker stages={activeStages} activeIndex={activeIndex} />
             </div>
 
             <div className="space-y-6">
@@ -319,15 +388,35 @@ function OrderTrackingPageContent() {
                 }
               />
 
-              <DisputeActionsCard
-                disputeReason={disputeReason}
-                submitting={submitting}
-                canConfirmDelivery={canConfirmDelivery}
-                releaseCountdownText={releaseCountdownText}
-                onChangeReason={setDisputeReason}
-                onConfirmDelivery={() => void handleConfirmDelivery()}
-                onOpenDispute={() => void handleOpenDispute()}
-              />
+              {isEventOrder ? (
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-2 text-zinc-500">
+                    <CreditCard className="h-4 w-4" />
+                    <p className="text-xs font-black uppercase tracking-[0.2em]">Ticket note</p>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-zinc-600">
+                    This ticket uses the event page and buyer wallet instead of escrow delivery actions.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Open event
+                  </button>
+                </div>
+              ) : (
+                <DisputeActionsCard
+                  disputeReason={disputeReason}
+                  submitting={submitting}
+                  canConfirmDelivery={canConfirmDelivery}
+                  releaseCountdownText={releaseCountdownText}
+                  onChangeReason={setDisputeReason}
+                  onConfirmDelivery={() => void handleConfirmDelivery()}
+                  onOpenDispute={() => void handleOpenDispute()}
+                />
+              )}
             </div>
           </div>
         ) : null}
