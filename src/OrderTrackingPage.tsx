@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CreditCard, Truck } from "lucide-react";
 import {
+  EVENTS_PATH,
   PAYMENTS_HUB_PATH,
   navigateToOrderDispute,
   navigateToPath,
@@ -144,19 +145,19 @@ function OrderTrackingPageContent() {
   }, [escrowState, order]);
 
   const paidAt =
-  typeof bundle?.payment?.paidAt === "string"
-    ? bundle.payment.paidAt
-    : typeof bundle?.payment?.paid_at === "string"
-      ? bundle.payment.paid_at
-      : null;
+    typeof bundle?.payment?.paidAt === "string"
+      ? bundle.payment.paidAt
+      : typeof bundle?.payment?.paid_at === "string"
+        ? bundle.payment.paid_at
+        : null;
 
-const escrowUpdatedAt =
-  typeof bundle?.escrow?.updatedAt === "string"
-    ? bundle.escrow.updatedAt
-    : typeof bundle?.escrow?.updated_at === "string"
-      ? bundle.escrow.updated_at
-      : null;
-  
+  const escrowUpdatedAt =
+    typeof bundle?.escrow?.updatedAt === "string"
+      ? bundle.escrow.updatedAt
+      : typeof bundle?.escrow?.updated_at === "string"
+        ? bundle.escrow.updated_at
+        : null;
+
   const releaseAvailableAt = getNextCatMidnightMs(paidAt ?? escrowUpdatedAt ?? Date.now());
   const releaseCountdownParts = getCountdownParts(releaseAvailableAt, nowMs);
   const releaseCountdownText =
@@ -166,7 +167,9 @@ const escrowUpdatedAt =
 
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
-  const firstItemTitle = order?.items?.[0]?.title ?? "—";
+  const firstItem = order?.items?.[0] ?? null;
+  const firstItemTitle = firstItem?.title ?? "—";
+  const firstItemKind = firstItem?.kind ?? (firstItem?.eventId ? "event_ticket" : "listing");
 
   const canConfirmDelivery =
     order?.status === "in_escrow" &&
@@ -176,7 +179,12 @@ const escrowUpdatedAt =
     nowMs >= releaseAvailableAt;
 
   const handleBackToListing = () => {
-    const firstListingId = order?.items?.[0]?.listingId;
+    if (firstItemKind === "event_ticket" && firstItem?.eventId) {
+      navigateToPath(`${EVENTS_PATH}?event=${encodeURIComponent(String(firstItem.eventId))}`);
+      return;
+    }
+
+    const firstListingId = firstItem?.listingId;
     if (firstListingId) {
       navigateToListingDetails(firstListingId);
       return;
@@ -245,11 +253,11 @@ const escrowUpdatedAt =
 
             <div className="max-w-3xl space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-                BUYER ORDER TACKING
+                BUYER ORDER TRACKING
               </p>
 
               <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-                ORDER STATUS OVERVIEW 
+                ORDER STATUS OVERVIEW
               </h1>
 
               <p className="text-sm leading-7 text-zinc-600 sm:text-base">
@@ -320,21 +328,9 @@ const escrowUpdatedAt =
                 onConfirmDelivery={() => void handleConfirmDelivery()}
                 onOpenDispute={() => void handleOpenDispute()}
               />
-
-              <button
-                type="button"
-                onClick={() => reference && navigateToOrderDispute(reference)}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
-              >
-                Go to dispute form
-              </button>
             </div>
           </div>
-        ) : (
-          <div className="mt-6 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm leading-6 text-zinc-600">
-            No tracking record yet. Start from the cart or checkout flow and the latest order will appear here.
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
