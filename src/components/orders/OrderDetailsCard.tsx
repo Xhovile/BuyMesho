@@ -1,5 +1,7 @@
 type OrderDetailsCardItem = {
+  kind?: "listing" | "event_ticket";
   listingId?: string;
+  eventId?: string;
   title?: string;
   quantity?: number;
   reference?: string;
@@ -26,7 +28,7 @@ type OrderDetailsCardProps = {
 };
 
 function formatLabel(value: string): string {
-  return value.replace(/_/g, ' ');
+  return value.replace(/_/g, " ");
 }
 
 export default function OrderDetailsCard({
@@ -48,8 +50,8 @@ export default function OrderDetailsCard({
       <div className="mt-4 space-y-3 text-sm">
         <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
           <span className="text-zinc-500">BuyMesho reference</span>
-          <p className="mt-1 font-semibold text-zinc-900 break-all">
-            {reference || '—'}
+          <p className="mt-1 break-all font-semibold text-zinc-900">
+            {reference || "—"}
           </p>
         </div>
 
@@ -64,17 +66,21 @@ export default function OrderDetailsCard({
           <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
             <span className="text-zinc-500">Item references</span>
             <div className="mt-2 space-y-2">
-              {items.map((item, index) => (
-                <div key={`${item.reference ?? item.listingId ?? index}`} className="rounded-xl bg-zinc-50 px-3 py-2">
-                  <p className="font-semibold text-zinc-900">
-                    {item.title || `Item ${index + 1}`}
-                    {item.quantity ? ` × ${item.quantity}` : ''}
-                  </p>
-                  <p className="mt-1 break-all font-mono text-xs text-zinc-500">
-                    {item.reference || 'Reference pending'}
-                  </p>
-                </div>
-              ))}
+              {items.map((item, index) => {
+                const label = item.kind === "event_ticket" ? "Event ticket" : "Listing";
+                const itemReference = item.reference || item.eventId || item.listingId || "Reference pending";
+                return (
+                  <div key={`${item.reference ?? item.listingId ?? item.eventId ?? index}`} className="rounded-xl bg-zinc-50 px-3 py-2">
+                    <p className="font-semibold text-zinc-900">
+                      {label}: {item.title || `Item ${index + 1}`}
+                      {item.quantity ? ` × ${item.quantity}` : ""}
+                    </p>
+                    <p className="mt-1 break-all font-mono text-xs text-zinc-500">
+                      {itemReference}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : null}
@@ -102,7 +108,7 @@ export default function OrderDetailsCard({
 
         <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
           <span className="text-zinc-500">Order ID</span>
-          <p className="mt-1 font-semibold text-zinc-900 break-all">
+          <p className="mt-1 break-all font-semibold text-zinc-900">
             {orderId}
           </p>
         </div>
@@ -119,7 +125,7 @@ export default function OrderDetailsCard({
             <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
               <span className="text-zinc-500">Payment captured</span>
               <p className="mt-1 font-semibold text-zinc-900">
-                {sellerPayout.paymentCaptured ? 'Yes' : 'No'}
+                {sellerPayout.paymentCaptured ? "Yes" : "No"}
               </p>
             </div>
 
@@ -140,14 +146,14 @@ export default function OrderDetailsCard({
             <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
               <span className="text-zinc-500">Estimated payout date</span>
               <p className="mt-1 font-semibold text-zinc-900">
-                {sellerPayout.estimatedPayoutDate || '—'}
+                {sellerPayout.estimatedPayoutDate || "—"}
               </p>
             </div>
 
             <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
               <span className="text-zinc-500">Payout destination</span>
               <p className="mt-1 font-semibold text-zinc-900">
-                {sellerPayout.payoutDestinationMask || 'Not configured'}
+                {sellerPayout.payoutDestinationMask || "Not configured"}
               </p>
             </div>
           </>
