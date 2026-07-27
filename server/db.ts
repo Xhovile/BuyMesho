@@ -22,12 +22,19 @@ export interface PgCompatPreparedStatement {
   all(...params: unknown[]): Record<string, unknown>[];
 }
 
-type WorkerRequest = {
-  id: number;
-  sql: string;
-  params: unknown[];
-  signal: SharedArrayBuffer;
-};
+type WorkerRequest =
+  | {
+      id: number;
+      op: "query";
+      sql: string;
+      params: unknown[];
+      signal: SharedArrayBuffer;
+    }
+  | {
+      id: number;
+      op: "begin" | "commit" | "rollback";
+      signal: SharedArrayBuffer;
+    };
 
 type WorkerResponse =
   | { id: number; ok: true; rows: Record<string, unknown>[]; rowCount: number }
@@ -81,26 +88,65 @@ function createPgPool() {
 
 function startWorker(port: MessagePort) {
   const workerPool = createPgPool();
+  let transactionClient: PoolClient | null = null;
 
   port.on("message", async (request: WorkerRequest) => {
     const signal = new Int32Array(request.signal);
 
     try {
-      const result = await workerPool.query(request.sql, request.params ?? []);
-      const response: WorkerResponse = {
-        id: request.id,
-        ok: true,
-        rows: result.rows ?? [],
-        rowCount: result.rowCount ?? (result.rows ?? []).length,
-      };
-      port.postMessage(response);
+      if (request.op === "begin") {
+        if (transactionClient) {
+          throw new Error("Transaction already active");
+        }
+        transactionClient = await workerPool.connect();
+        await transactionClient.query("BEGIN");
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
+      } else if (request.op === "commit") {
+        if (!transactionClient) {
+          throw new Error("No active transaction");
+        }
+        try {
+          await transactionClient.query("COMMIT");
+        } finally {
+          transactionClient.release();
+          transactionClient = null;
+        }
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
+      } else if (request.op === "rollback") {
+        if (transactionClient) {
+          try {
+            await transactionClient.query("ROLLBACK");
+          } finally {
+            transactionClient.release();
+            transactionClient = null;
+          }
+        }
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
+      } else {
+        const activeClient = transactionClient ?? workerPool;
+        const result = await activeClient.query(request.sql, request.params ?? []);
+        port.postMessage({
+          id: request.id,
+          ok: true,
+          rows: result.rows ?? [],
+          rowCount: result.rowCount ?? (result.rows ?? []).length,
+        } satisfies WorkerResponse);
+      }
     } catch (error) {
-      const response: WorkerResponse = {
+      if (request.op === "begin" && transactionClient) {
+        try {
+          transactionClient.release();
+        } catch {
+          // ignore release failures
+        }
+        transactionClient = null;
+      }
+
+      port.postMessage({
         id: request.id,
         ok: false,
         error: error instanceof Error ? error.message : String(error),
-      };
-      port.postMessage(response);
+      } satisfies WorkerResponse);
     } finally {
       Atomics.store(signal, 0, 1);
       Atomics.notify(signal, 0, 1);
@@ -159,29 +205,10 @@ function normalizeSchemaSql(sql: string): string {
     .replace(/\bDATETIME\b/gi, "TIMESTAMPTZ");
 }
 
-function fetchTableColumns(tableName: string): Record<string, unknown>[] {
-  const result = executeSync(
-    `
-      SELECT
-        column_name AS name,
-        data_type AS type,
-        is_nullable AS notnull,
-        column_default AS dflt_value,
-        ordinal_position AS cid
-      FROM information_schema.columns
-      WHERE table_schema = current_schema()
-        AND table_name = $1
-      ORDER BY ordinal_position ASC
-    `,
-    [tableName],
-  );
-
-  return result.rows;
-}
-
 let worker: Worker | null = null;
 let workerPort: MessagePort | null = null;
 let requestCounter = 0;
+let transactionDepth = 0;
 
 function ensureWorker() {
   if (worker && workerPort) return;
@@ -208,13 +235,13 @@ function ensureWorker() {
   workerPort.unref?.();
 }
 
-function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
+function sendWorkerRequest(request: Omit<WorkerRequest, "id" | "signal">): WorkerResponse {
   ensureWorker();
   if (!workerPort) {
     throw new Error("PostgreSQL worker is not available");
   }
 
-  const payload = { id: ++requestCounter, sql, params, signal: new SharedArrayBuffer(4) } satisfies WorkerRequest;
+  const payload = { id: ++requestCounter, signal: new SharedArrayBuffer(4), ...request } as WorkerRequest;
   const signal = new Int32Array(payload.signal);
   workerPort.postMessage(payload);
 
@@ -238,10 +265,27 @@ function executeSync(sql: string, params: unknown[] = []): { rows: Record<string
     throw new Error(`PostgreSQL query failed: ${response.error}`);
   }
 
+  return response;
+}
+
+function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
+  const response = sendWorkerRequest({ op: "query", sql, params });
   return {
     rows: Array.isArray(response.rows) ? response.rows : [],
     rowCount: Number.isFinite(response.rowCount) ? Number(response.rowCount) : 0,
   };
+}
+
+function beginTransaction() {
+  sendWorkerRequest({ op: "begin" });
+}
+
+function commitTransaction() {
+  sendWorkerRequest({ op: "commit" });
+}
+
+function rollbackTransaction() {
+  sendWorkerRequest({ op: "rollback" });
 }
 
 export class PgCompatDatabase {
@@ -273,3 +317,45 @@ export class PgCompatDatabase {
   }
 
   pragma(_statement: string): void {}
+
+  transaction<T extends (...args: any[]) => any>(fn: T): T {
+    return ((...args: Parameters<T>) => {
+      if (transactionDepth > 0) {
+        return fn(...args);
+      }
+
+      transactionDepth += 1;
+      try {
+        beginTransaction();
+        const result = fn(...args);
+        commitTransaction();
+        return result;
+      } catch (error) {
+        try {
+          rollbackTransaction();
+        } catch {
+          // ignore rollback failures so the original error is preserved
+        }
+        throw error;
+      } finally {
+        transactionDepth = 0;
+      }
+    }) as T;
+  }
+
+  async close(): Promise<void> {
+    const currentWorker = worker;
+    worker = null;
+    workerPort = null;
+    if (currentWorker) {
+      void currentWorker.terminate().catch(() => undefined);
+    }
+    await closePool();
+  }
+}
+
+export const postgresDb = new PgCompatDatabase();
+
+export { pool, query, getClient, withTransaction, closePool };
+export type { PoolClient, QueryResultRow };
+export default postgresDb;
