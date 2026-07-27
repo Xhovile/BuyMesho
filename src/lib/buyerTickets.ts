@@ -75,18 +75,6 @@ function buildDetail(eventDate: string, startTime: string, venue: string, locati
   return `${prefix}: ${parts.join(" • ")}`;
 }
 
-function getEventFields(bundle: OrderBundle, itemIndex: number) {
-  const item = bundle.order?.items?.[itemIndex];
-  return {
-    eventId: String(item?.eventId ?? ""),
-    title: String(item?.title ?? "Untitled event"),
-    quantity: Math.max(1, Number(item?.quantity ?? 1) || 1),
-    amount: Number(bundle.order?.total?.amount ?? 0),
-    currency: String(bundle.order?.total?.currency ?? "MWK"),
-    reference: String(item?.reference ?? bundle.order?.paymentReference ?? bundle.order?.id ?? ""),
-  };
-}
-
 export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPaymentRecord[]): BuyerTicketRecord[] {
   const paymentByReference = new Map<string, BuyerPaymentRecord>();
   const paymentByOrderId = new Map<string, BuyerPaymentRecord>();
