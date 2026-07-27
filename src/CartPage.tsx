@@ -5,7 +5,9 @@ import { CartItemCard } from "./cart/CartItemCard";
 import { CartSummarySidebar } from "./cart/CartSummarySidebar";
 import { useCartPageState } from "./cart/useCartPageState";
 import {
+  EVENTS_PATH,
   navigateBackOrPath,
+  navigateToListingDetails,
   navigateToPath,
   EXPLORE_PATH,
 } from "./lib/appNavigation";
@@ -122,10 +124,10 @@ function CartPageContent() {
                         maxSelectable={maxSelectable}
                         onOpen={() => {
                           if (item.kind === "listing") {
-                            navigateToPath(`/listing?listing=${encodeURIComponent(item.itemId)}&image=0`);
+                            navigateToListingDetails(item.itemId);
                             return;
                           }
-                          navigateToPath(`/events?event=${encodeURIComponent(item.itemId)}`);
+                          navigateToPath(`${EVENTS_PATH}?event=${encodeURIComponent(item.itemId)}`);
                         }}
                         onToggleSelection={() => toggleItemSelection(item.cartKey, maxSelectable)}
                         onDecrease={() =>
