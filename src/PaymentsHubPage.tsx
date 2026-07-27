@@ -14,7 +14,7 @@ import { useAccountProfile } from "./hooks/useAccountProfile";
 import FeedbackModal from "./components/FeedbackModal";
 
 const paymentActions = [
-  { label: "Payment Analytics", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
+  { label: "Buyer Wallet", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
   { label: "Payment Methods", path: PAYMENT_METHOD_PATH, icon: CreditCard, iconBg: "bg-[#438c7c]" },
   { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
   { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-red-900" },
