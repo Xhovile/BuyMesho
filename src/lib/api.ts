@@ -16,9 +16,14 @@ async function authHeader() {
 }
 
 const API_FETCH_TIMEOUT_MS = 15000;
+const DEFAULT_SAFE_RETRY_ATTEMPTS = 3;
+const DEFAULT_SAFE_RETRY_DELAY_MS = 350;
+const RETRYABLE_STATUS_CODES = new Set([502, 503, 504]);
 
 type ApiFetchInit = RequestInit & {
   timeoutMs?: number;
+  retryAttempts?: number;
+  retryDelayMs?: number;
 };
 
 function formatApiErrorMessage(value: unknown): string | null {
@@ -92,7 +97,19 @@ function normalizeAbortReason(reason: unknown, fallbackMessage: string) {
   return new Error(fallbackMessage);
 }
 
-export async function apiFetch(url: string, init: ApiFetchInit = {}) {
+function getRetryableMethod(method?: string) {
+  return (method || "GET").trim().toUpperCase();
+}
+
+function shouldRetrySafeRequest(method: string) {
+  return method === "GET" || method === "HEAD";
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function performApiFetch(url: string, init: ApiFetchInit = {}) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
     ...(await authHeader()),
@@ -131,9 +148,43 @@ export async function apiFetch(url: string, init: ApiFetchInit = {}) {
     let body: any = null;
     try { body = await res.json(); } catch {}
     const message = formatApiErrorMessage(body?.error ?? body?.message) ?? `Request failed (${res.status})`;
-    throw new Error(message);
+    const error = new Error(message);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+export async function apiFetch(url: string, init: ApiFetchInit = {}) {
+  const method = getRetryableMethod(init.method);
+  const retryAttempts = init.retryAttempts ?? (shouldRetrySafeRequest(method) ? DEFAULT_SAFE_RETRY_ATTEMPTS : 1);
+  const retryDelayMs = init.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
+
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
+    try {
+      return await performApiFetch(url, init);
+    } catch (error: any) {
+      lastError = error;
+
+      const status = typeof error?.status === "number" ? error.status : null;
+      const retryableStatus = status !== null && RETRYABLE_STATUS_CODES.has(status);
+      const retryableError =
+        error?.name === "AbortError" ||
+        /Request timed out/i.test(String(error?.message || "")) ||
+        /fetch/i.test(String(error?.message || ""));
+      const canRetry = attempt < retryAttempts && shouldRetrySafeRequest(method) && (retryableStatus || retryableError);
+
+      if (!canRetry) {
+        throw error;
+      }
+
+      await sleep(retryDelayMs * attempt);
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Request failed.");
 }
