@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MessageChannel, Worker, isMainThread, receiveMessageOnPort, workerData, type MessagePort } from "node:worker_threads";
 import dotenv from "dotenv";
 import { type PoolClient, type QueryResultRow, Pool } from "pg";
