@@ -169,19 +169,19 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
   switch (pathname) {
     case "/":
       return {
-        title: "BuyMesho - Marketplace for Buyers, Sellers & Deals",
+        title: "BuyMesho — Student Entrepreneurship Marketplace",
         description: "Discover listings, deals, sellers, and local events on BuyMesho.",
         canonicalPath: "/",
       };
     case "/about":
       return {
-        title: "About BuyMesho",
+        title: "About BuyMesho — Student Entrepreneurship Marketplace",
         description: "Learn what BuyMesho is, who it serves, and how the marketplace works.",
         canonicalPath: "/about",
       };
     case "/explore":
       return {
-        title: "Explore BuyMesho",
+        title: "Explore BuyMesho Marketplace",
         description: "Browse listings, deals, sellers, events, and more on BuyMesho.",
         canonicalPath: "/explore",
       };
@@ -285,6 +285,9 @@ export default function RootRouter() {
     upsertMeta("og:title", seo.title, "property");
     upsertMeta("og:description", seo.description, "property");
     upsertMeta("og:url", `${SEO_BASE_URL}${seo.canonicalPath}`, "property");
+    upsertMeta("og:image", loaderImage, "property");
+    upsertMeta("og:type", "website", "property");
+    upsertMeta("twitter:card", "summary_large_image");
   }, [locationPath, route]);
 
   useEffect(() => {
@@ -474,7 +477,7 @@ export default function RootRouter() {
           <HomePage />
         )}
       </Suspense>
-      {showScrollTop ? <ScrollToTopFab /> : null}
+      <ScrollToTopFab show={showScrollTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
     </>
   );
 }
