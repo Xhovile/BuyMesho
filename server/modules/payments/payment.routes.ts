@@ -1,4 +1,3 @@
-// @ts-nocheck
 import express, { type RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import rateLimit from "express-rate-limit";
@@ -130,7 +129,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const buyerName = body.buyerName;
       const buyerPhone = body.buyerPhone;
       const hasLegacyListingId = listingId !== undefined && listingId !== null && String(listingId).trim() !== "";
-      const requestedItems = items.length > 0 ? items : (hasLegacyListingId ? [{ listingId, quantity }] : []);
+      const requestedItems: CheckoutItemInput[] = items.length > 0 ? items : (hasLegacyListingId ? [{ listingId, quantity }] : []);
 
       if (requestedItems.length === 0) {
         return res.status(400).json({ error: "listingId or items are required" });
@@ -364,11 +363,11 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
   });
 
   router.post("/webhooks/paychangu", async (req, res) => {
-    await paymentWebhookHandler(req, res, { paymentService: serverPaymentService, paymentRepository, orderRepository, escrowRepository });
+    await paymentWebhookHandler(req, res);
   });
 
   router.post("/webhooks/payouts", async (req, res) => {
-    await payoutWebhookHandler(req, res, { paymentRepository, orderRepository, escrowRepository });
+    await payoutWebhookHandler(req, res);
   });
 
   router.get("/orders/by-reference/:reference", requireAuth, async (req, res) => {
