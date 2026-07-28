@@ -2,6 +2,7 @@ import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
 import './index.css';
+import loaderImage from '../photos/LoaderPic.png';
 
 const nativeFetch = window.fetch.bind(window);
 const APICACHE_PREFIX = '__buymesho_api_cache_v2:';
@@ -108,6 +109,40 @@ function clearCachedResponsesByPath(prefixes: string[]) {
     // Ignore cleanup failures.
   }
 }
+
+function upsertMeta(name: string, content: string, attribute: 'name' | 'property' = 'name') {
+  let el = document.head.querySelector(`meta[${attribute}="${name}"]`) as HTMLMetaElement | null;
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute(attribute, name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+function upsertLink(rel: string, href: string, type?: string) {
+  let el = document.head.querySelector(`link[rel="${rel}"]`) as HTMLLinkElement | null;
+  if (!el) {
+    el = document.createElement('link');
+    el.setAttribute('rel', rel);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('href', href);
+  if (type) {
+    el.setAttribute('type', type);
+  }
+}
+
+function setBrandMetadata() {
+  upsertMeta('application-name', 'BuyMesho');
+  upsertMeta('theme-color', '#111827');
+  upsertMeta('description', 'BuyMesho is a student entrepreneurship marketplace for discovering listings, deals, events, and sellers.');
+  upsertLink('icon', loaderImage, 'image/png');
+  upsertLink('shortcut icon', loaderImage, 'image/png');
+  upsertLink('apple-touch-icon', loaderImage, 'image/png');
+}
+
+setBrandMetadata();
 
 window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = getUrl(input);
