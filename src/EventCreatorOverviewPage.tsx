@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { ArrowRight, CalendarDays, Download, Filter, Loader2, Search, Ticket, Wallet, AlertCircle, LayoutDashboard } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, Download, Filter, LayoutDashboard, Loader2, Search, Ticket, Wallet } from "lucide-react";
 
 import AccountPageShell from "./components/AccountPageShell";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
-import { formatMoney } from "./shared/utils/formatMoney";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { formatMoney } from "./shared/utils/formatMoney";
+
 
 type DashboardEvent = {
   id: number;
@@ -19,7 +20,8 @@ type DashboardEvent = {
   status: string;
   updated_at: string;
   tickets_sold: number;
-  revenue_amount: number;
+  gross_revenue_amount: number;
+  net_revenue_amount: number;
   revenue_currency: string;
   ticket_clicks: number;
   cart_adds: number;
@@ -33,6 +35,8 @@ type DashboardResponse = {
   events: DashboardEvent[];
   summary: {
     totalTicketsSold: number;
+    grossRevenueAmount: number;
+    netRevenueAmount: number;
     revenueAmount: number;
     revenueCurrency: string;
     activeEvents: number;
@@ -73,12 +77,12 @@ function statusClass(status: string) {
 
 function MetricCard({ label, value, helper, icon: Icon }: { label: string; value: string; helper?: string; icon: ComponentType<{ className?: string }> }) {
   return (
-    <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+    <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm shadow-zinc-200/30">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
           <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-          {helper ? <p className="mt-1 text-xs text-zinc-500">{helper}</p> : null}
+          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-700">
           <Icon className="h-5 w-5" />
@@ -86,6 +90,113 @@ function MetricCard({ label, value, helper, icon: Icon }: { label: string; value
       </div>
     </div>
   );
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function buildPrintableDashboardHtml(params: {
+  title: string;
+  summary: DashboardResponse["summary"];
+  events: DashboardEvent[];
+  filters: { query: string; status: StatusFilter; eventType: string; dateFrom: string; dateTo: string };
+}) {
+  const { title, summary, events, filters } = params;
+  const now = new Date().toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+  const rows = events
+    .map(
+      (event) => `
+        <tr>
+          <td><strong>${escapeHtml(event.event_title)}</strong><div class="muted">${escapeHtml(event.event_type)} • ${escapeHtml(event.organizer_name)}</div></td>
+          <td>${escapeHtml(event.status)}</td>
+          <td>${escapeHtml(formatDate(event.event_date))}</td>
+          <td>${event.tickets_sold}</td>
+          <td>${escapeHtml(formatMoney(event.gross_revenue_amount, event.revenue_currency))}</td>
+          <td>${escapeHtml(formatMoney(event.net_revenue_amount, event.revenue_currency))}</td>
+          <td>${event.ticket_clicks} / ${event.cart_adds} / ${event.message_threads}</td>
+          <td>${escapeHtml(formatDateTime(event.last_activity_at || event.updated_at))}</td>
+        </tr>
+      `,
+    )
+    .join("");
+
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(title)}</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 32px; color: #0f172a; background: #ffffff; }
+    h1 { margin: 0; font-size: 28px; }
+    .sub { color: #475569; font-size: 13px; margin-top: 8px; line-height: 1.5; }
+    .meta { margin-top: 8px; color: #64748b; font-size: 12px; }
+    .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
+    .card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; }
+    .card .label { font-size: 10px; text-transform: uppercase; letter-spacing: .18em; color: #94a3b8; font-weight: 700; }
+    .card .value { margin-top: 8px; font-size: 22px; font-weight: 800; }
+    .card .note { margin-top: 6px; font-size: 11px; color: #64748b; line-height: 1.4; }
+    table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 12px; }
+    thead th { text-align: left; background: #f8fafc; color: #94a3b8; text-transform: uppercase; letter-spacing: .14em; font-size: 10px; padding: 10px; border-bottom: 1px solid #e2e8f0; }
+    tbody td { padding: 12px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    .muted { color: #64748b; font-size: 11px; margin-top: 4px; }
+    .footer { margin-top: 18px; color: #94a3b8; font-size: 11px; }
+    @media print { body { padding: 20px; } .no-print { display: none; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(title)}</h1>
+  <div class="sub">Creator dashboard export for your events. This view uses the current dashboard filters and shows gross and estimated net sales separately.</div>
+  <div class="meta">Exported ${escapeHtml(now)} • Filters: ${escapeHtml(filters.query || "All events")} • ${escapeHtml(filters.status)} • ${escapeHtml(filters.eventType)} • ${escapeHtml(filters.dateFrom || "Any start date")} → ${escapeHtml(filters.dateTo || "Any end date")}</div>
+
+  <div class="grid">
+    <div class="card"><div class="label">Total tickets sold</div><div class="value">${summary.totalTicketsSold}</div><div class="note">All published ticket purchases in scope.</div></div>
+    <div class="card"><div class="label">Gross sales</div><div class="value">${escapeHtml(formatMoney(summary.grossRevenueAmount, summary.revenueCurrency))}</div><div class="note">Before platform fee adjustments.</div></div>
+    <div class="card"><div class="label">Estimated net sales</div><div class="value">${escapeHtml(formatMoney(summary.netRevenueAmount, summary.revenueCurrency))}</div><div class="note">After estimated platform fee only.</div></div>
+    <div class="card"><div class="label">Active events</div><div class="value">${summary.activeEvents}</div><div class="note">Currently published events.</div></div>
+    <div class="card"><div class="label">Pending issues</div><div class="value">${summary.pendingIssues}</div><div class="note">Events needing attention.</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Status</th>
+        <th>Date</th>
+        <th>Tickets</th>
+        <th>Gross</th>
+        <th>Net</th>
+        <th>Activity</th>
+        <th>Last updated</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows || `<tr><td colspan="8">No events matched the current filters.</td></tr>`}
+    </tbody>
+  </table>
+
+  <div class="footer">Generated by BuyMesho creator dashboard.</div>
+  <script>
+    window.onload = function () {
+      setTimeout(function () { window.print(); }, 250);
+    };
+    window.onafterprint = function () { window.close(); };
+  </script>
+</body>
+</html>`;
 }
 
 export default function EventCreatorOverviewPage() {
@@ -119,6 +230,8 @@ export default function EventCreatorOverviewPage() {
           events: Array.isArray(response?.events) ? response.events : [],
           summary: response?.summary ?? {
             totalTicketsSold: 0,
+            grossRevenueAmount: 0,
+            netRevenueAmount: 0,
             revenueAmount: 0,
             revenueCurrency: "MWK",
             activeEvents: 0,
@@ -131,7 +244,7 @@ export default function EventCreatorOverviewPage() {
         setData({
           creator: null,
           events: [],
-          summary: { totalTicketsSold: 0, revenueAmount: 0, revenueCurrency: "MWK", activeEvents: 0, pendingIssues: 0 },
+          summary: { totalTicketsSold: 0, grossRevenueAmount: 0, netRevenueAmount: 0, revenueAmount: 0, revenueCurrency: "MWK", activeEvents: 0, pendingIssues: 0 },
         });
       } finally {
         if (mounted) setLoading(false);
@@ -168,7 +281,29 @@ export default function EventCreatorOverviewPage() {
     });
   }, [data?.events, query, status, eventType, dateFrom, dateTo]);
 
-  const summary = data?.summary ?? { totalTicketsSold: 0, revenueAmount: 0, revenueCurrency: "MWK", activeEvents: 0, pendingIssues: 0 };
+  const summary = data?.summary ?? { totalTicketsSold: 0, grossRevenueAmount: 0, netRevenueAmount: 0, revenueAmount: 0, revenueCurrency: "MWK", activeEvents: 0, pendingIssues: 0 };
+  const exportState = { query, status, eventType, dateFrom, dateTo };
+
+  const handleExportPdf = () => {
+    if (typeof window === "undefined") return;
+    const html = buildPrintableDashboardHtml({
+      title: "Creator Dashboard Export",
+      summary,
+      events: filteredEvents,
+      filters: exportState,
+    });
+
+    const printWindow = window.open("", "_blank", "noopener,noreferrer,width=1100,height=900");
+    if (!printWindow) {
+      window.print();
+      return;
+    }
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+  };
 
   return (
     <AccountPageShell
@@ -187,22 +322,22 @@ export default function EventCreatorOverviewPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => navigateToPath(EVENTS_MANAGE_PATH)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
-              <ArrowRight className="h-4 w-4" />
-              Manage Events
+              <ArrowRight className="h-4 w-4" /> Manage Events
             </button>
             <button type="button" onClick={() => navigateToPath(EVENTS_CREATE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
               New Event
             </button>
-            <button type="button" onClick={() => window.print()} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+            <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
               <Download className="h-4 w-4" />
-              Print / PDF
+              Export PDF
             </button>
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5 print:grid-cols-5">
           <MetricCard label="Total tickets sold" value={String(summary.totalTicketsSold)} helper="Across all events" icon={Ticket} />
-          <MetricCard label="Revenue" value={formatMoney(summary.revenueAmount, summary.revenueCurrency)} helper="Paid ticket sales" icon={Wallet} />
+          <MetricCard label="Gross sales" value={formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)} helper="Before platform fee" icon={Wallet} />
+          <MetricCard label="Estimated net sales" value={formatMoney(summary.netRevenueAmount, summary.revenueCurrency)} helper="After platform fee" icon={Wallet} />
           <MetricCard label="Active events" value={String(summary.activeEvents)} helper="Currently published" icon={CalendarDays} />
           <MetricCard label="Pending issues" value={String(summary.pendingIssues)} helper="Needs attention" icon={AlertCircle} />
         </div>
@@ -239,9 +374,7 @@ export default function EventCreatorOverviewPage() {
               <Filter className="h-4 w-4 shrink-0" />
               <select value={eventType} onChange={(event) => setEventType(event.target.value)} className="w-full bg-transparent text-sm text-zinc-900 outline-none">
                 <option value="all">All types</option>
-                {eventTypes.map((type) => (
-                  <option key={type} value={type}>{type}</option>
-                ))}
+                {eventTypes.map((type) => <option key={type} value={type}>{type}</option>)}
               </select>
             </label>
           </div>
@@ -279,7 +412,8 @@ export default function EventCreatorOverviewPage() {
                     <th className="px-4 py-3">Status</th>
                     <th className="px-4 py-3">Date</th>
                     <th className="px-4 py-3">Tickets</th>
-                    <th className="px-4 py-3">Revenue</th>
+                    <th className="px-4 py-3">Gross</th>
+                    <th className="px-4 py-3">Net</th>
                     <th className="px-4 py-3">Activity</th>
                     <th className="px-4 py-3">Last updated</th>
                     <th className="px-4 py-3">Action</th>
@@ -302,19 +436,11 @@ export default function EventCreatorOverviewPage() {
                         <div className="mt-1 text-xs text-zinc-500">{event.start_time}</div>
                       </td>
                       <td className="px-4 py-4 font-bold text-zinc-950">{event.tickets_sold}</td>
-                      <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.revenue_amount, event.revenue_currency)}</td>
-                      <td className="px-4 py-4 text-xs text-zinc-500">
-                        <p>{event.ticket_clicks} clicks</p>
-                        <p>{event.cart_adds} cart adds</p>
-                        <p>{event.message_threads} threads</p>
-                      </td>
+                      <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</td>
+                      <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.net_revenue_amount, event.revenue_currency)}</td>
+                      <td className="px-4 py-4 text-zinc-700"><div className="space-y-1 text-xs text-zinc-500"><p>{event.ticket_clicks} clicks</p><p>{event.cart_adds} cart adds</p><p>{event.message_threads} threads</p></div></td>
                       <td className="px-4 py-4 text-zinc-700">{formatDateTime(event.last_activity_at || event.updated_at)}</td>
-                      <td className="px-4 py-4">
-                        <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-900 hover:bg-zinc-50">
-                          Open
-                          <ArrowRight className="h-3.5 w-3.5" />
-                        </button>
-                      </td>
+                      <td className="px-4 py-4"><button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-900 hover:bg-zinc-50">Open<ArrowRight className="h-3.5 w-3.5" /></button></td>
                     </tr>
                   ))}
                 </tbody>
