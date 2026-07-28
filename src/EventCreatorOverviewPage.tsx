@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { AlertCircle, ArrowRight, CalendarDays, Download, Filter, LayoutDashboard, Loader2, Search, Ticket, Wallet } from "lucide-react";
 
+import loaderImage from "../photos/LoaderPic.png";
 import AccountPageShell from "./components/AccountPageShell";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { formatMoney } from "./shared/utils/formatMoney";
-
 
 type DashboardEvent = {
   id: number;
@@ -103,11 +103,12 @@ function escapeHtml(value: string) {
 
 function buildPrintableDashboardHtml(params: {
   title: string;
+  logoUrl: string;
   summary: DashboardResponse["summary"];
   events: DashboardEvent[];
   filters: { query: string; status: StatusFilter; eventType: string; dateFrom: string; dateTo: string };
 }) {
-  const { title, summary, events, filters } = params;
+  const { title, logoUrl, summary, events, filters } = params;
   const now = new Date().toLocaleString(undefined, {
     month: "short",
     day: "numeric",
@@ -142,6 +143,13 @@ function buildPrintableDashboardHtml(params: {
     :root { color-scheme: light; }
     body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 32px; color: #0f172a; background: #ffffff; }
     h1 { margin: 0; font-size: 28px; }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+    .brand img { width: 44px; height: 44px; border-radius: 14px; object-fit: cover; border: 1px solid #e2e8f0; }
+    .brand-copy { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font-size: 18px; font-weight: 900; letter-spacing: -.03em; line-height: 1; }
+    .brand-name .buy { color: #7f1d1d; }
+    .brand-name .mesho { color: #334155; }
+    .brand-sub { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: .18em; font-weight: 700; }
     .sub { color: #475569; font-size: 13px; margin-top: 8px; line-height: 1.5; }
     .meta { margin-top: 8px; color: #64748b; font-size: 12px; }
     .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 20px; }
@@ -158,6 +166,14 @@ function buildPrintableDashboardHtml(params: {
   </style>
 </head>
 <body>
+  <div class="brand">
+    <img src="${escapeHtml(logoUrl)}" alt="BuyMesho logo" />
+    <div class="brand-copy">
+      <div class="brand-name"><span class="buy">Buy</span><span class="mesho">Mesho</span></div>
+      <div class="brand-sub">Creator dashboard export</div>
+    </div>
+  </div>
+
   <h1>${escapeHtml(title)}</h1>
   <div class="sub">Creator dashboard export for your events. This view uses the current dashboard filters and shows gross and estimated net sales separately.</div>
   <div class="meta">Exported ${escapeHtml(now)} • Filters: ${escapeHtml(filters.query || "All events")} • ${escapeHtml(filters.status)} • ${escapeHtml(filters.eventType)} • ${escapeHtml(filters.dateFrom || "Any start date")} → ${escapeHtml(filters.dateTo || "Any end date")}</div>
@@ -288,6 +304,7 @@ export default function EventCreatorOverviewPage() {
     if (typeof window === "undefined") return;
     const html = buildPrintableDashboardHtml({
       title: "Creator Dashboard Export",
+      logoUrl: loaderImage,
       summary,
       events: filteredEvents,
       filters: exportState,
