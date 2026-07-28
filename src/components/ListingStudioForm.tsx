@@ -686,9 +686,17 @@ const applyAiDraft = async () => {
     <div className="flex flex-col min-h-0 flex-1">
       <div className="p-6">
         <div className="space-y-4 pr-1">
-          <div className="space-y-4 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+          <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Basic Info</p>
-            <div>
+            <button
+              type="button"
+              onClick={() => void applyAiDraft()}
+              disabled={isGeneratingDraft || uploadingMedia || isSubmitting}
+              className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+              >
+              {isGeneratingDraft ? "Generating..." : "AI Draft"}
+            </button>
+          </div>
               <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>
               <input type="text" className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.name ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`} value={form.name} onChange={(e) => { clearFieldError("name"); setForm({ ...form, name: e.target.value }); }} />
               {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
