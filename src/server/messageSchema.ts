@@ -21,14 +21,6 @@ export const MESSAGE_SCHEMA_SQL = `
     last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
-  ON conversations (buyer_uid, seller_uid, listing_id)
-  WHERE listing_id IS NOT NULL;
-
-  CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_event
-  ON conversations (buyer_uid, seller_uid, event_id)
-  WHERE event_id IS NOT NULL;
-
   CREATE TABLE IF NOT EXISTS conversation_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id INTEGER NOT NULL,
@@ -115,12 +107,6 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     last_message_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing
-   ON conversations (buyer_uid, seller_uid, listing_id)
-   WHERE listing_id IS NOT NULL`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_event
-   ON conversations (buyer_uid, seller_uid, event_id)
-   WHERE event_id IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS conversation_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id INTEGER NOT NULL,
@@ -219,6 +205,12 @@ function ensureColumn(db: SchemaDbLike, table: string, column: string, definitio
   db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${alterDefinition}`);
 }
 
+function ensureIndex(db: SchemaDbLike, indexName: string, sql: string) {
+  const rows = db.prepare(`SELECT indexname AS name FROM pg_indexes WHERE schemaname = current_schema()`).all();
+  if (rows.some((row) => String(row.name ?? "") === indexName)) return;
+  db.exec(sql);
+}
+
 export function ensureMessageSchema(db: SchemaDbLike) {
   db.pragma("foreign_keys = ON");
   db.exec(MESSAGE_SCHEMA_SQL);
@@ -266,4 +258,7 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   ensureColumn(db, "sender_spam_profiles", "last_flagged_at", "DATETIME");
   ensureColumn(db, "sender_spam_profiles", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "sender_spam_profiles", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
+
+  ensureIndex(db, "idx_conversations_pair_listing", `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_listing ON conversations (buyer_uid, seller_uid, listing_id) WHERE listing_id IS NOT NULL`);
+  ensureIndex(db, "idx_conversations_pair_event", `CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_pair_event ON conversations (buyer_uid, seller_uid, event_id) WHERE event_id IS NOT NULL`);
 }
