@@ -11,11 +11,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://buymesho.app/signup</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://buymesho.app/explore</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
@@ -46,16 +41,6 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://buymesho.app/explore/innovation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
-    <loc>https://buymesho.app/explore/accommodation</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>
-  <url>
     <loc>https://buymesho.app/privacy</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
@@ -69,10 +54,5 @@
     <loc>https://buymesho.app/safety</loc>
     <changefreq>yearly</changefreq>
     <priority>0.3</priority>
-  </url>
-  <url>
-    <loc>https://buymesho.app/report</loc>
-    <changefreq>yearly</changefreq>
-    <priority>0.2</priority>
   </url>
 </urlset>
