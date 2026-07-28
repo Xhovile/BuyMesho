@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import { Funnel, Loader2, Search } from "lucide-react";
+import { Funnel, Search } from "lucide-react";
 import type { Listing } from "../types";
 import FilterSection from "../components/FilterSection";
 import ListingCard from "../components/ListingCard";
@@ -71,6 +71,23 @@ type MarketSectionProps = {
   actions: MarketSectionActions;
   activeChip?: HeaderChip;
 };
+
+function ListingCardSkeleton() {
+  return (
+    <div className="w-full max-w-[160px] overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm sm:max-w-[235px]">
+      <div className="aspect-square animate-pulse bg-zinc-100 sm:aspect-[4/5]" />
+      <div className="space-y-2 p-2.5 sm:p-3">
+        <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100" />
+        <div className="flex gap-1.5">
+          <div className="h-4 w-12 animate-pulse rounded-full bg-zinc-100" />
+          <div className="h-4 w-10 animate-pulse rounded-full bg-zinc-100" />
+        </div>
+        <div className="h-3 w-16 animate-pulse rounded-full bg-zinc-100" />
+      </div>
+    </div>
+  );
+}
 
 export default function MarketSection({
   loading,
@@ -199,6 +216,8 @@ export default function MarketSection({
     setCurrentPage(1);
   };
 
+  const skeletonCount = typeof window !== "undefined" && window.innerWidth >= 768 ? 8 : 4;
+
   return (
     <>
       <FloatingCartButton isLoggedIn={isLoggedIn} />
@@ -257,9 +276,10 @@ export default function MarketSection({
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center gap-4 py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="font-medium text-zinc-500">Loading marketplace...</p>
+        <div className="grid justify-start grid-cols-[repeat(auto-fit,160px)] gap-2 md:gap-8">
+          {Array.from({ length: skeletonCount }).map((_, index) => (
+            <ListingCardSkeleton key={index} />
+          ))}
         </div>
       ) : visibleListings.length > 0 ? (
         <>
