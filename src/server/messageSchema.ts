@@ -189,11 +189,11 @@ export const MESSAGE_SCHEMA_MIGRATIONS = [
   )`,
 ] as const;
 
-export const MESSAGE_BLOCK_SCOPES = ["messages", "listing", "all"] as const;
-export type MessageBlockScope = (typeof MESSAGE_BLOCK_SCOPES)[number];
-
 type SchemaDbLike = {
-  prepare(sql: string): { all(): Array<{ name: string }> };
+  prepare(sql: string): {
+    all(...params: unknown[]): Array<Record<string, unknown>>;
+    get(...params: unknown[]): Record<string, unknown> | undefined;
+  };
   exec(sql: string): void;
   pragma(statement: string): void;
 };
@@ -210,7 +210,7 @@ function stripNonConstantDefault(definition: string) {
 
 function ensureColumn(db: SchemaDbLike, table: string, column: string, definition: string) {
   const rows = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${table}'`).all();
-  if (rows.some((row) => row.name === column)) return;
+  if (rows.some((row) => String(row.name ?? "") === column)) return;
 
   const alterDefinition = hasNonConstantDefault(definition)
     ? stripNonConstantDefault(definition)
@@ -266,27 +266,4 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   ensureColumn(db, "sender_spam_profiles", "last_flagged_at", "DATETIME");
   ensureColumn(db, "sender_spam_profiles", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "sender_spam_profiles", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_conversations_pair_listing
-    ON conversations (listing_id, buyer_uid, seller_uid);
-
-    CREATE INDEX IF NOT EXISTS idx_conversations_pair_event
-    ON conversations (event_id, buyer_uid, seller_uid);
-
-    CREATE INDEX IF NOT EXISTS idx_conversations_buyer_updated_at
-    ON conversations (buyer_uid, updated_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_conversations_seller_updated_at
-    ON conversations (seller_uid, updated_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_messages_conversation_created_at
-    ON messages (conversation_id, created_at ASC, id ASC);
-
-    CREATE INDEX IF NOT EXISTS idx_message_reports_status_created_at
-    ON message_reports (status, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_message_blocks_blocked_uid
-    ON message_blocks (blocked_uid, block_scope);
-  `);
 }
