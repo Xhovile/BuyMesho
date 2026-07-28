@@ -37,6 +37,9 @@ type WorkerControlRequest = {
 };
 
 type WorkerRequest = WorkerQueryRequest | WorkerControlRequest;
+type WorkerQueryRequestPayload = Omit<WorkerQueryRequest, "id" | "signal">;
+type WorkerControlRequestPayload = Omit<WorkerControlRequest, "id" | "signal">;
+type WorkerRequestPayload = WorkerQueryRequestPayload | WorkerControlRequestPayload;
 
 type WorkerSuccessResponse = { id: number; ok: true; rows: Record<string, unknown>[]; rowCount: number };
 type WorkerFailureResponse = { id: number; ok: false; error: string };
@@ -245,13 +248,17 @@ function ensureWorker() {
   workerPort.unref?.();
 }
 
-function sendWorkerRequest(request: Omit<WorkerRequest, "id" | "signal">): WorkerResponse {
+function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse {
   ensureWorker();
   if (!workerPort) {
     throw new Error("PostgreSQL worker is not available");
   }
 
-  const payload: WorkerRequest = { id: ++requestCounter, signal: new SharedArrayBuffer(4), ...request };
+  const base = { id: ++requestCounter, signal: new SharedArrayBuffer(4) };
+  const payload =
+    request.op === "query"
+      ? ({ ...base, ...request } satisfies WorkerQueryRequest)
+      : ({ ...base, ...request } satisfies WorkerControlRequest);
   const signal = new Int32Array(payload.signal);
   workerPort.postMessage(payload);
 
