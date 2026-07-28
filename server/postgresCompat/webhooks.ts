@@ -1,4 +1,4 @@
-import { getPaymentDb } from "../db.js";
+import { getPaymentDb } from "../postgresCompat.js";
 
 export type PaymentWebhookProcessingStatus =
   | "received"
