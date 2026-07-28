@@ -1,8 +1,9 @@
 import dotenv from "dotenv";
 import express from "express";
+import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer } from "vite";
+import { createServer as createViteServer, type ViteDevServer } from "vite";
 import { createApp } from "./app.js";
 import { runMigrations } from "./db/migrations/index.js";
 import { registerRoutes } from "./routes/index.js";
@@ -19,13 +20,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 function registerFallbackHandlers(app: express.Express) {
-  app.use((req, res) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api/")) {
       res.status(404).json({ error: "API route not found", path: req.path });
       return;
     }
 
-    res.status(404).json({ error: "Not found", path: req.path });
+    next();
   });
 
   app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
@@ -35,6 +36,28 @@ function registerFallbackHandlers(app: express.Express) {
       message: err instanceof Error ? err.message : "Unknown error",
       stack: process.env.NODE_ENV === "development" && err instanceof Error ? err.stack : undefined,
     });
+  });
+}
+
+async function serveSpaShell(req: express.Request, res: express.Response, vite: ViteDevServer | null) {
+  const staticDir = path.join(process.cwd(), "dist");
+  const indexPath = path.join(staticDir, "index.html");
+
+  if (process.env.NODE_ENV !== "production" && vite) {
+    const indexHtml = await fs.readFile(path.join(process.cwd(), "index.html"), "utf-8");
+    const transformedHtml = await vite.transformIndexHtml(req.originalUrl, indexHtml);
+    res.status(200).setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(transformedHtml);
+    return;
+  }
+
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      res.status(500).json({
+        error: "Failed to load app shell",
+        path: req.path,
+      });
+    }
   });
 }
 
@@ -57,8 +80,10 @@ export async function startServer() {
   registerMarketplaceRoutes(app, { db });
   registerSellerProfileRoutes(app, { db });
 
+  let vite: ViteDevServer | null = null;
+
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({
+    vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
@@ -71,6 +96,14 @@ export async function startServer() {
       res.sendFile(path.join(staticDir, "index.html"));
     });
   }
+
+  app.get(/^\/(?!api\/).*/, async (req, res, next) => {
+    try {
+      await serveSpaShell(req, res, vite);
+    } catch (error) {
+      next(error);
+    }
+  });
 
   registerFallbackHandlers(app);
 
