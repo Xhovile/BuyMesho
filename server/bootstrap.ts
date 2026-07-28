@@ -57,13 +57,12 @@ export async function startServer() {
   registerMarketplaceRoutes(app, { db });
   registerSellerProfileRoutes(app, { db });
 
-  registerFallbackHandlers(app);
-
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
+
     app.use(vite.middlewares);
   } else {
     const staticDir = path.join(process.cwd(), "dist");
@@ -72,6 +71,8 @@ export async function startServer() {
       res.sendFile(path.join(staticDir, "index.html"));
     });
   }
+
+  registerFallbackHandlers(app);
 
   const PORT = Number(process.env.PORT ?? 3000);
   app.listen(PORT, "0.0.0.0", () => {
