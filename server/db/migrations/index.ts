@@ -175,4 +175,5 @@ export function runMigrations() {
   updateSellerPayoutAccountColumns();
   ensurePayoutLifecycleSchema();
   initPaymentSchema(postgresDb);
+  return postgresDb;
 }
