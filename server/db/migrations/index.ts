@@ -1,4 +1,5 @@
 import { postgresDb } from "../../db.js";
+import { ensureMessageSchema } from "../../../src/server/messageSchema.js";
 import { initPaymentSchema } from "../../postgresCompat/schema.js";
 import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema.js";
 
@@ -169,6 +170,7 @@ function updateSellerPayoutAccountColumns() {
 
 export function runMigrations() {
   ensureExtraTables();
+  ensureMessageSchema(postgresDb);
   normalizeHardDeleteAfterColumn();
   updateSellerPayoutAccountColumns();
   ensurePayoutLifecycleSchema();
