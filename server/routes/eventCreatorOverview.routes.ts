@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { requireAuth } from "../middleware/requireAuth.js";
+import { calculatePayoutFormula } from "../modules/payouts/payout.policy.js";
 
 type EventRow = {
   id: number;
@@ -43,7 +44,8 @@ type EventMessageSummaryRow = {
 type EventSalesSummaryRow = {
   event_id: number;
   tickets_sold: number;
-  revenue_amount: number;
+  gross_revenue_amount: number;
+  net_revenue_amount: number;
   revenue_currency: string;
   purchase_count: number;
   last_sale_at: string | null;
@@ -144,7 +146,8 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
     summaries.set(event.id, {
       event_id: event.id,
       tickets_sold: 0,
-      revenue_amount: 0,
+      gross_revenue_amount: 0,
+      net_revenue_amount: 0,
       revenue_currency: "MWK",
       purchase_count: 0,
       last_sale_at: null,
@@ -186,10 +189,15 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
         typeof unitPriceRaw === "object" && unitPriceRaw !== null && "amount" in unitPriceRaw
           ? Number((unitPriceRaw as { amount?: unknown }).amount ?? 0)
           : Number(item.ticketPrice ?? eventMap.get(eventId)?.ticket_price ?? 0);
-      const revenue = Number.isFinite(unitPrice) ? unitPrice * quantity : 0;
+      const grossRevenue = Number.isFinite(unitPrice) ? unitPrice * quantity : 0;
+      const netRevenue = calculatePayoutFormula({
+        grossAmount: grossRevenue,
+        currency: order.total_currency || order.currency || "MWK",
+      }).netAmount;
 
       summary.tickets_sold += quantity;
-      summary.revenue_amount += revenue;
+      summary.gross_revenue_amount += grossRevenue;
+      summary.net_revenue_amount += netRevenue;
       summary.revenue_currency = order.total_currency || order.currency || summary.revenue_currency;
       summary.last_sale_at = saleTime && (!summary.last_sale_at || new Date(saleTime).getTime() > new Date(summary.last_sale_at).getTime()) ? saleTime : summary.last_sale_at;
       orderIdsByEvent.get(eventId)?.add(order.id);
@@ -202,7 +210,8 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
     return {
       event_id: event.id,
       tickets_sold: summary?.tickets_sold ?? 0,
-      revenue_amount: summary?.revenue_amount ?? 0,
+      gross_revenue_amount: summary?.gross_revenue_amount ?? 0,
+      net_revenue_amount: summary?.net_revenue_amount ?? 0,
       revenue_currency: summary?.revenue_currency ?? "MWK",
       purchase_count: orderIds.size,
       last_sale_at: summary?.last_sale_at ?? null,
@@ -256,7 +265,9 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
           ticket_clicks: Number(activity?.ticket_clicks || 0),
           last_activity_at: lastActivityAt,
           tickets_sold: Number(sales?.tickets_sold || 0),
-          revenue_amount: Number(sales?.revenue_amount || 0),
+          gross_revenue_amount: Number(sales?.gross_revenue_amount || 0),
+          net_revenue_amount: Number(sales?.net_revenue_amount || 0),
+          revenue_amount: Number(sales?.gross_revenue_amount || 0),
           revenue_currency: sales?.revenue_currency || "MWK",
           purchase_count: Number(sales?.purchase_count || 0),
           last_sale_at: sales?.last_sale_at || null,
@@ -265,8 +276,9 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
       });
 
       const totalTicketsSold = overviewEvents.reduce((sum, event) => sum + Number(event.tickets_sold || 0), 0);
-      const revenueCurrency = overviewEvents.find((event) => Number(event.revenue_amount || 0) > 0)?.revenue_currency || "MWK";
-      const revenueAmount = overviewEvents.reduce((sum, event) => sum + Number(event.revenue_amount || 0), 0);
+      const revenueCurrency = overviewEvents.find((event) => Number(event.gross_revenue_amount || 0) > 0)?.revenue_currency || "MWK";
+      const grossRevenueAmount = overviewEvents.reduce((sum, event) => sum + Number(event.gross_revenue_amount || 0), 0);
+      const netRevenueAmount = overviewEvents.reduce((sum, event) => sum + Number(event.net_revenue_amount || 0), 0);
       const activeEvents = overviewEvents.filter((event) => event.status === "published").length;
       const pendingIssues = overviewEvents.filter((event) => event.pending_issues).length;
 
@@ -275,7 +287,9 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
         events: overviewEvents,
         summary: {
           totalTicketsSold,
-          revenueAmount,
+          grossRevenueAmount,
+          netRevenueAmount,
+          revenueAmount: grossRevenueAmount,
           revenueCurrency,
           activeEvents,
           pendingIssues,
