@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Globe, Sparkles, ShieldCheck, Target, Users, ShoppingBag, BadgeCheck, ArrowRight } from "lucide-react";
 import { EXPLORE_PATH, HOME_PATH, SIGNUP_PATH, navigateToPath } from "../lib/appNavigation";
+import loaderImage from "../../photos/LoaderPic.png";
 
 type SectionProps = {
   title: string;
@@ -31,8 +32,8 @@ export default function AboutPage() {
             className="text-left"
           >
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-red-900 text-sm font-extrabold text-white">
-                B
+              <div className="flex h-9 w-9 overflow-hidden rounded-xl bg-white ring-1 ring-zinc-200 shadow-sm">
+                <img src={loaderImage} alt="BuyMesho logo" className="h-full w-full object-cover" />
               </div>
               <div>
                 <p className="text-sm font-black text-zinc-900">BuyMesho</p>
