@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { MessageChannel, Worker, isMainThread, receiveMessageOnPort, workerData, type MessagePort } from "node:worker_threads";
 import dotenv from "dotenv";
 import { type PoolClient, type QueryResultRow, Pool } from "pg";
@@ -23,23 +22,25 @@ export interface PgCompatPreparedStatement {
   all(...params: unknown[]): Record<string, unknown>[];
 }
 
-type WorkerRequest =
-  | {
-      id: number;
-      op: "query";
-      sql: string;
-      params: unknown[];
-      signal: SharedArrayBuffer;
-    }
-  | {
-      id: number;
-      op: "begin" | "commit" | "rollback";
-      signal: SharedArrayBuffer;
-    };
+type WorkerQueryRequest = {
+  id: number;
+  op: "query";
+  sql: string;
+  params: unknown[];
+  signal: SharedArrayBuffer;
+};
 
-type WorkerResponse =
-  | { id: number; ok: true; rows: Record<string, unknown>[]; rowCount: number }
-  | { id: number; ok: false; error: string };
+type WorkerControlRequest = {
+  id: number;
+  op: "begin" | "commit" | "rollback";
+  signal: SharedArrayBuffer;
+};
+
+type WorkerRequest = WorkerQueryRequest | WorkerControlRequest;
+
+type WorkerSuccessResponse = { id: number; ok: true; rows: Record<string, unknown>[]; rowCount: number };
+type WorkerFailureResponse = { id: number; ok: false; error: string };
+type WorkerResponse = WorkerSuccessResponse | WorkerFailureResponse;
 
 function parseBoolean(value: string | undefined): boolean | undefined {
   if (value === undefined) return undefined;
@@ -87,6 +88,14 @@ function createPgPool() {
   });
 }
 
+function isQueryRequest(request: WorkerRequest): request is WorkerQueryRequest {
+  return request.op === "query";
+}
+
+function isWorkerSuccessResponse(response: WorkerResponse): response is WorkerSuccessResponse {
+  return response.ok === true;
+}
+
 function startWorker(port: MessagePort) {
   const workerPool = createPgPool();
   let transactionClient: PoolClient | null = null;
@@ -101,7 +110,7 @@ function startWorker(port: MessagePort) {
         }
         transactionClient = await workerPool.connect();
         await transactionClient.query("BEGIN");
-        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
       } else if (request.op === "commit") {
         if (!transactionClient) {
           throw new Error("No active transaction");
@@ -112,7 +121,7 @@ function startWorker(port: MessagePort) {
           transactionClient.release();
           transactionClient = null;
         }
-        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
       } else if (request.op === "rollback") {
         if (transactionClient) {
           try {
@@ -122,8 +131,8 @@ function startWorker(port: MessagePort) {
             transactionClient = null;
           }
         }
-        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerResponse);
-      } else {
+        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
+      } else if (isQueryRequest(request)) {
         const activeClient = transactionClient ?? workerPool;
         const result = await activeClient.query(request.sql, request.params ?? []);
         port.postMessage({
@@ -131,7 +140,7 @@ function startWorker(port: MessagePort) {
           ok: true,
           rows: result.rows ?? [],
           rowCount: result.rowCount ?? (result.rows ?? []).length,
-        } satisfies WorkerResponse);
+        } satisfies WorkerSuccessResponse);
       }
     } catch (error) {
       if (request.op === "begin" && transactionClient) {
@@ -147,7 +156,7 @@ function startWorker(port: MessagePort) {
         id: request.id,
         ok: false,
         error: error instanceof Error ? error.message : String(error),
-      } satisfies WorkerResponse);
+      } satisfies WorkerFailureResponse);
     } finally {
       Atomics.store(signal, 0, 1);
       Atomics.notify(signal, 0, 1);
@@ -242,7 +251,7 @@ function sendWorkerRequest(request: Omit<WorkerRequest, "id" | "signal">): Worke
     throw new Error("PostgreSQL worker is not available");
   }
 
-  const payload = { id: ++requestCounter, signal: new SharedArrayBuffer(4), ...request } as WorkerRequest;
+  const payload: WorkerRequest = { id: ++requestCounter, signal: new SharedArrayBuffer(4), ...request };
   const signal = new Int32Array(payload.signal);
   workerPort.postMessage(payload);
 
@@ -262,7 +271,7 @@ function sendWorkerRequest(request: Omit<WorkerRequest, "id" | "signal">): Worke
     throw new Error("PostgreSQL worker response mismatch");
   }
 
-  if (response.ok === false) {
+  if (!isWorkerSuccessResponse(response)) {
     throw new Error(`PostgreSQL query failed: ${response.error}`);
   }
 
@@ -272,8 +281,8 @@ function sendWorkerRequest(request: Omit<WorkerRequest, "id" | "signal">): Worke
 function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
   const response = sendWorkerRequest({ op: "query", sql, params });
   return {
-    rows: Array.isArray(response.rows) ? response.rows : [],
-    rowCount: Number.isFinite(response.rowCount) ? Number(response.rowCount) : 0,
+    rows: response.rows,
+    rowCount: response.rowCount,
   };
 }
 
