@@ -198,6 +198,31 @@ export default function HomePage() {
           </section>
         ) : null}
 
+        <section className="relative left-1/2 w-screen -translate-x-1/2 border-y border-zinc-200 bg-white py-6 sm:py-8">
+          <div className="mx-auto max-w-7xl px-4">
+            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 sm:text-4xl">
+              FEATURED CATEGORIES
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {visibleFeaturedSections.map((section) => {
+              const listings = controller.filteredSectionListings[section.key] || [];
+              return (
+                <CategorySection
+                  key={section.key}
+                  title={section.title}
+                  description={section.description}
+                  categoryKey={section.key}
+                  icon={section.icon}
+                  listings={listings}
+                  loading={controller.loading}
+                />
+              );
+            })}
+          </div>
+        </section>
+
         <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
           <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
             <div className="space-y-6">
@@ -236,31 +261,6 @@ export default function HomePage() {
                 </div>
               </section>
             </div>
-          </div>
-        </section>
-
-        <section className="relative left-1/2 w-screen -translate-x-1/2 border-y border-zinc-200 bg-white py-6 sm:py-8">
-          <div className="mx-auto max-w-7xl px-4">
-            <h2 className="mb-5 text-2xl font-black tracking-[-0.04em] text-zinc-950 sm:text-4xl">
-              FEATURED CATEGORIES
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            {visibleFeaturedSections.map((section) => {
-              const listings = controller.filteredSectionListings[section.key] || [];
-              return (
-                <CategorySection
-                  key={section.key}
-                  title={section.title}
-                  description={section.description}
-                  categoryKey={section.key}
-                  icon={section.icon}
-                  listings={listings}
-                  loading={controller.loading}
-                />
-              );
-            })}
           </div>
         </section>
       </main>
