@@ -271,7 +271,7 @@ export default function EventsDirectoryPage() {
                     type="button"
                     onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
                     disabled={creatorAccessLoading}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-extrabold text-blue-800 shadow-sm shadow-blue-100/70 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                     {creatorAccessLoading ? "Checking access…" : "Manage Events"}
