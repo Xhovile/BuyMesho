@@ -1,10 +1,11 @@
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
   getListingCardSpecs,
   getListingConditionLabel,
 } from "../lib/listingCardHighlights";
+import { navigateToListingDetails } from "../lib/appNavigation";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -49,6 +50,7 @@ export default function ListingCard({
   ultraCompact = false,
   showActionsMenu = true,
   performanceMode = false,
+  clickable = true,
   onOpenDetails,
   onOpenSeller: _onOpenSeller,
 }: ListingCardProps) {
@@ -75,36 +77,42 @@ export default function ListingCard({
   const conditionLabel = getListingConditionLabel(listing.condition);
   const availabilityLabel = getListingAvailabilityLabel(listing.quantity, listing.sold_quantity);
 
-  const handleOpenDetails = () => {
-    onOpenDetails(listing);
+  const openDetails = () => {
+    if (!clickable) return;
+    if (onOpenDetails) {
+      onOpenDetails(listing);
+      return;
+    }
+    navigateToListingDetails(listing.id, 0);
+  };
+
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      openDetails();
+    }
   };
 
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
   const cardSize = ultraCompact ? "max-h-[245px] max-w-[160px]" : compact ? "max-h-[320px] max-w-[235px]" : "max-h-[420px] max-w-[300px]";
 
   return (
-    <article
-      className={`group relative w-full overflow-hidden ${cardSize} cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
-      onClick={handleOpenDetails}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          handleOpenDetails();
-        }
-      }}
-      tabIndex={0}
-      role="button"
+    <div
+      className={`group relative w-full overflow-hidden ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      onClick={openDetails}
+      onKeyDown={handleKeyDown}
+      tabIndex={clickable ? 0 : -1}
+      role={clickable ? "button" : undefined}
       aria-label={`Open listing details for ${titleLabel}`}
     >
       <div className="relative overflow-hidden">
         <div className={`relative overflow-hidden rounded-2xl bg-zinc-100 ${imageAspect}`}>
-          <button
-            type="button"
-            onClick={(e) => {
+          <div
+            className="h-full w-full"
+            onClick={(e: ReactMouseEvent<HTMLDivElement>) => {
               e.stopPropagation();
-              handleOpenDetails();
+              openDetails();
             }}
-            className="h-full w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80"
           >
             <img
               src={firstPhoto}
@@ -114,7 +122,7 @@ export default function ListingCard({
               className={`h-full w-full object-cover ${performanceMode ? "" : "transition-transform duration-700 group-hover:scale-105"}`}
               referrerPolicy="no-referrer"
             />
-          </button>
+          </div>
 
           {listing.status === "sold" ? (
             <>
@@ -206,6 +214,6 @@ export default function ListingCard({
           </div>
         </div>
       </div>
-    </article>
+    </div>
   );
 }
