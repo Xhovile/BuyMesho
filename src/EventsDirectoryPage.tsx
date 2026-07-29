@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Loader2 } from "lucide-react";
 
+import desktopHeroImage from "../photos/DesktopHero.webp";
+import mobileHeroImage from "../photos/MobileHero.webp";
+
 import FormDropdown from "./components/FormDropdown";
 import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
@@ -22,8 +25,6 @@ import { apiFetch } from "./lib/api";
 const EVENTS_API_URL = "/api/events";
 const EVENT_CREATOR_ACCESS_URL = "/api/event-creators/me";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
-const HERO_DESKTOP_IMAGE = "/photos/DesktopHero.webp";
-const HERO_MOBILE_IMAGE = "/MobileHero.webp";
 
 function matchesSearch(item: EventRecord, query: string) {
   const normalized = query.trim().toLowerCase();
@@ -306,8 +307,8 @@ export default function EventsDirectoryPage() {
           <div className="relative overflow-hidden rounded-[2.25rem] border border-white/60 bg-white/45 px-5 py-8 text-zinc-900 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8 sm:py-10 lg:px-10">
             <div className="pointer-events-none absolute inset-0">
               <picture>
-                <source media="(min-width: 640px)" srcSet={HERO_DESKTOP_IMAGE} />
-                <img src={HERO_MOBILE_IMAGE} alt="" className="h-full w-full object-cover object-center opacity-35" />
+                <source media="(min-width: 640px)" srcSet={desktopHeroImage} />
+                <img src={mobileHeroImage} alt="" className="h-full w-full object-cover object-center opacity-35" />
               </picture>
               <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/82 to-white/45 sm:from-white/82 sm:via-white/58 sm:to-white/15" />
               <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-zinc-950/5 blur-3xl sm:h-64 sm:w-64" />
