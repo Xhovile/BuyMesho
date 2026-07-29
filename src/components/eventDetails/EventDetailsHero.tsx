@@ -24,6 +24,12 @@ export default function EventDetailsHero({
 
   return (
     <section className="space-y-8">
+      <section>
+        <div className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
+          {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
+        </div>
+      </section>
+
       {notice ? (
         <div className="flex items-start justify-between gap-4 rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-700 shadow-sm">
           <p>{notice}</p>
@@ -39,14 +45,6 @@ export default function EventDetailsHero({
         </h1>
         <p className="text-3xl font-black tracking-tight text-red-950 sm:text-4xl">{price}</p>
       </div>
-
-      <section>
-        <div className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
-          {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
-        </div>
-      </section>
-
-      {!event ? null : null}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4">
         <SummaryCard label="Event type" value={event.event_type} />
