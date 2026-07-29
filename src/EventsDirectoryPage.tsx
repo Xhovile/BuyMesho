@@ -169,6 +169,7 @@ export default function EventsDirectoryPage() {
   const [viewAll, setViewAll] = useState(false);
   const [canCreateEvents, setCanCreateEvents] = useState(false);
   const [creatorAccessLoading, setCreatorAccessLoading] = useState(true);
+  const [heroImageLoaded, setHeroImageLoaded] = useState(false);
 
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const { profile: userProfile } = useAccountProfile();
@@ -304,22 +305,42 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="relative overflow-hidden rounded-[2.25rem] border border-white/60 bg-white/45 px-5 py-8 text-zinc-900 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8 sm:py-10 lg:px-10">
-            <div className="pointer-events-none absolute inset-0">
-              <picture>
-                <source media="(min-width: 640px)" srcSet={desktopHeroImage} />
-                <img src={mobileHeroImage} alt="" className="h-full w-full object-cover object-center opacity-35" />
-              </picture>
-              <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/82 to-white/45 sm:from-white/82 sm:via-white/58 sm:to-white/15" />
-              <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-zinc-950/5 blur-3xl sm:h-64 sm:w-64" />
+          <div className="relative overflow-hidden rounded-[2.25rem] border border-white/10 bg-zinc-950/15 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:px-8 sm:py-10 lg:px-10">
+            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+              {!heroImageLoaded ? (
+                <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
+                  <div className="absolute inset-0 opacity-35">
+                    <div className="absolute left-5 top-5 h-16 w-24 animate-pulse rounded-[1.5rem] bg-white/10" />
+                    <div className="absolute right-6 top-6 h-24 w-24 animate-pulse rounded-[1.5rem] bg-white/10" />
+                    <div className="absolute left-5 bottom-6 h-3 w-44 animate-pulse rounded-full bg-white/10" />
+                    <div className="absolute left-5 bottom-12 h-3 w-60 animate-pulse rounded-full bg-white/10" />
+                  </div>
+                </div>
+              ) : null}
+
+              <div className={`absolute inset-0 transition-opacity duration-500 ${heroImageLoaded ? "opacity-100" : "opacity-0"}`}>
+                <picture>
+                  <source media="(min-width: 640px)" srcSet={desktopHeroImage} />
+                  <img
+                    src={mobileHeroImage}
+                    alt=""
+                    className="h-full w-full object-cover object-center"
+                    onLoad={() => setHeroImageLoaded(true)}
+                    onError={() => setHeroImageLoaded(false)}
+                  />
+                </picture>
+              </div>
+
+              <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-black/45" />
+              <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-white/10 blur-3xl sm:h-64 sm:w-64" />
             </div>
 
             <div className="relative z-10">
-              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Events directory</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">Events directory</p>
               <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
                 <div className="max-w-2xl">
-                  <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
-                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Don't miss!</p>
+                  <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] text-white sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">Don't miss!</p>
                 </div>
 
                 <div className="flex flex-wrap gap-3 sm:justify-end">
@@ -328,7 +349,7 @@ export default function EventsDirectoryPage() {
                       type="button"
                       onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
                       disabled={creatorAccessLoading}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-extrabold text-blue-800 shadow-sm shadow-blue-100/70 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/20 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/15 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
                     >
                       {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                       {creatorAccessLoading ? "Checking access…" : "Manage Events"}
@@ -337,7 +358,7 @@ export default function EventsDirectoryPage() {
                   <button
                     type="button"
                     onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-zinc-800"
                   >
                     Create Event
                     <ArrowRight className="h-4 w-4" />
