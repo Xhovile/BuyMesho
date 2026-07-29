@@ -8,11 +8,13 @@ export default function BrandMark() {
       className="flex items-center gap-2.5 group min-w-0"
       onClick={() => navigateToPath(HOME_PATH)}
     >
-      <img
-        src={loaderImage}
-        alt="BuyMesho logo"
-        className="h-10 w-10 flex-shrink-0 object-contain transition-transform group-hover:scale-105"
-      />
+      <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
+        <img
+          src={loaderImage}
+          alt="BuyMesho logo"
+          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+        />
+      </span>
       <div className="min-w-0 text-left">
         <p className="text-lg font-extrabold tracking-tight">
           <span className="text-red-900">Buy</span>
