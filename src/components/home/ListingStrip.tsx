@@ -6,9 +6,9 @@ import type { ListingStripVariant, SectionListing } from "../../home/home.types"
 
 function ListingCardSkeleton() {
   return (
-    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
-      <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
-      <div className="p-4 space-y-3">
+    <div className="w-[220px] shrink-0 snap-start bg-transparent sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100" />
+      <div className="space-y-3 px-1 py-4">
         <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
         <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
         <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
@@ -78,9 +78,9 @@ export default function ListingStrip({
                 key={item.id}
                 type="button"
                 onClick={() => navigateToListingDetails(item.id)}
-                className="group w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm transition-shadow hover:shadow-md sm:w-[260px]"
+                className="group flex w-[220px] shrink-0 snap-start flex-col bg-transparent text-left sm:w-[260px]"
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
                   <img
                     src={imageSrc}
                     alt={item.name}
@@ -90,9 +90,9 @@ export default function ListingStrip({
                   />
                 </div>
 
-                <div className="p-4">
-                  <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">{item.name}</p>
-                  <p className="mt-1 text-sm text-zinc-500 line-clamp-2">
+                <div className="px-1 py-4">
+                  <p className="line-clamp-1 text-sm font-extrabold text-zinc-900">{item.name}</p>
+                  <p className="mt-1 line-clamp-2 text-sm text-zinc-500">
                     {item.description || item.university || "Tap to open the full listing details."}
                   </p>
                   <p className="mt-2 text-sm font-bold text-red-900">
