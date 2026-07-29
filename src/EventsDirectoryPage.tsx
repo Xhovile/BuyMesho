@@ -304,7 +304,7 @@ export default function EventsDirectoryPage() {
       />
 
       <main className="flex-1">
-        <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
+        <section className="mx-auto max-w-7xl px-4 pb-6 pt-0 sm:pt-0">
           <div className="relative -mx-4 overflow-hidden border-y border-white/10 bg-zinc-950/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {!heroImageLoaded ? (
