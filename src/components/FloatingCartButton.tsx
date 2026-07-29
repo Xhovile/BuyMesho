@@ -23,10 +23,10 @@ export default function FloatingCartButton({
   stickyHeaderSelector = DEFAULT_STICKY_HEADER_SELECTOR,
 }: FloatingCartButtonProps) {
   const [loginPromptOpen, setLoginPromptOpen] = useState(false);
-  const { items: cartItems } = useBuyerCartSync();
+  const { items: cartItems, eventItems } = useBuyerCartSync();
   const [topOffset, setTopOffset] = useState(96);
 
-  const cartCount = isLoggedIn ? cartItems.length : 0;
+  const cartCount = isLoggedIn ? cartItems.length + eventItems.length : 0;
 
   useEffect(() => {
     let rafId: number | null = null;
