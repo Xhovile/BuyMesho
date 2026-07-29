@@ -305,7 +305,7 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-zinc-950/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
+          <div className="relative -mx-4 overflow-hidden border-y border-white/10 bg-zinc-950/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {!heroImageLoaded ? (
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
@@ -368,16 +368,18 @@ export default function EventsDirectoryPage() {
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-white/10 bg-white/8 px-4 py-4 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-5">
-                <FormDropdown
-                  label="Filter by category"
-                  value={selectedCategory}
-                  onChange={setSelectedCategory}
-                  placeholder="All categories"
-                  options={["All categories", ...categories]}
-                  searchable={false}
-                  tone="dark"
-                />
+              <div className="border-t border-white/10 pt-4">
+                <div className="bg-white/6 px-0 py-0 text-white backdrop-blur-md">
+                  <FormDropdown
+                    label="Filter by category"
+                    value={selectedCategory}
+                    onChange={setSelectedCategory}
+                    placeholder="All categories"
+                    options={["All categories", ...categories]}
+                    searchable={false}
+                    tone="dark"
+                  />
+                </div>
               </div>
             </div>
           </div>
