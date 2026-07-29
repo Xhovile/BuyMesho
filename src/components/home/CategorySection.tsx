@@ -26,9 +26,9 @@ const LOAD_MORE_COUNT = 4;
 
 function PreviewSkeleton() {
   return (
-    <div className="snap-start shrink-0 w-[174px] sm:w-[260px] overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm">
-      <div className="aspect-[4/3] bg-zinc-100 animate-pulse" />
-      <div className="p-4 space-y-3">
+    <div className="snap-start shrink-0 w-[174px] bg-transparent sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse rounded-2xl bg-zinc-100" />
+      <div className="space-y-3 px-1 py-4">
         <div className="h-4 w-3/4 rounded-full bg-zinc-100 animate-pulse" />
         <div className="h-3 w-full rounded-full bg-zinc-100 animate-pulse" />
         <div className="h-3 w-5/6 rounded-full bg-zinc-100 animate-pulse" />
