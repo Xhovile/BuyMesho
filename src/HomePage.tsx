@@ -3,15 +3,10 @@ import { useEffect, useRef, useState } from "react";
 import {
   navigateToLoginWithReturnPath,
   navigateToPath,
-  ABOUT_PATH,
   EXPLORE_PATH,
   MARKET_CHIP_PATHS,
-  PRIVACY_PATH,
-  REPORT_PATH,
-  SAFETY_PATH,
-  SIGNUP_PATH,
-  TERMS_PATH,
 } from "./lib/appNavigation";
+import AppFooter from "./components/AppFooter";
 import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
 import CategorySection from "./components/home/CategorySection";
@@ -22,7 +17,6 @@ import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
 import ListingStrip from "./components/home/ListingStrip";
 import { HOME_CATEGORY_KEYS, featuredSections } from "./home/home.constants";
 import { useHomePageController } from "./hooks/useHomePageController";
-import Logo from "../photos/Logo.png";
 
 function DeferredHomeSkeleton() {
   return (
@@ -159,7 +153,7 @@ export default function HomePage() {
     : featuredSections;
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+    <div className="min-h-screen pb-20 bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={controller.isLoggedIn} />
       <HomeHeader controller={controller} />
       <HomeMobileDrawer controller={controller} />
@@ -271,59 +265,7 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="mt-24 border-t border-zinc-100 bg-white pt-12 pb-28">
-        <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-4">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
-              <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
-            </span>
-            <span className="text-sm font-bold text-zinc-900 sm:text-base">
-              <span className="text-red-900">Buy</span>
-              <span className="text-zinc-700">Mesho Mw</span>
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs font-bold uppercase tracking-widest text-zinc-400">
-            <button
-              type="button"
-              onClick={() => navigateToPath(ABOUT_PATH)}
-              className="transition-colors hover:text-primary"
-            >
-              About
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(PRIVACY_PATH)}
-              className="transition-colors hover:text-primary"
-            >
-              Privacy
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(TERMS_PATH)}
-              className="transition-colors hover:text-primary"
-            >
-              Terms
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(SAFETY_PATH)}
-              className="transition-colors hover:text-primary"
-            >
-              Safety
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateToPath(REPORT_PATH)}
-              className="transition-colors hover:text-primary"
-            >
-              Report
-            </button>
-          </div>
-
-          <div className="text-xs font-bold text-zinc-300">© 2026 Crafted for Students</div>
-        </div>
-      </footer>
+      <AppFooter />
     </div>
   );
 }
