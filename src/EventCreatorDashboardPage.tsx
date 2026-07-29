@@ -95,8 +95,7 @@ function StatCard({ label, value, helper, icon: Icon }: { label: string; value: 
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
           <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}
-        </div>
+          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}</div>
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-700">
           <Icon className="h-5 w-5" />
         </div>
@@ -200,7 +199,7 @@ export default function EventCreatorDashboardPage() {
   }, { ticketClicks: 0, cartAdds: 0, threads: 0, unread: 0, published: 0, inactive: 0 }), [events]);
 
   const handleSelectEvent = (eventId: number) => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
-  const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}`);
+  const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
   const handleOpenThread = (conversationId: number) => navigateToConversation(conversationId);
 
@@ -325,7 +324,7 @@ export default function EventCreatorDashboardPage() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <ActionButton onClick={() => handleEditEvent(selectedEvent.id)}><Pencil className="h-4 w-4" />Edit</ActionButton>
+                    <ActionButton onClick={() => handleEditEvent(selectedEvent.id)} variant="ghost"><Pencil className="h-4 w-4" />Edit</ActionButton>
                     <ActionButton onClick={() => handleViewPublic(selectedEvent.id)} variant="ghost"><ExternalLink className="h-4 w-4" />View public page</ActionButton>
                     {selectedEvent.status === "inactive" ? (
                       <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "published")}><RefreshCw className="h-4 w-4" />Reactivate</ActionButton>
@@ -357,14 +356,15 @@ export default function EventCreatorDashboardPage() {
                         const preview = conversation.last_message_preview || "No preview available.";
                         const unread = Number(conversation.seller_unread_count || 0);
                         return (
-                          <div key={conversation.id} className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4">
+                          <button key={conversation.id} type="button" onClick={() => handleOpenThread(conversation.id)} className="w-full rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 text-left transition hover:bg-zinc-100">
                             <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0"><p className="text-sm font-black tracking-tight text-zinc-950">{buyerName}</p><p className="mt-1 text-xs font-medium text-zinc-500">Updated {formatDateTime(conversation.updated_at)}</p></div>
-                              {unread > 0 ? <span className="rounded-full bg-zinc-950 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">{unread} unread</span> : null}
+                              <div className="min-w-0">
+                                <p className="text-sm font-black tracking-tight text-zinc-950">{buyerName}</p>
+                                <p className="mt-1 text-sm text-zinc-600">{preview}</p>
+                              </div>
+                              {unread > 0 ? <span className="rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">{unread} unread</span> : null}
                             </div>
-                            <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-zinc-700">{preview}</p>
-                            <div className="mt-4 flex flex-wrap gap-2"><ActionButton onClick={() => handleOpenThread(conversation.id)}><ArrowRight className="h-4 w-4" />Open thread</ActionButton></div>
-                          </div>
+                          </button>
                         );
                       })}
                     </div>
@@ -372,33 +372,19 @@ export default function EventCreatorDashboardPage() {
 
                   <section className="rounded-[1.75rem] border border-zinc-200 bg-white p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
-                      <div><p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Activity</p><h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Ticket movement</h3></div>
-                      <BarChart3 className="h-5 w-5 text-zinc-400" />
+                      <div><p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Profile</p><h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Creator status</h3></div>
                     </div>
-
-                    <div className="mt-4 space-y-3 text-sm text-zinc-700">
-                      <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Buy clicks</p><p className="mt-1 text-2xl font-black tracking-tight text-zinc-950">{selectedEvent.ticket_clicks}</p><p className="mt-1 text-xs text-zinc-500">People who opened the ticket link from the event page.</p></div>
-                      <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Cart adds</p><p className="mt-1 text-2xl font-black tracking-tight text-zinc-950">{selectedEvent.cart_adds}</p><p className="mt-1 text-xs text-zinc-500">Tickets saved by buyers for later checkout.</p></div>
-                      <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Last ticket activity</p><p className="mt-1 text-sm font-semibold text-zinc-950">{formatDateTime(selectedEvent.last_activity_at)}</p></div>
-                      <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Creator status</p><p className="mt-1 text-sm font-semibold text-zinc-950">{creatorProfile?.status || "Unknown"}</p><p className="mt-1 text-xs text-zinc-500">Active until: {activeUntil || "—"}</p></div>
+                    <div className="mt-4 space-y-3 text-sm text-zinc-600">
+                      <p><span className="font-bold text-zinc-900">Creator:</span> {creatorProfile?.display_name || "—"}</p>
+                      <p><span className="font-bold text-zinc-900">Organization:</span> {creatorProfile?.organization_name || "—"}</p>
+                      <p><span className="font-bold text-zinc-900">Status:</span> {creatorProfile?.status || "—"}</p>
+                      <p><span className="font-bold text-zinc-900">Active until:</span> {activeUntil || "—"}</p>
                     </div>
                   </section>
                 </div>
               </div>
             )}
           </section>
-        </div>
-
-        <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/30">
-          <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
-            <div><p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Creator profile</p><h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">{creatorProfile?.display_name || firebaseUser.email || "Your account"}</h3></div>
-            <div className="text-right text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">{creatorProfile?.organization_name || "No organization yet"}</div>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Email</p><p className="mt-1 break-words text-sm font-semibold text-zinc-950">{creatorProfile?.email || firebaseUser.email || "—"}</p></div>
-            <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Events hosted</p><p className="mt-1 text-sm font-semibold text-zinc-950">{events.length}</p></div>
-            <div className="rounded-[1.4rem] border border-zinc-200 bg-zinc-50/80 p-4"><p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">WhatsApp</p><p className="mt-1 text-sm font-semibold text-zinc-950">{creatorProfile?.contact_whatsapp || "—"}</p></div>
-          </div>
         </div>
       </div>
     </AccountPageShell>
