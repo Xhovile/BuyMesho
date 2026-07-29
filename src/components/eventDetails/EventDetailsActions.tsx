@@ -32,12 +32,24 @@ export default function EventDetailsActions({
   return canManageEvent ? (
     <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
       <div className="flex flex-col gap-3">
-        <div className="min-w-0">
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
-          <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">Manage this event</h2>
-          <p className="mt-1 text-sm leading-6 text-zinc-600">
-            Use these tools to edit details, publish changes, or remove the event from the public directory.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
+            <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">Manage this event</h2>
+            <p className="mt-1 text-sm leading-6 text-zinc-600">
+              Use these tools to edit details, publish changes, or remove the event from the public directory.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onShare}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-blue-200 bg-white shadow-sm transition-colors hover:bg-blue-50"
+            aria-label="Share event"
+            title="Share event"
+          >
+            <Share2 className="h-4 w-4 text-blue-700" />
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-2">
