@@ -21,6 +21,7 @@ import { startConversationFromEvent } from "../../lib/messages";
 import { navigateToConversation } from "../../lib/messagesNavigation";
 import { useAuthUser } from "../../hooks/useAuthUser";
 import { upsertEventCartItem } from "../../lib/eventCart";
+import FeedbackModal from "../FeedbackModal";
 
 export default function EventDetailsView() {
   const { user: firebaseUser } = useAuthUser();
@@ -38,6 +39,7 @@ export default function EventDetailsView() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [cartNoticeOpen, setCartNoticeOpen] = useState(false);
   const [coreOpen, setCoreOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState(false);
 
@@ -200,6 +202,7 @@ export default function EventDetailsView() {
     });
 
     setNotice("Ticket added to cart.");
+    setCartNoticeOpen(true);
   };
 
   const handleCancelEvent = async () => {
@@ -299,6 +302,14 @@ export default function EventDetailsView() {
           />
         </div>
       </main>
+
+      <FeedbackModal
+        open={cartNoticeOpen}
+        type="success"
+        title="Added to cart"
+        message="Ticket added to cart."
+        onClose={() => setCartNoticeOpen(false)}
+      />
     </div>
   );
 }
