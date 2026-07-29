@@ -350,7 +350,7 @@ export default function EventsDirectoryPage() {
                         type="button"
                         onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
                         disabled={creatorAccessLoading}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/20 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/15 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
+                        className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none bg-[#5B2DA8] px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/15 hover:bg-[#4C2491] disabled:cursor-not-allowed disabled:opacity-70"
                       >
                         {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
                         {creatorAccessLoading ? "Checking access…" : "Manage Events"}
@@ -359,7 +359,7 @@ export default function EventsDirectoryPage() {
                     <button
                       type="button"
                       onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-zinc-800"
+                      className="inline-flex min-w-[170px] shrink-0 items-center justify-center gap-2 rounded-none bg-emerald-600 px-6 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-emerald-700"
                     >
                       Create Event
                       <ArrowRight className="h-4 w-4" />
