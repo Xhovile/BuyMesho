@@ -22,24 +22,24 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
     <button
       type="button"
       onClick={() => navigateToListingDetails(item.id)}
-      className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white text-left shadow-sm hover:shadow-md transition-shadow"
+      className="group flex h-full w-full flex-col bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
     >
-      <div className="relative aspect-[4/3] bg-zinc-100 overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
         <img
           src={imageSrc}
           alt={item.name}
           loading="lazy"
           decoding="async"
-          className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
         />
       </div>
 
-      <div className="p-4">
-        <p className="text-sm font-extrabold text-zinc-900 line-clamp-1">
+      <div className="px-1 py-3">
+        <p className="line-clamp-1 text-sm font-extrabold text-zinc-900">
           {item.name}
         </p>
 
-        <p className="mt-2 text-sm text-zinc-500 leading-relaxed line-clamp-2">
+        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">
           {item.description || "Tap to open the full listing details."}
         </p>
 
@@ -48,7 +48,7 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
         </p>
 
         <div className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-red-900">
-          Open listing <ArrowRight className="w-3.5 h-3.5" />
+          Open listing <ArrowRight className="h-3.5 w-3.5" />
         </div>
       </div>
     </button>
