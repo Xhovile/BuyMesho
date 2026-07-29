@@ -37,7 +37,7 @@ export default function EventDetailsView() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [coreOpen, setCoreOpen] = useState(true);
+  const [coreOpen, setCoreOpen] = useState(false);
   const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
