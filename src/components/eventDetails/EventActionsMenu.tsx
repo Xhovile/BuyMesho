@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Flag, Link2, MoreVertical, Pencil, Share2, Trash2 } from "lucide-react";
+import { Flag, Link2, MoreVertical, Share2, Trash2 } from "lucide-react";
 
-import { EVENTS_CREATE_PATH, EVENTS_PATH, REPORT_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
+import { EVENTS_PATH, REPORT_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
 import { apiFetch } from "../../lib/api";
 
 type EventActionsMenuProps = {
@@ -61,11 +61,6 @@ export default function EventActionsMenu({ eventId, eventTitle, shareUrl }: Even
     }
   };
 
-  const handleEdit = () => {
-    setOpen(false);
-    navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}`);
-  };
-
   const handleReport = () => {
     setOpen(false);
     navigateToPath(REPORT_PATH);
@@ -106,10 +101,6 @@ export default function EventActionsMenu({ eventId, eventTitle, shareUrl }: Even
 
       {open ? (
         <div className="absolute left-0 top-full z-50 mt-2 w-60 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
-          <button type="button" onClick={handleEdit} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
-            <Pencil className="h-4 w-4" />
-            Edit event
-          </button>
           <button type="button" onClick={handleShare} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-zinc-800 hover:bg-zinc-50">
             <Share2 className="h-4 w-4" />
             Share event
