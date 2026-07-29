@@ -20,7 +20,6 @@ export default function AccordionSection({
         className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-zinc-50 sm:px-6"
       >
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Accordion</p>
           <h2 className="mt-1 text-lg font-black tracking-[-0.04em] text-zinc-950">{title}</h2>
         </div>
         <ChevronDown className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
