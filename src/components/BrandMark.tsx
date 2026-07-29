@@ -1,5 +1,5 @@
 import { HOME_PATH, navigateToPath } from "../lib/appNavigation";
-import loaderImage from "../../photos/LoaderPic.png";
+import Logo from "../../photos/Logo.png";
 
 export default function BrandMark() {
   return (
@@ -10,7 +10,7 @@ export default function BrandMark() {
     >
       <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
         <img
-          src={loaderImage}
+          src={Logo}
           alt="BuyMesho logo"
           className="h-full w-full object-cover transition-transform group-hover:scale-105"
         />
