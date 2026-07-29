@@ -120,7 +120,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2 overflow-x-auto pl-5 pr-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:pl-5 sm:pr-5">
+      <div className="mt-3 flex gap-2 overflow-x-auto pl-6 pr-3 pb-2 snap-x snap-mandatory sm:mt-4 sm:gap-3 sm:pl-5 sm:pr-5">
         {loading ? (
           Array.from({ length: skeletonCount }).map((_, index) => <PreviewSkeleton key={index} />)
         ) : listings.length === 0 ? (
