@@ -22,6 +22,7 @@ import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
 import ListingStrip from "./components/home/ListingStrip";
 import { HOME_CATEGORY_KEYS, featuredSections } from "./home/home.constants";
 import { useHomePageController } from "./hooks/useHomePageController";
+import Logo from "../photos/Logo.png";
 
 function DeferredHomeSkeleton() {
   return (
@@ -270,18 +271,19 @@ export default function HomePage() {
         </section>
       </main>
 
-      <footer className="mt-20 border-t border-zinc-100 bg-white py-12">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:flex-row">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-900 text-sm font-extrabold text-white">
-              B
-            </div>
-            <span className="text-sm font-bold text-zinc-900">
-              <span className="text-red-900">Buy</span><span className="text-zinc-700">Mesho</span> Malawi
+      <footer className="mt-24 border-t border-zinc-100 bg-white pt-12 pb-28">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-10 px-4">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
+              <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
+            </span>
+            <span className="text-sm font-bold text-zinc-900 sm:text-base">
+              <span className="text-red-900">Buy</span>
+              <span className="text-zinc-700">Mesho Mw</span>
             </span>
           </div>
 
-          <div className="flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-400">
+          <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-xs font-bold uppercase tracking-widest text-zinc-400">
             <button
               type="button"
               onClick={() => navigateToPath(ABOUT_PATH)}
