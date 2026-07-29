@@ -8,6 +8,7 @@ import {
   Pencil,
   Share2,
   ShoppingBag,
+  ShoppingCart,
   Ticket,
   Trash2,
 } from "lucide-react";
@@ -353,6 +354,9 @@ export default function EventDetailsPage() {
     );
   }
 
+  const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
+  const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
+
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
@@ -459,14 +463,34 @@ export default function EventDetailsPage() {
               </div>
             </div>
 
-            <div className="border-t border-zinc-200 pt-4">
-              {canManageEvent ? (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+            {canManageEvent ? (
+              <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
+                    <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">Manage this event</h2>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      Use these tools to edit details, publish changes, or remove the event from the public directory.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-white shadow-sm transition-colors hover:bg-blue-50"
+                    aria-label="Share event"
+                    title="Share event"
+                  >
+                    <Share2 className="h-4 w-4 text-blue-700" />
+                  </button>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className={ownerActionButtonClass}>
                     <BarChart3 className="h-4 w-4" />
                     Creator dashboard
                   </button>
-                  <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
+                  <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}&skipCreatorCheck=1`)} className={ownerActionButtonClass}>
                     <Pencil className="h-4 w-4" />
                     Edit event
                   </button>
@@ -475,50 +499,53 @@ export default function EventDetailsPage() {
                     Cancel event
                   </button>
                 </div>
-              ) : null}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
-                <button
-                  type="button"
-                  onClick={() => void handleBuyTicket()}
-                  disabled={!canBuyOrCart || checkoutLoading}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-orange-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <ExternalLink className="h-4 w-4 shrink-0" />
-                  <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleMessage()}
-                  disabled={!canMessageEvent}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-sky-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60"
-                  title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
-                >
-                  <MessageCircle className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Message</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => void handleAddToCart()}
-                  disabled={!canBuyOrCart}
-                  className="inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl bg-yellow-500 px-3 py-3 text-sm font-extrabold text-white transition-colors hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <ShoppingBag className="h-4 w-4 shrink-0" />
-                  <span className="truncate">Add to Cart</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
-                  aria-label="Share event"
-                  title="Share event"
-                >
-                  <Share2 className="h-4 w-4 text-zinc-700" />
-                </button>
               </div>
-            </div>
+            ) : (
+              <div className="border-t border-zinc-200 pt-4">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                  <button
+                    type="button"
+                    onClick={() => void handleBuyTicket()}
+                    disabled={!canBuyOrCart || checkoutLoading}
+                    className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    <ShoppingBag className="h-4 w-4 shrink-0" />
+                    <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleMessage()}
+                    disabled={!canMessageEvent}
+                    className={`${buyerActionButtonClass} bg-sky-500 text-white hover:bg-sky-600 disabled:cursor-not-allowed disabled:opacity-60`}
+                    title={!canMessageEvent ? "This event is not available for messaging right now." : "Message event owner"}
+                  >
+                    <MessageCircle className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Message</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => void handleAddToCart()}
+                    disabled={!canBuyOrCart}
+                    className={`${buyerActionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60`}
+                  >
+                    <ShoppingCart className="h-4 w-4 shrink-0" />
+                    <span className="truncate">Add to Cart</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-zinc-200 bg-white shadow-sm transition-colors hover:bg-zinc-50"
+                    aria-label="Share event"
+                    title="Share event"
+                  >
+                    <Share2 className="h-4 w-4 text-zinc-700" />
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         </div>
       </main>
