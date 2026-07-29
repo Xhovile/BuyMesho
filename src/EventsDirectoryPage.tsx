@@ -305,7 +305,7 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="relative overflow-hidden border-y border-white/10 bg-zinc-950/20">
+          <div className="relative overflow-hidden rounded-[2.75rem] border border-white/10 bg-zinc-950/20 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.45)]">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
               {!heroImageLoaded ? (
                 <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-black">
@@ -335,53 +335,49 @@ export default function EventsDirectoryPage() {
               <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-white/10 blur-3xl sm:h-64 sm:w-64" />
             </div>
 
-            <div className="relative z-10 px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
-              <div className="flex min-h-[420px] flex-col justify-between gap-8 sm:min-h-[480px] lg:min-h-[520px]">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">Events directory</p>
-                  <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="max-w-2xl">
-                      <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] text-white sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
-                      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">Don't miss!</p>
-                    </div>
+            <div className="relative z-10 space-y-6 px-5 py-8 sm:px-8 sm:py-10 lg:px-10">
+              <div className="rounded-[2.25rem] border border-white/10 bg-white/6 px-5 py-8 text-white shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] backdrop-blur-md sm:px-8 sm:py-10 lg:px-10">
+                <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-white/70">Events directory</p>
+                <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="max-w-2xl">
+                    <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] text-white sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-relaxed text-white/75 sm:text-base">Don't miss!</p>
+                  </div>
 
-                    <div className="flex flex-wrap gap-3 sm:justify-end">
-                      {showManageEventsButton ? (
-                        <button
-                          type="button"
-                          onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
-                          disabled={creatorAccessLoading}
-                          className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/20 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/15 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
-                        >
-                          {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                          {creatorAccessLoading ? "Checking access…" : "Manage Events"}
-                        </button>
-                      ) : null}
+                  <div className="flex flex-wrap gap-3 sm:justify-end">
+                    {showManageEventsButton ? (
                       <button
                         type="button"
-                        onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-zinc-800"
+                        onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
+                        disabled={creatorAccessLoading}
+                        className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-white/20 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-lg shadow-black/15 hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-70"
                       >
-                        Create Event
-                        <ArrowRight className="h-4 w-4" />
+                        {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                        {creatorAccessLoading ? "Checking access…" : "Manage Events"}
                       </button>
-                    </div>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/20 hover:bg-zinc-800"
+                    >
+                      Create Event
+                      <ArrowRight className="h-4 w-4" />
+                    </button>
                   </div>
                 </div>
+              </div>
 
-                <div className="border-t border-white/10 pt-4">
-                  <div className="bg-white/6 px-0 py-0 text-white backdrop-blur-md">
-                    <FormDropdown
-                      label="Filter by category"
-                      value={selectedCategory}
-                      onChange={setSelectedCategory}
-                      placeholder="All categories"
-                      options={["All categories", ...categories]}
-                      searchable={false}
-                      tone="dark"
-                    />
-                  </div>
-                </div>
+              <div className="rounded-[2rem] border border-white/10 bg-white/8 px-4 py-4 text-white shadow-[0_20px_60px_-35px_rgba(0,0,0,0.28)] backdrop-blur-md sm:px-5">
+                <FormDropdown
+                  label="Filter by category"
+                  value={selectedCategory}
+                  onChange={setSelectedCategory}
+                  placeholder="All categories"
+                  options={["All categories", ...categories]}
+                  searchable={false}
+                  tone="dark"
+                />
               </div>
             </div>
           </div>
