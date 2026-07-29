@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, Loader2, Ticket } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 import FormDropdown from "./components/FormDropdown";
 import FloatingCartButton from "./components/FloatingCartButton";
@@ -10,7 +10,6 @@ import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from ".
 import {
   EVENTS_CREATE_PATH,
   EVENTS_MANAGE_PATH,
-  EXPLORE_PATH,
   getMarketChipFromLocation,
   navigateToCreateListing,
   navigateToMarketChip,
@@ -23,6 +22,8 @@ import { apiFetch } from "./lib/api";
 const EVENTS_API_URL = "/api/events";
 const EVENT_CREATOR_ACCESS_URL = "/api/event-creators/me";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
+const HERO_DESKTOP_IMAGE = "/photos/DesktopHero.webp";
+const HERO_MOBILE_IMAGE = "/MobileHero.webp";
 
 function matchesSearch(item: EventRecord, query: string) {
   const normalized = query.trim().toLowerCase();
@@ -302,39 +303,50 @@ export default function EventsDirectoryPage() {
 
       <main className="flex-1">
         <section className="mx-auto max-w-7xl px-4 pb-6 pt-8 sm:pt-10">
-          <div className="rounded-[2.25rem] bg-white px-5 py-8 text-zinc-900 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)] sm:px-8 sm:py-10 lg:px-10">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Events directory</p>
-            <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
-                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Don't miss!</p>
-              </div>
+          <div className="relative overflow-hidden rounded-[2.25rem] border border-white/60 bg-white/45 px-5 py-8 text-zinc-900 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.28)] backdrop-blur-xl sm:px-8 sm:py-10 lg:px-10">
+            <div className="pointer-events-none absolute inset-0">
+              <picture>
+                <source media="(min-width: 640px)" srcSet={HERO_DESKTOP_IMAGE} />
+                <img src={HERO_MOBILE_IMAGE} alt="" className="h-full w-full object-cover object-center opacity-35" />
+              </picture>
+              <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/82 to-white/45 sm:from-white/82 sm:via-white/58 sm:to-white/15" />
+              <div className="absolute -right-16 top-10 h-52 w-52 rounded-full bg-zinc-950/5 blur-3xl sm:h-64 sm:w-64" />
+            </div>
 
-              <div className="flex flex-wrap gap-3 sm:justify-end">
-                {showManageEventsButton ? (
+            <div className="relative z-10">
+              <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-zinc-500">Events directory</p>
+              <div className="mt-3 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+                <div className="max-w-2xl">
+                  <h1 className="text-4xl font-black tracking-[-0.06em] leading-[0.92] sm:text-5xl lg:text-6xl">Browse events and happenings.</h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">Don't miss!</p>
+                </div>
+
+                <div className="flex flex-wrap gap-3 sm:justify-end">
+                  {showManageEventsButton ? (
+                    <button
+                      type="button"
+                      onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
+                      disabled={creatorAccessLoading}
+                      className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-extrabold text-blue-800 shadow-sm shadow-blue-100/70 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                    >
+                      {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                      {creatorAccessLoading ? "Checking access…" : "Manage Events"}
+                    </button>
+                  ) : null}
                   <button
                     type="button"
-                    onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
-                    disabled={creatorAccessLoading}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 px-5 py-3 text-sm font-extrabold text-blue-800 shadow-sm shadow-blue-100/70 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-70"
+                    onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
                   >
-                    {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
-                    {creatorAccessLoading ? "Checking access…" : "Manage Events"}
+                    Create Event
+                    <ArrowRight className="h-4 w-4" />
                   </button>
-                ) : null}
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-black/10 hover:bg-zinc-800"
-                >
-                  Create Event
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white px-4 py-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] sm:px-5">
+          <div className="mt-6 rounded-[2rem] border border-white/70 bg-white/72 px-4 py-4 shadow-[0_20px_60px_-35px_rgba(0,0,0,0.18)] backdrop-blur-md sm:px-5">
             <FormDropdown
               label="Filter by category"
               value={selectedCategory}
