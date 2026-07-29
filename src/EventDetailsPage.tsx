@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
+  ChevronDown,
   ChevronLeft,
   ExternalLink,
   Loader2,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 
 import FloatingCartButton from "./components/FloatingCartButton";
+import EventActionsMenu from "./components/eventDetails/EventActionsMenu";
 import { apiFetch } from "./lib/api";
 import {
   EVENTS_CREATE_PATH,
@@ -49,6 +51,23 @@ type EventRecord = {
   created_at: string;
   updated_at: string;
 };
+
+const BASE_DETAIL_KEYS = new Set([
+  "event_title",
+  "organizer_name",
+  "event_date",
+  "start_time",
+  "venue",
+  "location",
+  "ticket_mode",
+  "ticket_price",
+  "ticket_link",
+  "description",
+  "contact_whatsapp",
+  "poster_alt",
+]);
+
+const HIDDEN_SPEC_KEYS = new Set(["poster_image_url", "poster_url", "poster"]);
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
@@ -121,12 +140,61 @@ function getPosterAlt(item: EventRecord) {
   return `${item.event_type} poster for ${item.event_title}`;
 }
 
+function normalizeValue(value: unknown) {
+  if (Array.isArray(value)) return value.length > 0 ? value.join(", ") : "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+}
+
+function fieldLabelFromKey(key: string) {
+  return key.replace(/_/g, " ").replace(/\b\w/g, (part) => part.toUpperCase());
+}
+
 function SummaryCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[1.25rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm shadow-zinc-200/20">
       <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
       <p className="mt-1 break-words text-sm font-black tracking-tight text-zinc-950">{value}</p>
     </div>
+  );
+}
+
+function DetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="grid gap-1 border-b border-zinc-200/70 py-4 last:border-b-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6 sm:py-5">
+      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="min-w-0 whitespace-pre-line break-words text-sm font-semibold leading-relaxed text-zinc-950">{value}</p>
+    </div>
+  );
+}
+
+function AccordionSection({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-zinc-50 sm:px-6"
+      >
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Accordion</p>
+          <h2 className="mt-1 text-lg font-black tracking-[-0.04em] text-zinc-950">{title}</h2>
+        </div>
+        <ChevronDown className={`h-5 w-5 shrink-0 text-zinc-500 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+      {open ? <div className="border-t border-zinc-200/70 px-5 sm:px-6">{children}</div> : null}
+    </section>
   );
 }
 
@@ -146,6 +214,8 @@ export default function EventDetailsPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [coreOpen, setCoreOpen] = useState(true);
+  const [extraOpen, setExtraOpen] = useState(false);
 
   useEffect(() => {
     if (!eventId) {
@@ -188,6 +258,10 @@ export default function EventDetailsPage() {
   const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
   const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid && isPublished;
   const canBuyOrCart = !!event && isPublished;
+  const shouldShowMenu = !!event && !canManageEvent;
+
+  const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
+  const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
 
   const clearNotice = () => setNotice(null);
 
@@ -322,6 +396,11 @@ export default function EventDetailsPage() {
     }
   };
 
+  const extraSpecEntries = useMemo(() => {
+    if (!event) return [] as Array<[string, unknown]>;
+    return Object.entries(event.spec_values ?? {}).filter(([key]) => !BASE_DETAIL_KEYS.has(key) && !HIDDEN_SPEC_KEYS.has(key));
+  }, [event]);
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100 px-4">
@@ -354,9 +433,6 @@ export default function EventDetailsPage() {
     );
   }
 
-  const ownerActionButtonClass = "inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-blue-50";
-  const buyerActionButtonClass = "inline-flex min-w-0 items-center justify-center gap-2 rounded-2xl px-3 py-3 text-sm font-extrabold transition-colors";
-
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
@@ -388,6 +464,14 @@ export default function EventDetailsPage() {
 
       <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-24 sm:pb-12">
         <div className="grid gap-8">
+          {shouldShowMenu ? (
+            <section>
+              <div className="mb-3 flex justify-start">
+                <EventActionsMenu eventId={event.id} eventTitle={event.event_title} shareUrl={eventPageUrl} />
+              </div>
+            </section>
+          ) : null}
+
           <section>
             <div className={`relative aspect-[16/10] overflow-hidden rounded-[2rem] bg-gradient-to-br ${accent}`}>
               {posterUrl ? <img src={posterUrl} alt={posterAlt} className="h-full w-full object-cover" /> : null}
@@ -434,38 +518,35 @@ export default function EventDetailsPage() {
             </section>
 
             <div className="grid gap-6 md:grid-cols-2">
-              <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
-                <div className="border-b border-zinc-200/70 px-5 py-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Core details</p>
-                </div>
-                <div className="divide-y divide-zinc-200/70 px-5">
+              <AccordionSection title="Core details" open={coreOpen} onToggle={() => setCoreOpen((current) => !current)}>
+                <div className="divide-y divide-zinc-200/70">
                   {[
                     ["Organizer name", event.organizer_name],
                     ["Venue", event.venue || "—"],
                     ["Location", event.location || "—"],
                     ["Contact WhatsApp", event.contact_whatsapp || "—"],
                   ].map(([label, value]) => (
-                    <div key={label} className="grid gap-1 py-4 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
-                      <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">{label}</p>
-                      <p className="min-w-0 whitespace-pre-line break-words text-sm font-semibold leading-relaxed text-zinc-950">{value}</p>
-                    </div>
+                    <DetailRow key={label} label={label} value={String(value)} />
                   ))}
                 </div>
-              </div>
+              </AccordionSection>
 
-              <div className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white">
-                <div className="border-b border-zinc-200/70 px-5 py-4">
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event specific details</p>
-                </div>
-                <div className="px-5 py-4 text-sm text-zinc-500">
-                  No extra event-specific fields.
-                </div>
-              </div>
+              <AccordionSection title="Event specific details" open={extraOpen} onToggle={() => setExtraOpen((current) => !current)}>
+                {extraSpecEntries.length > 0 ? (
+                  <div className="divide-y divide-zinc-200/70">
+                    {extraSpecEntries.map(([key, value]) => (
+                      <DetailRow key={key} label={fieldLabelFromKey(key)} value={normalizeValue(value)} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="px-0 py-5 text-sm text-zinc-500">No extra event-specific fields.</div>
+                )}
+              </AccordionSection>
             </div>
 
             {canManageEvent ? (
               <div className="rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50/80 via-zinc-50 to-white p-4 shadow-sm ring-1 ring-blue-100/60">
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-3">
                   <div className="min-w-0">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-blue-700/80">Owner view</p>
                     <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-900">Manage this event</h2>
@@ -474,30 +555,20 @@ export default function EventDetailsPage() {
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleShare}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-white shadow-sm transition-colors hover:bg-blue-50"
-                    aria-label="Share event"
-                    title="Share event"
-                  >
-                    <Share2 className="h-4 w-4 text-blue-700" />
-                  </button>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className={ownerActionButtonClass}>
-                    <BarChart3 className="h-4 w-4" />
-                    Creator dashboard
-                  </button>
-                  <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}&skipCreatorCheck=1`)} className={ownerActionButtonClass}>
-                    <Pencil className="h-4 w-4" />
-                    Edit event
-                  </button>
-                  <button type="button" onClick={handleCancelEvent} className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">
-                    <Trash2 className="h-4 w-4" />
-                    Cancel event
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className={ownerActionButtonClass}>
+                      <BarChart3 className="h-4 w-4" />
+                      Creator dashboard
+                    </button>
+                    <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}&skipCreatorCheck=1`)} className={ownerActionButtonClass}>
+                      <Pencil className="h-4 w-4" />
+                      Edit event
+                    </button>
+                    <button type="button" onClick={handleCancelEvent} className="inline-flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-bold text-rose-700 hover:bg-rose-100">
+                      <Trash2 className="h-4 w-4" />
+                      Cancel event
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
