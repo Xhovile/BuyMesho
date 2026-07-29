@@ -7,55 +7,36 @@ import {
   SAFETY_PATH,
   TERMS_PATH,
 } from "../lib/appNavigation";
+import Logo from "../../photos/Logo.png";
 
 export default function AppFooter() {
   return (
-    <footer className="mt-20 border-t border-zinc-100 py-12 bg-white">
-      <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-8">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-red-900 rounded-xl flex items-center justify-center text-white font-extrabold text-sm">
-            B
-          </div>
+    <footer className="mt-20 border-t border-zinc-100 bg-white py-12">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 sm:flex-row">
+        <button type="button" onClick={() => navigateToPath(ABOUT_PATH)} className="flex items-center gap-2.5 text-left">
+          <span className="inline-flex h-10 w-10 flex-shrink-0 overflow-hidden bg-transparent">
+            <img src={Logo} alt="BuyMesho logo" className="h-full w-full object-cover" />
+          </span>
           <span className="text-sm font-bold text-zinc-900">
             <span className="text-red-900">Buy</span>
-            <span className="text-zinc-700">Mesho</span> Malawi
+            <span className="text-zinc-700">Mesho Mw</span>
           </span>
-        </div>
+        </button>
 
-        <div className="flex items-center gap-8 text-xs font-bold text-zinc-400 uppercase tracking-widest">
-          <button
-            type="button"
-            onClick={() => navigateToPath(ABOUT_PATH)}
-            className="hover:text-primary transition-colors"
-          >
+        <div className="flex flex-wrap items-center justify-center gap-8 text-xs font-bold uppercase tracking-widest text-zinc-400">
+          <button type="button" onClick={() => navigateToPath(ABOUT_PATH)} className="transition-colors hover:text-primary">
             About
           </button>
-          <button
-            type="button"
-            onClick={() => navigateToPath(PRIVACY_PATH)}
-            className="hover:text-primary transition-colors"
-          >
+          <button type="button" onClick={() => navigateToPath(PRIVACY_PATH)} className="transition-colors hover:text-primary">
             Privacy
           </button>
-          <button
-            type="button"
-            onClick={() => navigateToPath(TERMS_PATH)}
-            className="hover:text-primary transition-colors"
-          >
+          <button type="button" onClick={() => navigateToPath(TERMS_PATH)} className="transition-colors hover:text-primary">
             Terms
           </button>
-          <button
-            type="button"
-            onClick={() => navigateToPath(SAFETY_PATH)}
-            className="hover:text-primary transition-colors"
-          >
+          <button type="button" onClick={() => navigateToPath(SAFETY_PATH)} className="transition-colors hover:text-primary">
             Safety
           </button>
-          <button
-            type="button"
-            onClick={() => navigateToPath(REPORT_PATH)}
-            className="hover:text-primary transition-colors"
-          >
+          <button type="button" onClick={() => navigateToPath(REPORT_PATH)} className="transition-colors hover:text-primary">
             Report
           </button>
         </div>
