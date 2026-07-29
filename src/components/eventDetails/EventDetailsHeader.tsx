@@ -3,10 +3,10 @@ import { ChevronLeft, Ticket } from "lucide-react";
 
 import { EVENTS_PATH, navigateBackOrPath } from "../../lib/appNavigation";
 
-export default function EventDetailsHeader() {
+export default function EventDetailsHeader({ isLoggedIn }: { isLoggedIn: boolean }) {
   return (
     <>
-      <FloatingCartButton isLoggedIn />
+      <FloatingCartButton isLoggedIn={isLoggedIn} />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
           <button type="button" onClick={() => navigateBackOrPath(EVENTS_PATH)} className="flex min-w-0 items-center gap-3 text-left">
