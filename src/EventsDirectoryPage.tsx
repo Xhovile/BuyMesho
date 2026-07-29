@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, Loader2, Ticket } from "lucide-react";
 
 import FormDropdown from "./components/FormDropdown";
+import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
 import { EventCard, type EventRecord } from "./components/events/EventCard";
 import { API_CACHE_TTL_MS, isCachedApiResponseFresh, readCachedApiJson } from "./lib/apiCache";
@@ -125,6 +126,7 @@ export default function EventsDirectoryPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
   const { profile: userProfile } = useAccountProfile();
   const activeChip = getMarketChipFromLocation(window.location);
+  const showManageEventsButton = !!firebaseUser && (creatorAccessLoading || canCreateEvents);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -241,6 +243,7 @@ export default function EventsDirectoryPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
       <Header
         searchValue={searchTerm}
         onSearch={setSearchTerm}
@@ -263,24 +266,17 @@ export default function EventsDirectoryPage() {
               </div>
 
               <div className="flex flex-wrap gap-3 sm:justify-end">
-                {creatorAccessLoading ? null : canCreateEvents ? (
+                {showManageEventsButton ? (
                   <button
                     type="button"
                     onClick={() => navigateToPath(EVENTS_MANAGE_PATH)}
-                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50"
+                    disabled={creatorAccessLoading}
+                    className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    Manage Events
-                    <ArrowRight className="h-4 w-4" />
+                    {creatorAccessLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
+                    {creatorAccessLoading ? "Checking access…" : "Manage Events"}
                   </button>
                 ) : null}
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 shadow-sm hover:bg-zinc-50"
-                >
-                  Back to Market
-                  <ArrowRight className="h-4 w-4" />
-                </button>
                 <button
                   type="button"
                   onClick={() => navigateToPath(EVENTS_CREATE_PATH)}
