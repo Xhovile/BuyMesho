@@ -66,6 +66,24 @@ function readEventsSnapshot() {
   };
 }
 
+function EventCardSkeleton() {
+  return (
+    <div className="w-[220px] shrink-0 snap-start overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm sm:w-[260px]">
+      <div className="aspect-[4/3] animate-pulse bg-zinc-100" />
+      <div className="space-y-3 p-4">
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-zinc-100" />
+        <div className="h-3 w-5/6 animate-pulse rounded-full bg-zinc-100" />
+        <div className="grid gap-2 pt-1">
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-zinc-100" />
+          <div className="h-3 w-1/2 animate-pulse rounded-full bg-zinc-100" />
+        </div>
+        <div className="h-10 w-full animate-pulse rounded-2xl bg-zinc-100" />
+      </div>
+    </div>
+  );
+}
+
 function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }) {
   const desktopRowCountClass = items.length === 1 ? "md:grid-rows-1" : "md:grid-rows-2";
 
@@ -87,6 +105,32 @@ function CategoryStrip({ title, items }: { title: string; items: EventRecord[] }
         ))}
       </div>
     </section>
+  );
+}
+
+function EventsLoadingStrip() {
+  const skeletonCount = typeof window !== "undefined" && window.innerWidth >= 640 ? 4 : 2;
+
+  return (
+    <div className="pb-12">
+      <section className="pt-8">
+        <div className="mb-5 border-t border-zinc-200 pt-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Category</p>
+              <h3 className="mt-1 text-2xl font-black tracking-[-0.05em] text-zinc-950">Loading events</h3>
+            </div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-500">Preparing cards</p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
+          {Array.from({ length: skeletonCount }).map((_, index) => (
+            <EventCardSkeleton key={index} />
+          ))}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -301,10 +345,7 @@ export default function EventsDirectoryPage() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white py-10 text-sm font-medium text-zinc-600 shadow-sm">
-              <Loader2 className="h-5 w-5 animate-spin text-zinc-700" />
-              Loading events...
-            </div>
+            <EventsLoadingStrip />
           ) : error ? (
             <div className="rounded-[2rem] border border-rose-200 bg-rose-50 px-5 py-4 text-sm text-rose-900 shadow-sm">{error}</div>
           ) : viewAll ? (
