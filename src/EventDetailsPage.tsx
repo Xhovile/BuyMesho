@@ -509,7 +509,7 @@ export default function EventDetailsPage() {
                     disabled={!canBuyOrCart || checkoutLoading}
                     className={`${buyerActionButtonClass} bg-orange-500 text-white hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-60`}
                   >
-                    <ShoppingBag className="h-4 w-4 shrink-0" />
+                    <ExternalLink className="h-4 w-4 shrink-0" />
                     <span className="truncate">{checkoutLoading ? "Buying…" : "Buy Ticket"}</span>
                   </button>
 
