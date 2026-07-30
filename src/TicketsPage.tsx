@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Ticket, Users, Clock3, CheckCircle2, AlertCircle } from "lucide-react";
+import { Ticket, Users, Clock3, CheckCircle2, AlertCircle } from "lucide-react";
 
+import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
 import { navigateBackOrPath, navigateToOrderTracking, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
@@ -16,16 +17,6 @@ const FILTERS: Array<{ key: "all" | BuyerTicketStatus; label: string }> = [
   { key: "rejected", label: "Rejected" },
   { key: "error", label: "Error" },
 ];
-
-function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
-      <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
-    </div>
-  );
-}
 
 function sortTicketsByNewest(tickets: BuyerTicketRecord[]) {
   return [...tickets].sort((left, right) => {
@@ -146,39 +137,28 @@ function TicketsPageContent() {
   const pendingTickets = counts.pending;
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <MarketHeaderBar subtitle="Buyer wallet" />
+
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tickets</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
+              Your event tickets
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
+              Keep event passes separate from wallet activity. Each ticket here can be downloaded as a PDF, shared on WhatsApp, and opened from the order trail.
+            </p>
+          </div>
+
           <button
             type="button"
             onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
+            className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 sm:inline-flex"
           >
-            <ArrowLeft className="h-4 w-4" />
             Payments page
           </button>
-
-          <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
-            <Ticket className="h-4 w-4" />
-            Standalone tickets
-          </div>
-        </div>
-
-        <div className="mt-8 border-b border-zinc-200 pb-6">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tickets</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-            Your event tickets
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-            Keep event passes separate from wallet activity. Each ticket here can be downloaded as a PDF, shared on WhatsApp, and opened from the order trail.
-          </p>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <StatTile label="Tickets" value={String(tickets.length)} hint="All event passes" />
-          <StatTile label="Paid" value={String(paidTickets)} hint="Ready to show" />
-          <StatTile label="Pending" value={String(pendingTickets)} hint="Waiting payment" />
-          <StatTile label="Checked list" value={String(tickets.length)} hint="Organizer manifest size" />
         </div>
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
