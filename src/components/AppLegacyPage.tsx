@@ -18,6 +18,7 @@ export default function AppLegacyPage(props: AppLegacyState) {
         userProfile={props.userProfile}
         firebaseUser={props.firebaseUser}
         activeChip={props.activeChip}
+        subtitle={props.activeChip.toLowerCase()}
         onChipChange={navigateToMarketChip}
       />
 
