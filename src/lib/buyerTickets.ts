@@ -119,9 +119,9 @@ function resolvePaymentTicketAmount(
 ) {
   const checkoutItem = (payment.checkoutItems ?? []).find((entry) => String(entry.eventId) === eventId);
   const checkoutQuantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? 1) || 1);
-  const detailPrice = Number(eventDetail?.ticketPrice ?? 0);
+  const detailPrice = eventDetail?.ticketPrice;
 
-  if (Number.isFinite(detailPrice) && detailPrice > 0) {
+  if (typeof detailPrice === "number") {
     return detailPrice * checkoutQuantity;
   }
 
@@ -186,11 +186,11 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
         const organizerName = readString(itemData, "organizerName") || paymentEvent?.organizerName || "Event organizer";
         const quantity = Math.max(1, Number(item.quantity ?? paymentEvent?.quantity ?? 1) || 1);
         const { amount: itemUnitPrice, currency } = readUnitPrice(itemData);
-        const paymentEventPrice = Number(paymentEvent?.ticketPrice ?? 0);
+        const paymentEventPrice = paymentEvent?.ticketPrice;
         const amount =
-          (Number.isFinite(itemUnitPrice ?? NaN) && (itemUnitPrice ?? 0) > 0)
-            ? (itemUnitPrice as number) * quantity
-            : paymentEventPrice > 0
+          typeof itemUnitPrice === "number"
+            ? itemUnitPrice * quantity
+            : typeof paymentEventPrice === "number"
               ? paymentEventPrice * quantity
               : Number(bundle.order?.total?.amount ?? 0);
 
