@@ -18,6 +18,14 @@ function displayStatus(status: BuyerTicketRecord["status"]) {
   return status;
 }
 
+function settlementNote(status: BuyerTicketRecord["status"]) {
+  if (status === "paid") return "Payment received · pending midnight verification";
+  if (status === "pending") return "Awaiting payment confirmation";
+  if (status === "rejected") return "Payment rejected";
+  if (status === "error") return "Payment error";
+  return "";
+}
+
 type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onDownloadPdf: () => void;
@@ -27,6 +35,7 @@ type BuyerTicketCardProps = {
 
 export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp, onOpenDispute }: BuyerTicketCardProps) {
   const showDisputeButton = ticket.status === "paid" && typeof onOpenDispute === "function";
+  const note = settlementNote(ticket.status);
 
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -38,6 +47,7 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp
           </div>
           <h3 className="mt-3 line-clamp-2 text-lg font-black tracking-tight text-zinc-950">{ticket.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">{displayValue(ticket.organizerName)}</p>
+          {note ? <p className="mt-2 text-xs font-semibold text-zinc-500">{note}</p> : null}
         </div>
         <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.18em] ${statusClasses(ticket.status)}`}>
           {displayStatus(ticket.status)}
