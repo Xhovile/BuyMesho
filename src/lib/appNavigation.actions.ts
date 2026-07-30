@@ -48,6 +48,7 @@ import {
   SIGNUP_PATH,
   TERMS_PATH,
   TRACK_ORDER_PATH,
+  TICKETS_PATH,
   VERIFY_EMAIL_PATH,
   sanitizeInternalReturnPath,
 } from "./appNavigation.paths";
@@ -236,6 +237,7 @@ export const navigateToAdminSetup = () => navigateToPath(ADMIN_SETUP_PATH);
 export const navigateToPaymentReturn = () => navigateToPath(PAYMENT_RETURN_PATH);
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
 export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
+export const navigateToTickets = () => navigateToPath(TICKETS_PATH);
 export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
 export const navigateToOrderTracking = (reference?: string) => {
   if (!reference) {
