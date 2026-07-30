@@ -9,6 +9,8 @@ const desktopProfileButtonClass =
   "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-white hover:border-red-900/20 hover:shadow-md transition-all overflow-hidden active:scale-95";
 const desktopMenuButtonClass =
   "w-11 h-11 rounded-2xl border border-zinc-200 bg-white flex items-center justify-center hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md transition-all active:scale-95";
+const desktopMarketButtonClass =
+  "hidden md:inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 transition-all hover:bg-zinc-50 hover:border-zinc-300 hover:shadow-md active:scale-95";
 
 export default function HomeHeader({ controller }: { controller: HomePageController }) {
   return (
@@ -18,6 +20,16 @@ export default function HomeHeader({ controller }: { controller: HomePageControl
           <BrandMark />
 
           <div className="ml-auto flex flex-shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigateToPath(EXPLORE_PATH)}
+              className={desktopMarketButtonClass}
+              aria-label="Go to Market"
+            >
+              <ShoppingBag className="h-4 w-4" />
+              Market
+            </button>
+
             <button
               onClick={controller.handleStartSelling}
               disabled={controller.isSellerProfileLoading}
