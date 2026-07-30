@@ -227,43 +227,38 @@ export default function HomePage() {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-            <div className="space-y-6">
-              <section>
-                <div className="grid grid-cols-1 gap-4">
-                  <ListingStrip
-                    title="Picked for you"
-                    description="Campus-aware picks based on what is active and relevant now."
-                    listings={controller.filteredRecommendedListings}
-                    loading={controller.loading}
-                    maxItems={8}
-                    variant="featured"
-                    viewMorePath={EXPLORE_PATH}
-                  />
-                  <ListingStrip
-                    title="Deals"
-                    description="Discounted listings and special offers."
-                    listings={controller.filteredDealListings}
-                    loading={controller.loading}
-                    maxItems={8}
-                    variant="featured"
-                    viewMorePath={MARKET_CHIP_PATHS.Deals}
-                  />
+          <div className="space-y-6">
+            <ListingStrip
+              title="Picked for you"
+              description="Campus-aware picks based on what is active and relevant now."
+              listings={controller.filteredRecommendedListings}
+              loading={controller.loading}
+              maxItems={8}
+              variant="featured"
+              viewMorePath={EXPLORE_PATH}
+            />
 
-                  <div ref={deferredAnchorRef} className="h-px w-full" />
+            <ListingStrip
+              title="Deals"
+              description="Discounted listings and special offers."
+              listings={controller.filteredDealListings}
+              loading={controller.loading}
+              maxItems={8}
+              variant="featured"
+              viewMorePath={MARKET_CHIP_PATHS.Deals}
+            />
 
-                  {showDeferredContent ? (
-                    <EventsStrip
-                      events={controller.eventsListings}
-                      loading={controller.eventsLoading}
-                      viewMorePath={MARKET_CHIP_PATHS.Events}
-                    />
-                  ) : (
-                    <DeferredHomeSkeleton />
-                  )}
-                </div>
-              </section>
-            </div>
+            <div ref={deferredAnchorRef} className="h-px w-full" />
+
+            {showDeferredContent ? (
+              <EventsStrip
+                events={controller.eventsListings}
+                loading={controller.eventsLoading}
+                viewMorePath={MARKET_CHIP_PATHS.Events}
+              />
+            ) : (
+              <DeferredHomeSkeleton />
+            )}
           </div>
         </section>
 
