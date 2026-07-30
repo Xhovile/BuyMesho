@@ -58,7 +58,7 @@ export default function HomeDesktopMenu({ controller }: { controller: HomePageCo
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
           transition={{ duration: 0.16 }}
-          className="absolute right-0 top-full z-[70] mt-3 flex max-h-[calc(100vh-5rem)] w-72 flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl"
+          className="absolute right-0 top-full z-[70] mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl"
           role="menu"
           aria-label="Homepage header menu"
         >
@@ -69,7 +69,7 @@ export default function HomeDesktopMenu({ controller }: { controller: HomePageCo
             <h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2>
           </div>
 
-          <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-2">
+          <div className="max-h-[calc(100vh-9rem)] space-y-1 overflow-y-auto overscroll-contain p-2">
             {controller.isGuest ? (
               <>
                 <MenuRow
