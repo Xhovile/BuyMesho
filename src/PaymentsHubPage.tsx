@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Receipt, Truck, Wallet } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Receipt, Truck, Wallet, Ticket } from "lucide-react";
 import {
   BUYER_PAYMENTS_PATH,
   DISPUTES_PATH,
   EXPLORE_PATH,
   PAYMENT_METHOD_PATH,
   PAYMENTS_HUB_PATH,
+  TICKETS_PATH,
   TRACK_ORDER_PATH,
   navigateBackOrPath,
   navigateToPath,
@@ -15,6 +16,7 @@ import FeedbackModal from "./components/FeedbackModal";
 
 const paymentActions = [
   { label: "Buyer Wallet", path: BUYER_PAYMENTS_PATH, icon: Receipt, iconBg: "bg-emerald-300" },
+  { label: "Tickets", path: TICKETS_PATH, icon: Ticket, iconBg: "bg-zinc-900" },
   { label: "Payment Methods", path: PAYMENT_METHOD_PATH, icon: CreditCard, iconBg: "bg-[#438c7c]" },
   { label: "Track Order", path: TRACK_ORDER_PATH, icon: Truck, iconBg: "bg-blue-500" },
   { label: "Disputes", path: DISPUTES_PATH, icon: ShieldAlert, iconBg: "bg-red-900" },
