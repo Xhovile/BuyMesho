@@ -1,7 +1,11 @@
 import { HOME_PATH, navigateToPath } from "../lib/appNavigation";
 import Logo from "../../photos/Logo.png";
 
-export default function BrandMark() {
+type BrandMarkProps = {
+  subtitle?: string;
+};
+
+export default function BrandMark({ subtitle = "Secure Marketplace" }: BrandMarkProps) {
   return (
     <button
       type="button"
@@ -21,7 +25,7 @@ export default function BrandMark() {
           <span className="text-zinc-700">Mesho</span>
         </p>
         <p className="hidden sm:block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400">
-          Secure Marketplace
+          {subtitle}
         </p>
       </div>
     </button>
