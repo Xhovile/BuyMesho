@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, Clock3, Download, MapPin, Share2, Ticket } from "lucide-react";
+import { CalendarDays, Clock3, Download, MapPin, Share2, Ticket } from "lucide-react";
 
 import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
@@ -14,14 +14,21 @@ function displayValue(value: string) {
   return value && value.trim() ? value : "—";
 }
 
+function displayStatus(status: BuyerTicketRecord["status"]) {
+  if (status === "pending") return "Pending confirmation";
+  if (status === "paid") return "Paid";
+  if (status === "rejected") return "Rejected";
+  if (status === "error") return "Error";
+  return status;
+}
+
 type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
-  onOpenOrder: () => void;
   onDownloadPdf: () => void;
   onShareWhatsApp: () => void;
 };
 
-export default function BuyerTicketCard({ ticket, onOpenOrder, onDownloadPdf, onShareWhatsApp }: BuyerTicketCardProps) {
+export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp }: BuyerTicketCardProps) {
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
@@ -34,7 +41,7 @@ export default function BuyerTicketCard({ ticket, onOpenOrder, onDownloadPdf, on
           <p className="mt-1 text-sm text-zinc-500">{displayValue(ticket.organizerName)}</p>
         </div>
         <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.18em] ${statusClasses(ticket.status)}`}>
-          {ticket.status}
+          {displayStatus(ticket.status)}
         </span>
       </div>
 
@@ -90,14 +97,6 @@ export default function BuyerTicketCard({ ticket, onOpenOrder, onDownloadPdf, on
           >
             <Share2 className="h-4 w-4" />
             WhatsApp
-          </button>
-          <button
-            type="button"
-            onClick={onOpenOrder}
-            className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            Open order
-            <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
