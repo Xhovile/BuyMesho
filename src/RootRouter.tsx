@@ -21,6 +21,7 @@ import {
   SETTINGS_PATH,
   VERIFY_EMAIL_PATH,
   navigateToLoginWithReturnPath,
+  TICKETS_PATH,
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import ScrollToTopFab from "./components/ScrollToTopFab";
@@ -41,6 +42,7 @@ const AdminEventModerationPage = lazy(() => import("./AdminEventModerationPage")
 const AdminRouteGuard = lazy(() => import("./components/AdminRouteGuard"));
 const BecomeSellerPage = lazy(() => import("./BecomeSellerPage"));
 const BuyerPaymentsPage = lazy(() => import("./BuyerPaymentsPage"));
+const TicketsPage = lazy(() => import("./TicketsPage"));
 const CartPage = lazy(() => import("./CartPage"));
 const ChangeEmailPage = lazy(() => import("./ChangeEmailPage"));
 const ChangePasswordPage = lazy(() => import("./ChangePasswordPage"));
@@ -210,6 +212,12 @@ function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
         description: "Discover public events and event listings on BuyMesho.",
         canonicalPath: "/explore/events",
       };
+    case "/tickets":
+      return {
+        title: "BuyMesho Tickets",
+        description: "View your event tickets, download PDFs, and share passes on WhatsApp.",
+        canonicalPath: "/tickets",
+      };
     case "/explore/wholesale":
       return {
         title: "BuyMesho Wholesale",
@@ -313,6 +321,7 @@ export default function RootRouter() {
       "seller_payouts",
       "messages",
       "event_creator_dashboard",
+      "tickets",
       "admin",
       "admin_events",
       "admin_payments",
@@ -383,6 +392,8 @@ export default function RootRouter() {
           <DisputesPage />
         ) : locationPath === "/buyer-payments" ? (
           <BuyerPaymentsPage />
+        ) : locationPath === "/tickets" ? (
+          <TicketsPage />
         ) : locationPath === "/cart" ? (
           <CartPage />
         ) : locationPath === "/payments" ? (
