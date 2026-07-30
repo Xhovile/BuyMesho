@@ -79,16 +79,16 @@ export default function HeaderDesktopMenu({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -8, scale: 0.98 }}
           transition={{ duration: 0.16 }}
-          className="absolute right-0 top-full mt-3 w-72 overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]"
+          className="absolute right-0 top-full mt-3 flex max-h-[calc(100vh-5rem)] w-72 flex-col overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-2xl z-[70]"
           role="menu"
           aria-label="Desktop header menu"
         >
-          <div className="px-4 pt-4 pb-3 border-b border-zinc-100">
+          <div className="border-b border-zinc-100 px-4 pb-3 pt-4">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">Menu</p>
             <h2 className="mt-1 text-base font-black text-zinc-900">Start here</h2>
           </div>
 
-          <div className="p-2 space-y-1">
+          <div className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-2">
             {isLoggedIn ? (
               <>
                 <HeaderMenuItem
