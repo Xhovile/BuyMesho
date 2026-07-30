@@ -8,15 +8,22 @@ import FormDropdown from "./components/FormDropdown";
 import { auth, db as firestore } from "./firebase";
 import { apiFetch } from "./lib/api";
 import { UNIVERSITIES } from "./constants";
-import { navigateToPath } from "./lib/appNavigation";
+import { navigateToLogin, navigateToPath } from "./lib/appNavigation";
 import { resolveUniversity } from "./lib/university";
 import type { University, UserProfile } from "./types";
+
+type FeedbackAction = {
+  label: string;
+  onClick: () => void;
+  variant?: "primary" | "secondary";
+};
 
 type FeedbackState = {
   open: boolean;
   type: "success" | "error" | "info";
   title: string;
   message: string;
+  actions?: FeedbackAction[];
 } | null;
 
 const PASSWORD_REQUIREMENTS_MESSAGE =
@@ -114,8 +121,9 @@ export default function SignupPage() {
   const showFeedback = (
     type: "success" | "error" | "info",
     title: string,
-    message: string
-  ) => setFeedback({ open: true, type, title, message });
+    message: string,
+    actions?: FeedbackAction[]
+  ) => setFeedback({ open: true, type, title, message, actions });
 
   const closeFeedback = () => {
     setFeedback(null);
@@ -182,11 +190,32 @@ export default function SignupPage() {
       setRedirectAfterFeedback(true);
       showFeedback("info", "Account created", emailNotice);
     } catch (err: any) {
+      if (err?.code === "auth/email-already-in-use") {
+        showFeedback(
+          "error",
+          "Signup failed",
+          "This email is already registered. Use Log In to continue.",
+          [
+            {
+              label: "Cancel",
+              variant: "secondary",
+              onClick: closeFeedback,
+            },
+            {
+              label: "Log In",
+              onClick: () => {
+                closeFeedback();
+                navigateToLogin();
+              },
+            },
+          ]
+        );
+        return;
+      }
+
       let message = "We could not create your account. Please try again.";
 
-      if (err?.code === "auth/email-already-in-use") {
-        message = "This email is already registered. Please log in instead.";
-      } else if (err?.code === "auth/invalid-email") {
+      if (err?.code === "auth/invalid-email") {
         message = "Please enter a valid email address.";
       } else if (err?.code === "auth/weak-password") {
         message = PASSWORD_REQUIREMENTS_MESSAGE;
@@ -209,7 +238,8 @@ export default function SignupPage() {
       eyebrow="Account"
       title="Create account"
       description="Join BuyMesho and start buying or selling easily."
-      backLabel="Back"
+      backLabel="Sign in"
+      onBack={() => navigateToLogin()}
     >
       <form onSubmit={handleSignUp} className="space-y-6 w-full">
         <FormDropdown
@@ -331,6 +361,7 @@ export default function SignupPage() {
           type={feedback.type}
           title={feedback.title}
           message={feedback.message}
+          actions={feedback.actions}
           onClose={closeFeedback}
         />
       )}
