@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { ArrowLeft, Truck } from "lucide-react";
+import { Truck } from "lucide-react";
+import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
@@ -21,26 +22,16 @@ function TrackOrderPageContent() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <MarketHeaderBar subtitle="Track order" />
+
       <div className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
-        <button
-          type="button"
-          onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 shadow-sm hover:bg-zinc-50"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back
-        </button>
-
-        <p className="mt-6 text-lg font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">
-          Track order
-        </p>
-
-        <div className="mt-2 flex items-start gap-3">
+        <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-500 text-white">
             <Truck className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
+            <p className="text-xs font-black uppercase tracking-[0.28em] text-zinc-600 sm:text-xl">Track order</p>
+            <h1 className="mt-2 text-4xl font-black tracking-tight text-zinc-950 sm:text-5xl">
               Open order tracking
             </h1>
             <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
