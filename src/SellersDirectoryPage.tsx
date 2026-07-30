@@ -3,13 +3,7 @@ import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
 
 import BrandMark from "./components/BrandMark";
 import { apiFetch } from "./lib/api";
-import {
-  EXPLORE_PATH,
-  HOME_PATH,
-  navigateBackOrPath,
-  navigateToPath,
-  navigateToSellerProfile,
-} from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateBackOrPath, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 
 import type { Listing, RatingSummary } from "./types";
