@@ -3,7 +3,7 @@ import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
 
 import BrandMark from "./components/BrandMark";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, navigateBackOrPath, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
+import { EXPLORE_PATH, navigateBackOrPath, navigateToSellerProfile } from "./lib/appNavigation";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 
 import type { Listing, RatingSummary } from "./types";
@@ -109,6 +109,15 @@ async function fetchSellerRatingSummary(sellerUid: string) {
   } catch {
     return (await apiFetch(`/api/users/${sellerUid}/rating-summary`)) as RatingSummary;
   }
+}
+
+function StatPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white/80 px-3 py-2 shadow-sm backdrop-blur-sm">
+      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">{label}</p>
+      <p className="mt-1 text-sm font-black tracking-tight text-zinc-900">{value}</p>
+    </div>
+  );
 }
 
 export default function SellersDirectoryPage() {
@@ -296,51 +305,64 @@ export default function SellersDirectoryPage() {
                 key={card.uid}
                 type="button"
                 onClick={() => navigateToSellerProfile(card.uid)}
-                className="group rounded-[2rem] border border-zinc-200 bg-white p-5 text-left shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
+                className="group relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-5 text-left shadow-[0_18px_50px_-28px_rgba(0,0,0,0.28)] transition-all duration-200 hover:-translate-y-1 hover:border-zinc-300 hover:shadow-[0_26px_70px_-30px_rgba(0,0,0,0.38)]"
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-zinc-100">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(127,29,29,0.10),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(24,24,27,0.05),transparent_26%)]" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-red-900 via-amber-500 to-zinc-200" />
+
+                <div className="relative flex items-start gap-4">
+                  <div className="relative shrink-0">
+                    <div className="absolute inset-0 rounded-[1.75rem] bg-red-900/10 blur-xl" />
+                    <div className="relative flex h-18 w-18 items-center justify-center overflow-hidden rounded-[1.75rem] border border-white/70 bg-zinc-100 ring-1 ring-zinc-200">
                       {card.logoUrl ? (
                         <img src={card.logoUrl} alt="Seller logo" className="h-full w-full object-cover" />
                       ) : (
-                        <div className="text-sm font-black tracking-tight text-zinc-500">
+                        <div className="text-lg font-black tracking-tight text-zinc-500">
                           {fallbackInitials(card.uid, card.description)}
                         </div>
                       )}
                     </div>
+                  </div>
 
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="truncate text-base font-black tracking-tight text-zinc-900">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-lg font-black tracking-tight text-zinc-950 sm:text-xl">
                           {card.sellerName}
                         </p>
-                        {card.isVerified ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
-                            <ShieldCheck className="h-3 w-3" />
-                            Verified
-                          </span>
-                        ) : null}
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-medium text-zinc-500">
+                          <span>Joined {formatDate(card.joinedAt)}</span>
+                          {card.isVerified ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 font-black text-blue-700">
+                              <ShieldCheck className="h-3 w-3" />
+                              Verified
+                            </span>
+                          ) : null}
+                        </div>
                       </div>
-                      <p className="mt-1 text-xs font-bold text-zinc-500">Joined {formatDate(card.joinedAt)}</p>
                     </div>
+
+                    <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
+                      {card.description || "This seller has not added a bio yet."}
+                    </p>
                   </div>
                 </div>
 
-                <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
-                  {card.description || "—"}
-                </p>
-
-                <div className="mt-5 flex items-end justify-between border-t border-zinc-100 pt-4">
-                  <span className="text-xs font-bold text-zinc-500">
-                    {card.listingCount} listing{card.listingCount === 1 ? "" : "s"}
-                  </span>
-
-                  <div className="inline-flex flex-col items-end gap-1 text-right text-xs font-black text-amber-700">
-                    <RatingStars rating={card.rating} />
-                    <span>
-                      {card.rating.toFixed(1)} ({card.ratingCount})
-                    </span>
+                <div className="relative mt-5 grid grid-cols-2 gap-3 border-t border-zinc-100 pt-4">
+                  <StatPill label="Listings" value={`${card.listingCount}`} />
+                  <div className="rounded-2xl border border-zinc-200 bg-zinc-50/80 px-3 py-2 shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-zinc-400">Rating</p>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-1.5">
+                        <RatingStars rating={card.rating} />
+                      </div>
+                      <span className="text-sm font-black tracking-tight text-amber-700">
+                        {card.rating.toFixed(1)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[11px] font-semibold text-zinc-500">
+                      {card.ratingCount} review{card.ratingCount === 1 ? "" : "s"}
+                    </p>
                   </div>
                 </div>
               </button>
