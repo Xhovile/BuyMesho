@@ -1,12 +1,18 @@
+import { ArrowRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
   navigateToLoginWithReturnPath,
   navigateToPath,
+  ABOUT_PATH,
   EXPLORE_PATH,
   MARKET_CHIP_PATHS,
+  PRIVACY_PATH,
+  REPORT_PATH,
+  SAFETY_PATH,
+  SIGNUP_PATH,
+  TERMS_PATH,
 } from "./lib/appNavigation";
-import AppFooter from "./components/AppFooter";
 import FeedbackModal from "./components/FeedbackModal";
 import FloatingCartButton from "./components/FloatingCartButton";
 import CategorySection from "./components/home/CategorySection";
@@ -15,7 +21,7 @@ import HomeHeader from "./components/home/HomeHeader";
 import HomeHero from "./components/home/HomeHero";
 import HomeMobileDrawer from "./components/home/HomeMobileDrawer";
 import ListingStrip from "./components/home/ListingStrip";
-import { HOME_CATEGORY_KEYS, featuredSections } from "./home/home.constants";
+import { featuredSections } from "./home/home.constants";
 import { useHomePageController } from "./hooks/useHomePageController";
 
 function DeferredHomeSkeleton() {
@@ -147,9 +153,8 @@ export default function HomePage() {
     return () => observer.disconnect();
   }, [showDeferredContent]);
 
-  const mobileFeaturedKeys = new Set<string>([HOME_CATEGORY_KEYS.phones, HOME_CATEGORY_KEYS.fashion, HOME_CATEGORY_KEYS.beauty]);
   const visibleFeaturedSections = isMobileViewport
-    ? featuredSections.filter((section) => mobileFeaturedKeys.has(section.key))
+    ? featuredSections.filter((section) => ["phones", "fashion", "beauty"].includes(section.key))
     : featuredSections;
 
   return (
@@ -224,92 +229,38 @@ export default function HomePage() {
         </section>
 
         <section className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
-          <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-2">
-            <div className="space-y-6">
-              <section>
-                <div className="grid grid-cols-1 gap-4">
-                  <ListingStrip
-                    title="Picked for you"
-                    description="Campus-aware picks based on what is active and relevant now."
-                    listings={controller.filteredRecommendedListings}
-                    loading={controller.loading}
-                    maxItems={8}
-                    variant="featured"
-                    viewMorePath={EXPLORE_PATH}
-                  />
-                  <ListingStrip
-                    title="Deals"
-                    description="Discounted listings and special offers."
-                    listings={controller.filteredDealListings}
-                    loading={controller.loading}
-                    maxItems={8}
-                    variant="featured"
-                    viewMorePath={MARKET_CHIP_PATHS.Deals}
-                  />
+          <div className="space-y-6">
+            <ListingStrip
+              title="Picked for you"
+              description="Campus-aware picks based on what is active and relevant now."
+              listings={controller.filteredRecommendedListings}
+              loading={controller.loading}
+              maxItems={8}
+              variant="featured"
+              viewMorePath={EXPLORE_PATH}
+            />
 
-                  <div ref={deferredAnchorRef} className="h-px w-full" />
+            <ListingStrip
+              title="Deals"
+              description="Discounted listings and special offers."
+              listings={controller.filteredDealListings}
+              loading={controller.loading}
+              maxItems={8}
+              variant="featured"
+              viewMorePath={MARKET_CHIP_PATHS.Deals}
+            />
 
-                  {showDeferredContent ? (
-                    <EventsStrip
-                      events={controller.eventsListings}
-                      loading={controller.eventsLoading}
-                      viewMorePath={MARKET_CHIP_PATHS.Events}
-                    />
-                  ) : (
-                    <DeferredHomeSkeleton />
-                  )}
-                </div>
-              </section>
-            </div>
-          </div>
-        </section>
+            <div ref={deferredAnchorRef} className="h-px w-full" />
 
-        
-              <section>
-                <div className="relative overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.18)] sm:p-7">
-                  <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(127,29,29,0.10),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(24,24,27,0.05),transparent_28%)]" />
-                  <div className="relative">
-                    <div className="flex items-center justify-between gap-4">
-                      <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-zinc-400">
-                        Why BuyMesho
-                      </p>
-                      <span className="h-2.5 w-2.5 rounded-full bg-red-900" />
-                    </div>
-
-                    <div className="mt-4 grid gap-3 sm:gap-4">
-                      <div className="rounded-[1.5rem] border border-red-950/10 bg-zinc-900 p-4 text-white shadow-[0_18px_40px_-24px_rgba(0,0,0,0.45)] sm:p-5 md:col-span-2">
-                        <p className="text-[0.72rem] font-bold uppercase tracking-[0.18em] text-red-200/80">
-                          Main point
-                        </p>
-                        <p className="mt-2 text-sm leading-relaxed text-zinc-100 sm:text-base">
-                          BuyMesho is a platform meant to enhance the exposure of student entrepreneurship while also serving as a marketplace for sellers offering student-friendly products and services.
-                        </p>
-                      </div>
-
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5">
-                          <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">
-                            Everyone can buy on BuyMesho.
-                          </p>
-                        </div>
-
-                        <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5">
-                          <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">
-                            Seller restrictions apply only because the platform&apos;s primary goal is to help student entrepreneurs develop and grow.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 sm:p-5">
-                        <p className="text-sm leading-relaxed text-zinc-700 sm:text-base">
-                          List once, get discovered faster, and build trust through a structured marketplace designed for real commerce.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
+            {showDeferredContent ? (
+              <EventsStrip
+                events={controller.eventsListings}
+                loading={controller.eventsLoading}
+                viewMorePath={MARKET_CHIP_PATHS.Events}
+              />
+            ) : (
+              <DeferredHomeSkeleton />
+            )}
           </div>
         </section>
 
