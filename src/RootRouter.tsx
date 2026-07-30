@@ -168,10 +168,17 @@ function upsertCanonical(href: string) {
 function buildSeoConfig(pathname: string, route: AppRoute): SeoConfig {
   switch (pathname) {
     case "/":
+    case "/home":
       return {
         title: "BuyMesho — Student Entrepreneurship Marketplace",
         description: "Discover listings, deals, sellers, and local events on BuyMesho.",
         canonicalPath: "/",
+      };
+    case "/signup":
+      return {
+        title: "Create a BuyMesho Account",
+        description: "Join BuyMesho to buy, sell, and manage your student marketplace activity.",
+        canonicalPath: "/signup",
       };
     case "/about":
       return {
@@ -318,7 +325,6 @@ export default function RootRouter() {
       "admin_setup",
       "admin_payout_destinations",
     ];
-
     const requiresAuth =
       locationPath === EVENTS_CREATE_PATH ||
       locationPath === EVENTS_MANAGE_PATH ||
