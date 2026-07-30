@@ -98,6 +98,44 @@ function readNumber(source: Record<string, unknown> | undefined, ...fields: stri
   return null;
 }
 
+function readUnitPrice(itemData: Record<string, unknown> | undefined) {
+  if (!itemData) return { amount: null as number | null, currency: "MWK" };
+
+  const nestedUnitPrice = itemData.unitPrice;
+  const nestedUnitPriceObject = nestedUnitPrice && typeof nestedUnitPrice === "object" ? (nestedUnitPrice as Record<string, unknown>) : undefined;
+  const amount =
+    readNumber(itemData, "ticketPrice") ??
+    readNumber(nestedUnitPriceObject, "amount") ??
+    null;
+  const currency = readString(nestedUnitPriceObject, "currency") || "MWK";
+
+  return { amount, currency };
+}
+
+function resolvePaymentTicketAmount(
+  payment: BuyerPaymentRecord,
+  eventId: string,
+  eventDetail?: BuyerPaymentRecord["eventDetails"][number],
+) {
+  const checkoutItem = (payment.checkoutItems ?? []).find((entry) => String(entry.eventId) === eventId);
+  const checkoutQuantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? 1) || 1);
+  const detailPrice = Number(eventDetail?.ticketPrice ?? 0);
+
+  if (Number.isFinite(detailPrice) && detailPrice > 0) {
+    return detailPrice * checkoutQuantity;
+  }
+
+  if (checkoutItem && typeof (checkoutItem as Record<string, unknown>).totalPrice === "number") {
+    return Number((checkoutItem as Record<string, unknown>).totalPrice) || 0;
+  }
+
+  if (checkoutItem && typeof (checkoutItem as Record<string, unknown>).unitPrice === "number") {
+    return Number((checkoutItem as Record<string, unknown>).unitPrice) * checkoutQuantity;
+  }
+
+  return 0;
+}
+
 export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPaymentRecord[]): BuyerTicketRecord[] {
   const paymentByReference = new Map<string, BuyerPaymentRecord>();
   const paymentByOrderId = new Map<string, BuyerPaymentRecord>();
@@ -146,9 +184,15 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
         const venue = readString(itemData, "venue") || paymentEvent?.venue || "";
         const location = readString(itemData, "location") || paymentEvent?.location || "";
         const organizerName = readString(itemData, "organizerName") || paymentEvent?.organizerName || "Event organizer";
-        const ticketPrice = readNumber(itemData, "ticketPrice") ?? paymentEvent?.ticketPrice ?? null;
         const quantity = Math.max(1, Number(item.quantity ?? paymentEvent?.quantity ?? 1) || 1);
-        const amount = ticketPrice !== null ? Number(ticketPrice) * quantity : Number(bundle.order?.total?.amount ?? 0);
+        const { amount: itemUnitPrice, currency } = readUnitPrice(itemData);
+        const paymentEventPrice = Number(paymentEvent?.ticketPrice ?? 0);
+        const amount =
+          (Number.isFinite(itemUnitPrice ?? NaN) && (itemUnitPrice ?? 0) > 0)
+            ? (itemUnitPrice as number) * quantity
+            : paymentEventPrice > 0
+              ? paymentEventPrice * quantity
+              : Number(bundle.order?.total?.amount ?? 0);
 
         pushTicket({
           key: `${reference}:${eventId}`,
@@ -163,7 +207,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
           location,
           quantity,
           amount,
-          currency: String(bundle.order?.total?.currency ?? "MWK"),
+          currency,
           status: ticketStatus,
           paymentStatus,
           orderStatus,
@@ -201,12 +245,12 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const checkoutItem = checkoutItems.find((entry) => String(entry.eventId) === eventId);
       const title = eventDetail?.title || payment.listingTitle || `Event ${eventId}`;
       const quantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? payment.quantity ?? 1) || 1);
-      const amount = Number(payment.totalPrice ?? 0);
+      const amount = resolvePaymentTicketAmount(payment, eventId, eventDetail);
 
       pushTicket({
         key: dedupeKey,
-        reference,
         orderId: String(payment.orderId ?? reference),
+        reference,
         eventId,
         title,
         organizerName: eventDetail?.organizerName || "Event organizer",
