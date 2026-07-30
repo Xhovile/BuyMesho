@@ -42,6 +42,7 @@ type HeaderProps = {
   userProfile?: UserProfile | null;
   firebaseUser: FirebaseUser | null;
   activeChip?: HeaderChip;
+  subtitle?: string;
   onChipChange?: (chip: HeaderChip) => void;
 };
 
@@ -55,6 +56,7 @@ export default function Header({
   userProfile,
   firebaseUser,
   activeChip = "All",
+  subtitle,
   onChipChange,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,6 +74,7 @@ export default function Header({
   const fallbackLetter = (userProfile?.email || firebaseUser?.email || "?").charAt(0).toUpperCase();
   const avatarUrl = getAvatarUrl(userProfile, firebaseUser);
   const isSeller = !!(firebaseUser && userProfile?.is_seller);
+  const headerSubtitle = (subtitle || selectedChip).toLowerCase();
 
   const closeMenu = () => {
     setMobileMenuOpen(false);
@@ -283,7 +286,7 @@ export default function Header({
               }`}
             >
               <div className="flex items-center justify-between gap-4">
-                <BrandMark />
+                <BrandMark subtitle={headerSubtitle} />
 
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
