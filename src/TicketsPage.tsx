@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Ticket, Users, Clock3, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, Users } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
+import { navigateToOrderDispute } from "./lib/appNavigation";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
@@ -12,7 +13,7 @@ import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 const FILTERS: Array<{ key: "all" | BuyerTicketStatus; label: string }> = [
   { key: "all", label: "All" },
   { key: "paid", label: "Paid" },
-  { key: "pending", label: "Pending confirmation" },
+  { key: "pending", label: "Pending" },
   { key: "rejected", label: "Rejected" },
   { key: "error", label: "Error" },
 ];
@@ -34,7 +35,7 @@ function buildWhatsAppMessage(ticket: BuyerTicketRecord) {
     ticket.eventDate ? `Date: ${ticket.eventDate}` : null,
     ticket.startTime ? `Time: ${ticket.startTime}` : null,
     [ticket.venue, ticket.location].filter(Boolean).join(" • ") ? `Venue: ${[ticket.venue, ticket.location].filter(Boolean).join(" • ")}` : null,
-    ticket.status === "pending" ? "Status: Pending confirmation" : null,
+    ticket.status === "pending" ? "Status: Pending" : null,
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -122,7 +123,7 @@ function TicketsPageContent() {
       { label: "Date", value: ticket.eventDate || "—" },
       { label: "Time", value: ticket.startTime || "—" },
       { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
-      { label: "Status", value: ticket.status === "pending" ? "Pending confirmation" : ticket.status },
+      { label: "Status", value: ticket.status },
       { label: "Amount", value: `${ticket.amount} ${ticket.currency}` },
     ]);
   };
@@ -131,6 +132,10 @@ function TicketsPageContent() {
     const message = buildWhatsAppMessage(ticket);
     const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(url, "_blank", "noopener,noreferrer");
+  };
+
+  const handleOpenDispute = (ticket: BuyerTicketRecord) => {
+    navigateToOrderDispute(ticket.reference);
   };
 
   return (
@@ -211,6 +216,7 @@ function TicketsPageContent() {
                 ticket={ticket}
                 onDownloadPdf={() => handleDownload(ticket)}
                 onShareWhatsApp={() => handleShareWhatsApp(ticket)}
+                onOpenDispute={ticket.status === "paid" ? () => handleOpenDispute(ticket) : undefined}
               />
             ))
           ) : (
