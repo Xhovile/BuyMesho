@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
+import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
 import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
@@ -23,16 +24,6 @@ const FILTERS: Array<{ key: Exclude<PaymentFilter, "all">; label: string }> = [
   { key: "rejected", label: "Rejected" },
   { key: "error", label: "Error" },
 ];
-
-function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
-  return (
-    <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-      <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
-      <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-zinc-500">{hint}</p> : null}
-    </div>
-  );
-}
 
 export default function BuyerPaymentsPage() {
   const ready = useRequireVerifiedUser();
@@ -103,17 +94,20 @@ function BuyerPaymentsPageContent() {
   const currentSortLabel = activeFilter === "all" ? "All" : activeFilter;
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+    <div className="min-h-screen bg-zinc-100 text-zinc-900">
+      <MarketHeaderBar subtitle="Buyer wallet" />
+
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Payments page
-          </button>
+          <div>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer wallet</p>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
+              Payment activity
+            </h1>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
+              Review payment records, open the order trail, and track payment outcomes from one screen.
+            </p>
+          </div>
 
           <button
             type="button"
@@ -123,23 +117,6 @@ function BuyerPaymentsPageContent() {
             <Trash2 className="h-4 w-4" />
             Clear logs
           </button>
-        </div>
-
-        <div className="mt-8 border-b border-zinc-200 pb-6">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer wallet</p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-            Payment activity
-          </h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-            Review payment records, open the order trail, and track payment outcomes from one screen.
-          </p>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-4">
-          <StatTile label="Payments" value={String(summary.records.length)} hint="Total recorded entries" />
-          <StatTile label="Paid" value={String(summary.statusCounts.paid)} hint="Successful payments" />
-          <StatTile label="Pending" value={String(summary.statusCounts.pending)} hint="Awaiting confirmation" />
-          <StatTile label="Rejected" value={String(summary.statusCounts.rejected + summary.statusCounts.error)} hint="Failed or reversed" />
         </div>
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
