@@ -5,7 +5,7 @@ type BrandMarkProps = {
   subtitle?: string;
 };
 
-export default function BrandMark({ subtitle = "Secure Marketplace" }: BrandMarkProps) {
+export default function BrandMark({ subtitle = "Home" }: BrandMarkProps) {
   return (
     <button
       type="button"
