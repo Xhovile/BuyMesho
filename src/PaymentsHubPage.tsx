@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, ShoppingCart, Receipt, Truck, Wallet, Ticket } from "lucide-react";
+import { ArrowLeft, ChevronRight, CreditCard, ShieldAlert, Receipt, Truck, Wallet, Ticket } from "lucide-react";
 import {
   BUYER_PAYMENTS_PATH,
   DISPUTES_PATH,
