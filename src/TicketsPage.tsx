@@ -5,7 +5,7 @@ import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
 import { navigateBackOrPath, navigateToOrderTracking, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
-import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
+import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
@@ -127,7 +127,7 @@ function TicketsPageContent() {
       { label: "Organizer", value: ticket.organizerName || "Event organizer" },
       { label: "Ticket code", value: ticket.ticketCode },
       { label: "Reference", value: ticket.reference },
-      { label: "Buyer", value: ticket.orderId },
+      { label: "Holder", value: "Verified buyer account" },
       { label: "Date", value: ticket.eventDate || "—" },
       { label: "Time", value: ticket.startTime || "—" },
       { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
