@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Download, MapPin, Share2, Ticket } from "lucide-react";
+import { CalendarDays, Clock3, Download, MapPin, ShieldAlert, Share2, Ticket } from "lucide-react";
 
 import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
@@ -15,10 +15,6 @@ function displayValue(value: string) {
 }
 
 function displayStatus(status: BuyerTicketRecord["status"]) {
-  if (status === "pending") return "Pending confirmation";
-  if (status === "paid") return "Paid";
-  if (status === "rejected") return "Rejected";
-  if (status === "error") return "Error";
   return status;
 }
 
@@ -26,9 +22,12 @@ type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onDownloadPdf: () => void;
   onShareWhatsApp: () => void;
+  onOpenDispute?: () => void;
 };
 
-export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp }: BuyerTicketCardProps) {
+export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp, onOpenDispute }: BuyerTicketCardProps) {
+  const showDisputeButton = ticket.status === "paid" && typeof onOpenDispute === "function";
+
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
@@ -98,6 +97,16 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp
             <Share2 className="h-4 w-4" />
             WhatsApp
           </button>
+          {showDisputeButton ? (
+            <button
+              type="button"
+              onClick={onOpenDispute}
+              className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Dispute
+            </button>
+          ) : null}
         </div>
       </div>
     </article>
