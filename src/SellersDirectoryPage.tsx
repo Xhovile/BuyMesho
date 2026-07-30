@@ -309,16 +309,38 @@ export default function SellersDirectoryPage() {
                         </div>
                       )}
                     </div>
+
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="truncate text-lg font-black tracking-tight text-zinc-900">{card.sellerName}</h3>
-                        {card.isVerified ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : null}
+                        <p className="truncate text-base font-black tracking-tight text-zinc-900">
+                          {card.sellerName}
+                        </p>
+                        {card.isVerified ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
+                            <ShieldCheck className="h-3 w-3" />
+                            Verified
+                          </span>
+                        ) : null}
                       </div>
-                      <div className="mt-1 flex items-center gap-2 text-xs font-medium text-zinc-500">
-                        <RatingStars rating={card.rating} />
-                        <span>({card.ratingCount})</span>
-                      </div>
+                      <p className="mt-1 text-xs font-bold text-zinc-500">Joined {formatDate(card.joinedAt)}</p>
                     </div>
+                  </div>
+                </div>
+
+                <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
+                  {card.description || "—"}
+                </p>
+
+                <div className="mt-5 flex items-end justify-between border-t border-zinc-100 pt-4">
+                  <span className="text-xs font-bold text-zinc-500">
+                    {card.listingCount} listing{card.listingCount === 1 ? "" : "s"}
+                  </span>
+
+                  <div className="inline-flex flex-col items-end gap-1 text-right text-xs font-black text-amber-700">
+                    <RatingStars rating={card.rating} />
+                    <span>
+                      {card.rating.toFixed(1)} ({card.ratingCount})
+                    </span>
                   </div>
                 </div>
               </button>
