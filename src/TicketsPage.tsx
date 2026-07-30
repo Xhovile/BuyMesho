@@ -3,7 +3,6 @@ import { Ticket, Users, Clock3, CheckCircle2, AlertCircle } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
-import { navigateToOrderTracking } from "./lib/appNavigation";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
@@ -13,7 +12,7 @@ import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 const FILTERS: Array<{ key: "all" | BuyerTicketStatus; label: string }> = [
   { key: "all", label: "All" },
   { key: "paid", label: "Paid" },
-  { key: "pending", label: "Pending" },
+  { key: "pending", label: "Pending confirmation" },
   { key: "rejected", label: "Rejected" },
   { key: "error", label: "Error" },
 ];
@@ -35,6 +34,7 @@ function buildWhatsAppMessage(ticket: BuyerTicketRecord) {
     ticket.eventDate ? `Date: ${ticket.eventDate}` : null,
     ticket.startTime ? `Time: ${ticket.startTime}` : null,
     [ticket.venue, ticket.location].filter(Boolean).join(" • ") ? `Venue: ${[ticket.venue, ticket.location].filter(Boolean).join(" • ")}` : null,
+    ticket.status === "pending" ? "Status: Pending confirmation" : null,
   ].filter(Boolean);
 
   return lines.join("\n");
@@ -122,7 +122,7 @@ function TicketsPageContent() {
       { label: "Date", value: ticket.eventDate || "—" },
       { label: "Time", value: ticket.startTime || "—" },
       { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
-      { label: "Status", value: ticket.status },
+      { label: "Status", value: ticket.status === "pending" ? "Pending confirmation" : ticket.status },
       { label: "Amount", value: `${ticket.amount} ${ticket.currency}` },
     ]);
   };
@@ -135,7 +135,7 @@ function TicketsPageContent() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <MarketHeaderBar subtitle="Buyer wallet" />
+      <MarketHeaderBar subtitle="Tickets" />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -145,7 +145,7 @@ function TicketsPageContent() {
               Your event tickets
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-              Keep event passes separate from wallet activity. Each ticket here can be downloaded as a PDF, shared on WhatsApp, and opened from the order trail.
+              Keep event passes separate from purchases. Each ticket here can be downloaded as a PDF, shared on WhatsApp, and waits for confirmation instead of order tracking.
             </p>
           </div>
         </div>
@@ -209,7 +209,6 @@ function TicketsPageContent() {
               <BuyerTicketCard
                 key={ticket.key}
                 ticket={ticket}
-                onOpenOrder={() => navigateToOrderTracking(ticket.reference)}
                 onDownloadPdf={() => handleDownload(ticket)}
                 onShareWhatsApp={() => handleShareWhatsApp(ticket)}
               />
@@ -249,10 +248,10 @@ function TicketsPageContent() {
           <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
               <AlertCircle className="h-4 w-4 text-amber-600" />
-              No wallet clutter
+              No order tracking
             </div>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Listing purchases stay in Buyer Wallet. Event passes stay here. That separation is the point.
+              Tickets wait for confirmation instead of using the normal listing tracking flow.
             </p>
           </div>
         </div>
