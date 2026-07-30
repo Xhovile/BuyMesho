@@ -223,6 +223,11 @@ function OrderTrackingPageContent() {
     navigateToPath(PAYMENTS_HUB_PATH);
   };
 
+  const handleOpenDispute = () => {
+    if (!reference) return;
+    navigateToOrderDispute(reference);
+  };
+
   const handleConfirmDelivery = async () => {
     if (!order || isEventOrder) return;
 
@@ -239,7 +244,7 @@ function OrderTrackingPageContent() {
     }
   };
 
-  const handleOpenDispute = async () => {
+  const handleOpenDisputeForm = async () => {
     if (!order || isEventOrder) return;
 
     if (!disputeReason.trim()) {
@@ -344,6 +349,25 @@ function OrderTrackingPageContent() {
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
                     <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{reference}</p>
                   </div>
+
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Open event
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenDispute}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                      Open dispute
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <EscrowProtectionCard
@@ -397,14 +421,24 @@ function OrderTrackingPageContent() {
                   <p className="mt-3 text-sm leading-7 text-zinc-600">
                     This ticket uses the event page and buyer wallet instead of escrow delivery actions.
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleBack}
-                    className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Open event
-                  </button>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Open event
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleOpenDispute}
+                      className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
+                    >
+                      <ShieldAlert className="h-4 w-4" />
+                      Open dispute
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <DisputeActionsCard
@@ -414,7 +448,7 @@ function OrderTrackingPageContent() {
                   releaseCountdownText={releaseCountdownText}
                   onChangeReason={setDisputeReason}
                   onConfirmDelivery={() => void handleConfirmDelivery()}
-                  onOpenDispute={() => void handleOpenDispute()}
+                  onOpenDispute={() => void handleOpenDisputeForm()}
                 />
               )}
             </div>
