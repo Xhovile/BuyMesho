@@ -34,30 +34,32 @@ export default function EscrowProtectionCard({
 
   const headline = isSellerView
     ? state.escrowState === 'released'
-      ? 'Escrow released to payout queue'
+      ? 'Payment released to payout queue'
       : state.escrowState === 'refunded'
-        ? 'Escrow refunded — seller payout cancelled'
+        ? 'Payment refunded — seller payout cancelled'
         : state.escrowState === 'disputed'
-          ? 'Escrow under dispute review'
+          ? 'Payment under dispute review'
           : state.orderStatus === 'in_escrow' || state.escrowState === 'funded' || state.escrowState === 'held'
-            ? 'Escrow holding funds before seller payout'
+            ? 'Payment holding before seller payout'
             : state.paymentStatus === 'pending'
               ? 'Payment verification pending'
               : 'Order payout status in progress'
-    : getEscrowHeadline(state);
+    : getEscrowHeadline(state).replace(/escrow protection/gi, 'payment protection');
   const description = isSellerView
     ? state.escrowState === 'released'
-      ? 'Funds are released from escrow and automatically enter the payout queue for admin review and provider processing.'
+      ? 'Funds are released and automatically enter the payout queue for admin review and provider processing.'
       : state.escrowState === 'refunded'
         ? 'This order was refunded, so no seller payout will be sent for this payment.'
         : state.escrowState === 'disputed'
           ? 'Payout stays paused while BuyMesho resolves the dispute outcome.'
           : state.orderStatus === 'in_escrow' || state.escrowState === 'funded' || state.escrowState === 'held'
-            ? 'Funds remain protected in escrow and will move to payout only after release conditions are met.'
+            ? 'Funds remain protected and will move to payout only after release conditions are met.'
             : state.paymentStatus === 'pending'
-              ? 'Provider confirmation has not completed, so escrow and payout cannot move forward yet.'
+              ? 'Provider confirmation has not completed yet, so payout cannot move forward.'
               : 'The payout lifecycle is still being updated for this order.'
-    : getEscrowDescription(state);
+    : getEscrowDescription(state)
+        .replace(/escrow and payout/gi, 'payment and payout')
+        .replace(/escrow protection/gi, 'payment protection');
 
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
@@ -68,7 +70,7 @@ export default function EscrowProtectionCard({
 
         <div>
           <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">
-            {isSellerView ? 'BuyMesho payout release state' : 'BuyMesho escrow protection'}
+            {isSellerView ? 'BuyMesho payout release state' : 'BuyMesho payment protection'}
           </p>
 
           <h3 className="mt-1 text-lg font-black text-zinc-950">
@@ -94,7 +96,7 @@ export default function EscrowProtectionCard({
 
         <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
           <span className="text-xs font-bold uppercase tracking-wide text-zinc-500">
-            LAST ESCROW UPDATE
+            LAST PAYMENT UPDATE
           </span>
 
           <p className="mt-1 text-sm font-semibold text-zinc-900">
