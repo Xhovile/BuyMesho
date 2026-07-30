@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Trash2 } from "lucide-react";
+import { ArrowUpRight, Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
@@ -89,6 +89,10 @@ function BuyerPaymentsPageContent() {
 
   const toggleFilter = (filter: PaymentFilter) => {
     setActiveFilter((current) => (current === filter ? "all" : filter));
+  };
+
+  const openTracking = (reference: string) => {
+    navigateToOrderTracking(reference);
   };
 
   return (
@@ -189,11 +193,19 @@ function BuyerPaymentsPageContent() {
             </p>
           ) : visibleRecords.length ? (
             visibleRecords.map((record) => (
-              <button
+              <div
                 key={record.key}
-                type="button"
-                onClick={() => navigateToOrderTracking(record.reference)}
-                className="w-full rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left transition hover:border-zinc-300 hover:bg-zinc-100/40"
+                role="button"
+                tabIndex={0}
+                onClick={() => openTracking(record.reference)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openTracking(record.reference);
+                  }
+                }}
+                className="w-full cursor-pointer rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left transition hover:border-zinc-300 hover:bg-zinc-100/40"
+                aria-label={`Open tracking for ${record.title}`}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
@@ -210,7 +222,24 @@ function BuyerPaymentsPageContent() {
                   <p className="text-base font-black text-zinc-950">{formatMoney(record.amount, record.currency)}</p>
                   <p className="text-sm leading-6 text-zinc-600">{record.detail}</p>
                 </div>
-              </button>
+
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-4">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">
+                    Tap the card or use the button below to open order / ticket tracking.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      openTracking(record.reference);
+                    }}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                  >
+                    Open tracking
+                    <ArrowUpRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
             ))
           ) : (
             <p className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
