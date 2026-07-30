@@ -38,6 +38,17 @@ const PAID_ORDER_STATUSES = new Set(['paid', 'in_escrow', 'fulfilled', 'closed']
 const REJECTED_ORDER_STATUSES = new Set(['cancelled', 'refunded']);
 const PENDING_ORDER_STATUSES = new Set(['draft', 'pending_payment']);
 
+type OrderItemLike = {
+  title?: unknown;
+  name?: unknown;
+  quantity?: unknown;
+};
+
+type TitleBucket = {
+  title: string;
+  quantity: number;
+};
+
 function normalizeToken(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
 }
@@ -114,6 +125,68 @@ function getOrderActivityTimestamp(bundle: OrderBundle): string | null {
   );
 }
 
+function getItemQuantity(item: OrderItemLike): number {
+  const raw = Number(item.quantity ?? 1);
+  return Number.isFinite(raw) && raw > 0 ? raw : 1;
+}
+
+function getItemTitle(item: OrderItemLike): string {
+  const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : null;
+  if (title) return title;
+
+  const name = typeof item.name === 'string' && item.name.trim() ? item.name.trim() : null;
+  if (name) return name;
+
+  return 'Item';
+}
+
+function formatTitleBucket(bucket: TitleBucket): string {
+  return bucket.quantity > 1 ? `${bucket.title} ×${bucket.quantity}` : bucket.title;
+}
+
+function buildOrderTitle(items: OrderItemLike[] | undefined): string {
+  if (!Array.isArray(items) || items.length === 0) {
+    return 'Untitled order';
+  }
+
+  const buckets: TitleBucket[] = [];
+  const bucketByKey = new Map<string, TitleBucket>();
+
+  for (const item of items) {
+    const title = getItemTitle(item);
+    const quantity = getItemQuantity(item);
+    const key = title.trim().toLowerCase();
+    const existing = bucketByKey.get(key);
+
+    if (existing) {
+      existing.quantity += quantity;
+    } else {
+      const bucket = { title, quantity };
+      bucketByKey.set(key, bucket);
+      buckets.push(bucket);
+    }
+  }
+
+  if (buckets.length === 1) {
+    return formatTitleBucket(buckets[0]);
+  }
+
+  const first = buckets[0];
+  const second = buckets[1];
+  const remainingCount = buckets.slice(2).reduce((total, bucket) => total + bucket.quantity, 0);
+
+  if (!second) {
+    return formatTitleBucket(first);
+  }
+
+  const head = `${formatTitleBucket(first)}, ${formatTitleBucket(second)}`;
+  if (remainingCount <= 0) {
+    return head;
+  }
+
+  return `${head} +${remainingCount} more`;
+}
+
 export function summarizePayments(
   orders: OrderBundle[],
   buyerPayments: BuyerPaymentRecord[],
@@ -161,7 +234,7 @@ export function summarizePayments(
     summary.records.push({
       key: `order-${reference}`,
       reference,
-      title: bundle.order?.items?.[0]?.title ?? 'Untitled order',
+      title: buildOrderTitle(bundle.order?.items as OrderItemLike[] | undefined),
       amount,
       currency,
       status,
