@@ -1,6 +1,6 @@
 import { ChevronLeft } from "lucide-react";
 import BrandMark from "../BrandMark";
-import { EXPLORE_PATH, HOME_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
+import { EXPLORE_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
 
 export default function ListingHeaderBar() {
   return (
