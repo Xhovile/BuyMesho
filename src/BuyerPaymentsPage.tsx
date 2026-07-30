@@ -53,7 +53,7 @@ function BuyerPaymentsPageContent() {
         setOrders(Array.isArray(data) ? data : []);
       } catch (err) {
         if (!mounted) return;
-        setError(err instanceof Error ? err.message : "Failed to load buyer orders.");
+        setError(err instanceof Error ? err.message : "Failed to load purchases.");
       } finally {
         if (mounted) setLoading(false);
       }
@@ -77,7 +77,7 @@ function BuyerPaymentsPageContent() {
   }, [activeFilter, summary.records]);
 
   const handleClearLogs = () => {
-    const confirmed = window.confirm("Clear the buyer payment logs on this device? This only resets the local view.");
+    const confirmed = window.confirm("Clear the purchase logs on this device? This only resets the local view.");
     if (!confirmed) return;
 
     clearBuyerPaymentRecords();
@@ -91,18 +91,16 @@ function BuyerPaymentsPageContent() {
     setActiveFilter((current) => (current === filter ? "all" : filter));
   };
 
-  const currentSortLabel = activeFilter === "all" ? "All" : activeFilter;
-
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <MarketHeaderBar subtitle="Buyer wallet" />
+      <MarketHeaderBar subtitle="Purchases" />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Buyer wallet</p>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Purchases</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-              Payment activity
+              Purchase activity
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
               Review payment records, open the order trail, and track payment outcomes from one screen.
@@ -121,8 +119,8 @@ function BuyerPaymentsPageContent() {
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Payment feed</p>
-            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">Your payment records</h2>
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Purchase feed</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">Your purchase records</h2>
           </div>
           <p className="text-sm text-zinc-500">
             Showing <span className="font-bold text-zinc-800">{summary.records.length ? visibleRecords.length : 0}</span> of <span className="font-bold text-zinc-800">{summary.records.length}</span>
@@ -187,7 +185,7 @@ function BuyerPaymentsPageContent() {
         <div className="mt-8 space-y-3">
           {loading ? (
             <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
-              Loading payment activity…
+              Loading purchase activity…
             </p>
           ) : visibleRecords.length ? (
             visibleRecords.map((record) => (
@@ -216,7 +214,7 @@ function BuyerPaymentsPageContent() {
             ))
           ) : (
             <p className="rounded-2xl border border-dashed border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
-              No buyer payments have been recorded yet.
+              No purchases have been recorded yet.
             </p>
           )}
         </div>
