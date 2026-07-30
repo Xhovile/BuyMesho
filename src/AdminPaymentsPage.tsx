@@ -301,7 +301,7 @@ export default function AdminPaymentsPage() {
           note: latestPayment.order_status || "pending_payment",
         },
         {
-          label: "Escrow active",
+          label: "Funds held",
           active: ["initiated", "active", "released", "refunded", "disputed"].includes(
             latestPayment.escrow_state || ""
           ),
@@ -351,8 +351,11 @@ export default function AdminPaymentsPage() {
     }
   };
 
-  const normalizeStatusLabel = (value: string | null | undefined): string =>
-    value ? value.replace(/_/g, " ") : "—";
+  const normalizeStatusLabel = (value: string | null | undefined): string => {
+  if (!value) return "—";
+  const label = value.replace(/_/g, " ");
+  return label.replace(/\bescrow\b/gi, "settlement");
+};
 
   const sortedPayments = useMemo(() => sortPayments(payments, paymentSortMode), [payments, paymentSortMode]);
   const sortedWebhookEvents = useMemo(
@@ -635,7 +638,7 @@ export default function AdminPaymentsPage() {
                       <th className="p-4 text-left">Reference</th>
                       <th className="p-4 text-left">Payment</th>
                       <th className="p-4 text-left">Order</th>
-                      <th className="p-4 text-left">Escrow</th>
+                      <th className="p-4 text-left">Settlement</th>
                       <th className="p-4 text-left">Amount</th>
                       <th className="p-4 text-left">Updated</th>
                     </tr>
@@ -679,10 +682,10 @@ export default function AdminPaymentsPage() {
                             tone={escrowTone(payment.escrow_state)}
                           />
                           <div className="mt-2 text-xs text-zinc-500">
-                            {payment.escrow_id || "No escrow yet"}
+                            {payment.escrow_id || "No settlement yet"}
                           </div>
                           <div className="mt-1 text-[11px] text-zinc-400">
-                            Escrow updated: {formatDate(payment.escrow_updated_at)}
+                            Settlement updated: {formatDate(payment.escrow_updated_at)}
                           </div>
                         </td>
                         <td className="p-4">
@@ -783,11 +786,11 @@ export default function AdminPaymentsPage() {
               <p className="text-sm leading-relaxed text-zinc-600">
                 Pending means the payment has been created, but the webhook or verification step has
                 not completed yet. Once confirmed, the order should move through paid and into
-                escrow, and later to released or refunded. This page is the admin view only.
+                the holding phase, and later to released or refunded. This page is the admin view only.
               </p>
               <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
                 <CircleAlert className="h-3.5 w-3.5" />
-                Escrow control should stay in the order flow, not the admin page.
+                Settlement control should stay in the order flow, not the admin page.
               </p>
             </div>
           </div>
