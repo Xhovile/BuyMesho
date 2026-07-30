@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowLeft, FileText, MessageSquare, ShieldAlert } from "lucide-react";
 import { navigateBackOrPath, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
 import { fetchOrderById, openOrderDispute, type OrderBundle } from "./lib/orderApi";
+import { resolveOrderIdentifier } from "./lib/orderIdentifier";
 
 export default function OrderDisputePage() {
   const [bundle, setBundle] = useState<OrderBundle | null>(null);
@@ -22,7 +23,8 @@ export default function OrderDisputePage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchOrderById(orderParam ?? "");
+        const resolved = await resolveOrderIdentifier(orderParam ?? "");
+        const data = await fetchOrderById(resolved);
         setBundle(data);
       } catch (err) {
         setBundle(null);
