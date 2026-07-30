@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { ShieldAlert } from "lucide-react";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { PAYMENTS_HUB_PATH, navigateToOrderDispute } from "./lib/appNavigation";
+import { resolveOrderIdentifier } from "./lib/orderIdentifier";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function DisputesPage() {
@@ -12,12 +13,24 @@ export default function DisputesPage() {
 
 function DisputesPageContent() {
   const [reference, setReference] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const value = reference.trim();
     if (!value) return;
-    navigateToOrderDispute(value);
+
+    try {
+      setLoading(true);
+      setError(null);
+      const resolved = await resolveOrderIdentifier(value);
+      navigateToOrderDispute(resolved);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resolve the reference.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -35,7 +48,7 @@ function DisputesPageContent() {
               Open a dispute
             </h1>
             <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
-              Enter the order or payment reference related to the issue.
+              Enter the order reference, order ID, or ticket code related to the issue.
             </p>
           </div>
         </div>
@@ -45,16 +58,18 @@ function DisputesPageContent() {
             <input
               value={reference}
               onChange={(event) => setReference(event.target.value)}
-              placeholder="Enter order or payment reference"
+              placeholder="Enter order reference, order ID, or ticket code"
               className="w-full rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none focus:ring-2 focus:ring-zinc-900"
             />
             <button
               type="submit"
-              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800"
+              disabled={loading}
+              className="inline-flex items-center justify-center rounded-2xl bg-zinc-900 px-5 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              Open dispute
+              {loading ? "Resolving…" : "Open dispute"}
             </button>
           </div>
+          {error ? <p className="mt-3 text-sm text-red-700">{error}</p> : null}
         </form>
       </div>
     </div>
