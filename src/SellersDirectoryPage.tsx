@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
 
+import BrandMark from "./components/BrandMark";
 import { apiFetch } from "./lib/api";
 import {
   EXPLORE_PATH,
@@ -234,22 +235,7 @@ export default function SellersDirectoryPage() {
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex min-w-0 items-center gap-2.5"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-900 text-xl font-extrabold text-white shadow-lg shadow-red-900/20">
-              B
-            </div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Sellers</p>
-            </div>
-          </button>
+          <BrandMark subtitle="sellers" />
 
           <button
             type="button"
@@ -329,38 +315,16 @@ export default function SellersDirectoryPage() {
                         </div>
                       )}
                     </div>
-
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <p className="truncate text-base font-black tracking-tight text-zinc-900">
-                          {card.sellerName}
-                        </p>
-                        {card.isVerified ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-1 text-[11px] font-black text-blue-700">
-                            <ShieldCheck className="h-3 w-3" />
-                            Verified
-                          </span>
-                        ) : null}
+                        <h3 className="truncate text-lg font-black tracking-tight text-zinc-900">{card.sellerName}</h3>
+                        {card.isVerified ? <ShieldCheck className="h-4 w-4 text-emerald-600" /> : null}
                       </div>
-                      <p className="mt-1 text-xs font-bold text-zinc-500">Joined {formatDate(card.joinedAt)}</p>
+                      <div className="mt-1 flex items-center gap-2 text-xs font-medium text-zinc-500">
+                        <RatingStars rating={card.rating} />
+                        <span>({card.ratingCount})</span>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
-                <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-zinc-600">
-                  {card.description || "—"}
-                </p>
-
-                <div className="mt-5 flex items-end justify-between border-t border-zinc-100 pt-4">
-                  <span className="text-xs font-bold text-zinc-500">
-                    {card.listingCount} listing{card.listingCount === 1 ? "" : "s"}
-                  </span>
-
-                  <div className="inline-flex flex-col items-end gap-1 text-right text-xs font-black text-amber-700">
-                    <RatingStars rating={card.rating} />
-                    <span>
-                      {card.rating.toFixed(1)} ({card.ratingCount})
-                    </span>
                   </div>
                 </div>
               </button>
