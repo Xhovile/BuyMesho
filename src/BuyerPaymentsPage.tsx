@@ -3,7 +3,7 @@ import { Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
-import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
+import { navigateToOrderTracking } from "./lib/appNavigation";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
