@@ -3,7 +3,7 @@ import { Ticket, Users, Clock3, CheckCircle2, AlertCircle } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
-import { navigateBackOrPath, navigateToOrderTracking, PAYMENTS_HUB_PATH } from "./lib/appNavigation";
+import { navigateToOrderTracking } from "./lib/appNavigation";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
@@ -133,15 +133,12 @@ function TicketsPageContent() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const paidTickets = counts.paid;
-  const pendingTickets = counts.pending;
-
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
       <MarketHeaderBar subtitle="Buyer wallet" />
 
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tickets</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
@@ -151,14 +148,6 @@ function TicketsPageContent() {
               Keep event passes separate from wallet activity. Each ticket here can be downloaded as a PDF, shared on WhatsApp, and opened from the order trail.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => navigateBackOrPath(PAYMENTS_HUB_PATH)}
-            className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50 sm:inline-flex"
-          >
-            Payments page
-          </button>
         </div>
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
