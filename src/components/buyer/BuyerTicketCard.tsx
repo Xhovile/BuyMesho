@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronRight, Clock3, MapPin, Ticket } from "lucide-react";
+import { CalendarDays, ChevronRight, Clock3, Download, MapPin, Share2, Ticket } from "lucide-react";
 
 import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
@@ -17,9 +17,11 @@ function displayValue(value: string) {
 type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onOpenOrder: () => void;
+  onDownloadPdf: () => void;
+  onShareWhatsApp: () => void;
 };
 
-export default function BuyerTicketCard({ ticket, onOpenOrder }: BuyerTicketCardProps) {
+export default function BuyerTicketCard({ ticket, onOpenOrder, onDownloadPdf, onShareWhatsApp }: BuyerTicketCardProps) {
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
@@ -75,10 +77,26 @@ export default function BuyerTicketCard({ ticket, onOpenOrder }: BuyerTicketCard
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={onDownloadPdf}
+            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+          >
+            <Download className="h-4 w-4" />
+            PDF ticket
+          </button>
+          <button
+            type="button"
+            onClick={onShareWhatsApp}
+            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100"
+          >
+            <Share2 className="h-4 w-4" />
+            WhatsApp
+          </button>
+          <button
+            type="button"
             onClick={onOpenOrder}
             className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
           >
-            Open ticket
+            Open order
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
