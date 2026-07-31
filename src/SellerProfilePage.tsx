@@ -11,6 +11,7 @@ import {
   navigateBackOrPath,
 } from "./lib/appNavigation";
 import FloatingCartButton from "./components/FloatingCartButton";
+import AppFooter from "./components/AppFooter";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 
@@ -246,31 +247,12 @@ export default function SellerProfilePage() {
   }, []);
 
   useEffect(() => {
-    if (!sellerUid) {
-      setLoading(false);
-      setProfile(null);
-      setListings([]);
-      setRatingSummary(null);
-      return;
-    }
-
-    const cached = readPersistentPageCache<SellerProfileCacheEntry>(
-      getSellerProfileCacheKey(sellerUid),
-      SELLER_PROFILE_CACHE_TTL_MS
-    );
-
-    if (cached) {
-      setProfile(cached.profile);
-      setListings(cached.listings);
-      setRatingSummary(cached.ratingSummary);
-      setLoading(false);
-      setRatingLoading(false);
-      return;
-    }
-
-    let mounted = true;
-
     const loadSeller = async () => {
+      if (!sellerUid) {
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const [profileResult, listingsResult, ratingResult] = await Promise.allSettled([
@@ -280,13 +262,13 @@ export default function SellerProfilePage() {
         ]);
 
         const loadedProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
-        const loadedListings =
+        setProfile(loadedProfile);
+        setListings(
           listingsResult.status === "fulfilled" && Array.isArray(listingsResult.value)
             ? listingsResult.value
-            : [];
-        const loadedRatingSummary = ratingResult.status === "fulfilled" ? ratingResult.value : null;
-
-        let nextProfile = loadedProfile;
+            : []
+        );
+        setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
 
         if (loadedProfile) {
           const viewTrackResult = await trackSellerProfileView(sellerUid, firebaseUser?.uid ?? null).catch(
@@ -294,41 +276,27 @@ export default function SellerProfilePage() {
           );
 
           if (viewTrackResult && !viewTrackResult.skipped) {
-            nextProfile = {
-              ...loadedProfile,
-              profile_views: (loadedProfile.profile_views ?? 0) + 1,
-            };
+            setProfile((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    profile_views: (prev.profile_views ?? 0) + 1,
+                  }
+                : prev
+            );
           }
-        }
-
-        if (!mounted) return;
-        setProfile(nextProfile);
-        setListings(loadedListings);
-        setRatingSummary(loadedRatingSummary);
-
-        if (nextProfile) {
-          writePersistentPageCache<SellerProfileCacheEntry>(getSellerProfileCacheKey(sellerUid), {
-            profile: nextProfile,
-            listings: loadedListings,
-            ratingSummary: loadedRatingSummary,
-          });
         }
       } catch (error) {
         console.error("Failed to load seller profile page", error);
-        if (!mounted) return;
         setProfile(null);
         setListings([]);
         setRatingSummary(null);
       } finally {
-        if (mounted) setLoading(false);
+        setLoading(false);
       }
     };
 
     void loadSeller();
-
-    return () => {
-      mounted = false;
-    };
   }, [sellerUid, firebaseUser?.uid]);
 
   const refreshRatingSummary = async () => {
@@ -337,19 +305,16 @@ export default function SellerProfilePage() {
     try {
       const summary = await fetchSellerRatingSummary(sellerUid);
       setRatingSummary(summary);
-      if (profile) {
-        writePersistentPageCache<SellerProfileCacheEntry>(getSellerProfileCacheKey(sellerUid), {
-          profile,
-          listings,
-          ratingSummary: summary,
-        });
-      }
     } catch (error) {
       console.error("Failed to load rating summary", error);
     } finally {
       setRatingLoading(false);
     }
   };
+
+  useEffect(() => {
+    void refreshRatingSummary();
+  }, [sellerUid, firebaseUser?.uid]);
 
   const filteredListings = useMemo(() => {
     const term = listingSearch.trim().toLowerCase();
@@ -550,6 +515,8 @@ export default function SellerProfilePage() {
           </>
         )}
       </main>
+
+      <AppFooter />
     </div>
   );
 }
