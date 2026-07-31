@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 
 import AppFooter from "./components/AppFooter";
 import FloatingCartButton from "./components/FloatingCartButton";
 import Header from "./components/Header";
+import ScrollToTopFab from "./components/ScrollToTopFab";
 import EventDetailsPage from "./EventDetailsPage";
 import EventsCreatePage from "./EventsCreatePage";
 import EventsDirectoryPage from "./EventsDirectoryPage";
@@ -27,12 +28,8 @@ function ComingSoonBody({ title }: { title: string }) {
             <Sparkles className="h-8 w-8" />
           </div>
 
-          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-700">
-            BuyMesho
-          </p>
-          <h1 className="mt-3 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
-            {title}
-          </h1>
+          <p className="mt-6 text-[11px] font-black uppercase tracking-[0.28em] text-emerald-700">BuyMesho</p>
+          <h1 className="mt-3 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">{title}</h1>
           <p className="mt-4 text-base leading-relaxed text-zinc-600 sm:text-lg">
             This section is not wired yet. It will open once the separate logic and data flow are ready.
           </p>
@@ -48,6 +45,14 @@ export default function MarketComingSoonPage() {
   const { user: firebaseUser } = useAuthUser();
   const { profile: userProfile } = useAccountProfile();
   const [searchTerm, setSearchTerm] = useState("");
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  useEffect(() => {
+    const update = () => setShowBackToTop(window.scrollY > 300);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, []);
 
   if (pathname === EVENTS_PATH) {
     const params = new URLSearchParams(window.location.search);
@@ -59,26 +64,6 @@ export default function MarketComingSoonPage() {
 
   if (pathname === EVENTS_CREATE_PATH) {
     return <EventsCreatePage />;
-  }
-
-  if (pathname === "/explore/lay-by" || pathname === "/explore/accommodation" || pathname === "/explore/innovation") {
-    return (
-      <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900 pb-20">
-        <FloatingCartButton isLoggedIn={!!firebaseUser} />
-        <Header
-          searchValue={searchTerm}
-          onSearch={setSearchTerm}
-          onAddListing={navigateToCreateListing}
-          onProfileClick={() => navigateToPath("/profile")}
-          userProfile={userProfile}
-          firebaseUser={firebaseUser}
-          activeChip={chip}
-          onChipChange={navigateToMarketChip}
-        />
-        <ComingSoonBody title={getComingSoonTitle(pathname)} />
-        <AppFooter />
-      </div>
-    );
   }
 
   return (
@@ -94,8 +79,9 @@ export default function MarketComingSoonPage() {
         activeChip={chip}
         onChipChange={navigateToMarketChip}
       />
-      <ComingSoonBody title="Coming soon" />
+      <ComingSoonBody title={getComingSoonTitle(pathname)} />
       <AppFooter />
+      <ScrollToTopFab show={showBackToTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
     </div>
   );
 }
