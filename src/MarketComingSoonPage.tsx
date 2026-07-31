@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Sparkles } from "lucide-react";
 
 import AppFooter from "./components/AppFooter";
@@ -43,7 +44,7 @@ function ComingSoonBody({ title }: { title: string }) {
 
 export default function MarketComingSoonPage() {
   const pathname = typeof window === "undefined" ? EXPLORE_PATH : window.location.pathname;
-  const chip = getMarketChipFromLocation(typeof window === "undefined" ? { pathname: EXPLORE_PATH, search: "" } : window.location);
+  const chip = typeof window === "undefined" ? "All" : getMarketChipFromLocation(window.location);
   const { user: firebaseUser } = useAuthUser();
   const { profile: userProfile } = useAccountProfile();
   const [searchTerm, setSearchTerm] = useState("");
