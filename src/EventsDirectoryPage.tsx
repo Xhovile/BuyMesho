@@ -21,10 +21,17 @@ import {
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { apiFetch } from "./lib/api";
+import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 
 const EVENTS_API_URL = "/api/events";
 const EVENT_CREATOR_ACCESS_URL = "/api/event-creators/me";
 const SHARED_API_CACHE_PREFIX = "__buymesho_api_cache_v2:";
+const EVENT_CREATOR_ACCESS_CACHE_PREFIX = "__buymesho_event_creator_access_v1:";
+const EVENT_CREATOR_ACCESS_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
+
+type EventCreatorAccessCacheEntry = {
+  canCreateEvents: boolean;
+};
 
 function matchesSearch(item: EventRecord, query: string) {
   const normalized = query.trim().toLowerCase();
@@ -40,6 +47,10 @@ function matchesSearch(item: EventRecord, query: string) {
 
 function getCacheKey(url: string) {
   return `${SHARED_API_CACHE_PREFIX}${url}`;
+}
+
+function getCreatorAccessCacheKey(uid: string) {
+  return `${EVENT_CREATOR_ACCESS_CACHE_PREFIX}${uid}`;
 }
 
 function writeCachedApiJson(url: string, body: unknown, response: Response) {
@@ -168,7 +179,7 @@ export default function EventsDirectoryPage() {
   const [selectedCategory, setSelectedCategory] = useState("All categories");
   const [viewAll, setViewAll] = useState(false);
   const [canCreateEvents, setCanCreateEvents] = useState(false);
-  const [creatorAccessLoading, setCreatorAccessLoading] = useState(true);
+  const [creatorAccessLoading, setCreatorAccessLoading] = useState(false);
   const [heroImageLoaded, setHeroImageLoaded] = useState(false);
 
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
@@ -231,27 +242,41 @@ export default function EventsDirectoryPage() {
   useEffect(() => {
     if (authLoading) return;
 
-    let active = true;
-    async function loadCreatorAccess() {
-      if (!firebaseUser) {
-        if (!active) return;
-        setCanCreateEvents(false);
-        setCreatorAccessLoading(false);
-        return;
-      }
+    if (!firebaseUser) {
+      setCanCreateEvents(false);
+      setCreatorAccessLoading(false);
+      return;
+    }
 
+    const cacheKey = getCreatorAccessCacheKey(firebaseUser.uid);
+    const cachedAccess = readPersistentPageCache<EventCreatorAccessCacheEntry>(
+      cacheKey,
+      EVENT_CREATOR_ACCESS_CACHE_TTL_MS
+    );
+
+    if (cachedAccess !== null) {
+      setCanCreateEvents(cachedAccess.canCreateEvents);
+      setCreatorAccessLoading(false);
+      return;
+    }
+
+    let active = true;
+
+    const loadCreatorAccess = async () => {
       try {
         setCreatorAccessLoading(true);
         const data = (await apiFetch(EVENT_CREATOR_ACCESS_URL)) as { canCreateEvents?: boolean };
+        const resolved = data?.canCreateEvents === true;
         if (!active) return;
-        setCanCreateEvents(data?.canCreateEvents === true);
+        setCanCreateEvents(resolved);
+        writePersistentPageCache<EventCreatorAccessCacheEntry>(cacheKey, { canCreateEvents: resolved });
       } catch {
         if (!active) return;
         setCanCreateEvents(false);
       } finally {
         if (active) setCreatorAccessLoading(false);
       }
-    }
+    };
 
     void loadCreatorAccess();
     return () => {
