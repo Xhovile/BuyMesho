@@ -30,10 +30,6 @@ const BRAND_LIGHT: PdfColor = { r: 244, g: 244, b: 245 };
 const BRAND_ZINC: PdfColor = { r: 63, g: 63, b: 70 };
 const BRAND_MUTED: PdfColor = { r: 161, g: 161, b: 170 };
 
-function escapePdfText(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
-}
-
 function encodeUtf8(input: string) {
   return new TextEncoder().encode(input);
 }
@@ -73,6 +69,10 @@ function mixColors(a: PdfColor, b: PdfColor, ratio: number): PdfColor {
   };
 }
 
+function escapePdfText(value: string) {
+  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+}
+
 function hashString(value: string) {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index += 1) {
@@ -107,13 +107,69 @@ function addText(commands: string[], x: number, y: number, size: number, text: s
   commands.push("ET");
 }
 
-function addCenteredText(commands: string[], xCenter: number, y: number, size: number, text: string, color: PdfColor) {
-  commands.push("BT");
-  commands.push(`${rgb(color)} rg`);
-  commands.push(`/F1 ${size} Tf`);
-  commands.push(`1 0 0 1 ${xCenter.toFixed(2)} ${y.toFixed(2)} Tm`);
-  commands.push(`(${escapePdfText(text)}) Tj`);
-  commands.push("ET");
+function estimateTextWidth(text: string, size: number) {
+  return text.length * size * 0.52;
+}
+
+function wrapPdfText(text: string, size: number, maxWidth: number) {
+  const value = text.trim();
+  if (!value) return ["—"];
+
+  const words = value.split(/\s+/);
+  const lines: string[] = [];
+  let current = "";
+
+  const pushCurrent = () => {
+    if (current) {
+      lines.push(current);
+      current = "";
+    }
+  };
+
+  words.forEach((word) => {
+    const candidate = current ? `${current} ${word}` : word;
+    if (estimateTextWidth(candidate, size) <= maxWidth) {
+      current = candidate;
+      return;
+    }
+
+    if (current) pushCurrent();
+
+    if (estimateTextWidth(word, size) <= maxWidth) {
+      current = word;
+      return;
+    }
+
+    let fragment = "";
+    for (const character of word) {
+      const next = `${fragment}${character}`;
+      if (estimateTextWidth(next, size) <= maxWidth) {
+        fragment = next;
+        continue;
+      }
+      if (fragment) lines.push(fragment);
+      fragment = character;
+    }
+    current = fragment;
+  });
+
+  pushCurrent();
+  return lines.length ? lines : [value];
+}
+
+function addWrappedText(
+  commands: string[],
+  x: number,
+  y: number,
+  size: number,
+  text: string,
+  color: PdfColor,
+  maxWidth: number,
+  lineGap = size + 2,
+) {
+  const lines = wrapPdfText(text, size, maxWidth);
+  lines.forEach((line, index) => addText(commands, x, y - index * lineGap, size, line, color));
+  return y - lines.length * lineGap;
 }
 
 function addBrandWordmark(commands: string[], x: number, y: number, size: number, brandName: string) {
@@ -124,6 +180,26 @@ function addBrandWordmark(commands: string[], x: number, y: number, size: number
   }
 
   addText(commands, x, y, size, brandName, BRAND_RED);
+}
+
+function addFieldBlock(
+  commands: string[],
+  x: number,
+  y: number,
+  label: string,
+  value: string,
+  width: number,
+  options?: { labelSize?: number; valueSize?: number; valueColor?: PdfColor },
+) {
+  const labelSize = options?.labelSize ?? 8.2;
+  const valueSize = options?.valueSize ?? 11.6;
+  const valueColor = options?.valueColor ?? BRAND_CHARCOAL;
+  const maxWidth = width;
+
+  addText(commands, x, y, labelSize, label.toUpperCase(), BRAND_MID);
+  const valueTop = y - 14;
+  const usedBottom = addWrappedText(commands, x, valueTop, valueSize, value, valueColor, maxWidth, valueSize + 1.8);
+  return usedBottom - 10;
 }
 
 function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
@@ -196,7 +272,7 @@ function loadImageElement(src: string) {
 async function embedLogoAsJpeg(): Promise<EmbeddedImage> {
   const image = await loadImageElement(Logo);
   const canvas = document.createElement("canvas");
-  const targetWidth = 96;
+  const targetWidth = 112;
   const targetHeight = Math.max(1, Math.round((image.height / image.width) * targetWidth));
 
   canvas.width = targetWidth;
@@ -241,47 +317,58 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   const commands: string[] = [];
 
   addRect(commands, 0, 0, 595, 842, BRAND_LIGHT);
-  addRect(commands, 0, 690, 595, 152, BRAND_CHARCOAL);
-  addRect(commands, 0, 678, 595, 12, BRAND_RED);
+  addRect(commands, 0, 686, 595, 156, BRAND_CHARCOAL);
+  addRect(commands, 0, 674, 595, 12, BRAND_RED);
 
+  const logoWidth = 46;
+  const logoHeight = Math.max(18, Math.round((logo.width ? logo.height / logo.width : 1) * logoWidth));
   commands.push("q");
-  commands.push(`${44} 0 0 ${44} 34 734 cm`);
+  commands.push(`${logoWidth.toFixed(2)} 0 0 ${logoHeight.toFixed(2)} 34 ${730 + Math.max(0, Math.floor((46 - logoHeight) / 2))} cm`);
   commands.push("/Im0 Do");
   commands.push("Q");
 
-  addBrandWordmark(commands, 86, 776, 24, brandName);
-  addText(commands, 86, 752, 11, brandTagline, BRAND_MUTED);
+  addBrandWordmark(commands, 90, 782, 24, brandName);
+  addText(commands, 90, 758, 11, brandTagline, BRAND_MUTED);
 
-  addText(commands, 34, 648, 26, title, BRAND_CHARCOAL);
-  addText(commands, 34, 626, 12, "Ticket information", BRAND_MID);
+  addText(commands, 34, 644, 27, title, BRAND_CHARCOAL);
+  addText(commands, 34, 622, 12, "Ticket information", BRAND_MID);
 
-  addRect(commands, 34, 566, 260, 42, { r: 255, g: 255, b: 255 });
-  addRect(commands, 34, 566, 260, 42, BRAND_RED);
-  addText(commands, 48, 592, 11, `Ticket code: ${ticketCode}`, { r: 255, g: 255, b: 255 });
+  addRect(commands, 34, 568, 270, 42, { r: 255, g: 255, b: 255 });
+  addRect(commands, 34, 568, 270, 42, BRAND_RED);
+  addText(commands, 48, 594, 11, `Ticket code: ${ticketCode}`, { r: 255, g: 255, b: 255 });
 
-  const detailTop = 546;
-  const lineGap = 32;
-  let currentY = detailTop;
+  const leftColumnX = 34;
+  const rightColumnX = 304;
+  const leftWidth = 246;
+  const rightWidth = 254;
 
-  lines.forEach((line) => {
-    const label = line.label.trim();
-    const value = line.value.trim();
-    addText(commands, 34, currentY, 9, label.toUpperCase(), BRAND_MID);
-    addText(commands, 34, currentY - 14, 12, value || "—", BRAND_CHARCOAL);
-    currentY -= lineGap;
-  });
+  let leftY = 542;
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Event", lines[0]?.value || "—", leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Organizer", lines[1]?.value || "Event organizer", leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Date", lines[5]?.value || "—", leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Time", lines[6]?.value || "—", leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Status", lines[8]?.value || "—", leftWidth);
 
-  addRect(commands, 338, 540, 223, 240, { r: 255, g: 255, b: 255 });
-  addRect(commands, 338, 540, 223, 240, { r: 232, g: 232, b: 235 });
-  addText(commands, 356, 756, 11, "Scan at entry", BRAND_MID);
-  addText(commands, 356, 736, 20, "QR Code", BRAND_CHARCOAL);
+  let rightY = 542;
+  rightY = addFieldBlock(commands, rightColumnX, rightY, "Reference", lines[3]?.value || "—", rightWidth, { valueSize: 10.8 });
+  rightY = addFieldBlock(commands, rightColumnX, rightY, "Holder", lines[4]?.value || "Verified buyer account", rightWidth, { valueSize: 11.2 });
+  rightY = addFieldBlock(commands, rightColumnX, rightY, "Venue", lines[7]?.value || "—", rightWidth, { valueSize: 11.2 });
+  rightY = addFieldBlock(commands, rightColumnX, rightY, "Amount", lines[9]?.value || "—", rightWidth, { valueSize: 11.6 });
+  void leftY;
+  void rightY;
 
-  commands.push(...drawTicketCodeMatrix(ticketCode, 355, 586, 160));
+  addRect(commands, 336, 528, 224, 246, { r: 255, g: 255, b: 255 });
+  addRect(commands, 336, 528, 224, 246, { r: 236, g: 236, b: 239 });
+  addText(commands, 354, 756, 11, "Scan at entry", BRAND_MID);
+  addText(commands, 354, 736, 20, "QR Code", BRAND_CHARCOAL);
 
-  addText(commands, 356, 566, 10, ticketCode, BRAND_CHARCOAL);
-  addText(commands, 34, 90, 10, "Keep this ticket and code available for verification.", BRAND_MID);
-  addRect(commands, 34, 50, 527, 1.5, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addBrandWordmark(commands, 34, 30, 9, brandName);
+  commands.push(...drawTicketCodeMatrix(ticketCode, 352, 588, 160));
+
+  addText(commands, 354, 568, 10, ticketCode, BRAND_CHARCOAL);
+  addText(commands, 34, 118, 10, "Keep this ticket and code available for verification.", BRAND_MID);
+  addRect(commands, 34, 86, 527, 1.4, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
+  addBrandWordmark(commands, 34, 58, 9, brandName);
+  addText(commands, 34, 44, 8.5, "Verified event access", BRAND_MUTED);
 
   const contentStream = commands.join("\n");
   const contentBytes = encodeUtf8(contentStream);
