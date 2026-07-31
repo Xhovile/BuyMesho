@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 import { QUICK_CHIPS, type HeaderChip } from "../../constants";
 
@@ -11,22 +11,46 @@ type HeaderChipsProps = {
 
 export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const restoreRafRef = useRef<number | null>(null);
 
-  useEffect(() => {
+  const persistScrollPosition = () => {
     const el = scrollRef.current;
     if (!el) return;
 
     try {
-      const stored = window.sessionStorage.getItem(CHIP_SCROLL_STORAGE_KEY);
-      if (stored !== null) {
+      window.sessionStorage.setItem(CHIP_SCROLL_STORAGE_KEY, String(el.scrollLeft));
+    } catch {
+      // Ignore storage failures.
+    }
+  };
+
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const restore = () => {
+      try {
+        const stored = window.sessionStorage.getItem(CHIP_SCROLL_STORAGE_KEY);
+        if (stored === null) return;
+
         const next = Number(stored);
         if (Number.isFinite(next) && next >= 0) {
           el.scrollLeft = next;
         }
+      } catch {
+        // Ignore storage failures and keep the current viewport position.
       }
-    } catch {
-      // Ignore storage failures and keep the current viewport position.
-    }
+    };
+
+    restore();
+    restoreRafRef.current = window.requestAnimationFrame(restore);
+
+    return () => {
+      if (restoreRafRef.current !== null) {
+        window.cancelAnimationFrame(restoreRafRef.current);
+        restoreRafRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -34,21 +58,13 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
     if (!el) return;
 
     const handleScroll = () => {
-      try {
-        window.sessionStorage.setItem(CHIP_SCROLL_STORAGE_KEY, String(el.scrollLeft));
-      } catch {
-        // Ignore storage failures.
-      }
+      persistScrollPosition();
     };
 
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       el.removeEventListener("scroll", handleScroll);
-      try {
-        window.sessionStorage.setItem(CHIP_SCROLL_STORAGE_KEY, String(el.scrollLeft));
-      } catch {
-        // Ignore storage failures.
-      }
+      persistScrollPosition();
     };
   }, []);
 
@@ -66,7 +82,11 @@ export default function HeaderChips({ selectedChip, onChipChange }: HeaderChipsP
                 <button
                   key={chip}
                   type="button"
-                  onClick={() => onChipChange?.(chip)}
+                  onPointerDown={persistScrollPosition}
+                  onClick={() => {
+                    persistScrollPosition();
+                    onChipChange?.(chip);
+                  }}
                   className={`inline-flex items-center whitespace-nowrap border-b-2 px-0 py-0.5 text-base font-bold font-sans leading-none transition-all ${
                     isActive
                       ? "border-red-900 text-red-900 drop-shadow-[0_0_6px_rgba(127,29,29,0.35)]"
