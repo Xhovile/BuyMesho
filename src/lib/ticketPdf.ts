@@ -19,6 +19,8 @@ const BRAND_RED: PdfColor = { r: 175, g: 25, b: 42 };
 const BRAND_CHARCOAL: PdfColor = { r: 24, g: 24, b: 27 };
 const BRAND_MID: PdfColor = { r: 84, g: 84, b: 99 };
 const BRAND_LIGHT: PdfColor = { r: 244, g: 244, b: 245 };
+const BRAND_PANEL: PdfColor = { r: 255, g: 255, b: 255 };
+const BRAND_BORDER: PdfColor = { r: 228, g: 228, b: 231 };
 
 function escapePdfText(value: string) {
   return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
@@ -83,13 +85,18 @@ function addText(commands: string[], x: number, y: number, size: number, text: s
   commands.push("ET");
 }
 
-function addCenteredText(commands: string[], xCenter: number, y: number, size: number, text: string, color: PdfColor) {
-  commands.push("BT");
-  commands.push(`${rgb(color)} rg`);
-  commands.push(`/F1 ${size} Tf`);
-  commands.push(`1 0 0 1 ${xCenter.toFixed(2)} ${y.toFixed(2)} Tm`);
-  commands.push(`(${escapePdfText(text)}) Tj`);
-  commands.push("ET");
+function drawWordmark(commands: string[], x: number, y: number, darkBackground: boolean) {
+  const badgeColor = BRAND_RED;
+  const buyColor = BRAND_RED;
+  const meshoColor = darkBackground ? { r: 235, g: 235, b: 240 } : BRAND_CHARCOAL;
+  const subColor = darkBackground ? { r: 220, g: 220, b: 225 } : BRAND_MID;
+
+  addRect(commands, x, y, 232, 54, darkBackground ? BRAND_PANEL : { r: 255, g: 255, b: 255 });
+  addRect(commands, x + 10, y + 10, 34, 34, badgeColor);
+  addText(commands, x + 15, y + 31, 12, "BM", { r: 255, g: 255, b: 255 });
+  addText(commands, x + 54, y + 34, 17, "Buy", buyColor);
+  addText(commands, x + 92, y + 34, 17, "Mesho", meshoColor);
+  addText(commands, x + 54, y + 17, 7.5, "Official event ticket", subColor);
 }
 
 function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
@@ -160,14 +167,11 @@ function createPdfBytes(title: string, lines: PdfTicketLine[], options: TicketPd
   addRect(commands, 0, 0, 595, 842, BRAND_LIGHT);
   addRect(commands, 0, 690, 595, 152, BRAND_CHARCOAL);
   addRect(commands, 0, 678, 595, 12, BRAND_RED);
-  addRect(commands, 34, 728, 68, 68, BRAND_RED);
-  addCenteredText(commands, 68, 764, 18, "BM", { r: 255, g: 255, b: 255 });
-  addText(commands, 118, 790, 24, brandName, { r: 255, g: 255, b: 255 });
-  addText(commands, 118, 768, 11, brandTagline, { r: 220, g: 220, b: 225 });
+
+  drawWordmark(commands, 26, 735, true);
   addText(commands, 34, 648, 26, title, BRAND_CHARCOAL);
   addText(commands, 34, 626, 12, "Ticket information", BRAND_MID);
 
-  addRect(commands, 34, 566, 260, 42, { r: 255, g: 255, b: 255 });
   addRect(commands, 34, 566, 260, 42, BRAND_RED);
   addText(commands, 48, 592, 11, `Ticket code: ${ticketCode}`, { r: 255, g: 255, b: 255 });
 
@@ -183,8 +187,8 @@ function createPdfBytes(title: string, lines: PdfTicketLine[], options: TicketPd
     currentY -= lineGap;
   });
 
-  addRect(commands, 338, 540, 223, 240, { r: 255, g: 255, b: 255 });
-  addRect(commands, 338, 540, 223, 240, { r: 232, g: 232, b: 235 });
+  addRect(commands, 338, 540, 223, 240, BRAND_PANEL);
+  addRect(commands, 338, 540, 223, 240, BRAND_BORDER);
   addText(commands, 356, 756, 11, "Scan at entry", BRAND_MID);
   addText(commands, 356, 736, 20, "QR Code", BRAND_CHARCOAL);
 
@@ -193,7 +197,7 @@ function createPdfBytes(title: string, lines: PdfTicketLine[], options: TicketPd
   addText(commands, 356, 566, 10, ticketCode, BRAND_CHARCOAL);
   addText(commands, 34, 90, 10, "Keep this ticket and code available for verification.", BRAND_MID);
   addRect(commands, 34, 50, 527, 1.5, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addText(commands, 34, 30, 9, brandName, BRAND_RED);
+  drawWordmark(commands, 34, 12, false);
 
   const contentStream = commands.join("\n");
   const objects = [
