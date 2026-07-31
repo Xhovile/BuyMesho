@@ -3,7 +3,16 @@ import { fetchMyOrders } from "./orderApi";
 import { buildBuyerTickets } from "./buyerTickets";
 
 function normalize(value: string) {
-  return value.trim().toLowerCase();
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
+}
+
+function matchesTicketIdentifier(candidate: string, normalizedInput: string) {
+  if (!candidate) return false;
+  const normalizedCandidate = normalize(candidate);
+  return (
+    normalizedCandidate === normalizedInput ||
+    normalizedInput.endsWith(normalizedCandidate)
+  );
 }
 
 export async function resolveOrderIdentifier(input: string): Promise<string> {
@@ -16,9 +25,9 @@ export async function resolveOrderIdentifier(input: string): Promise<string> {
 
   const match = tickets.find((ticket) => {
     return (
-      normalize(ticket.reference) === normalized ||
-      normalize(ticket.orderId) === normalized ||
-      normalize(ticket.ticketCode) === normalized
+      matchesTicketIdentifier(ticket.ticketCode, normalized) ||
+      matchesTicketIdentifier(ticket.reference, normalized) ||
+      matchesTicketIdentifier(ticket.orderId, normalized)
     );
   });
 
