@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Trash2 } from "lucide-react";
+import { ArrowUpRight, Loader2, Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
@@ -135,6 +135,13 @@ function BuyerPaymentsPageContent() {
             {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
           </p>
         </div>
+
+        {refreshing ? (
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+            Syncing purchases…
+          </div>
+        ) : null}
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {FILTERS.map(({ key, label }) => {
