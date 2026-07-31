@@ -12,6 +12,7 @@ import {
 } from "./lib/appNavigation";
 import FloatingCartButton from "./components/FloatingCartButton";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
+import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 
 type SellerProfile = {
   uid?: string;
@@ -22,6 +23,18 @@ type SellerProfile = {
   join_date?: string;
   profile_views?: number;
 };
+
+type SellerProfileCacheEntry = {
+  profile: SellerProfile | null;
+  listings: Listing[];
+  ratingSummary: RatingSummary | null;
+};
+
+const SELLER_PROFILE_CACHE_TTL_MS = 60 * 60 * 1000;
+
+function getSellerProfileCacheKey(uid: string) {
+  return `seller-profile:${uid}`;
+}
 
 function formatDate(value?: string) {
   if (!value) return "—";
@@ -233,12 +246,31 @@ export default function SellerProfilePage() {
   }, []);
 
   useEffect(() => {
-    const loadSeller = async () => {
-      if (!sellerUid) {
-        setLoading(false);
-        return;
-      }
+    if (!sellerUid) {
+      setLoading(false);
+      setProfile(null);
+      setListings([]);
+      setRatingSummary(null);
+      return;
+    }
 
+    const cached = readPersistentPageCache<SellerProfileCacheEntry>(
+      getSellerProfileCacheKey(sellerUid),
+      SELLER_PROFILE_CACHE_TTL_MS
+    );
+
+    if (cached) {
+      setProfile(cached.profile);
+      setListings(cached.listings);
+      setRatingSummary(cached.ratingSummary);
+      setLoading(false);
+      setRatingLoading(false);
+      return;
+    }
+
+    let mounted = true;
+
+    const loadSeller = async () => {
       setLoading(true);
       try {
         const [profileResult, listingsResult, ratingResult] = await Promise.allSettled([
@@ -248,13 +280,13 @@ export default function SellerProfilePage() {
         ]);
 
         const loadedProfile = profileResult.status === "fulfilled" ? profileResult.value : null;
-        setProfile(loadedProfile);
-        setListings(
+        const loadedListings =
           listingsResult.status === "fulfilled" && Array.isArray(listingsResult.value)
             ? listingsResult.value
-            : []
-        );
-        setRatingSummary(ratingResult.status === "fulfilled" ? ratingResult.value : null);
+            : [];
+        const loadedRatingSummary = ratingResult.status === "fulfilled" ? ratingResult.value : null;
+
+        let nextProfile = loadedProfile;
 
         if (loadedProfile) {
           const viewTrackResult = await trackSellerProfileView(sellerUid, firebaseUser?.uid ?? null).catch(
@@ -262,27 +294,41 @@ export default function SellerProfilePage() {
           );
 
           if (viewTrackResult && !viewTrackResult.skipped) {
-            setProfile((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    profile_views: (prev.profile_views ?? 0) + 1,
-                  }
-                : prev
-            );
+            nextProfile = {
+              ...loadedProfile,
+              profile_views: (loadedProfile.profile_views ?? 0) + 1,
+            };
           }
+        }
+
+        if (!mounted) return;
+        setProfile(nextProfile);
+        setListings(loadedListings);
+        setRatingSummary(loadedRatingSummary);
+
+        if (nextProfile) {
+          writePersistentPageCache<SellerProfileCacheEntry>(getSellerProfileCacheKey(sellerUid), {
+            profile: nextProfile,
+            listings: loadedListings,
+            ratingSummary: loadedRatingSummary,
+          });
         }
       } catch (error) {
         console.error("Failed to load seller profile page", error);
+        if (!mounted) return;
         setProfile(null);
         setListings([]);
         setRatingSummary(null);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
     void loadSeller();
+
+    return () => {
+      mounted = false;
+    };
   }, [sellerUid, firebaseUser?.uid]);
 
   const refreshRatingSummary = async () => {
@@ -291,6 +337,13 @@ export default function SellerProfilePage() {
     try {
       const summary = await fetchSellerRatingSummary(sellerUid);
       setRatingSummary(summary);
+      if (profile) {
+        writePersistentPageCache<SellerProfileCacheEntry>(getSellerProfileCacheKey(sellerUid), {
+          profile,
+          listings,
+          ratingSummary: summary,
+        });
+      }
     } catch (error) {
       console.error("Failed to load rating summary", error);
     } finally {
