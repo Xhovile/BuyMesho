@@ -1,6 +1,5 @@
 import { apiFetch } from "./api";
 import { readBuyerPayments } from "./buyerState";
-import { fetchMyOrders } from "./orderApi";
 import { buildBuyerTickets } from "./buyerTickets";
 import type { SellerOrderPayoutMetadata, SellerOrderPayoutStatus } from "../shared/types/payment";
 import { maskAccountLast4 } from "../modules/payouts/masking";
@@ -177,7 +176,11 @@ export async function fetchOrderByReference(reference: string): Promise<OrderBun
     throw new Error("No order reference provided.");
   }
 
-  const [orders, buyerPayments] = await Promise.all([fetchMyOrders(), Promise.resolve(readBuyerPayments())]);
+  const [ordersResponse, buyerPayments] = await Promise.all([
+    apiFetch("/api/payments/orders/me"),
+    Promise.resolve(readBuyerPayments()),
+  ]);
+  const orders = Array.isArray(ordersResponse) ? (ordersResponse as OrderBundle[]) : [];
   const tickets = buildBuyerTickets(orders, buyerPayments);
   const resolvedTicket = tickets.find((ticket) => matchesTicketCode(ticket.ticketCode, normalizeTicketCode(trimmed)));
   const lookupReference = resolvedTicket?.reference ?? trimmed;
