@@ -6,13 +6,12 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 import {
   EXPLORE_PATH,
-  HOME_PATH,
-  SETTINGS_PATH,
   getSellerUidFromUrl,
   navigateToListingDetails,
-  navigateToPath,
   navigateBackOrPath,
 } from "./lib/appNavigation";
+import FloatingCartButton from "./components/FloatingCartButton";
+import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 
 type SellerProfile = {
   uid?: string;
@@ -344,43 +343,8 @@ export default function SellerProfilePage() {
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-          <button
-            type="button"
-            onClick={() => navigateToPath(HOME_PATH)}
-            className="flex items-center gap-2.5 min-w-0"
-          >
-            <div className="w-10 h-10 bg-red-900 rounded-2xl flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-red-900/20">
-              B
-            </div>
-            <div className="text-left">
-              <p className="text-lg font-extrabold tracking-tight">
-                <span className="text-red-900">Buy</span>
-                <span className="text-zinc-700">Mesho</span>
-              </p>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Seller profile</p>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => navigateToPath(SETTINGS_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50"
-            >
-              Settings
-            </button>
-            <button
-              type="button"
-              onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-              className="px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-white text-sm font-bold hover:bg-zinc-800"
-            >
-              Back
-            </button>
-          </div>
-        </div>
-      </header>
+      <ListingHeaderBar />
+      <FloatingCartButton isLoggedIn={!!firebaseUser} />
 
       <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
         {loading ? (
