@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Search, ShieldCheck, Star } from "lucide-react";
+import { Loader2, ShieldCheck, Star } from "lucide-react";
 
 import Header from "./components/Header";
 import { apiFetch } from "./lib/api";
