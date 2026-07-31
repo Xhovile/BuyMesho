@@ -6,10 +6,8 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 import {
   EXPLORE_PATH,
-  HOME_PATH,
   getSellerUidFromUrl,
   navigateToListingDetails,
-  navigateToPath,
   navigateBackOrPath,
 } from "./lib/appNavigation";
 import FloatingCartButton from "./components/FloatingCartButton";
