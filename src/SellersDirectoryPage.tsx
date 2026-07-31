@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, ShieldCheck, Star } from "lucide-react";
 
 import Header from "./components/Header";
+import AppFooter from "./components/AppFooter";
 import { apiFetch } from "./lib/api";
 import {
   getMarketChipFromLocation,
@@ -374,6 +375,8 @@ export default function SellersDirectoryPage() {
           </section>
         )}
       </main>
+
+      <AppFooter />
     </div>
   );
 }
