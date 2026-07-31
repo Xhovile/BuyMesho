@@ -154,13 +154,9 @@ function TicketsPageContent() {
               Your event tickets
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-              Keep event passes separate from purchases. Each ticket can be downloaded as a PDF and shared on WhatsApp.
+              Each purchased ticket can be downloaded as a PDF and shared on WhatsApp.
             </p>
           </div>
-        </div>
-
-        <div className="mt-6 rounded-[1.5rem] border border-blue-200 bg-blue-50 px-4 py-4 text-sm leading-6 text-blue-900 shadow-sm">
-          Ticket payments are not escrow. A successful payment shows as paid, then stays on midnight verification before final confirmation.
         </div>
 
         <div className="mt-8 flex flex-wrap items-end justify-between gap-4 border-b border-zinc-200 pb-4">
