@@ -18,7 +18,8 @@ type PdfColor = {
 };
 
 type EmbeddedImage = {
-  bytes: Uint8Array;
+  rgbBytes: Uint8Array;
+  alphaBytes: Uint8Array;
   width: number;
   height: number;
 };
@@ -192,14 +193,13 @@ function addFieldBlock(
   options?: { labelSize?: number; valueSize?: number; valueColor?: PdfColor },
 ) {
   const labelSize = options?.labelSize ?? 8.2;
-  const valueSize = options?.valueSize ?? 11.6;
+  const valueSize = options?.valueSize ?? 11.2;
   const valueColor = options?.valueColor ?? BRAND_CHARCOAL;
-  const maxWidth = width;
 
   addText(commands, x, y, labelSize, label.toUpperCase(), BRAND_MID);
   const valueTop = y - 14;
-  const usedBottom = addWrappedText(commands, x, valueTop, valueSize, value, valueColor, maxWidth, valueSize + 1.8);
-  return usedBottom - 10;
+  const usedBottom = addWrappedText(commands, x, valueTop, valueSize, value, valueColor, width, valueSize + 1.8);
+  return usedBottom - 9;
 }
 
 function drawTicketCodeMatrix(ticketCode: string, x: number, y: number, size: number) {
@@ -269,7 +269,7 @@ function loadImageElement(src: string) {
   });
 }
 
-async function embedLogoAsJpeg(): Promise<EmbeddedImage> {
+async function embedLogoAsImage(): Promise<EmbeddedImage> {
   const image = await loadImageElement(Logo);
   const canvas = document.createElement("canvas");
   const targetWidth = 112;
@@ -283,36 +283,39 @@ async function embedLogoAsJpeg(): Promise<EmbeddedImage> {
     throw new Error("Unable to prepare logo canvas.");
   }
 
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.clearRect(0, 0, canvas.width, canvas.height);
   context.drawImage(image, 0, 0, canvas.width, canvas.height);
 
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (result) => {
-        if (result) {
-          resolve(result);
-          return;
-        }
-        reject(new Error("Unable to encode logo image."));
-      },
-      "image/jpeg",
-      0.96,
-    );
-  });
+  const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+  const rgbBytes = new Uint8Array(canvas.width * canvas.height * 3);
+  const alphaBytes = new Uint8Array(canvas.width * canvas.height);
+
+  for (let index = 0, rgbIndex = 0; index < imageData.data.length; index += 4) {
+    rgbBytes[rgbIndex] = imageData.data[index];
+    rgbBytes[rgbIndex + 1] = imageData.data[index + 1];
+    rgbBytes[rgbIndex + 2] = imageData.data[index + 2];
+    alphaBytes[rgbIndex / 3] = imageData.data[index + 3];
+    rgbIndex += 3;
+  }
 
   return {
-    bytes: new Uint8Array(await blob.arrayBuffer()),
+    rgbBytes,
+    alphaBytes,
     width: canvas.width,
     height: canvas.height,
   };
+}
+
+function getLineValue(lines: PdfTicketLine[], label: string, fallback = "—") {
+  const found = lines.find((line) => line.label.trim().toLowerCase() === label.trim().toLowerCase());
+  return found?.value?.trim() || fallback;
 }
 
 async function createPdfBytes(title: string, lines: PdfTicketLine[], options: TicketPdfOptions) {
   const brandName = options.brandName?.trim() || "BuyMesho";
   const brandTagline = options.brandTagline?.trim() || "Official event ticket";
   const ticketCode = options.ticketCode.trim() || title.trim();
-  const logo = await embedLogoAsJpeg();
+  const logo = await embedLogoAsImage();
 
   const commands: string[] = [];
 
@@ -320,55 +323,59 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   addRect(commands, 0, 686, 595, 156, BRAND_CHARCOAL);
   addRect(commands, 0, 674, 595, 12, BRAND_RED);
 
-  const logoWidth = 46;
-  const logoHeight = Math.max(18, Math.round((logo.width ? logo.height / logo.width : 1) * logoWidth));
+  const logoDisplayWidth = 46;
+  const logoDisplayHeight = Math.max(20, Math.round((logo.height / logo.width) * logoDisplayWidth));
+  const logoX = 34;
+  const logoY = 734;
   commands.push("q");
-  commands.push(`${logoWidth.toFixed(2)} 0 0 ${logoHeight.toFixed(2)} 34 ${730 + Math.max(0, Math.floor((46 - logoHeight) / 2))} cm`);
+  commands.push(`${logoDisplayWidth.toFixed(2)} 0 0 ${logoDisplayHeight.toFixed(2)} ${logoX.toFixed(2)} ${logoY.toFixed(2)} cm`);
   commands.push("/Im0 Do");
   commands.push("Q");
 
-  addBrandWordmark(commands, 90, 782, 24, brandName);
-  addText(commands, 90, 758, 11, brandTagline, BRAND_MUTED);
+  addBrandWordmark(commands, 88, 756, 24, brandName);
+  addText(commands, 88, 734, 11, brandTagline, BRAND_MUTED);
 
-  addText(commands, 34, 644, 27, title, BRAND_CHARCOAL);
-  addText(commands, 34, 622, 12, "Ticket information", BRAND_MID);
+  addText(commands, 34, 642, 27, title, BRAND_CHARCOAL);
+  addText(commands, 34, 620, 12, "Ticket information", BRAND_MID);
 
   addRect(commands, 34, 568, 270, 42, { r: 255, g: 255, b: 255 });
   addRect(commands, 34, 568, 270, 42, BRAND_RED);
   addText(commands, 48, 594, 11, `Ticket code: ${ticketCode}`, { r: 255, g: 255, b: 255 });
 
   const leftColumnX = 34;
-  const rightColumnX = 304;
+  const rightColumnX = 34;
   const leftWidth = 246;
-  const rightWidth = 254;
-
+  const rightWidth = 246;
   let leftY = 542;
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Event", lines[0]?.value || "—", leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Organizer", lines[1]?.value || "Event organizer", leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Date", lines[5]?.value || "—", leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Time", lines[6]?.value || "—", leftWidth);
-  leftY = addFieldBlock(commands, leftColumnX, leftY, "Status", lines[8]?.value || "—", leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Event", getLineValue(lines, "Event"), leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Organizer", getLineValue(lines, "Organizer", "Event organizer"), leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Date", getLineValue(lines, "Date"), leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Time", getLineValue(lines, "Time"), leftWidth);
+  leftY = addFieldBlock(commands, leftColumnX, leftY, "Status", getLineValue(lines, "Status"), leftWidth);
 
   let rightY = 542;
-  rightY = addFieldBlock(commands, rightColumnX, rightY, "Reference", lines[3]?.value || "—", rightWidth, { valueSize: 10.8 });
-  rightY = addFieldBlock(commands, rightColumnX, rightY, "Holder", lines[4]?.value || "Verified buyer account", rightWidth, { valueSize: 11.2 });
-  rightY = addFieldBlock(commands, rightColumnX, rightY, "Venue", lines[7]?.value || "—", rightWidth, { valueSize: 11.2 });
-  rightY = addFieldBlock(commands, rightColumnX, rightY, "Amount", lines[9]?.value || "—", rightWidth, { valueSize: 11.6 });
+  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Reference", getLineValue(lines, "Reference"), rightWidth, { valueSize: 10.6 });
+  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Holder", getLineValue(lines, "Holder", "Verified buyer account"), rightWidth, { valueSize: 11.2 });
+  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Venue", getLineValue(lines, "Venue"), rightWidth, { valueSize: 11.2 });
+  rightY = addFieldBlock(commands, rightColumnX + 270, rightY, "Amount", getLineValue(lines, "Amount"), rightWidth, { valueSize: 11.2 });
   void leftY;
   void rightY;
 
-  addRect(commands, 336, 528, 224, 246, { r: 255, g: 255, b: 255 });
-  addRect(commands, 336, 528, 224, 246, { r: 236, g: 236, b: 239 });
-  addText(commands, 354, 756, 11, "Scan at entry", BRAND_MID);
-  addText(commands, 354, 736, 20, "QR Code", BRAND_CHARCOAL);
+  const qrX = 355;
+  const qrY = 118;
+  const qrBoxWidth = 206;
+  const qrBoxHeight = 258;
+  addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 255, g: 255, b: 255 });
+  addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 236, g: 236, b: 239 });
+  addText(commands, qrX + 18, qrY + 228, 11, "Scan at entry", BRAND_MID);
+  addText(commands, qrX + 18, qrY + 206, 20, "QR Code", BRAND_CHARCOAL);
+  commands.push(...drawTicketCodeMatrix(ticketCode, qrX + 17, qrY + 48, 160));
+  addText(commands, qrX + 18, qrY + 32, 10, ticketCode, BRAND_CHARCOAL);
 
-  commands.push(...drawTicketCodeMatrix(ticketCode, 352, 588, 160));
-
-  addText(commands, 354, 568, 10, ticketCode, BRAND_CHARCOAL);
-  addText(commands, 34, 118, 10, "Keep this ticket and code available for verification.", BRAND_MID);
-  addRect(commands, 34, 86, 527, 1.4, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
-  addBrandWordmark(commands, 34, 58, 9, brandName);
-  addText(commands, 34, 44, 8.5, "Verified event access", BRAND_MUTED);
+  addText(commands, 34, 96, 10, "Keep this ticket and code available for verification.", BRAND_MID);
+  addRect(commands, 34, 64, 527, 1.4, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
+  addBrandWordmark(commands, 34, 38, 9, brandName);
+  addText(commands, 34, 24, 8.5, "Verified event access", BRAND_MUTED);
 
   const contentStream = commands.join("\n");
   const contentBytes = encodeUtf8(contentStream);
@@ -379,7 +386,7 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
     buildPdfObjectBytes(
       3,
       [
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> /XObject << /Im0 6 0 R >> >> /Contents 4 0 R >>",
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 5 0 R >> /XObject << /Im0 6 0 R /Im1 7 0 R >> >> /Contents 4 0 R >>",
       ],
     ),
     buildPdfObjectBytes(4, [`<< /Length ${contentBytes.length} >>\nstream\n`, contentBytes, "\nendstream"]),
@@ -387,8 +394,16 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
     buildPdfObjectBytes(
       6,
       [
-        `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`,
-        logo.bytes,
+        `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /SMask 7 0 R /Length ${logo.rgbBytes.length} >>\nstream\n`,
+        logo.rgbBytes,
+        "\nendstream",
+      ],
+    ),
+    buildPdfObjectBytes(
+      7,
+      [
+        `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceGray /BitsPerComponent 8 /Length ${logo.alphaBytes.length} >>\nstream\n`,
+        logo.alphaBytes,
         "\nendstream",
       ],
     ),
