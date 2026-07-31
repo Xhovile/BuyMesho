@@ -35,6 +35,7 @@ function BuyerPaymentsPageContent() {
   const [orders, setOrders] = useState<OrderBundle[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<PaymentFilter>("all");
 
@@ -45,8 +46,11 @@ function BuyerPaymentsPageContent() {
       if (mounted) setPaymentRecords(readBuyerPayments());
     };
 
+    syncLocal();
+    setLoading(false);
+
     void (async () => {
-      syncLocal();
+      setRefreshing(true);
       try {
         const data = await fetchMyOrders();
         if (!mounted) return;
@@ -55,7 +59,7 @@ function BuyerPaymentsPageContent() {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Failed to load purchases.");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setRefreshing(false);
       }
     })();
 
@@ -128,6 +132,7 @@ function BuyerPaymentsPageContent() {
           </div>
           <p className="text-sm text-zinc-500">
             Showing <span className="font-bold text-zinc-800">{summary.records.length ? visibleRecords.length : 0}</span> of <span className="font-bold text-zinc-800">{summary.records.length}</span>
+            {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
           </p>
         </div>
 
