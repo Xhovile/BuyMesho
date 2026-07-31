@@ -125,7 +125,11 @@ function TicketsPageContent() {
       { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
       { label: "Status", value: ticket.status },
       { label: "Amount", value: `${ticket.amount} ${ticket.currency}` },
-    ]);
+    ], {
+      ticketCode: ticket.ticketCode,
+      brandName: "BuyMesho",
+      brandTagline: "Official event ticket",
+    });
   };
 
   const handleShareWhatsApp = (ticket: BuyerTicketRecord) => {
