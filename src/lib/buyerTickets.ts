@@ -66,7 +66,8 @@ function getPaymentStatusText(payment: BuyerPaymentRecord | undefined): string {
 
 function formatTicketCode(reference: string, eventId: string) {
   const seed = `${reference}-${eventId}`.replace(/[^a-zA-Z0-9]+/g, "").toUpperCase();
-  return seed.slice(0, 18) || `TKT-${eventId}`;
+  const short = seed.slice(-6);
+  return short || seed.slice(0, 6) || `TKT${eventId.slice(-6)}`;
 }
 
 function buildDetail(eventDate: string, startTime: string, venue: string, location: string, source: string) {
@@ -103,10 +104,7 @@ function readUnitPrice(itemData: Record<string, unknown> | undefined) {
 
   const nestedUnitPrice = itemData.unitPrice;
   const nestedUnitPriceObject = nestedUnitPrice && typeof nestedUnitPrice === "object" ? (nestedUnitPrice as Record<string, unknown>) : undefined;
-  const amount =
-    readNumber(itemData, "ticketPrice") ??
-    readNumber(nestedUnitPriceObject, "amount") ??
-    null;
+  const amount = readNumber(itemData, "ticketPrice") ?? readNumber(nestedUnitPriceObject, "amount") ?? null;
   const currency = readString(nestedUnitPriceObject, "currency") || "MWK";
 
   return { amount, currency };
@@ -226,9 +224,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
     const checkoutItems = Array.isArray(payment.checkoutItems) ? payment.checkoutItems : [];
     const fallbackEventIds = [
       ...eventIds,
-      ...checkoutItems
-        .filter((item) => item.eventId)
-        .map((item) => String(item.eventId)),
+      ...checkoutItems.filter((item) => item.eventId).map((item) => String(item.eventId)),
       ...(payment.eventDetails ?? []).map((entry) => String(entry.eventId)),
     ].filter(Boolean);
 
