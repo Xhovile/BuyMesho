@@ -4,7 +4,7 @@ import { AlertCircle, ArrowRight, CalendarDays, Download, Filter, LayoutDashboar
 import loaderImage from "../photos/LoaderPic.png";
 import AccountPageShell from "./components/AccountPageShell";
 import { apiFetch } from "./lib/api";
-import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
+import { EVENTS_MANAGE_PATH, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { formatMoney } from "./shared/utils/formatMoney";
 
@@ -275,11 +275,13 @@ export default function EventCreatorOverviewPage() {
 
   const eventTypes = useMemo(() => {
     const seen = new Set<string>();
-    return (data?.events ?? []).filter((event) => {
-      if (!event.event_type || seen.has(event.event_type)) return false;
-      seen.add(event.event_type);
-      return true;
-    }).map((event) => event.event_type);
+    return (data?.events ?? [])
+      .filter((event) => {
+        if (!event.event_type || seen.has(event.event_type)) return false;
+        seen.add(event.event_type);
+        return true;
+      })
+      .map((event) => event.event_type);
   }, [data?.events]);
 
   const filteredEvents = useMemo(() => {
@@ -340,9 +342,6 @@ export default function EventCreatorOverviewPage() {
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => navigateToPath(EVENTS_MANAGE_PATH)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
               <ArrowRight className="h-4 w-4" /> Manage Events
-            </button>
-            <button type="button" onClick={() => navigateToPath(EVENTS_CREATE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
-              New Event
             </button>
             <button type="button" onClick={handleExportPdf} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50">
               <Download className="h-4 w-4" />
@@ -433,7 +432,6 @@ export default function EventCreatorOverviewPage() {
                     <th className="px-4 py-3">Net</th>
                     <th className="px-4 py-3">Activity</th>
                     <th className="px-4 py-3">Last updated</th>
-                    <th className="px-4 py-3">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 bg-white text-sm">
@@ -457,7 +455,6 @@ export default function EventCreatorOverviewPage() {
                       <td className="px-4 py-4 font-bold text-zinc-950">{formatMoney(event.net_revenue_amount, event.revenue_currency)}</td>
                       <td className="px-4 py-4 text-zinc-700"><div className="space-y-1 text-xs text-zinc-500"><p>{event.ticket_clicks} clicks</p><p>{event.cart_adds} cart adds</p><p>{event.message_threads} threads</p></div></td>
                       <td className="px-4 py-4 text-zinc-700">{formatDateTime(event.last_activity_at || event.updated_at)}</td>
-                      <td className="px-4 py-4"><button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-bold text-zinc-900 hover:bg-zinc-50">Open<ArrowRight className="h-3.5 w-3.5" /></button></td>
                     </tr>
                   ))}
                 </tbody>
