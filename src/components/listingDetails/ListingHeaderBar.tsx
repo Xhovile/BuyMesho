@@ -2,11 +2,15 @@ import { ChevronLeft } from "lucide-react";
 import BrandMark from "../BrandMark";
 import { EXPLORE_PATH, navigateBackOrPath, navigateToPath } from "../../lib/appNavigation";
 
-export default function ListingHeaderBar() {
+type ListingHeaderBarProps = {
+  subtitle?: string;
+};
+
+export default function ListingHeaderBar({ subtitle = "Listing details" }: ListingHeaderBarProps) {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-        <BrandMark subtitle="Listing details" />
+        <BrandMark subtitle={subtitle} />
 
         <div className="flex items-center gap-3">
           <button
