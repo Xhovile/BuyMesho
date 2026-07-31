@@ -290,7 +290,7 @@ export default function EventsDirectoryPage() {
   }, [filteredEvents, categories]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
+    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900 pb-20">
       <FloatingCartButton isLoggedIn={!!firebaseUser} />
       <Header
         searchValue={searchTerm}
