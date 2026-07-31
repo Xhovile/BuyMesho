@@ -1,6 +1,11 @@
 import { apiFetch } from "./api";
+import { readBuyerPayments } from "./buyerState";
+import { fetchMyOrders } from "./orderApi";
+import { buildBuyerTickets } from "./buyerTickets";
 import type { SellerOrderPayoutMetadata, SellerOrderPayoutStatus } from "../shared/types/payment";
 import { maskAccountLast4 } from "../modules/payouts/masking";
+
+type MaybeRecord = Record<string, unknown> | null | undefined;
 
 export type SellerEscrowRecord = {
   id: string;
@@ -80,6 +85,30 @@ function normalizePayoutStatus(bundle: OrderBundle): SellerOrderPayoutStatus {
   return "unknown";
 }
 
+function normalizeTicketCode(value: string) {
+  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
+}
+
+function normalizeShortTicketCode(value: string) {
+  const match = value.match(/(?:^|[^a-z0-9])(?:order_|ord_)([a-z0-9]+)/i);
+  if (match?.[1]) {
+    return match[1].replace(/[^a-z0-9]/gi, "").slice(0, 6).toUpperCase();
+  }
+  return normalizeTicketCode(value).slice(0, 6);
+}
+
+function matchesTicketCode(candidate: string | null | undefined, normalizedInput: string) {
+  if (!candidate) return false;
+  const normalizedCandidate = normalizeTicketCode(candidate);
+  const shortCandidate = normalizeShortTicketCode(candidate);
+  return (
+    normalizedCandidate === normalizedInput ||
+    shortCandidate === normalizedInput ||
+    normalizedInput.endsWith(normalizedCandidate) ||
+    normalizedInput === shortCandidate
+  );
+}
+
 function normalizeDestinationMask(bundle: OrderBundle): string | null {
   const raw = pickString(
     bundle.payout?.destinationMask,
@@ -88,8 +117,7 @@ function normalizeDestinationMask(bundle: OrderBundle): string | null {
     bundle.payout?.payout_destination_mask,
     bundle.payout?.maskedDestination,
     bundle.payout?.masked_destination,
-    (bundle.payout?.destination as Record<string, unknown> | undefined)
-      ?.maskedAccount,
+    (bundle.payout?.destination as MaybeRecord)?.maskedAccount,
   );
   if (!raw) return null;
   return maskAccountLast4(raw);
@@ -144,7 +172,25 @@ export function getOrderPayoutMetadata(bundle: OrderBundle): SellerOrderPayoutMe
 }
 
 export async function fetchOrderByReference(reference: string): Promise<OrderBundle> {
-  return apiFetch(`/api/payments/orders/by-reference/${encodeURIComponent(reference)}`) as Promise<OrderBundle>;
+  const trimmed = reference.trim();
+  if (!trimmed) {
+    throw new Error("No order reference provided.");
+  }
+
+  const [orders, buyerPayments] = await Promise.all([fetchMyOrders(), Promise.resolve(readBuyerPayments())]);
+  const tickets = buildBuyerTickets(orders, buyerPayments);
+  const resolvedTicket = tickets.find((ticket) => matchesTicketCode(ticket.ticketCode, normalizeTicketCode(trimmed)));
+  const lookupReference = resolvedTicket?.reference ?? trimmed;
+
+  try {
+    return (await apiFetch(`/api/payments/orders/by-reference/${encodeURIComponent(lookupReference)}`)) as OrderBundle;
+  } catch (firstError) {
+    try {
+      return (await apiFetch(`/api/payments/orders/${encodeURIComponent(lookupReference)}`)) as OrderBundle;
+    } catch {
+      throw firstError;
+    }
+  }
 }
 
 export async function fetchOrderById(idOrReference: string): Promise<OrderBundle> {
