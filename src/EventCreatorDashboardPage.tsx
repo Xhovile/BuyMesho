@@ -1,30 +1,12 @@
-import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
-import { ArrowRight, BarChart3, Clock3, ExternalLink, Loader2, MessageCircle, Pencil, RefreshCw, Ticket, Trash2, Eye } from "lucide-react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { ArrowRight, BarChart3, Clock3, ExternalLink, Loader2, Pencil, RefreshCw, Search, Ticket, Trash2, Eye } from "lucide-react";
 
 import AccountPageShell from "./components/AccountPageShell";
 import EventCreatorOverviewPage from "./EventCreatorOverviewPage";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
-import { fetchInbox } from "./lib/messages";
-import { navigateToConversation } from "./lib/messagesNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
-import { useLocationSearch } from "./hooks/useLocationSearch";
-import type { Conversation } from "./types";
 
-type CreatorProfile = {
-  uid: string;
-  email: string;
-  display_name: string;
-  organization_name: string;
-  organization_type: string;
-  contact_whatsapp: string | null;
-  event_types: string;
-  status: string;
-  active_until: string | null;
-  approved_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
 
 type ManagedEvent = {
   id: number;
@@ -56,9 +38,24 @@ type ManagedEvent = {
 };
 
 type CreatorDashboardResponse = {
-  creator: CreatorProfile | null;
+  creator: {
+    uid: string;
+    email: string;
+    display_name: string;
+    organization_name: string;
+    organization_type: string;
+    contact_whatsapp: string | null;
+    event_types: string;
+    status: string;
+    active_until: string | null;
+    approved_at: string | null;
+    created_at: string;
+    updated_at: string;
+  } | null;
   events: ManagedEvent[];
 };
+
+type StatusFilter = "all" | "published" | "inactive" | "draft" | "cancelled";
 
 function formatMoney(value: number | null | undefined) {
   if (value === null || value === undefined || value <= 0) return "Free";
@@ -76,26 +73,49 @@ function formatDateTime(value: string | null | undefined) {
   if (!value) return "—";
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return value;
-  return parsed.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  return parsed.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-function badgeClass(status: string) {
+function statusClass(status: string) {
   switch (status.toLowerCase()) {
-    case "published": return "border-emerald-200 bg-emerald-50 text-emerald-700";
-    case "inactive": return "border-amber-200 bg-amber-50 text-amber-700";
-    case "cancelled": return "border-rose-200 bg-rose-50 text-rose-700";
-    default: return "border-zinc-200 bg-zinc-50 text-zinc-700";
+    case "published":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "inactive":
+      return "border-amber-200 bg-amber-50 text-amber-700";
+    case "cancelled":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "draft":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    default:
+      return "border-zinc-200 bg-zinc-50 text-zinc-700";
   }
 }
 
-function StatCard({ label, value, helper, icon: Icon }: { label: string; value: string; helper?: string; icon: ComponentType<{ className?: string }> }) {
+function MetricCard({
+  label,
+  value,
+  helper,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+  icon: ComponentType<{ className?: string }>;
+}) {
   return (
     <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm shadow-zinc-200/30">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">{label}</p>
           <p className="mt-2 text-2xl font-black tracking-tight text-zinc-950">{value}</p>
-          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}</div>
+          {helper ? <p className="mt-1 text-xs font-medium text-zinc-500">{helper}</p> : null}
+        </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-zinc-50 text-zinc-700">
           <Icon className="h-5 w-5" />
         </div>
@@ -104,15 +124,31 @@ function StatCard({ label, value, helper, icon: Icon }: { label: string; value: 
   );
 }
 
-function ActionButton({ children, onClick, variant = "default", disabled }: { children: ReactNode; onClick: () => void; variant?: "default" | "danger" | "ghost"; disabled?: boolean; }) {
-  const className = variant === "danger"
-    ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-    : variant === "ghost"
-      ? "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
-      : "border-zinc-900 bg-zinc-950 text-white hover:bg-zinc-800";
+function ActionButton({
+  children,
+  onClick,
+  variant = "default",
+  disabled,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+  variant?: "default" | "danger" | "ghost";
+  disabled?: boolean;
+}) {
+  const className =
+    variant === "danger"
+      ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+      : variant === "ghost"
+        ? "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50"
+        : "border-zinc-900 bg-zinc-950 text-white hover:bg-zinc-800";
 
   return (
-    <button type="button" onClick={onClick} disabled={disabled} className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}>
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 ${className}`}
+    >
       {children}
     </button>
   );
@@ -120,13 +156,17 @@ function ActionButton({ children, onClick, variant = "default", disabled }: { ch
 
 export default function EventCreatorDashboardPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const locationSearch = useLocationSearch();
   const [dashboard, setDashboard] = useState<CreatorDashboardResponse | null>(null);
-  const [inbox, setInbox] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
 
-  const searchParams = useMemo(() => new URLSearchParams(locationSearch), [locationSearch]);
+  const searchParams = useMemo(() => {
+    if (typeof window === "undefined") return new URLSearchParams();
+    return new URLSearchParams(window.location.search);
+  }, []);
+
   const isOverviewView = searchParams.get("view") === "dashboard";
   const selectedEventId = useMemo(() => {
     const raw = searchParams.get("event");
@@ -140,23 +180,14 @@ export default function EventCreatorDashboardPage() {
     setError(null);
 
     try {
-      const [dashboardResponse, inboxResponse] = await Promise.allSettled([
-        apiFetch("/api/event-creator/dashboard"),
-        fetchInbox(),
-      ]);
-
-      if (dashboardResponse.status === "fulfilled") {
-        const data = dashboardResponse.value as CreatorDashboardResponse;
-        setDashboard({ creator: data?.creator ?? null, events: Array.isArray(data?.events) ? data.events : [] });
-      } else {
-        throw dashboardResponse.reason;
-      }
-
-      setInbox(inboxResponse.status === "fulfilled" ? (Array.isArray(inboxResponse.value) ? inboxResponse.value : []) : []);
+      const response = (await apiFetch("/api/event-creator/dashboard")) as CreatorDashboardResponse;
+      setDashboard({
+        creator: response?.creator ?? null,
+        events: Array.isArray(response?.events) ? response.events : [],
+      });
     } catch (loadError: any) {
       setError(loadError?.message || "Could not load your event dashboard.");
       setDashboard({ creator: null, events: [] });
-      setInbox([]);
     } finally {
       setLoading(false);
     }
@@ -173,38 +204,55 @@ export default function EventCreatorDashboardPage() {
       return;
     }
     void loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, firebaseUser, isOverviewView]);
 
-  const events = dashboard?.events ?? [];
+  const allEvents = dashboard?.events ?? [];
+
+  const filteredEvents = useMemo(() => {
+    const q = query.trim().toLowerCase();
+
+    return allEvents.filter((event) => {
+      const matchesSearch =
+        !q ||
+        [event.event_title, event.event_type, event.organizer_name, event.venue, event.location]
+          .join(" ")
+          .toLowerCase()
+          .includes(q);
+      const matchesStatus = status === "all" || event.status === status;
+      return matchesSearch && matchesStatus;
+    });
+  }, [allEvents, query, status]);
+
   const selectedEvent = useMemo(() => {
-    if (events.length === 0) return null;
-    return events.find((event) => event.id === selectedEventId) ?? events[0] ?? null;
-  }, [events, selectedEventId]);
+    if (filteredEvents.length === 0) return null;
+    return filteredEvents.find((event) => event.id === selectedEventId) ?? filteredEvents[0] ?? null;
+  }, [filteredEvents, selectedEventId]);
 
-  const selectedThreads = useMemo(() => {
-    if (!selectedEvent) return [];
-    return inbox
-      .filter((conversation) => conversation.thread_type === "event" && (conversation.event?.id === selectedEvent.id || conversation.event_id === selectedEvent.id))
-      .sort((a, b) => new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime());
-  }, [inbox, selectedEvent]);
-
-  const totals = useMemo(() => events.reduce((acc, event) => {
-    acc.ticketClicks += Number(event.ticket_clicks || 0);
-    acc.cartAdds += Number(event.cart_adds || 0);
-    acc.threads += Number(event.message_threads || 0);
-    acc.unread += Number(event.unread_messages || 0);
-    if (event.status === "published") acc.published += 1;
-    if (event.status === "inactive") acc.inactive += 1;
-    return acc;
-  }, { ticketClicks: 0, cartAdds: 0, threads: 0, unread: 0, published: 0, inactive: 0 }), [events]);
+  const totals = useMemo(
+    () =>
+      allEvents.reduce(
+        (acc, event) => {
+          acc.published += event.status === "published" ? 1 : 0;
+          acc.inactive += event.status === "inactive" ? 1 : 0;
+          acc.draft += event.status === "draft" ? 1 : 0;
+          acc.cancelled += event.status === "cancelled" ? 1 : 0;
+          return acc;
+        },
+        { published: 0, inactive: 0, draft: 0, cancelled: 0 },
+      ),
+    [allEvents],
+  );
 
   const handleSelectEvent = (eventId: number) => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
   const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
-  const handleOpenThread = (conversationId: number) => navigateToConversation(conversationId);
 
-  const updateEventStatus = async (eventId: number, status: "published" | "inactive") => {
-    await apiFetch(`/api/event-creator/events/${eventId}/status`, { method: "PATCH", body: JSON.stringify({ status }) });
+  const updateEventStatus = async (eventId: number, nextStatus: "published" | "inactive") => {
+    await apiFetch(`/api/event-creator/events/${eventId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status: nextStatus }),
+    });
     await loadDashboard();
   };
 
@@ -218,9 +266,16 @@ export default function EventCreatorDashboardPage() {
 
   if (authLoading || loading) {
     return (
-      <AccountPageShell eyebrow="Event creator" title="Creator dashboard" description="Manage the events you own, review ticket activity, and open event conversations without touching seller tools." backLabel="Back to Events" onBack={() => navigateToPath(EVENTS_PATH)} childrenSectionClassName="w-full">
+      <AccountPageShell
+        eyebrow="Event creator"
+        title="Manage events"
+        description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
+        backLabel="Back to Events"
+        onBack={() => navigateToPath(EVENTS_PATH)}
+        childrenSectionClassName="w-full"
+      >
         <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-600 shadow-sm">
-          <Loader2 className="h-5 w-5 animate-spin" /> Loading creator dashboard...
+          <Loader2 className="h-5 w-5 animate-spin" /> Loading manage events...
         </div>
       </AccountPageShell>
     );
@@ -228,10 +283,17 @@ export default function EventCreatorDashboardPage() {
 
   if (!firebaseUser) {
     return (
-      <AccountPageShell eyebrow="Event creator" title="Creator dashboard" description="Manage the events you own, review ticket activity, and open event conversations without touching seller tools." backLabel="Back to Events" onBack={() => navigateToPath(EVENTS_PATH)} childrenSectionClassName="w-full">
+      <AccountPageShell
+        eyebrow="Event creator"
+        title="Manage events"
+        description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
+        backLabel="Back to Events"
+        onBack={() => navigateToPath(EVENTS_PATH)}
+        childrenSectionClassName="w-full"
+      >
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
           <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
-          <p className="mt-3 text-sm text-zinc-500">Sign in before opening the event creator dashboard.</p>
+          <p className="mt-3 text-sm text-zinc-500">Sign in before opening the event manager.</p>
           <ActionButton onClick={() => navigateToLoginWithReturnPath(EVENTS_MANAGE_PATH)}>Go to Login</ActionButton>
         </div>
       </AccountPageShell>
@@ -246,15 +308,22 @@ export default function EventCreatorDashboardPage() {
   }
 
   return (
-    <AccountPageShell eyebrow="Event creator" title="Creator dashboard" description="Manage the events you own, review ticket activity, and open event conversations without touching seller tools." backLabel="Back to Events" onBack={() => navigateToPath(EVENTS_PATH)} childrenSectionClassName="w-full">
+    <AccountPageShell
+      eyebrow="Event creator"
+      title="Manage events"
+      description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
+      backLabel="Back to Events"
+      onBack={() => navigateToPath(EVENTS_PATH)}
+      childrenSectionClassName="w-full"
+    >
       <div className="space-y-6">
         {error ? <div className="rounded-[2rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-900">{error}</div> : null}
 
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Owned events" value={String(events.length)} icon={Ticket} helper="Only your events are shown here." />
-          <StatCard label="Published" value={String(totals.published)} icon={Eye} helper="Visible in the public directory." />
-          <StatCard label="Inactive" value={String(totals.inactive)} icon={Clock3} helper="Hidden from the public directory." />
-          <StatCard label="Event threads" value={String(totals.threads)} icon={MessageCircle} helper={`${totals.unread} unread messages`} />
+          <MetricCard label="Owned events" value={String(allEvents.length)} icon={Ticket} helper="Only your events are listed." />
+          <MetricCard label="Published" value={String(totals.published)} icon={Eye} helper="Live in the public directory." />
+          <MetricCard label="Inactive" value={String(totals.inactive)} icon={Clock3} helper="Hidden from the public directory." />
+          <MetricCard label="Drafts" value={String(totals.draft)} icon={BarChart3} helper="Not ready for publishing." />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
@@ -262,52 +331,109 @@ export default function EventCreatorDashboardPage() {
             <div className="flex items-center justify-between gap-2 border-b border-zinc-200 pb-4">
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your events</p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">Manage</h2>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">Select one event</h2>
               </div>
-              <div className="flex items-center gap-2">
-                <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`)} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"><BarChart3 className="h-3.5 w-3.5" />Dashboard</button>
-                <button type="button" onClick={loadDashboard} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"><RefreshCw className="h-3.5 w-3.5" />Refresh</button>
-              </div>
+              <button
+                type="button"
+                onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`)}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
+              >
+                <BarChart3 className="h-3.5 w-3.5" /> Summary
+              </button>
             </div>
 
-            <div className="mt-4 space-y-3">
-              {events.length === 0 ? (
-                <div className="rounded-[1.5rem] border border-dashed border-zinc-200 bg-zinc-50/60 p-5 text-sm text-zinc-600">
-                  No events yet. Create your first event to start managing it here.
-                  <div className="mt-4"><ActionButton onClick={() => navigateToPath(EVENTS_CREATE_PATH)}><ArrowRight className="h-4 w-4" />Create Event</ActionButton></div>
-                </div>
-              ) : events.map((event) => {
-                const active = selectedEvent?.id === event.id;
+            <div className="mt-4 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
+              <Search className="h-4 w-4 text-zinc-400" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search title, venue, organizer"
+                className="w-full bg-transparent text-sm font-medium text-zinc-900 outline-none placeholder:text-zinc-400"
+              />
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {(["all", "published", "inactive", "draft", "cancelled"] as StatusFilter[]).map((item) => {
+                const label = item === "all" ? "All" : item.charAt(0).toUpperCase() + item.slice(1);
+                const active = status === item;
                 return (
-                  <button key={event.id} type="button" onClick={() => handleSelectEvent(event.id)} className={`w-full rounded-[1.5rem] border p-4 text-left transition ${active ? "border-zinc-900 bg-zinc-950 text-white shadow-lg shadow-zinc-950/10" : "border-zinc-200 bg-white hover:bg-zinc-50"}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${active ? "text-white/60" : "text-zinc-400"}`}>{event.event_type}</p>
-                        <h3 className="mt-1 truncate text-base font-black tracking-tight">{event.event_title}</h3>
-                        <p className={`mt-1 text-sm ${active ? "text-white/75" : "text-zinc-500"}`}>{formatDate(event.event_date)} • {formatMoney(event.ticket_price)}</p>
-                      </div>
-                      <span className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${badgeClass(event.status)}`}>{event.status}</span>
-                    </div>
-                    <div className={`mt-3 flex flex-wrap gap-2 text-[11px] font-bold ${active ? "text-white/80" : "text-zinc-500"}`}>
-                      <span className="rounded-full border border-current/10 px-3 py-1">{event.message_threads} threads</span>
-                      <span className="rounded-full border border-current/10 px-3 py-1">{event.cart_adds} cart adds</span>
-                      <span className="rounded-full border border-current/10 px-3 py-1">{event.ticket_clicks} clicks</span>
-                    </div>
+                  <button
+                    key={item}
+                    type="button"
+                    onClick={() => setStatus(item)}
+                    className={`rounded-full border px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.18em] transition ${
+                      active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-white text-zinc-500 hover:bg-zinc-50"
+                    }`}
+                  >
+                    {label}
                   </button>
                 );
               })}
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {filteredEvents.length === 0 ? (
+                <div className="rounded-[1.5rem] border border-dashed border-zinc-200 bg-zinc-50/60 p-5 text-sm text-zinc-600">
+                  No events matched this filter.
+                  <div className="mt-4">
+                    <ActionButton onClick={() => navigateToPath(EVENTS_CREATE_PATH)}>
+                      <ArrowRight className="h-4 w-4" /> Create Event
+                    </ActionButton>
+                  </div>
+                </div>
+              ) : (
+                filteredEvents.map((event) => {
+                  const active = selectedEvent?.id === event.id;
+                  return (
+                    <button
+                      key={event.id}
+                      type="button"
+                      onClick={() => handleSelectEvent(event.id)}
+                      className={`w-full rounded-[1.5rem] border p-4 text-left transition ${
+                        active
+                          ? "border-zinc-950 bg-zinc-950 text-white shadow-lg shadow-zinc-950/10"
+                          : "border-zinc-200 bg-white hover:bg-zinc-50"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className={`text-[10px] font-extrabold uppercase tracking-[0.2em] ${active ? "text-white/60" : "text-zinc-400"}`}>
+                            {event.event_type}
+                          </p>
+                          <h3 className="mt-1 truncate text-base font-black tracking-tight">{event.event_title}</h3>
+                          <p className={`mt-1 text-sm ${active ? "text-white/75" : "text-zinc-500"}`}>
+                            {formatDate(event.event_date)} • {formatMoney(event.ticket_price)}
+                          </p>
+                        </div>
+                        <span className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${statusClass(event.status)}`}>
+                          {event.status}
+                        </span>
+                      </div>
+                      <div className={`mt-3 text-sm ${active ? "text-white/75" : "text-zinc-500"}`}>
+                        {event.venue || "Venue unavailable"}
+                      </div>
+                    </button>
+                  );
+                })
+              )}
             </div>
           </section>
 
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-5 shadow-sm shadow-zinc-200/30">
             {!selectedEvent ? (
               <div className="rounded-[1.75rem] border border-dashed border-zinc-200 bg-zinc-50/70 p-6 text-sm text-zinc-600">
-                {events.length === 0 ? (
+                {allEvents.length === 0 ? (
                   <>
-                    Your event creator dashboard is empty. Once you publish an event, its edit controls, messages, and ticket activity will appear here.
-                    <div className="mt-4"><ActionButton onClick={() => navigateToPath(EVENTS_CREATE_PATH)}><ArrowRight className="h-4 w-4" />Publish Event</ActionButton></div>
+                    Your event manager is empty. Create one event first, then control everything from here.
+                    <div className="mt-4">
+                      <ActionButton onClick={() => navigateToPath(EVENTS_CREATE_PATH)}>
+                        <ArrowRight className="h-4 w-4" /> Publish Event
+                      </ActionButton>
+                    </div>
                   </>
-                ) : "Select an event from the left to manage it."}
+                ) : (
+                  "Select an event from the left to manage it."
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -315,70 +441,105 @@ export default function EventCreatorDashboardPage() {
                   <div className="min-w-0">
                     <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Selected event</p>
                     <h2 className="mt-1 text-3xl font-black tracking-[-0.05em] text-zinc-950">{selectedEvent.event_title}</h2>
-                    <p className="mt-2 text-sm font-medium text-zinc-600">{selectedEvent.organizer_name} • {selectedEvent.venue || "Venue unavailable"} • {selectedEvent.location || "Location unavailable"}</p>
+                    <p className="mt-2 text-sm font-medium text-zinc-600">
+                      {selectedEvent.organizer_name} • {selectedEvent.venue || "Venue unavailable"} • {selectedEvent.location || "Location unavailable"}
+                    </p>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      <span className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${badgeClass(selectedEvent.status)}`}>{selectedEvent.status}</span>
-                      <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">{formatDate(selectedEvent.event_date)}</span>
-                      <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">{selectedEvent.ticket_mode}</span>
+                      <span className={`rounded-full border px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] ${statusClass(selectedEvent.status)}`}>
+                        {selectedEvent.status}
+                      </span>
+                      <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">
+                        {formatDate(selectedEvent.event_date)}
+                      </span>
+                      <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">
+                        {selectedEvent.ticket_mode}
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <ActionButton onClick={() => handleEditEvent(selectedEvent.id)} variant="ghost"><Pencil className="h-4 w-4" />Edit</ActionButton>
-                    <ActionButton onClick={() => handleViewPublic(selectedEvent.id)} variant="ghost"><ExternalLink className="h-4 w-4" />View public page</ActionButton>
-                    {selectedEvent.status === "inactive" ? (
-                      <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "published")}><RefreshCw className="h-4 w-4" />Reactivate</ActionButton>
+                    <ActionButton onClick={() => handleEditEvent(selectedEvent.id)} variant="ghost">
+                      <Pencil className="h-4 w-4" /> Edit
+                    </ActionButton>
+                    <ActionButton onClick={() => handleViewPublic(selectedEvent.id)} variant="ghost">
+                      <ExternalLink className="h-4 w-4" /> View public page
+                    </ActionButton>
+                    {selectedEvent.status === "draft" ? (
+                      <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "published")}>
+                        <RefreshCw className="h-4 w-4" /> Publish
+                      </ActionButton>
+                    ) : selectedEvent.status === "published" ? (
+                      <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "inactive")} variant="ghost">
+                        <Clock3 className="h-4 w-4" /> Pause
+                      </ActionButton>
+                    ) : selectedEvent.status === "inactive" ? (
+                      <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "published")}>
+                        <RefreshCw className="h-4 w-4" /> Reactivate
+                      </ActionButton>
                     ) : (
-                      <ActionButton onClick={() => void updateEventStatus(selectedEvent.id, "inactive")} variant="ghost"><Clock3 className="h-4 w-4" />Mark inactive</ActionButton>
+                      <ActionButton onClick={() => {}} variant="ghost" disabled>
+                        <Clock3 className="h-4 w-4" /> Status locked
+                      </ActionButton>
                     )}
-                    <ActionButton onClick={() => void handleDeleteEvent(selectedEvent.id)} variant="danger"><Trash2 className="h-4 w-4" />Cancel</ActionButton>
+                    <ActionButton onClick={() => void handleDeleteEvent(selectedEvent.id)} variant="danger">
+                      <Trash2 className="h-4 w-4" /> Cancel
+                    </ActionButton>
                   </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <StatCard label="Ticket clicks" value={String(selectedEvent.ticket_clicks)} icon={ExternalLink} helper="Clicks on the buy button." />
-                  <StatCard label="Cart adds" value={String(selectedEvent.cart_adds)} icon={Ticket} helper="Tickets added to cart." />
-                  <StatCard label="Message threads" value={String(selectedEvent.message_threads)} icon={MessageCircle} helper={`${selectedEvent.unread_messages} unread messages`} />
+                  <MetricCard label="Tickets sold" value={String(selectedEvent.ticket_clicks || 0)} icon={Ticket} helper="Clicks, not orders." />
+                  <MetricCard label="Cart adds" value={String(selectedEvent.cart_adds || 0)} icon={Eye} helper="People showing intent." />
+                  <MetricCard label="Last activity" value={selectedEvent.last_activity_at ? formatDateTime(selectedEvent.last_activity_at) : "—"} icon={Clock3} helper="Latest interaction seen." />
                 </div>
 
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+                <div className="grid gap-4 md:grid-cols-2">
                   <section className="rounded-[1.75rem] border border-zinc-200 bg-white p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
-                      <div><p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Messages</p><h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Event conversations</h3></div>
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-500">{selectedThreads.length} threads</span>
+                      <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Event details</p>
+                        <h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Key information</h3>
+                      </div>
                     </div>
-
-                    <div className="mt-4 space-y-3">
-                      {selectedThreads.length === 0 ? (
-                        <div className="rounded-[1.5rem] border border-dashed border-zinc-200 bg-zinc-50/70 p-5 text-sm text-zinc-600">No one has messaged about this event yet.</div>
-                      ) : selectedThreads.map((conversation) => {
-                        const buyerName = conversation.buyer?.business_name || conversation.buyer_uid || "Buyer";
-                        const preview = conversation.last_message_preview || "No preview available.";
-                        const unread = Number(conversation.seller_unread_count || 0);
-                        return (
-                          <button key={conversation.id} type="button" onClick={() => handleOpenThread(conversation.id)} className="w-full rounded-[1.5rem] border border-zinc-200 bg-zinc-50/80 p-4 text-left transition hover:bg-zinc-100">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="text-sm font-black tracking-tight text-zinc-950">{buyerName}</p>
-                                <p className="mt-1 text-sm text-zinc-600">{preview}</p>
-                              </div>
-                              {unread > 0 ? <span className="rounded-full bg-red-900 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.18em] text-white">{unread} unread</span> : null}
-                            </div>
-                          </button>
-                        );
-                      })}
+                    <div className="mt-4 space-y-3 text-sm text-zinc-600">
+                      <p>
+                        <span className="font-bold text-zinc-900">Date:</span> {formatDate(selectedEvent.event_date)}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Time:</span> {selectedEvent.start_time || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Venue:</span> {selectedEvent.venue || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Location:</span> {selectedEvent.location || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Ticket price:</span> {formatMoney(selectedEvent.ticket_price)}
+                      </p>
                     </div>
                   </section>
 
                   <section className="rounded-[1.75rem] border border-zinc-200 bg-white p-5">
                     <div className="flex items-center justify-between gap-3 border-b border-zinc-200 pb-4">
-                      <div><p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Profile</p><h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Creator status</h3></div>
+                      <div>
+                        <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Creator status</p>
+                        <h3 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Account snapshot</h3>
+                      </div>
                     </div>
                     <div className="mt-4 space-y-3 text-sm text-zinc-600">
-                      <p><span className="font-bold text-zinc-900">Creator:</span> {creatorProfile?.display_name || "—"}</p>
-                      <p><span className="font-bold text-zinc-900">Organization:</span> {creatorProfile?.organization_name || "—"}</p>
-                      <p><span className="font-bold text-zinc-900">Status:</span> {creatorProfile?.status || "—"}</p>
-                      <p><span className="font-bold text-zinc-900">Active until:</span> {activeUntil || "—"}</p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Creator:</span> {creatorProfile?.display_name || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Organization:</span> {creatorProfile?.organization_name || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Status:</span> {creatorProfile?.status || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Active until:</span> {activeUntil || "—"}
+                      </p>
                     </div>
                   </section>
                 </div>
