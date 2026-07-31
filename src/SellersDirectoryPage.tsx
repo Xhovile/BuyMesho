@@ -15,6 +15,7 @@ import {
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
+import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
 
 import type { Listing, RatingSummary } from "./types";
 
@@ -43,6 +44,9 @@ type SellerCard = {
 };
 
 type ListingsResponse = { items?: Listing[] } | Listing[] | null;
+
+const SELLERS_DIRECTORY_CACHE_KEY = "seller-directory-cards-v1";
+const SELLERS_DIRECTORY_CACHE_TTL_MS = 60 * 60 * 1000;
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -133,7 +137,9 @@ function StatPill({ label, value }: { label: string; value: string }) {
 export default function SellersDirectoryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [cards, setCards] = useState<SellerCard[]>([]);
+  const [cards, setCards] = useState<SellerCard[]>(() =>
+    readPersistentPageCache<SellerCard[]>(SELLERS_DIRECTORY_CACHE_KEY, SELLERS_DIRECTORY_CACHE_TTL_MS) ?? []
+  );
   const [error, setError] = useState<string | null>(null);
 
   const { user: firebaseUser } = useAuthUser();
@@ -141,6 +147,13 @@ export default function SellersDirectoryPage() {
   const activeChip = getMarketChipFromLocation(window.location);
 
   useEffect(() => {
+    const cached = readPersistentPageCache<SellerCard[]>(SELLERS_DIRECTORY_CACHE_KEY, SELLERS_DIRECTORY_CACHE_TTL_MS);
+    if (cached) {
+      setCards(cached);
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
 
     const loadSellers = async () => {
@@ -201,14 +214,14 @@ export default function SellersDirectoryPage() {
         );
 
         if (!mounted) return;
-        setCards(
-          sellerEntries.sort((a, b) => {
-            if (b.isVerified !== a.isVerified) return Number(b.isVerified) - Number(a.isVerified);
-            if (b.rating !== a.rating) return b.rating - a.rating;
-            if (b.listingCount !== a.listingCount) return b.listingCount - a.listingCount;
-            return String(a.joinedAt || "").localeCompare(String(b.joinedAt || ""));
-          })
-        );
+        const nextCards = sellerEntries.sort((a, b) => {
+          if (b.isVerified !== a.isVerified) return Number(b.isVerified) - Number(a.isVerified);
+          if (b.rating !== a.rating) return b.rating - a.rating;
+          if (b.listingCount !== a.listingCount) return b.listingCount - a.listingCount;
+          return String(a.joinedAt || "").localeCompare(String(b.joinedAt || ""));
+        });
+        setCards(nextCards);
+        writePersistentPageCache(SELLERS_DIRECTORY_CACHE_KEY, nextCards);
       } catch (loadErr) {
         console.error("Failed to load sellers directory", loadErr);
         if (!mounted) return;
