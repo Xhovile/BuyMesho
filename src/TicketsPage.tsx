@@ -60,6 +60,7 @@ function TicketsPageContent() {
   const [orders, setOrders] = useState<OrderBundle[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<"all" | BuyerTicketStatus>("all");
 
@@ -70,8 +71,11 @@ function TicketsPageContent() {
       if (mounted) setPaymentRecords(readBuyerPayments());
     };
 
+    syncLocal();
+    setLoading(false);
+
     void (async () => {
-      syncLocal();
+      setRefreshing(true);
       try {
         const data = await fetchMyOrders();
         if (!mounted) return;
@@ -80,7 +84,7 @@ function TicketsPageContent() {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Failed to load buyer tickets.");
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) setRefreshing(false);
       }
     })();
 
@@ -166,6 +170,7 @@ function TicketsPageContent() {
           </div>
           <p className="text-sm text-zinc-500">
             Showing <span className="font-bold text-zinc-800">{visibleTickets.length}</span> of <span className="font-bold text-zinc-800">{tickets.length}</span>
+            {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
           </p>
         </div>
 
@@ -200,6 +205,22 @@ function TicketsPageContent() {
               </button>
             );
           })}
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm text-zinc-500">
+          <p>
+            Showing <span className="font-bold text-zinc-800">{visibleTickets.length}</span> of <span className="font-bold text-zinc-800">{tickets.length}</span> tickets
+            {activeFilter === "all" ? "" : ` filtered by ${activeFilter}.`}
+          </p>
+          {activeFilter !== "all" ? (
+            <button
+              type="button"
+              onClick={() => setActiveFilter("all")}
+              className="font-bold text-zinc-800 underline decoration-zinc-300 underline-offset-4 hover:text-zinc-950"
+            >
+              Show all
+            </button>
+          ) : null}
         </div>
 
         {error ? (
