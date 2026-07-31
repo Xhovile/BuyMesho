@@ -144,19 +144,6 @@ const CategorySection: FC<CategorySectionProps> = ({
                 Scroll to load more
               </div>
             ) : null}
-
-            <button
-              type="button"
-              onClick={() => navigateToExploreWithCategory(categoryKey)}
-              className="snap-start shrink-0 w-[174px] sm:w-[260px] rounded-2xl border border-zinc-200 bg-white/90 p-3 text-left shadow-sm transition-colors hover:bg-zinc-50"
-            >
-              <div className="flex h-full min-h-[168px] sm:min-h-[220px] items-center justify-center rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 text-center">
-                <span className="inline-flex items-center gap-2 text-sm font-extrabold text-zinc-900">
-                  View more listings
-                  <ArrowRight className="w-4 h-4" />
-                </span>
-              </div>
-            </button>
           </>
         )}
       </div>
@@ -165,9 +152,9 @@ const CategorySection: FC<CategorySectionProps> = ({
         <button
           type="button"
           onClick={() => navigateToExploreWithCategory(categoryKey)}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 py-3 text-sm font-extrabold text-white transition-colors hover:bg-zinc-800"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500 bg-gradient-to-r from-emerald-600 to-emerald-500 px-5 py-3 text-sm font-extrabold text-white shadow-md shadow-emerald-500/20 transition-all hover:-translate-y-0.5 hover:from-emerald-500 hover:to-emerald-400 hover:shadow-lg hover:shadow-emerald-500/30"
         >
-          View more
+          View all
           <ArrowRight className="w-4 h-4" />
         </button>
       </div>
