@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
+import { Loader2, Search, ShieldCheck, Star } from "lucide-react";
 
-import BrandMark from "./components/BrandMark";
+import Header from "./components/Header";
 import { apiFetch } from "./lib/api";
-import { EXPLORE_PATH, navigateBackOrPath, navigateToSellerProfile } from "./lib/appNavigation";
+import {
+  getMarketChipFromLocation,
+  navigateToCreateListing,
+  navigateToMarketChip,
+  navigateToPath,
+  navigateToSellerProfile,
+  PROFILE_PATH,
+} from "./lib/appNavigation";
+import { useAccountProfile } from "./hooks/useAccountProfile";
+import { useAuthUser } from "./hooks/useAuthUser";
 import { normalizeRatingSummary } from "./components/ratings/ratingSummaryUtils";
 
 import type { Listing, RatingSummary } from "./types";
@@ -126,6 +135,10 @@ export default function SellersDirectoryPage() {
   const [cards, setCards] = useState<SellerCard[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  const { user: firebaseUser } = useAuthUser();
+  const { profile: userProfile } = useAccountProfile();
+  const activeChip = getMarketChipFromLocation(window.location);
+
   useEffect(() => {
     let mounted = true;
 
@@ -137,13 +150,7 @@ export default function SellersDirectoryPage() {
         const listingsPayload = await apiFetch("/api/listings?sortBy=newest&pageSize=200");
         const listings = normalizeListingsResponse(listingsPayload as ListingsResponse);
 
-        const sellerBuckets = new Map<
-          string,
-          {
-            listingCount: number;
-            representativeListing: Listing;
-          }
-        >();
+        const sellerBuckets = new Map<string, { listingCount: number; representativeListing: Listing }>();
 
         for (const listing of listings) {
           if (!listing?.seller_uid) continue;
@@ -235,71 +242,68 @@ export default function SellersDirectoryPage() {
   }, [cards, search]);
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
-          <BrandMark subtitle="sellers" />
+    <div className="flex min-h-screen flex-col bg-zinc-100 text-zinc-900">
+      <Header
+        searchValue={search}
+        onSearch={setSearch}
+        onAddListing={navigateToCreateListing}
+        onProfileClick={() => navigateToPath(PROFILE_PATH)}
+        userProfile={userProfile}
+        firebaseUser={firebaseUser}
+        activeChip={activeChip}
+        onChipChange={navigateToMarketChip}
+      />
 
-          <button
-            type="button"
-            onClick={() => navigateBackOrPath(EXPLORE_PATH)}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Back
-          </button>
-        </div>
-      </header>
+      <main className="flex-1">
+        <section className="mx-auto max-w-7xl px-4 pb-6 pt-6 sm:pt-8">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Explore</p>
+                <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
+                  Seller Directory.
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-600 sm:text-base">
+                  Browse approved sellers, compare their listings, and open any profile directly from the directory.
+                </p>
+              </div>
 
-      <main className="mx-auto max-w-7xl px-4 py-8">
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">Directory</p>
-              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">
-                Approved sellers.
-              </h1>
-            </div>
-
-            <div className="w-full max-w-md">
-              <label className="mb-2 block text-xs font-black uppercase tracking-[0.18em] text-zinc-400">
-                Search sellers
-              </label>
-              <div className="flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
-                <Search className="h-4 w-4 shrink-0 text-zinc-500" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search by description, rating, or listings"
-                  className="w-full bg-transparent text-sm text-zinc-900 outline-none placeholder:text-zinc-400"
-                />
+              <div className="grid grid-cols-2 gap-3 sm:min-w-[260px]">
+                <StatPill label="Sellers" value={`${cards.length}`} />
+                <StatPill label="Showing" value={`${filteredCards.length}`} />
               </div>
             </div>
           </div>
         </section>
 
         {error ? (
-          <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-            {error}
+          <div className="mx-auto mt-0 max-w-7xl px-4">
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {error}
+            </div>
           </div>
         ) : null}
 
         {loading ? (
-          <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm">
-            <div className="flex items-center justify-center gap-3 text-zinc-500">
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Loading approved sellers…
+          <div className="mx-auto mt-0 max-w-7xl px-4 pb-8">
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 shadow-sm">
+              <div className="flex items-center justify-center gap-3 text-zinc-500">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Loading approved sellers…
+              </div>
             </div>
           </div>
         ) : filteredCards.length === 0 ? (
-          <div className="mt-6 rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
-            <h2 className="text-xl font-black tracking-tight text-zinc-900">No sellers found</h2>
-            <p className="mt-3 text-sm text-zinc-500">
-              Approved sellers will show up here once they have public listings.
-            </p>
+          <div className="mx-auto mt-0 max-w-7xl px-4 pb-8">
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
+              <h2 className="text-xl font-black tracking-tight text-zinc-900">No sellers found</h2>
+              <p className="mt-3 text-sm text-zinc-500">
+                Approved sellers will show up here once they have public listings.
+              </p>
+            </div>
           </div>
         ) : (
-          <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-4 pb-8 sm:grid-cols-2 xl:grid-cols-3">
             {filteredCards.map((card) => (
               <button
                 key={card.uid}
