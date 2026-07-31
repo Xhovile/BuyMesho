@@ -34,9 +34,16 @@ type ManagedEvent = {
   unread_messages: number;
   last_activity_at: string | null;
   last_message_at: string | null;
+  tickets_sold: number;
+  gross_revenue_amount: number;
+  net_revenue_amount: number;
+  revenue_currency: string;
+  purchase_count: number;
+  last_sale_at: string | null;
+  pending_issues: boolean;
 };
 
-type CreatorDashboardResponse = {
+type CreatorOverviewResponse = {
   creator: {
     uid: string;
     email: string;
@@ -52,6 +59,15 @@ type CreatorDashboardResponse = {
     updated_at: string;
   } | null;
   events: ManagedEvent[];
+  summary: {
+    totalTicketsSold: number;
+    grossRevenueAmount: number;
+    netRevenueAmount: number;
+    revenueAmount: number;
+    revenueCurrency: string;
+    activeEvents: number;
+    pendingIssues: number;
+  };
 };
 
 type StatusFilter = "all" | "published" | "inactive" | "draft" | "cancelled";
@@ -155,7 +171,7 @@ function ActionButton({
 
 export default function EventCreatorDashboardPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
-  const [dashboard, setDashboard] = useState<CreatorDashboardResponse | null>(null);
+  const [dashboard, setDashboard] = useState<CreatorOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -179,14 +195,35 @@ export default function EventCreatorDashboardPage() {
     setError(null);
 
     try {
-      const response = (await apiFetch("/api/event-creator/dashboard")) as CreatorDashboardResponse;
+      const response = (await apiFetch("/api/event-creator/overview")) as CreatorOverviewResponse;
       setDashboard({
         creator: response?.creator ?? null,
         events: Array.isArray(response?.events) ? response.events : [],
+        summary: response?.summary ?? {
+          totalTicketsSold: 0,
+          grossRevenueAmount: 0,
+          netRevenueAmount: 0,
+          revenueAmount: 0,
+          revenueCurrency: "MWK",
+          activeEvents: 0,
+          pendingIssues: 0,
+        },
       });
     } catch (loadError: any) {
       setError(loadError?.message || "Could not load your event dashboard.");
-      setDashboard({ creator: null, events: [] });
+      setDashboard({
+        creator: null,
+        events: [],
+        summary: {
+          totalTicketsSold: 0,
+          grossRevenueAmount: 0,
+          netRevenueAmount: 0,
+          revenueAmount: 0,
+          revenueCurrency: "MWK",
+          activeEvents: 0,
+          pendingIssues: 0,
+        },
+      });
     } finally {
       setLoading(false);
     }
@@ -207,6 +244,15 @@ export default function EventCreatorDashboardPage() {
   }, [authLoading, firebaseUser, isOverviewView]);
 
   const allEvents = dashboard?.events ?? [];
+  const summary = dashboard?.summary ?? {
+    totalTicketsSold: 0,
+    grossRevenueAmount: 0,
+    netRevenueAmount: 0,
+    revenueAmount: 0,
+    revenueCurrency: "MWK",
+    activeEvents: 0,
+    pendingIssues: 0,
+  };
 
   const filteredEvents = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -227,21 +273,6 @@ export default function EventCreatorDashboardPage() {
     if (filteredEvents.length === 0) return null;
     return filteredEvents.find((event) => event.id === selectedEventId) ?? filteredEvents[0] ?? null;
   }, [filteredEvents, selectedEventId]);
-
-  const totals = useMemo(
-    () =>
-      allEvents.reduce(
-        (acc, event) => {
-          acc.published += event.status === "published" ? 1 : 0;
-          acc.inactive += event.status === "inactive" ? 1 : 0;
-          acc.draft += event.status === "draft" ? 1 : 0;
-          acc.cancelled += event.status === "cancelled" ? 1 : 0;
-          return acc;
-        },
-        { published: 0, inactive: 0, draft: 0, cancelled: 0 },
-      ),
-    [allEvents],
-  );
 
   const handleSelectEvent = (eventId: number) => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
   const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
@@ -320,9 +351,9 @@ export default function EventCreatorDashboardPage() {
 
         <div className="grid gap-4 md:grid-cols-4">
           <MetricCard label="Owned events" value={String(allEvents.length)} icon={Ticket} helper="Only your events are listed." />
-          <MetricCard label="Published" value={String(totals.published)} icon={Eye} helper="Live in the public directory." />
-          <MetricCard label="Inactive" value={String(totals.inactive)} icon={Clock3} helper="Hidden from the public directory." />
-          <MetricCard label="Drafts" value={String(totals.draft)} icon={BarChart3} helper="Not ready for publishing." />
+          <MetricCard label="Published" value={String(summary.activeEvents)} icon={Eye} helper="Live in the public directory." />
+          <MetricCard label="Tickets sold" value={String(summary.totalTicketsSold)} icon={BarChart3} helper="From paid orders." />
+          <MetricCard label="Pending issues" value={String(summary.pendingIssues)} icon={Clock3} helper="Needs attention." />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)]">
@@ -411,6 +442,10 @@ export default function EventCreatorDashboardPage() {
                       <div className={`mt-3 text-sm ${active ? "text-white/75" : "text-zinc-500"}`}>
                         {event.venue || "Venue unavailable"}
                       </div>
+                      <div className={`mt-3 flex flex-wrap gap-2 text-[11px] font-bold ${active ? "text-white/80" : "text-zinc-500"}`}>
+                        <span className="rounded-full border border-current/10 px-3 py-1">{event.tickets_sold} sold</span>
+                        <span className="rounded-full border border-current/10 px-3 py-1">{formatMoney(event.gross_revenue_amount)}</span>
+                      </div>
                     </button>
                   );
                 })
@@ -486,10 +521,11 @@ export default function EventCreatorDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Ticket clicks" value={String(selectedEvent.ticket_clicks || 0)} icon={ExternalLink} helper="Clicks on the buy button." />
-                  <MetricCard label="Cart adds" value={String(selectedEvent.cart_adds || 0)} icon={Ticket} helper="Tickets added to cart." />
-                  <MetricCard label="Last activity" value={selectedEvent.last_activity_at ? formatDateTime(selectedEvent.last_activity_at) : "—"} icon={Clock3} helper="Latest interaction seen." />
+                <div className="grid gap-4 md:grid-cols-4">
+                  <MetricCard label="Tickets sold" value={String(selectedEvent.tickets_sold || 0)} icon={Ticket} helper="From paid orders." />
+                  <MetricCard label="Gross sales" value={formatMoney(selectedEvent.gross_revenue_amount)} icon={BarChart3} helper="Before payout fees." />
+                  <MetricCard label="Net sales" value={formatMoney(selectedEvent.net_revenue_amount)} icon={Eye} helper="Estimated payout value." />
+                  <MetricCard label="Last sale" value={selectedEvent.last_sale_at ? formatDateTime(selectedEvent.last_sale_at) : "—"} icon={Clock3} helper="Latest paid order." />
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -512,6 +548,9 @@ export default function EventCreatorDashboardPage() {
                       </p>
                       <p>
                         <span className="font-bold text-zinc-900">Location:</span> {selectedEvent.location || "—"}
+                      </p>
+                      <p>
+                        <span className="font-bold text-zinc-900">Ticket mode:</span> {selectedEvent.ticket_mode || "—"}
                       </p>
                       <p>
                         <span className="font-bold text-zinc-900">Ticket price:</span> {formatMoney(selectedEvent.ticket_price)}
