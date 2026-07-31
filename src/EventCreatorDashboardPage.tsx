@@ -7,7 +7,6 @@ import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 
-
 type ManagedEvent = {
   id: number;
   creator_uid: string | null;
@@ -488,8 +487,8 @@ export default function EventCreatorDashboardPage() {
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-3">
-                  <MetricCard label="Tickets sold" value={String(selectedEvent.ticket_clicks || 0)} icon={Ticket} helper="Clicks, not orders." />
-                  <MetricCard label="Cart adds" value={String(selectedEvent.cart_adds || 0)} icon={Eye} helper="People showing intent." />
+                  <MetricCard label="Ticket clicks" value={String(selectedEvent.ticket_clicks || 0)} icon={ExternalLink} helper="Clicks on the buy button." />
+                  <MetricCard label="Cart adds" value={String(selectedEvent.cart_adds || 0)} icon={Ticket} helper="Tickets added to cart." />
                   <MetricCard label="Last activity" value={selectedEvent.last_activity_at ? formatDateTime(selectedEvent.last_activity_at) : "—"} icon={Clock3} helper="Latest interaction seen." />
                 </div>
 
