@@ -351,10 +351,6 @@ export default function SellerProfilePage() {
     }
   };
 
-  useEffect(() => {
-    void refreshRatingSummary();
-  }, [sellerUid, firebaseUser?.uid]);
-
   const filteredListings = useMemo(() => {
     const term = listingSearch.trim().toLowerCase();
     if (!term) return listings;
