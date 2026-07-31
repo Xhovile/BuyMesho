@@ -320,7 +320,8 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   const commands: string[] = [];
 
   addRect(commands, 0, 0, 595, 842, BRAND_LIGHT);
-  addRect(commands, 0, 686, 595, 156, BRAND_CHARCOAL);
+  addRect(commands, 0, 686, 275, 156, { r: 255, g: 255, b: 255 });
+  addRect(commands, 275, 686, 320, 156, BRAND_CHARCOAL);
   addRect(commands, 0, 674, 595, 12, BRAND_RED);
 
   const logoDisplayWidth = 46;
@@ -332,8 +333,8 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   commands.push("/Im0 Do");
   commands.push("Q");
 
-  addBrandWordmark(commands, 88, 756, 24, brandName);
-  addText(commands, 88, 734, 11, brandTagline, BRAND_MUTED);
+  addBrandWordmark(commands, 90, 748, 24, brandName);
+  addText(commands, 90, 726, 11, brandTagline, BRAND_MUTED);
 
   addText(commands, 34, 642, 27, title, BRAND_CHARCOAL);
   addText(commands, 34, 620, 12, "Ticket information", BRAND_MID);
@@ -364,13 +365,13 @@ async function createPdfBytes(title: string, lines: PdfTicketLine[], options: Ti
   const qrX = 355;
   const qrY = 118;
   const qrBoxWidth = 206;
-  const qrBoxHeight = 258;
+  const qrBoxHeight = 252;
   addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 255, g: 255, b: 255 });
   addRect(commands, qrX, qrY, qrBoxWidth, qrBoxHeight, { r: 236, g: 236, b: 239 });
-  addText(commands, qrX + 18, qrY + 228, 11, "Scan at entry", BRAND_MID);
-  addText(commands, qrX + 18, qrY + 206, 20, "QR Code", BRAND_CHARCOAL);
-  commands.push(...drawTicketCodeMatrix(ticketCode, qrX + 17, qrY + 48, 160));
-  addText(commands, qrX + 18, qrY + 32, 10, ticketCode, BRAND_CHARCOAL);
+  addText(commands, qrX + 18, qrY + 224, 11, "Scan at entry", BRAND_MID);
+  addText(commands, qrX + 18, qrY + 202, 20, "QR Code", BRAND_CHARCOAL);
+  commands.push(...drawTicketCodeMatrix(ticketCode, qrX + 17, qrY + 42, 152));
+  addText(commands, qrX + 18, qrY + 24, 10, ticketCode, BRAND_CHARCOAL);
 
   addText(commands, 34, 96, 10, "Keep this ticket and code available for verification.", BRAND_MID);
   addRect(commands, 34, 64, 527, 1.4, mixColors(BRAND_RED, BRAND_CHARCOAL, 0.55));
