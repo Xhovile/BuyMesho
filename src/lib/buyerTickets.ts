@@ -1,5 +1,6 @@
 import type { BuyerPaymentRecord } from "./buyerState";
 import type { OrderBundle } from "./orderApi";
+import { extractPayChanguTicketCode } from "./ticketCode";
 
 export type BuyerTicketStatus = "pending" | "paid" | "rejected" | "error";
 
@@ -64,10 +65,8 @@ function getPaymentStatusText(payment: BuyerPaymentRecord | undefined): string {
   return String(payment?.status ?? "pending");
 }
 
-function formatTicketCode(reference: string, eventId: string) {
-  const seed = `${reference}-${eventId}`.replace(/[^a-zA-Z0-9]+/g, "").toUpperCase();
-  const short = seed.slice(-6);
-  return short || seed.slice(0, 6) || `TKT${eventId.slice(-6)}`;
+function formatTicketCode(reference: string, orderId: string, txRef?: string | null) {
+  return extractPayChanguTicketCode(orderId, reference, txRef);
 }
 
 function buildDetail(eventDate: string, startTime: string, venue: string, location: string, source: string) {
@@ -191,6 +190,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
             : typeof paymentEventPrice === "number"
               ? paymentEventPrice * quantity
               : Number(bundle.order?.total?.amount ?? 0);
+        const ticketCode = formatTicketCode(reference, String(bundle.order?.id ?? reference), payment?.txRef ?? null);
 
         pushTicket({
           key: `${reference}:${eventId}`,
@@ -209,7 +209,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
           status: ticketStatus,
           paymentStatus,
           orderStatus,
-          ticketCode: formatTicketCode(reference, eventId),
+          ticketCode,
           detail: buildDetail(eventDate, startTime, venue, location, "order"),
           updatedAt,
           source: "order",
@@ -242,6 +242,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const title = eventDetail?.title || payment.listingTitle || `Event ${eventId}`;
       const quantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? payment.quantity ?? 1) || 1);
       const amount = resolvePaymentTicketAmount(payment, eventId, eventDetail);
+      const ticketCode = formatTicketCode(reference, String(payment.orderId ?? reference), payment.txRef ?? null);
 
       pushTicket({
         key: dedupeKey,
@@ -260,7 +261,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
         status: ticketStatus,
         paymentStatus: payment.status,
         orderStatus: payment.status,
-        ticketCode: formatTicketCode(reference, eventId),
+        ticketCode,
         detail: buildDetail(eventDetail?.eventDate || "", eventDetail?.startTime || "", eventDetail?.venue || "", eventDetail?.location || "", "payment"),
         updatedAt: payment.updatedAt ?? payment.createdAt ?? null,
         source: "payment",
