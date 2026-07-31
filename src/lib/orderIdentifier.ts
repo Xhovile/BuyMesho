@@ -1,6 +1,7 @@
 import { readBuyerPayments } from "./buyerState";
 import { fetchMyOrders } from "./orderApi";
 import { buildBuyerTickets } from "./buyerTickets";
+import { extractPayChanguTicketCode } from "./ticketCode";
 
 function normalize(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
@@ -9,9 +10,12 @@ function normalize(value: string) {
 function matchesTicketIdentifier(candidate: string, normalizedInput: string) {
   if (!candidate) return false;
   const normalizedCandidate = normalize(candidate);
+  const shortCandidate = extractPayChanguTicketCode(candidate);
   return (
     normalizedCandidate === normalizedInput ||
-    normalizedInput.endsWith(normalizedCandidate)
+    shortCandidate === normalizedInput ||
+    normalizedInput.endsWith(normalizedCandidate) ||
+    normalizedInput === shortCandidate
   );
 }
 
