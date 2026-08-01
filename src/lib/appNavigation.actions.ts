@@ -22,7 +22,6 @@ import {
   EDIT_PATH,
   EDIT_PROFILE_PATH,
   EMAIL_ACTION_PATH,
-  EVENTS_MANAGE_PATH,
   EXPLORE_PATH,
   FORGOT_PASSWORD_PATH,
   HIDDEN_PATH,
@@ -75,15 +74,6 @@ export function navigateToPath(path: string, options?: { replace?: boolean; scro
 
   if (url.pathname !== EDIT_PATH) {
     url.searchParams.delete("id");
-  }
-
-  const shouldHardReload =
-    url.pathname === EVENTS_MANAGE_PATH &&
-    (url.searchParams.get("view") === "dashboard" || url.searchParams.has("event"));
-
-  if (shouldHardReload) {
-    window.location.assign(url.toString());
-    return;
   }
 
   if (options?.replace) {
