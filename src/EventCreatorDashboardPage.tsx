@@ -182,13 +182,14 @@ export default function EventCreatorDashboardPage() {
     return new URLSearchParams(window.location.search);
   }, []);
 
-  const isOverviewView = searchParams.get("view") === "dashboard";
-  const selectedEventId = useMemo(() => {
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(() => {
     const raw = searchParams.get("event");
     if (!raw) return null;
     const parsed = Number(raw);
     return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  }, [searchParams]);
+  });
+
+  const isOverviewView = searchParams.get("view") === "dashboard";
 
   const loadDashboard = async () => {
     setLoading(true);
@@ -271,10 +272,13 @@ export default function EventCreatorDashboardPage() {
 
   const selectedEvent = useMemo(() => {
     if (filteredEvents.length === 0) return null;
-    return filteredEvents.find((event) => event.id === selectedEventId) ?? filteredEvents[0] ?? null;
+    return filteredEvents.find((event) => event.id === selectedEventId) ?? null;
   }, [filteredEvents, selectedEventId]);
 
-  const handleSelectEvent = (eventId: number) => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
+  const handleSelectEvent = (eventId: number) => {
+    setSelectedEventId(eventId);
+    navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
+  };
   const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
 
@@ -362,13 +366,14 @@ export default function EventCreatorDashboardPage() {
               <div>
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.22em] text-zinc-400">Your events</p>
                 <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">Select one event</h2>
+                <p className="mt-1 text-xs font-medium text-zinc-500">Click a card to load its action panel.</p>
               </div>
               <button
                 type="button"
                 onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`)}
                 className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
               >
-                <BarChart3 className="h-3.5 w-3.5" /> Summary
+                <BarChart3 className="h-3.5 w-3.5" /> Dashboard
               </button>
             </div>
 
@@ -418,6 +423,7 @@ export default function EventCreatorDashboardPage() {
                     <button
                       key={event.id}
                       type="button"
+                      aria-pressed={active}
                       onClick={() => handleSelectEvent(event.id)}
                       className={`w-full rounded-[1.5rem] border p-4 text-left transition ${
                         active
@@ -466,7 +472,7 @@ export default function EventCreatorDashboardPage() {
                     </div>
                   </>
                 ) : (
-                  "Select an event from the left to manage it."
+                  "Select an event from the left to manage its actions."
                 )}
               </div>
             ) : (
