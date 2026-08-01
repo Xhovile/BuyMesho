@@ -146,7 +146,7 @@ const CategorySection: FC<CategorySectionProps> = ({
         <button
           type="button"
           onClick={() => navigateToExploreWithCategory(categoryKey)}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-900 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-zinc-950 hover:text-white hover:shadow-md"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-950 bg-white px-5 py-3 text-sm font-extrabold text-zinc-950 shadow-[inset_0_0_0_1px_#d4d4d8] transition-all hover:-translate-y-0.5 hover:bg-zinc-950 hover:text-white hover:shadow-[inset_0_0_0_1px_#ffffff]"
         >
           View all
           <ArrowRight className="w-4 h-4" />
