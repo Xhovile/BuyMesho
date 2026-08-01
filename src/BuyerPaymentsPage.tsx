@@ -1,12 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpRight, Loader2, Trash2 } from "lucide-react";
+import { ArrowUpRight, Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
 import { navigateToOrderTracking } from "./lib/appNavigation";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
-import { fetchMyOrders, type OrderBundle } from "./lib/orderApi";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 type PaymentFilter = "all" | "pending" | "paid" | "rejected" | "error";
@@ -32,48 +31,23 @@ export default function BuyerPaymentsPage() {
 }
 
 function BuyerPaymentsPageContent() {
-  const [orders, setOrders] = useState<OrderBundle[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<PaymentFilter>("all");
 
   useEffect(() => {
-    let mounted = true;
-
-    const syncLocal = () => {
-      if (mounted) setPaymentRecords(readBuyerPayments());
-    };
+    const syncLocal = () => setPaymentRecords(readBuyerPayments());
 
     syncLocal();
-    setLoading(false);
-
-    void (async () => {
-      setRefreshing(true);
-      try {
-        const data = await fetchMyOrders();
-        if (!mounted) return;
-        setOrders(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (!mounted) return;
-        setError(err instanceof Error ? err.message : "Failed to load purchases.");
-      } finally {
-        if (mounted) setRefreshing(false);
-      }
-    })();
-
     window.addEventListener("storage", syncLocal);
     window.addEventListener("focus", syncLocal);
 
     return () => {
-      mounted = false;
       window.removeEventListener("storage", syncLocal);
       window.removeEventListener("focus", syncLocal);
     };
   }, []);
 
-  const summary = useMemo(() => summarizePayments(orders, paymentRecords), [orders, paymentRecords]);
+  const summary = useMemo(() => summarizePayments([], paymentRecords), [paymentRecords]);
 
   const visibleRecords = useMemo(() => {
     if (activeFilter === "all") return summary.records;
@@ -85,10 +59,8 @@ function BuyerPaymentsPageContent() {
     if (!confirmed) return;
 
     clearBuyerPaymentRecords();
-    setOrders([]);
     setPaymentRecords([]);
     setActiveFilter("all");
-    setError(null);
   };
 
   const toggleFilter = (filter: PaymentFilter) => {
@@ -131,17 +103,9 @@ function BuyerPaymentsPageContent() {
             <h2 className="mt-2 text-2xl font-black tracking-tight text-zinc-950">Your purchase records</h2>
           </div>
           <p className="text-sm text-zinc-500">
-            Showing <span className="font-bold text-zinc-800">{summary.records.length ? visibleRecords.length : 0}</span> of <span className="font-bold text-zinc-800">{summary.records.length}</span>
-            {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
+            Showing <span className="font-bold text-zinc-800">{visibleRecords.length}</span> of <span className="font-bold text-zinc-800">{summary.records.length}</span>
           </p>
         </div>
-
-        {refreshing ? (
-          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 shadow-sm">
-            <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
-            Syncing purchases…
-          </div>
-        ) : null}
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {FILTERS.map(({ key, label }) => {
@@ -192,18 +156,8 @@ function BuyerPaymentsPageContent() {
           ) : null}
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {error}
-          </div>
-        ) : null}
-
         <div className="mt-8 space-y-3">
-          {loading ? (
-            <p className="rounded-2xl border border-zinc-200 bg-white px-4 py-4 text-sm text-zinc-600">
-              Loading purchase activity…
-            </p>
-          ) : visibleRecords.length ? (
+          {visibleRecords.length ? (
             visibleRecords.map((record) => (
               <div
                 key={record.key}
