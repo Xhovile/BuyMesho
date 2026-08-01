@@ -19,6 +19,7 @@ type AccountPageShellProps = {
   children: ReactNode;
   backLabel?: string;
   onBack?: () => void;
+  headerActions?: ReactNode;
   childrenSectionClassName?: string;
 };
 
@@ -29,6 +30,7 @@ export default function AccountPageShell({
   children,
   backLabel = "Back",
   onBack,
+  headerActions,
   childrenSectionClassName,
 }: AccountPageShellProps) {
   const { firebaseUser } = useAccountProfile();
@@ -50,26 +52,26 @@ export default function AccountPageShell({
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(30,41,59,0.08),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#eef2ff_48%,_#f8fafc_100%)] text-zinc-900">
-      <header className="sticky top-0 z-40 border-b border-white/70 bg-white/85 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-white/85 shadow-sm backdrop-blur-md">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3">
           <BrandMark />
           <div className="flex items-center gap-3">
             {firebaseUser && (
               <button
                 type="button"
                 onClick={() => void handleLogout()}
-                className="inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="h-4 w-4" />
                 Log out
               </button>
             )}
             <button
               type="button"
               onClick={() => navigateToPath(HOME_PATH)}
-              className="hidden sm:inline-flex px-4 py-2.5 rounded-2xl border border-zinc-200 bg-white text-sm font-bold hover:bg-zinc-50 items-center gap-2"
+              className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
             >
-              <House className="w-4 h-4" />
+              <House className="h-4 w-4" />
               Home
             </button>
             <button
@@ -77,31 +79,35 @@ export default function AccountPageShell({
               onClick={() => navigateToPath(EXPLORE_PATH)}
               className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="h-4 w-4" />
               Market
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-8">
+      <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
         <div className="space-y-6 sm:space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">{eyebrow}</p>
-              <h1 className="mt-2 text-3xl sm:text-4xl font-black tracking-tight text-zinc-900">{title}</h1>
-              <p className="mt-3 max-w-2xl text-sm sm:text-base text-zinc-600 leading-relaxed font-medium">
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900 sm:text-4xl">{title}</h1>
+              <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">
                 {description}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-zinc-900 bg-black text-sm font-bold text-white hover:bg-zinc-800 self-start"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              {backLabel}
-            </button>
+
+            <div className="flex flex-wrap items-start gap-3 self-start">
+              <button
+                type="button"
+                onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
+                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {backLabel}
+              </button>
+              {headerActions}
+            </div>
           </div>
 
           <div className={childrenWrapperClassName}>{children}</div>
