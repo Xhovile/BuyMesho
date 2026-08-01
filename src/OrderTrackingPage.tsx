@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, CreditCard, MapPin, Ticket, Truck } from "lucide-react";
+import { ArrowLeft, CalendarDays, CreditCard, MapPin, ShieldAlert, Ticket, Truck } from "lucide-react";
 import {
   EVENTS_PATH,
   PAYMENTS_HUB_PATH,
