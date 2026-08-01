@@ -95,8 +95,8 @@ function BuyerPaymentsPageContent() {
     setActiveFilter((current) => (current === filter ? "all" : filter));
   };
 
-  const openTracking = (reference: string) => {
-    navigateToOrderTracking(reference);
+  const openTracking = (reference: string, orderId?: string | null) => {
+    navigateToOrderTracking(orderId?.trim() || reference);
   };
 
   return (
@@ -209,11 +209,11 @@ function BuyerPaymentsPageContent() {
                 key={record.key}
                 role="button"
                 tabIndex={0}
-                onClick={() => openTracking(record.reference)}
+                onClick={() => openTracking(record.reference, record.orderId)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    openTracking(record.reference);
+                    openTracking(record.reference, record.orderId);
                   }
                 }}
                 className="w-full cursor-pointer rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left transition hover:border-zinc-300 hover:bg-zinc-100/40"
@@ -240,7 +240,7 @@ function BuyerPaymentsPageContent() {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      openTracking(record.reference);
+                      openTracking(record.reference, record.orderId);
                     }}
                     className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
                   >
