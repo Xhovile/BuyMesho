@@ -300,6 +300,17 @@ export default function EventCreatorDashboardPage() {
     navigateToPath(EVENTS_MANAGE_PATH, { replace: true });
   };
 
+  const dashboardButton = (
+    <button
+      type="button"
+      onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
+      className="inline-flex items-center gap-2 rounded-2xl border border-emerald-950 bg-emerald-100 px-4 py-2.5 text-sm font-extrabold text-emerald-950 shadow-sm shadow-emerald-950/10 transition hover:bg-emerald-200"
+    >
+      <BarChart3 className="h-4 w-4" />
+      Dashboard
+    </button>
+  );
+
   if (authLoading || loading) {
     return (
       <AccountPageShell
@@ -308,6 +319,7 @@ export default function EventCreatorDashboardPage() {
         description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
         backLabel="Back to Events"
         onBack={() => navigateToPath(EVENTS_PATH)}
+        headerActions={dashboardButton}
         childrenSectionClassName="w-full"
       >
         <div className="flex items-center justify-center gap-3 rounded-[2rem] border border-zinc-200 bg-white p-10 text-zinc-600 shadow-sm">
@@ -325,6 +337,7 @@ export default function EventCreatorDashboardPage() {
         description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
         backLabel="Back to Events"
         onBack={() => navigateToPath(EVENTS_PATH)}
+        headerActions={dashboardButton}
         childrenSectionClassName="w-full"
       >
         <div className="rounded-[2rem] border border-zinc-200 bg-white p-10 text-center shadow-sm">
@@ -350,6 +363,7 @@ export default function EventCreatorDashboardPage() {
       description="Keep your event list clean, open one event at a time, and edit or pause it without distractions."
       backLabel="Back to Events"
       onBack={() => navigateToPath(EVENTS_PATH)}
+      headerActions={dashboardButton}
       childrenSectionClassName="w-full"
     >
       <div className="space-y-6">
@@ -370,13 +384,6 @@ export default function EventCreatorDashboardPage() {
                 <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950">Select one event</h2>
                 <p className="mt-1 text-xs font-medium text-zinc-500">Click a card to load its action panel.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
-              >
-                <BarChart3 className="h-3.5 w-3.5" /> Dashboard
-              </button>
             </div>
 
             <div className="mt-4 flex items-center gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 px-3 py-2.5">
