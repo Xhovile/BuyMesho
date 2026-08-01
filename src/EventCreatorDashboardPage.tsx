@@ -277,7 +277,7 @@ export default function EventCreatorDashboardPage() {
 
   const handleSelectEvent = (eventId: number) => {
     setSelectedEventId(eventId);
-    navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`);
+    navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`, { scroll: false });
   };
   const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
@@ -370,7 +370,7 @@ export default function EventCreatorDashboardPage() {
               </div>
               <button
                 type="button"
-                onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`)}
+                onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?view=dashboard`, { scroll: false })}
                 className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2 text-xs font-extrabold text-zinc-900 hover:bg-zinc-50"
               >
                 <BarChart3 className="h-3.5 w-3.5" /> Dashboard
