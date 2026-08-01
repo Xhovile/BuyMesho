@@ -54,6 +54,7 @@ type EventSalesSummaryRow = {
 type OrderRow = {
   id: string;
   status: string;
+  payment_status: string | null;
   items: string;
   currency: string;
   total_amount: number;
@@ -102,7 +103,7 @@ function loadEventMessageSummaries(db: any, creatorUid: string) {
         WHERE c.event_id IS NOT NULL
           AND c.seller_uid = ?
         GROUP BY c.event_id
-      `
+      `,
     )
     .all(creatorUid) as EventMessageSummaryRow[];
 }
@@ -121,7 +122,7 @@ function loadEventActivitySummaries(db: any, creatorUid: string) {
         WHERE e.creator_uid = ?
           AND e.deleted_at IS NULL
         GROUP BY e.id
-      `
+      `,
     )
     .all(creatorUid) as EventActivitySummaryRow[];
 }
@@ -134,7 +135,7 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
         FROM events
         WHERE creator_uid = ?
           AND deleted_at IS NULL
-      `
+      `,
     )
     .all(creatorUid) as Array<{ id: number; ticket_price: number | null }>;
 
@@ -158,14 +159,38 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
   const orders = db
     .prepare(
       `
-        SELECT id, status, items, currency, total_amount, total_currency, paid_at, updated_at, created_at
-        FROM orders
-        WHERE status IN ('paid', 'in_escrow', 'fulfilled', 'closed')
-      `
+        SELECT
+          o.id,
+          o.status,
+          p.status AS payment_status,
+          o.items,
+          o.currency,
+          o.total_amount,
+          o.total_currency,
+          o.paid_at,
+          o.updated_at,
+          o.created_at
+        FROM orders o
+        LEFT JOIN payments p
+          ON p.order_id = o.id
+          OR p.reference = o.payment_reference
+      `,
     )
     .all() as OrderRow[];
 
+  const settledOrderStatuses = new Set(["paid", "in_escrow", "fulfilled", "closed"]);
+  const settledPaymentStatuses = new Set(["captured", "paid", "verified", "successful", "completed"]);
+
   for (const order of orders) {
+    const orderStatus = normalizeString(order.status).toLowerCase();
+    const paymentStatus = normalizeString(order.payment_status).toLowerCase();
+    const isSettled =
+      settledOrderStatuses.has(orderStatus) ||
+      settledPaymentStatuses.has(paymentStatus) ||
+      !!order.paid_at;
+
+    if (!isSettled) continue;
+
     let items: Array<Record<string, unknown>> = [];
     try {
       const parsed = JSON.parse(order.items);
@@ -175,6 +200,7 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
     }
 
     const saleTime = order.paid_at || order.updated_at || order.created_at;
+    const saleCurrency = order.total_currency || order.currency || "MWK";
 
     for (const item of items) {
       const eventId = Number(item.eventId ?? null);
@@ -192,13 +218,13 @@ function loadEventSalesSummaries(db: any, creatorUid: string) {
       const grossRevenue = Number.isFinite(unitPrice) ? unitPrice * quantity : 0;
       const netRevenue = calculatePayoutFormula({
         grossAmount: grossRevenue,
-        currency: order.total_currency || order.currency || "MWK",
+        currency: saleCurrency,
       }).netAmount;
 
       summary.tickets_sold += quantity;
       summary.gross_revenue_amount += grossRevenue;
       summary.net_revenue_amount += netRevenue;
-      summary.revenue_currency = order.total_currency || order.currency || summary.revenue_currency;
+      summary.revenue_currency = saleCurrency;
       summary.last_sale_at = saleTime && (!summary.last_sale_at || new Date(saleTime).getTime() > new Date(summary.last_sale_at).getTime()) ? saleTime : summary.last_sale_at;
       orderIdsByEvent.get(eventId)?.add(order.id);
     }
@@ -226,7 +252,7 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
     const uid = req.user!.uid;
 
     try {
-      const creator = db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid);
+      const creator = db.prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid) as EventCreatorRow | undefined;
       const events = db
         .prepare(
           `
@@ -235,7 +261,7 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
             WHERE creator_uid = ?
               AND deleted_at IS NULL
             ORDER BY created_at DESC, id DESC
-          `
+          `,
         )
         .all(uid) as EventRow[];
 
