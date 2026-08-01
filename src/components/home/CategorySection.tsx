@@ -1,5 +1,5 @@
 import { ArrowRight } from "lucide-react";
-import { type ElementType, type FC, useEffect, useRef, useState } from "react";
+import { type FC, useEffect, useRef, useState } from "react";
 import { navigateToExploreWithCategory } from "../../lib/appNavigation";
 import ListingPreviewCard from "./ListingPreviewCard";
 
@@ -15,7 +15,6 @@ type CategorySectionProps = {
   title: string;
   description: string;
   categoryKey: string;
-  icon: ElementType;
   listings: Listing[];
   loading?: boolean;
 };
@@ -42,7 +41,6 @@ const CategorySection: FC<CategorySectionProps> = ({
   title,
   description,
   categoryKey,
-  icon: Icon,
   listings,
   loading = false,
 }) => {
@@ -107,10 +105,6 @@ const CategorySection: FC<CategorySectionProps> = ({
           <p className="mt-1.5 hidden text-sm leading-relaxed text-zinc-500 sm:block">
             {description}
           </p>
-        </div>
-
-        <div className="flex h-9 w-9 sm:h-11 sm:w-11 flex-shrink-0 items-center justify-center rounded-[0.95rem] bg-zinc-950 text-white shadow-lg shadow-zinc-900/15 transition-transform duration-300 group-hover:scale-105">
-          <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
         </div>
       </div>
 
