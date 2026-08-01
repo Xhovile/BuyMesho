@@ -6,6 +6,7 @@ import EventCreatorOverviewPage from "./EventCreatorOverviewPage";
 import { apiFetch } from "./lib/api";
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, EVENTS_PATH, navigateToLoginWithReturnPath, navigateToPath } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
+import { useLocationSearch } from "./hooks/useLocationSearch";
 
 type ManagedEvent = {
   id: number;
@@ -171,25 +172,26 @@ function ActionButton({
 
 export default function EventCreatorDashboardPage() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
+  const locationSearch = useLocationSearch();
   const [dashboard, setDashboard] = useState<CreatorOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
+  const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
 
-  const searchParams = useMemo(() => {
-    if (typeof window === "undefined") return new URLSearchParams();
-    return new URLSearchParams(window.location.search);
-  }, []);
-
-  const [selectedEventId, setSelectedEventId] = useState<number | null>(() => {
-    const raw = searchParams.get("event");
-    if (!raw) return null;
-    const parsed = Number(raw);
-    return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
-  });
-
+  const searchParams = useMemo(() => new URLSearchParams(locationSearch), [locationSearch]);
   const isOverviewView = searchParams.get("view") === "dashboard";
+
+  useEffect(() => {
+    const raw = searchParams.get("event");
+    if (!raw) {
+      setSelectedEventId(null);
+      return;
+    }
+    const parsed = Number(raw);
+    setSelectedEventId(Number.isInteger(parsed) && parsed > 0 ? parsed : null);
+  }, [searchParams]);
 
   const loadDashboard = async () => {
     setLoading(true);
