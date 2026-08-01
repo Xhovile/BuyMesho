@@ -59,7 +59,7 @@ const hasWindow = () => typeof window !== "undefined";
 const getCurrentAppPath = () =>
   `${window.location.pathname}${window.location.search}${window.location.hash}`;
 
-export function navigateToPath(path: string, options?: { replace?: boolean }) {
+export function navigateToPath(path: string, options?: { replace?: boolean; scroll?: boolean }) {
   if (!hasWindow()) return;
   const url = new URL(path, window.location.href);
 
@@ -82,7 +82,9 @@ export function navigateToPath(path: string, options?: { replace?: boolean }) {
     window.history.pushState(markAppHistoryState(), "", url.toString());
   }
   window.dispatchEvent(new PopStateEvent("popstate"));
-  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (options?.scroll !== false) {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 }
 
 export const navigateBackOrPath = (fallbackPath: string) => {
