@@ -279,8 +279,15 @@ export default function EventCreatorDashboardPage() {
 
   const handleSelectEvent = (eventId: number) => {
     setSelectedEventId(eventId);
-    navigateToPath(`${EVENTS_MANAGE_PATH}?event=${eventId}`, { scroll: false });
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.pathname = EVENTS_MANAGE_PATH;
+      url.searchParams.set("event", String(eventId));
+      url.searchParams.delete("view");
+      window.history.replaceState(window.history.state, "", url.toString());
+    }
   };
+
   const handleEditEvent = (eventId: number) => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${eventId}&skipCreatorCheck=1`);
   const handleViewPublic = (eventId: number) => navigateToPath(`${EVENTS_PATH}?event=${eventId}`);
 
