@@ -176,20 +176,11 @@ export async function fetchOrderByReference(reference: string): Promise<OrderBun
     throw new Error("No order reference provided.");
   }
 
-  const [ordersResponse, buyerPayments] = await Promise.all([
-    apiFetch("/api/payments/orders/me"),
-    Promise.resolve(readBuyerPayments()),
-  ]);
-  const orders = Array.isArray(ordersResponse) ? (ordersResponse as OrderBundle[]) : [];
-  const tickets = buildBuyerTickets(orders, buyerPayments);
-  const resolvedTicket = tickets.find((ticket) => matchesTicketCode(ticket.ticketCode, normalizeTicketCode(trimmed)));
-  const lookupReference = resolvedTicket?.reference ?? trimmed;
-
   try {
-    return (await apiFetch(`/api/payments/orders/by-reference/${encodeURIComponent(lookupReference)}`)) as OrderBundle;
+    return (await apiFetch(`/api/payments/orders/by-reference/${encodeURIComponent(trimmed)}`)) as OrderBundle;
   } catch (firstError) {
     try {
-      return (await apiFetch(`/api/payments/orders/${encodeURIComponent(lookupReference)}`)) as OrderBundle;
+      return (await apiFetch(`/api/payments/orders/${encodeURIComponent(trimmed)}`)) as OrderBundle;
     } catch {
       throw firstError;
     }
