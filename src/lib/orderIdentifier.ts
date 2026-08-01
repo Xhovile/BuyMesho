@@ -1,5 +1,4 @@
 import { readBuyerPayments } from "./buyerState";
-import { fetchMyOrders } from "./orderApi";
 import { buildBuyerTickets } from "./buyerTickets";
 import { extractPayChanguTicketCode } from "./ticketCode";
 
@@ -24,8 +23,8 @@ export async function resolveOrderIdentifier(input: string): Promise<string> {
   if (!trimmed) return trimmed;
 
   const normalized = normalize(trimmed);
-  const [orders, buyerPayments] = await Promise.all([fetchMyOrders(), Promise.resolve(readBuyerPayments())]);
-  const tickets = buildBuyerTickets(orders, buyerPayments);
+  const buyerPayments = readBuyerPayments();
+  const tickets = buildBuyerTickets([], buyerPayments);
 
   const match = tickets.find((ticket) => {
     return (
