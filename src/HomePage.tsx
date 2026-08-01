@@ -217,7 +217,6 @@ export default function HomePage() {
                   title={section.title}
                   description={section.description}
                   categoryKey={section.key}
-                  icon={section.icon}
                   listings={listings}
                   loading={controller.loading}
                 />
@@ -332,38 +331,4 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={controller.handleStartSelling}
-                    disabled={controller.isSellerProfileLoading}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {controller.isSellerProfileLoading ? "Loading..." : "Get Started"}
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => navigateToPath(SIGNUP_PATH)}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-100"
-                  >
-                    Sign Up
-                    <ArrowRight className="h-4 w-4" />
-                  </button>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => navigateToPath(EXPLORE_PATH)}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-extrabold text-white hover:bg-white/10"
-                >
-                  Explore First
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-
-      <AppFooter />
-    </div>
-  );
-}
+                    disabled... (truncated)
