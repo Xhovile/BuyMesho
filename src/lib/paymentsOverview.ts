@@ -1,5 +1,6 @@
 import type { BuyerPaymentRecord } from './buyerState';
 import type { OrderBundle } from './orderApi';
+import { getOrderFlowType, type OrderFlowType } from './orderFlow';
 
 export type PaymentsStatus = 'pending' | 'paid' | 'rejected' | 'error';
 
@@ -12,6 +13,7 @@ export type PaymentOverviewRecord = {
   status: PaymentsStatus;
   detail: string;
   updatedAt: string | null;
+  flowType: OrderFlowType;
 };
 
 export type PaymentsOverview = {
@@ -51,6 +53,49 @@ type TitleBucket = {
 
 function normalizeToken(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : '';
+}
+
+function hasAnyString(values: unknown): boolean {
+  return Array.isArray(values) && values.some((value) => typeof value === 'string' && value.trim());
+}
+
+function hasMixedSignals(record: BuyerPaymentRecord): boolean {
+  return hasListingSignals(record) && hasEventSignals(record);
+}
+
+function hasListingSignals(source: Record<string, unknown> | null | undefined): boolean {
+  if (!source) return false;
+  if (typeof source.listingId === 'string' && source.listingId.trim()) return true;
+  if (hasAnyString(source.listingIds)) return true;
+  if (Array.isArray(source.checkoutItems) && source.checkoutItems.some((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const candidate = entry as Record<string, unknown>;
+    return typeof candidate.listingId === 'string' && candidate.listingId.trim();
+  })) return true;
+  return false;
+}
+
+function hasEventSignals(source: Record<string, unknown> | null | undefined): boolean {
+  if (!source) return false;
+  if (typeof source.eventId === 'string' && source.eventId.trim()) return true;
+  if (hasAnyString(source.eventIds)) return true;
+  if (Array.isArray(source.eventDetails) && source.eventDetails.length > 0) return true;
+  if (Array.isArray(source.checkoutItems) && source.checkoutItems.some((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const candidate = entry as Record<string, unknown>;
+    return typeof candidate.eventId === 'string' && candidate.eventId.trim();
+  })) return true;
+  return false;
+}
+
+function classifyStoredPaymentFlowType(record: BuyerPaymentRecord): OrderFlowType {
+  const listingSignals = hasListingSignals(record as unknown as Record<string, unknown>);
+  const eventSignals = hasEventSignals(record as unknown as Record<string, unknown>);
+
+  if (listingSignals && eventSignals) return 'mixed_checkout';
+  if (eventSignals) return 'event_only';
+  if (listingSignals) return 'listing_only';
+  return 'unknown';
 }
 
 function classifyOrderStatus(bundle: OrderBundle): PaymentsStatus {
@@ -240,6 +285,7 @@ export function summarizePayments(
       status,
       detail: buildOrderDetail(bundle),
       updatedAt: getOrderActivityTimestamp(bundle),
+      flowType: getOrderFlowType(bundle),
     });
 
     seenReferences.add(reference);
@@ -270,6 +316,7 @@ export function summarizePayments(
       status,
       detail: buildStoredPaymentDetail(record),
       updatedAt: record.updatedAt ?? record.createdAt ?? null,
+      flowType: classifyStoredPaymentFlowType(record),
     });
   });
 
