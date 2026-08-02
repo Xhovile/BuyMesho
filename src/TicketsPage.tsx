@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CheckCircle2, Clock3, Loader2, Users } from "lucide-react";
 
+import EventTicketTrackingPage from "./EventTicketTrackingPage";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
 import { navigateToOrderDispute } from "./lib/appNavigation";
@@ -29,8 +30,8 @@ function sortTicketsByNewest(tickets: BuyerTicketRecord[]) {
 }
 
 function buildWhatsAppMessage(ticket: BuyerTicketRecord) {
-  const lines = [
-    `Hello, I have bought an event ticket on BuyMesho.`,
+  return [
+    "Hello, I have bought an event ticket on BuyMesho.",
     `Event: ${ticket.title}`,
     `Ticket code: ${ticket.ticketCode}`,
     `Reference: ${ticket.reference}`,
@@ -38,18 +39,25 @@ function buildWhatsAppMessage(ticket: BuyerTicketRecord) {
     ticket.startTime ? `Time: ${ticket.startTime}` : null,
     [ticket.venue, ticket.location].filter(Boolean).join(" • ") ? `Venue: ${[ticket.venue, ticket.location].filter(Boolean).join(" • ")}` : null,
     ticket.status === "pending" ? "Status: Pending" : null,
-  ].filter(Boolean);
-
-  return lines.join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
 }
 
 function ticketFileName(ticket: BuyerTicketRecord) {
-  const safeTitle = ticket.title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40) || "ticket";
+  const safeTitle =
+    ticket.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "ticket";
   return `${safeTitle}-${ticket.ticketCode}.pdf`;
+}
+
+function getReferenceFromUrl() {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  return params.get("reference");
 }
 
 export default function TicketsPage() {
@@ -59,6 +67,12 @@ export default function TicketsPage() {
 }
 
 function TicketsPageContent() {
+  const ticketReference = useMemo(() => getReferenceFromUrl(), []);
+
+  if (ticketReference) {
+    return <EventTicketTrackingPage reference={ticketReference} />;
+  }
+
   const [orders, setOrders] = useState<OrderBundle[]>(() => getCachedBuyerOrders() ?? []);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(() => !hasCachedBuyerOrders());
@@ -116,12 +130,7 @@ function TicketsPageContent() {
   }, []);
 
   const tickets = useMemo(() => sortTicketsByNewest(buildBuyerTickets(orders, paymentRecords)), [orders, paymentRecords]);
-
-  const visibleTickets = useMemo(() => {
-    if (activeFilter === "all") return tickets;
-    return tickets.filter((ticket) => ticket.status === activeFilter);
-  }, [activeFilter, tickets]);
-
+  const visibleTickets = useMemo(() => (activeFilter === "all" ? tickets : tickets.filter((ticket) => ticket.status === activeFilter)), [activeFilter, tickets]);
   const counts = useMemo(
     () =>
       tickets.reduce(
@@ -135,27 +144,31 @@ function TicketsPageContent() {
   );
 
   const handleDownload = (ticket: BuyerTicketRecord) => {
-    downloadTicketPdf(ticketFileName(ticket), `${ticket.title} ticket`, [
-      { label: "Event", value: ticket.title },
-      { label: "Organizer", value: ticket.organizerName || "Event organizer" },
-      { label: "Ticket code", value: ticket.ticketCode },
-      { label: "Reference", value: ticket.reference },
-      { label: "Holder", value: "Verified buyer account" },
-      { label: "Date", value: ticket.eventDate || "—" },
-      { label: "Time", value: ticket.startTime || "—" },
-      { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
-      { label: "Status", value: ticket.status },
-      { label: "Amount", value: `${ticket.amount} ${ticket.currency}` },
-    ], {
-      ticketCode: ticket.ticketCode,
-      brandName: "BuyMesho",
-      brandTagline: "Official event ticket",
-    });
+    downloadTicketPdf(
+      ticketFileName(ticket),
+      `${ticket.title} ticket`,
+      [
+        { label: "Event", value: ticket.title },
+        { label: "Organizer", value: ticket.organizerName || "Event organizer" },
+        { label: "Ticket code", value: ticket.ticketCode },
+        { label: "Reference", value: ticket.reference },
+        { label: "Holder", value: "Verified buyer account" },
+        { label: "Date", value: ticket.eventDate || "—" },
+        { label: "Time", value: ticket.startTime || "—" },
+        { label: "Venue", value: [ticket.venue, ticket.location].filter(Boolean).join(" • ") || "—" },
+        { label: "Status", value: ticket.status },
+        { label: "Amount", value: `${ticket.amount} ${ticket.currency}` },
+      ],
+      {
+        ticketCode: ticket.ticketCode,
+        brandName: "BuyMesho",
+        brandTagline: "Official event ticket",
+      },
+    );
   };
 
   const handleShareWhatsApp = (ticket: BuyerTicketRecord) => {
-    const message = buildWhatsAppMessage(ticket);
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(ticket))}`;
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
@@ -171,9 +184,7 @@ function TicketsPageContent() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tickets</p>
-            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">
-              Your event tickets
-            </h1>
+            <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">Your event tickets</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
               Each purchased ticket can be downloaded as a PDF and shared on WhatsApp.
             </p>
@@ -215,9 +226,7 @@ function TicketsPageContent() {
                 aria-pressed={active}
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-zinc-500"}`}>
-                    {label}
-                  </p>
+                  <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-zinc-500"}`}>{label}</p>
                   <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200/70"}`}>
                     Filter
                   </span>
@@ -247,11 +256,7 @@ function TicketsPageContent() {
           ) : null}
         </div>
 
-        {error ? (
-          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            {error}
-          </div>
-        ) : null}
+        {error ? <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">{error}</div> : null}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {visibleTickets.length ? (
