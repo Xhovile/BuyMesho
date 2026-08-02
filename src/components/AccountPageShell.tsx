@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+The import type { ReactNode } from "react";
 import { ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
@@ -58,13 +58,13 @@ export default function AccountPageShell({
           <div className="flex items-center gap-3">
             {firebaseUser && (
               <button
-                type="button"
-                onClick={() => void handleLogout()}
-                className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
-              >
-                <LogOut className="h-4 w-4" />
-                Log out
-              </button>
+  type="button"
+  onClick={() => void handleLogout()}
+  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 md:px-4 py-2.5 text-sm font-bold hover:bg-zinc-50"
+>
+  <LogOut className="h-4 w-4" />
+  <span className="hidden md:inline">Log out</span>
+</button>
             )}
             <button
               type="button"
