@@ -395,6 +395,7 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
               </div>
             </div>
           </div>
+          </div>
         ) : null}
       </div>
     </div>
