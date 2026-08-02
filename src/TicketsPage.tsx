@@ -63,16 +63,16 @@ function getReferenceFromUrl() {
 export default function TicketsPage() {
   const ready = useRequireVerifiedUser();
   if (!ready) return null;
-  return <TicketsPageContent />;
-}
 
-function TicketsPageContent() {
   const ticketReference = getReferenceFromUrl();
-
   if (ticketReference) {
     return <EventTicketTrackingPage reference={ticketReference} />;
   }
 
+  return <TicketsListPage />;
+}
+
+function TicketsListPage() {
   const [orders, setOrders] = useState<OrderBundle[]>(() => getCachedBuyerOrders() ?? []);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(() => !hasCachedBuyerOrders());
