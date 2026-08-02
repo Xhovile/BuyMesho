@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, Clock3, Loader2, Users } from "lucide-react"
 import EventTicketTrackingPage from "./EventTicketTrackingPage";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
-import { navigateToOrderDispute } from "./lib/appNavigation";
+import { navigateToPath } from "./lib/appNavigation";
 import { apiFetch } from "./lib/api";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
@@ -175,8 +175,8 @@ function TicketsPageContent() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
-  const handleOpenDispute = (ticket: BuyerTicketRecord) => {
-    navigateToOrderDispute(ticket.reference);
+  const handleOpenSupport = () => {
+    navigateToPath("/report");
   };
 
   return (
@@ -269,7 +269,7 @@ function TicketsPageContent() {
                 ticket={ticket}
                 onDownloadPdf={() => handleDownload(ticket)}
                 onShareWhatsApp={() => handleShareWhatsApp(ticket)}
-                onOpenDispute={ticket.status === "paid" ? () => handleOpenDispute(ticket) : undefined}
+                onOpenSupport={handleOpenSupport}
               />
             ))
           ) : (
@@ -298,16 +298,16 @@ function TicketsPageContent() {
           <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
               <Clock3 className="h-4 w-4 text-zinc-400" />
-              Midnight verification
+              Event confirmation
             </div>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Ticket payments are not escrow; they are marked paid first, then confirmed by the midnight verifier.
+              Ticket status is confirmed separately from escrow, so the ticket view stays focused on event readiness.
             </p>
           </div>
           <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
               <AlertCircle className="h-4 w-4 text-amber-600" />
-              No order tracking
+              Ticket-only flow
             </div>
             <p className="mt-2 text-sm leading-6 text-zinc-600">
               Tickets wait for confirmation instead of using the normal listing tracking flow.
