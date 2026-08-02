@@ -100,7 +100,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       const subcategory = normalizeString(body.subcategory) || null;
       const itemType = normalizeString(body.item_type) || null;
       const university = normalizeString(body.university);
-      const status = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
+      const requestedStatus = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
       const condition = normalizeString(body.condition).toLowerCase() || "used";
       const photos = normalizeStringArray(body.photos, 5);
       const videoUrl = normalizeString(body.video_url) || null;
@@ -154,6 +154,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       if (soldQuantity > quantity) {
         return res.status(400).json({ error: "Sold quantity cannot be greater than total quantity." });
       }
+
+      const status = quantity > soldQuantity ? "available" : requestedStatus;
 
       const pricing = normalizeListingPricing(body);
       if (pricing.listing_mode === "deal" && pricing.original_price === null) {
@@ -307,7 +309,7 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       const subcategory = normalizeString(body.subcategory) || null;
       const itemType = normalizeString(body.item_type) || null;
       const university = normalizeString(body.university);
-      const status = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
+      const requestedStatus = normalizeString(body.status).toLowerCase() === "sold" ? "sold" : "available";
       const condition = normalizeString(body.condition).toLowerCase() || "used";
       const photos = normalizeStringArray(body.photos, 5);
       const videoUrl = normalizeString(body.video_url) || null;
@@ -359,6 +361,8 @@ export function registerListingRoutes(app: Express, deps: ListingRouteDeps) {
       if (soldQuantity > quantity) {
         return res.status(400).json({ error: "Sold quantity cannot be greater than total quantity." });
       }
+
+      const status = quantity > soldQuantity ? "available" : requestedStatus;
 
       const pricing = normalizeListingPricing(body);
       if (pricing.listing_mode === "deal" && pricing.original_price === null) {

@@ -6,6 +6,7 @@ import {
   getListingConditionLabel,
 } from "../lib/listingCardHighlights";
 import { navigateToListingDetails } from "../lib/appNavigation";
+import { saveListingDetailsFallback } from "../lib/listings";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
 
@@ -79,6 +80,7 @@ export default function ListingCard({
 
   const openDetails = () => {
     if (!clickable) return;
+    saveListingDetailsFallback(listing);
     if (onOpenDetails) {
       onOpenDetails(listing);
       return;
