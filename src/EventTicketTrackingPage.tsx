@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Clock3, CreditCard, Hash, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, CreditCard, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { EVENTS_PATH, navigateToPath } from "./lib/appNavigation";
@@ -115,7 +115,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
   };
 
   const orderReference = String(bundle?.order?.paymentReference ?? reference);
-  const orderId = String(bundle?.order?.id ?? "");
   const totalAmount = Number(bundle?.order?.total?.amount ?? 0);
   const totalCurrency = String(bundle?.order?.total?.currency ?? "MWK");
 
@@ -241,14 +240,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                   </div>
                   <p className="mt-2 text-sm leading-6 text-zinc-600">{paymentStatus}</p>
                 </div>
-
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                    <Hash className="h-4 w-4 text-zinc-400" />
-                    Order reference
-                  </div>
-                  <p className="mt-2 break-all font-mono text-sm leading-6 text-zinc-600">{orderId || orderReference}</p>
-                </div>
               </div>
             </div>
 
@@ -282,10 +273,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Ticket details</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket type</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-900">Event ticket</p>
-                  </div>
                   <div className="rounded-2xl bg-zinc-50 px-4 py-3">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Quantity</p>
                     <p className="mt-1 text-sm font-semibold text-zinc-900">{ticketItems.reduce((sum, item) => sum + Number(item?.quantity ?? 1), 0) || 1}</p>
