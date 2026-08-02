@@ -68,9 +68,6 @@ export default function TicketsPage() {
 
 function TicketsPageContent() {
   const ticketReference = getReferenceFromUrl();
-  if (ticketReference) {
-    return <EventTicketTrackingPage reference={ticketReference} />;
-  }
 
   const [orders, setOrders] = useState<OrderBundle[]>(() => getCachedBuyerOrders() ?? []);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
@@ -129,7 +126,10 @@ function TicketsPageContent() {
   }, []);
 
   const tickets = useMemo(() => sortTicketsByNewest(buildBuyerTickets(orders, paymentRecords)), [orders, paymentRecords]);
-  const visibleTickets = useMemo(() => (activeFilter === "all" ? tickets : tickets.filter((ticket) => ticket.status === activeFilter)), [activeFilter, tickets]);
+  const visibleTickets = useMemo(
+    () => (activeFilter === "all" ? tickets : tickets.filter((ticket) => ticket.status === activeFilter)),
+    [activeFilter, tickets],
+  );
   const counts = useMemo(
     () =>
       tickets.reduce(
@@ -141,6 +141,10 @@ function TicketsPageContent() {
       ),
     [tickets],
   );
+
+  if (ticketReference) {
+    return <EventTicketTrackingPage reference={ticketReference} />;
+  }
 
   const handleDownload = (ticket: BuyerTicketRecord) => {
     downloadTicketPdf(
