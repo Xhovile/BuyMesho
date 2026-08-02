@@ -29,21 +29,6 @@ function sortTicketsByNewest(tickets: BuyerTicketRecord[]) {
   });
 }
 
-function buildWhatsAppMessage(ticket: BuyerTicketRecord) {
-  return [
-    "Hello, I have bought an event ticket on BuyMesho.",
-    `Event: ${ticket.title}`,
-    `Ticket code: ${ticket.ticketCode}`,
-    `Reference: ${ticket.reference}`,
-    ticket.eventDate ? `Date: ${ticket.eventDate}` : null,
-    ticket.startTime ? `Time: ${ticket.startTime}` : null,
-    [ticket.venue, ticket.location].filter(Boolean).join(" • ") ? `Venue: ${[ticket.venue, ticket.location].filter(Boolean).join(" • ")}` : null,
-    ticket.status === "pending" ? "Status: Pending" : null,
-  ]
-    .filter(Boolean)
-    .join("\n");
-}
-
 function ticketFileName(ticket: BuyerTicketRecord) {
   const safeTitle =
     ticket.title
@@ -170,11 +155,6 @@ function TicketsListPage() {
     );
   };
 
-  const handleShareWhatsApp = (ticket: BuyerTicketRecord) => {
-    const url = `https://wa.me/?text=${encodeURIComponent(buildWhatsAppMessage(ticket))}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
-
   const handleOpenTicket = (ticket: BuyerTicketRecord) => {
     navigateToPath(`/tickets?reference=${encodeURIComponent(ticket.reference)}`);
   };
@@ -193,7 +173,7 @@ function TicketsListPage() {
             <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Tickets</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">Your event tickets</h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-              Each purchased ticket can be downloaded as a PDF and shared on WhatsApp.
+              Each purchased ticket can be downloaded as a PDF.
             </p>
           </div>
         </div>
@@ -272,7 +252,6 @@ function TicketsListPage() {
                 key={ticket.key}
                 ticket={ticket}
                 onDownloadPdf={() => handleDownload(ticket)}
-                onShareWhatsApp={() => handleShareWhatsApp(ticket)}
                 onOpenTicket={() => handleOpenTicket(ticket)}
                 onOpenSupport={handleOpenSupport}
               />
@@ -284,7 +263,7 @@ function TicketsListPage() {
                 No tickets yet
               </div>
               <p className="mt-2 leading-6 text-zinc-600">
-                Once a buyer completes an event payment, the ticket should appear here with its PDF and WhatsApp actions.
+                Once a buyer completes an event payment, the ticket should appear here with its PDF action.
               </p>
             </div>
           )}
