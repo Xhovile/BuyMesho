@@ -44,6 +44,13 @@ type OrderItemLike = {
   title?: unknown;
   name?: unknown;
   quantity?: unknown;
+  unitPrice?: {
+    amount?: unknown;
+    currency?: unknown;
+  };
+  kind?: unknown;
+  listingId?: unknown;
+  eventId?: unknown;
 };
 
 type TitleBucket = {
@@ -119,53 +126,6 @@ function getOrderReference(bundle: OrderBundle): string {
   return String(bundle.order?.id ?? 'Unknown reference');
 }
 
-function buildOrderDetail(bundle: OrderBundle): string {
-  const escrowState = normalizeToken(bundle.escrow?.state);
-  const orderStatus = String(bundle.order?.status ?? 'pending');
-
-  if (HELD_ESCROW_STATES.has(escrowState)) {
-    return escrowState === 'disputed' ? 'Funds are currently disputed.' : 'Funds are currently being held in escrow.';
-  }
-
-  if (RELEASED_ESCROW_STATES.has(escrowState) || AVAILABLE_ORDER_STATUSES.has(normalizeToken(bundle.order?.status))) {
-    return 'Payment is complete and available in the finished order flow.';
-  }
-
-  return `Order status: ${orderStatus.replace(/_/g, ' ')}`;
-}
-
-function buildStoredPaymentDetail(record: BuyerPaymentRecord): string {
-  if (record.status === 'captured') return 'Payment captured successfully.';
-  if (record.status === 'failed') return 'Payment returned an error.';
-  if (record.status === 'refunded') return 'Payment was refunded.';
-  if (record.status === 'cancelled') return 'Payment was cancelled.';
-  return 'Payment is still pending confirmation.';
-}
-
-function getStringField(source: Record<string, unknown> | null | undefined, field: string): string | null {
-  const value = source?.[field];
-  return typeof value === 'string' && value.trim() ? value : null;
-}
-
-function getOrderActivityTimestamp(bundle: OrderBundle): string | null {
-  return (
-    getStringField(bundle.escrow, 'updatedAt') ??
-    getStringField(bundle.escrow, 'updated_at') ??
-    getStringField(bundle.payment, 'updatedAt') ??
-    getStringField(bundle.payment, 'updated_at') ??
-    getStringField(bundle.payment, 'paidAt') ??
-    getStringField(bundle.payment, 'paid_at') ??
-    getStringField(bundle.order, 'updatedAt') ??
-    getStringField(bundle.order, 'updated_at') ??
-    getStringField(bundle.order, 'paidAt') ??
-    getStringField(bundle.order, 'paid_at') ??
-    getStringField(bundle.order, 'placedAt') ??
-    getStringField(bundle.order, 'placed_at') ??
-    getStringField(bundle.order, 'createdAt') ??
-    getStringField(bundle.order, 'created_at')
-  );
-}
-
 function getItemQuantity(item: OrderItemLike): number {
   const raw = Number(item.quantity ?? 1);
   return Number.isFinite(raw) && raw > 0 ? raw : 1;
@@ -179,6 +139,17 @@ function getItemTitle(item: OrderItemLike): string {
   if (name) return name;
 
   return 'Item';
+}
+
+function isListingItem(item: OrderItemLike): boolean {
+  return item.kind === 'listing' || !!item.listingId || (!item.kind && !item.eventId);
+}
+
+function getItemSubtotal(item: OrderItemLike): number | null {
+  const amount = item.unitPrice?.amount;
+  if (typeof amount !== 'number' || !Number.isFinite(amount)) return null;
+  const quantity = getItemQuantity(item);
+  return amount * quantity;
 }
 
 function formatTitleBucket(bucket: TitleBucket): string {
@@ -228,6 +199,91 @@ function buildOrderTitle(items: OrderItemLike[] | undefined): string {
   return `${head} +${remainingCount} more`;
 }
 
+function getDisplayedOrderAmount(bundle: OrderBundle, flowType: OrderFlowType): number {
+  const totalAmount = Number(bundle.order?.total?.amount ?? 0);
+  if (flowType !== 'mixed_checkout') {
+    return totalAmount;
+  }
+
+  const listingSubtotal = Array.isArray(bundle.order?.items)
+    ? bundle.order.items.reduce((sum, item) => {
+        if (!isListingItem(item)) return sum;
+        return sum + (getItemSubtotal(item) ?? 0);
+      }, 0)
+    : 0;
+
+  return listingSubtotal > 0 ? listingSubtotal : totalAmount;
+}
+
+function buildOrderDetail(bundle: OrderBundle, flowType: OrderFlowType): string {
+  const escrowState = normalizeToken(bundle.escrow?.state);
+  const orderStatus = String(bundle.order?.status ?? 'pending');
+
+  if (flowType === 'mixed_checkout') {
+    return 'Listing total shown here. Ticket details live in Tickets.';
+  }
+
+  if (flowType === 'event_only') {
+    return 'Ticket details live in Tickets.';
+  }
+
+  if (HELD_ESCROW_STATES.has(escrowState)) {
+    return escrowState === 'disputed' ? 'Funds are currently disputed.' : 'Funds are currently being held in escrow.';
+  }
+
+  if (RELEASED_ESCROW_STATES.has(escrowState) || AVAILABLE_ORDER_STATUSES.has(normalizeToken(bundle.order?.status))) {
+    return 'Payment is complete and available in the finished order flow.';
+  }
+
+  return `Order status: ${orderStatus.replace(/_/g, ' ')}`;
+}
+
+function buildStoredPaymentDetail(record: BuyerPaymentRecord): string {
+  if (record.status === 'captured') return 'Payment captured successfully.';
+  if (record.status === 'failed') return 'Payment returned an error.';
+  if (record.status === 'refunded') return 'Payment was refunded.';
+  if (record.status === 'cancelled') return 'Payment was cancelled.';
+  return 'Payment is still pending confirmation.';
+}
+
+function getStringField(source: Record<string, unknown> | null | undefined, field: string): string | null {
+  const value = source?.[field];
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+function getOrderActivityTimestamp(bundle: OrderBundle): string | null {
+  return (
+    getStringField(bundle.escrow, 'updatedAt') ??
+    getStringField(bundle.escrow, 'updated_at') ??
+    getStringField(bundle.payment, 'updatedAt') ??
+    getStringField(bundle.payment, 'updated_at') ??
+    getStringField(bundle.payment, 'paidAt') ??
+    getStringField(bundle.payment, 'paid_at') ??
+    getStringField(bundle.order, 'updatedAt') ??
+    getStringField(bundle.order, 'updated_at') ??
+    getStringField(bundle.order, 'paidAt') ??
+    getStringField(bundle.order, 'paid_at') ??
+    getStringField(bundle.order, 'placedAt') ??
+    getStringField(bundle.order, 'placed_at') ??
+    getStringField(bundle.order, 'createdAt') ??
+    getStringField(bundle.order, 'created_at')
+  );
+}
+
+function buildOrderReferenceNotes(bundle: OrderBundle, flowType: OrderFlowType): string {
+  if (flowType === 'mixed_checkout') {
+    const hasListing = Array.isArray(bundle.order?.items) && bundle.order.items.some(isListingItem);
+    const hasEvent = Array.isArray(bundle.order?.items) && bundle.order.items.some((item) => !isListingItem(item) && (item.kind === 'event_ticket' || !!item.eventId));
+    if (hasListing && hasEvent) return 'This order combines listing items and a ticket. Open Tickets for ticket details.';
+  }
+
+  if (flowType === 'event_only') {
+    return 'Event ticket details are managed in Tickets.';
+  }
+
+  return buildOrderDetail(bundle, flowType);
+}
+
 export function summarizePayments(
   orders: OrderBundle[],
   buyerPayments: BuyerPaymentRecord[],
@@ -254,7 +310,8 @@ export function summarizePayments(
 
   orders.forEach((bundle) => {
     const reference = getOrderReference(bundle);
-    const amount = Number(bundle.order?.total?.amount ?? 0);
+    const flowType = getOrderFlowType(bundle);
+    const amount = getDisplayedOrderAmount(bundle, flowType);
     const currency = String(bundle.order?.total?.currency ?? 'MWK');
     const status = classifyOrderStatus(bundle);
     const escrowState = normalizeToken(bundle.escrow?.state);
@@ -279,9 +336,9 @@ export function summarizePayments(
       amount,
       currency,
       status,
-      detail: buildOrderDetail(bundle),
+      detail: buildOrderReferenceNotes(bundle, flowType),
       updatedAt: getOrderActivityTimestamp(bundle),
-      flowType: getOrderFlowType(bundle),
+      flowType,
     });
 
     seenReferences.add(reference);
