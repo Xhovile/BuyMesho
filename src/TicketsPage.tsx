@@ -69,6 +69,10 @@ export default function TicketsPage() {
 function TicketsPageContent() {
   const ticketReference = getReferenceFromUrl();
 
+  if (ticketReference) {
+    return <EventTicketTrackingPage reference={ticketReference} />;
+  }
+
   const [orders, setOrders] = useState<OrderBundle[]>(() => getCachedBuyerOrders() ?? []);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
   const [loading, setLoading] = useState(() => !hasCachedBuyerOrders());
@@ -141,10 +145,6 @@ function TicketsPageContent() {
       ),
     [tickets],
   );
-
-  if (ticketReference) {
-    return <EventTicketTrackingPage reference={ticketReference} />;
-  }
 
   const handleDownload = (ticket: BuyerTicketRecord) => {
     downloadTicketPdf(
