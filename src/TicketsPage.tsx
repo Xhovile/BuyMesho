@@ -268,35 +268,6 @@ function TicketsListPage() {
             </div>
           )}
         </div>
-
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              Organizer-ready manifest
-            </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Keep a searchable attendee list on the event manager side using ticket number, buyer name, and payment state.
-            </p>
-          </div>
-          <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-              <Clock3 className="h-4 w-4 text-zinc-400" />
-              Event confirmation
-            </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Ticket status is confirmed separately from escrow, so the ticket view stays focused on event readiness.
-            </p>
-          </div>
-          <div className="rounded-[1.5rem] border border-zinc-200 bg-white px-4 py-4 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              Ticket-only flow
-            </div>
-            <p className="mt-2 text-sm leading-6 text-zinc-600">
-              Tickets wait for confirmation instead of using the normal listing tracking flow.
-            </p>
-          </div>
         </div>
       </div>
     </div>
