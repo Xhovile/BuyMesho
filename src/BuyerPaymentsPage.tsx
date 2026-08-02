@@ -51,7 +51,7 @@ function BuyerPaymentsPageContent() {
       setRefreshing(true);
       try {
         const data = await apiFetch("/api/payments/orders/me", {
-          timeoutMs: 8000,
+          timeoutMs: 30000,
           retryAttempts: 1,
         });
         if (!mounted) return;
