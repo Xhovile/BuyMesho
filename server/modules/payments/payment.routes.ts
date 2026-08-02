@@ -414,3 +414,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
 
   return router;
 }
+
+export function mountPayChanguRoutes(app: express.Express, requireAuth: RequestHandler): void {
+  app.use("/api/payments", createPaymentRouter(requireAuth));
+}

@@ -544,22 +544,33 @@ export function useAppLegacyState(): AppLegacyState {
     currentPage,
     setCurrentPage,
     pageSize,
-    totalResults,
+    totalListingsCount: totalResults,
     totalPages,
   };
 
   const marketActions: MarketSectionActions = {
-    handleListItem,
-    handleUpdateListing,
-    navigateToListingDetails,
-    navigateToSellerProfile,
-    hideSellerLocal,
-    hideListingLocal,
-    toggleSavedListing,
-    showFeedback,
-    askConfirm,
-    setEditingListing,
-    setReportListingId,
+    onReport: (listingId) => setReportListingId(listingId),
+    onDelete: (listingId) => {
+      askConfirm({
+        title: "Delete listing?",
+        message: "This action cannot be undone.",
+        confirmText: "Delete",
+        danger: true,
+        onConfirm: () => {
+          void performDeleteListing(listingId);
+        },
+      });
+    },
+    onEdit: (listing) => setEditingListing(listing),
+    onHideSeller: hideSellerLocal,
+    onHideListing: hideListingLocal,
+    onToggleStatus: (listing) => {
+      const nextStatus = listing.status === "active" ? "sold" : "active";
+      void handleUpdateListing(listing.id, { status: nextStatus });
+    },
+    onToggleSave: toggleSavedListing,
+    onOpenDetails: navigateToListingDetails,
+    onOpenSeller: navigateToSellerProfile,
   };
 
   return {
