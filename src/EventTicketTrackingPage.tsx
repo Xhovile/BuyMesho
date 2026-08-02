@@ -1,16 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Clock3, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, CreditCard, Hash, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { EVENTS_PATH, navigateToPath } from "./lib/appNavigation";
 import { fetchOrderByReference, type OrderBundle } from "./lib/orderApi";
-import { getOrderFlowType } from "./lib/orderFlow";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 type EventTicketTrackingPageProps = {
   reference: string;
   initialBundle?: OrderBundle | null;
 };
+
+const ticketStages = [
+  "Ticket ordered",
+  "Payment confirmed",
+  "Ticket issued",
+  "Ready for event",
+  "Event day",
+];
 
 function getTicketStatusLabel(paymentStatus: string) {
   const normalized = paymentStatus.trim().toLowerCase();
@@ -19,6 +26,27 @@ function getTicketStatusLabel(paymentStatus: string) {
   if (["rejected", "cancelled", "refunded"].includes(normalized)) return "Cancelled";
   if (["failed", "error"].includes(normalized)) return "Ticket issue";
   return paymentStatus || "Pending confirmation";
+}
+
+function getTicketProgressIndex(paymentStatus: string) {
+  const normalized = paymentStatus.trim().toLowerCase();
+  if (["paid", "captured", "verified", "successful", "completed"].includes(normalized)) return 2;
+  if (["pending", "initiated", "processing", "queued", "awaiting_payment"].includes(normalized)) return 0;
+  if (["rejected", "cancelled", "refunded", "failed", "error"].includes(normalized)) return 0;
+  return 1;
+}
+
+function formatMoney(amount: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  } catch {
+    return `${currency} ${amount.toLocaleString()}`;
+  }
 }
 
 export default function EventTicketTrackingPage({ reference, initialBundle = null }: EventTicketTrackingPageProps) {
@@ -65,20 +93,31 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
   }, [initialBundle, reload]);
 
   const order = bundle?.order ?? null;
-  const firstItem = order?.items?.[0] ?? null;
-  const flowType = useMemo(() => getOrderFlowType(bundle), [bundle]);
+  const orderItems = order?.items ?? [];
+  const ticketItems = useMemo(
+    () =>
+      orderItems.filter((item) => item?.kind === "event_ticket" || !!item?.eventId),
+    [orderItems],
+  );
+  const firstTicketItem = ticketItems[0] ?? orderItems[0] ?? null;
   const paymentStatus = typeof bundle?.payment?.status === "string" ? String(bundle.payment.status) : order?.status ?? "pending";
   const ticketStatus = getTicketStatusLabel(paymentStatus);
+  const progressIndex = getTicketProgressIndex(paymentStatus);
 
   const eventDetails = {
-    title: String(firstItem?.title ?? "Event ticket"),
-    organizerName: String((firstItem as Record<string, unknown> | null)?.organizerName ?? "Event organizer"),
-    eventDate: String((firstItem as Record<string, unknown> | null)?.eventDate ?? ""),
-    startTime: String((firstItem as Record<string, unknown> | null)?.startTime ?? ""),
-    venue: String((firstItem as Record<string, unknown> | null)?.venue ?? ""),
-    location: String((firstItem as Record<string, unknown> | null)?.location ?? ""),
-    eventId: typeof firstItem?.eventId === "string" ? firstItem.eventId : null,
+    title: String(firstTicketItem?.title ?? "Event ticket"),
+    organizerName: String((firstTicketItem as Record<string, unknown> | null)?.organizerName ?? "Event organizer"),
+    eventDate: String((firstTicketItem as Record<string, unknown> | null)?.eventDate ?? ""),
+    startTime: String((firstTicketItem as Record<string, unknown> | null)?.startTime ?? ""),
+    venue: String((firstTicketItem as Record<string, unknown> | null)?.venue ?? ""),
+    location: String((firstTicketItem as Record<string, unknown> | null)?.location ?? ""),
+    eventId: typeof firstTicketItem?.eventId === "string" ? firstTicketItem.eventId : null,
   };
+
+  const orderReference = String(bundle?.order?.paymentReference ?? reference);
+  const orderId = String(bundle?.order?.id ?? "");
+  const totalAmount = Number(bundle?.order?.total?.amount ?? 0);
+  const totalCurrency = String(bundle?.order?.total?.currency ?? "MWK");
 
   const handleBack = () => navigateToPath("/tickets");
   const handleOpenEvent = () => {
@@ -107,13 +146,8 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
           <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Event ticket tracking</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">Ticket status overview</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-zinc-600 sm:text-base">
-            Review the ticket confirmation, event details, and support options in one place.
+            Review your ticket confirmation and event details in one place.
           </p>
-          {flowType !== "event_only" ? (
-            <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              This reference includes more than a pure event ticket. The buyer order flow may also apply.
-            </p>
-          ) : null}
         </div>
 
         {loading ? (
@@ -125,90 +159,176 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
             {error}
           </div>
         ) : order ? (
-          <div className="mt-8 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
-                    <Ticket className="h-3.5 w-3.5" />
-                    Event ticket
+          <div className="mt-8 space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
+                      <Ticket className="h-3.5 w-3.5" />
+                      Event ticket
+                    </div>
+                    <h2 className="mt-4 text-2xl font-black tracking-tight text-zinc-950">{eventDetails.title}</h2>
+                    <p className="mt-2 text-sm text-zinc-600">{eventDetails.organizerName}</p>
                   </div>
-                  <h2 className="mt-4 text-2xl font-black tracking-tight text-zinc-950">{eventDetails.title}</h2>
-                  <p className="mt-2 text-sm text-zinc-600">{eventDetails.organizerName}</p>
+                  <span className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
+                    {ticketStatus}
+                  </span>
                 </div>
-                <span className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
-                  {ticketStatus}
-                </span>
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Date</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                      <CalendarDays className="h-4 w-4 text-zinc-400" />
+                      {eventDetails.eventDate || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Time</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                      <Clock3 className="h-4 w-4 text-zinc-400" />
+                      {eventDetails.startTime || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Venue</p>
+                    <p className="mt-1 inline-flex items-start gap-2 text-sm font-semibold text-zinc-900">
+                      <MapPin className="mt-0.5 h-4 w-4 text-zinc-400" />
+                      <span>{[eventDetails.venue, eventDetails.location].filter(Boolean).join(" • ") || "—"}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
+                  <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{orderReference}</p>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={handleOpenEvent}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Open event
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSupport}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    Support / report issue
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Date</p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
-                    <CalendarDays className="h-4 w-4 text-zinc-400" />
-                    {eventDetails.eventDate || "—"}
-                  </p>
+              <div className="space-y-4">
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                    <UserRound className="h-4 w-4 text-zinc-400" />
+                    Ticket holder
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600">Verified buyer account</p>
                 </div>
-                <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Time</p>
-                  <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
-                    <Clock3 className="h-4 w-4 text-zinc-400" />
-                    {eventDetails.startTime || "—"}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Venue</p>
-                  <p className="mt-1 inline-flex items-start gap-2 text-sm font-semibold text-zinc-900">
-                    <MapPin className="mt-0.5 h-4 w-4 text-zinc-400" />
-                    <span>{[eventDetails.venue, eventDetails.location].filter(Boolean).join(" • ") || "—"}</span>
-                  </p>
-                </div>
-              </div>
 
-              <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
-                <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{reference}</p>
-              </div>
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                    <CreditCard className="h-4 w-4 text-zinc-400" />
+                    Payment
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600">{paymentStatus}</p>
+                </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={handleOpenEvent}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Open event
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSupport}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
-                >
-                  <ShieldAlert className="h-4 w-4" />
-                  Support / report issue
-                </button>
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                    <Hash className="h-4 w-4 text-zinc-400" />
+                    Order reference
+                  </div>
+                  <p className="mt-2 break-all font-mono text-sm leading-6 text-zinc-600">{orderId || orderReference}</p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Progress</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-5">
+                {ticketStages.map((stage, index) => {
+                  const active = index <= progressIndex;
+                  return (
+                    <div
+                      key={stage}
+                      className={`rounded-2xl border px-4 py-3 ${
+                        active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-[11px] font-black uppercase tracking-[0.18em]">{index + 1}</p>
+                        <span className={`h-2.5 w-2.5 rounded-full ${active ? "bg-white" : "bg-zinc-300"}`} />
+                      </div>
+                      <p className="mt-3 text-sm font-semibold leading-6">{stage}</p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-zinc-600">
+                Current state: <span className="font-bold text-zinc-900">{ticketStatus}</span>
+              </p>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                  <UserRound className="h-4 w-4 text-zinc-400" />
-                  Ticket holder
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Ticket details</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket type</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">Event ticket</p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Quantity</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">{ticketItems.reduce((sum, item) => sum + Number(item?.quantity ?? 1), 0) || 1}</p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Item references</p>
+                    <div className="mt-2 space-y-2">
+                      {ticketItems.length ? (
+                        ticketItems.map((item, index) => (
+                          <div key={`${item.title ?? "ticket"}-${index}`} className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-700">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="font-semibold text-zinc-900">{String(item.title ?? "Event ticket")}</span>
+                              <span className="font-mono text-xs text-zinc-500">{String((item as Record<string, unknown>).reference ?? `${orderReference}-EVENT-${String(index + 1).padStart(2, "0")}`)}</span>
+                            </div>
+                            <p className="mt-1 text-xs text-zinc-500">Quantity × {Number(item?.quantity ?? 1)}</p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-zinc-600">No ticket items found.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">Verified buyer account</p>
               </div>
 
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <p className="text-sm font-bold text-zinc-900">Ticket state</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">{ticketStatus}</p>
-              </div>
-
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <p className="text-sm font-bold text-zinc-900">Status note</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  This view is for ticket confirmation and event reference only.
-                </p>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Payment summary</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment status</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">{paymentStatus}</p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Total</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(totalAmount, totalCurrency)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket note</p>
+                    <p className="mt-1 text-sm leading-6 text-zinc-600">
+                      This ticket is managed separately from escrow-based order tracking.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
