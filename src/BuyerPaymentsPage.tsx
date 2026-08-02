@@ -4,10 +4,11 @@ import { ArrowUpRight, Loader2, Trash2 } from "lucide-react";
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
 import { navigateToOrderTracking } from "./lib/appNavigation";
-import { apiFetch } from "./lib/api";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
+import { getCachedBuyerOrders, hasCachedBuyerOrders, setCachedBuyerOrders } from "./lib/buyerOrdersCache";
+import { apiFetch } from "./lib/api";
 import type { OrderBundle } from "./lib/orderApi";
 
 type PaymentFilter = "all" | "pending" | "paid" | "rejected" | "error";
@@ -33,10 +34,9 @@ export default function BuyerPaymentsPage() {
 }
 
 function BuyerPaymentsPageContent() {
-  const [orders, setOrders] = useState<OrderBundle[]>([]);
+  const [orders, setOrders] = useState<OrderBundle[]>(() => getCachedBuyerOrders() ?? []);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(() => !hasCachedBuyerOrders());
   const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<PaymentFilter>("all");
 
@@ -47,26 +47,38 @@ function BuyerPaymentsPageContent() {
       if (mounted) setPaymentRecords(readBuyerPayments());
     };
 
-    const refreshServer = async () => {
-      setRefreshing(true);
+    syncLocal();
+
+    const cachedOrders = getCachedBuyerOrders();
+    if (cachedOrders) {
+      setOrders(cachedOrders);
+      setLoading(false);
+      window.addEventListener("storage", syncLocal);
+      window.addEventListener("focus", syncLocal);
+      return () => {
+        mounted = false;
+        window.removeEventListener("storage", syncLocal);
+        window.removeEventListener("focus", syncLocal);
+      };
+    }
+
+    void (async () => {
       try {
         const data = await apiFetch("/api/payments/orders/me", {
           timeoutMs: 30000,
           retryAttempts: 1,
         });
         if (!mounted) return;
-        setOrders(Array.isArray(data) ? (data as OrderBundle[]) : []);
+        const nextOrders = Array.isArray(data) ? (data as OrderBundle[]) : [];
+        setOrders(nextOrders);
+        setCachedBuyerOrders(nextOrders);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Failed to load purchases.");
       } finally {
-        if (mounted) setRefreshing(false);
+        if (mounted) setLoading(false);
       }
-    };
-
-    syncLocal();
-    void refreshServer();
-    setLoading(false);
+    })();
 
     window.addEventListener("storage", syncLocal);
     window.addEventListener("focus", syncLocal);
@@ -91,6 +103,7 @@ function BuyerPaymentsPageContent() {
 
     clearBuyerPaymentRecords();
     setOrders([]);
+    setCachedBuyerOrders([]);
     setPaymentRecords([]);
     setActiveFilter("all");
     setError(null);
@@ -137,7 +150,7 @@ function BuyerPaymentsPageContent() {
           </div>
           <p className="text-sm text-zinc-500">
             Showing <span className="font-bold text-zinc-800">{visibleRecords.length}</span> of <span className="font-bold text-zinc-800">{summary.records.length}</span>
-            {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
+            {loading ? <span className="ml-2 font-medium text-zinc-400">Syncing…</span> : null}
           </p>
         </div>
 
