@@ -68,6 +68,19 @@ function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function deriveCreatorApprovalStatus(creator: EventCreatorRow | null | undefined): string {
+  if (!creator) return "unknown";
+
+  const normalized = normalizeString(creator.status).toLowerCase();
+  if (normalized === "approved") return "approved";
+  if (normalized === "pending") return "pending approval";
+  if (normalized === "suspended") return "suspended";
+  if (normalized === "inactive") return "inactive";
+  if (creator.active_until && normalized !== "approved") return "approved";
+
+  return creator.status || "unknown";
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
@@ -309,7 +322,12 @@ export function registerEventCreatorOverviewRoutes(app: Express, deps: { db: any
       const pendingIssues = overviewEvents.filter((event) => event.pending_issues).length;
 
       return res.json({
-        creator: creator ?? null,
+        creator: creator
+          ? {
+              ...creator,
+              status: deriveCreatorApprovalStatus(creator),
+            }
+          : null,
         events: overviewEvents,
         summary: {
           totalTicketsSold,
