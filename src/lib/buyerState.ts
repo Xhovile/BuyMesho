@@ -220,16 +220,15 @@ export const removeBuyerCartItem = async (listingId: string) => {
     throw new Error("Please log in again before updating your cart.");
   }
 
-  await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
-    method: "DELETE",
-  });
-
   removeCartItemLocally(listingId);
 
   try {
+    await apiFetch(`/api/cart/items/${encodeURIComponent(listingId)}`, {
+      method: "DELETE",
+    });
     await refreshBuyerCartFromServer();
-  } catch {
-    // Keep the locally removed cart snapshot if refresh fails.
+  } catch (error) {
+    console.warn("Cart item removal sync failed, keeping local cart item removed:", error);
   }
 };
 
