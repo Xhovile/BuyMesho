@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { AlertCircle, ArrowRight, CalendarDays, Download, Filter, LayoutDashboard, Loader2, Search, Ticket, Wallet } from "lucide-react";
+import { useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { AlertCircle, ArrowRight, CalendarDays, Clock3, Download, Filter, LayoutDashboard, Loader2, Search, Ticket, Wallet } from "lucide-react";
 
 import loaderImage from "../photos/LoaderPic.png";
 import AccountPageShell from "./components/AccountPageShell";
@@ -75,6 +75,38 @@ function statusClass(status: string) {
   }
 }
 
+function transactionStatusClass(hasRevenue: boolean, pendingIssues: boolean) {
+  if (hasRevenue) {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+  if (pendingIssues) {
+    return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+  return "border-zinc-200 bg-zinc-50 text-zinc-700";
+}
+
+function transactionStatusLabel(event: DashboardEvent) {
+  if (event.gross_revenue_amount > 0) {
+    return "Successful · awaiting midnight settlement";
+  }
+  if (event.pending_issues) {
+    return "Needs attention";
+  }
+  return "No captured payments yet";
+}
+
+function transactionSettlementNote(event: DashboardEvent) {
+  if (event.gross_revenue_amount > 0) {
+    return "Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.";
+  }
+  return "No captured event payments yet.";
+}
+
+function settlementFeeAmount(event: DashboardEvent) {
+  const fee = Number(event.gross_revenue_amount || 0) - Number(event.net_revenue_amount || 0);
+  return fee > 0 ? fee : 0;
+}
+
 function MetricCard({ label, value, helper, icon: Icon }: { label: string; value: string; helper?: string; icon: ComponentType<{ className?: string }> }) {
   return (
     <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm shadow-zinc-200/30">
@@ -88,6 +120,26 @@ function MetricCard({ label, value, helper, icon: Icon }: { label: string; value
           <Icon className="h-5 w-5" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionTitle({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4">
+      <div>
+        <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-zinc-400">{eyebrow}</p>
+        <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
+      </div>
+      {action ? action : null}
     </div>
   );
 }
@@ -122,11 +174,11 @@ function buildPrintableDashboardHtml(params: {
       (event) => `
         <tr>
           <td><strong>${escapeHtml(event.event_title)}</strong><div class="muted">${escapeHtml(event.event_type)} • ${escapeHtml(event.organizer_name)}</div></td>
-          <td>${escapeHtml(event.status)}</td>
-          <td>${escapeHtml(formatDate(event.event_date))}</td>
-          <td>${event.tickets_sold}</td>
+          <td>${escapeHtml(transactionStatusLabel(event))}</td>
           <td>${escapeHtml(formatMoney(event.gross_revenue_amount, event.revenue_currency))}</td>
+          <td>${escapeHtml(formatMoney(settlementFeeAmount(event), event.revenue_currency))}</td>
           <td>${escapeHtml(formatMoney(event.net_revenue_amount, event.revenue_currency))}</td>
+          <td>${event.tickets_sold}</td>
           <td>${event.ticket_clicks} / ${event.cart_adds} / ${event.message_threads}</td>
           <td>${escapeHtml(formatDateTime(event.last_activity_at || event.updated_at))}</td>
         </tr>
@@ -175,7 +227,7 @@ function buildPrintableDashboardHtml(params: {
   </div>
 
   <h1>${escapeHtml(title)}</h1>
-  <div class="sub">Creator dashboard export for your events. This view uses the current dashboard filters and shows gross and estimated net sales separately.</div>
+  <div class="sub">Creator dashboard export for your events. Successful payments are captured now and settle after midnight on a T+1 cycle.</div>
   <div class="meta">Exported ${escapeHtml(now)} • Filters: ${escapeHtml(filters.query || "All events")} • ${escapeHtml(filters.status)} • ${escapeHtml(filters.eventType)} • ${escapeHtml(filters.dateFrom || "Any start date")} → ${escapeHtml(filters.dateTo || "Any end date")}</div>
 
   <div class="grid">
@@ -190,11 +242,11 @@ function buildPrintableDashboardHtml(params: {
     <thead>
       <tr>
         <th>Event</th>
-        <th>Status</th>
-        <th>Date</th>
-        <th>Tickets</th>
+        <th>Settlement</th>
         <th>Gross</th>
+        <th>Fee / reserve</th>
         <th>Net</th>
+        <th>Tickets</th>
         <th>Activity</th>
         <th>Last updated</th>
       </tr>
@@ -213,6 +265,146 @@ function buildPrintableDashboardHtml(params: {
   </script>
 </body>
 </html>`;
+}
+
+function SettlementBanner({ summary }: { summary: DashboardResponse["summary"] }) {
+  const hasRevenue = summary.grossRevenueAmount > 0;
+  return (
+    <div className="rounded-[1.5rem] border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-emerald-700">
+          <Clock3 className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-emerald-600">Settlement status</p>
+          <h3 className="mt-1 text-xl font-black tracking-tight text-emerald-950">
+            {hasRevenue ? "Successful transactions are waiting for midnight settlement" : "No captured transactions yet"}
+          </h3>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-900/90">
+            Payments made today will be available the next day after midnight. The exact time may vary slightly, but it follows the T+1 cycle.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.16em] text-emerald-900">
+            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+              Captured: {formatMoney(summary.grossRevenueAmount, summary.revenueCurrency)}
+            </span>
+            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+              Est. net: {formatMoney(summary.netRevenueAmount, summary.revenueCurrency)}
+            </span>
+            <span className="rounded-full border border-emerald-200 bg-white px-3 py-1">
+              T+1 settlement
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TransactionHistorySection({ events }: { events: DashboardEvent[] }) {
+  return (
+    <section className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
+      <SectionTitle
+        eyebrow="Transaction ledger"
+        title="Captured payments and settlement maths"
+        action={<Wallet className="h-5 w-5 text-zinc-400" />}
+      />
+
+      <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-600">
+        Successful event payments stay visible here with gross, fees, net, and settlement state. The ledger stays intact; only the wording changes.
+      </p>
+
+      <div className="mt-4 overflow-hidden rounded-2xl border border-zinc-200">
+        <div className="max-h-[540px] min-w-[940px] overflow-auto">
+          <table className="w-full divide-y divide-zinc-200 text-left text-sm">
+            <thead className="sticky top-0 bg-zinc-50 text-zinc-500">
+              <tr>
+                <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Settlement</th>
+                <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Amount</th>
+                <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Event</th>
+                <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Ledger</th>
+                <th className="px-4 py-3 text-[11px] font-extrabold uppercase tracking-[0.14em]">Updated</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 bg-white">
+              {events.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-zinc-500">
+                    No transaction records yet.
+                  </td>
+                </tr>
+              ) : (
+                events.map((event) => {
+                  const hasRevenue = event.gross_revenue_amount > 0;
+                  const feeAmount = settlementFeeAmount(event);
+
+                  return (
+                    <tr key={event.id} className="align-top">
+                      <td className="px-4 py-4">
+                        <div className="space-y-2">
+                          <span className={`inline-flex rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] ${transactionStatusClass(hasRevenue, event.pending_issues)}`}>
+                            {transactionStatusLabel(event)}
+                          </span>
+                          <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs font-semibold text-zinc-600">
+                            {transactionSettlementNote(event)}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 text-zinc-700">
+                        <div className="font-bold text-zinc-900">
+                          {formatMoney(event.gross_revenue_amount, event.revenue_currency)}
+                        </div>
+                        <div className="mt-2 space-y-1 rounded-xl border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-[11px] font-semibold text-zinc-500">
+                          <div className="flex justify-between gap-3">
+                            <span>Gross</span>
+                            <span>{formatMoney(event.gross_revenue_amount, event.revenue_currency)}</span>
+                          </div>
+                          <div className="flex justify-between gap-3">
+                            <span>Fee / reserve</span>
+                            <span>-{formatMoney(feeAmount, event.revenue_currency)}</span>
+                          </div>
+                          <div className="flex justify-between gap-3 border-t border-zinc-200 pt-1 font-bold text-zinc-700">
+                            <span>Net</span>
+                            <span>{formatMoney(event.net_revenue_amount, event.revenue_currency)}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 text-zinc-700">
+                        <p className="font-bold text-zinc-950">{event.event_title}</p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {event.event_type} • {event.organizer_name}
+                        </p>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {event.venue} • {event.location}
+                        </p>
+                        <p className="mt-2 text-xs text-zinc-500">
+                          {formatDate(event.event_date)} • {event.start_time}
+                        </p>
+                      </td>
+
+                      <td className="px-4 py-4 text-zinc-700">
+                        <div className="space-y-1 text-xs text-zinc-500">
+                          <p>{event.tickets_sold} tickets sold</p>
+                          <p>{event.cart_adds} cart adds</p>
+                          <p>{event.message_threads} message threads</p>
+                          <p>{event.ticket_clicks} ticket clicks</p>
+                        </div>
+                      </td>
+
+                      <td className="px-4 py-4 text-zinc-700">
+                        {formatDateTime(event.last_activity_at || event.updated_at)}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 export default function EventCreatorOverviewPage() {
@@ -324,6 +516,8 @@ export default function EventCreatorOverviewPage() {
     printWindow.focus();
   };
 
+  const creatorStatus = typeof data?.creator?.status === "string" ? data.creator.status : null;
+
   return (
     <AccountPageShell
       eyebrow="Event creator"
@@ -357,6 +551,10 @@ export default function EventCreatorOverviewPage() {
           <MetricCard label="Active events" value={String(summary.activeEvents)} helper="Currently published" icon={CalendarDays} />
           <MetricCard label="Pending issues" value={String(summary.pendingIssues)} helper="Needs attention" icon={AlertCircle} />
         </div>
+
+        <SettlementBanner summary={summary} />
+
+        <TransactionHistorySection events={filteredEvents} />
 
         <div className="rounded-[1.5rem] border border-zinc-200 bg-white p-4 shadow-sm">
           <div className="grid gap-3 lg:grid-cols-[1.7fr_0.8fr_0.8fr_0.8fr_0.8fr]">
@@ -401,7 +599,7 @@ export default function EventCreatorOverviewPage() {
         <div className="overflow-hidden rounded-[1.5rem] border border-zinc-200 bg-white shadow-sm">
           <div className="flex items-center justify-between gap-3 border-b border-zinc-200 px-4 py-4">
             <div>
-              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Events table</p>
+              <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-zinc-400">Event performance</p>
               <h2 className="mt-1 text-lg font-black tracking-tight text-zinc-950">Filtered events</h2>
             </div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-zinc-500">{filteredEvents.length} shown</p>
