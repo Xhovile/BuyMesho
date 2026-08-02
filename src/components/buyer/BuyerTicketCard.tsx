@@ -120,7 +120,7 @@ export default function BuyerTicketCard({
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
           >
             <Download className="h-4 w-4" />
-            PDF ticket
+            Print(PDF)
           </button>
           {showOpenTicketButton ? (
             <button
@@ -129,7 +129,7 @@ export default function BuyerTicketCard({
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
             >
               <Ticket className="h-4 w-4" />
-              Open ticket
+              View Details
             </button>
           ) : null}
           {showSupportButton ? (
@@ -139,7 +139,7 @@ export default function BuyerTicketCard({
               className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
             >
               <ShieldAlert className="h-4 w-4" />
-              Support / report issue
+              Contact Support
             </button>
           ) : null}
         </div>
