@@ -5,7 +5,6 @@ import {
   navigateToListingDetails,
   navigateToOrderDispute,
   navigateToPath,
-  TICKETS_PATH,
 } from "./lib/appNavigation";
 import {
   fetchOrderByReference,
@@ -22,6 +21,10 @@ import DisputeActionsCard from "./components/orders/DisputeActionsCard";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
+type OrderTrackingPageProps = {
+  initialBundle?: OrderBundle | null;
+};
+
 const listingStages = [
   "Order placed",
   "Payment pending",
@@ -31,21 +34,20 @@ const listingStages = [
   "Funds released",
 ];
 
-export default function OrderTrackingPage() {
+export default function OrderTrackingPage({ initialBundle = null }: OrderTrackingPageProps) {
   const ready = useRequireVerifiedUser();
   if (!ready) return null;
-  return <OrderTrackingPageContent />;
+  return <OrderTrackingPageContent initialBundle={initialBundle} />;
 }
 
-function OrderTrackingPageContent() {
+function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPageProps) {
   const { firebaseUser, profile } = useAccountProfile();
-  const [bundle, setBundle] = useState<OrderBundle | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
+  const [loading, setLoading] = useState(() => !initialBundle);
   const [error, setError] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [redirectingToTickets, setRedirectingToTickets] = useState(false);
 
   const reference = useMemo(() => {
     const segments = window.location.pathname.split("/").filter(Boolean);
@@ -74,8 +76,14 @@ function OrderTrackingPageContent() {
   }, [reference]);
 
   useEffect(() => {
+    if (initialBundle) {
+      setBundle(initialBundle);
+      setLoading(false);
+      return;
+    }
+
     void reload();
-  }, [reload]);
+  }, [initialBundle, reload]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
@@ -110,20 +118,11 @@ function OrderTrackingPageContent() {
   const activeIndex = useMemo(() => {
     if (!order) return 0;
 
-    if (
-      escrowState === "released" ||
-      order.status === "fulfilled" ||
-      order.status === "closed"
-    ) {
+    if (escrowState === "released" || order.status === "fulfilled" || order.status === "closed") {
       return 5;
     }
 
-    if (
-      order.status === "in_escrow" ||
-      escrowState === "funded" ||
-      escrowState === "held" ||
-      escrowState === "disputed"
-    ) {
+    if (order.status === "in_escrow" || escrowState === "funded" || escrowState === "held" || escrowState === "disputed") {
       return 3;
     }
 
@@ -172,13 +171,6 @@ function OrderTrackingPageContent() {
     escrowState !== "refunded" &&
     escrowState !== "closed" &&
     nowMs >= releaseAvailableAt;
-
-  useEffect(() => {
-    if (flowType === "event_only" && reference && !redirectingToTickets) {
-      setRedirectingToTickets(true);
-      navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`, { replace: true });
-    }
-  }, [flowType, reference, redirectingToTickets]);
 
   const handleBack = () => {
     if (firstListingId) {
@@ -231,14 +223,6 @@ function OrderTrackingPageContent() {
       setSubmitting(null);
     }
   };
-
-  if (redirectingToTickets) {
-    return (
-      <div className="min-h-screen bg-zinc-50 text-zinc-900">
-        <div className="mx-auto max-w-4xl px-4 py-10 text-sm text-zinc-600">Redirecting to ticket tracking…</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -302,7 +286,7 @@ function OrderTrackingPageContent() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference ?? "")}`)}
+                      onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(reference ?? "")}`)}
                       className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
                     >
                       <ExternalLink className="h-4 w-4" />
