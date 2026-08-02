@@ -14,6 +14,16 @@ function displayValue(value: string) {
   return value && value.trim() ? value : "—";
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 function displayStatus(status: BuyerTicketRecord["status"]) {
   return status;
 }
@@ -44,6 +54,7 @@ export default function BuyerTicketCard({
   const showOpenTicketButton = typeof onOpenTicket === "function";
   const showSupportButton = typeof onOpenSupport === "function";
   const note = settlementNote(ticket.status);
+  const purchasedAt = formatDateTime(ticket.updatedAt);
 
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -55,6 +66,12 @@ export default function BuyerTicketCard({
           </div>
           <h3 className="mt-3 line-clamp-2 text-lg font-black tracking-tight text-zinc-950">{ticket.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">{displayValue(ticket.organizerName)}</p>
+          {purchasedAt ? (
+            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
+              <Clock3 className="h-3.5 w-3.5 text-zinc-400" />
+              Purchased {purchasedAt}
+            </div>
+          ) : null}
           {note ? <p className="mt-2 text-xs font-semibold text-zinc-500">{note}</p> : null}
         </div>
         <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.18em] ${statusClasses(ticket.status)}`}>
