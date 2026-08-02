@@ -59,10 +59,6 @@ function hasAnyString(values: unknown): boolean {
   return Array.isArray(values) && values.some((value) => typeof value === 'string' && value.trim());
 }
 
-function hasMixedSignals(record: BuyerPaymentRecord): boolean {
-  return hasListingSignals(record) && hasEventSignals(record);
-}
-
 function hasListingSignals(source: Record<string, unknown> | null | undefined): boolean {
   if (!source) return false;
   if (typeof source.listingId === 'string' && source.listingId.trim()) return true;
