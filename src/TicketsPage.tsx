@@ -175,6 +175,10 @@ function TicketsPageContent() {
     window.open(url, "_blank", "noopener,noreferrer");
   };
 
+  const handleOpenTicket = (ticket: BuyerTicketRecord) => {
+    navigateToPath(`/tickets?reference=${encodeURIComponent(ticket.reference)}`);
+  };
+
   const handleOpenSupport = () => {
     navigateToPath("/report");
   };
@@ -269,6 +273,7 @@ function TicketsPageContent() {
                 ticket={ticket}
                 onDownloadPdf={() => handleDownload(ticket)}
                 onShareWhatsApp={() => handleShareWhatsApp(ticket)}
+                onOpenTicket={() => handleOpenTicket(ticket)}
                 onOpenSupport={handleOpenSupport}
               />
             ))
