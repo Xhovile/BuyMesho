@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, Clock3, Users } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock3, Loader2, Users } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import BuyerTicketCard from "./components/buyer/BuyerTicketCard";
 import { navigateToOrderDispute } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 import { buildBuyerTickets, type BuyerTicketRecord, type BuyerTicketStatus } from "./lib/buyerTickets";
 import { downloadTicketPdf } from "./lib/ticketPdf";
 import { readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
+import type { OrderBundle } from "./lib/orderApi";
 
 const FILTERS: Array<{ key: "all" | BuyerTicketStatus; label: string }> = [
   { key: "all", label: "All" },
@@ -56,23 +58,52 @@ export default function TicketsPage() {
 }
 
 function TicketsPageContent() {
+  const [orders, setOrders] = useState<OrderBundle[]>([]);
   const [paymentRecords, setPaymentRecords] = useState<BuyerPaymentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<"all" | BuyerTicketStatus>("all");
 
   useEffect(() => {
-    const syncLocal = () => setPaymentRecords(readBuyerPayments());
+    let mounted = true;
+
+    const syncLocal = () => {
+      if (mounted) setPaymentRecords(readBuyerPayments());
+    };
+
+    const refreshServer = async () => {
+      setRefreshing(true);
+      try {
+        const data = await apiFetch("/api/payments/orders/me", {
+          timeoutMs: 8000,
+          retryAttempts: 1,
+        });
+        if (!mounted) return;
+        setOrders(Array.isArray(data) ? (data as OrderBundle[]) : []);
+      } catch (err) {
+        if (!mounted) return;
+        setError(err instanceof Error ? err.message : "Failed to load buyer tickets.");
+      } finally {
+        if (mounted) setRefreshing(false);
+      }
+    };
 
     syncLocal();
+    void refreshServer();
+    setLoading(false);
+
     window.addEventListener("storage", syncLocal);
     window.addEventListener("focus", syncLocal);
 
     return () => {
+      mounted = false;
       window.removeEventListener("storage", syncLocal);
       window.removeEventListener("focus", syncLocal);
     };
   }, []);
 
-  const tickets = useMemo(() => sortTicketsByNewest(buildBuyerTickets([], paymentRecords)), [paymentRecords]);
+  const tickets = useMemo(() => sortTicketsByNewest(buildBuyerTickets(orders, paymentRecords)), [orders, paymentRecords]);
 
   const visibleTickets = useMemo(() => {
     if (activeFilter === "all") return tickets;
@@ -144,8 +175,16 @@ function TicketsPageContent() {
           </div>
           <p className="text-sm text-zinc-500">
             Showing <span className="font-bold text-zinc-800">{visibleTickets.length}</span> of <span className="font-bold text-zinc-800">{tickets.length}</span>
+            {refreshing ? <span className="ml-2 font-medium text-zinc-400">Refreshing…</span> : null}
           </p>
         </div>
+
+        {loading ? (
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 shadow-sm">
+            <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+            Syncing tickets…
+          </div>
+        ) : null}
 
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
           {FILTERS.map(({ key, label }) => {
@@ -195,6 +234,12 @@ function TicketsPageContent() {
             </button>
           ) : null}
         </div>
+
+        {error ? (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            {error}
+          </div>
+        ) : null}
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           {visibleTickets.length ? (
