@@ -12,14 +12,6 @@ type EventTicketTrackingPageProps = {
   initialBundle?: OrderBundle | null;
 };
 
-const ticketStages = [
-  "Ticket ordered",
-  "Payment confirmed",
-  "Ticket issued",
-  "Ready for event",
-  "Event day",
-];
-
 function getTicketStatusLabel(paymentStatus: string) {
   const normalized = paymentStatus.trim().toLowerCase();
   if (["paid", "captured", "verified", "successful", "completed"].includes(normalized)) return "Issued";
@@ -28,15 +20,6 @@ function getTicketStatusLabel(paymentStatus: string) {
   if (["failed", "error"].includes(normalized)) return "Ticket issue";
   return paymentStatus || "Pending confirmation";
 }
-
-function getTicketProgressIndex(paymentStatus: string) {
-  const normalized = paymentStatus.trim().toLowerCase();
-  if (["paid", "captured", "verified", "successful", "completed"].includes(normalized)) return 2;
-  if (["pending", "initiated", "processing", "queued", "awaiting_payment"].includes(normalized)) return 0;
-  if (["rejected", "cancelled", "refunded", "failed", "error"].includes(normalized)) return 0;
-  return 1;
-}
-
 function formatMoney(amount: number, currency: string) {
   try {
     return new Intl.NumberFormat("en-US", {
@@ -152,7 +135,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
   const firstTicketItem = ticketItems[0] ?? orderItems[0] ?? null;
   const paymentStatus = typeof bundle?.payment?.status === "string" ? String(bundle.payment.status) : order?.status ?? "pending";
   const ticketStatus = getTicketStatusLabel(paymentStatus);
-  const progressIndex = getTicketProgressIndex(paymentStatus);
 
   const eventDetails = {
     title: String(firstTicketItem?.title ?? "Event ticket"),
@@ -264,7 +246,10 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                       <Ticket className="h-3.5 w-3.5" />
                       Event ticket
                     </div>
-                    <h2 className="mt-4 text-2xl font-black tracking-tight text-zinc-950">{eventDetails.title}</h2>
+                    <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
+                      <h2 className="text-2xl font-black tracking-tight text-zinc-950">{eventDetails.title}</h2>
+                      <p className="text-3xl font-black tracking-tight text-red-900 sm:text-4xl">{formatMoney(ticketAmount, ticketCurrency)}</p>
+                    </div>
                     <p className="mt-2 text-sm text-zinc-600">{eventDetails.organizerName}</p>
                     {purchaseTimeLabel ? (
                       <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
@@ -330,32 +315,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
               </div>
             </div>
 
-            <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Progress</p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-5">
-                {ticketStages.map((stage, index) => {
-                  const active = index <= progressIndex;
-                  return (
-                    <div
-                      key={stage}
-                      className={`rounded-2xl border px-4 py-3 ${
-                        active ? "border-zinc-950 bg-zinc-950 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-500"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[11px] font-black uppercase tracking-[0.18em]">{index + 1}</p>
-                        <span className={`h-2.5 w-2.5 rounded-full ${active ? "bg-white" : "bg-zinc-300"}`} />
-                      </div>
-                      <p className="mt-3 text-sm font-semibold leading-6">{stage}</p>
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="mt-4 text-sm leading-6 text-zinc-600">
-                Current state: <span className="font-bold text-zinc-900">{ticketStatus}</span>
-              </p>
-            </div>
-
             <div className="grid gap-6 lg:grid-cols-2">
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
                 <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Ticket details</p>
@@ -396,7 +355,7 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                   <button
                     type="button"
                     onClick={handlePrint}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"
                   >
                     <Download className="h-4 w-4" />
                     Print PDF
@@ -406,9 +365,9 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     type="button"
                     onClick={handleOpenEvent}
                     disabled={!eventDetails.eventId}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <MapPin className="h-4 w-4" />
+                    <Ticket className="h-4 w-4" />
                     Open event
                   </button>
 

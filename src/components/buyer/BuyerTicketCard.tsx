@@ -117,7 +117,7 @@ export default function BuyerTicketCard({
           <button
             type="button"
             onClick={onDownloadPdf}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"
           >
             <Download className="h-4 w-4" />
             Print(PDF)

@@ -565,11 +565,11 @@ export function useAppLegacyState(): AppLegacyState {
     onHideSeller: hideSellerLocal,
     onHideListing: hideListingLocal,
     onToggleStatus: (listing) => {
-      const nextStatus = listing.status === "active" ? "sold" : "active";
+      const nextStatus = listing.status === "sold" ? "available" : "sold";
       void handleUpdateListing(listing.id, { status: nextStatus });
     },
     onToggleSave: toggleSavedListing,
-    onOpenDetails: navigateToListingDetails,
+    onOpenDetails: (listing) => navigateToListingDetails(listing.id, 0),
     onOpenSeller: navigateToSellerProfile,
   };
 

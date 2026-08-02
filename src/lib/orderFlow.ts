@@ -26,8 +26,8 @@ function hasEventSignals(source: MaybeRecord): boolean {
   if (typeof source.eventId === "string" && source.eventId.trim()) return true;
   if (typeof source.eventIds === "string" && source.eventIds.trim()) return true;
   if (Array.isArray(source.eventIds) && source.eventIds.some((value) => typeof value === "string" && value.trim())) return true;
-  if (hasArraySignal(source, "eventDetails", (entry) => isRecord(entry) && typeof entry.eventId === "string" && entry.eventId.trim())) return true;
-  if (hasArraySignal(source, "checkoutItems", (entry) => isRecord(entry) && (entry.kind === "event_ticket" || (typeof entry.eventId === "string" && entry.eventId.trim())))) return true;
+  if (hasArraySignal(source, "eventDetails", (entry) => isRecord(entry) && typeof entry.eventId === "string" && Boolean(entry.eventId.trim()))) return true;
+  if (hasArraySignal(source, "checkoutItems", (entry) => isRecord(entry) && (entry.kind === "event_ticket" || (typeof entry.eventId === "string" && Boolean(entry.eventId.trim()))))) return true;
   return false;
 }
 
@@ -35,8 +35,8 @@ function hasListingSignals(source: MaybeRecord): boolean {
   if (!source) return false;
   if (typeof source.listingId === "string" && source.listingId.trim()) return true;
   if (Array.isArray(source.listingIds) && source.listingIds.some((value) => typeof value === "string" && value.trim())) return true;
-  if (hasArraySignal(source, "items", (entry) => isRecord(entry) && (entry.kind === "listing" || (typeof entry.listingId === "string" && entry.listingId.trim())))) return true;
-  if (hasArraySignal(source, "checkoutItems", (entry) => isRecord(entry) && (entry.kind === "listing" || (typeof entry.listingId === "string" && entry.listingId.trim())))) return true;
+  if (hasArraySignal(source, "items", (entry) => isRecord(entry) && (entry.kind === "listing" || (typeof entry.listingId === "string" && Boolean(entry.listingId.trim()))))) return true;
+  if (hasArraySignal(source, "checkoutItems", (entry) => isRecord(entry) && (entry.kind === "listing" || (typeof entry.listingId === "string" && Boolean(entry.listingId.trim()))))) return true;
   return false;
 }
 
