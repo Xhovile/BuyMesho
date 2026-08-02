@@ -363,21 +363,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Payment summary</p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment status</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-900">{paymentStatus}</p>
-                  </div>
-                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket amount</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(ticketAmount, ticketCurrency)}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div className="grid gap-3 lg:grid-cols-3">
               <div> 
                 <button
