@@ -221,6 +221,7 @@ function TicketsListPage() {
                     >
                     Filter
                   </span>
+                </div>
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{count}</p>
                   <span className={`h-1.5 w-8 rounded-full ${active ? "bg-white/60" : "bg-zinc-200 group-hover:bg-zinc-300"}`} />
@@ -270,7 +271,6 @@ function TicketsListPage() {
               </p>
             </div>
           )}
-        </div>
         </div>
       </div>
     </div>

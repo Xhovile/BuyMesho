@@ -697,6 +697,7 @@ const applyAiDraft = async () => {
               {isGeneratingDraft ? "Generating..." : "AI Draft"}
             </button>
           </div>
+          <div>
               <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>
               <input type="text" className={`w-full px-4 py-3 bg-white border rounded-xl outline-none ${fieldErrors.name ? "border-red-500 focus:ring-2 focus:ring-red-200" : "border-zinc-200 focus:ring-2 focus:ring-primary/20"}`} value={form.name} onChange={(e) => { clearFieldError("name"); setForm({ ...form, name: e.target.value }); }} />
               {fieldErrors.name ? <p className="mt-1 text-xs text-red-600">{fieldErrors.name}</p> : null}
@@ -912,7 +913,6 @@ const applyAiDraft = async () => {
           <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">Note</p>
           <p className="text-sm text-zinc-600">You can upload up to 5 photos and 1 video. Buyers trust clearer listings, so complete the required fields carefully before submitting.</p>
         </div>
-      </div>
 
       <div className="sticky bottom-0 z-30 p-4 sm:p-6 border-t border-zinc-200 bg-white/95 backdrop-blur-sm flex gap-3 flex-shrink-0">
         <button type="button" onClick={onCancel} className="flex-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 py-3 rounded-xl font-bold transition-colors">Cancel</button>

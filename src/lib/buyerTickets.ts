@@ -157,15 +157,16 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
     const paymentStatus = getPaymentStatusText(payment);
     const orderStatus = getOrderStatusText(bundle);
     const ticketStatus = classifyOrderStatus(orderStatus, paymentStatus);
-    const updatedAt =
-      bundle.order?.placedAt ??
-      bundle.order?.paidAt ??
-      bundle.payment?.paidAt ??
-      bundle.payment?.createdAt ??
-      bundle.order?.createdAt ??
-      bundle.order?.updatedAt ??
-      bundle.payment?.updatedAt ??
-      null;
+    const updatedAtCandidates = [
+      bundle.order?.placedAt,
+      bundle.order?.paidAt,
+      bundle.payment?.paidAt,
+      bundle.payment?.createdAt,
+      bundle.order?.createdAt,
+      bundle.order?.updatedAt,
+      bundle.payment?.updatedAt,
+    ];
+    const updatedAt = updatedAtCandidates.find((value): value is string => typeof value === "string" && value.trim().length > 0) ?? null;
 
     (bundle.order?.items ?? [])
       .filter((item) => item?.kind === "event_ticket" || item?.eventId)
