@@ -374,12 +374,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket amount</p>
                     <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(ticketAmount, ticketCurrency)}</p>
                   </div>
-                  <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket note</p>
-                    <p className="mt-1 text-sm leading-6 text-zinc-600">
-                      This ticket is managed separately from escrow-based order tracking.
-                    </p>
-                  </div>
                 </div>
               </div>
             </div>
@@ -394,9 +388,7 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                   <Ticket className="h-4 w-4" />
                   Print now
                 </button>
-              </div>
 
-              <div>
                 <button
                   type="button"
                   onClick={handleOpenEvent}
@@ -406,9 +398,7 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                   <MapPin className="h-4 w-4" />
                   Open event
                 </button>
-              </div>
 
-              <div>
                 <button
                   type="button"
                   onClick={handleSupport}
