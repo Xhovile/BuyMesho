@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CalendarDays, Clock3, CreditCard, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, CreditCard, Download, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { EVENTS_PATH, navigateToPath } from "./lib/appNavigation";
+import { downloadTicketPdf } from "./lib/ticketPdf";
 import { fetchOrderByReference, type OrderBundle } from "./lib/orderApi";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
@@ -83,6 +84,16 @@ function getUnitPriceCurrency(item: Record<string, unknown>, fallbackCurrency: s
     if (currency.trim()) return currency.trim();
   }
   return fallbackCurrency;
+}
+
+function ticketFileName(title: string, code: string) {
+  const safeTitle =
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40) || "ticket";
+  return `${safeTitle}-${code}.pdf`;
 }
 
 export default function EventTicketTrackingPage({ reference, initialBundle = null }: EventTicketTrackingPageProps) {
@@ -189,7 +200,28 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
     navigateToPath("/report");
   };
   const handlePrint = () => {
-    window.print();
+    const ticketCode = String((firstTicketItem as Record<string, unknown> | null)?.reference ?? orderReference);
+    downloadTicketPdf(
+      ticketFileName(eventDetails.title, ticketCode),
+      `${eventDetails.title} ticket`,
+      [
+        { label: "Event", value: eventDetails.title },
+        { label: "Organizer", value: eventDetails.organizerName || "Event organizer" },
+        { label: "Ticket code", value: ticketCode },
+        { label: "Reference", value: orderReference },
+        { label: "Holder", value: "Verified buyer account" },
+        { label: "Date", value: eventDetails.eventDate || "—" },
+        { label: "Time", value: eventDetails.startTime || "—" },
+        { label: "Venue", value: [eventDetails.venue, eventDetails.location].filter(Boolean).join(" • ") || "—" },
+        { label: "Status", value: paymentStatus },
+        { label: "Amount", value: formatMoney(ticketAmount, ticketCurrency) },
+      ],
+      {
+        ticketCode,
+        brandName: "BuyMesho",
+        brandTagline: "Official event ticket",
+      },
+    );
   };
 
   return (
@@ -224,7 +256,7 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
           </div>
         ) : order ? (
           <div className="mt-8 space-y-6">
-            <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div>
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -268,37 +300,32 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                       <span>{[eventDetails.venue, eventDetails.location].filter(Boolean).join(" • ") || "—"}</span>
                     </p>
                   </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket holder</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                      <UserRound className="h-4 w-4 text-zinc-400" />
+                      Verified buyer account
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Payment</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                      <CreditCard className="h-4 w-4 text-zinc-400" />
+                      {paymentStatus}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Purchase time</p>
+                    <p className="mt-1 inline-flex items-center gap-2 text-sm font-semibold text-zinc-900">
+                      <Clock3 className="h-4 w-4 text-zinc-400" />
+                      {purchaseTimeLabel || "—"}
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
                   <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{orderReference}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                    <UserRound className="h-4 w-4 text-zinc-400" />
-                    Ticket holder
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">Verified buyer account</p>
-                </div>
-
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                    <CreditCard className="h-4 w-4 text-zinc-400" />
-                    Payment
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">{paymentStatus}</p>
-                </div>
-
-                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                    <Clock3 className="h-4 w-4 text-zinc-400" />
-                    Purchase time
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-zinc-600">{purchaseTimeLabel || "—"}</p>
                 </div>
               </div>
             </div>
@@ -363,38 +390,39 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                 </div>
               </div>
 
-            <div className="grid gap-3 lg:grid-cols-3">
-              <div> 
-                <button
-                  type="button"
-                  onClick={handlePrint}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-                >
-                  <Ticket className="h-4 w-4" />
-                  Print now
-                </button>
+              <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Actions</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+                  >
+                    <Download className="h-4 w-4" />
+                    Print PDF
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleOpenEvent}
-                  disabled={!eventDetails.eventId}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Open event
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleOpenEvent}
+                    disabled={!eventDetails.eventId}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <MapPin className="h-4 w-4" />
+                    Open event
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleSupport}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
-                >
-                  <ShieldAlert className="h-4 w-4" />
-                  Support
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleSupport}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
+                  >
+                    <ShieldAlert className="h-4 w-4" />
+                    Support
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         ) : null}
       </div>

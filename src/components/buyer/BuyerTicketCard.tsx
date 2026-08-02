@@ -1,4 +1,4 @@
-import { CalendarDays, Clock3, Download, MapPin, ShieldAlert, Share2, Ticket } from "lucide-react";
+import { CalendarDays, Clock3, Download, MapPin, ShieldAlert, Ticket } from "lucide-react";
 
 import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
@@ -39,7 +39,6 @@ function settlementNote(status: BuyerTicketRecord["status"]) {
 type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onDownloadPdf: () => void;
-  onShareWhatsApp: () => void;
   onOpenTicket?: () => void;
   onOpenSupport?: () => void;
 };
@@ -47,7 +46,6 @@ type BuyerTicketCardProps = {
 export default function BuyerTicketCard({
   ticket,
   onDownloadPdf,
-  onShareWhatsApp,
   onOpenTicket,
   onOpenSupport,
 }: BuyerTicketCardProps) {
@@ -123,14 +121,6 @@ export default function BuyerTicketCard({
           >
             <Download className="h-4 w-4" />
             PDF ticket
-          </button>
-          <button
-            type="button"
-            onClick={onShareWhatsApp}
-            className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 hover:bg-emerald-100"
-          >
-            <Share2 className="h-4 w-4" />
-            WhatsApp
           </button>
           {showOpenTicketButton ? (
             <button
