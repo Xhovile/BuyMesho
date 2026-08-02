@@ -49,6 +49,42 @@ function formatMoney(amount: number, currency: string) {
   }
 }
 
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function readFirstString(...values: Array<string | null | undefined>) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function getUnitPriceAmount(item: Record<string, unknown>) {
+  const unitPrice = item.unitPrice;
+  if (unitPrice && typeof unitPrice === "object") {
+    const amount = Number((unitPrice as Record<string, unknown>).amount ?? 0);
+    if (Number.isFinite(amount) && amount > 0) return amount;
+  }
+  const fallback = Number(item.ticketPrice ?? 0);
+  return Number.isFinite(fallback) && fallback > 0 ? fallback : 0;
+}
+
+function getUnitPriceCurrency(item: Record<string, unknown>, fallbackCurrency: string) {
+  const unitPrice = item.unitPrice;
+  if (unitPrice && typeof unitPrice === "object") {
+    const currency = String((unitPrice as Record<string, unknown>).currency ?? "");
+    if (currency.trim()) return currency.trim();
+  }
+  return fallbackCurrency;
+}
+
 export default function EventTicketTrackingPage({ reference, initialBundle = null }: EventTicketTrackingPageProps) {
   const ready = useRequireVerifiedUser();
   if (!ready) return null;
@@ -94,9 +130,12 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
 
   const order = bundle?.order ?? null;
   const orderItems = order?.items ?? [];
+  const listingItems = useMemo(
+    () => orderItems.filter((item) => item?.kind === "listing" || !!item?.listingId || (!item?.kind && !item?.eventId)),
+    [orderItems],
+  );
   const ticketItems = useMemo(
-    () =>
-      orderItems.filter((item) => item?.kind === "event_ticket" || !!item?.eventId),
+    () => orderItems.filter((item) => item?.kind === "event_ticket" || !!item?.eventId),
     [orderItems],
   );
   const firstTicketItem = ticketItems[0] ?? orderItems[0] ?? null;
@@ -115,8 +154,31 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
   };
 
   const orderReference = String(bundle?.order?.paymentReference ?? reference);
-  const totalAmount = Number(bundle?.order?.total?.amount ?? 0);
-  const totalCurrency = String(bundle?.order?.total?.currency ?? "MWK");
+  const purchaseTime = readFirstString(
+    (bundle?.order as Record<string, unknown> | null)?.placedAt as string | null | undefined,
+    (bundle?.order as Record<string, unknown> | null)?.paidAt as string | null | undefined,
+    (bundle?.payment as Record<string, unknown> | null)?.paidAt as string | null | undefined,
+    (bundle?.payment as Record<string, unknown> | null)?.createdAt as string | null | undefined,
+    (bundle?.order as Record<string, unknown> | null)?.createdAt as string | null | undefined,
+    (bundle?.order as Record<string, unknown> | null)?.updatedAt as string | null | undefined,
+    (bundle?.payment as Record<string, unknown> | null)?.updatedAt as string | null | undefined,
+  );
+  const purchaseTimeLabel = formatDateTime(purchaseTime);
+
+  const eventAmount = ticketItems.reduce((sum, item) => {
+    const data = item as Record<string, unknown>;
+    const quantity = Math.max(1, Number(data.quantity ?? 1) || 1);
+    const unitPrice = getUnitPriceAmount(data);
+    return sum + (unitPrice > 0 ? unitPrice * quantity : 0);
+  }, 0);
+  const ticketCurrency = ticketItems.length
+    ? getUnitPriceCurrency(ticketItems[0] as Record<string, unknown>, String(bundle?.order?.total?.currency ?? "MWK"))
+    : String(bundle?.order?.total?.currency ?? "MWK");
+  const ticketAmount = eventAmount > 0
+    ? eventAmount
+    : listingItems.length > 0
+      ? 0
+      : Number(bundle?.order?.total?.amount ?? 0);
 
   const handleBack = () => navigateToPath("/tickets");
   const handleOpenEvent = () => {
@@ -125,6 +187,9 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
   };
   const handleSupport = () => {
     navigateToPath("/report");
+  };
+  const handlePrint = () => {
+    window.print();
   };
 
   return (
@@ -169,6 +234,12 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     </div>
                     <h2 className="mt-4 text-2xl font-black tracking-tight text-zinc-950">{eventDetails.title}</h2>
                     <p className="mt-2 text-sm text-zinc-600">{eventDetails.organizerName}</p>
+                    {purchaseTimeLabel ? (
+                      <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
+                        <Clock3 className="h-3.5 w-3.5 text-zinc-400" />
+                        Purchased {purchaseTimeLabel}
+                      </p>
+                    ) : null}
                   </div>
                   <span className="rounded-full bg-zinc-950 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-white">
                     {ticketStatus}
@@ -203,25 +274,6 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket reference</p>
                   <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{orderReference}</p>
                 </div>
-
-                <div className="mt-5 flex flex-wrap gap-3">
-                  <button
-                    type="button"
-                    onClick={handleOpenEvent}
-                    className="inline-flex items-center gap-2 rounded-2xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-                  >
-                    <MapPin className="h-4 w-4" />
-                    Open event
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSupport}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
-                  >
-                    <ShieldAlert className="h-4 w-4" />
-                    Support / report issue
-                  </button>
-                </div>
               </div>
 
               <div className="space-y-4">
@@ -239,6 +291,14 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     Payment
                   </div>
                   <p className="mt-2 text-sm leading-6 text-zinc-600">{paymentStatus}</p>
+                </div>
+
+                <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
+                  <div className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                    <Clock3 className="h-4 w-4 text-zinc-400" />
+                    Purchase time
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-zinc-600">{purchaseTimeLabel || "—"}</p>
                 </div>
               </div>
             </div>
@@ -277,6 +337,11 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Quantity</p>
                     <p className="mt-1 text-sm font-semibold text-zinc-900">{ticketItems.reduce((sum, item) => sum + Number(item?.quantity ?? 1), 0) || 1}</p>
                   </div>
+                  <div className="rounded-2xl bg-zinc-50 px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket price</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(ticketAmount, ticketCurrency)}</p>
+                    {listingItems.length > 0 ? <p className="mt-1 text-xs text-zinc-500">Listing totals stay in Purchases.</p> : null}
+                  </div>
                   <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Item references</p>
                     <div className="mt-2 space-y-2">
@@ -306,8 +371,8 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     <p className="mt-1 text-sm font-semibold text-zinc-900">{paymentStatus}</p>
                   </div>
                   <div className="rounded-2xl bg-zinc-50 px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Total</p>
-                    <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(totalAmount, totalCurrency)}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket amount</p>
+                    <p className="mt-1 text-sm font-semibold text-zinc-900">{formatMoney(ticketAmount, ticketCurrency)}</p>
                   </div>
                   <div className="rounded-2xl bg-zinc-50 px-4 py-3 sm:col-span-2">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket note</p>
@@ -316,6 +381,48 @@ function EventTicketTrackingPageContent({ reference, initialBundle = null }: Eve
                     </p>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Print ticket</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">Print this ticket or save it as a hard copy for the gate.</p>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                >
+                  <Ticket className="h-4 w-4" />
+                  Print now
+                </button>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Open event</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">Jump to the event page for venue details and updates.</p>
+                <button
+                  type="button"
+                  onClick={handleOpenEvent}
+                  disabled={!eventDetails.eventId}
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <MapPin className="h-4 w-4" />
+                  Open event
+                </button>
+              </div>
+
+              <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Need help?</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">Report a ticket issue or ask for support if something looks wrong.</p>
+                <button
+                  type="button"
+                  onClick={handleSupport}
+                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
+                >
+                  <ShieldAlert className="h-4 w-4" />
+                  Support / report issue
+                </button>
               </div>
             </div>
           </div>
