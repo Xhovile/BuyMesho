@@ -30,10 +30,18 @@ type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onDownloadPdf: () => void;
   onShareWhatsApp: () => void;
+  onOpenTicket?: () => void;
   onOpenSupport?: () => void;
 };
 
-export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp, onOpenSupport }: BuyerTicketCardProps) {
+export default function BuyerTicketCard({
+  ticket,
+  onDownloadPdf,
+  onShareWhatsApp,
+  onOpenTicket,
+  onOpenSupport,
+}: BuyerTicketCardProps) {
+  const showOpenTicketButton = typeof onOpenTicket === "function";
   const showSupportButton = typeof onOpenSupport === "function";
   const note = settlementNote(ticket.status);
 
@@ -107,6 +115,16 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp
             <Share2 className="h-4 w-4" />
             WhatsApp
           </button>
+          {showOpenTicketButton ? (
+            <button
+              type="button"
+              onClick={onOpenTicket}
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+            >
+              <Ticket className="h-4 w-4" />
+              Open ticket
+            </button>
+          ) : null}
           {showSupportButton ? (
             <button
               type="button"
