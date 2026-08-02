@@ -67,8 +67,7 @@ export default function TicketsPage() {
 }
 
 function TicketsPageContent() {
-  const ticketReference = useMemo(() => getReferenceFromUrl(), []);
-
+  const ticketReference = getReferenceFromUrl();
   if (ticketReference) {
     return <EventTicketTrackingPage reference={ticketReference} />;
   }
