@@ -19,10 +19,10 @@ function displayStatus(status: BuyerTicketRecord["status"]) {
 }
 
 function settlementNote(status: BuyerTicketRecord["status"]) {
-  if (status === "paid") return "Payment received · pending midnight verification";
-  if (status === "pending") return "Awaiting payment confirmation";
-  if (status === "rejected") return "Payment rejected";
-  if (status === "error") return "Payment error";
+  if (status === "paid") return "Ticket confirmed · ready for event";
+  if (status === "pending") return "Awaiting ticket confirmation";
+  if (status === "rejected") return "Ticket not issued";
+  if (status === "error") return "Ticket issue detected";
   return "";
 }
 
@@ -30,11 +30,11 @@ type BuyerTicketCardProps = {
   ticket: BuyerTicketRecord;
   onDownloadPdf: () => void;
   onShareWhatsApp: () => void;
-  onOpenDispute?: () => void;
+  onOpenSupport?: () => void;
 };
 
-export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp, onOpenDispute }: BuyerTicketCardProps) {
-  const showDisputeButton = ticket.status === "paid" && typeof onOpenDispute === "function";
+export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp, onOpenSupport }: BuyerTicketCardProps) {
+  const showSupportButton = typeof onOpenSupport === "function";
   const note = settlementNote(ticket.status);
 
   return (
@@ -107,14 +107,14 @@ export default function BuyerTicketCard({ ticket, onDownloadPdf, onShareWhatsApp
             <Share2 className="h-4 w-4" />
             WhatsApp
           </button>
-          {showDisputeButton ? (
+          {showSupportButton ? (
             <button
               type="button"
-              onClick={onOpenDispute}
-              className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
+              onClick={onOpenSupport}
+              className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
             >
               <ShieldAlert className="h-4 w-4" />
-              Dispute
+              Support / report issue
             </button>
           ) : null}
         </div>
