@@ -3,7 +3,7 @@ import { ArrowUpRight, Loader2, Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
-import { navigateToOrderTracking } from "./lib/appNavigation";
+import { navigateToOrderTracking, navigateToPath, TICKETS_PATH } from "./lib/appNavigation";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
@@ -113,8 +113,13 @@ function BuyerPaymentsPageContent() {
     setActiveFilter((current) => (current === filter ? "all" : filter));
   };
 
-  const openTracking = (reference: string, orderId?: string | null) => {
-    navigateToOrderTracking(orderId?.trim() || reference);
+  const openTracking = (reference: string, flowType: string) => {
+    if (flowType === "event_only") {
+      navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`);
+      return;
+    }
+
+    navigateToOrderTracking(reference);
   };
 
   return (
@@ -223,11 +228,11 @@ function BuyerPaymentsPageContent() {
                 key={record.key}
                 role="button"
                 tabIndex={0}
-                onClick={() => openTracking(record.reference, record.orderId)}
+                onClick={() => openTracking(record.reference, record.flowType)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    openTracking(record.reference, record.orderId);
+                    openTracking(record.reference, record.flowType);
                   }
                 }}
                 className="w-full cursor-pointer rounded-2xl border border-zinc-200 bg-white px-5 py-5 text-left transition hover:border-zinc-300 hover:bg-zinc-100/40"
@@ -254,7 +259,7 @@ function BuyerPaymentsPageContent() {
                     type="button"
                     onClick={(event) => {
                       event.stopPropagation();
-                      openTracking(record.reference, record.orderId);
+                      openTracking(record.reference, record.flowType);
                     }}
                     className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
                   >
