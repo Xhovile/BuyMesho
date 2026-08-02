@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, ShieldAlert, Truck } from "lucide-react";
+import { ArrowLeft, ExternalLink, Loader2, ShieldAlert, Truck } from "lucide-react";
 
 import {
   navigateToListingDetails,
@@ -18,10 +18,12 @@ import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
 import OrderProgressTracker from "./components/orders/OrderProgressTracker";
 import OrderDetailsCard from "./components/orders/OrderDetailsCard";
 import DisputeActionsCard from "./components/orders/DisputeActionsCard";
+import EventTicketTrackingPage from "./EventTicketTrackingPage";
 import { useAccountProfile } from "./hooks/useAccountProfile";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
-type OrderTrackingPageProps = {
+type TrackingPageProps = {
+  reference?: string | null;
   initialBundle?: OrderBundle | null;
 };
 
@@ -34,28 +36,50 @@ const listingStages = [
   "Funds released",
 ];
 
-export default function OrderTrackingPage({ initialBundle = null }: OrderTrackingPageProps) {
-  const ready = useRequireVerifiedUser();
-  if (!ready) return null;
-  return <OrderTrackingPageContent initialBundle={initialBundle} />;
+function getReferenceFromUrl() {
+  const segments = window.location.pathname.split("/").filter(Boolean);
+  return segments[1] ? decodeURIComponent(segments[1]) : null;
 }
 
-function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPageProps) {
-  const { firebaseUser, profile } = useAccountProfile();
+function LoadingState() {
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-10">
+        <div className="flex items-center gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-600 shadow-sm">
+          <Loader2 className="h-4 w-4 animate-spin text-zinc-500" />
+          Loading order details…
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="min-h-screen bg-zinc-50 text-zinc-900">
+      <div className="mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-10">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {message}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function OrderTrackingPage({ reference: referenceProp = null, initialBundle = null }: TrackingPageProps = {}) {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <OrderTrackingRouteContent reference={referenceProp ?? getReferenceFromUrl()} initialBundle={initialBundle} />;
+}
+
+function OrderTrackingRouteContent({ reference, initialBundle = null }: TrackingPageProps) {
   const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
   const [loading, setLoading] = useState(() => !initialBundle);
   const [error, setError] = useState<string | null>(null);
-  const [disputeReason, setDisputeReason] = useState("");
-  const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
-
-  const reference = useMemo(() => {
-    const segments = window.location.pathname.split("/").filter(Boolean);
-    return segments[1] ? decodeURIComponent(segments[1]) : null;
-  }, []);
 
   const reload = useCallback(async () => {
-    if (!reference) {
+    const trimmed = reference?.trim();
+    if (!trimmed) {
       setError("No order reference found in URL.");
       setLoading(false);
       return;
@@ -65,7 +89,61 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
     setError(null);
 
     try {
-      const data = await fetchOrderByReference(reference);
+      const data = await fetchOrderByReference(trimmed);
+      setBundle(data);
+    } catch (err) {
+      setBundle(null);
+      setError(err instanceof Error ? err.message : "Failed to load order details.");
+    } finally {
+      setLoading(false);
+    }
+  }, [reference]);
+
+  useEffect(() => {
+    if (initialBundle) {
+      setBundle(initialBundle);
+      setLoading(false);
+      return;
+    }
+
+    void reload();
+  }, [initialBundle, reload]);
+
+  const flowType = useMemo(() => getOrderFlowType(bundle), [bundle]);
+
+  if (loading) return <LoadingState />;
+  if (error && !bundle) return <ErrorState message={error} />;
+  if (bundle && flowType === "event_only") {
+    return <EventTicketTrackingPage reference={reference ?? ""} initialBundle={bundle} />;
+  }
+
+  return <BuyerOrderTrackingContent reference={reference ?? null} initialBundle={bundle} />;
+}
+
+function BuyerOrderTrackingContent({ reference, initialBundle = null }: TrackingPageProps) {
+  const { firebaseUser, profile } = useAccountProfile();
+  const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
+  const [loading, setLoading] = useState(() => !initialBundle);
+  const [error, setError] = useState<string | null>(null);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const effectiveReference = reference ?? getReferenceFromUrl();
+
+  const reload = useCallback(async () => {
+    const trimmed = effectiveReference?.trim();
+    if (!trimmed) {
+      setError("No order reference found in URL.");
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchOrderByReference(trimmed);
       setBundle(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load order details.");
@@ -73,7 +151,7 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
     } finally {
       setLoading(false);
     }
-  }, [reference]);
+  }, [effectiveReference]);
 
   useEffect(() => {
     if (initialBundle) {
@@ -182,8 +260,8 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
   };
 
   const handleOpenDispute = () => {
-    if (!reference) return;
-    navigateToOrderDispute(reference);
+    if (!effectiveReference) return;
+    navigateToOrderDispute(effectiveReference);
   };
 
   const handleConfirmDelivery = async () => {
@@ -247,9 +325,7 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
             <div className="max-w-3xl space-y-2">
               <p className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">BUYER ORDER TRACKING</p>
               <h1 className="text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl">ORDER STATUS OVERVIEW</h1>
-              <p className="text-sm leading-7 text-zinc-600 sm:text-base">
-                Monitor payment, escrow, and delivery progress in one place.
-              </p>
+              <p className="text-sm leading-7 text-zinc-600 sm:text-base">Monitor payment, escrow, and delivery progress in one place.</p>
             </div>
           </div>
         </div>
@@ -286,7 +362,7 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
                     </div>
                     <button
                       type="button"
-                      onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(reference ?? "")}`)}
+                      onClick={() => navigateToPath(`/tickets?reference=${encodeURIComponent(effectiveReference ?? "")}`)}
                       className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -301,7 +377,7 @@ function OrderTrackingPageContent({ initialBundle = null }: OrderTrackingPagePro
 
             <div className="space-y-6">
               <OrderDetailsCard
-                reference={reference}
+                reference={effectiveReference}
                 firstItemTitle={firstItemTitle}
                 items={order.items}
                 paymentStatus={paymentStatus}
