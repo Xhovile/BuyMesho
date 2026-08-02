@@ -2,24 +2,34 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, CalendarDays, Clock3, MapPin, ShieldAlert, Ticket, UserRound } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
-import { EVENTS_PATH, navigateToOrderDispute, navigateToPath } from "./lib/appNavigation";
+import { EVENTS_PATH, navigateToPath } from "./lib/appNavigation";
 import { fetchOrderByReference, type OrderBundle } from "./lib/orderApi";
 import { getOrderFlowType } from "./lib/orderFlow";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 type EventTicketTrackingPageProps = {
   reference: string;
+  initialBundle?: OrderBundle | null;
 };
 
-export default function EventTicketTrackingPage({ reference }: EventTicketTrackingPageProps) {
-  const ready = useRequireVerifiedUser();
-  if (!ready) return null;
-  return <EventTicketTrackingPageContent reference={reference} />;
+function getTicketStatusLabel(paymentStatus: string) {
+  const normalized = paymentStatus.trim().toLowerCase();
+  if (["paid", "captured", "verified", "successful", "completed"].includes(normalized)) return "Issued";
+  if (["pending", "initiated", "processing", "queued", "awaiting_payment"].includes(normalized)) return "Pending confirmation";
+  if (["rejected", "cancelled", "refunded"].includes(normalized)) return "Cancelled";
+  if (["failed", "error"].includes(normalized)) return "Ticket issue";
+  return paymentStatus || "Pending confirmation";
 }
 
-function EventTicketTrackingPageContent({ reference }: EventTicketTrackingPageProps) {
-  const [bundle, setBundle] = useState<OrderBundle | null>(null);
-  const [loading, setLoading] = useState(true);
+export default function EventTicketTrackingPage({ reference, initialBundle = null }: EventTicketTrackingPageProps) {
+  const ready = useRequireVerifiedUser();
+  if (!ready) return null;
+  return <EventTicketTrackingPageContent reference={reference} initialBundle={initialBundle} />;
+}
+
+function EventTicketTrackingPageContent({ reference, initialBundle = null }: EventTicketTrackingPageProps) {
+  const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
+  const [loading, setLoading] = useState(() => !initialBundle);
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(async () => {
@@ -45,14 +55,20 @@ function EventTicketTrackingPageContent({ reference }: EventTicketTrackingPagePr
   }, [reference]);
 
   useEffect(() => {
+    if (initialBundle) {
+      setBundle(initialBundle);
+      setLoading(false);
+      return;
+    }
+
     void reload();
-  }, [reload]);
+  }, [initialBundle, reload]);
 
   const order = bundle?.order ?? null;
   const firstItem = order?.items?.[0] ?? null;
   const flowType = useMemo(() => getOrderFlowType(bundle), [bundle]);
   const paymentStatus = typeof bundle?.payment?.status === "string" ? String(bundle.payment.status) : order?.status ?? "pending";
-  const ticketStatus = paymentStatus;
+  const ticketStatus = getTicketStatusLabel(paymentStatus);
 
   const eventDetails = {
     title: String(firstItem?.title ?? "Event ticket"),
@@ -70,8 +86,7 @@ function EventTicketTrackingPageContent({ reference }: EventTicketTrackingPagePr
     navigateToPath(`${EVENTS_PATH}?event=${encodeURIComponent(eventDetails.eventId)}`);
   };
   const handleSupport = () => {
-    if (!reference) return;
-    navigateToOrderDispute(reference);
+    navigateToPath("/report");
   };
 
   return (
@@ -167,7 +182,7 @@ function EventTicketTrackingPageContent({ reference }: EventTicketTrackingPagePr
                 <button
                   type="button"
                   onClick={handleSupport}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
                 >
                   <ShieldAlert className="h-4 w-4" />
                   Support / report issue
@@ -185,14 +200,14 @@ function EventTicketTrackingPageContent({ reference }: EventTicketTrackingPagePr
               </div>
 
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
-                <p className="text-sm font-bold text-zinc-900">Payment status</p>
-                <p className="mt-2 text-sm leading-6 text-zinc-600">{paymentStatus}</p>
+                <p className="text-sm font-bold text-zinc-900">Ticket state</p>
+                <p className="mt-2 text-sm leading-6 text-zinc-600">{ticketStatus}</p>
               </div>
 
               <div className="rounded-[2rem] border border-zinc-200 bg-white p-5 sm:p-6">
                 <p className="text-sm font-bold text-zinc-900">Status note</p>
                 <p className="mt-2 text-sm leading-6 text-zinc-600">
-                  This view is for ticket confirmation and event reference only. Escrow, release, and delivery language stay in the order flow.
+                  This view is for ticket confirmation and event reference only.
                 </p>
               </div>
             </div>
