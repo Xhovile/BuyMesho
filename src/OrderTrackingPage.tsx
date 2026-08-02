@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CreditCard, ExternalLink, MapPin, ShieldAlert, Truck } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldAlert, Truck } from "lucide-react";
 
 import {
   navigateToListingDetails,
@@ -9,7 +9,6 @@ import {
 } from "./lib/appNavigation";
 import {
   fetchOrderByReference,
-  getOrderPayoutMetadata,
   openOrderDispute,
   releaseOrderEscrow,
   type OrderBundle,
@@ -94,7 +93,6 @@ function OrderTrackingPageContent() {
         : null;
   const isSellerViewer = !!viewerUid && !!orderSellerUid && viewerUid === orderSellerUid;
 
-  const sellerPayoutMetadata = bundle ? getOrderPayoutMetadata(bundle) : null;
   const paymentStatus =
     typeof bundle?.payment?.status === "string"
       ? String(bundle.payment.status)
