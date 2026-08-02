@@ -158,14 +158,13 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
     const orderStatus = getOrderStatusText(bundle);
     const ticketStatus = classifyOrderStatus(orderStatus, paymentStatus);
     const updatedAt =
-      bundle.order?.updatedAt ??
-      bundle.order?.updated_at ??
+      bundle.order?.placedAt ??
+      bundle.order?.paidAt ??
       bundle.payment?.paidAt ??
-      bundle.payment?.paid_at ??
-      bundle.payment?.updatedAt ??
-      bundle.payment?.updated_at ??
+      bundle.payment?.createdAt ??
       bundle.order?.createdAt ??
-      bundle.order?.created_at ??
+      bundle.order?.updatedAt ??
+      bundle.payment?.updatedAt ??
       null;
 
     (bundle.order?.items ?? [])
@@ -243,6 +242,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const quantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? payment.quantity ?? 1) || 1);
       const amount = resolvePaymentTicketAmount(payment, eventId, eventDetail);
       const ticketCode = formatTicketCode(reference, String(payment.orderId ?? reference), payment.txRef ?? null);
+      const updatedAt = payment.createdAt ?? payment.updatedAt ?? null;
 
       pushTicket({
         key: dedupeKey,
@@ -263,7 +263,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
         orderStatus: payment.status,
         ticketCode,
         detail: buildDetail(eventDetail?.eventDate || "", eventDetail?.startTime || "", eventDetail?.venue || "", eventDetail?.location || "", "payment"),
-        updatedAt: payment.updatedAt ?? payment.createdAt ?? null,
+        updatedAt,
         source: "payment",
       });
     });
