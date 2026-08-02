@@ -1,4 +1,4 @@
-The import type { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { ChevronLeft, House, LogOut, ShoppingBag } from "lucide-react";
 import { signOut } from "firebase/auth";
 import {
