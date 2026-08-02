@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from "react";
 import { Truck } from "lucide-react";
+
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
-import { PAYMENTS_HUB_PATH, navigateBackOrPath, navigateToOrderTracking } from "./lib/appNavigation";
-import { resolveOrderIdentifier } from "./lib/orderIdentifier";
+import { navigateToPath } from "./lib/appNavigation";
+import { resolveTrackingTarget } from "./lib/orderFlow";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 
 export default function TrackOrderPage() {
@@ -24,8 +25,8 @@ function TrackOrderPageContent() {
     try {
       setLoading(true);
       setError(null);
-      const resolved = await resolveOrderIdentifier(value);
-      navigateToOrderTracking(resolved);
+      const target = await resolveTrackingTarget(value);
+      navigateToPath(target.destinationPath);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to resolve the reference.");
     } finally {
@@ -48,7 +49,7 @@ function TrackOrderPageContent() {
               Open order tracking
             </h1>
             <p className="mt-2 text-sm leading-7 text-zinc-600 sm:text-base">
-              Enter the order reference, order ID, or ticket code to view tracking and delivery updates.
+              Enter the order reference, order ID, or ticket code to open the correct tracking view.
             </p>
           </div>
         </div>
