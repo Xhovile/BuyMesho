@@ -4,6 +4,10 @@ type OrderDetailsCardItem = {
   eventId?: string;
   title?: string;
   quantity?: number;
+  unitPrice?: {
+    amount?: number;
+    currency?: string;
+  };
   reference?: string;
 };
 
@@ -39,6 +43,13 @@ function isListingItem(item: OrderDetailsCardItem) {
   return item.kind === "listing" || !!item.listingId || (!item.kind && !item.eventId);
 }
 
+function getItemSubtotal(item: OrderDetailsCardItem): number | null {
+  const amount = item.unitPrice?.amount;
+  if (typeof amount !== "number" || !Number.isFinite(amount)) return null;
+  const quantity = typeof item.quantity === "number" && Number.isFinite(item.quantity) && item.quantity > 0 ? item.quantity : 1;
+  return amount * quantity;
+}
+
 export default function OrderDetailsCard({
   reference,
   firstItemTitle,
@@ -53,6 +64,10 @@ export default function OrderDetailsCard({
 }: OrderDetailsCardProps) {
   const listingItems = items.filter(isListingItem);
   const eventItems = items.filter(isEventItem);
+  const listingSubtotal = listingItems.reduce((sum, item) => sum + (getItemSubtotal(item) ?? 0), 0);
+  const hasPricedListingItems = listingItems.some((item) => typeof item.unitPrice?.amount === "number");
+  const displayTotalAmount = eventItems.length && hasPricedListingItems ? listingSubtotal : totalAmount;
+  const totalLabel = eventItems.length ? "Listing total" : "Total";
 
   return (
     <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-5 sm:p-6">
@@ -117,10 +132,13 @@ export default function OrderDetailsCard({
         </div>
 
         <div className="rounded-2xl border border-zinc-200 bg-white px-4 py-3">
-          <span className="text-zinc-500">Total</span>
+          <span className="text-zinc-500">{totalLabel}</span>
           <p className="mt-1 font-semibold text-zinc-900">
-            {totalCurrency} {totalAmount.toLocaleString()}
+            {totalCurrency} {displayTotalAmount.toLocaleString()}
           </p>
+          {eventItems.length ? (
+            <p className="mt-1 text-xs text-zinc-500">Event ticket charges are shown separately in Tickets.</p>
+          ) : null}
         </div>
 
         {sellerPayout ? (
