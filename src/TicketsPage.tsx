@@ -214,10 +214,13 @@ function TicketsListPage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <p className={`text-[11px] font-black uppercase tracking-[0.2em] ${active ? "text-zinc-300" : "text-zinc-500"}`}>{label}</p>
-                  <span className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200/70"}`}>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.18em] ${
+                      active ? "bg-white/15 text-white" : "bg-zinc-100 text-zinc-500 group-hover:bg-zinc-200"
+                    }`}
+                    >
                     Filter
                   </span>
-                </div>
                 <div className="mt-3 flex items-end justify-between gap-3">
                   <p className="text-2xl font-black leading-none tracking-tight sm:text-3xl">{count}</p>
                   <span className={`h-1.5 w-8 rounded-full ${active ? "bg-white/60" : "bg-zinc-200 group-hover:bg-zinc-300"}`} />
