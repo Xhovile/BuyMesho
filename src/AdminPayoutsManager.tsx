@@ -39,6 +39,7 @@ export type PayoutRow = {
   destinationMaskedAccount: string | null;
   destinationType: string | null;
   destinationVerificationStatus: string | null;
+  destinationStatus?: string | null;
   destinationActive?: boolean;
   destinationLastError?: string | null;
   sellerSuspended?: boolean;
@@ -63,6 +64,8 @@ export type PayoutRow = {
   lastError?: string | null;
   holdReason?: string | null;
   retryEligible?: boolean;
+  retryAllowed?: boolean;
+  manualReviewPending?: boolean;
   retryBlockedReason?: string | null;
   auditSummary?: {
     totalEvents?: number;

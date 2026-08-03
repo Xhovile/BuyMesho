@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
+import { CalendarDays, ClipboardList, CreditCard, ListChecks, ReceiptText, ShieldCheck, Wallet, Wrench } from "lucide-react";
 import type { ComponentType } from "react";
 import {
   ADMIN_AUDIT_PATH,
@@ -12,6 +12,7 @@ import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   ADMIN_SETUP_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
 } from "../../lib/appNavigation";
 
 export type AdminWorkspaceIcon = ComponentType<{ className?: string }>;
@@ -53,6 +54,12 @@ export const ADMIN_HUB_ACTIONS: AdminWorkspaceItem[] = [
     path: ADMIN_PAYMENTS_PATH,
     icon: ReceiptText,
     description: "Inspect payment events and webhook activity.",
+  },
+  {
+    label: "Transaction Inspector",
+    path: ADMIN_TRANSACTION_INSPECTOR_PATH,
+    icon: CreditCard,
+    description: "Deep-dive into payouts, reconciliation, and seller payout history.",
   },
   {
     label: "Balance",
@@ -99,6 +106,11 @@ export const ADMIN_WORKSPACE_NAV_ITEMS: AdminWorkspaceItem[] = [
     label: "Payments",
     path: ADMIN_PAYMENTS_PATH,
     icon: ReceiptText,
+  },
+  {
+    label: "Transaction Inspector",
+    path: ADMIN_TRANSACTION_INSPECTOR_PATH,
+    icon: CreditCard,
   },
   {
     label: "Balance",

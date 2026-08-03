@@ -7,6 +7,7 @@ import {
   ADMIN_MODERATION_QUEUE_PATH,
   ADMIN_SETUP_PATH,
   ADMIN_BALANCE_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   EVENTS_CREATE_PATH,
   EVENTS_MANAGE_PATH,
   EVENTS_PATH,
@@ -30,6 +31,7 @@ import loaderImage from "../photos/LoaderPic.png";
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
 const AdminPaymentsPage = lazy(() => import("./AdminPaymentsConsole"));
+const TransactionInspectorPage = lazy(() => import("./TransactionInspectorPage"));
 const AdminBalancePage = lazy(() => import("./AdminBalancePage"));
 const AdminPayoutsManager = lazy(() => import("./AdminPayoutsManager"));
 const AdminReportsPage = lazy(() => import("./AdminReportsPage"));
@@ -325,6 +327,7 @@ export default function RootRouter() {
       "admin",
       "admin_events",
       "admin_payments",
+      "admin_transaction_inspector",
       "admin_payouts",
       "admin_reports",
       "admin_seller_applications",
@@ -470,6 +473,8 @@ export default function RootRouter() {
           <AdminEventModerationPage />
         ) : route === "admin_payments" ? (
           <AdminPaymentsPage />
+        ) : route === "admin_transaction_inspector" || locationPath === ADMIN_TRANSACTION_INSPECTOR_PATH ? (
+          <TransactionInspectorPage />
         ) : route === "admin_payouts" ? (
           <AdminPayoutsManager />
         ) : route === "admin_reports" ? (
