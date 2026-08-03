@@ -1421,8 +1421,15 @@ export class PayoutService {
 
     const chargeId = (row.provider_charge_id as string | null) ?? (row.latest_attempt_charge_id as string | null) ?? null;
     if (!chargeId) {
-      throw new Error('Payout has no provider attempt to reconcile');
-    }
+      const legacyAttempt = payoutRepository.ensureLegacyAttemptForReconciliation({
+        payoutId,
+        actorType: 'admin',
+        actorId,
+      });
+
+      if (!legacyAttempt.providerReference) {
+        throw new Error('Payout has no provider attempt to reconcile');
+      }
 
     const status = await getPayChanguPayoutStatus(chargeId);
     const now = new Date().toISOString();
