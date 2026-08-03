@@ -439,9 +439,9 @@ export default function AdminPaymentsConsole() {
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2">
               <CreditCard className="h-5 w-5" />
-              <h2 className="text-lg font-black">Transaction lifecycle</h2>
+              <h2 className="text-lg font-black">Latest Transaction Lifecycle</h2>
             </div>
-            <p className="mt-2 text-sm text-zinc-600">Showing the latest reference: {toText(latestPayment.reference)}</p>
+            <p className="mt-2 text-sm text-zinc-600">Showing latest order reference: {toText(latestPayment.reference)}</p>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               {lifecycleSteps.map((step) => (
                 <div key={step.number} className={`rounded-2xl border p-4 shadow-sm ${step.state === "done" ? "border-emerald-200 bg-emerald-50/70" : step.state === "active" ? "border-blue-200 bg-blue-50/70" : step.state === "issue" ? "border-rose-200 bg-rose-50/70" : "border-zinc-200 bg-white"}`}>
@@ -576,16 +576,6 @@ export default function AdminPaymentsConsole() {
               <p className="text-sm leading-relaxed text-zinc-600">Pending means the payment has been created, but the webhook or verification step has not completed yet. Once confirmed, the order should move through paid and into escrow, and later to released or refunded.</p>
               <p className="text-sm leading-relaxed text-zinc-600">Seller-facing payout wording remains: Queued for admin review → Sent to PayChangu → Provider pending → Paid (or Needs destination update).</p>
               <p className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700"><CircleAlert className="h-3.5 w-3.5" />Escrow control should stay in the order flow, not the admin page.</p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-100 text-zinc-700"><BadgeInfo className="h-5 w-5" /></div>
-            <div className="space-y-2">
-              <p className="text-sm font-black text-zinc-900">Notes</p>
-              <p className="text-sm leading-relaxed text-zinc-600">This page is intentionally defensive. If summary data is missing or incomplete, it falls back to the live payment and webhook rows instead of crashing the app.</p>
             </div>
           </div>
         </section>
