@@ -7,6 +7,7 @@ import {
   ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   navigateToAdminEvents,
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
@@ -114,10 +115,10 @@ export default function AdminHubPage() {
           title="Transaction Inspector"
           description="Deep-dive into payouts, reconciliation, and seller payout history."
           icon={CreditCard}
-          path={ADMIN_PAYMENTS_PATH}
+          path={ADMIN_TRANSACTION_INSPECTOR_PATH}
           onClick={(event) => {
             event.preventDefault();
-            navigateToPath(ADMIN_PAYMENTS_PATH);
+            navigateToPath(ADMIN_TRANSACTION_INSPECTOR_PATH);
           }}
         />
         <AdminOverviewCard
