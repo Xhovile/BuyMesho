@@ -354,7 +354,7 @@ export default function AdminPayoutsManager() {
         apiFetch("/api/admin/payouts/summary"),
       ]);
       const payouts = payoutsData as PayoutsListResponse;
-      const nextRows = Array.isArray(payouts.rows) ? payouts.rows : [];
+      const nextRows = Array.isArray(payouts.rows) ? payouts.rows.map(normalizePayoutRow) : [];
       const nextTotal = Number(payouts.pagination?.total ?? nextRows.length);
       const nextHasMore = Boolean(payouts.pagination?.hasMore);
       setRows(nextRows);
