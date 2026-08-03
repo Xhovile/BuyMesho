@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { BadgeInfo, CircleAlert, CreditCard, Loader2, ShieldCheck, Wallet, Webhook } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { BadgeInfo, CircleAlert, CreditCard, Loader2, Search, ShieldCheck, Wallet, Webhook } from "lucide-react";
 import AdminPayoutDetailDrawer from "./AdminPayoutDetailDrawer";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
@@ -80,7 +80,7 @@ type PayoutsSummaryResponse = {
 
 type Tone = "zinc" | "emerald" | "amber" | "rose" | "blue";
 type LifecycleState = "done" | "active" | "waiting" | "issue";
-type LifecycleStep = { number: number; title: string; detail: string; state: LifecycleState };
+type LifecycleStep = { number: number; title: string; detail: string; state: LifecycleState; timestamp?: string; dbRecord?: string; externalRef?: string; error?: string | null };
 type Diagnostic = { title: string; detail: string; tone: Tone };
 
 type PayoutSortMode = "recent" | "paid" | "failed" | "held";
@@ -203,6 +203,26 @@ function DiagnosticCard({ diagnostic }: { diagnostic: Diagnostic }) {
   );
 }
 
+function JsonBlock({ title, value }: { title: string; value: unknown }) {
+  const formatted = useMemo(() => {
+    if (typeof value === "string") {
+      try {
+        return JSON.stringify(JSON.parse(value), null, 2);
+      } catch {
+        return value || "—";
+      }
+    }
+    return JSON.stringify(value ?? null, null, 2);
+  }, [value]);
+
+  return (
+    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-zinc-100 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">{title}</p>
+      <pre className="mt-3 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{formatted}</pre>
+    </div>
+  );
+}
+
 function Row({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm">
@@ -294,18 +314,18 @@ function buildLifecycleSteps(payment?: PaymentRow | null, webhook?: WebhookEvent
   const payoutComplete = !!payout && token(payout.status) === "paid";
 
   return [
-    { number: 1, title: "Payment created", detail: hasPayment ? "BuyMesho stored a payment row for this checkout attempt." : "No payment row exists yet.", state: hasPayment ? "done" : "waiting" },
-    { number: 2, title: "Checkout opened", detail: hasCheckout ? "The buyer was sent to the provider checkout URL." : "Waiting for checkout creation.", state: hasCheckout ? "done" : hasPayment ? "active" : "waiting" },
-    { number: 3, title: "Webhook received", detail: hasWebhook ? "PayChangu callback delivery was captured." : "No webhook event has arrived yet.", state: hasWebhook ? "active" : "waiting" },
-    { number: 4, title: "Signature verified", detail: hasValidWebhook ? "Webhook signature passed verification." : hasWebhook ? "Webhook arrived, but verification has not passed yet." : "Waiting for a webhook to verify.", state: hasValidWebhook ? "done" : hasWebhook ? "active" : "waiting" },
-    { number: 5, title: "Order confirmed", detail: isPaid ? "The order was marked paid and moved into the confirmed flow." : "The order is still pending confirmation.", state: isPaid ? "done" : "waiting" },
-    { number: 6, title: "Escrow active", detail: isEscrowActive ? "Funds are represented as active escrow for the order." : "Escrow has not started yet.", state: isEscrowActive ? (isDisputed ? "issue" : "active") : "waiting" },
-    { number: 7, title: "Buyer confirmed delivery", detail: isDelivered ? "The order has been marked fulfilled after delivery confirmation." : "Waiting for delivery confirmation.", state: isDelivered ? "done" : "waiting" },
-    { number: 8, title: "Funds released or refunded", detail: isSettled ? (token(payment?.escrow_state) === "released" ? "Funds were released to the seller." : "Funds were refunded to the buyer.") : "Final settlement has not happened yet.", state: token(payment?.escrow_state) === "released" ? "done" : token(payment?.escrow_state) === "refunded" ? "issue" : "waiting" },
-    { number: 9, title: "Payout row created", detail: hasPayout ? "A seller payout record exists for this transaction." : "No seller payout row has been linked yet.", state: hasPayout ? "done" : "waiting" },
-    { number: 10, title: "Destination verified", detail: destinationVerified ? "The payout destination is verified and active." : hasPayout ? "Destination still needs verification or activation." : "No payout destination context yet.", state: destinationVerified ? "done" : hasPayout ? "active" : "waiting" },
-    { number: 11, title: "Seller payout processed", detail: payoutComplete ? "The seller payout has completed successfully." : payoutProcessing ? "The payout is still moving through the settlement flow." : hasPayout ? "The payout is not finished yet." : "No seller payout to process.", state: payoutComplete ? "done" : payoutProcessing ? "active" : "waiting" },
-    { number: 12, title: "Flow closed", detail: hasPayout && payoutComplete ? "The payout path is fully closed out." : hasPayout ? "The payout path is still open." : "The transaction has not closed the payout loop yet.", state: hasPayout && payoutComplete ? "done" : "waiting" },
+    { number: 1, title: "Checkout created", detail: hasPayment ? "BuyMesho stored a payment row for this checkout attempt." : "No payment row exists yet.", state: hasPayment ? "done" : "waiting", timestamp: payment?.created_at, dbRecord: payment?.id, externalRef: payment?.reference },
+    { number: 2, title: "Payment completed", detail: hasCheckout ? "The buyer was sent to the provider checkout URL." : "Waiting for checkout creation.", state: hasCheckout ? "done" : hasPayment ? "active" : "waiting", timestamp: payment?.paid_at, dbRecord: payment?.id, externalRef: payment?.provider_reference },
+    { number: 3, title: "Webhook received", detail: hasWebhook ? "PayChangu callback delivery was captured." : "No webhook event has arrived yet.", state: hasWebhook ? "active" : "waiting", timestamp: webhook?.created_at, dbRecord: webhook?.id ? String(webhook.id) : undefined, externalRef: webhook?.reference },
+    { number: 4, title: "Webhook verified", detail: hasValidWebhook ? "Webhook signature passed verification." : hasWebhook ? "Webhook arrived, but verification has not passed yet." : "Waiting for a webhook to verify.", state: hasValidWebhook ? "done" : hasWebhook ? "issue" : "waiting", timestamp: webhook?.created_at, dbRecord: webhook?.id ? String(webhook.id) : undefined, externalRef: webhook?.reference, error: hasWebhook && !hasValidWebhook ? "Invalid or missing signature" : null },
+    { number: 5, title: "Order marked paid", detail: isPaid ? "The order was marked paid and moved into the confirmed flow." : "The order is still pending confirmation.", state: isPaid ? "done" : "waiting", timestamp: payment?.order_paid_at, dbRecord: payment?.order_id, externalRef: payment?.reference },
+    { number: 6, title: "Escrow created", detail: isEscrowActive ? "Funds are represented as active escrow for the order." : "Escrow has not started yet.", state: isEscrowActive ? (isDisputed ? "issue" : "active") : "waiting", timestamp: payment?.escrow_updated_at, dbRecord: payment?.escrow_id ?? undefined, externalRef: payment?.order_id },
+    { number: 7, title: "Delivery confirmed", detail: isDelivered ? "The order has been marked fulfilled after delivery confirmation." : "Waiting for delivery confirmation.", state: isDelivered ? "done" : "waiting", timestamp: payment?.order_fulfilled_at, dbRecord: payment?.order_id, externalRef: payment?.escrow_id ?? undefined },
+    { number: 8, title: "Escrow released", detail: isSettled ? (token(payment?.escrow_state) === "released" ? "Funds were released to the seller." : "Funds were refunded to the buyer.") : "Final settlement has not happened yet.", state: token(payment?.escrow_state) === "released" ? "done" : token(payment?.escrow_state) === "refunded" ? "issue" : "waiting", timestamp: payment?.escrow_updated_at, dbRecord: payment?.escrow_id ?? undefined, externalRef: payment?.order_id },
+    { number: 9, title: "Payout generated", detail: hasPayout ? "A seller payout record exists for this transaction." : "No seller payout row has been linked yet.", state: hasPayout ? "done" : "waiting", timestamp: payout?.createdAt, dbRecord: payout?.id, externalRef: payout?.providerReference },
+    { number: 10, title: "Destination verified", detail: destinationVerified ? "The payout destination is verified and active." : hasPayout ? "Destination still needs verification or activation." : "No payout destination context yet.", state: destinationVerified ? "done" : hasPayout ? "issue" : "waiting", timestamp: payout?.updatedAt, dbRecord: payout?.destinationAccountId ?? undefined, externalRef: payout?.destinationMaskedAccount ?? undefined, error: hasPayout && !destinationVerified ? toText(payout?.destinationLastError, "Destination unverified") : null },
+    { number: 11, title: "PayChangu transfer", detail: payoutComplete ? "The seller payout has completed successfully." : payoutProcessing ? "The payout is still moving through the settlement flow." : hasPayout ? "The payout is not finished yet." : "No seller payout to process.", state: payoutComplete ? "done" : payoutProcessing ? "active" : hasPayout ? "issue" : "waiting", timestamp: payout?.latestAttemptAt ?? payout?.sentAt ?? payout?.updatedAt, dbRecord: payout?.id, externalRef: payout?.providerTransactionId ?? payout?.providerReference, error: payout?.latestAttemptFailureReason ?? payout?.lastError },
+    { number: 12, title: "Seller paid", detail: hasPayout && payoutComplete ? "The payout path is fully closed out." : hasPayout ? "The payout path is still open." : "The transaction has not closed the payout loop yet.", state: hasPayout && payoutComplete ? "done" : "waiting", timestamp: payout?.paidAt, dbRecord: payout?.id, externalRef: payout?.providerTransactionId ?? payout?.providerReference },
   ];
 }
 
@@ -396,6 +416,9 @@ export default function TransactionInspectorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
   const [selectedPayoutAdjustments, setSelectedPayoutAdjustments] = useState<PayoutAdjustment[]>([]);
   const [selectedPayoutAdjustmentsLoading, setSelectedPayoutAdjustmentsLoading] = useState(false);
 
@@ -441,19 +464,60 @@ export default function TransactionInspectorPage() {
   const sortedWebhooks = useMemo(() => [...webhookEvents].sort((a, b) => Date.parse(b.created_at || "") - Date.parse(a.created_at || "")), [webhookEvents]);
   const sortedPayouts = useMemo(() => sortPayouts(payouts, "recent"), [payouts]);
 
-  const latestPayment = sortedPayments[0] ?? null;
-  const latestWebhook = sortedWebhooks[0] ?? null;
+  const searchNeedle = token(submittedQuery);
+  const hasSubmittedSearch = searchNeedle.length > 0;
+  const paymentMatchesQuery = (payment: PaymentRow) => {
+    const values = [
+      payment.id,
+      payment.order_id,
+      payment.reference,
+      payment.provider_reference,
+      payment.escrow_id,
+      payment.payment_status,
+      payment.order_status,
+      payment.escrow_state,
+    ];
+    return values.some((value) => token(value).includes(searchNeedle));
+  };
+  const webhookMatchesQuery = (event: WebhookEventRow) => [event.id, event.reference, event.event_type, event.payload].some((value) => token(value).includes(searchNeedle));
+  const payoutMatchesQuery = (payout: PayoutRow) => [
+    payout.id,
+    payout.sellerId,
+    payout.orderId,
+    payout.escrowId,
+    payout.providerReference,
+    payout.providerTransactionId,
+    payout.providerChargeId,
+    payout.destinationAccountId,
+    payout.destinationMaskedAccount,
+  ].some((value) => token(value).includes(searchNeedle));
+
+  const matchingPayments = useMemo(() => {
+    if (!hasSubmittedSearch) return [];
+    const matchedPayouts = sortedPayouts.filter(payoutMatchesQuery);
+    const matchedWebhooks = sortedWebhooks.filter(webhookMatchesQuery);
+    return sortedPayments.filter((payment) => (
+      paymentMatchesQuery(payment) ||
+      matchedPayouts.some((payout) => payout.orderId === payment.order_id || (payout.escrowId && payout.escrowId === payment.escrow_id)) ||
+      matchedWebhooks.some((event) => event.reference && event.reference === payment.reference)
+    ));
+  }, [hasSubmittedSearch, searchNeedle, sortedPayments, sortedPayouts, sortedWebhooks]);
+
+  const latestPayment = matchingPayments.find((payment) => payment.id === selectedPaymentId) ?? matchingPayments[0] ?? null;
+  const latestWebhook = latestPayment
+    ? sortedWebhooks.find((event) => event.reference && event.reference === latestPayment.reference) ?? sortedWebhooks.find(webhookMatchesQuery) ?? null
+    : null;
   const linkedPayout = useMemo(() => {
-    if (!latestPayment) return null;
+    if (!latestPayment) return sortedPayouts.find(payoutMatchesQuery) ?? null;
     return (
       sortedPayouts.find((row) => row.orderId === latestPayment.order_id) ??
       sortedPayouts.find((row) => row.escrowId && latestPayment.escrow_id && row.escrowId === latestPayment.escrow_id) ??
       null
     );
-  }, [latestPayment, sortedPayouts]);
+  }, [latestPayment, searchNeedle, sortedPayouts]);
 
   const selectedPayout = useMemo(
-    () => sortedPayouts.find((row) => row.id === selectedPayoutId) ?? linkedPayout ?? sortedPayouts[0] ?? null,
+    () => sortedPayouts.find((row) => row.id === selectedPayoutId) ?? linkedPayout ?? null,
     [linkedPayout, selectedPayoutId, sortedPayouts],
   );
 
@@ -571,6 +635,16 @@ export default function TransactionInspectorPage() {
     : [];
 
   const payoutSortLabel = "Recent";
+  const matchedPayoutRows = hasSubmittedSearch ? sortedPayouts.filter((payout) => payoutMatchesQuery(payout) || (latestPayment ? payout.orderId === latestPayment.order_id || (payout.escrowId && payout.escrowId === latestPayment.escrow_id) : false)) : [];
+  const payoutRowsForReview = matchedPayoutRows.length ? matchedPayoutRows : (selectedPayout ? [selectedPayout] : []);
+  const unmatchedPayouts = matchedPayoutRows.filter((payout) => !matchingPayments.some((payment) => payment.order_id === payout.orderId || (payment.escrow_id && payment.escrow_id === payout.escrowId)));
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSubmittedQuery(searchInput.trim());
+    setSelectedPaymentId(null);
+    setSelectedPayoutId(null);
+  };
 
   return (
     <AdminWorkspaceLayout
@@ -579,13 +653,57 @@ export default function TransactionInspectorPage() {
       onRefresh={() => window.location.reload()}
     >
       <main className="space-y-8">
-        <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard label="Payments" value={stats.totalPayments} detail={`${stats.verifiedPayments} verified · ${stats.paidPayments} paid`} tone="zinc" />
-          <SummaryCard label="Webhooks" value={stats.totalWebhooks} detail={`${stats.validWebhooks} valid · ${stats.invalidWebhooks} invalid`} tone="blue" />
-          <SummaryCard label="Payouts" value={stats.totalPayouts} detail={`${stats.paidPayouts} paid · ${stats.failedPayouts} failed`} tone="emerald" />
-          <SummaryCard label="Held" value={stats.heldPayouts} detail={`${stats.pendingPayments} payment pending`} tone="amber" />
+        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-zinc-400">One source of truth</p>
+              <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">Inspect one transaction from checkout to seller paid.</h1>
+              <p className="mt-3 text-sm leading-6 text-zinc-600">Paste an Order ID, Escrow ID, Buyer Email, Seller ID, payment reference, PayChangu reference, provider transaction ID, payout ID, listing/event ID, or webhook reference. Results appear only after search, then select a transaction to open the investigation record.</p>
+            </div>
+            <form onSubmit={handleSearchSubmit} className="flex w-full flex-col gap-3 sm:flex-row lg:max-w-2xl">
+              <label className="sr-only" htmlFor="transaction-inspector-search">Search transaction identifiers</label>
+              <input
+                id="transaction-inspector-search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Order, escrow, buyer email, seller, payout, webhook, PayChangu ref…"
+                className="min-h-12 flex-1 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 text-sm font-semibold text-zinc-900 outline-none transition focus:border-zinc-400 focus:bg-white"
+              />
+              <button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-black text-white shadow-sm transition hover:bg-zinc-800">
+                <Search className="h-4 w-4" /> Submit
+              </button>
+            </form>
+          </div>
+          {hasSubmittedSearch ? <p className="mt-4 text-sm font-semibold text-zinc-600">Search results for <span className="text-zinc-950">{submittedQuery}</span>: {matchingPayments.length} linked payment transaction(s){unmatchedPayouts.length ? ` · ${unmatchedPayouts.length} payout-only match(es)` : ""}</p> : null}
         </section>
 
+        {!hasSubmittedSearch ? (
+          <section className="rounded-[2rem] border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
+            <p className="text-lg font-black text-zinc-950">Start with search.</p>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-zinc-600">The primary view stays intentionally simple. Search any transaction-related identifier to load matching records, then choose a transaction to see payment, webhook, order, escrow, payout, seller history, reconciliation, and debugging details.</p>
+          </section>
+        ) : null}
+
+        {hasSubmittedSearch && matchingPayments.length > 1 ? (
+          <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-black text-zinc-950">Select a transaction</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {matchingPayments.map((payment) => (
+                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-zinc-400 ${latestPayment?.id === payment.id ? "border-zinc-950 bg-zinc-50" : "border-zinc-200 bg-white"}`}>
+                  <p className="break-all font-mono text-xs font-black text-zinc-950">{payment.reference}</p>
+                  <p className="mt-2 text-sm text-zinc-600">Order {payment.order_id}</p>
+                  <p className="mt-1 text-sm text-zinc-600">{payment.currency} {Number(payment.amount).toLocaleString()} · {normalizeStatusLabel(payment.payment_status)}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {hasSubmittedSearch && !latestPayment && !selectedPayout ? (
+          <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">No transaction records matched that identifier. Try a payment reference, PayChangu reference, order ID, escrow ID, payout ID, buyer email, seller ID, listing/event ID, or webhook reference.</section>
+        ) : null}
+
+        {hasSubmittedSearch && (latestPayment || selectedPayout) ? <>
         {latestPayment ? (
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2">
@@ -604,6 +722,12 @@ export default function TransactionInspectorPage() {
                         <StatusPill label={step.state === "done" ? "Done" : step.state === "active" ? "Active" : step.state === "issue" ? "Issue" : "Waiting"} tone={lifecycleTone(step.state)} />
                       </div>
                       <p className="mt-2 text-sm leading-relaxed text-zinc-600">{step.detail}</p>
+                      <div className="mt-3 space-y-1 text-[11px] font-semibold text-zinc-500">
+                        <p>Timestamp: <span className="text-zinc-800">{formatDate(step.timestamp)}</span></p>
+                        <p>Database record: <span className="break-all text-zinc-800">{toText(step.dbRecord)}</span></p>
+                        <p>External reference: <span className="break-all text-zinc-800">{toText(step.externalRef)}</span></p>
+                        {step.error ? <p className="text-rose-700">Error: {step.error}</p> : null}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -712,6 +836,65 @@ export default function TransactionInspectorPage() {
           </div>
         </section>
 
+
+        <section className="grid gap-4 xl:grid-cols-3">
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-black">Order & escrow record</h3>
+            {latestPayment ? (
+              <div className="mt-4 grid gap-2">
+                <Row label="Order ID" value={latestPayment.order_id} />
+                <Row label="Order status" value={<StatusPill label={normalizeStatusLabel(latestPayment.order_status)} tone={orderTone(latestPayment.order_status)} />} />
+                <Row label="Buyer paid at" value={formatDate(latestPayment.order_paid_at)} />
+                <Row label="Fulfilled at" value={formatDate(latestPayment.order_fulfilled_at)} />
+                <Row label="Escrow ID" value={toText(latestPayment.escrow_id)} />
+                <Row label="Escrow state" value={<StatusPill label={normalizeStatusLabel(latestPayment.escrow_state)} tone={escrowTone(latestPayment.escrow_state)} />} />
+                <Row label="Escrow amount" value={latestPayment.balance_amount === null ? "—" : `${latestPayment.balance_currency || latestPayment.currency} ${Number(latestPayment.balance_amount).toLocaleString()}`} />
+              </div>
+            ) : <p className="mt-4 text-sm text-zinc-500">No order or escrow record correlated to this search.</p>}
+          </div>
+
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-black">Payout attempts & overrides</h3>
+            {selectedPayout ? (
+              <div className="mt-4 grid gap-2">
+                <Row label="Attempt count" value={selectedPayout.attemptCount ?? selectedPayout.latestAttemptNo ?? "—"} />
+                <Row label="Latest attempt" value={toText(selectedPayout.latestAttemptStatus)} />
+                <Row label="Latest attempt at" value={formatDate(selectedPayout.latestAttemptAt)} />
+                <Row label="Retry allowed" value={selectedPayout.retryAllowed === false ? "No" : "Yes / not blocked"} />
+                <Row label="Manual review" value={selectedPayout.manualReviewPending ? "Pending" : "Not pending"} />
+                <Row label="Adjustments" value={selectedPayoutAdjustmentsLoading ? "Loading…" : selectedPayoutAdjustments.length} />
+              </div>
+            ) : <p className="mt-4 text-sm text-zinc-500">No payout record correlated to this search.</p>}
+          </div>
+
+          <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h3 className="text-base font-black">Provider & destination</h3>
+            {selectedPayout ? (
+              <div className="mt-4 grid gap-2">
+                <Row label="Provider" value={toText(selectedPayout.provider)} />
+                <Row label="Provider ref" value={toText(selectedPayout.providerReference)} />
+                <Row label="Transaction ID" value={toText(selectedPayout.providerTransactionId)} />
+                <Row label="Destination status" value={toText(selectedPayout.destinationVerificationStatus)} />
+                <Row label="Destination active" value={selectedPayout.destinationActive === false ? "No" : "Yes / unknown"} />
+                <Row label="Last error" value={toText(selectedPayout.lastError || selectedPayout.destinationLastError || selectedPayout.latestAttemptFailureReason)} />
+              </div>
+            ) : <p className="mt-4 text-sm text-zinc-500">No destination record correlated to this search.</p>}
+          </div>
+        </section>
+
+        <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+          <h3 className="text-base font-black">Developer debugging</h3>
+          <p className="mt-2 text-sm text-zinc-600">Raw records exposed for webhook payload inspection, parsed payload comparison, payment/escrow/payout database state, retry logs, API response fields, processing errors, and validation results.</p>
+          <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
+            <JsonBlock title="Raw webhook payload" value={latestWebhook?.payload ?? null} />
+            <JsonBlock title="Parsed webhook payload" value={latestWebhook?.payload ? (() => { try { return JSON.parse(latestWebhook.payload); } catch { return { parseError: "Payload is not valid JSON", raw: latestWebhook.payload }; } })() : null} />
+            <JsonBlock title="Database payment / order / escrow record" value={latestPayment} />
+            <JsonBlock title="Payout / destination / retry record" value={selectedPayout} />
+            <JsonBlock title="Adjustment history" value={selectedPayoutAdjustments} />
+            <JsonBlock title="Seller payout history" value={sellerHistory} />
+          </div>
+        </section>
+
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-4">
             <div>
@@ -724,7 +907,7 @@ export default function TransactionInspectorPage() {
           <div className="overflow-hidden rounded-[2rem] border border-zinc-200 bg-white shadow-sm">
             {loading ? (
               <div className="flex items-center justify-center p-12"><Loader2 className="h-6 w-6 animate-spin text-zinc-500" /></div>
-            ) : sortedPayouts.length === 0 ? (
+            ) : payoutRowsForReview.length === 0 ? (
               <div className="p-8 text-center text-sm text-zinc-500">No payout rows found.</div>
             ) : (
               <div className="overflow-x-auto">
@@ -739,7 +922,7 @@ export default function TransactionInspectorPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedPayouts.map((payout) => (
+                    {payoutRowsForReview.map((payout) => (
                       <PayoutTableRow key={payout.id} payout={payout} onSelect={(next) => setSelectedPayoutId(next.id)} />
                     ))}
                   </tbody>
@@ -763,9 +946,10 @@ export default function TransactionInspectorPage() {
             </div>
           </div>
         </section>
+        </> : null}
       </main>
 
-      {selectedPayout ? (
+      {hasSubmittedSearch && selectedPayout ? (
         <AdminPayoutDetailDrawer
           selected={selectedPayout}
           visibleActions={STATIC_VISIBLE_ACTIONS as unknown as string[]}

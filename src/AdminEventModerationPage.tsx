@@ -500,8 +500,8 @@ export default function AdminEventModerationPage() {
           <StatCard label="Traffic" value={String(summary.totalTicketClicks)} icon={Ticket} helper={`${summary.totalCartAdds} cart adds`} />
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(360px,0.95fr)]">
-          <section className="space-y-4">
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
+          <section className="min-w-0 space-y-4">
             <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -519,8 +519,8 @@ export default function AdminEventModerationPage() {
                 </label>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200">
-                <div className="grid grid-cols-[1.4fr_1.2fr_1fr_0.8fr_0.8fr_0.9fr] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+              <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-zinc-200">
+                <div className="grid min-w-[760px] grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                   <div>Creator</div>
                   <div>Organisation</div>
                   <div>Status</div>
@@ -540,7 +540,7 @@ export default function AdminEventModerationPage() {
                           setSelectedCreatorUid(creator.uid);
                           setSelectedEventId(null);
                         }}
-                        className={`grid w-full grid-cols-[1.4fr_1.2fr_1fr_0.8fr_0.8fr_0.9fr] gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 ${selectedCreatorUid === creator.uid ? "bg-zinc-50" : "bg-white"}`}
+                        className={`grid min-w-[760px] w-full grid-cols-[minmax(0,1.4fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 ${selectedCreatorUid === creator.uid ? "bg-zinc-50" : "bg-white"}`}
                       >
                         <div>
                           <p className="font-bold text-zinc-950">{creator.display_name}</p>
@@ -586,8 +586,8 @@ export default function AdminEventModerationPage() {
                 </label>
               </div>
 
-              <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200">
-                <div className="grid grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.9fr] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+              <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-zinc-200">
+                <div className="grid min-w-[680px] grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
                   <div>Event</div>
                   <div>Status</div>
                   <div>Messages</div>
@@ -606,7 +606,7 @@ export default function AdminEventModerationPage() {
                           setSelectedEventId(event.id);
                           if (event.creator_uid) setSelectedCreatorUid(event.creator_uid);
                         }}
-                        className={`grid w-full grid-cols-[1.4fr_0.8fr_0.8fr_0.8fr_0.9fr] gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 ${selectedEventId === event.id ? "bg-zinc-50" : "bg-white"}`}
+                        className={`grid min-w-[680px] w-full grid-cols-[minmax(0,1.4fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.9fr)] gap-3 px-4 py-3 text-left transition hover:bg-zinc-50 ${selectedEventId === event.id ? "bg-zinc-50" : "bg-white"}`}
                       >
                         <div>
                           <p className="font-bold text-zinc-950">{event.event_title}</p>
@@ -640,7 +640,7 @@ export default function AdminEventModerationPage() {
             </div>
           </section>
 
-          <aside className="space-y-4 lg:sticky lg:top-24 self-start">
+          <aside className="min-w-0 space-y-4 self-start lg:sticky lg:top-24">
             <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-5 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -803,7 +803,7 @@ export default function AdminEventModerationPage() {
                               Activity
                             </span>
                           </div>
-                          <pre className="mt-3 overflow-auto rounded-2xl bg-zinc-50 p-3 text-[11px] text-zinc-600">{JSON.stringify(activity.metadata, null, 2)}</pre>
+                          <pre className="mt-3 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-zinc-50 p-3 text-[11px] text-zinc-600">{JSON.stringify(activity.metadata, null, 2)}</pre>
                         </div>
                       ))
                     )}
@@ -831,7 +831,7 @@ export default function AdminEventModerationPage() {
                                 Purchase
                               </span>
                             </div>
-                            <pre className="mt-3 overflow-auto rounded-2xl bg-zinc-50 p-3 text-[11px] text-zinc-600">{String(purchase.items ?? "")}</pre>
+                            <pre className="mt-3 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-2xl bg-zinc-50 p-3 text-[11px] text-zinc-600">{String(purchase.items ?? "")}</pre>
                           </div>
                         ))
                       )}
@@ -857,8 +857,8 @@ export default function AdminEventModerationPage() {
               {overview?.submissions.length ?? 0} submissions
             </span>
           </div>
-          <div className="mt-4 overflow-hidden rounded-[1.5rem] border border-zinc-200">
-            <div className="grid grid-cols-[1fr_1fr_1fr_0.8fr_1.2fr] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
+          <div className="mt-4 max-w-full overflow-x-auto rounded-[1.5rem] border border-zinc-200">
+            <div className="grid min-w-[680px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 border-b border-zinc-200 bg-zinc-50 px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.18em] text-zinc-400">
               <div>Creator</div>
               <div>Organisation</div>
               <div>Status</div>
@@ -867,7 +867,7 @@ export default function AdminEventModerationPage() {
             </div>
             <div className="divide-y divide-zinc-200 bg-white">
               {(overview?.submissions ?? []).map((submission) => (
-                <div key={submission.id} className="grid grid-cols-[1fr_1fr_1fr_0.8fr_1.2fr] gap-3 px-4 py-3 text-sm">
+                <div key={submission.id} className="grid min-w-[680px] grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,1.2fr)] gap-3 px-4 py-3 text-sm">
                   <div>
                     <p className="font-bold text-zinc-950">{submission.display_name}</p>
                     <p className="text-xs text-zinc-500">{submission.applicant_email || submission.applicant_uid}</p>
