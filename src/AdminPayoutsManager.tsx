@@ -274,6 +274,33 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function normalizePayoutRow(row: PayoutRow): PayoutRow {
+  const destinationVerificationStatus = row.destinationVerificationStatus ?? row.destinationStatus ?? null;
+  const destinationLastError =
+    row.destinationLastError ??
+    row.lastError ??
+    row.latestAttemptFailureReason ??
+    row.failureReason ??
+    null;
+
+  const retryEligible = row.retryEligible ?? row.retryAllowed ?? false;
+
+  return {
+    ...row,
+    destinationVerificationStatus,
+    destinationStatus: row.destinationStatus ?? destinationVerificationStatus,
+    destinationActive:
+      row.destinationActive ?? (destinationVerificationStatus ? destinationVerificationStatus === "verified" : undefined),
+    destinationLastError,
+    latestAttemptFailureReason: row.latestAttemptFailureReason ?? destinationLastError,
+    retryEligible,
+    retryAllowed: row.retryAllowed ?? retryEligible,
+    manualReviewPending:
+      row.manualReviewPending ??
+      Boolean(row.holdReason || row.manualReviewReason || destinationLastError),
+  };
+}
+
 export default function AdminPayoutsManager() {
   const { user } = useAuthUser();
   const { isAdmin } = useIsAdmin(user);
