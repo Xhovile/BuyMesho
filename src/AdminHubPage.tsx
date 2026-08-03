@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, ShieldCheck, Webhook } from "lucide-react";
+import { CalendarDays, ClipboardList, CreditCard, ShieldCheck, Webhook } from "lucide-react";
 import type { ComponentType, MouseEvent } from "react";
 import {
   ADMIN_EVENTS_PATH,
@@ -7,6 +7,7 @@ import {
   ADMIN_PAYOUT_DESTINATIONS_PATH,
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   navigateToAdminEvents,
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
@@ -108,6 +109,16 @@ export default function AdminHubPage() {
           onClick={(event) => {
             event.preventDefault();
             navigateToAdminPayments();
+          }}
+        />
+        <AdminOverviewCard
+          title="Transaction Inspector"
+          description="Deep-dive into payouts, reconciliation, and seller payout history."
+          icon={CreditCard}
+          path={ADMIN_TRANSACTION_INSPECTOR_PATH}
+          onClick={(event) => {
+            event.preventDefault();
+            navigateToPath(ADMIN_TRANSACTION_INSPECTOR_PATH);
           }}
         />
         <AdminOverviewCard
