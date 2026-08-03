@@ -13,6 +13,77 @@ function ensureIndex(statement: string): void {
   db.exec(statement);
 }
 
+function backfillMissingPayoutDestinations(): void {
+  const payoutRows = db.prepare(
+    `SELECT id, seller_id AS sellerId
+     FROM payouts
+     WHERE destination_account_id IS NULL
+       AND seller_id IS NOT NULL
+       AND (order_id IS NOT NULL OR escrow_id IS NOT NULL)`,
+  ).all() as Array<{ id: string; sellerId: string }>;
+
+  if (payoutRows.length === 0) {
+    return;
+  }
+
+  const verifiedDestinationStmt = db.prepare(
+    `SELECT id
+     FROM seller_payout_accounts
+     WHERE seller_uid = ?
+       AND is_active = 1
+       AND verification_status = 'verified'
+     ORDER BY is_default DESC, updated_at DESC, created_at DESC
+     LIMIT 1`,
+  );
+
+  const updatePayoutDestinationStmt = db.prepare(
+    `UPDATE payouts
+     SET destination_account_id = ?,
+         updated_at = ?
+     WHERE id = ?
+       AND destination_account_id IS NULL`,
+  );
+
+  const insertBackfillEventStmt = db.prepare(
+    `INSERT INTO payout_events (
+      payout_id,
+      seller_id,
+      event_type,
+      actor_type,
+      actor_id,
+      note,
+      payload,
+      created_at
+    ) VALUES (?, ?, ?, 'system', ?, ?, ?, ?)`,
+  );
+
+  for (const payout of payoutRows) {
+    const destination = verifiedDestinationStmt.get(payout.sellerId) as { id: string } | undefined;
+    if (!destination) {
+      continue;
+    }
+
+    const now = new Date().toISOString();
+    const result = updatePayoutDestinationStmt.run(destination.id, now, payout.id) as { changes?: number };
+
+    if (Number(result.changes ?? 0) > 0) {
+      insertBackfillEventStmt.run(
+        payout.id,
+        payout.sellerId,
+        'payout_destination_backfilled',
+        null,
+        'Backfilled missing destination_account_id from the seller\'s current verified destination',
+        JSON.stringify({
+          previousDestinationAccountId: null,
+          nextDestinationAccountId: destination.id,
+          backfilledAt: now,
+        }),
+        now,
+      );
+    }
+  }
+}
+
 function ensurePayoutLifecycleSchema(): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS payout_attempts (
@@ -135,6 +206,8 @@ function ensurePayoutLifecycleSchema(): void {
       WHERE id = NEW.id;
     END;
   `);
+
+  backfillMissingPayoutDestinations();
 }
 
 export { ensurePayoutLifecycleSchema };
