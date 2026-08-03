@@ -287,7 +287,7 @@ test('release endpoint creates a pending-settlement payout candidate without imm
     assert.equal(body.payout?.orderId, releasePayoutOrderId, 'payout should link to the order');
     assert.equal(body.payout?.escrowId, body.escrow?.id, 'payout should link to the escrow');
     assert.equal(body.payout?.releaseEntryId, releaseEntry?.id, 'payout should link to the release ledger entry');
-    assert.equal(body.payout?.amount, 1429, 'payout should use the server-side net payout formula after payout fee');
+    assert.equal(body.payout?.amount, 1410, 'payout should use the server-side net payout formula after payout fee');
     assert.equal(body.payout?.currency, 'MWK', 'payout should use the escrow currency');
     assert.equal(body.payout?.status, 'pending_settlement', 'payout should wait for PayChangu settlement before dispatch');
     assert.equal(body.payout?.provider, 'paychangu', 'payout should be prepared for PayChangu');
@@ -331,9 +331,9 @@ test('release endpoint creates a pending-settlement payout candidate without imm
     assert.equal(formulaRow.reserve_amount, 0, 'payout should persist the reserve formula amount');
     assert.equal(formulaRow.reserve_cap_amount, 90, 'payout should persist the reserve cap formula amount');
     assert.equal(formulaRow.manual_adjustment_amount, 0, 'payout should persist the manual adjustment formula amount');
-    assert.equal(formulaRow.payout_fee_amount, 26, 'payout should persist the PayChangu transfer fee estimate');
-    assert.equal(formulaRow.seller_receives_amount, 1429, 'payout should persist the seller amount after payout fee estimate');
-    assert.equal(formulaRow.net_amount, 1429, 'payout should persist the net formula amount after payout fee');
+    assert.equal(formulaRow.payout_fee_amount, 45, 'payout should persist the PayChangu transfer fee estimate');
+    assert.equal(formulaRow.seller_receives_amount, 1410, 'payout should persist the seller amount after payout fee estimate');
+    assert.equal(formulaRow.net_amount, 1410, 'payout should persist the net formula amount after payout fee');
     assert.deepEqual(JSON.parse(formulaRow.formula_snapshot ?? '{}'), {
       grossAmount: 1500,
       platformFeeAmount: 45,
@@ -341,9 +341,9 @@ test('release endpoint creates a pending-settlement payout candidate without imm
       reserveAmount: 0,
       reserveCapAmount: 90,
       manualAdjustmentAmount: 0,
-      payoutFeeAmount: 26,
-      sellerReceivesAmount: 1429,
-      netAmount: 1429,
+      payoutFeeAmount: 45,
+      sellerReceivesAmount: 1410,
+      netAmount: 1410,
       currency: 'MWK',
     });
     assert.equal(orderRepository.findById(releasePayoutOrderId)?.status, 'fulfilled', 'release should fulfill the order');

@@ -75,13 +75,32 @@ export function money(amount: number, currency = DEFAULT_CURRENCY) {
   }).format(amount || 0);
 }
 
+export function payoutMathBreakdown(payout: PayoutRecord) {
+  const currency = payout.currency || DEFAULT_CURRENCY;
+  const grossAmount = Number(payout.grossAmount ?? payout.amount ?? 0);
+  const platformFeeAmount = Number(payout.platformFeeAmount ?? 0);
+  const payChanguFeeAmount = Number(payout.payoutFeeAmount ?? 0);
+  const reserveAmount = Number(payout.reserveAmount ?? 0);
+  const sellerReceivesAmount = Number(payout.sellerReceivesAmount ?? payout.netAmount ?? payout.amount ?? 0);
+
+  return {
+    currency,
+    grossAmount,
+    platformFeeAmount,
+    payChanguFeeAmount,
+    reserveAmount,
+    sellerReceivesAmount,
+    hasFormula: payout.grossAmount !== null && payout.grossAmount !== undefined,
+  };
+}
+
 export function payoutFeeNote(payout: PayoutRecord) {
-  const fee = Number(payout.payoutFeeAmount ?? 0);
-  if (fee > 0) {
-    return `Estimated PayChangu transfer fee: -${money(fee, payout.currency)}`;
+  const { payChanguFeeAmount, currency } = payoutMathBreakdown(payout);
+  if (payChanguFeeAmount > 0) {
+    return `PayChangu mobile money transaction fee (3%): -${money(payChanguFeeAmount, currency)}`;
   }
 
-  return "A PayChangu payout transaction fee may also be deducted when funds are transferred to your account.";
+  return "PayChangu mobile money transaction fee is shown once the payout formula is available.";
 }
 
 export function formatDate(value: string | null) {

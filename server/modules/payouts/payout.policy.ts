@@ -1,11 +1,11 @@
 export const PAYOUT_POLICY = {
   platformFeeBps: 300,
   payoutFeeBps: {
-    airtel_money: 180,
-    tnm_mpamba: 150,
-    bank_transfer: 170,
+    airtel_money: 300,
+    tnm_mpamba: 300,
+    bank_transfer: 300,
   },
-  bankPayoutFlatFeeAmount: 700,
+  bankPayoutFlatFeeAmount: 0,
   buyerFeeBps: 0,
   payChanguCustomerFeeBps: 0,
   reserveCapBps: 600,
@@ -122,7 +122,9 @@ export function calculatePayoutFormula(input: PayoutFormulaInput): PayoutFormula
         manualAdjustmentAmount,
     ),
   );
-  const payoutFeeAmount = calculatePayoutFee(amountBeforePayoutFee, input.payoutMethod ?? null);
+  // PayChangu mobile-money transaction fee is withheld from the item total,
+  // alongside BuyMesho's commission, before funds are requested for seller payout.
+  const payoutFeeAmount = calculatePayoutFee(grossAmount, input.payoutMethod ?? null);
   const netAmount = Math.max(0, toFixedMoney(amountBeforePayoutFee - payoutFeeAmount));
   const sellerReceivesAmount = netAmount;
 
