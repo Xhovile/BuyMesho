@@ -387,6 +387,140 @@ export class PayoutRepository {
     return this.rowToPayout(row);
   }
 
+  findLatestAttemptByPayoutId(payoutId: string): Record<string, unknown> | undefined {
+    const row = this.db
+      .prepare(
+        `SELECT *
+         FROM payout_attempts
+         WHERE payout_id = ?
+         ORDER BY attempt_no DESC, created_at DESC
+         LIMIT 1`,
+      )
+      .get(payoutId) as Record<string, unknown> | undefined;
+
+    return row ?? undefined;
+  }
+
+  ensureLegacyAttemptForReconciliation(input: {
+    payoutId: string;
+    actorType: 'admin' | 'system';
+    actorId?: string | null;
+  }): { created: boolean; providerReference: string | null } {
+    const existingAttempt = this.findLatestAttemptByPayoutId(input.payoutId);
+    if (existingAttempt) {
+      const providerReference =
+        (existingAttempt.provider_charge_id as string | null) ??
+        (existingAttempt.provider_ref_id as string | null) ??
+        (existingAttempt.provider_transaction_id as string | null) ??
+        null;
+
+      return { created: false, providerReference };
+    }
+
+    const payout = this.db
+      .prepare(
+        `SELECT id, seller_id AS sellerId, provider, provider_charge_id AS providerChargeId, provider_ref_id AS providerRefId, provider_transaction_id AS providerTransactionId
+         FROM payouts
+         WHERE id = ?
+         LIMIT 1`,
+      )
+      .get(input.payoutId) as
+      | {
+          id: string;
+          sellerId: string;
+          provider: string | null;
+          providerChargeId: string | null;
+          providerRefId: string | null;
+          providerTransactionId: string | null;
+        }
+      | undefined;
+
+    if (!payout) {
+      throw new Error('Payout not found');
+    }
+
+    const providerReference =
+      payout.providerChargeId ??
+      payout.providerRefId ??
+      payout.providerTransactionId ??
+      null;
+
+    if (!providerReference) {
+      return { created: false, providerReference: null };
+    }
+
+    const now = new Date().toISOString();
+    const attemptId = randomUUID();
+
+    this.db.transaction(() => {
+      this.db.prepare(
+        `INSERT INTO payout_attempts (
+          id,
+          payout_id,
+          attempt_no,
+          provider,
+          provider_charge_id,
+          request_payload,
+          response_payload,
+          status,
+          failure_reason,
+          sent_at,
+          completed_at,
+          created_at,
+          updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).run(
+        attemptId,
+        input.payoutId,
+        1,
+        payout.provider ?? 'paychangu',
+        providerReference,
+        JSON.stringify({
+          legacyBackfill: true,
+          payoutId: input.payoutId,
+          source: 'legacy_reconciliation_fallback',
+        }),
+        null,
+        'legacy_imported',
+        null,
+        now,
+        now,
+        now,
+        now,
+      );
+
+      this.db.prepare(
+        `UPDATE payouts
+         SET provider = COALESCE(provider, ?),
+             provider_charge_id = COALESCE(provider_charge_id, ?),
+             provider_ref_id = COALESCE(provider_ref_id, ?),
+             updated_at = ?
+         WHERE id = ?`,
+      ).run(
+        payout.provider ?? 'paychangu',
+        providerReference,
+        providerReference,
+        now,
+        input.payoutId,
+      );
+
+      this.addEvent({
+        payoutId: input.payoutId,
+        sellerId: payout.sellerId,
+        eventType: 'payout_legacy_attempt_backfilled',
+        actorType: input.actorType,
+        actorId: input.actorId ?? null,
+        note: 'Synthetic provider attempt created for legacy reconciliation',
+        payload: {
+          providerReference,
+          backfilledAt: now,
+        },
+      });
+    })();
+
+    return { created: true, providerReference };
+  }
+  
   createEligibleForRelease(input: CreateEligiblePayoutInput): PayoutRecord {
     const existing = this.findByEscrowId(input.escrowId);
     if (existing) return existing;
