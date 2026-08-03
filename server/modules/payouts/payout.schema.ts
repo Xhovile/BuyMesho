@@ -112,6 +112,29 @@ function ensurePayoutLifecycleSchema(): void {
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_adjustments_seller_id ON payout_adjustments (seller_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid ON seller_payout_account_events (seller_uid, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id ON payouts (destination_account_id)`);
+
+  db.exec(`
+    CREATE TRIGGER IF NOT EXISTS trg_preserve_verified_seller_payout_destination
+    AFTER UPDATE ON seller_payout_accounts
+    WHEN OLD.verification_status = 'verified'
+      AND NEW.verification_status = 'pending'
+      AND COALESCE(OLD.destination_fingerprint, '') = COALESCE(NEW.destination_fingerprint, '')
+      AND COALESCE(OLD.destination_type, '') = COALESCE(NEW.destination_type, '')
+      AND COALESCE(OLD.provider_name, '') = COALESCE(NEW.provider_name, '')
+      AND COALESCE(OLD.provider_ref_id, '') = COALESCE(NEW.provider_ref_id, '')
+      AND COALESCE(OLD.currency, '') = COALESCE(NEW.currency, '')
+      AND OLD.is_active = 1
+      AND NEW.is_active = 1
+    BEGIN
+      UPDATE seller_payout_accounts
+      SET verification_status = 'verified',
+          verification_attempts = OLD.verification_attempts,
+          last_error = OLD.last_error,
+          verified_at = OLD.verified_at,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = NEW.id;
+    END;
+  `);
 }
 
 export { ensurePayoutLifecycleSchema };
