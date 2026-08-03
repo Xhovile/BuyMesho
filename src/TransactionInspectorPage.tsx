@@ -216,9 +216,9 @@ function JsonBlock({ title, value }: { title: string; value: unknown }) {
   }, [value]);
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-zinc-100 shadow-sm">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-950 p-4 text-zinc-100 shadow-sm">
       <p className="text-xs font-black uppercase tracking-[0.18em] text-zinc-400">{title}</p>
-      <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{formatted}</pre>
+      <pre className="mt-3 max-h-80 max-w-full overflow-auto whitespace-pre-wrap break-words text-xs leading-5">{formatted}</pre>
     </div>
   );
 }
@@ -711,6 +711,33 @@ export default function TransactionInspectorPage() {
           <SummaryCard label="Held" value={stats.heldPayouts} detail={`${stats.pendingPayments} payment pending`} tone="amber" />
         </section>
 
+        {!hasSubmittedSearch ? (
+          <section className="rounded-[2rem] border border-dashed border-zinc-300 bg-zinc-50 p-10 text-center">
+            <p className="text-lg font-black text-zinc-950">Start with search.</p>
+            <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-zinc-600">The primary view stays intentionally simple. Search any transaction-related identifier to load matching records, then choose a transaction to see payment, webhook, order, escrow, payout, seller history, reconciliation, and debugging details.</p>
+          </section>
+        ) : null}
+
+        {hasSubmittedSearch && matchingPayments.length > 1 ? (
+          <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-black text-zinc-950">Select a transaction</h2>
+            <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {matchingPayments.map((payment) => (
+                <button key={payment.id} type="button" onClick={() => setSelectedPaymentId(payment.id)} className={`rounded-2xl border p-4 text-left transition hover:border-zinc-400 ${latestPayment?.id === payment.id ? "border-zinc-950 bg-zinc-50" : "border-zinc-200 bg-white"}`}>
+                  <p className="break-all font-mono text-xs font-black text-zinc-950">{payment.reference}</p>
+                  <p className="mt-2 text-sm text-zinc-600">Order {payment.order_id}</p>
+                  <p className="mt-1 text-sm text-zinc-600">{payment.currency} {Number(payment.amount).toLocaleString()} · {normalizeStatusLabel(payment.payment_status)}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {hasSubmittedSearch && !latestPayment && !selectedPayout ? (
+          <section className="rounded-[2rem] border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">No transaction records matched that identifier. Try a payment reference, PayChangu reference, order ID, escrow ID, payout ID, buyer email, seller ID, listing/event ID, or webhook reference.</section>
+        ) : null}
+
+        {hasSubmittedSearch && (latestPayment || selectedPayout) ? <>
         {latestPayment ? (
           <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2">
@@ -889,10 +916,10 @@ export default function TransactionInspectorPage() {
           </div>
         </section>
 
-        <section className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
+        <section className="min-w-0 max-w-full overflow-hidden rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
           <h3 className="text-base font-black">Developer debugging</h3>
           <p className="mt-2 text-sm text-zinc-600">Raw records exposed for webhook payload inspection, parsed payload comparison, payment/escrow/payout database state, retry logs, API response fields, processing errors, and validation results.</p>
-          <div className="mt-5 grid gap-4 xl:grid-cols-2">
+          <div className="mt-5 grid min-w-0 gap-4 xl:grid-cols-2">
             <JsonBlock title="Raw webhook payload" value={latestWebhook?.payload ?? null} />
             <JsonBlock title="Parsed webhook payload" value={latestWebhook?.payload ? (() => { try { return JSON.parse(latestWebhook.payload); } catch { return { parseError: "Payload is not valid JSON", raw: latestWebhook.payload }; } })() : null} />
             <JsonBlock title="Database payment / order / escrow record" value={latestPayment} />
