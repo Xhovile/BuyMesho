@@ -416,6 +416,7 @@ export default function AdminPayoutsManager() {
         row.destinationMaskedAccount,
         row.destinationType,
         row.destinationVerificationStatus,
+        row.destinationStatus,
         row.failureReason,
         row.manualReviewReason,
         row.retryBlockedReason,
