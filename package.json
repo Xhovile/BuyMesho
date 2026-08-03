@@ -12,6 +12,7 @@
     "start:server": "node dist-server/server/entry.js",
     "test": "npm run test:integration",
     "reset:finance": "tsx scripts/reset-finance.ts",
+    "backfill:finance": "tsx scripts/backfill-finance.ts",
     "reset:events": "tsx scripts/reset-events.ts",
     "lint": "node scripts/run-lint.mjs",
     "smoke:paychangu": "tsx scripts/paychangu-smoke.ts",
