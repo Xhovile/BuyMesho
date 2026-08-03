@@ -1,6 +1,8 @@
-import type { ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import { type Listing } from "../../types";
 import { formatMoney, getListingPricing } from "../../lib/listingPricing";
+import CheckoutModal from "../CheckoutModal";
+import { auth } from "../../firebase";
 
 export function formatDate(value?: string) {
   if (!value) return "—";
@@ -90,6 +92,19 @@ export function RelatedRailCard({
       : "View seller profile";
 
   const isDesktop = variant === "desktop";
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [buyNotice, setBuyNotice] = useState<string | null>(null);
+
+  const handleBuyClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    const currentUid = auth.currentUser?.uid;
+    if (currentUid && String(currentUid).trim() === String(item.seller_uid).trim()) {
+      setBuyNotice("You cannot buy your own listing.");
+      return;
+    }
+    setBuyNotice(null);
+    setCheckoutOpen(true);
+  };
 
   return (
     <article
@@ -156,16 +171,23 @@ export function RelatedRailCard({
           <span className="line-clamp-1">{sellerName}</span>
         </button>
 
-        {isDesktop ? (
+        <div className="space-y-1">
           <button
             type="button"
-            onClick={() => onOpenDetails(item)}
-            className="inline-flex items-center gap-1 text-xs font-bold text-red-900"
+            onClick={handleBuyClick}
+            className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
           >
-            Open listing
+            Buy
           </button>
-        ) : null}
+          {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
+        </div>
       </div>
+
+      <CheckoutModal
+        listing={item}
+        isOpen={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+      />
     </article>
   );
 }

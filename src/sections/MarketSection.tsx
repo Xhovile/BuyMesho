@@ -276,14 +276,14 @@ export default function MarketSection({
       </div>
 
       {loading ? (
-        <div className="grid justify-start grid-cols-[repeat(auto-fit,160px)] gap-2 md:gap-8">
+        <div className="grid grid-cols-[repeat(auto-fit,160px)] justify-between gap-x-2 gap-y-4 md:gap-x-8 md:gap-y-6">
           {Array.from({ length: skeletonCount }).map((_, index) => (
             <ListingCardSkeleton key={index} />
           ))}
         </div>
       ) : visibleListings.length > 0 ? (
         <>
-          <div className="grid justify-start grid-cols-[repeat(auto-fit,160px)] gap-2 md:gap-8">
+          <div className="grid grid-cols-[repeat(auto-fit,160px)] justify-between gap-x-2 gap-y-4 md:gap-x-8 md:gap-y-6">
             {visibleListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -303,6 +303,7 @@ export default function MarketSection({
                 compact
                 ultraCompact
                 showActionsMenu={false}
+                showBuyButton
               />
             ))}
           </div>
