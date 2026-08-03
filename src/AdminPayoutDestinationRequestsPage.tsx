@@ -71,6 +71,22 @@ function badgeClass(label: string) {
   return "border-zinc-200 bg-white text-zinc-700";
 }
 
+function normalizeDestinationRow(row: DestinationRequestRow): DestinationRequestRow {
+  const destinationVerificationStatus =
+    row.destinationVerificationStatus ??
+    (row.destinationActive === false ? "disabled" : "pending");
+
+  return {
+    ...row,
+    destinationVerificationStatus,
+    destinationActive:
+      row.destinationActive ?? destinationVerificationStatus === "verified",
+    destinationLastError: row.destinationLastError ?? null,
+    sellerSuspended: row.sellerSuspended ?? false,
+    verificationBlockers: Array.isArray(row.verificationBlockers) ? row.verificationBlockers : [],
+  };
+}
+
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -103,7 +119,7 @@ export default function AdminPayoutDestinationRequestsPage() {
           ? data.rows
           : [];
 
-      setRows(fetchedRows);
+      setRows(fetchedRows.map(normalizeDestinationRow));
       setLastRefreshAt(new Date().toISOString());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load destination requests.");
