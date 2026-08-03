@@ -50,24 +50,16 @@ function quoteIdent(identifier: string): string {
 }
 
 function tableExistsSqlite(dbPath: string, table: string): boolean {
-  const result = spawnSync('sqlite3', [dbPath, '-noheader', '-batch', "SELECT name FROM sqlite_master WHERE type='table' AND name=$name LIMIT 1;", `-cmd`, `.parameter set $name ${JSON.stringify(table)}`], {
-    encoding: 'utf8',
-  });
-
-  // Older sqlite builds may not support parameter binding in -cmd mode.
-  // Fall back to a direct escaped query if that happens.
-  if (result.status === 0) {
-    return result.stdout.trim().length > 0;
-  }
-
   const escaped = table.replace(/'/g, "''");
-  const fallback = spawnSync('sqlite3', [dbPath, '-noheader', '-batch', `SELECT name FROM sqlite_master WHERE type='table' AND name='${escaped}' LIMIT 1;`], {
+  const result = spawnSync('sqlite3', [dbPath, '-noheader', '-batch', `SELECT 1 FROM sqlite_master WHERE type='table' AND name='${escaped}' LIMIT 1;`], {
     encoding: 'utf8',
   });
-  if (fallback.status !== 0) {
-    throw new Error(fallback.stderr.trim() || `Failed to check whether SQLite table ${table} exists`);
+
+  if (result.status !== 0) {
+    throw new Error(result.stderr.trim() || `Failed to check whether SQLite table ${table} exists`);
   }
-  return fallback.stdout.trim().length > 0;
+
+  return result.stdout.trim().length > 0;
 }
 
 function loadSqliteRows(dbPath: string, table: string): SqliteRow[] {
@@ -116,8 +108,9 @@ function resolveConflictColumns(table: TableName, columns: string[]): string[] {
 function buildUpsertSql(table: TableName, columns: string[]): string {
   const insertColumns = columns.map(quoteIdent).join(', ');
   const values = columns.map((column) => `@${column}`).join(', ');
-  const conflictColumns = resolveConflictColumns(table, columns).map(quoteIdent).join(', ');
-  const updateColumns = columns.filter((column) => !resolveConflictColumns(table, columns).includes(column));
+  const conflictTarget = resolveConflictColumns(table, columns);
+  const conflictColumns = conflictTarget.map(quoteIdent).join(', ');
+  const updateColumns = columns.filter((column) => !conflictTarget.includes(column));
 
   if (updateColumns.length === 0) {
     return `INSERT INTO ${quoteIdent(table)} (${insertColumns}) VALUES (${values}) ON CONFLICT (${conflictColumns}) DO NOTHING`;
@@ -212,10 +205,11 @@ function repairPaymentAndOrderLinks(
     }
 
     if (!next.paid_at) {
+      const rawResponse = typeof next.raw_response === 'string' ? parseJsonField<Record<string, unknown>>(next.raw_response, {}) : {};
       next.paid_at =
         webhook?.completed_at ??
         webhook?.created_at ??
-        (typeof rawResponseToDate(next.raw_response) === 'string' ? rawResponseToDate(next.raw_response) : null) ??
+        (typeof rawResponse.completed_at === 'string' ? rawResponse.completed_at : null) ??
         next.updated_at ??
         null;
     }
@@ -255,22 +249,6 @@ function repairPaymentAndOrderLinks(
   });
 
   return { payments: repairedPayments, orders: repairedOrders };
-}
-
-function rawResponseToDate(rawResponse: unknown): string | null {
-  if (typeof rawResponse !== 'string') return null;
-  try {
-    const parsed = JSON.parse(rawResponse) as unknown;
-    if (!parsed || typeof parsed !== 'object') return null;
-    const record = parsed as Record<string, unknown>;
-    const createdAt = record.created_at;
-    if (typeof createdAt === 'string' && createdAt.trim()) return createdAt;
-    const completedAt = record.completed_at;
-    if (typeof completedAt === 'string' && completedAt.trim()) return completedAt;
-  } catch {
-    return null;
-  }
-  return null;
 }
 
 function normalizeSourceRows(table: TableName, rows: SqliteRow[]): SqliteRow[] {
