@@ -440,8 +440,9 @@ export default function AdminPayoutsManager() {
       return;
     }
     void loadAdjustments(selected.id);
-    setDestinationStatus(selected.destinationVerificationStatus ?? "verified");
-    setDestinationReason(selected.destinationLastError ?? "");
+  
+    setDestinationStatus(selected.destinationVerificationStatus ?? selected.destinationStatus ?? "verified");
+    setDestinationReason(selected.destinationLastError ?? selected.lastError ?? selected.latestAttemptFailureReason ?? "");
     setSellerControlReason("");
     setAdjustmentAmount("");
     setAdjustmentReason("");
