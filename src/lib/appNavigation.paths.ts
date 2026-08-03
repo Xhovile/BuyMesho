@@ -37,6 +37,7 @@ export type AppRoute =
   | "admin"
   | "admin_events"
   | "admin_payments"
+  | "admin_transaction_inspector"
   | "admin_payouts"
   | "admin_payout_destinations"
   | "admin_reports"
@@ -85,6 +86,7 @@ export const EMAIL_ACTION_PATH = "/email-action";
 export const MY_LISTINGS_PATH = "/my-listings";
 export const ADMIN_PATH = "/admin";
 export const ADMIN_PAYMENTS_PATH = "/admin/payments";
+export const ADMIN_TRANSACTION_INSPECTOR_PATH = "/admin/transaction-inspector";
 export const ADMIN_PAYOUTS_PATH = "/admin/payouts";
 export const ADMIN_REPORTS_PATH = "/admin/reports";
 export const ADMIN_SELLER_APPLICATIONS_PATH = "/admin/seller-applications";
