@@ -11,6 +11,7 @@ import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   ADMIN_SETUP_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   BECOME_SELLER_PATH,
   CHANGE_EMAIL_PATH,
   CHANGE_PASSWORD_PATH,
@@ -263,6 +264,7 @@ export const getAppRouteFromLocation = (
   if (location.pathname === ADMIN_PATH) return "admin";
   if (location.pathname === ADMIN_EVENTS_PATH) return "admin_events";
   if (location.pathname === ADMIN_PAYMENTS_PATH) return "admin_payments";
+  if (location.pathname === ADMIN_TRANSACTION_INSPECTOR_PATH) return "admin_transaction_inspector";
   if (location.pathname === ADMIN_PAYOUTS_PATH) return "admin_payouts";
   if (location.pathname === ADMIN_REPORTS_PATH) return "admin_reports";
   if (location.pathname === ADMIN_SELLER_APPLICATIONS_PATH) return "admin_seller_applications";
