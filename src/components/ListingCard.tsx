@@ -1,4 +1,4 @@
-import type { MouseEvent as ReactMouseEvent, KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useState, type MouseEvent as ReactMouseEvent, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { formatMoney, getListingPricing } from "../lib/listingPricing";
 import {
   getListingAvailabilityLabel,
@@ -9,6 +9,7 @@ import { navigateToListingDetails } from "../lib/appNavigation";
 import { saveListingDetailsFallback } from "../lib/listings";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
+import CheckoutModal from "./CheckoutModal";
 
 type ListingCardProps = {
   listing: Listing;
@@ -31,6 +32,9 @@ type ListingCardProps = {
   performanceMode?: boolean;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
+  showBuyButton?: boolean;
+  buyerName?: string | null;
+  buyerEmail?: string | null;
 };
 
 export default function ListingCard({
@@ -54,7 +58,12 @@ export default function ListingCard({
   clickable = true,
   onOpenDetails,
   onOpenSeller: _onOpenSeller,
+  showBuyButton = false,
+  buyerName,
+  buyerEmail,
 }: ListingCardProps) {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [buyNotice, setBuyNotice] = useState<string | null>(null);
   const pricing = getListingPricing(listing);
   const firstPhoto =
     Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
@@ -96,11 +105,21 @@ export default function ListingCard({
   };
 
   const imageAspect = ultraCompact ? "aspect-square" : compact ? "aspect-[4/3]" : "aspect-[1/1] md:aspect-[4/5]";
-  const cardSize = ultraCompact ? "max-h-[245px] max-w-[160px]" : compact ? "max-h-[320px] max-w-[235px]" : "max-h-[420px] max-w-[300px]";
+  const cardSize = ultraCompact ? "max-w-[160px]" : compact ? "max-w-[235px]" : "max-w-[300px]";
+
+  const handleBuyClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (currentUid && String(currentUid).trim() === String(listing.seller_uid).trim()) {
+      setBuyNotice("You cannot buy your own listing.");
+      return;
+    }
+    setBuyNotice(null);
+    setCheckoutOpen(true);
+  };
 
   return (
     <div
-      className={`group relative w-full overflow-hidden ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
+      className={`group relative w-full ${cardSize} ${clickable ? "cursor-pointer" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40`}
       onClick={openDetails}
       onKeyDown={handleKeyDown}
       tabIndex={clickable ? 0 : -1}
@@ -214,8 +233,31 @@ export default function ListingCard({
           <div className="min-h-[1.1rem] text-[9px] font-extrabold uppercase tracking-wider text-zinc-600">
             {[conditionLabel, availabilityLabel].filter(Boolean).join(" | ")}
           </div>
+
+          {showBuyButton ? (
+            <div className="space-y-1" onClick={(event) => event.stopPropagation()}>
+              <button
+                type="button"
+                onClick={handleBuyClick}
+                className="inline-flex h-9 w-full items-center justify-center rounded-xl bg-lime-400 px-3 text-xs font-black uppercase tracking-[0.14em] text-zinc-950 shadow-sm transition-colors hover:bg-lime-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-lime-500/60"
+              >
+                Buy
+              </button>
+              {buyNotice ? <p className="text-[10px] font-bold text-red-700">{buyNotice}</p> : null}
+            </div>
+          ) : null}
         </div>
       </div>
+
+      {showBuyButton ? (
+        <CheckoutModal
+          listing={listing}
+          isOpen={checkoutOpen}
+          onClose={() => setCheckoutOpen(false)}
+          buyerName={buyerName}
+          buyerEmail={buyerEmail}
+        />
+      ) : null}
     </div>
   );
 }
