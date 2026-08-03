@@ -12,6 +12,7 @@ import { registerEventRoutes } from "./events.routes.js";
 import { registerEventCreatorOverviewRoutes } from "./eventCreatorOverview.routes.js";
 import { registerAiRoutes } from "./ai.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
+import { createPaymentAdminPayoutRouter } from "../modules/payments/payment.admin.payout.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
 import { createPaymentAdminDetailRouter } from "../modules/payments/payment.admin.detail.routes.js";
 import { createPaymentAdminReconcileRouter } from "../modules/payments/payment.admin.reconcile.routes.js";
@@ -108,6 +109,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
 
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
+  app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
