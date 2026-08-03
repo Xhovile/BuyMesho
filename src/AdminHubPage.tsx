@@ -11,6 +11,7 @@ import {
   navigateToAdminEvents,
   navigateToAdminModerationQueue,
   navigateToAdminPayments,
+  navigateToAdminTransactionInspector,
   navigateToAdminPayoutDestinations,
   navigateToAdminReports,
   navigateToAdminSellerApplications,
@@ -118,7 +119,7 @@ export default function AdminHubPage() {
           path={ADMIN_TRANSACTION_INSPECTOR_PATH}
           onClick={(event) => {
             event.preventDefault();
-            navigateToPath(ADMIN_TRANSACTION_INSPECTOR_PATH);
+            navigateToAdminTransactionInspector();
           }}
         />
         <AdminOverviewCard

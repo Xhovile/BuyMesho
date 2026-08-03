@@ -10,6 +10,7 @@ import {
   ADMIN_REPORTS_PATH,
   ADMIN_SELLER_APPLICATIONS_PATH,
   ADMIN_SETUP_PATH,
+  ADMIN_TRANSACTION_INSPECTOR_PATH,
   AUTH_RETURN_PATH_STORAGE_KEY,
   BECOME_SELLER_PATH,
   BUYER_PAYMENTS_PATH,
@@ -228,6 +229,7 @@ export const navigateToMyListings = () => navigateToPath(MY_LISTINGS_PATH);
 export const navigateToAdmin = () => navigateToPath(ADMIN_PATH);
 export const navigateToAdminEvents = () => navigateToPath(ADMIN_EVENTS_PATH);
 export const navigateToAdminPayments = () => navigateToPath(ADMIN_PAYMENTS_PATH);
+export const navigateToAdminTransactionInspector = () => navigateToPath(ADMIN_TRANSACTION_INSPECTOR_PATH);
 export const navigateToAdminPayouts = () => navigateToPath(ADMIN_PAYOUTS_PATH);
 export const navigateToAdminPayoutDestinations = () => navigateToPath(ADMIN_PAYOUT_DESTINATIONS_PATH);
 export const navigateToAdminReports = () => navigateToPath(ADMIN_REPORTS_PATH);
