@@ -48,35 +48,6 @@ type WebhookEventRow = {
   created_at: string;
 };
 
-type SummaryResponse = {
-  summary?: {
-    total_payments?: number;
-    verified_payments?: number;
-    paid_payments?: number;
-    pending_payments?: number;
-  };
-  webhookSummary?: {
-    total_webhooks?: number;
-    valid_webhooks?: number;
-    invalid_webhooks?: number;
-  };
-};
-
-type PayoutsSummaryResponse = {
-  summary?: {
-    totalPayouts?: number;
-    pendingPayouts?: number;
-    paidPayouts?: number;
-    failedPayouts?: number;
-    cancelledPayouts?: number;
-  };
-  attempts?: {
-    totalAttempts?: number;
-    successfulAttempts?: number;
-    failedAttempts?: number;
-  };
-};
-
 type Tone = "zinc" | "emerald" | "amber" | "rose" | "blue";
 type LifecycleState = "done" | "active" | "waiting" | "issue";
 type LifecycleStep = { number: number; title: string; detail: string; state: LifecycleState; timestamp?: string; dbRecord?: string; externalRef?: string; error?: string | null };
@@ -398,8 +369,6 @@ export default function TransactionInspectorPage() {
   const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
   const [sellerHistory, setSellerHistory] = useState<PayoutRecord[]>([]);
-  const [summary, setSummary] = useState<SummaryResponse | null>(null);
-  const [payoutSummary, setPayoutSummary] = useState<PayoutsSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
@@ -416,23 +385,19 @@ export default function TransactionInspectorPage() {
       setError(null);
       setLoading(true);
       try {
-        const [paymentsData, webhookData, summaryData, payoutsData, payoutSummaryData] = await Promise.allSettled([
+        const [paymentsData, webhookData, payoutsData] = await Promise.allSettled([
           apiFetch("/api/admin/payments"),
           apiFetch("/api/admin/webhook-events"),
-          apiFetch("/api/admin/payment-summary"),
           apiFetch("/api/admin/payouts?limit=100&offset=0"),
-          apiFetch("/api/admin/payouts/summary"),
         ]);
 
         if (!mounted) return;
 
         setPayments(paymentsData.status === "fulfilled" && Array.isArray(paymentsData.value) ? paymentsData.value : []);
         setWebhookEvents(webhookData.status === "fulfilled" && Array.isArray(webhookData.value) ? webhookData.value : []);
-        setSummary((summaryData.status === "fulfilled" ? (summaryData.value ?? {}) : {}) as SummaryResponse);
         setPayouts(
           payoutRowsFromResponse(payoutsData.status === "fulfilled" ? payoutsData.value : null),
         );
-        setPayoutSummary((payoutSummaryData.status === "fulfilled" ? (payoutSummaryData.value ?? {}) : {}) as PayoutsSummaryResponse);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Failed to load transaction inspector data.");
@@ -553,23 +518,6 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
       mounted = false;
     };
   }, [selectedPayout]);
-
-  const stats = useMemo(
-    () => ({
-      totalPayments: summary?.summary?.total_payments ?? payments.length,
-      verifiedPayments: summary?.summary?.verified_payments ?? payments.filter((p) => Number(p.verified) === 1).length,
-      paidPayments: summary?.summary?.paid_payments ?? payments.filter((p) => ["paid", "captured", "success"].includes(token(p.payment_status))).length,
-      pendingPayments: summary?.summary?.pending_payments ?? payments.filter((p) => token(p.payment_status) === "pending").length,
-      totalWebhooks: summary?.webhookSummary?.total_webhooks ?? webhookEvents.length,
-      validWebhooks: summary?.webhookSummary?.valid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 1).length,
-      invalidWebhooks: summary?.webhookSummary?.invalid_webhooks ?? webhookEvents.filter((e) => Number(e.signature_valid) === 0).length,
-      totalPayouts: payoutSummary?.summary?.totalPayouts ?? payouts.length,
-      paidPayouts: payoutSummary?.summary?.paidPayouts ?? payouts.filter((p) => token(p.status) === "paid").length,
-      failedPayouts: payoutSummary?.summary?.failedPayouts ?? payouts.filter((p) => token(p.status) === "failed").length,
-      heldPayouts: payoutSummary?.summary?.pendingPayouts ?? payouts.filter((p) => token(p.status) === "held").length,
-    }),
-    [payments, payoutSummary, payouts, summary, webhookEvents],
-  );
 
   const lifecycleSteps = useMemo(
     () => buildLifecycleSteps(latestPayment, latestWebhook, selectedPayout),
