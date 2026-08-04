@@ -96,7 +96,6 @@ export const ADMIN_BALANCE_PATH = "/admin/balance";
 export const ADMIN_SETUP_PATH = "/admin/setup";
 export const PAYMENT_RETURN_PATH = "/payment/return";
 export const PAYMENTS_HUB_PATH = "/payments";
-export const PAYMENT_METHOD_PATH = "/payments/payment-method";
 export const TRACK_ORDER_PATH = "/payments/track-order";
 export const DISPUTES_PATH = "/payments/disputes";
 export const BUYER_PAYMENTS_PATH = "/buyer-payments";
