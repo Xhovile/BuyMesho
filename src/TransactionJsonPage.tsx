@@ -39,35 +39,6 @@ type WebhookEventRow = {
   created_at: string;
 };
 
-type SummaryResponse = {
-  summary?: {
-    total_payments?: number;
-    verified_payments?: number;
-    paid_payments?: number;
-    pending_payments?: number;
-  };
-  webhookSummary?: {
-    total_webhooks?: number;
-    valid_webhooks?: number;
-    invalid_webhooks?: number;
-  };
-};
-
-type PayoutsSummaryResponse = {
-  summary?: {
-    totalPayouts?: number;
-    pendingPayouts?: number;
-    paidPayouts?: number;
-    failedPayouts?: number;
-    cancelledPayouts?: number;
-  };
-  attempts?: {
-    totalAttempts?: number;
-    successfulAttempts?: number;
-    failedAttempts?: number;
-  };
-};
-
 type PayoutAdjustment = Record<string, unknown>;
 
 type JsonPayload = {
@@ -87,20 +58,13 @@ type JsonPayload = {
     payment: PaymentRow | null;
     webhook: WebhookEventRow | null;
     payout: PayoutRow | null;
-    payments: PaymentRow[];
-    webhooks: WebhookEventRow[];
-    payouts: PayoutRow[];
-    sellerHistory: unknown[];
-    payoutAdjustments: PayoutAdjustment[];
-    summary: SummaryResponse | null;
-    payoutSummary: PayoutsSummaryResponse | null;
   };
   derived: {
-    paymentMatches: number;
-    webhookMatches: number;
-    payoutMatches: number;
     hasSelection: boolean;
-    isLikelyTransactionRecord: boolean;
+    hasPayment: boolean;
+    hasWebhook: boolean;
+    hasPayout: boolean;
+    updatedAt: string | null;
     notes: string[];
   };
 };
@@ -148,24 +112,6 @@ function sortPayouts(rows: PayoutRow[]) {
 
 function prettyJson(value: unknown) {
   return JSON.stringify(value ?? null, null, 2);
-}
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function extractSellerHistoryRows(value: unknown): unknown[] {
-  if (Array.isArray(value)) return value;
-  if (!isObject(value)) return [];
-  const candidate = value.history ?? value.rows ?? value.data ?? value.items;
-  return Array.isArray(candidate) ? candidate : [];
-}
-
-function extractAdjustmentsRows(value: unknown): PayoutAdjustment[] {
-  if (Array.isArray(value)) return value as PayoutAdjustment[];
-  if (!isObject(value)) return [];
-  const candidate = value.adjustments ?? value.rows ?? value.data ?? value.items;
-  return Array.isArray(candidate) ? (candidate as PayoutAdjustment[]) : [];
 }
 
 function findBestPayment(payments: PaymentRow[], q: string) {
@@ -224,19 +170,11 @@ function buildPayload({
   payments,
   webhooks,
   payouts,
-  sellerHistory,
-  payoutAdjustments,
-  summary,
-  payoutSummary,
 }: {
   rawQuery: string;
   payments: PaymentRow[];
   webhooks: WebhookEventRow[];
   payouts: PayoutRow[];
-  sellerHistory: unknown[];
-  payoutAdjustments: PayoutAdjustment[];
-  summary: SummaryResponse | null;
-  payoutSummary: PayoutsSummaryResponse | null;
 }): JsonPayload {
   const normalized = token(rawQuery);
   const sortedPayments = [...payments].sort((a, b) => Date.parse(b.updated_at || b.created_at || "") - Date.parse(a.updated_at || a.created_at || ""));
@@ -247,22 +185,23 @@ function buildPayload({
   const webhook = findWebhook(sortedWebhooks, normalized, payment);
   const payout = findPayout(sortedPayouts, normalized, payment);
 
-  const paymentMatches = normalized
-    ? sortedPayments.filter((row) => [row.id, row.order_id, row.reference, row.provider_reference, row.escrow_id, row.payment_status, row.order_status, row.escrow_state].some((field) => token(field).includes(normalized))).length
-    : sortedPayments.length;
-  const webhookMatches = normalized
-    ? sortedWebhooks.filter((row) => [row.id, row.provider, row.reference, row.event_type, row.payload, row.created_at].some((field) => token(field).includes(normalized))).length
-    : sortedWebhooks.length;
-  const payoutMatches = normalized
-    ? sortedPayouts.filter((row) => [row.id, row.sellerId, row.orderId, row.escrowId, row.providerReference, row.providerTransactionId, row.providerChargeId, row.destinationAccountId, row.destinationMaskedAccount].some((field) => token(field).includes(normalized))).length
-    : sortedPayouts.length;
-
   const notes: string[] = [];
-  if (payment) notes.push(`Payment ${payment.reference} selected from the loaded admin payments dataset.`);
-  if (webhook) notes.push(`Webhook ${toText(webhook.reference)} selected from the loaded webhook dataset.`);
-  if (payout) notes.push(`Payout ${payout.id} selected from the loaded payout dataset.`);
-  if (!normalized) notes.push("No search token provided, so the page is showing the latest loaded transaction context.");
-  if (normalized && !payment && !webhook && !payout) notes.push("No exact transaction record matched the query; the payload still contains the full loaded datasets.");
+  if (payment) notes.push(`Payment ${payment.reference} selected from the loaded payments list.`);
+  if (webhook) notes.push(`Webhook ${toText(webhook.reference)} linked to the selected payment context.`);
+  if (payout) notes.push(`Payout ${payout.id} linked to the selected transaction context.`);
+  if (!normalized) notes.push("No search token provided, so the page is showing the most recent matched transaction context.");
+  if (!payment && !webhook && !payout) notes.push("No exact transaction record matched the query.");
+
+  const updatedAtCandidates = [
+    payment?.updated_at,
+    webhook?.created_at,
+    payout?.updatedAt ?? payout?.createdAt,
+  ].filter(Boolean) as string[];
+  const updatedAt = updatedAtCandidates.length
+    ? updatedAtCandidates
+        .slice()
+        .sort((left, right) => Date.parse(right) - Date.parse(left))[0]
+    : null;
 
   return {
     query: {
@@ -281,33 +220,23 @@ function buildPayload({
       payment,
       webhook,
       payout,
-      payments: sortedPayments,
-      webhooks: sortedWebhooks,
-      payouts: sortedPayouts,
-      sellerHistory,
-      payoutAdjustments,
-      summary,
-      payoutSummary,
     },
     derived: {
-      paymentMatches,
-      webhookMatches,
-      payoutMatches,
       hasSelection: !!(payment || webhook || payout),
-      isLikelyTransactionRecord: !!(payment || webhook || payout || normalized),
+      hasPayment: !!payment,
+      hasWebhook: !!webhook,
+      hasPayout: !!payout,
+      updatedAt,
       notes,
     },
   };
 }
 
+
 export default function TransactionJsonPage() {
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookEventRow[]>([]);
   const [payouts, setPayouts] = useState<PayoutRow[]>([]);
-  const [summary, setSummary] = useState<SummaryResponse | null>(null);
-  const [payoutSummary, setPayoutSummary] = useState<PayoutsSummaryResponse | null>(null);
-  const [sellerHistory, setSellerHistory] = useState<unknown[]>([]);
-  const [payoutAdjustments, setPayoutAdjustments] = useState<PayoutAdjustment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshTick, setRefreshTick] = useState(0);
@@ -321,21 +250,17 @@ export default function TransactionJsonPage() {
       setLoading(true);
       setError(null);
       try {
-        const [paymentsData, webhooksData, summaryData, payoutsData, payoutSummaryData] = await Promise.allSettled([
+        const [paymentsData, webhooksData, payoutsData] = await Promise.allSettled([
           apiFetch("/api/admin/payments"),
           apiFetch("/api/admin/webhook-events"),
-          apiFetch("/api/admin/payment-summary"),
           apiFetch("/api/admin/payouts?limit=100&offset=0"),
-          apiFetch("/api/admin/payouts/summary"),
         ]);
 
         if (!mounted) return;
 
         setPayments(paymentsData.status === "fulfilled" && Array.isArray(paymentsData.value) ? paymentsData.value : []);
         setWebhooks(webhooksData.status === "fulfilled" && Array.isArray(webhooksData.value) ? webhooksData.value : []);
-        setSummary(summaryData.status === "fulfilled" && isObject(summaryData.value) ? (summaryData.value as SummaryResponse) : null);
         setPayouts(payoutsData.status === "fulfilled" && Array.isArray(payoutsData.value) ? (payoutsData.value as PayoutRow[]) : []);
-        setPayoutSummary(payoutSummaryData.status === "fulfilled" && isObject(payoutSummaryData.value) ? (payoutSummaryData.value as PayoutsSummaryResponse) : null);
       } catch (err) {
         if (!mounted) return;
         setError(err instanceof Error ? err.message : "Failed to load transaction JSON data.");
@@ -361,12 +286,8 @@ export default function TransactionJsonPage() {
       payments,
       webhooks,
       payouts,
-      sellerHistory,
-      payoutAdjustments,
-      summary,
-      payoutSummary,
     }),
-    [payments, webhooks, payouts, sellerHistory, payoutAdjustments, summary, payoutSummary, queryInput],
+    [payments, webhooks, payouts, queryInput],
   );
 
   const jsonText = useMemo(() => prettyJson(payload), [payload]);
@@ -459,8 +380,8 @@ const handleDownload = () => {
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:px-8">
         <section className="grid gap-4">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Latest update</p>
-            <p className="mt-2 text-sm font-semibold text-zinc-100">{loading ? "Loading…" : formatDate(payments[0]?.updated_at ?? webhooks[0]?.created_at ?? payouts[0]?.updatedAt ?? null)}</p>
+            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Matched update</p>
+            <p className="mt-2 text-sm font-semibold text-zinc-100">{loading ? "Loading…" : formatDate(payload.derived.updatedAt ?? null)}</p>
           </div>
         </section>
 
@@ -481,13 +402,13 @@ const handleDownload = () => {
             <div>
               <h2 className="text-lg font-black text-white">Payload summary</h2>
               <p className="mt-1 text-sm text-zinc-300">
-                {payload.derived.hasSelection ? "A transaction context was matched from the loaded datasets." : "No exact match found; the payload still includes the full loaded datasets."}
+                {payload.derived.hasSelection ? "A transaction context was matched from the loaded datasets." : "No exact match found for the query."}
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-zinc-300">
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Payment {payload.derived.paymentMatches}</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Webhook {payload.derived.webhookMatches}</span>
-              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">Payout {payload.derived.payoutMatches}</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{payload.derived.hasPayment ? "Payment linked" : "No payment"}</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{payload.derived.hasWebhook ? "Webhook linked" : "No webhook"}</span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">{payload.derived.hasPayout ? "Payout linked" : "No payout"}</span>
             </div>
           </div>
 
@@ -503,13 +424,24 @@ const handleDownload = () => {
                   <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Webhook ref</span><span className="break-all font-semibold text-white">{payload.matchContext.webhookReference ?? "—"}</span></div>
                 </div>
               </div>
+
+              {payload.derived.notes.length ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">Notes</p>
+                  <ul className="mt-3 space-y-2 text-sm text-zinc-200">
+                    {payload.derived.notes.map((note) => (
+                      <li key={note}>• {note}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
 
             <div className="min-w-0 rounded-3xl border border-white/10 bg-black/30 p-4 shadow-inner">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-[0.2em] text-zinc-400">JSON</p>
-                  <h3 className="mt-1 text-sm font-bold text-white">Full payload snapshot</h3>
+                  <h3 className="mt-1 text-sm font-bold text-white">Scoped payload snapshot</h3>
                 </div>
                 <a href="/admin/transaction-inspector" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-bold text-zinc-100 transition hover:bg-white/10">
                   <SquareArrowOutUpRight className="h-3.5 w-3.5" /> Inspector
