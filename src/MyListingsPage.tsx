@@ -30,9 +30,18 @@ function promptForQuantity(message: string): number | null {
   return quantity;
 }
 
+async function fetchSellerListings(uid: string): Promise<Listing[]> {
+  try {
+    const data = await apiFetch(`/api/sellers/${uid}/listings`);
+    return Array.isArray(data) ? (data as Listing[]) : [];
+  } catch {
+    const data = await apiFetch(`/api/users/${uid}/listings`);
+    return Array.isArray(data) ? (data as Listing[]) : [];
+  }
+}
+
 type ListingRowProps = {
   listing: Listing;
-  currentUid?: string;
   onEdit: (listing: Listing) => void;
   onDelete: (id: number) => void;
   onToggleStatus: (listing: Listing) => void;
@@ -40,11 +49,11 @@ type ListingRowProps = {
   onRestock: (listing: Listing, quantity: number) => void;
   onOpenDetails: (listing: Listing) => void;
   onOpenSeller: (sellerUid: string) => void;
+  busy: boolean;
 };
 
 function ListingRow({
   listing,
-  currentUid,
   onEdit,
   onDelete,
   onToggleStatus,
@@ -52,6 +61,7 @@ function ListingRow({
   onRestock,
   onOpenDetails,
   onOpenSeller,
+  busy,
 }: ListingRowProps) {
   const sellerUid = typeof listing.seller_uid === "string" ? listing.seller_uid : "";
   const sellerName =
@@ -86,6 +96,7 @@ function ListingRow({
           onClick={() => onOpenDetails(listing)}
           className="group relative aspect-square overflow-hidden rounded-2xl bg-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
           aria-label={`Open ${titleLabel}`}
+          disabled={busy}
         >
           <img
             src={firstPhoto}
@@ -103,6 +114,7 @@ function ListingRow({
               type="button"
               onClick={() => sellerUid && onOpenSeller(sellerUid)}
               className="max-w-full truncate text-left text-sm font-extrabold text-red-900"
+              disabled={busy}
             >
               {sellerName}
             </button>
@@ -144,21 +156,24 @@ function ListingRow({
           <button
             type="button"
             onClick={() => onOpenDetails(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            disabled={busy}
           >
             Open
           </button>
           <button
             type="button"
             onClick={() => onEdit(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            disabled={busy}
           >
             Edit
           </button>
           <button
             type="button"
             onClick={() => onToggleStatus(listing)}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            disabled={busy}
           >
             {listing.status === "sold" ? "Mark available" : "Mark sold"}
           </button>
@@ -170,7 +185,8 @@ function ListingRow({
               );
               if (quantityToSell !== null) onRecordSale(listing, quantityToSell);
             }}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            disabled={busy}
           >
             Sale
           </button>
@@ -182,14 +198,16 @@ function ListingRow({
               );
               if (quantityToAdd !== null) onRestock(listing, quantityToAdd);
             }}
-            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+            className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50 disabled:opacity-50"
+            disabled={busy}
           >
             Restock
           </button>
           <button
             type="button"
             onClick={() => onDelete(listing.id)}
-            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100"
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 hover:bg-red-100 disabled:opacity-50"
+            disabled={busy}
           >
             Delete
           </button>
@@ -206,28 +224,25 @@ export default function MyListingsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   useEffect(() => {
+    let active = true;
+
     const loadListings = async () => {
       if (!firebaseUser || !profile?.is_seller) {
-        setListings([]);
-        setLoadingListings(false);
+        if (active) {
+          setListings([]);
+          setLoadingListings(false);
+        }
         return;
       }
 
-      setLoadingListings(true);
+      if (active) setLoadingListings(true);
       try {
-        const data = await apiFetch(`/api/users/${firebaseUser.uid}/listings`);
-        if (!Array.isArray(data)) {
-          setListings([]);
-          return;
-        }
+        const data = await fetchSellerListings(firebaseUser.uid);
+        if (!active) return;
 
         const uniqueById = new Map<number, Listing>();
         for (const item of data) {
-          if (
-            !item ||
-            typeof item !== "object" ||
-            !Number.isFinite(Number((item as Listing).id))
-          ) {
+          if (!item || typeof item !== "object" || !Number.isFinite(Number((item as Listing).id))) {
             continue;
           }
           const listing = item as Listing;
@@ -237,13 +252,17 @@ export default function MyListingsPage() {
         setListings(Array.from(uniqueById.values()));
       } catch (error) {
         console.error("Failed to load my listings", error);
-        setListings([]);
+        if (active) setListings([]);
       } finally {
-        setLoadingListings(false);
+        if (active) setLoadingListings(false);
       }
     };
 
     void loadListings();
+
+    return () => {
+      active = false;
+    };
   }, [firebaseUser, profile?.is_seller]);
 
   const handleDeleteListing = async (listingId: number) => {
@@ -272,11 +291,7 @@ export default function MyListingsPage() {
         body: JSON.stringify({ status: nextStatus }),
       });
 
-      setListings((prev) =>
-        prev.map((item) =>
-          item.id === listing.id ? { ...item, status: nextStatus } : item,
-        ),
-      );
+      setListings((prev) => prev.map((item) => (item.id === listing.id ? { ...item, status: nextStatus } : item)));
     } catch (error) {
       console.error("Failed to toggle listing status", error);
       window.alert("Failed to update listing status.");
@@ -298,9 +313,7 @@ export default function MyListingsPage() {
 
       if (result?.listing) {
         setListings((prev) =>
-          prev.map((item) =>
-            item.id === result.listing.id ? { ...item, ...result.listing } : item,
-          ),
+          prev.map((item) => (item.id === result.listing.id ? { ...item, ...result.listing } : item)),
         );
       }
     } catch (error) {
@@ -353,9 +366,7 @@ export default function MyListingsPage() {
         </div>
       ) : !firebaseUser ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
-            Login required
-          </h2>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Login required</h2>
           <p className="mt-3 text-sm text-zinc-500">
             You need to log in before opening your listings page.
           </p>
@@ -369,12 +380,8 @@ export default function MyListingsPage() {
         </div>
       ) : !profile?.is_seller ? (
         <div className="p-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-zinc-900">
-            Seller access required
-          </h2>
-          <p className="mt-3 text-sm text-zinc-500">
-            Only seller accounts can access My Listings.
-          </p>
+          <h2 className="text-2xl font-black tracking-tight text-zinc-900">Seller access required</h2>
+          <p className="mt-3 text-sm text-zinc-500">Only seller accounts can access My Listings.</p>
           <button
             type="button"
             onClick={() => navigateToPath("/become-seller")}
@@ -386,12 +393,8 @@ export default function MyListingsPage() {
       ) : listings.length === 0 ? (
         <div className="space-y-5 p-10 text-center">
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-zinc-900">
-              No listings yet
-            </h2>
-            <p className="mt-3 text-sm text-zinc-500">
-              You have not posted any listings yet.
-            </p>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-900">No listings yet</h2>
+            <p className="mt-3 text-sm text-zinc-500">You have not posted any listings yet.</p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
@@ -412,43 +415,46 @@ export default function MyListingsPage() {
           </div>
         </div>
       ) : (
-        <div className="space-y-5">
-          <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="space-y-4">
+          <div className="rounded-[1.75rem] border border-zinc-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                  Seller performance
-                </p>
-                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">
-                  My Listings
-                </h2>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Seller</p>
+                <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Your listings</h2>
               </div>
-
-              <button
-                type="button"
-                onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-                className="inline-flex items-center gap-2 rounded-2xl bg-indigo-700 px-5 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-indigo-100 transition-all hover:bg-indigo-700 active:scale-95"
-              >
-                Open Dashboard
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
+                  className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+                >
+                  Open Dashboard
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateToPath("/create")}
+                  className="rounded-2xl bg-zinc-900 px-4 py-2 text-sm font-bold text-white hover:bg-zinc-800"
+                >
+                  Create Listing
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
             {listings.map((listing) => (
-              <div key={listing.id} className="min-w-0">
-                <ListingRow
-                  listing={listing}
-                  currentUid={firebaseUser?.uid}
-                  onEdit={(item) => navigateToEditListing(item.id)}
-                  onDelete={(id) => void handleDeleteListing(id)}
-                  onToggleStatus={(item) => void handleToggleStatus(item)}
-                  onRecordSale={(item, quantity) => void handleRecordSale(item, quantity)}
-                  onRestock={(item, quantity) => void handleRestock(item, quantity)}
-                  onOpenDetails={(item) => navigateToListingDetails(item.id, 0)}
-                  onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
-                />
-              </div>
+              <ListingRow
+                key={listing.id}
+                listing={listing}
+                busy={actionLoadingId === listing.id}
+                onEdit={(item) => navigateToEditListing(item.id)}
+                onDelete={handleDeleteListing}
+                onToggleStatus={handleToggleStatus}
+                onRecordSale={handleRecordSale}
+                onRestock={handleRestock}
+                onOpenDetails={(item) => navigateToListingDetails(item.id)}
+                onOpenSeller={(sellerUid) => navigateToSellerProfile(sellerUid)}
+              />
             ))}
           </div>
         </div>
