@@ -14,7 +14,6 @@ import {
   getAppRouteFromLocation,
   HOME_PATH,
   navigateToPath,
-  PAYMENT_METHOD_PATH,
   TRACK_ORDER_PATH,
   type AppRoute,
   LOGIN_PATH,
@@ -82,7 +81,6 @@ const VerifyEmailPage = lazy(() => import("./VerifyEmailPage"));
 const PaymentReturnPage = lazy(() => import("./PaymentReturnPage"));
 const ConnectCallbackPage = lazy(() => import("./ConnectCallbackPage"));
 const PaymentsHubPage = lazy(() => import("./PaymentsHubPage"));
-const PaymentMethodPage = lazy(() => import("./PaymentMethodPage"));
 const TrackOrderPage = lazy(() => import("./TrackOrderPage"));
 const DisputesPage = lazy(() => import("./DisputesPage"));
 const EventsDirectoryPage = lazy(() => import("./EventsDirectoryPage"));
@@ -387,8 +385,6 @@ export default function RootRouter() {
           <OrderDisputePage />
         ) : isOrderTrackingPath ? (
           <OrderTrackingPage />
-        ) : locationPath === PAYMENT_METHOD_PATH ? (
-          <PaymentMethodPage />
         ) : locationPath === TRACK_ORDER_PATH ? (
           <TrackOrderPage />
         ) : locationPath === DISPUTES_PATH ? (
@@ -405,8 +401,6 @@ export default function RootRouter() {
           <PaymentReturnPage />
         ) : locationPath === "/payments/track-order" ? (
           <TrackOrderPage />
-        ) : locationPath === "/payments/payment-method" ? (
-          <PaymentMethodPage />
         ) : route === "about" ? (
           <AboutPage />
         ) : route === "category" ? (
@@ -502,4 +496,4 @@ export default function RootRouter() {
       <ScrollToTopFab show={showScrollTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
     </>
   );
-}8
+}
