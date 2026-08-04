@@ -34,7 +34,6 @@ import {
   MESSAGES_PATH,
   MY_LISTINGS_PATH,
   ORDER_TRACKING_BASE_PATH,
-  PAYMENT_METHOD_PATH,
   PAYMENT_RETURN_PATH,
   PAYMENTS_HUB_PATH,
   PRIVACY_PATH,
@@ -240,7 +239,6 @@ export const navigateToAdminBalance = () => navigateToPath(ADMIN_BALANCE_PATH);
 export const navigateToAdminSetup = () => navigateToPath(ADMIN_SETUP_PATH);
 export const navigateToPaymentReturn = () => navigateToPath(PAYMENT_RETURN_PATH);
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
-export const navigateToPaymentMethod = () => navigateToPath(PAYMENT_METHOD_PATH);
 export const navigateToTickets = () => navigateToPath(TICKETS_PATH);
 export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
 export const navigateToOrderTracking = (reference?: string) => {
