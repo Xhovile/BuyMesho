@@ -401,8 +401,8 @@ export default function MyListingsPage() {
             <button
               type="button"
               onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-3 text-sm font-extrabold text-zinc-900 hover:bg-zinc-50"
-            >
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#30B955] transition-colors"
+              >
               Open Dashboard
             </button>
             <button
@@ -426,7 +426,7 @@ export default function MyListingsPage() {
                 <button
                   type="button"
                   onClick={() => navigateToPath(SELLER_DASHBOARD_PATH)}
-                  className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 text-sm font-bold text-zinc-900 hover:bg-zinc-50"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-[#34C759] px-5 py-3 text-sm font-extrabold text-white shadow-sm hover:bg-[#30B955] transition-colors"
                 >
                   Open Dashboard
                 </button>
