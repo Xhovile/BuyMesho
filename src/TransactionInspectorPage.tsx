@@ -680,6 +680,15 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
               <button type="submit" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-zinc-950 px-5 text-sm font-black text-white shadow-sm transition hover:bg-zinc-800">
                 <Search className="h-4 w-4" /> Submit
               </button>
+              <a
+                href={transactionJsonHref}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 text-sm font-black text-zinc-950 transition hover:bg-zinc-100"
+                >
+                <SquareArrowOutUpRight className="h-4 w-4" />
+                View JSON
+              </a>
             </form>
           </div>
           {hasSubmittedSearch ? <p className="mt-4 text-sm font-semibold text-zinc-600">Search results for <span className="text-zinc-950">{submittedQuery}</span>: {matchingPayments.length} linked payment transaction(s){unmatchedPayouts.length ? ` · ${unmatchedPayouts.length} payout-only match(es)` : ""}</p> : null}
