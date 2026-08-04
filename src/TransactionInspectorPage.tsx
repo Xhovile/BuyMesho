@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { BadgeInfo, CircleAlert,SquareArrowOutUpRight, CreditCard, Loader2, Search, ShieldCheck, Wallet, Webhook } from "lucide-react";
-import AdminPayoutDetailDrawer from "./AdminPayoutDetailDrawer";
 import { apiFetch } from "./lib/api";
 import AdminWorkspaceLayout from "./modules/admin/AdminWorkspaceLayout";
-import type { OverrideAction, PayoutAdjustment, PayoutRow, RowAction } from "./AdminPayoutsManager";
+import type { PayoutAdjustment, PayoutRow } from "./AdminPayoutsManager";
 import {
   getSellerPayoutStatusDetail,
   getSellerPayoutStatusLabel,
@@ -92,18 +91,6 @@ const TONE_CLASSES: Record<Tone, string> = {
   rose: "bg-rose-50 text-rose-700 border-rose-200",
   blue: "bg-blue-50 text-blue-700 border-blue-200",
 };
-
-const STATIC_VISIBLE_ACTIONS = ["retry", "hold", "mark_paid", "mark_failed", "cancel"] as const;
-const STATIC_PAYOUT_STATUS_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "verified", label: "Verified" },
-  { value: "failed", label: "Failed" },
-  { value: "disabled", label: "Disabled" },
-] as const;
-const STATIC_ADJUSTMENT_TYPE_OPTIONS = [
-  { value: "manual_adjustment", label: "Manual payout adjustment" },
-  { value: "processing_fee", label: "Legacy compatibility amount" },
-] as const;
 
 function toText(value: unknown, fallback = "—"): string {
   if (value === null || value === undefined) return fallback;
@@ -654,20 +641,6 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
     setSelectedPayoutId(null);
   };
 
-
-  const formatStatusLabel = (value: string | null | undefined) => {
-     if (!value) return "—";
-
-     const normalized = String(value).toLowerCase();
-     if (
-       ["eligible", "queued", "processing", "pending", "held", "paid", "failed", "cancelled", "ready_for_payout", "pending_settlement"].includes(normalized)
-     ) {
-       return getSellerPayoutStatusLabel(normalized);
-     }
- 
-      return String(value).replace(/_/g, " ");
-  };
-  
   return (
     <AdminWorkspaceLayout
       title="Transaction Inspector"
@@ -867,7 +840,6 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
           </div>
         </section>
 
-
         <section className="grid gap-4 xl:grid-cols-3">
           <div className="rounded-[2rem] border border-zinc-200 bg-white p-6 shadow-sm">
             <h3 className="text-base font-black">Order & escrow record</h3>
@@ -979,53 +951,6 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
         </section>
         </> : null}
       </main>
-
-      {hasSubmittedSearch && selectedPayout ? (
-        <AdminPayoutDetailDrawer
-          selected={selectedPayout}
-          formatStatus={formatStatusLabel}
-          visibleActions={STATIC_VISIBLE_ACTIONS as unknown as string[]}
-          actionBusyId={null}
-          adjustments={selectedPayoutAdjustments}
-          adjustmentsLoading={selectedPayoutAdjustmentsLoading}
-          destinationStatus={selectedPayout.destinationVerificationStatus || "pending"}
-          destinationReason={selectedPayout.destinationLastError || ""}
-          sellerControlReason={selectedPayout.holdReason || selectedPayout.manualReviewReason || ""}
-          adjustmentType="manual_adjustment"
-          adjustmentAmount=""
-          adjustmentReason=""
-          adjustmentProviderRef={selectedPayout.providerReference || ""}
-          destinationStatusOptions={STATIC_PAYOUT_STATUS_OPTIONS}
-          adjustmentTypeOptions={STATIC_ADJUSTMENT_TYPE_OPTIONS}
-          canAction={() => false}
-          statusTone={(status) => {
-            const normalized = token(status);
-            if (normalized === "paid") return "border-emerald-200 bg-emerald-50 text-emerald-700";
-            if (["failed", "cancelled"].includes(normalized)) return "border-rose-200 bg-rose-50 text-rose-700";
-            if (["queued", "processing", "pending", "held", "eligible", "ready_for_payout", "pending_settlement"].includes(normalized)) return "border-amber-200 bg-amber-50 text-amber-700";
-            return "border-zinc-200 bg-zinc-100 text-zinc-700";
-          }}
-          toDate={formatDate}
-          onClose={() => setSelectedPayoutId(null)}
-          onOpenRetryDialog={() => undefined}
-          onOpenOverrideDialog={() => undefined}
-          onOpenReconcileDialog={() => undefined}
-          onOpenRefundEscrowDialog={() => undefined}
-          isAdmin={true}
-          onDestinationStatusChange={() => undefined}
-          onDestinationReasonChange={() => undefined}
-          onUpdateDestinationVerification={() => undefined}
-          onApproveDestinationVerification={() => undefined}
-          onSellerControlReasonChange={() => undefined}
-          onUpdateSellerSuspension={() => undefined}
-          onReloadAdjustments={() => undefined}
-          onAdjustmentTypeChange={() => undefined}
-          onAdjustmentAmountChange={() => undefined}
-          onAdjustmentReasonChange={() => undefined}
-          onAdjustmentProviderRefChange={() => undefined}
-          onCreateAdjustment={() => undefined}
-        />
-      ) : null}
     </AdminWorkspaceLayout>
   );
 }
