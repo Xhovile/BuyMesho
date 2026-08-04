@@ -990,13 +990,17 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             if (["queued", "processing", "pending", "held", "eligible", "ready_for_payout", "pending_settlement"].includes(normalized)) return "border-amber-200 bg-amber-50 text-amber-700";
             return "border-zinc-200 bg-zinc-100 text-zinc-700";
           }}
-          formatStatus={(value) => {
+          const formatStatusLabel = (value: string | null | undefined) => {
             if (!value) return "—";
-            const normalized = String(value || "").toLowerCase();
-            if (["eligible", "queued", "processing", "pending", "held", "paid", "failed", "cancelled", "ready_for_payout", "pending_settlement"].includes(normalized)) {
+
+            const normalized = String(value).toLowerCase();
+            if (
+              ["eligible", "queued", "processing", "pending", "held", "paid", "failed", "cancelled", "ready_for_payout", "pending_settlement"].includes(normalized)
+            ) {
               return getSellerPayoutStatusLabel(normalized);
             }
-            return value.replace(/_/g, " ");
+ 
+            return String(value).replace(/_/g, " ");};
           }}
           toDate={formatDate}
           onClose={() => setSelectedPayoutId(null)}
