@@ -1005,7 +1005,6 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
             if (["queued", "processing", "pending", "held", "eligible", "ready_for_payout", "pending_settlement"].includes(normalized)) return "border-amber-200 bg-amber-50 text-amber-700";
             return "border-zinc-200 bg-zinc-100 text-zinc-700";
           }}
-          }}
           toDate={formatDate}
           onClose={() => setSelectedPayoutId(null)}
           onOpenRetryDialog={() => undefined}
