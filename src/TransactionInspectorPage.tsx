@@ -969,6 +969,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
       {hasSubmittedSearch && selectedPayout ? (
         <AdminPayoutDetailDrawer
           selected={selectedPayout}
+          formatStatus={formatStatusLabel}
           visibleActions={STATIC_VISIBLE_ACTIONS as unknown as string[]}
           actionBusyId={null}
           adjustments={selectedPayoutAdjustments}
