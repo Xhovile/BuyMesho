@@ -521,6 +521,14 @@ export default function TransactionInspectorPage() {
     [linkedPayout, selectedPayoutId, sortedPayouts],
   );
 
+const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
+  submittedQuery.trim() ||
+    latestPayment?.reference ||
+    latestPayment?.order_id ||
+    selectedPayout?.id ||
+    ""
+)}`;
+  
   useEffect(() => {
     let mounted = true;
 
