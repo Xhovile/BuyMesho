@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Database, RefreshCw, ShieldAlert, SquareArrowOutUpRight, Search } from "lucide-react";
+import { Copy, Database, Download, RefreshCw, ShieldAlert, SquareArrowOutUpRight, Search } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import type { PayoutRow } from "./AdminPayoutsManager";
 
@@ -371,6 +371,35 @@ export default function TransactionJsonPage() {
 
   const jsonText = useMemo(() => prettyJson(payload), [payload]);
 
+const safeFileName = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+const handleDownload = () => {
+  try {
+    const blob = new Blob([jsonText], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const fileNameBase = safeFileName(queryInput || "latest-transaction");
+    const fileName = `transaction-json-${fileNameBase || "latest"}.json`;
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    URL.revokeObjectURL(url);
+  } catch {
+    // optional: set an error state here if you want
+  }
+};
+  
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(jsonText);
@@ -417,6 +446,14 @@ export default function TransactionJsonPage() {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white px-4 text-sm font-black text-zinc-950 transition hover:bg-zinc-200"
             >
               <Copy className="h-4 w-4" /> {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy JSON"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition hover:bg-white/10"
+              >
+              <Download className="h-4 w-4" />
+              Download JSON
             </button>
           </div>
         </div>
