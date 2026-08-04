@@ -666,7 +666,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
      }
  
       return String(value).replace(/_/g, " ");
-  }:
+  };
   
   return (
     <AdminWorkspaceLayout
