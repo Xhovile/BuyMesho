@@ -278,11 +278,7 @@ export default function SellerDashboardPage() {
         <div className="rounded-[2rem] border border-zinc-200 bg-zinc-50 p-4 shadow-sm sm:p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-2xl">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Seller performance</p>
               <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-900">Live dashboard</h2>
-              <p className="mt-2 text-sm text-zinc-500">
-                A clean readout of reach, traction, and seller health. Keep the management work in My Listings.
-              </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -382,7 +378,7 @@ export default function SellerDashboardPage() {
                     onClick={() => navigateToPath("/seller/payouts")}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
-                    <span>Open Seller Settings</span>
+                    <span>Open Seller Payouts</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                   <button
@@ -390,7 +386,7 @@ export default function SellerDashboardPage() {
                     onClick={() => navigateToPath("/profile")}
                     className="flex w-full items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-left text-sm font-bold text-zinc-900 hover:bg-zinc-100"
                   >
-                    <span>Open Profile</span>
+                    <span>Open Business Profile</span>
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </div>
