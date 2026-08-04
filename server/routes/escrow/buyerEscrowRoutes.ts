@@ -8,6 +8,41 @@ import { assertEscrowReleaseReadiness } from '../../modules/escrow/escrow.rules.
 import { getPaymentDb } from '../../postgresCompat.js';
 import { assertEscrowReleaseAccess, assertOrderAccess, escrowActionLimiter, jsonError } from './shared.js';
 
+type VerifiedPayoutDestination = {
+  id: string;
+  destination_type?: string | null;
+  provider_ref_id?: string | null;
+  provider_name?: string | null;
+};
+
+function resolveVerifiedPayoutDestination(sellerId: string): VerifiedPayoutDestination | undefined {
+  const db = getPaymentDb();
+  return db
+    .prepare(
+      `SELECT id, destination_type, provider_ref_id, provider_name
+       FROM seller_payout_accounts
+       WHERE seller_uid = ?
+         AND is_active = 1
+         AND verification_status = 'verified'
+       ORDER BY is_default DESC, updated_at DESC
+       LIMIT 1`,
+    )
+    .get(sellerId) as VerifiedPayoutDestination | undefined;
+}
+
+function getRequestedDestinationAccountId(body: unknown): string | null {
+  if (!body || typeof body !== 'object') return null;
+
+  const candidate =
+    (body as { destinationAccountId?: unknown }).destinationAccountId ??
+    (body as { destination_id?: unknown }).destination_id ??
+    (body as { payoutDestinationId?: unknown }).payoutDestinationId;
+
+  if (typeof candidate !== 'string') return null;
+  const trimmed = candidate.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -93,6 +128,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           ? req.body.reference.trim()
           : `escrow-release:${orderId}`;
 
+      const requestedDestinationAccountId = getRequestedDestinationAccountId(req.body);
+
       const result = getPaymentDb().transaction(() => {
         const released = escrowRepository.releaseToSellerEarnings({
           orderId,
@@ -108,23 +145,14 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           throw new Error('Escrow release succeeded but payout is not eligible');
         }
 
-        const db = getPaymentDb();
-        const destination = db
-          .prepare(
-            `SELECT id, destination_type, provider_ref_id, provider_name
-             FROM seller_payout_accounts
-             WHERE seller_uid = ?
-               AND is_active = 1
-               AND verification_status = 'verified'
-             ORDER BY is_default DESC, updated_at DESC
-             LIMIT 1`,
-          )
-          .get(access.order.sellerId) as
-          | { id: string; destination_type?: string | null; provider_ref_id?: string | null; provider_name?: string | null }
-          | undefined;
+        const destination = resolveVerifiedPayoutDestination(access.order.sellerId);
 
         if (!destination) {
           throw new Error('No verified active payout destination found for seller');
+        }
+
+        if (requestedDestinationAccountId && requestedDestinationAccountId !== destination.id) {
+          throw new Error('Invalid payout destination for this seller');
         }
 
         const payoutMethod =
@@ -166,6 +194,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             payoutFormula,
             releaseAmount: released.releaseEntry.amount,
             releaseEntryId: released.releaseEntry.id,
+            destinationAccountId: destination.id,
+            requestedDestinationAccountId,
           },
         });
 
@@ -183,6 +213,9 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             payoutAmount: payout.amount,
             payoutStatusReason: 'pending_paychangu_settlement_until_t_plus_1',
             payoutFormula,
+            destinationAccountId: destination.id,
+            requestedDestinationAccountId,
+            destinationValidated: true,
           },
         });
 
@@ -194,6 +227,8 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return {
           escrow: released.escrow,
           payout,
+          destination,
+          requestedDestinationAccountId,
           payoutEligibility: {
             eligible: true,
             reason: releaseReadiness.reason,
@@ -209,6 +244,16 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         escrow: result.escrow,
         payout: result.payout,
         payoutEligibility: result.payoutEligibility,
+        payoutDestination: {
+          id: result.destination.id,
+          destinationType: result.destination.destination_type ?? null,
+          providerRefId: result.destination.provider_ref_id ?? null,
+          providerName: result.destination.provider_name ?? null,
+          requestedDestinationAccountId: result.requestedDestinationAccountId,
+          matched: result.requestedDestinationAccountId ? result.requestedDestinationAccountId === result.destination.id : true,
+          verified: true,
+          active: true,
+        },
         payoutDispatch: {
           payout: result.payout,
           attempt: null,
@@ -230,7 +275,10 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(400).json({ error: message });
       }
 
-      if (message.includes('No verified active payout destination found for seller')) {
+      if (
+        message.includes('No verified active payout destination found for seller') ||
+        message.includes('Invalid payout destination for this seller')
+      ) {
         return res.status(409).json({ error: message });
       }
 
