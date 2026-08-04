@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Copy, Database, Download, RefreshCw, ShieldAlert, SquareArrowOutUpRight, Search } from "lucide-react";
+import { Copy, Download, RefreshCw, ShieldAlert, SquareArrowOutUpRight, Search } from "lucide-react";
 import { apiFetch } from "./lib/api";
 import type { PayoutRow } from "./AdminPayoutsManager";
 
@@ -418,9 +418,6 @@ const handleDownload = () => {
           <div className="max-w-3xl">
             <p className="text-[11px] font-black uppercase tracking-[0.28em] text-zinc-400">Deep-link transaction dump</p>
             <h1 className="mt-2 text-3xl font-black tracking-tight text-white">Transaction JSON</h1>
-            <p className="mt-3 text-sm leading-6 text-zinc-300">
-              This page is the raw data companion to the Transaction Inspector. It keeps a dark diagnostic shell and shows the loaded transaction context as a single JSON payload for sharing, copying, and debugging.
-            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -438,7 +435,7 @@ const handleDownload = () => {
               onClick={() => setRefreshTick((value) => value + 1)}
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-white transition hover:bg-white/10"
             >
-              <RefreshCw className="h-4 w-4" /> Refresh
+              <RefreshCw className="h-4 w-4" /> Search or reload
             </button>
             <button
               type="button"
@@ -460,19 +457,7 @@ const handleDownload = () => {
       </section>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:px-8">
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Payments</p>
-            <p className="mt-2 text-3xl font-black text-white">{payments.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Webhooks</p>
-            <p className="mt-2 text-3xl font-black text-white">{webhooks.length}</p>
-          </div>
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
-            <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Payouts</p>
-            <p className="mt-2 text-3xl font-black text-white">{payouts.length}</p>
-          </div>
+        <section className="grid gap-4">
           <div className="rounded-3xl border border-white/10 bg-white/5 p-5 shadow-sm">
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-zinc-400">Latest update</p>
             <p className="mt-2 text-sm font-semibold text-zinc-100">{loading ? "Loading…" : formatDate(payments[0]?.updated_at ?? webhooks[0]?.created_at ?? payouts[0]?.updatedAt ?? null)}</p>
@@ -517,15 +502,6 @@ const handleDownload = () => {
                   <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Payout ID</span><span className="break-all font-semibold text-white">{payload.matchContext.payoutId ?? "—"}</span></div>
                   <div className="flex items-center justify-between gap-4"><span className="text-zinc-400">Webhook ref</span><span className="break-all font-semibold text-white">{payload.matchContext.webhookReference ?? "—"}</span></div>
                 </div>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-zinc-300">
-                <div className="flex items-center gap-2 font-black text-white"><Database className="h-4 w-4" /> Notes</div>
-                <ul className="mt-3 space-y-2">
-                  {payload.derived.notes.map((note) => (
-                    <li key={note} className="rounded-2xl border border-white/10 bg-black/20 px-3 py-2">{note}</li>
-                  ))}
-                </ul>
               </div>
             </div>
 
