@@ -1001,7 +1001,7 @@ const transactionJsonHref = `/transaction-json?q=${encodeURIComponent(
               return getSellerPayoutStatusLabel(normalized);
             }
  
-            return String(value).replace(/_/g, " ");};
+            return String(value).replace(/_/g, " ");
           }}
           toDate={formatDate}
           onClose={() => setSelectedPayoutId(null)}
