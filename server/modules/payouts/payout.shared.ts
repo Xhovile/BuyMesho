@@ -21,6 +21,7 @@ export interface PayoutRecord {
   orderId: string | null;
   escrowId: string | null;
   releaseEntryId: string | null;
+  destinationAccountId: string | null;
   amount: number;
   currency: string;
   status: PayoutStatus;
