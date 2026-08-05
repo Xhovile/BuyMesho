@@ -261,12 +261,21 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
       let finalPayout = result.payout;
 
       if (result.settlementElapsed) {
+        const queuedPayout = payoutRepository.updateStatus(result.payout.id, 'queued', {
+          provider: 'paychangu',
+          providerStatus: 'queued',
+        });
+
+        if (queuedPayout) {
+          finalPayout = queuedPayout;
+        }
+
         executionResult = await payoutService.executePayout({
           payoutId: result.payout.id,
           actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
           actorId: requesterId,
         });
-        finalPayout = executionResult.payout;
+        finalPayout = executionResult.payout ?? finalPayout;
       }
 
       payoutRepository.addEvent({
