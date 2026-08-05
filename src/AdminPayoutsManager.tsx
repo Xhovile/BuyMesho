@@ -345,6 +345,141 @@ export default function AdminPayoutsManager() {
     setRefundReason("");
   };
 
+
+  const reloadSelected = async () => {
+    await load(pageIndex);
+    if (selectedId) {
+      await loadAdjustments(selectedId);
+    }
+  };
+
+  const handleUpdateDestinationVerification = async () => {
+    if (!selected) return;
+    if (!selected.destinationAccountId) {
+      setNotice({ type: "error", message: "This payout has no destination account." });
+      return;
+    }
+
+    const status = destinationStatus.trim().toLowerCase();
+    if (!["pending", "verified", "failed", "disabled"].includes(status)) {
+      setNotice({ type: "error", message: "Choose a valid destination status first." });
+      return;
+    }
+
+    if ((status === "failed" || status === "disabled") && !destinationReason.trim()) {
+      setNotice({ type: "error", message: "Destination reason is required for failed or disabled status." });
+      return;
+    }
+
+    setActionBusyId(selected.id);
+    try {
+      await apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId)}/verification`, {
+        method: "POST",
+        body: JSON.stringify({
+          status,
+          reason: destinationReason.trim() || undefined,
+        }),
+      });
+      setNotice({ type: "success", message: "Destination verification updated." });
+      await reloadSelected();
+    } catch (err) {
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Failed to update destination verification." });
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleApproveDestinationVerification = async () => {
+    if (!selected) return;
+    if (!selected.destinationAccountId) {
+      setNotice({ type: "error", message: "This payout has no destination account." });
+      return;
+    }
+
+    setActionBusyId(selected.id);
+    try {
+      await apiFetch(`/api/admin/payouts/destinations/${encodeURIComponent(selected.destinationAccountId)}/verification`, {
+        method: "POST",
+        body: JSON.stringify({
+          status: "verified",
+          reason: destinationReason.trim() || "Approved by admin",
+        }),
+      });
+      setNotice({ type: "success", message: "Destination approved as verified." });
+      await reloadSelected();
+    } catch (err) {
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Failed to approve destination verification." });
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleUpdateSellerSuspension = async (suspended: boolean) => {
+    if (!selected) return;
+    const reason = sellerControlReason.trim();
+    if (!reason) {
+      setNotice({ type: "error", message: "Seller suspension reason is required." });
+      return;
+    }
+
+    setActionBusyId(selected.id);
+    try {
+      await apiFetch(`/api/admin/payouts/sellers/${encodeURIComponent(selected.sellerId)}/suspension`, {
+        method: "POST",
+        body: JSON.stringify({
+          suspended,
+          reason,
+        }),
+      });
+      setNotice({
+        type: "success",
+        message: suspended ? "Seller payouts suspended." : "Seller payouts restored.",
+      });
+      await reloadSelected();
+    } catch (err) {
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Failed to update seller suspension." });
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleCreateAdjustment = async () => {
+    if (!selected) return;
+
+    const amount = Number(adjustmentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setNotice({ type: "error", message: "Enter a valid adjustment amount." });
+      return;
+    }
+    const reason = adjustmentReason.trim();
+    if (!reason) {
+      setNotice({ type: "error", message: "Adjustment reason is required." });
+      return;
+    }
+
+    setActionBusyId(selected.id);
+    try {
+      await apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/adjustments`, {
+        method: "POST",
+        body: JSON.stringify({
+          adjustmentType,
+          amount,
+          reason,
+          providerReference: adjustmentProviderRef.trim() || undefined,
+        }),
+      });
+      setNotice({ type: "success", message: "Adjustment saved." });
+      setAdjustmentAmount("");
+      setAdjustmentReason("");
+      setAdjustmentProviderRef("");
+      await reloadSelected();
+    } catch (err) {
+      setNotice({ type: "error", message: err instanceof Error ? err.message : "Failed to save adjustment." });
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
   const load = async (nextPageIndex = pageIndex) => {
     setError(null);
     setRefreshing(true);
@@ -514,10 +649,16 @@ export default function AdminPayoutsManager() {
     await load(pageIndex);
   };
 
+
   const handleRetry = async (row: PayoutRow) => {
     setActionBusyId(row.id);
     try {
-      await apiFetch(`/api/admin/payouts/${encodeURIComponent(row.id)}/retry`, { method: "POST" });
+      await apiFetch(`/api/payouts/${encodeURIComponent(row.sellerId)}/retry`, {
+        method: "POST",
+        body: JSON.stringify({
+          payoutId: row.id,
+        }),
+      });
       setNotice({ type: "success", message: "Payout retried." });
       await load(pageIndex);
       if (selectedId) {
@@ -554,14 +695,7 @@ export default function AdminPayoutsManager() {
     }
 
     if (kind === "refund_escrow") {
-      setPendingDialog({
-        kind,
-        row,
-        title: "Refund escrow",
-        message: "Record an escrow refund for this payout.",
-        confirmLabel: "Refund escrow",
-        danger: true,
-      });
+      setNotice({ type: "error", message: "Refund escrow is not wired in this build." });
       return;
     }
 
@@ -578,7 +712,7 @@ export default function AdminPayoutsManager() {
               : action === "mark_failed"
                 ? "Mark payout failed"
                 : "Cancel payout",
-        message: "This changes the admin payout state directly.",
+        message: "This changes the payout state directly.",
         confirmLabel:
           action === "hold"
             ? "Hold payout"
@@ -597,15 +731,19 @@ export default function AdminPayoutsManager() {
     setActionBusyId(pendingDialog.row.id);
     try {
       if (pendingDialog.kind === "retry") {
-        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/retry`, { method: "POST" });
-      } else if (pendingDialog.kind === "reconcile") {
-        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/reconcile`, { method: "POST" });
-      } else if (pendingDialog.kind === "refund_escrow") {
-        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/refund-escrow`, { method: "POST" });
-      } else if (pendingDialog.kind === "override") {
-        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/override`, {
+        await apiFetch(`/api/payouts/${encodeURIComponent(pendingDialog.row.sellerId)}/retry`, {
           method: "POST",
           body: JSON.stringify({
+            payoutId: pendingDialog.row.id,
+          }),
+        });
+      } else if (pendingDialog.kind === "reconcile") {
+        await apiFetch(`/api/admin/payouts/${encodeURIComponent(pendingDialog.row.id)}/reconcile`, { method: "POST" });
+      } else if (pendingDialog.kind === "override") {
+        await apiFetch(`/api/payouts/${encodeURIComponent(pendingDialog.row.sellerId)}/override`, {
+          method: "POST",
+          body: JSON.stringify({
+            payoutId: pendingDialog.row.id,
             action: pendingDialog.action,
             reason: overrideReason,
           }),
@@ -613,6 +751,9 @@ export default function AdminPayoutsManager() {
       }
       closeActionDialog();
       await load(pageIndex);
+      if (selectedId) {
+        await loadAdjustments(selectedId);
+      }
     } catch (err) {
       setNotice({ type: "error", message: err instanceof Error ? err.message : "Action failed." });
     } finally {
@@ -806,20 +947,20 @@ export default function AdminPayoutsManager() {
           onOpenRetryDialog={() => handleOpenDialog(selected, "retry")}
           onOpenOverrideDialog={(action) => handleOpenDialog(selected, "override", action)}
           onOpenReconcileDialog={() => handleOpenDialog(selected, "reconcile")}
-          onOpenRefundEscrowDialog={() => handleOpenDialog(selected, "refund_escrow")}
+          onOpenRefundEscrowDialog={() => setNotice({ type: "error", message: "Refund escrow is not wired in this build." })}
           isAdmin={isAdmin}
           onDestinationStatusChange={setDestinationStatus}
           onDestinationReasonChange={setDestinationReason}
-          onUpdateDestinationVerification={() => handleOpenDialog(selected, "override", "hold")}
-          onApproveDestinationVerification={() => handleOpenDialog(selected, "override", "mark_paid")}
+          onUpdateDestinationVerification={handleUpdateDestinationVerification}
+          onApproveDestinationVerification={handleApproveDestinationVerification}
           onSellerControlReasonChange={setSellerControlReason}
-          onUpdateSellerSuspension={() => handleOpenDialog(selected, "override", "hold")}
+          onUpdateSellerSuspension={handleUpdateSellerSuspension}
           onReloadAdjustments={() => void loadAdjustments(selected.id)}
           onAdjustmentTypeChange={setAdjustmentType}
           onAdjustmentAmountChange={setAdjustmentAmount}
           onAdjustmentReasonChange={setAdjustmentReason}
           onAdjustmentProviderRefChange={setAdjustmentProviderRef}
-          onCreateAdjustment={() => handleOpenDialog(selected, "override", "hold")}
+          onCreateAdjustment={handleCreateAdjustment}
         />
       ) : null}
 
