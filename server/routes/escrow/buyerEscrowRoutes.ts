@@ -64,7 +64,7 @@ function hasPastSettlementMidnightTPlusOne(referenceAt: string | null | undefine
     return false;
   }
 
-  const settlementAt = Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0);
+  const settlementAt = Date.UTC(year, month - 1, day + 1, 6, 0, 0, 0);
   return Date.now() >= settlementAt;
 }
 
@@ -221,6 +221,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             releaseEntryId: released.releaseEntry.id,
             destinationAccountId: destination.id,
             requestedDestinationAccountId,
+            settlementReferenceAt: released.releaseEntry.createdAt,
           },
         });
 
@@ -282,7 +283,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           payoutAmount: finalPayout.amount,
           payoutStatusReason: result.settlementElapsed
             ? executionResult?.reasonCode ?? 'settlement_ready_immediate_dispatch'
-            : 'pending_paychangu_settlement_until_t_plus_1',
+            : 'pending_paychangu_settlement_until_6_am_t_plus_1',
           payoutFormula: result.payoutFormula,
           destinationAccountId: result.destination.id,
           requestedDestinationAccountId: result.requestedDestinationAccountId,
@@ -311,7 +312,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
               attempt: executionResult?.attempt ?? null,
               execution: executionResult?.execution ?? null,
               reasonCode: executionResult?.reasonCode ?? null,
-              reason: executionResult?.reason ?? 'Payout submitted immediately after settlement.',
+              reason: executionResult?.reason ?? 'Payout submitted immediately after the 6 a.m. T+1 settlement window.',
               nextAction: executionResult?.nextAction ?? 'none',
             }
           : {
@@ -319,7 +320,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
               attempt: null,
               execution: null,
               reasonCode: null,
-              reason: 'Payout queued pending PayChangu settlement; provider submission will run after T+1 settlement.',
+              reason: 'Payout queued pending PayChangu settlement; provider submission will run after the 6 a.m. T+1 settlement window.',
               nextAction: 'awaiting_provider',
             },
       });
