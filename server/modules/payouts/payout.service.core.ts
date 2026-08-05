@@ -10,6 +10,7 @@ import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
 import { payoutRepository, PayoutRepository } from './payout.repository.js';
 import {
   classifyProviderFailureFromError,
+  decryptSensitiveValue,
   exactProviderErrorMessage,
   providerFailureReason,
   isProviderHoldFailure,
@@ -22,6 +23,7 @@ import {
   type PayoutRecord,
   type PayoutRequest,
   type ReconcileProviderCallbackInput,
+  type PayoutStatus,
 } from './payout.shared.js';
 
 export class PayoutService {
@@ -208,8 +210,8 @@ export class PayoutService {
 
     const destinationValue = (
       row.destination_type === 'bank'
-        ? require('./payout.shared.js').decryptSensitiveValue((row.destination_account_number_encrypted as string | null) ?? null)
-        : require('./payout.shared.js').decryptSensitiveValue((row.destination_mobile_encrypted as string | null) ?? null)
+        ? decryptSensitiveValue((row.destination_account_number_encrypted as string | null) ?? null)
+        : decryptSensitiveValue((row.destination_mobile_encrypted as string | null) ?? null)
     ) ?? null;
 
     if (!destinationValue) {
