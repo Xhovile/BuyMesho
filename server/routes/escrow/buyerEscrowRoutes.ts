@@ -43,6 +43,31 @@ function getRequestedDestinationAccountId(body: unknown): string | null {
   return trimmed.length > 0 ? trimmed : null;
 }
 
+function hasPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined): boolean {
+  if (!referenceAt) return false;
+
+  const referenceDate = new Date(referenceAt);
+  if (Number.isNaN(referenceDate.getTime())) return false;
+
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Blantyre',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(referenceDate);
+
+  const year = Number(parts.find((part) => part.type === 'year')?.value);
+  const month = Number(parts.find((part) => part.type === 'month')?.value);
+  const day = Number(parts.find((part) => part.type === 'day')?.value);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return false;
+  }
+
+  const settlementAt = Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0);
+  return Date.now() >= settlementAt;
+}
+
 export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -199,25 +224,12 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           },
         });
 
-        payoutRepository.addEvent({
-          payoutId: payout.id,
-          sellerId: access.order.sellerId,
-          eventType: 'payout_released',
-          actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
-          actorId: requesterId,
-          note: 'Escrow release created payout candidate',
-          payload: {
-            escrowId: released.escrow.id,
-            releaseEntryId: released.releaseEntry.id,
-            payoutStatus: payout.status,
-            payoutAmount: payout.amount,
-            payoutStatusReason: 'pending_paychangu_settlement_until_t_plus_1',
-            payoutFormula,
-            destinationAccountId: destination.id,
-            requestedDestinationAccountId,
-            destinationValidated: true,
-          },
-        });
+        const settlementReferenceAt =
+          access.order.paidAt ??
+          access.order.paymentCapturedAt ??
+          access.order.capturedAt ??
+          released.releaseEntry.createdAt;
+        const settlementElapsed = hasPastSettlementMidnightTPlusOne(settlementReferenceAt);
 
         const orderUpdated = serverOrderService.setStatus(orderId, 'fulfilled');
         if (!orderUpdated) {
@@ -233,6 +245,10 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
             eligible: true,
             reason: releaseReadiness.reason,
           },
+          payoutFormula,
+          releaseEntryId: released.releaseEntry.id,
+          settlementReferenceAt,
+          settlementElapsed,
         };
       })();
 
@@ -240,9 +256,44 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         return res.status(404).json({ error: 'Escrow not found' });
       }
 
+      let executionResult: Awaited<ReturnType<typeof payoutService.executePayout>> | null = null;
+      let finalPayout = result.payout;
+
+      if (result.settlementElapsed) {
+        executionResult = await payoutService.executePayout({
+          payoutId: result.payout.id,
+          actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
+          actorId: requesterId,
+        });
+        finalPayout = executionResult.payout;
+      }
+
+      payoutRepository.addEvent({
+        payoutId: finalPayout.id,
+        sellerId: access.order.sellerId,
+        eventType: 'payout_released',
+        actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
+        actorId: requesterId,
+        note: 'Escrow release created payout candidate',
+        payload: {
+          escrowId: result.escrow.id,
+          releaseEntryId: result.releaseEntryId,
+          payoutStatus: finalPayout.status,
+          payoutAmount: finalPayout.amount,
+          payoutStatusReason: result.settlementElapsed
+            ? executionResult?.reasonCode ?? 'settlement_ready_immediate_dispatch'
+            : 'pending_paychangu_settlement_until_t_plus_1',
+          payoutFormula: result.payoutFormula,
+          destinationAccountId: result.destination.id,
+          requestedDestinationAccountId: result.requestedDestinationAccountId,
+          destinationValidated: true,
+          settlementReferenceAt: result.settlementReferenceAt,
+        },
+      });
+
       return res.status(200).json({
         escrow: result.escrow,
-        payout: result.payout,
+        payout: finalPayout,
         payoutEligibility: result.payoutEligibility,
         payoutDestination: {
           id: result.destination.id,
@@ -254,14 +305,23 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
           verified: true,
           active: true,
         },
-        payoutDispatch: {
-          payout: result.payout,
-          attempt: null,
-          execution: null,
-          reasonCode: null,
-          reason: 'Payout queued pending PayChangu settlement; provider submission will run after T+1 settlement.',
-          nextAction: 'awaiting_provider',
-        },
+        payoutDispatch: result.settlementElapsed
+          ? {
+              payout: finalPayout,
+              attempt: executionResult?.attempt ?? null,
+              execution: executionResult?.execution ?? null,
+              reasonCode: executionResult?.reasonCode ?? null,
+              reason: executionResult?.reason ?? 'Payout submitted immediately after settlement.',
+              nextAction: executionResult?.nextAction ?? 'none',
+            }
+          : {
+              payout: finalPayout,
+              attempt: null,
+              execution: null,
+              reasonCode: null,
+              reason: 'Payout queued pending PayChangu settlement; provider submission will run after T+1 settlement.',
+              nextAction: 'awaiting_provider',
+            },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : '';
