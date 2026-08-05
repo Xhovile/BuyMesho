@@ -82,7 +82,7 @@ function isPastSettlementMidnightTPlusOne(referenceAt: string | null | undefined
     return false;
   }
 
-  const settlementAt = Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0);
+  const settlementAt = Date.UTC(year, month - 1, day + 1, 6, 0, 0, 0);
 
   return nowMs >= settlementAt;
 }
