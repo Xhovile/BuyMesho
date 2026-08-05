@@ -581,25 +581,26 @@ export class PayoutRepository {
     );
   }
 
-  private rowToPayout(row: Record<string, unknown>): PayoutRecord {
-    return {
-      id: row.id as string,
-      sellerId: row.seller_id as string,
-      orderId: (row.order_id as string | null) ?? null,
-      escrowId: (row.escrow_id as string | null) ?? null,
-      releaseEntryId: (row.release_entry_id as string | null) ?? null,
-      amount: row.amount as number,
-      currency: row.currency as string,
-      status: row.status as PayoutStatus,
-      provider: (row.provider as string | null) ?? null,
-      providerChargeId: (row.provider_charge_id as string | null) ?? null,
-      providerStatus: (row.provider_status as string | null) ?? null,
-      requestedBy: (row.requested_by as string | null) ?? null,
-      requestedAt: (row.requested_at as string | null) ?? null,
-      createdAt: row.created_at as string,
-      updatedAt: row.updated_at as string,
-    };
-  }
+private rowToPayout(row: Record<string, unknown>): PayoutRecord {
+  return {
+    id: row.id as string,
+    sellerId: row.seller_id as string,
+    orderId: (row.order_id as string | null) ?? null,
+    escrowId: (row.escrow_id as string | null) ?? null,
+    releaseEntryId: (row.release_entry_id as string | null) ?? null,
+    destinationAccountId: (row.destination_account_id as string | null) ?? null,
+    amount: row.amount as number,
+    currency: row.currency as string,
+    status: row.status as PayoutStatus,
+    provider: (row.provider as string | null) ?? null,
+    providerChargeId: (row.provider_charge_id as string | null) ?? null,
+    providerStatus: (row.provider_status as string | null) ?? null,
+    requestedBy: (row.requested_by as string | null) ?? null,
+    requestedAt: (row.requested_at as string | null) ?? null,
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string,
+  };
+ }
 }
 
 export const payoutRepository = new PayoutRepository();
