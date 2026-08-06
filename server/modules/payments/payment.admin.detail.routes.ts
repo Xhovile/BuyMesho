@@ -60,7 +60,11 @@ function hydratePayoutDetailRow(db: ReturnType<typeof getPaymentDb>, row: Record
   const currentDestinationStatus = String(row.destinationVerificationStatus ?? row.destination_verification_status ?? 'missing').toLowerCase();
   const currentDestinationActive = Number(row.destinationActive ?? row.destination_active ?? row.destinationIsActive ?? row.destination_is_active ?? 0) === 1;
   const fallbackDestination = sellerId ? findDefaultVerifiedDestination(db, sellerId) : undefined;
-  const useFallbackDestination = !currentDestinationAccountId || currentDestinationStatus === 'missing' || currentDestinationStatus === 'disabled' || !currentDestinationActive;
+  const useFallbackDestination =
+    !currentDestinationAccountId ||
+    currentDestinationStatus !== 'verified' ||
+    currentDestinationStatus === 'disabled' ||
+    !currentDestinationActive;
 
   const destination = useFallbackDestination && fallbackDestination ? fallbackDestination : null;
   const destinationAccountId = destination?.id ?? currentDestinationAccountId;
