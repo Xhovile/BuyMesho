@@ -1,4 +1,4 @@
-import { BarChart3, MessageCircle, Pencil, Share2, ShoppingBag, ShoppingCart, Trash2 } from "lucide-react";
+import { BarChart3, MessageCircle, Pencil, Share2, ShoppingBag, Trash2 } from "lucide-react";
 
 import { EVENTS_CREATE_PATH, EVENTS_MANAGE_PATH, navigateToPath } from "../../lib/appNavigation";
 import type { EventRecord } from "./eventDetailsTypes";
@@ -70,7 +70,7 @@ export default function EventDetailsActions({
     </div>
   ) : (
     <div className="border-t border-zinc-200 pt-4">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto]">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto]">
         <button
           type="button"
           onClick={onBuyTicket}
@@ -90,16 +90,6 @@ export default function EventDetailsActions({
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
           <span className="truncate">Message</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onAddToCart}
-          disabled={!canBuyOrCart}
-          className={`${buyerActionButtonClass} bg-yellow-500 text-white hover:bg-yellow-400 disabled:cursor-not-allowed disabled:opacity-60`}
-        >
-          <ShoppingCart className="h-4 w-4 shrink-0" />
-          <span className="truncate">Add to Cart</span>
         </button>
 
         <button
