@@ -104,7 +104,7 @@ export interface ExecutePayoutInput {
   currency?: string;
   providerName?: string;
   destinationReference?: string;
-  actorType?: 'admin' | 'system';
+  actorType?: 'admin' | 'system' | 'buyer';
   actorId?: string | null;
 }
 
@@ -199,110 +199,46 @@ export function providerFailureReason(
   reasonCode: PayChanguPayoutFailureClass,
   exactMessage?: string | null,
 ): string {
-  if (exactMessage) return exactMessage;
-
-  switch (reasonCode) {
-    case 'provider_timeout':
-      return 'Provider timeout; payout held for manual review.';
-    case 'provider_rate_limited':
-      return 'Provider rate-limited payout submission; retry is blocked pending manual review.';
-    case 'provider_unavailable':
-    default:
-      return 'Provider outage detected; payout held for manual review.';
+  if (reasonCode === 'provider_rate_limited') {
+    return exactMessage
+      ? `Provider rate-limited: ${exactMessage}`
+      : 'Provider rate-limited';
   }
-}
 
-export function isProviderHoldFailure(reasonCode: string | null | undefined): reasonCode is NonNullable<PayChanguPayoutFailureClass> {
-  return (
-    reasonCode === 'provider_unavailable' ||
-    reasonCode === 'provider_timeout' ||
-    reasonCode === 'provider_rate_limited'
-  );
-}
-
-export function isAdminActor(actor: PayoutPermissionActor | null): boolean {
-  return actor?.is_admin === true;
-}
-
-export function isSameSeller(actor: PayoutPermissionActor | null, sellerId: string): boolean {
-  return !!actor?.uid && actor.uid === sellerId;
-}
-
-export function requirePayoutEncryptionSecret(): string {
-  if (!PAYOUT_ENCRYPTION_SECRET) {
-    throw new Error('SELLER_PAYOUT_ENCRYPTION_KEY is not configured');
+  if (reasonCode === 'provider_timeout') {
+    return exactMessage
+      ? `Provider timeout: ${exactMessage}`
+      : 'Provider timeout';
   }
-  return PAYOUT_ENCRYPTION_SECRET;
+
+  if (reasonCode === 'provider_unavailable') {
+    return exactMessage
+      ? `Provider unavailable: ${exactMessage}`
+      : 'Provider unavailable';
+  }
+
+  return exactMessage ?? 'Payout failed';
 }
 
-export function getDerivedEncryptionKey(): Buffer {
-  return scryptSync(requirePayoutEncryptionSecret(), 'BuyMesho seller payout', 32);
-}
-
-export function decryptSensitiveValue(value: string | null): string | null {
+export function decryptSensitiveValue(value: string | null | undefined): string | null {
   if (!value) return null;
-  const parts = value.split(':');
-  if (parts.length !== 3) {
-    return value;
-  }
+  if (!PAYOUT_ENCRYPTION_SECRET) return value;
+
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+
+  const [ivPart, encryptedPart] = trimmed.split(':');
+  if (!ivPart || !encryptedPart) return trimmed;
 
   try {
-    const key = getDerivedEncryptionKey();
-    const iv = Buffer.from(parts[0], 'base64');
-    const tag = Buffer.from(parts[1], 'base64');
-    const encrypted = Buffer.from(parts[2], 'base64');
-    const decipher = createDecipheriv('aes-256-gcm', key, iv);
-    decipher.setAuthTag(tag);
-    return `${decipher.update(encrypted, undefined, 'utf8')}${decipher.final('utf8')}`;
+    const key = scryptSync(PAYOUT_ENCRYPTION_SECRET, 'seller-payout-key', 32);
+    const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(ivPart, 'hex'));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(encryptedPart, 'hex')),
+      decipher.final(),
+    ]).toString('utf8');
+    return decrypted || null;
   } catch {
-    return null;
+    return trimmed;
   }
-}
-
-export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
-  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
-}
-
-export function canEditPayoutSettings(context: PayoutPermissionContext): boolean {
-  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
-}
-
-export function canRequestWithdrawal(context: PayoutPermissionContext): boolean {
-  if (PAYOUT_POLICY.launchMode === 'admin_approved') {
-    return isAdminActor(context.actor);
-  }
-  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
-}
-
-export function canViewPayoutHistory(context: PayoutPermissionContext): boolean {
-  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
-}
-
-export function canRequestPayoutRetry(context: PayoutPermissionContext): boolean {
-  if (PAYOUT_POLICY.launchMode === 'admin_approved') {
-    return isAdminActor(context.actor);
-  }
-  return isAdminActor(context.actor) || isSameSeller(context.actor, context.sellerId);
-}
-
-export function canApprovePayoutOverride(context: PayoutPermissionContext): boolean {
-  return isAdminActor(context.actor);
-}
-
-export function canManageSellerPayoutDestination(context: PayoutPermissionContext): boolean {
-  return canEditPayoutSettings(context);
-}
-
-export function canAccessSellerPayoutData(context: PayoutPermissionContext): boolean {
-  return canViewPayoutSettings(context);
-}
-
-/**
- * System actor permission gate.
- * The system actor (e.g. scheduled reconciliation, automated release) may always
- * execute internal payout operations. System actions bypass human approval gates
- * but still emit audit events with actorType='system'.
- */
-export function canExecuteSystemAction(_operation: string): boolean {
-  return true;
 }
