@@ -19,6 +19,9 @@ export default function DisputeActionsCard({
   onConfirmDelivery,
   onOpenDispute,
 }: DisputeActionsCardProps) {
+  const releaseInProgress = submitting === 'release';
+  const releaseStale = releaseInProgress || !canConfirmDelivery;
+
   return (
     <div className="space-y-3">
       {!canConfirmDelivery && releaseCountdownText ? (
@@ -30,13 +33,20 @@ export default function DisputeActionsCard({
       <button
         type="button"
         onClick={onConfirmDelivery}
-        disabled={submitting !== null}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
+        disabled={releaseStale || submitting !== null}
+        aria-disabled={releaseStale || submitting !== null}
+        className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+          releaseStale
+            ? 'border border-zinc-200 bg-zinc-100 text-zinc-500'
+            : 'bg-zinc-900 text-white hover:bg-zinc-800'
+        }`}
       >
         <CreditCard className="h-4 w-4" />
-        {submitting === 'release'
-          ? 'Confirming...'
-          : 'Confirm delivery (release escrow)'}
+        {releaseInProgress
+          ? 'Submitting escrow…'
+          : releaseStale
+            ? 'Escrow released'
+            : 'Confirm delivery (release escrow)'}
       </button>
 
       <div className="rounded-2xl border border-zinc-200 bg-white p-3">
