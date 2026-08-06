@@ -40,7 +40,7 @@ export interface PayoutAttemptRecord {
   payoutId: string;
   provider: string;
   providerChargeId: string;
-  providerReference: string;
+  providerReference: string | null;
   providerTransactionId: string | null;
   status: PayoutStatus;
   attemptNo: number;
