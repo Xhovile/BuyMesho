@@ -104,7 +104,7 @@ export interface ExecutePayoutInput {
   currency?: string;
   providerName?: string;
   destinationReference?: string;
-  actorType?: 'admin' | 'system' | 'buyer';
+  actorType?: 'admin' | 'system';
   actorId?: string | null;
 }
 
@@ -137,6 +137,10 @@ export type PayoutNextAction =
   | 'none';
 
 const PAYOUT_ENCRYPTION_SECRET = process.env.SELLER_PAYOUT_ENCRYPTION_KEY ?? '';
+
+export function isProviderHoldFailure(reasonCode: PayChanguPayoutFailureClass): boolean {
+  return reasonCode !== null;
+}
 
 export function classifyProviderFailureFromError(error: unknown): PayChanguPayoutFailureClass {
   if (error instanceof Error) {
@@ -218,6 +222,30 @@ export function providerFailureReason(
   }
 
   return exactMessage ?? 'Payout failed';
+}
+
+export function canViewPayoutSettings(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canEditPayoutSettings(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canRequestWithdrawal(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canViewPayoutHistory(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canRequestPayoutRetry(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin || context.actor?.uid === context.sellerId);
+}
+
+export function canApprovePayoutOverride(context: PayoutPermissionContext): boolean {
+  return Boolean(context.actor?.is_admin);
 }
 
 export function decryptSensitiveValue(value: string | null | undefined): string | null {
