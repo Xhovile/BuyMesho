@@ -295,19 +295,23 @@ export async function executePayoutFlow(
   });
 
   repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
-  const providerReference = String(execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId);
-  const attempt: PayoutAttemptRecord = {
-    id: reservedAttempt.id,
-    payoutId: input.payoutId,
-    provider: execution.provider,
-    providerChargeId: execution.providerChargeId,
-    providerReference,
-    providerTransactionId: execution.providerTransactionId,
-    status: execution.status,
-    attemptNo: execution.attemptNo,
-    rawResponse: execution.rawResponse,
-    createdAt: reservedAttempt.createdAt,
-  };
+  const providerReference =
+     execution.providerReference ??
+     reservedAttempt.providerChargeId ??
+     execution.providerChargeId ??'';
+
+const attempt: PayoutAttemptRecord = {
+  id: reservedAttempt.id,
+  payoutId: input.payoutId,
+  provider: execution.provider,
+  providerChargeId: execution.providerChargeId,
+  providerReference,
+  providerTransactionId: execution.providerTransactionId,
+  status: execution.status,
+  attemptNo: execution.attemptNo,
+  rawResponse: execution.rawResponse,
+  createdAt: reservedAttempt.createdAt,
+};
 
   if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
     const exactMessage = exactProviderErrorMessage(execution.rawResponse);
