@@ -3,6 +3,8 @@ import { getPaymentDb } from '../../postgresCompat.js';
 
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
+  paymentCapturedAt?: string | null;
+  capturedAt?: string | null;
 }
 
 export class PostgresOrderRepository {
@@ -105,6 +107,8 @@ export class PostgresOrderRepository {
       paymentProvider: (row.payment_provider as StoredOrder['paymentProvider']) ?? undefined,
       settlementRoute: (row.settlement_route as StoredOrder['settlementRoute']) ?? null,
       paymentReference: (row.payment_reference as string | null) ?? null,
+      paymentCapturedAt: (row.paid_at as string | null) ?? null,
+      capturedAt: (row.paid_at as string | null) ?? null,
       escrowId: (row.escrow_id as string | null) ?? null,
       items,
       placedAt: (row.placed_at as string | null) ?? null,
