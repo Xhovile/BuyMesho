@@ -326,7 +326,7 @@ export async function executePayoutFlow(
         statusExtras: {
           provider: execution.provider,
           providerChargeId: execution.providerChargeId,
-          providerReference: execution.providerReference,
+          providerReference: execution.providerReference ?? reservedAttempt.providerChargeId,
           providerTransactionId: execution.providerTransactionId,
           lastAttemptId: attempt.id,
           rawResponse: execution.rawResponse,
