@@ -44,7 +44,7 @@ const settlementOptions: Array<{
     route: "escrow",
     label: "Pay and confirm later",
     description: "Funds are held until delivery is confirmed.",
-    buttonClassName: "border-zinc-200 bg-white text-zinc-900 hover:bg-zinc-50",
+    buttonClassName: "border-lime-200 bg-lime-500 text-white hover:bg-lime-600",
   },
   {
     route: "connect",
@@ -157,7 +157,7 @@ export default function CheckoutModal({
             initial={{ opacity: 0, scale: 0.96, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden"
+            className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
           >
             <div className="flex items-start justify-between gap-4 border-b border-zinc-100 p-6">
               <div className="flex items-center gap-3">
@@ -178,7 +178,7 @@ export default function CheckoutModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-full p-2 hover:bg-zinc-100 transition-colors"
+                  className="rounded-full p-2 transition-colors hover:bg-zinc-100"
                   aria-label="Close checkout"
                 >
                   <X className="h-5 w-5 text-zinc-500" />
@@ -186,7 +186,7 @@ export default function CheckoutModal({
               )}
             </div>
 
-            <div className="p-6 space-y-5">
+            <div className="space-y-5 p-6">
               {step === "loading" && (
                 <div className="flex flex-col items-center gap-4 py-6">
                   <Loader2 className="h-10 w-10 animate-spin text-zinc-700" />
