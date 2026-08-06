@@ -11,6 +11,14 @@ export class PostgresOrderRepository {
   }
 
   save(order: StoredOrder): StoredOrder {
+    const now = new Date().toISOString();
+    const paidAt = order.status === 'paid' ? (order.paidAt ?? now) : (order.paidAt ?? null);
+
+    const stored: StoredOrder = {
+      ...order,
+      paidAt,
+    };
+
     this.db.prepare(`
       INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, escrow_id, items, placed_at, paid_at, fulfilled_at, created_at, updated_at)
       VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @escrow_id, @items, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
@@ -24,28 +32,28 @@ export class PostgresOrderRepository {
         fulfilled_at = excluded.fulfilled_at,
         updated_at = excluded.updated_at
     `).run({
-      id: order.id,
-      buyer_id: order.buyerId,
-      seller_id: order.sellerId,
-      source: order.source,
-      status: order.status,
-      currency: order.currency,
-      subtotal_amount: order.subtotal.amount,
-      subtotal_currency: order.subtotal.currency,
-      total_amount: order.total.amount,
-      total_currency: order.total.currency,
-      payment_provider: order.paymentProvider ?? null,
-      settlement_route: order.settlementRoute ?? null,
-      payment_reference: order.paymentReference ?? null,
-      escrow_id: order.escrowId ?? null,
-      items: JSON.stringify(order.items),
-      placed_at: order.placedAt ?? null,
-      paid_at: order.paidAt ?? null,
-      fulfilled_at: order.fulfilledAt ?? null,
-      created_at: order.createdAt,
-      updated_at: order.updatedAt,
+      id: stored.id,
+      buyer_id: stored.buyerId,
+      seller_id: stored.sellerId,
+      source: stored.source,
+      status: stored.status,
+      currency: stored.currency,
+      subtotal_amount: stored.subtotal.amount,
+      subtotal_currency: stored.subtotal.currency,
+      total_amount: stored.total.amount,
+      total_currency: stored.total.currency,
+      payment_provider: stored.paymentProvider ?? null,
+      settlement_route: stored.settlementRoute ?? null,
+      payment_reference: stored.paymentReference ?? null,
+      escrow_id: stored.escrowId ?? null,
+      items: JSON.stringify(stored.items),
+      placed_at: stored.placedAt ?? null,
+      paid_at: paidAt,
+      fulfilled_at: stored.fulfilledAt ?? null,
+      created_at: stored.createdAt,
+      updated_at: stored.updatedAt ?? now,
     });
-    return order;
+    return stored;
   }
 
   findById(id: string): StoredOrder | undefined {
