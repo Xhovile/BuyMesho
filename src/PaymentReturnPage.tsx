@@ -17,6 +17,8 @@ import {
   updateBuyerPaymentStatus,
 } from "./lib/buyerState";
 import { subtractEventCartItemQuantities } from "./lib/eventCart";
+import { fetchOrderByReference } from "./lib/orderApi";
+import { getOrderFlowType } from "./lib/orderFlow";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -69,6 +71,12 @@ const getPurchasedItems = (
 
   return payment.listingId ? [{ listingId: String(payment.listingId), quantity: 1 }] : [];
 };
+
+function buildTrackingPath(reference: string, flowType: string) {
+  return flowType === "event_only"
+    ? `/tickets?reference=${encodeURIComponent(reference)}`
+    : `/orders/${encodeURIComponent(reference)}`;
+}
 
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
@@ -183,11 +191,20 @@ export default function PaymentReturnPage() {
             }
           }
 
+          let flowType = "unknown";
+          try {
+            const bundle = await fetchOrderByReference(txRef);
+            flowType = getOrderFlowType(bundle as never);
+          } catch {
+            flowType = "unknown";
+          }
+
+          const targetPath = buildTrackingPath(txRef, flowType);
           setOrderId(result.orderId ?? null);
           setStatus("success");
 
           timer = window.setTimeout(() => {
-            navigateToPath(`/orders/${encodeURIComponent(txRef)}`, {
+            navigateToPath(targetPath, {
               replace: true,
             });
           }, 1200);
@@ -264,7 +281,7 @@ export default function PaymentReturnPage() {
             <CheckCircle2 className="h-16 w-16 text-emerald-500" />
             <h1 className="text-2xl font-black text-zinc-900">Payment received!</h1>
             <p className="text-sm leading-6 text-zinc-600">
-              Your payment was received successfully. Opening your order tracking page.
+              Your payment was received successfully. Opening your tracking page.
             </p>
 
             {reference && (
