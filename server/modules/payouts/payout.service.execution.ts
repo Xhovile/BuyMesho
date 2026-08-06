@@ -200,7 +200,7 @@ export async function executePayoutFlow(
           },
           actor,
         )
-      : null;
+      : undefined;
     return {
       payout,
       attempt: null,
