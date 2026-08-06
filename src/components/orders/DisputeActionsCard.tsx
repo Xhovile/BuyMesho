@@ -30,7 +30,7 @@ export default function DisputeActionsCard({
       <button
         type="button"
         onClick={onConfirmDelivery}
-        disabled={!canConfirmDelivery || submitting !== null}
+        disabled={submitting !== null}
         className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-4 py-3 text-sm font-bold text-white hover:bg-zinc-800 disabled:opacity-60"
       >
         <CreditCard className="h-4 w-4" />
