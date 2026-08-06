@@ -53,6 +53,7 @@ import {
   sanitizeInternalReturnPath,
 } from "./appNavigation.paths";
 import { writeExploreStateToUrl, type ExploreQueryState } from "./appNavigation.query";
+import { resolveTrackingTarget } from "./orderFlow";
 
 const hasWindow = () => typeof window !== "undefined";
 
@@ -241,12 +242,9 @@ export const navigateToPaymentReturn = () => navigateToPath(PAYMENT_RETURN_PATH)
 export const navigateToPaymentsHub = () => navigateToPath(PAYMENTS_HUB_PATH);
 export const navigateToTickets = () => navigateToPath(TICKETS_PATH);
 export const navigateToTrackOrder = () => navigateToPath(TRACK_ORDER_PATH);
-export const navigateToOrderTracking = (reference?: string) => {
-  if (!reference) {
-    navigateToPath(TRACK_ORDER_PATH);
-    return;
-  }
-  navigateToPath(`${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`);
+export const navigateToOrderTracking = async (reference?: string) => {
+  const target = await resolveTrackingTarget(reference ?? "");
+  navigateToPath(target.destinationPath);
 };
 export const navigateToDisputes = () => navigateToPath(DISPUTES_PATH);
 export const navigateToBuyerPayments = () => navigateToPath(BUYER_PAYMENTS_PATH);
