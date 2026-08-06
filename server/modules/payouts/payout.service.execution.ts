@@ -295,9 +295,6 @@ export async function executePayoutFlow(
   });
 
   repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
-  const providerReference: string = String(
-    execution.providerReference ??
-  repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
 
   const providerReference: string = String(
     execution.providerReference ??
@@ -374,7 +371,6 @@ export async function executePayoutFlow(
       reason,
       nextAction: 'retry_blocked' as PayoutNextAction,
     };
-  }
   }
 
   const payout = repository.updateExecutionState(input.payoutId, execution);
