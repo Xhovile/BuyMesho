@@ -272,7 +272,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
 
         executionResult = await payoutService.executePayout({
           payoutId: result.payout.id,
-          actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
+          actorType: req.user?.is_admin ? 'admin' : 'system',
           actorId: requesterId,
         });
         finalPayout = executionResult.payout ?? finalPayout;
@@ -282,7 +282,7 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
         payoutId: finalPayout.id,
         sellerId: access.order.sellerId,
         eventType: 'payout_released',
-        actorType: requesterId === access.order.buyerId ? 'buyer' : req.user?.is_admin ? 'admin' : 'system',
+        actorType: req.user?.is_admin ? 'admin' : 'system',
         actorId: requesterId,
         note: 'Escrow release created payout candidate',
         payload: {
@@ -329,103 +329,12 @@ export function createBuyerEscrowRouter(requireAuth: RequestHandler): express.Ro
               attempt: null,
               execution: null,
               reasonCode: null,
-              reason: 'Payout queued pending PayChangu settlement; provider submission will run after the 6 a.m. T+1 settlement window.',
+              reason: 'Payout will be submitted after the next 6 a.m. T+1 settlement window.',
               nextAction: 'awaiting_provider',
             },
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '';
-      if (
-        message.startsWith('Escrow is already') ||
-        message.startsWith('Escrow cannot') ||
-        message.startsWith('Escrow has no') ||
-        message.includes('not ready') ||
-        message.includes('under dispute')
-      ) {
-        return res.status(400).json({ error: message });
-      }
-
-      if (
-        message.includes('No verified active payout destination found for seller') ||
-        message.includes('Invalid payout destination for this seller')
-      ) {
-        return res.status(409).json({ error: message });
-      }
-
       return res.status(500).json(jsonError(error, 'Failed to release escrow'));
-    }
-  });
-
-  router.post('/:orderId/refund', escrowActionLimiter, requireAuth, (req, res) => {
-    try {
-      if (!req.user?.is_admin) {
-        return res.status(403).json({ error: 'Admin access required' });
-      }
-
-      const { orderId } = req.params;
-      const requesterId = req.user?.uid;
-      if (!requesterId) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
-
-      const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim() : '';
-      if (!reason) {
-        return res.status(400).json({ error: 'Refund reason is required' });
-      }
-
-      const result = getPaymentDb().transaction(() => {
-        const escrow = escrowRepository.findByOrderId(orderId);
-        if (!escrow) {
-          return undefined;
-        }
-
-        const cancelledPayouts = payoutRepository
-          .findAllByOrderOrEscrow({ orderId, escrowId: escrow.id })
-          .filter((payout) => payout.status !== 'paid' && payout.status !== 'cancelled')
-          .map((payout) =>
-            payoutService.applyAdminOverride({
-              payoutId: payout.id,
-              action: 'cancel',
-              actorId: requesterId,
-              reason: `Escrow refunded before seller payout: ${reason}`,
-            }),
-          )
-          .filter((payout) => payout !== undefined);
-
-        const refunded = escrowRepository.refundHeldBalance({
-          orderId,
-          refundedBy: requesterId,
-          reference: `escrow-refund:${orderId}`,
-          note: reason,
-        });
-
-        if (!refunded) {
-          return undefined;
-        }
-
-        const orderUpdated = serverOrderService.setStatus(orderId, 'refunded');
-        if (!orderUpdated) {
-          console.warn(`[escrow] refund: order ${orderId} not found when updating status to refunded`);
-        }
-
-        return {
-          escrow: refunded.escrow,
-          refundEntry: refunded.refundEntry,
-          cancelledPayouts,
-        };
-      })();
-
-      if (!result) {
-        return res.status(404).json({ error: 'Escrow not found' });
-      }
-
-      return res.status(200).json({
-        escrow: result.escrow,
-        refundEntry: result.refundEntry,
-        cancelledPayouts: result.cancelledPayouts,
-      });
-    } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to refund escrow'));
     }
   });
 
