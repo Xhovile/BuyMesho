@@ -297,6 +297,10 @@ export async function executePayoutFlow(
   repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
   const providerReference: string = String(
     execution.providerReference ??
+  repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
+
+  const providerReference: string = String(
+    execution.providerReference ??
       reservedAttempt.providerChargeId ??
       execution.providerChargeId ??
       '',
@@ -316,14 +320,18 @@ export async function executePayoutFlow(
   };
 
   if (execution.status === 'failed' && isProviderHoldFailure(execution.failureClass)) {
+    const failureClass: NonNullable<typeof execution.failureClass> = execution.failureClass ?? 'provider_unavailable';
     const exactMessage = exactProviderErrorMessage(execution.rawResponse);
-    const reason = providerFailureReason(execution.failureClass, execution.failureClass === 'provider_unavailable' ? null : exactMessage);
+    const reason = providerFailureReason(
+      failureClass,
+      failureClass === 'provider_unavailable' ? null : exactMessage,
+    );
     const payout = holdPayoutForReview(
       repository,
       {
         payoutId: input.payoutId,
         sellerId: gate.sellerId,
-        reasonCode: execution.failureClass,
+        reasonCode: failureClass,
         reason,
         payload: {
           attemptNo,
@@ -354,7 +362,7 @@ export async function executePayoutFlow(
       payload: {
         attemptNo,
         providerChargeId: execution.providerChargeId,
-        reasonCode: execution.failureClass,
+        reasonCode: failureClass,
       },
     });
 
@@ -362,10 +370,11 @@ export async function executePayoutFlow(
       payout,
       attempt,
       execution,
-      reasonCode: execution.failureClass,
+      reasonCode: failureClass,
       reason,
       nextAction: 'retry_blocked' as PayoutNextAction,
     };
+  }
   }
 
   const payout = repository.updateExecutionState(input.payoutId, execution);
