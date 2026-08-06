@@ -295,12 +295,13 @@ export async function executePayoutFlow(
   });
 
   repository.recordAttempt(reservedAttempt.id, input.payoutId, execution);
+  const providerReference = String(execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId);
   const attempt: PayoutAttemptRecord = {
     id: reservedAttempt.id,
     payoutId: input.payoutId,
     provider: execution.provider,
     providerChargeId: execution.providerChargeId,
-    providerReference: execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId,
+    providerReference,
     providerTransactionId: execution.providerTransactionId,
     status: execution.status,
     attemptNo: execution.attemptNo,
@@ -326,7 +327,7 @@ export async function executePayoutFlow(
         statusExtras: {
           provider: execution.provider,
           providerChargeId: execution.providerChargeId,
-          providerReference: execution.providerReference ?? reservedAttempt.providerChargeId ?? execution.providerChargeId,
+          providerReference,
           providerTransactionId: execution.providerTransactionId,
           lastAttemptId: attempt.id,
           rawResponse: execution.rawResponse,
