@@ -184,8 +184,9 @@ function ensurePayoutLifecycleSchema(): void {
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid ON seller_payout_account_events (seller_uid, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id ON payouts (destination_account_id)`);
 
+  db.exec(`DROP TRIGGER IF EXISTS trg_preserve_verified_seller_payout_destination;`);
   db.exec(`
-    CREATE TRIGGER IF NOT EXISTS trg_preserve_verified_seller_payout_destination
+    CREATE TRIGGER trg_preserve_verified_seller_payout_destination
     AFTER UPDATE ON seller_payout_accounts
     WHEN OLD.verification_status = 'verified'
       AND NEW.verification_status = 'pending'
