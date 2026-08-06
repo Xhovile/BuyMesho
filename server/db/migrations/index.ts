@@ -168,6 +168,29 @@ function updateSellerPayoutAccountColumns() {
   `);
 }
 
+function backfillOrderPaidAtFromPayments() {
+  postgresDb.exec(`
+    UPDATE orders
+    SET paid_at = COALESCE(
+      paid_at,
+      (
+        SELECT MIN(COALESCE(p.paid_at, p.updated_at, p.created_at))
+        FROM payments p
+        WHERE p.order_id = orders.id
+          AND p.status = 'captured'
+      )
+    )
+    WHERE paid_at IS NULL
+      AND status IN ('paid', 'in_escrow', 'fulfilled')
+      AND EXISTS (
+        SELECT 1
+        FROM payments p
+        WHERE p.order_id = orders.id
+          AND p.status = 'captured'
+      );
+  `);
+}
+
 export function runMigrations() {
   ensureExtraTables();
   ensureMessageSchema(postgresDb);
@@ -175,5 +198,6 @@ export function runMigrations() {
   updateSellerPayoutAccountColumns();
   ensurePayoutLifecycleSchema();
   initPaymentSchema(postgresDb);
+  backfillOrderPaidAtFromPayments();
   return postgresDb;
 }
