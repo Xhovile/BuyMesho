@@ -18,7 +18,7 @@ import {
 } from "./lib/buyerState";
 import { subtractEventCartItemQuantities } from "./lib/eventCart";
 import { fetchOrderByReference } from "./lib/orderApi";
-import { getOrderFlowType } from "./lib/orderFlow";
+import { getOrderFlowType, buildTrackingTarget } from "./lib/orderFlow";
 
 type ReturnStatus = "loading" | "success" | "failed" | "cancelled";
 
@@ -71,12 +71,6 @@ const getPurchasedItems = (
 
   return payment.listingId ? [{ listingId: String(payment.listingId), quantity: 1 }] : [];
 };
-
-function buildTrackingPath(reference: string, flowType: string) {
-  return flowType === "event_only"
-    ? `/tickets?reference=${encodeURIComponent(reference)}`
-    : `/orders/${encodeURIComponent(reference)}`;
-}
 
 export default function PaymentReturnPage() {
   const [status, setStatus] = useState<ReturnStatus>("loading");
@@ -199,12 +193,12 @@ export default function PaymentReturnPage() {
             flowType = "unknown";
           }
 
-          const targetPath = buildTrackingPath(txRef, flowType);
+          const target = buildTrackingTarget(txRef, flowType as never);
           setOrderId(result.orderId ?? null);
           setStatus("success");
 
           timer = window.setTimeout(() => {
-            navigateToPath(targetPath, {
+            navigateToPath(target.destinationPath, {
               replace: true,
             });
           }, 1200);
