@@ -5,7 +5,7 @@ import {
   getListingCardSpecs,
   getListingConditionLabel,
 } from "../lib/listingCardHighlights";
-import { navigateToListingDetails } from "../lib/appNavigation";
+import { navigateToListingDetails, navigateToLogin } from "../lib/appNavigation";
 import { saveListingDetailsFallback } from "../lib/listings";
 import type { Listing } from "../types";
 import ListingActionsMenu from "./ListingActionsMenu";
@@ -109,6 +109,11 @@ export default function ListingCard({
 
   const handleBuyClick = (event: ReactMouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
+    if (!isLoggedIn) {
+      navigateToLogin();
+      return;
+    }
+
     if (currentUid && String(currentUid).trim() === String(listing.seller_uid).trim()) {
       setBuyNotice("You cannot buy your own listing.");
       return;
