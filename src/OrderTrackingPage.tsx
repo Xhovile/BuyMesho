@@ -12,7 +12,6 @@ import {
   type OrderBundle,
 } from "./lib/orderApi";
 import { getOrderFlowType } from "./lib/orderFlow";
-import { getCountdownParts, getNextCatMidnightMs } from "./lib/settlementWindow";
 import EscrowProtectionCard from "./components/orders/EscrowProtectionCard";
 import OrderProgressTracker from "./components/orders/OrderProgressTracker";
 import OrderDetailsCard from "./components/orders/OrderDetailsCard";
@@ -126,7 +125,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
   const [error, setError] = useState<string | null>(null);
   const [disputeReason, setDisputeReason] = useState("");
   const [submitting, setSubmitting] = useState<"release" | "dispute" | null>(null);
-  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const effectiveReference = reference ?? getReferenceFromUrl();
 
@@ -161,11 +159,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
 
     void reload();
   }, [initialBundle, reload]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   const order = bundle?.order ?? null;
   const flowType = useMemo(() => getOrderFlowType(bundle), [bundle]);
@@ -232,13 +225,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
         ? bundle.escrow.updated_at
         : null;
 
-  const releaseAvailableAt = getNextCatMidnightMs(paidAt ?? escrowUpdatedAt ?? Date.now());
-  const releaseCountdownParts = getCountdownParts(releaseAvailableAt, nowMs);
-  const releaseCountdownText =
-    releaseCountdownParts.diffMs === 0
-      ? "Now"
-      : `${releaseCountdownParts.days}d ${releaseCountdownParts.hours}h ${releaseCountdownParts.minutes}m`;
-
   const totalAmount = Number(order?.total?.amount ?? 0);
   const totalCurrency = String(order?.total?.currency ?? "MWK");
 
@@ -246,8 +232,7 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
     order?.status === "in_escrow" &&
     escrowState !== "released" &&
     escrowState !== "refunded" &&
-    escrowState !== "closed" &&
-    nowMs >= releaseAvailableAt;
+    escrowState !== "closed";
 
   const handleConfirmDelivery = async () => {
     if (!order) return;
@@ -370,7 +355,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
                     disputeReason={disputeReason}
                     submitting={submitting}
                     canConfirmDelivery={canConfirmDelivery}
-                    releaseCountdownText={releaseCountdownText}
                     onChangeReason={setDisputeReason}
                     onConfirmDelivery={handleConfirmDelivery}
                     onOpenDispute={handleOpenDisputeForm}
