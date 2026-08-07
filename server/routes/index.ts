@@ -11,6 +11,7 @@ import { registerListingRoutes } from "./listings.routes.js";
 import { registerEventRoutes } from "./events.routes.js";
 import { registerEventCreatorOverviewRoutes } from "./eventCreatorOverview.routes.js";
 import { registerAiRoutes } from "./ai.routes.js";
+import { registerSellerApplicationRoutes } from "./sellerApplication.routes.js";
 import { createPaymentRouter } from "../modules/payments/payment.routes.js";
 import { createPaymentAdminActionRouter } from "../modules/payments/payment.admin.actions.routes.js";
 import { createPaymentAdminPayoutDisplayRouter } from "../modules/payments/payment.admin.payout.display.routes.js";
@@ -105,6 +106,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerEventRoutes(app, { db });
   registerEventCreatorOverviewRoutes(app, { db });
   registerAiRoutes(app, requireFirebaseUser);
+  registerSellerApplicationRoutes(app, { db });
   mountTotpRoutes(app);
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
