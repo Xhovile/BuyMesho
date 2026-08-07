@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ExternalLink, Loader2, ShieldAlert, Truck } from "lucide-react";
+import { ExternalLink, Loader2, Truck } from "lucide-react";
 
 import {
-  navigateToListingDetails,
   navigateToOrderDispute,
   navigateToPath,
 } from "./lib/appNavigation";
@@ -250,20 +249,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
     escrowState !== "closed" &&
     nowMs >= releaseAvailableAt;
 
-  const handleBack = () => {
-    if (firstListingId) {
-      navigateToListingDetails(firstListingId);
-      return;
-    }
-
-    navigateToPath("/payments");
-  };
-
-  const handleOpenDispute = () => {
-    if (!effectiveReference) return;
-    navigateToOrderDispute(effectiveReference);
-  };
-
   const handleConfirmDelivery = async () => {
     if (!order) return;
 
@@ -305,17 +290,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
   return (
     <div className="min-h-screen bg-zinc-50 text-zinc-900">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:py-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-50"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-        </div>
-
         <div className="mt-8 border-b border-zinc-200 pb-6">
           <div className="flex flex-wrap items-start gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-zinc-200 bg-white text-zinc-900">
@@ -402,15 +376,6 @@ function BuyerOrderTrackingContent({ reference, initialBundle = null }: Tracking
                     onOpenDispute={handleOpenDisputeForm}
                   />
                 </div>
-
-                <button
-                  type="button"
-                  onClick={handleOpenDispute}
-                  className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-800 hover:bg-red-100"
-                >
-                  <ShieldAlert className="h-4 w-4" />
-                  Open dispute page
-                </button>
               </div>
             </div>
           </div>
