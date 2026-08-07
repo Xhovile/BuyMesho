@@ -35,6 +35,12 @@ export default function PayoutQueueCard({
   onOpenRetry,
   onOpenOverride,
 }: PayoutQueueCardProps) {
+  const rowMeta = row as PayoutRow & {
+    sellerBusinessName?: string | null;
+    provider?: string | null;
+    updatedAt?: string;
+  };
+
   return (
     <div className="rounded-[1.75rem] border border-zinc-400 bg-zinc-100 p-4 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -61,10 +67,13 @@ export default function PayoutQueueCard({
 
           <div className="grid gap-2 text-sm text-zinc-700 sm:grid-cols-2 xl:grid-cols-4">
             <Info label="Payout ID" value={row.id} />
+            <Info label="Seller" value={rowMeta.sellerBusinessName?.trim() || row.sellerId} />
             <Info label="Seller ID" value={row.sellerId} />
             <Info label="Order ID" value={row.orderId ?? "—"} />
             <Info label="Amount" value={`${row.currency} ${Number(row.amount).toLocaleString()}`} />
+            <Info label="Provider" value={rowMeta.provider ?? "paychangu"} />
             <Info label="Destination" value={row.destinationMaskedAccount ?? "—"} />
+            <Info label="Updated" value={rowMeta.updatedAt ? new Date(rowMeta.updatedAt).toLocaleString() : "—"} />
           </div>
 
           {Array.isArray(row.verificationBlockers) && row.verificationBlockers.length > 0 ? (
