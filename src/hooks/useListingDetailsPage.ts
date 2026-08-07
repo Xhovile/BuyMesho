@@ -405,6 +405,11 @@ export function useListingDetailsPage(): ListingDetailsPageState {
   const handleBuyNow = () => {
     if (!listing) return;
 
+    if (!firebaseUser?.uid) {
+      openAuthPrompt("buy");
+      return;
+    }
+
     const isOwner = !!firebaseUser?.uid && String(firebaseUser.uid).trim() === String(listing.seller_uid).trim();
     if (isOwner) {
       openShareNotice("You cannot buy your own listing.");
