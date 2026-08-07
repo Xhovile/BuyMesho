@@ -36,8 +36,65 @@ export type PayoutExecutionGate = {
   currentProviderChargeId?: string | null;
 };
 
+type VerifiedDestinationRow = {
+  id: string;
+  destinationType: string | null;
+  providerRefId: string | null;
+  providerName: string | null;
+  accountName: string | null;
+  verificationStatus: string | null;
+  isActive: number | null;
+  accountNumberEncrypted: string | null;
+  mobileEncrypted: string | null;
+  maskedAccount: string | null;
+};
+
+function normalizeText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function findFallbackVerifiedDestination(sellerId: string): VerifiedDestinationRow | undefined {
+  return getPaymentDb()
+    .prepare(
+      `SELECT
+         id,
+         destination_type AS destinationType,
+         provider_ref_id AS providerRefId,
+         provider_name AS providerName,
+         account_name AS accountName,
+         verification_status AS verificationStatus,
+         is_active AS isActive,
+         account_number_encrypted AS accountNumberEncrypted,
+         mobile_encrypted AS mobileEncrypted,
+         masked_account AS maskedAccount
+       FROM seller_payout_accounts
+       WHERE seller_uid = ?
+         AND is_active = 1
+         AND verification_status = 'verified'
+       ORDER BY is_default DESC, updated_at DESC, created_at DESC
+       LIMIT 1`,
+    )
+    .get(sellerId) as VerifiedDestinationRow | undefined;
+}
+
+function hydrateDestinationFromRow(row: Record<string, unknown>) {
+  return {
+    destinationType: normalizeText(row.destination_type ?? row.destinationType),
+    providerRefId: normalizeText(row.destination_provider_ref_id ?? row.destinationProviderRefId),
+    providerName: normalizeText(row.destination_provider_name ?? row.destinationProviderName),
+    accountName: normalizeText(row.destination_account_name ?? row.destinationAccountName),
+    verificationStatus: normalizeText(row.destination_verification_status ?? row.destinationVerificationStatus) ?? 'missing',
+    isActive: Number(row.destination_active ?? row.destinationActive ?? 0) === 1,
+    accountNumberEncrypted: normalizeText(row.destination_account_number_encrypted ?? row.destinationAccountNumberEncrypted),
+    mobileEncrypted: normalizeText(row.destination_mobile_encrypted ?? row.destinationMobileEncrypted),
+  };
+}
+
 export function gateForSubmission(payoutId: string): PayoutExecutionGate {
-  const row = getPaymentDb()
+  const db = getPaymentDb();
+  const row = db
     .prepare(
       `SELECT
          p.id,
@@ -47,6 +104,8 @@ export function gateForSubmission(payoutId: string): PayoutExecutionGate {
          p.status,
          p.provider,
          p.failure_reason,
+         p.order_id,
+         p.escrow_id,
          o.status AS order_status,
          e.state AS escrow_state,
          s.is_suspended AS seller_suspended,
@@ -59,6 +118,7 @@ export function gateForSubmission(payoutId: string): PayoutExecutionGate {
          spa.mobile_encrypted AS destination_mobile_encrypted,
          spa.verification_status AS destination_verification_status,
          spa.is_active AS destination_active,
+         spa.id AS destination_account_id,
          (
            SELECT COALESCE(MAX(attempt_no), 0)
            FROM payout_attempts pa
@@ -108,36 +168,77 @@ export function gateForSubmission(payoutId: string): PayoutExecutionGate {
     return { allowed: false, reasonCode: 'order_not_releasable', reason: 'Escrow must be released before payout submission' };
   }
 
-  if (Number(row.seller_suspended ?? 0) === 1) return { allowed: false, reasonCode: 'seller_suspended', reason: 'Seller is suspended' };
-  if (!row.destination_type) return { allowed: false, reasonCode: 'destination_not_verified', reason: 'No payout destination selected' };
-  if (Number(row.destination_active ?? 0) !== 1) return { allowed: false, reasonCode: 'destination_disabled', reason: 'Destination is disabled' };
+  if (Number(row.seller_suspended ?? 0) === 1) {
+    return { allowed: false, reasonCode: 'seller_suspended', reason: 'Seller is suspended' };
+  }
 
-  const destinationVerificationStatus = String(row.destination_verification_status ?? '').toLowerCase();
+  const currentDestination = hydrateDestinationFromRow(row);
+  const destinationAccountId = normalizeText(row.destination_account_id ?? row.destinationAccountId) ?? null;
+  const currentDestinationUsable =
+    Boolean(currentDestination.destinationType) &&
+    currentDestination.verificationStatus === 'verified' &&
+    currentDestination.isActive;
+
+  let resolvedDestination = currentDestinationUsable ? currentDestination : null;
+
+  if (!resolvedDestination) {
+    const fallbackDestination = findFallbackVerifiedDestination(String(row.seller_id ?? ''));
+    if (fallbackDestination) {
+      resolvedDestination = {
+        destinationType: normalizeText(fallbackDestination.destinationType),
+        providerRefId: normalizeText(fallbackDestination.providerRefId),
+        providerName: normalizeText(fallbackDestination.providerName),
+        accountName: normalizeText(fallbackDestination.accountName),
+        verificationStatus: normalizeText(fallbackDestination.verificationStatus) ?? 'verified',
+        isActive: Number(fallbackDestination.isActive ?? 1) === 1,
+        accountNumberEncrypted: normalizeText(fallbackDestination.accountNumberEncrypted),
+        mobileEncrypted: normalizeText(fallbackDestination.mobileEncrypted),
+      };
+
+      if (fallbackDestination.id && fallbackDestination.id !== destinationAccountId) {
+        db.prepare(
+          `UPDATE payouts
+           SET destination_account_id = ?,
+               updated_at = ?
+           WHERE id = ?`,
+        ).run(fallbackDestination.id, new Date().toISOString(), payoutId);
+      }
+    }
+  }
+
+  if (!resolvedDestination?.destinationType) {
+    return { allowed: false, reasonCode: 'destination_not_verified', reason: 'No payout destination selected' };
+  }
+  if (!resolvedDestination.isActive) {
+    return { allowed: false, reasonCode: 'destination_disabled', reason: 'Destination is disabled' };
+  }
+
+  const destinationVerificationStatus = String(resolvedDestination.verificationStatus ?? '').toLowerCase();
   if (destinationVerificationStatus === 'failed') return { allowed: false, reasonCode: 'destination_failed', reason: 'Destination verification failed' };
   if (destinationVerificationStatus === 'disabled') return { allowed: false, reasonCode: 'destination_disabled', reason: 'Destination is disabled' };
   if (destinationVerificationStatus !== 'verified') return { allowed: false, reasonCode: 'destination_not_verified', reason: 'Destination is pending verification' };
 
   const destinationValue = (
-    row.destination_type === 'bank'
-      ? decryptSensitiveValue((row.destination_account_number_encrypted as string | null) ?? null)
-      : decryptSensitiveValue((row.destination_mobile_encrypted as string | null) ?? null)
+    resolvedDestination.destinationType === 'bank'
+      ? decryptSensitiveValue(resolvedDestination.accountNumberEncrypted ?? null)
+      : decryptSensitiveValue(resolvedDestination.mobileEncrypted ?? null)
   ) ?? null;
   if (!destinationValue) return { allowed: false, reasonCode: 'destination_incomplete', reason: 'Destination details are incomplete' };
 
-  const destinationProviderRefId = ((row.destination_provider_ref_id as string | null) ?? '').trim();
+  const destinationProviderRefId = (resolvedDestination.providerRefId ?? '').trim();
   if (!destinationProviderRefId) return { allowed: false, reasonCode: 'destination_incomplete', reason: 'Destination routing details are incomplete' };
 
   return {
     allowed: true,
-    sellerId: row.seller_id as string,
+    sellerId: String(row.seller_id ?? ''),
     amount,
     currency: (row.currency as string) ?? 'MWK',
     provider: (row.provider as string | null) ?? 'paychangu',
-    destinationType: row.destination_type as 'bank' | 'mobile_money',
+    destinationType: resolvedDestination.destinationType as 'bank' | 'mobile_money',
     destinationValue,
     destinationProviderRefId,
-    destinationProviderName: (row.destination_provider_name as string | null) ?? null,
-    destinationAccountName: (row.destination_account_name as string | null) ?? null,
+    destinationProviderName: resolvedDestination.providerName ?? null,
+    destinationAccountName: resolvedDestination.accountName ?? null,
     currentFailureReason: (row.failure_reason as string | null) ?? null,
     currentProviderChargeId: (row.provider_charge_id as string | null) ?? null,
   };
