@@ -164,6 +164,7 @@ function hydratePayoutDetailRow(db: ReturnType<typeof getPaymentDb>, row: Record
             ? `Retry unavailable while payout is ${currentStatus}`
             : 'Retry unavailable due to policy gate',
     destinationRecoveredFromFallback: Boolean(destination),
+    payoutId,
   };
 }
 
@@ -247,9 +248,11 @@ export function createPaymentAdminDetailRouter(requireAuth: RequestHandler): exp
         return res.status(404).json({ error: 'Payout not found' });
       }
 
+      const payout = hydratePayoutDetailRow(db, row);
       return res.status(200).json({
         success: true,
-        payout: hydratePayoutDetailRow(db, row),
+        payout,
+        ...payout,
       });
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load payout detail' });
