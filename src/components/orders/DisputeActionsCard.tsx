@@ -4,7 +4,6 @@ type DisputeActionsCardProps = {
   disputeReason: string;
   submitting: 'release' | 'dispute' | null;
   canConfirmDelivery: boolean;
-  releaseCountdownText?: string | null;
   onChangeReason: (value: string) => void;
   onConfirmDelivery: () => void;
   onOpenDispute: () => void;
@@ -14,29 +13,22 @@ export default function DisputeActionsCard({
   disputeReason,
   submitting,
   canConfirmDelivery,
-  releaseCountdownText,
   onChangeReason,
   onConfirmDelivery,
   onOpenDispute,
 }: DisputeActionsCardProps) {
   const releaseInProgress = submitting === 'release';
-  const releaseStale = releaseInProgress || !canConfirmDelivery;
+  const releaseCompleted = !canConfirmDelivery && !releaseInProgress;
 
   return (
     <div className="space-y-3">
-      {!canConfirmDelivery && releaseCountdownText ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-900">
-          {releaseCountdownText}
-        </div>
-      ) : null}
-
       <button
         type="button"
         onClick={onConfirmDelivery}
-        disabled={releaseStale || submitting !== null}
-        aria-disabled={releaseStale || submitting !== null}
+        disabled={releaseCompleted || submitting !== null}
+        aria-disabled={releaseCompleted || submitting !== null}
         className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
-          releaseStale
+          releaseCompleted
             ? 'border border-zinc-200 bg-zinc-100 text-zinc-500'
             : 'bg-zinc-900 text-white hover:bg-zinc-800'
         }`}
@@ -44,7 +36,7 @@ export default function DisputeActionsCard({
         <CreditCard className="h-4 w-4" />
         {releaseInProgress
           ? 'Submitting escrow…'
-          : releaseStale
+          : releaseCompleted
             ? 'Escrow released'
             : 'Confirm delivery (release escrow)'}
       </button>
