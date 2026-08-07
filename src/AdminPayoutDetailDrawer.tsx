@@ -78,9 +78,9 @@ export default function AdminPayoutDetailDrawer(props: Props) {
   const handleRetry = async () => {
     if (!window.confirm(`Retry payout ${selected.id}?`)) return;
     await runAction("Payout retried.", () =>
-      apiFetch(`/api/payouts/${encodeURIComponent(selected.sellerId)}/retry`, {
+      apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/retry`, {
         method: "POST",
-        body: JSON.stringify({ payoutId: selected.id }),
+        body: JSON.stringify({ payoutId: selected.id, sellerId: selected.sellerId }),
       }),
     );
   };
@@ -115,10 +115,11 @@ export default function AdminPayoutDetailDrawer(props: Props) {
     );
 
     await runAction("Payout updated.", () =>
-      apiFetch(`/api/payouts/${encodeURIComponent(selected.sellerId)}/override`, {
+      apiFetch(`/api/admin/payouts/${encodeURIComponent(selected.id)}/override`, {
         method: "POST",
         body: JSON.stringify({
           payoutId: selected.id,
+          sellerId: selected.sellerId,
           action,
           reason,
         }),
