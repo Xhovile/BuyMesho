@@ -6,7 +6,7 @@ import {
   type PayChanguPayoutExecutionResult,
 } from './paychangu.payout.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
-import { payoutRepository, type PayoutRepository } from './payout.repository.js';
+import { type PayoutRepository } from './payout.repository.js';
 import {
   classifyProviderFailureFromError,
   decryptSensitiveValue,
