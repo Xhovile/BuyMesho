@@ -114,12 +114,12 @@ function BuyerPaymentsPageContent() {
   };
 
   const openTracking = (reference: string, flowType: string) => {
-    if (flowType === "event_only") {
-      navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`);
+    if (flowType === "listing_only" || flowType === "unknown") {
+      navigateToOrderTracking(reference);
       return;
     }
 
-    navigateToOrderTracking(reference);
+    navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`);
   };
 
   return (
