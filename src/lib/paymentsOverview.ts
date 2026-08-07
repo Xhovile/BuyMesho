@@ -75,6 +75,11 @@ function hasListingSignals(source: Record<string, unknown> | null | undefined): 
     const candidate = entry as Record<string, unknown>;
     return typeof candidate.listingId === 'string' && candidate.listingId.trim();
   })) return true;
+  if (Array.isArray(source.items) && source.items.some((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const candidate = entry as Record<string, unknown>;
+    return candidate.kind === 'listing' || (typeof candidate.listingId === 'string' && candidate.listingId.trim());
+  })) return true;
   return false;
 }
 
@@ -87,6 +92,11 @@ function hasEventSignals(source: Record<string, unknown> | null | undefined): bo
     if (!entry || typeof entry !== 'object') return false;
     const candidate = entry as Record<string, unknown>;
     return typeof candidate.eventId === 'string' && candidate.eventId.trim();
+  })) return true;
+  if (Array.isArray(source.items) && source.items.some((entry) => {
+    if (!entry || typeof entry !== 'object') return false;
+    const candidate = entry as Record<string, unknown>;
+    return candidate.kind === 'event_ticket' || (typeof candidate.eventId === 'string' && candidate.eventId.trim());
   })) return true;
   return false;
 }
