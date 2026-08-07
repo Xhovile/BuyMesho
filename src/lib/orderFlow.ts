@@ -28,6 +28,7 @@ function hasEventSignals(source: MaybeRecord): boolean {
   if (Array.isArray(source.eventIds) && source.eventIds.some((value) => typeof value === "string" && value.trim())) return true;
   if (hasArraySignal(source, "eventDetails", (entry) => isRecord(entry) && typeof entry.eventId === "string" && Boolean(entry.eventId.trim()))) return true;
   if (hasArraySignal(source, "checkoutItems", (entry) => isRecord(entry) && (entry.kind === "event_ticket" || (typeof entry.eventId === "string" && Boolean(entry.eventId.trim()))))) return true;
+  if (hasArraySignal(source, "items", (entry) => isRecord(entry) && (entry.kind === "event_ticket" || (typeof entry.eventId === "string" && Boolean(entry.eventId.trim()))))) return true;
   return false;
 }
 
