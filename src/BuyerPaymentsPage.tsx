@@ -3,7 +3,8 @@ import { ArrowUpRight, Loader2, Trash2 } from "lucide-react";
 
 import MarketHeaderBar from "./components/shared/MarketHeaderBar";
 import { formatMoney } from "./shared/utils/formatMoney";
-import { navigateToOrderTracking, navigateToPath, TICKETS_PATH } from "./lib/appNavigation";
+import { navigateToPath } from "./lib/appNavigation";
+import { ORDER_TRACKING_BASE_PATH, TICKETS_PATH } from "./lib/appNavigation.paths";
 import { clearBuyerPaymentRecords, readBuyerPayments, type BuyerPaymentRecord } from "./lib/buyerState";
 import { summarizePayments } from "./lib/paymentsOverview";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
@@ -114,13 +115,13 @@ function BuyerPaymentsPageContent() {
   };
 
   const openTracking = (reference: string, flowType: string) => {
-    if (flowType === "listing_only" || flowType === "unknown") {
-      navigateToOrderTracking(reference);
-      return;
-    }
+  if (flowType === "listing_only" || flowType === "unknown") {
+    navigateToPath(`${ORDER_TRACKING_BASE_PATH}/${encodeURIComponent(reference)}`);
+    return;
+  }
 
-    navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`);
-  };
+  navigateToPath(`${TICKETS_PATH}?reference=${encodeURIComponent(reference)}`);
+};
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
