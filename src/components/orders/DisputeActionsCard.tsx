@@ -54,10 +54,11 @@ export default function DisputeActionsCard({
           Dispute reason
         </label>
 
-        <input
+        <textarea
           value={disputeReason}
           onChange={(e) => onChangeReason(e.target.value)}
-          className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm"
+          rows={6}
+          className="min-h-28 w-full resize-y rounded-xl border border-zinc-200 px-3 py-2 text-sm leading-6"
           placeholder="Describe the issue"
         />
 
