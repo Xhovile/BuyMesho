@@ -109,6 +109,31 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function rewriteLegacyPayoutRoute(url: string, init: ApiFetchInit): { url: string; init: ApiFetchInit } {
+  const match = url.match(/^\/api\/payouts\/([^/]+)\/(retry|override)$/);
+  if (!match) {
+    return { url, init };
+  }
+
+  const payload = typeof init.body === "string" ? (() => {
+    try {
+      return JSON.parse(init.body) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  })() : null;
+
+  const payoutId = typeof payload?.payoutId === "string" ? payload.payoutId.trim() : "";
+  if (!payoutId) {
+    return { url, init };
+  }
+
+  return {
+    url: `/api/admin/payouts/${encodeURIComponent(payoutId)}/${match[2]}`,
+    init,
+  };
+}
+
 async function performApiFetch(url: string, init: ApiFetchInit = {}) {
   const headers: Record<string, string> = {
     ...(init.headers as Record<string, string> | undefined),
@@ -158,15 +183,16 @@ async function performApiFetch(url: string, init: ApiFetchInit = {}) {
 }
 
 export async function apiFetch(url: string, init: ApiFetchInit = {}) {
-  const method = getRetryableMethod(init.method);
-  const retryAttempts = init.retryAttempts ?? (shouldRetrySafeRequest(method) ? DEFAULT_SAFE_RETRY_ATTEMPTS : 1);
-  const retryDelayMs = init.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
+  const { url: rewrittenUrl, init: rewrittenInit } = rewriteLegacyPayoutRoute(url, init);
+  const method = getRetryableMethod(rewrittenInit.method);
+  const retryAttempts = rewrittenInit.retryAttempts ?? (shouldRetrySafeRequest(method) ? DEFAULT_SAFE_RETRY_ATTEMPTS : 1);
+  const retryDelayMs = rewrittenInit.retryDelayMs ?? DEFAULT_SAFE_RETRY_DELAY_MS;
 
   let lastError: unknown = null;
 
   for (let attempt = 1; attempt <= retryAttempts; attempt += 1) {
     try {
-      return await performApiFetch(url, init);
+      return await performApiFetch(rewrittenUrl, rewrittenInit);
     } catch (error: any) {
       lastError = error;
 
