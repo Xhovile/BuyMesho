@@ -16,9 +16,12 @@ export default defineConfig(({mode}) => {
       },
     },
     build: {
+      chunkSizeWarningLimit: 1600,
       rollupOptions: {
         output: {
           manualChunks(id) {
+            if (!id.includes('node_modules')) return;
+
             if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
               return 'vendor-react';
             }
@@ -34,6 +37,8 @@ export default defineConfig(({mode}) => {
             if (id.includes('node_modules/lucide-react')) {
               return 'vendor-lucide';
             }
+
+            return 'vendor';
           },
         },
       },
