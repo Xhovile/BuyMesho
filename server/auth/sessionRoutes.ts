@@ -1,5 +1,6 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import { hasAdminAccess } from "./adminAccess.js";
 import { revokeTotpVerifiedSessions } from "../../src/server/totpStoreCompat.js";
 
 type VerifiedRequestUser = {
@@ -7,6 +8,13 @@ type VerifiedRequestUser = {
   email: string | null;
   email_verified: boolean;
   is_admin: boolean;
+};
+
+type ValidatorAccessScope = {
+  can_validate_tickets: boolean;
+  is_admin: boolean;
+  role: "admin" | "validator";
+  source: "buymesho";
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.sessionRoutesInstalled");
@@ -38,6 +46,34 @@ function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   })();
 }
 
+function buildValidatorAccessScope(user: VerifiedRequestUser): ValidatorAccessScope {
+  const isAdmin = hasAdminAccess({ email: user.email, uid: user.uid, is_admin: user.is_admin });
+
+  return {
+    can_validate_tickets: true,
+    is_admin: isAdmin,
+    role: isAdmin ? "admin" : "validator",
+    source: "buymesho",
+  };
+}
+
+function validatorMeHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
+  return res.json({
+    identity: {
+      uid: user.uid,
+      email: user.email,
+      email_verified: user.email_verified,
+      is_admin: user.is_admin,
+    },
+    access_scope: buildValidatorAccessScope(user),
+  });
+}
+
 async function revokeSessionsHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
   if (!user) {
@@ -64,6 +100,7 @@ async function revokeSessionsHandler(req: Request, res: Response) {
 export function registerSessionRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
+  app.get("/api/auth/validator/me", verifyBearerIdentity, validatorMeHandler);
   app.post("/api/auth/revoke-sessions", verifyBearerIdentity, revokeSessionsHandler);
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
