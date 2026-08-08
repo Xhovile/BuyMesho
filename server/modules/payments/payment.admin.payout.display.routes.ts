@@ -18,6 +18,60 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
+function findDefaultVerifiedDestination(db: ReturnType<typeof getPaymentDb>, sellerId: string) {
+  return db.prepare(
+    `SELECT
+       id,
+       destination_type AS destinationType,
+       masked_account AS maskedAccount,
+       verification_status AS verificationStatus,
+       is_active AS isActive,
+       last_error AS lastError
+     FROM seller_payout_accounts
+     WHERE seller_uid = ?
+       AND is_active = 1
+       AND verification_status = 'verified'
+     ORDER BY is_default DESC, updated_at DESC, created_at DESC
+     LIMIT 1`,
+  ).get(sellerId) as
+    | {
+        id: string;
+        destinationType: string | null;
+        maskedAccount: string | null;
+        verificationStatus: string | null;
+        isActive: number | null;
+        lastError: string | null;
+      }
+    | undefined;
+}
+
+function hydratePayoutRow(db: ReturnType<typeof getPaymentDb>, row: Record<string, unknown>) {
+  const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
+  const currentDestinationAccountId = normalizeText(row.destinationAccountId ?? row.destination_account_id) ?? null;
+  const currentDestinationStatus = String(row.destinationVerificationStatus ?? row.destination_verification_status ?? 'missing').toLowerCase();
+  const currentDestinationActive = Number(row.destinationActive ?? row.destination_active ?? row.destinationIsActive ?? row.destination_is_active ?? 0) === 1;
+  const fallbackDestination = sellerId ? findDefaultVerifiedDestination(db, sellerId) : undefined;
+
+  const currentDestinationIsUsable =
+    !!currentDestinationAccountId &&
+    currentDestinationStatus === 'verified' &&
+    currentDestinationActive;
+
+  const destination = !currentDestinationIsUsable && fallbackDestination ? fallbackDestination : undefined;
+
+  return {
+    ...row,
+    sellerId,
+    destinationAccountId: destination?.id ?? currentDestinationAccountId,
+    destinationMaskedAccount: destination?.maskedAccount ?? normalizeText(row.destinationMaskedAccount ?? row.destination_masked_account) ?? null,
+    destinationType: destination?.destinationType ?? normalizeText(row.destinationType ?? row.destination_type) ?? null,
+    destinationVerificationStatus: (destination?.verificationStatus ?? normalizeText(row.destinationVerificationStatus ?? row.destination_verification_status) ?? 'missing').toLowerCase(),
+    destinationActive: destination ? Number(destination.isActive ?? 1) === 1 : currentDestinationActive,
+    destinationLastError: destination?.lastError ?? normalizeText(row.destinationLastError ?? row.destination_last_error) ?? null,
+    destinationRecoveredFromFallback: Boolean(destination),
+  };
+}
+
 function shapeRow(row: Record<string, unknown>) {
   const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
   const sellerBusinessName = normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? null;
@@ -166,7 +220,7 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
          OFFSET ?`,
       ).all(limit, offset) as Array<Record<string, unknown>>;
 
-      const shapedRows = rows.map((row) => shapeRow(row));
+      const shapedRows = rows.map((row) => shapeRow(hydratePayoutRow(db, row)));
 
       if (hasPaginationQuery) {
         return res.status(200).json({
@@ -263,7 +317,7 @@ export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandle
         return res.status(404).json({ error: 'Payout not found' });
       }
 
-      return res.status(200).json(shapeRow(row));
+      return res.status(200).json(shapeRow(hydratePayoutRow(db, row)));
     } catch (error) {
       return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load payout detail' });
     }
