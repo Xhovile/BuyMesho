@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
+import { registerSessionRoutes } from "./auth/sessionRoutes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -18,6 +19,8 @@ export function createApp(): Express {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
   });
+
+  registerSessionRoutes(app);
 
   return app;
 }
