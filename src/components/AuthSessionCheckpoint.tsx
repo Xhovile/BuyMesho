@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ArrowRight, CheckCircle2, Loader2, LogOut, ShieldAlert } from "lucide-react";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { auth } from "../firebase";
-import { navigateToLogin, navigateToPath } from "../lib/appNavigation";
+import { navigateToPath } from "../lib/appNavigation";
 import BrandMark from "./BrandMark";
 
 type AuthSessionCheckpointProps = { mode: "login" | "signup"; children: ReactNode };
@@ -63,7 +63,7 @@ export default function AuthSessionCheckpoint({ mode, children }: AuthSessionChe
     if (target) { target.searchParams.set("buymesho_session", await user.getIdToken(true)); window.location.replace(target.toString()); return; }
     navigateToPath("/");
   };
-  const handleUseAnotherAccount = async () => { await signOut(auth); navigateToLogin(); };
+  const handleUseAnotherAccount = async () => { await signOut(auth); };
 
   const validatorContent = () => {
     if (validatorAccess === "checking") return <><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">Ticket Validator</p><h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-900">Checking your access</h1><p className="mt-3 text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">We’re checking whether this BuyMesho account is an approved event creator.</p><div className="mt-8 flex items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm font-bold text-zinc-700"><Loader2 className="h-5 w-5 animate-spin" />Verifying Validator access…</div></>;
