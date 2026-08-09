@@ -77,28 +77,18 @@ export async function startServer() {
     requireFirebaseUser,
   });
 
-  // Temporary Validator runtime diagnostics. These are intentionally placed
-  // immediately after registerRoutes() so we can prove the live process is
-  // loading the Validator route registration before the fallback handler.
+  // Temporary Validator diagnostic endpoint. It is registered immediately
+  // after registerRoutes() so the live Render process can prove that this
+  // backend is the process serving the Validator API.
   app.get("/api/validator/health", (_req, res) => {
     res.status(200).json({
       ok: true,
       service: "buymesho-validator-api",
-      validatorSessionRouteRegistered: app._router?.stack?.some((layer: any) => {
-        const route = layer?.route;
-        return route?.path === "/api/validator/session" && route?.methods?.post === true;
-      }) ?? false,
       timestamp: new Date().toISOString(),
     });
   });
 
-  console.log(
-    "[Validator] Runtime route check:",
-    app._router?.stack?.some((layer: any) => {
-      const route = layer?.route;
-      return route?.path === "/api/validator/session" && route?.methods?.post === true;
-    }) ?? false
-  );
+  console.log("[Validator] registerRoutes() completed; health endpoint registered.");
 
   registerMarketplaceRoutes(app, { db });
   registerSellerProfileRoutes(app, { db });
