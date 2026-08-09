@@ -22,6 +22,8 @@ type AccountPageShellProps = {
   headerActions?: ReactNode;
   childrenSectionClassName?: string;
   hideNavigation?: boolean;
+  hideBackButton?: boolean;
+  showBrandHero?: boolean;
 };
 
 export default function AccountPageShell({
@@ -34,6 +36,8 @@ export default function AccountPageShell({
   headerActions,
   childrenSectionClassName,
   hideNavigation = false,
+  hideBackButton = false,
+  showBrandHero = false,
 }: AccountPageShellProps) {
   const { firebaseUser } = useAccountProfile();
   const isProfilePage = title === "My profile";
@@ -60,16 +64,28 @@ export default function AccountPageShell({
             <BrandMark />
             <div className="flex items-center gap-3">
               {firebaseUser && (
-                <button type="button" onClick={() => void handleLogout()} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 md:px-4 py-2.5 text-sm font-bold hover:bg-zinc-50">
+                <button
+                  type="button"
+                  onClick={() => void handleLogout()}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-2.5 text-sm font-bold hover:bg-zinc-50 md:px-4"
+                >
                   <LogOut className="h-4 w-4" />
                   <span className="hidden md:inline">Log out</span>
                 </button>
               )}
-              <button type="button" onClick={() => navigateToPath(HOME_PATH)} className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex">
+              <button
+                type="button"
+                onClick={() => navigateToPath(HOME_PATH)}
+                className="hidden items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold hover:bg-zinc-50 sm:inline-flex"
+              >
                 <House className="h-4 w-4" />
                 Home
               </button>
-              <button type="button" onClick={() => navigateToPath(EXPLORE_PATH)} className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800">
+              <button
+                type="button"
+                onClick={() => navigateToPath(EXPLORE_PATH)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800"
+              >
                 <ShoppingBag className="h-4 w-4" />
                 Market
               </button>
@@ -80,6 +96,12 @@ export default function AccountPageShell({
 
       <main className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8">
         <div className="space-y-6 sm:space-y-8">
+          {showBrandHero && (
+            <div className="rounded-[2rem] border border-white/80 bg-white/90 px-5 py-4 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+              <BrandMark />
+            </div>
+          )}
+
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-slate-400">{eyebrow}</p>
@@ -87,13 +109,19 @@ export default function AccountPageShell({
               <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-zinc-600 sm:text-base">{description}</p>
             </div>
 
-            <div className="flex flex-wrap items-start gap-3 self-start">
-              <button type="button" onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800">
-                <ChevronLeft className="h-4 w-4" />
-                {backLabel}
-              </button>
-              {headerActions}
-            </div>
+            {!hideBackButton && (
+              <div className="flex flex-wrap items-start gap-3 self-start">
+                <button
+                  type="button"
+                  onClick={onBack || (() => navigateBackOrPath(EXPLORE_PATH))}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-black px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  {backLabel}
+                </button>
+                {headerActions}
+              </div>
+            )}
           </div>
 
           <div className={childrenWrapperClassName}>{children}</div>
