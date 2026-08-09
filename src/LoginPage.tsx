@@ -45,6 +45,7 @@ export default function LoginPage() {
   const [totpChallengeOpen, setTotpChallengeOpen] = useState(false);
   const [totpChallengeCode, setTotpChallengeCode] = useState("");
   const [totpChallengeBusy, setTotpChallengeBusy] = useState(false);
+  const isValidatorEntry = Boolean(getTicketValidatorReturnUrl());
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string, actions?: FeedbackAction[]) => setFeedback({ open: true, type, title, message, actions });
   const closeFeedback = () => setFeedback(null);
@@ -143,9 +144,11 @@ export default function LoginPage() {
       <AccountPageShell
         eyebrow="Account"
         title="Log in"
-        description="Access your BuyMesho account, manage your profile, and continue buying or selling."
+        description={isValidatorEntry
+          ? "Sign in with your approved BuyMesho event creator account to continue to Ticket Validator."
+          : "Access your BuyMesho account, manage your profile, and continue buying or selling."
+        }
         hideNavigation
-        hideBackButton
         showBrandHero
       >
         <form onSubmit={handleLogin} className="w-full space-y-6">
@@ -181,14 +184,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 text-sm font-bold">
-            <button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">
-              Forgot Password?
-            </button>
-            <button type="button" onClick={() => navigateToSignup()} className="text-zinc-500 hover:text-zinc-900 hover:underline">
-              Create account
-            </button>
-          </div>
+          {!isValidatorEntry && (
+            <div className="flex items-center justify-between gap-4 text-sm font-bold">
+              <button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">
+                Forgot Password?
+              </button>
+              <button type="button" onClick={() => navigateToSignup()} className="text-zinc-500 hover:text-zinc-900 hover:underline">
+                Create account
+              </button>
+            </div>
+          )}
 
           <button
             type="submit"
