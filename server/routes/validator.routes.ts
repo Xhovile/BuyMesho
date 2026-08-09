@@ -1,5 +1,7 @@
 import type { Express, NextFunction, Request, Response } from "express";
-import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
+import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import { hasAdminAccess } from "./adminAccess.js";
+import { revokeTotpVerifiedSessions } from "../../src/server/totpStoreCompat.js";
 import { getPaymentDb } from "../postgresCompat.js";
 import { orderRepository } from "../modules/orders/order.repository.js";
 import { paymentRepository } from "../modules/payments/payment.repository.js";
@@ -11,34 +13,39 @@ type VerifiedRequestUser = {
   is_admin: boolean;
 };
 
-type ValidatorQueueItem = {
-  queueId: string;
-  ticketId: string;
-  eventId: string;
-  actionType: "check_in" | "check_out" | "status_change";
-  previousStatus: string;
-  newStatus: string;
-  gateName: string;
-  staffName: string;
-  timestamp: string;
-  clientSnapshotVersion: string;
-  idempotencyKey: string;
+type ValidatorAccessScope = {
+  can_validate_tickets: boolean;
+  is_admin: boolean;
+  role: "admin" | "validator";
+  source: "buymesho";
+  allowed_event_ids: string[];
+  snapshot_version: string | null;
 };
 
-type ValidatorTicket = {
-  id: string;
-  code: string;
-  event_id: string;
+type EventRow = {
+  id: number;
+  creator_uid: string | null;
+  event_type: string;
   event_title: string;
-  order_id: string;
-  buyer_id: string;
-  status: "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
-  order_status: string;
-  payment_status: string | null;
+  organizer_name: string;
+  event_date: string;
+  start_time: string;
+  venue: string;
+  location: string;
+  ticket_mode: string;
+  ticket_price: number | null;
+  ticket_link: string | null;
+  description: string;
+  contact_whatsapp: string | null;
+  poster_alt: string | null;
+  spec_values: string;
+  status: string;
+  deleted_at: string | null;
+  created_at: string;
   updated_at: string;
-  version: string;
-  metadata: Record<string, unknown>;
 };
+
+type EventCreatorRow = { uid: string; email: string; display_name: string; organization_name: string; organization_type: string; contact_whatsapp: string | null; event_types: string; status: string; active_until: string | null; approved_at: string | null; created_at: string; updated_at: string };
 
 type ValidatorEvent = {
   id: string;
@@ -64,13 +71,33 @@ type ValidatorEvent = {
   ticket_count: number;
 };
 
-const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.validatorRoutesInstalled");
+type ValidatorTicket = {
+  id: string;
+  code: string;
+  event_id: string;
+  event_title: string;
+  order_id: string;
+  buyer_id: string;
+  status: "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
+  order_status: string;
+  payment_status: string | null;
+  updated_at: string;
+  version: string;
+  metadata: Record<string, unknown>;
+};
+
+const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.sessionRoutesInstalled");
 
 function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header) return res.status(401).json({ error: "Missing Authorization Bearer token" });
+  if (!header) {
+    return res.status(401).json({ error: "Missing Authorization Bearer token" });
+  }
+
   const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) return res.status(401).json({ error: "Missing Authorization Bearer token" });
+  if (scheme !== "Bearer" || !token) {
+    return res.status(401).json({ error: "Missing Authorization Bearer token" });
+  }
 
   void (async () => {
     try {
@@ -92,6 +119,11 @@ function normalizeString(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+function normalizeOptionalString(value: unknown): string | null {
+  const text = normalizeString(value);
+  return text.length > 0 ? text : null;
+}
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
@@ -106,20 +138,105 @@ function safeParseJsonObject(value: string | null | undefined): Record<string, u
   }
 }
 
-function loadCreatorRecord(uid: string) {
-  const db = getPaymentDb();
-  return db.prepare("SELECT * FROM event_creators WHERE uid = ? LIMIT 1").get(uid) as { uid: string; email: string; display_name: string; organization_name: string; organization_type: string; contact_whatsapp: string | null; event_types: string; status: string; active_until: string | null; approved_at: string | null; created_at: string; updated_at: string } | undefined;
-}
-
-function isEventCreatorActive(row: ReturnType<typeof loadCreatorRecord>) {
+function isEventCreatorActive(row: EventCreatorRow | undefined) {
   if (!row || row.status !== "approved") return false;
   if (!row.active_until) return true;
   return new Date(row.active_until).getTime() >= Date.now();
 }
 
+function loadValidatorEvents(uid: string): ValidatorEvent[] {
+  const db = getPaymentDb();
+  const rows = db
+    .prepare(
+      `
+        SELECT *
+        FROM events
+        WHERE creator_uid = ?
+          AND deleted_at IS NULL
+        ORDER BY updated_at DESC, created_at DESC, id DESC
+      `,
+    )
+    .all(uid) as EventRow[];
+
+  const ticketCounts = new Map<number, number>();
+  const allOrders = db
+    .prepare(
+      `
+        SELECT id
+        FROM orders
+        ORDER BY updated_at DESC, created_at DESC
+      `,
+    )
+    .all() as Array<{ id: string }>;
+
+  for (const orderRef of allOrders) {
+    const order = orderRepository.findById(orderRef.id);
+    if (!order) continue;
+
+    for (const item of order.items ?? []) {
+      const eventId = typeof item.eventId === "string" ? Number(item.eventId) : Number.NaN;
+      if (!Number.isInteger(eventId)) continue;
+      if (order.status === "draft" || order.status === "pending_payment") continue;
+      ticketCounts.set(eventId, (ticketCounts.get(eventId) ?? 0) + (Number(item.quantity) || 1));
+    }
+  }
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    creator_uid: row.creator_uid,
+    event_type: row.event_type,
+    event_title: row.event_title,
+    organizer_name: row.organizer_name,
+    event_date: row.event_date,
+    start_time: row.start_time,
+    venue: row.venue,
+    location: row.location,
+    ticket_mode: row.ticket_mode,
+    ticket_price: row.ticket_price === null || row.ticket_price === undefined ? null : Number(row.ticket_price),
+    ticket_link: row.ticket_link,
+    description: row.description,
+    contact_whatsapp: row.contact_whatsapp,
+    poster_alt: row.poster_alt,
+    spec_values: safeParseJsonObject(row.spec_values),
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    version: row.updated_at,
+    ticket_count: ticketCounts.get(row.id) ?? 0,
+  }));
+}
+
+function loadCreatorRecord(uid: string) {
+  const db = getPaymentDb();
+  return db
+    .prepare(
+      `
+        SELECT *
+        FROM event_creators
+        WHERE uid = ?
+        LIMIT 1
+      `,
+    )
+    .get(uid) as EventCreatorRow | undefined;
+}
+
+function buildValidatorAccessScope(user: VerifiedRequestUser, events: ValidatorEvent[]): ValidatorAccessScope {
+  const isAdmin = hasAdminAccess({ email: user.email, uid: user.uid, is_admin: user.is_admin });
+
+  return {
+    can_validate_tickets: true,
+    is_admin: isAdmin,
+    role: isAdmin ? "admin" : "validator",
+    source: "buymesho",
+    allowed_event_ids: events.map((event) => event.id),
+    snapshot_version: events.length > 0 ? events[0].version : null,
+  };
+}
+
 function mapOrderStatusToTicketStatus(orderStatus: string, paymentStatus: string | null) {
   const status = orderStatus.toLowerCase();
   const payment = (paymentStatus ?? "").toLowerCase();
+
   if (status === "refunded" || payment === "refunded") return "Refunded" as const;
   if (status === "cancelled") return "Cancelled" as const;
   if (status === "disputed" || status === "closed") return "Blocked" as const;
@@ -132,55 +249,22 @@ function normalizeTicketCode(value: string) {
   return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
 }
 
-function loadValidatorEvents(uid: string): ValidatorEvent[] {
-  const db = getPaymentDb();
-  const rows = db.prepare(`SELECT * FROM events WHERE creator_uid = ? AND deleted_at IS NULL ORDER BY updated_at DESC, created_at DESC, id DESC`).all(uid) as Array<Record<string, unknown>>;
-  const ticketCounts = new Map<number, number>();
-  const allOrders = db.prepare(`SELECT id FROM orders ORDER BY updated_at DESC, created_at DESC`).all() as Array<{ id: string }>;
-
-  for (const orderRef of allOrders) {
-    const order = orderRepository.findById(orderRef.id);
-    if (!order) continue;
-    for (const item of order.items ?? []) {
-      const eventId = typeof item.eventId === "string" ? Number(item.eventId) : Number.NaN;
-      if (!Number.isInteger(eventId)) continue;
-      if (order.status === "draft" || order.status === "pending_payment") continue;
-      ticketCounts.set(eventId, (ticketCounts.get(eventId) ?? 0) + (Number(item.quantity) || 1));
-    }
-  }
-
-  return rows.map((row) => ({
-    id: String(row.id),
-    creator_uid: (row.creator_uid as string | null) ?? null,
-    event_type: String(row.event_type ?? ""),
-    event_title: String(row.event_title ?? ""),
-    organizer_name: String(row.organizer_name ?? ""),
-    event_date: String(row.event_date ?? ""),
-    start_time: String(row.start_time ?? ""),
-    venue: String(row.venue ?? ""),
-    location: String(row.location ?? ""),
-    ticket_mode: String(row.ticket_mode ?? ""),
-    ticket_price: row.ticket_price === null || row.ticket_price === undefined ? null : Number(row.ticket_price),
-    ticket_link: (row.ticket_link as string | null) ?? null,
-    description: String(row.description ?? ""),
-    contact_whatsapp: (row.contact_whatsapp as string | null) ?? null,
-    poster_alt: (row.poster_alt as string | null) ?? null,
-    spec_values: safeParseJsonObject(row.spec_values as string | null),
-    status: String(row.status ?? "published"),
-    created_at: String(row.created_at ?? ""),
-    updated_at: String(row.updated_at ?? ""),
-    version: String(row.updated_at ?? ""),
-    ticket_count: ticketCounts.get(Number(row.id)) ?? 0,
-  }));
-}
-
-function buildTicketSnapshotsForEvent(uid: string, eventId: string) {
+function buildTicketSnapshotsForEvent(uid: string, eventId: string): { event: ValidatorEvent; tickets: ValidatorTicket[] } | null {
   const events = loadValidatorEvents(uid);
   const event = events.find((entry) => entry.id === eventId);
   if (!event) return null;
 
+  const allOrders = getPaymentDb()
+    .prepare(
+      `
+        SELECT id
+        FROM orders
+        ORDER BY updated_at DESC, created_at DESC
+      `,
+    )
+    .all() as Array<{ id: string }>;
+
   const tickets: ValidatorTicket[] = [];
-  const allOrders = getPaymentDb().prepare("SELECT id FROM orders ORDER BY updated_at DESC, created_at DESC").all() as Array<{ id: string }>;
 
   for (const orderRef of allOrders) {
     const order = orderRepository.findById(orderRef.id);
@@ -192,12 +276,12 @@ function buildTicketSnapshotsForEvent(uid: string, eventId: string) {
       if (itemEventId !== event.id) continue;
 
       const quantity = Math.max(1, Number(item.quantity) || 1);
-      const codeSeed = String(item.reference ?? order.paymentReference ?? `${order.id}-${item.title}`).trim();
+      const codeSeed = normalizeString(item.reference ?? order.paymentReference ?? `${order.id}-${item.title}`);
       const codeBase = normalizeTicketCode(codeSeed || `${order.id}-${event.id}`);
 
       for (let index = 0; index < quantity; index += 1) {
         const ticketId = `${order.id}:${event.id}:${index + 1}`;
-        const updatedAt = payment?.status ? payment.updatedAt : order.updatedAt;
+        const updatedAt = payment?.updatedAt ?? order.updatedAt ?? event.updated_at;
         tickets.push({
           id: ticketId,
           code: `${codeBase}${quantity > 1 ? `-${index + 1}` : ""}`,
@@ -233,11 +317,18 @@ function buildTicketSnapshotsForEvent(uid: string, eventId: string) {
 
 function validatorMeHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
   const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
+  if (!isEventCreatorActive(creator)) {
+    return res.status(403).json({ error: "Approved event creator access is required" });
+  }
 
   const events = loadValidatorEvents(user.uid);
+  const scope = buildValidatorAccessScope(user, events);
+
   return res.json({
     success: true,
     identity: {
@@ -263,35 +354,51 @@ function validatorMeHandler(req: Request, res: Response) {
           updated_at: creator.updated_at,
         }
       : null,
-    access_scope: {
-      can_validate_tickets: true,
-      is_admin: user.is_admin,
-      role: user.is_admin ? "admin" : "validator",
-      source: "buymesho",
-      allowed_event_ids: events.map((event) => event.id),
-      snapshot_version: events[0]?.version ?? null,
-    },
+    access_scope: scope,
     events,
   });
 }
 
 function validatorEventsHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
   const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
-  return res.json({ success: true, events: loadValidatorEvents(user.uid) });
+  if (!isEventCreatorActive(creator)) {
+    return res.status(403).json({ error: "Approved event creator access is required" });
+  }
+
+  return res.json({
+    success: true,
+    events: loadValidatorEvents(user.uid),
+  });
 }
 
 function validatorEventTicketsHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!user) {
+    return res.status(401).json({ error: "Authentication required" });
+  }
+
   const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
+  if (!isEventCreatorActive(creator)) {
+    return res.status(403).json({ error: "Approved event creator access is required" });
+  }
+
   const eventId = normalizeString(req.params.eventId);
   const bundle = buildTicketSnapshotsForEvent(user.uid, eventId);
-  if (!bundle) return res.status(404).json({ error: "Event not found" });
-  return res.json({ success: true, event: bundle.event, tickets: bundle.tickets, snapshot_version: bundle.event.version });
+  if (!bundle) {
+    return res.status(404).json({ error: "Event not found" });
+  }
+
+  return res.json({
+    success: true,
+    event: bundle.event,
+    tickets: bundle.tickets,
+    snapshot_version: bundle.event.version,
+  });
 }
 
 function resolveTicketForCode(userUid: string, code: string) {
@@ -444,8 +551,38 @@ function validatorBulkSyncHandler(req: Request, res: Response) {
   return res.json({ success: true, applied, conflicts });
 }
 
+/**
+ * Exchange a valid BuyMesho Firebase ID token for a Firebase custom token.
+ * Ticket Validator signs in with the custom token, which gives Firebase Auth
+ * ownership of the long-lived browser session and automatic ID-token refresh.
+ */
+function validatorSessionHandler(req: Request, res: Response) {
+  const user = req.user as VerifiedRequestUser | undefined;
+  if (!user) return res.status(401).json({ error: "Authentication required" });
+
+  const creator = loadCreatorRecord(user.uid);
+  if (!isEventCreatorActive(creator)) {
+    return res.status(403).json({ error: "Approved event creator access is required" });
+  }
+
+  void (async () => {
+    try {
+      const customToken = await getFirebaseAdmin().auth().createCustomToken(user.uid, {
+        client: "ticket-validator",
+        role: user.is_admin ? "admin" : "validator",
+      });
+
+      return res.json({ success: true, customToken });
+    } catch (error) {
+      console.error("Failed to create Ticket Validator session token:", error);
+      return res.status(500).json({ error: "Unable to create Ticket Validator session" });
+    }
+  })();
+}
+
 export function registerValidatorRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
+  app.post("/api/validator/session", verifyBearerIdentity, validatorSessionHandler);
   app.get("/api/validator/me", verifyBearerIdentity, validatorMeHandler);
   app.get("/api/validator/events", verifyBearerIdentity, validatorEventsHandler);
   app.get("/api/validator/events/:eventId/tickets", verifyBearerIdentity, validatorEventTicketsHandler);
