@@ -2,6 +2,7 @@ import express, { type Express } from "express";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
 import { registerSessionRoutes } from "./auth/sessionRoutes.js";
+import { registerValidatorRoutes } from "./routes/validator.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp(): Express {
   });
 
   registerSessionRoutes(app);
+  registerValidatorRoutes(app);
 
   return app;
 }
