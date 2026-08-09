@@ -86,6 +86,15 @@ type ValidatorTicket = {
   metadata: Record<string, unknown>;
 };
 
+type ValidatorQueueItem = {
+  queueId: string;
+  ticketId: string;
+  eventId: string;
+  newStatus: ValidatorTicket["status"];
+  gateName: string;
+  staffName: string;
+};
+
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.sessionRoutesInstalled");
 
 function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
@@ -551,11 +560,6 @@ function validatorBulkSyncHandler(req: Request, res: Response) {
   return res.json({ success: true, applied, conflicts });
 }
 
-/**
- * Exchange a valid BuyMesho Firebase ID token for a Firebase custom token.
- * Ticket Validator signs in with the custom token, which gives Firebase Auth
- * ownership of the long-lived browser session and automatic ID-token refresh.
- */
 function validatorSessionHandler(req: Request, res: Response) {
   const user = req.user as VerifiedRequestUser | undefined;
   if (!user) return res.status(401).json({ error: "Authentication required" });
