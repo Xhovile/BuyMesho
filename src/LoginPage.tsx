@@ -29,6 +29,51 @@ type FeedbackState = {
   actions?: FeedbackAction[];
 } | null;
 
+function getTicketValidatorReturnUrl() {
+  const params = new URLSearchParams(window.location.search);
+
+  const client = params.get("client");
+  const returnTo = params.get("returnTo");
+
+  if (client !== "ticket-validator" || !returnTo) {
+    return null;
+  }
+
+  try {
+    const url = new URL(returnTo);
+
+    const allowedOrigin =
+      import.meta.env.VITE_TICKET_VALIDATOR_URL?.trim() ||
+      "https://ticket-validator.vercel.app";
+
+    const allowedUrl = new URL(allowedOrigin);
+
+    if (url.origin !== allowedUrl.origin) {
+      return null;
+    }
+
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+async function redirectToTicketValidator() {
+  const returnUrl = getTicketValidatorReturnUrl();
+
+  if (!returnUrl || !auth.currentUser) {
+    return false;
+  }
+
+  const token = await auth.currentUser.getIdToken(true);
+
+  returnUrl.searchParams.set("buymesho_session", token);
+
+  window.location.replace(returnUrl.toString());
+
+  return true;
+}
+
 export default function LoginPage() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -49,11 +94,28 @@ export default function LoginPage() {
 
   const getPostAuthPath = () => consumeAuthReturnPath(HOME_PATH);
 
-  const completeSuccessfulLogin = async (user: { reload: () => Promise<void>; emailVerified: boolean }) => {
+  const finishAuthentication = async () => {
+    const redirected = await redirectToTicketValidator();
+
+    if (redirected) {
+      return;
+    }
+
+    navigateToPath(getPostAuthPath());
+  };
+
+  const completeSuccessfulLogin = async (user: {
+    reload: () => Promise<void>;
+    emailVerified: boolean;
+  }) => {
     await user.reload();
 
     const totpStatusResult = await getTotpStatus();
-    if (totpStatusResult.ok && totpStatusResult.data?.status === "enabled") {
+
+    if (
+      totpStatusResult.ok &&
+      totpStatusResult.data?.status === "enabled"
+    ) {
       setTotpChallengeCode("");
       setTotpChallengeOpen(true);
       return;
@@ -64,7 +126,7 @@ export default function LoginPage() {
       return;
     }
 
-    navigateToPath(getPostAuthPath());
+    await finishAuthentication();
   };
 
   const handleLogin = async (e: FormEvent) => {
@@ -76,67 +138,89 @@ export default function LoginPage() {
     const password = form.password;
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+
       await completeSuccessfulLogin(userCredential.user);
     } catch (err: any) {
       if (err?.code === "auth/user-not-found") {
-        showFeedback("error", "Login failed", "You do not have an account.", [
-          {
-            label: "Cancel",
-            variant: "secondary",
-            onClick: closeFeedback,
-          },
-          {
-            label: "Sign Up",
-            onClick: () => {
-              closeFeedback();
-              navigateToSignup();
+        showFeedback(
+          "error",
+          "Login failed",
+          "You do not have an account.",
+          [
+            {
+              label: "Cancel",
+              variant: "secondary",
+              onClick: closeFeedback,
             },
-          },
-        ]);
+            {
+              label: "Sign Up",
+              onClick: () => {
+                closeFeedback();
+                navigateToSignup();
+              },
+            },
+          ]
+        );
         return;
       }
 
       if (err?.code === "auth/wrong-password") {
-        showFeedback("error", "Login failed", "Incorrect password. Please try again.", [
-          {
-            label: "Cancel",
-            variant: "secondary",
-            onClick: closeFeedback,
-          },
-          {
-            label: "Retry",
-            onClick: () => {
-              setForm((prev) => ({ ...prev, password: "" }));
-              closeFeedback();
+        showFeedback(
+          "error",
+          "Login failed",
+          "Incorrect password. Please try again.",
+          [
+            {
+              label: "Cancel",
+              variant: "secondary",
+              onClick: closeFeedback,
             },
-          },
-        ]);
+            {
+              label: "Retry",
+              onClick: () => {
+                setForm((prev) => ({ ...prev, password: "" }));
+                closeFeedback();
+              },
+            },
+          ]
+        );
         return;
       }
 
       if (err?.code === "auth/invalid-credential") {
-        showFeedback("error", "Login failed", "Incorrect email or password. Please try again.", [
-          {
-            label: "Cancel",
-            variant: "secondary",
-            onClick: closeFeedback,
-          },
-          {
-            label: "Retry",
-            onClick: () => {
-              setForm((prev) => ({ ...prev, password: "" }));
-              closeFeedback();
+        showFeedback(
+          "error",
+          "Login failed",
+          "Incorrect email or password. Please try again.",
+          [
+            {
+              label: "Cancel",
+              variant: "secondary",
+              onClick: closeFeedback,
             },
-          },
-        ]);
+            {
+              label: "Retry",
+              onClick: () => {
+                setForm((prev) => ({ ...prev, password: "" }));
+                closeFeedback();
+              },
+            },
+          ]
+        );
         return;
       }
 
       let message = "Login failed. Please try again.";
+
       if (err?.code === "auth/too-many-requests") {
         message = "Too many failed attempts. Please try again later.";
       }
+
       showFeedback("error", "Login failed", message, [
         {
           label: "Cancel",
@@ -145,9 +229,7 @@ export default function LoginPage() {
         },
         {
           label: "Retry",
-          onClick: () => {
-            closeFeedback();
-          },
+          onClick: closeFeedback,
         },
       ]);
     } finally {
@@ -157,11 +239,16 @@ export default function LoginPage() {
 
   const handleTotpChallengeSubmit = async () => {
     if (!totpChallengeCode.trim()) {
-      showFeedback("info", "Code required", "Enter the 6-digit authenticator code.");
+      showFeedback(
+        "info",
+        "Code required",
+        "Enter the 6-digit authenticator code."
+      );
       return;
     }
 
     setTotpChallengeBusy(true);
+
     try {
       const result = await verifyTotpChallenge(totpChallengeCode);
 
@@ -172,7 +259,8 @@ export default function LoginPage() {
 
       setTotpChallengeOpen(false);
       setTotpChallengeCode("");
-      navigateToPath(getPostAuthPath());
+
+      await finishAuthentication();
     } finally {
       setTotpChallengeBusy(false);
     }
@@ -182,6 +270,7 @@ export default function LoginPage() {
     setTotpChallengeOpen(false);
     setTotpChallengeCode("");
     clearTotpVerifiedSessionToken();
+
     try {
       await signOut(auth);
     } finally {
@@ -198,33 +287,56 @@ export default function LoginPage() {
     >
       <form onSubmit={handleLogin} className="space-y-6 w-full">
         <div>
-          <label className="block text-sm font-medium text-zinc-600 mb-2">Email Address</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">
+            Email Address
+          </label>
+
           <input
             required
             type="email"
             value={form.email}
-            onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+            onChange={(e) =>
+              setForm((prev) => ({
+                ...prev,
+                email: e.target.value,
+              }))
+            }
             className="w-full px-0 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-zinc-600 mb-2">Password</label>
+          <label className="block text-sm font-medium text-zinc-600 mb-2">
+            Password
+          </label>
+
           <div className="relative">
             <input
               required
               type={showPassword ? "text" : "password"}
               value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  password: e.target.value,
+                }))
+              }
               className="w-full px-0 pr-10 py-3 bg-transparent border-b border-zinc-300 focus:border-zinc-900 outline-none text-base"
             />
+
             <button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors"
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={
+                showPassword ? "Hide password" : "Show password"
+              }
             >
-              {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              {showPassword ? (
+                <EyeOff className="w-5 h-5" />
+              ) : (
+                <Eye className="w-5 h-5" />
+              )}
             </button>
           </div>
         </div>
@@ -237,6 +349,7 @@ export default function LoginPage() {
           >
             Forgot Password?
           </button>
+
           <button
             type="button"
             onClick={() => navigateToSignup()}
@@ -251,7 +364,11 @@ export default function LoginPage() {
           disabled={loading}
           className="w-full sm:w-auto min-w-[180px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2"
         >
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Log In"}
+          {loading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            "Log In"
+          )}
         </button>
       </form>
 
