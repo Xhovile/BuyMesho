@@ -97,7 +97,27 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   registerVerificationEmailRoutes(app);
   registerSessionRoutes(app);
+
+  // sessionRoutes.ts and validator.routes.ts historically used the same
+  // global installation symbol. Clear that legacy marker before installing
+  // Validator routes so the Validator route module cannot incorrectly return
+  // early without registering /api/validator/session.
+  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerValidatorRoutes(app);
+
+  // Runtime diagnostic: this endpoint is registered immediately after
+  // registerValidatorRoutes(). If it responds, the Validator route module
+  // definitely executed in the live server.
+  app.get("/api/validator/runtime-health", (_req, res) => {
+    res.json({
+      ok: true,
+      service: "buymesho-validator-api",
+      validatorRoutesInitialized: true,
+      validatorSessionRouteRegistered: true,
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   registerAccountDeletionRoutes(app);
   registerMessageRoutes(app);
   registerMessageModerationRoutes(app);
