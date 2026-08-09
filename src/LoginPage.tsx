@@ -149,6 +149,7 @@ export default function LoginPage() {
           : "Access your BuyMesho account, manage your profile, and continue buying or selling."
         }
         hideNavigation
+        hideBackButton
         showBrandHero
       >
         <form onSubmit={handleLogin} className="w-full space-y-6">
