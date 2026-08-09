@@ -43,9 +43,11 @@ export default function SignupPage() {
     e.preventDefault();
     if (!passwordsMatch) { showFeedback("error", "Passwords do not match", "Ensure both passwords are identical."); return; }
     if (!passwordChecks.hasMinLength || !passwordChecks.hasLowercase || !passwordChecks.hasUppercase || !passwordChecks.hasSpecial) { showFeedback("error", "Password requirements not met", PASSWORD_REQUIREMENTS_MESSAGE); return; }
-    const email = form.email.trim(); setLoading(true);
+    const email = form.email.trim();
+    setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, form.password); const user = userCredential.user;
+      const userCredential = await createUserWithEmailAndPassword(auth, email, form.password);
+      const user = userCredential.user;
       const profile: UserProfile = { uid: user.uid, email, university: form.university, is_verified: false, is_seller: false, join_date: new Date().toISOString() };
       try { await bootstrapProfile(profile); } catch (profileErr) { console.warn("Profile bootstrap failed after account creation.", profileErr); }
       let emailNotice = "A verification email was sent. Check your inbox and verify before you sell.";
@@ -58,17 +60,121 @@ export default function SignupPage() {
     } finally { setLoading(false); }
   };
 
-  const fieldClass = "w-full bg-transparent px-0 py-3 text-base text-zinc-900 border-0 border-b border-zinc-300 outline-none transition focus:border-zinc-900";
+  const fieldClass = "w-full border-0 border-b border-zinc-300 bg-transparent px-0 py-3 text-base text-zinc-900 outline-none transition focus:border-zinc-900";
   return (
     <AuthSessionCheckpoint mode="signup">
-      <AccountPageShell eyebrow="Account" title="Create account" description="Join BuyMesho and start buying or selling easily." backLabel="Sign in" onBack={() => navigateToLogin()} hideNavigation>
-        <form onSubmit={handleSignUp} className="space-y-6 w-full">
-          <FormDropdown label="University" value={form.university} options={UNIVERSITIES} onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))} />
-          <div><label className="block text-sm font-medium text-zinc-600 mb-2">Email Address</label><input required type="email" autoComplete="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} className={fieldClass} /></div>
-          <div><label className="block text-sm font-medium text-zinc-600 mb-2">Password (8+ chars, lowercase, uppercase, symbol)</label><div className="relative"><input required type={showPassword ? "text" : "password"} autoComplete="new-password" value={form.password} onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors" aria-label={showPassword ? "Hide password" : "Show password"}>{showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button></div><div className="mt-3 space-y-2"><div className="h-1.5 bg-zinc-200 rounded-full overflow-hidden"><div className={`h-full rounded-full transition-all ${strength <= 1 ? "bg-red-500 w-1/4" : strength === 2 ? "bg-amber-500 w-2/4" : strength === 3 ? "bg-blue-500 w-3/4" : "bg-emerald-500 w-full"}`} /></div><div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500"><span>Password strength</span><span>{getPasswordStrengthLabel(strength)}</span></div><p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p></div></div>
-          <div><label className="block text-sm font-medium text-zinc-600 mb-2">Confirm Password</label><div className="relative"><input required type={showConfirmPassword ? "text" : "password"} autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))} className={`${fieldClass} pr-10`} /><button type="button" onClick={() => setShowConfirmPassword((prev) => !prev)} className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 hover:text-zinc-800 transition-colors" aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}>{showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}</button></div>{form.confirmPassword.length > 0 && <p className={`text-sm mt-2 ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>{passwordsMatch ? "Passwords match" : "Passwords do not match"}</p>}</div>
-          <button type="submit" disabled={loading} className="w-full sm:w-auto min-w-[200px] bg-zinc-900 text-white py-3 px-6 rounded-2xl font-bold hover:bg-zinc-800 transition-colors flex items-center justify-center gap-2">{loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}</button>
+      <AccountPageShell
+        eyebrow="Account"
+        title="Create account"
+        description="Join BuyMesho and start buying or selling easily."
+        backLabel="Sign in"
+        onBack={() => navigateToLogin()}
+        hideNavigation
+        showBrandHero
+      >
+        <form onSubmit={handleSignUp} className="w-full space-y-6 pb-28">
+          <FormDropdown
+            label="University"
+            value={form.university}
+            options={UNIVERSITIES}
+            onChange={(value) => setForm((prev) => ({ ...prev, university: value as University }))}
+          />
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-zinc-600">Email Address</label>
+            <input
+              required
+              type="email"
+              autoComplete="email"
+              value={form.email}
+              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              className={fieldClass}
+            />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-zinc-600">Password (8+ chars, lowercase, uppercase, symbol)</label>
+            <div className="relative">
+              <input
+                required
+                type={showPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={form.password}
+                onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+                className={`${fieldClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-2">
+              <div className="h-1.5 overflow-hidden rounded-full bg-zinc-200">
+                <div
+                  className={`h-full rounded-full transition-all ${
+                    strength <= 1
+                      ? "w-1/4 bg-red-500"
+                      : strength === 2
+                        ? "w-2/4 bg-amber-500"
+                        : strength === 3
+                          ? "w-3/4 bg-blue-500"
+                          : "w-full bg-emerald-500"
+                  }`}
+                />
+              </div>
+              <div className="flex items-center justify-between gap-3 text-xs font-medium text-zinc-500">
+                <span>Password strength</span>
+                <span>{getPasswordStrengthLabel(strength)}</span>
+              </div>
+              <p className="text-xs text-zinc-500">{getPasswordTip(passwordChecks)}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-zinc-600">Confirm Password</label>
+            <div className="relative">
+              <input
+                required
+                type={showConfirmPassword ? "text" : "password"}
+                autoComplete="new-password"
+                value={form.confirmPassword}
+                onChange={(e) => setForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                className={`${fieldClass} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-zinc-500 transition-colors hover:text-zinc-800"
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+            {form.confirmPassword.length > 0 && (
+              <p className={`mt-2 text-sm ${passwordsMatch ? "text-emerald-600" : "text-red-600"}`}>
+                {passwordsMatch ? "Passwords match" : "Passwords do not match"}
+              </p>
+            )}
+          </div>
+
+          <div className="sticky bottom-4 z-20 pt-2">
+            <div className="rounded-[1.5rem] border border-white/80 bg-white/95 p-3 shadow-[0_18px_50px_rgba(15,23,42,0.14)] backdrop-blur">
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Create Account"}
+              </button>
+            </div>
+          </div>
         </form>
+
         {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={closeFeedback} />}
       </AccountPageShell>
     </AuthSessionCheckpoint>
