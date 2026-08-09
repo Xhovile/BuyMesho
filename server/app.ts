@@ -1,5 +1,4 @@
 import express, { type Express } from "express";
-import cors from "cors";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
 import { registerSessionRoutes } from "./auth/sessionRoutes.js";
@@ -8,16 +7,27 @@ import { registerValidatorRoutes } from "./routes/validator.routes.js";
 export function createApp(): Express {
   const app = express();
 
-  app.use(
-    cors({
-      origin: [
-        "https://ticket-validator.vercel.app",
-        "https://buymesho.vercel.app",
-      ],
-      methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
-    }),
-  );
+  // Ticket Validator authenticates with a Firebase Bearer token, not cookies.
+  // Reflect the requesting origin so the validator can call BuyMesho's API
+  // from its Vercel deployment without depending on a hard-coded hostname.
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+
+    if (origin) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Vary", "Origin");
+    }
+
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+    if (req.method === "OPTIONS") {
+      res.status(204).end();
+      return;
+    }
+
+    next();
+  });
 
   app.use("/api/payments/paychangu/webhook", express.raw({ type: "application/json" }));
   app.use("/api/payments/paychangu-payout/webhook", express.raw({ type: "application/json" }));
