@@ -57,6 +57,12 @@ type CheckoutItemInput = {
   quantity?: unknown;
 };
 
+type TicketHolderInput = {
+  fullName?: unknown;
+  email?: unknown;
+  phone?: unknown;
+};
+
 type OrderBundle = {
   order: ReturnType<typeof orderRepository.findById>;
   payment: ReturnType<typeof paymentRepository.findByReference> | null;
@@ -113,6 +119,24 @@ function buildPublicPaymentStatus(reference: string) {
   };
 }
 
+function createPublicTicketId() {
+  return `BM-${randomUUID().replace(/-/g, "").slice(0, 10).toUpperCase()}`;
+}
+
+function normalizeTicketHolder(input: TicketHolderInput | undefined) {
+  const fullName = typeof input?.fullName === "string" ? input.fullName.trim() : "";
+  const email = typeof input?.email === "string" ? input.email.trim().toLowerCase() : "";
+  const phone = typeof input?.phone === "string" ? input.phone.trim() : "";
+  return { fullName, email, phone };
+}
+
+function validateTicketHolder(holder: ReturnType<typeof normalizeTicketHolder>) {
+  if (holder.fullName.length < 2) return "Ticket holder full name is required";
+  if (!/^\S+@\S+\.\S+$/.test(holder.email)) return "A valid ticket holder email is required";
+  if (holder.phone.length < 7) return "A valid ticket holder phone number is required";
+  return null;
+}
+
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -128,11 +152,18 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const cancelUrl = body.cancelUrl;
       const buyerName = body.buyerName;
       const buyerPhone = body.buyerPhone;
+      const ticketHolder = normalizeTicketHolder(body.ticketHolder as TicketHolderInput | undefined);
       const hasLegacyListingId = listingId !== undefined && listingId !== null && String(listingId).trim() !== "";
       const requestedItems: CheckoutItemInput[] = items.length > 0 ? items : (hasLegacyListingId ? [{ listingId, quantity }] : []);
 
       if (requestedItems.length === 0) {
         return res.status(400).json({ error: "listingId or items are required" });
+      }
+
+      const containsEventTicket = requestedItems.some((item) => item?.eventId !== undefined && item?.eventId !== null && String(item.eventId).trim() !== "");
+      if (containsEventTicket) {
+        const holderError = validateTicketHolder(ticketHolder);
+        if (holderError) return res.status(400).json({ error: holderError });
       }
 
       const db: any = getPaymentDb();
@@ -202,6 +233,17 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
             quantity: safeQty,
           });
           sellerIds.add(String(event.creator_uid ?? `event:${event.id}`));
+
+          const ticketRecords = Array.from({ length: safeQty }, () => ({
+            ticketId: createPublicTicketId(),
+            holder: {
+              fullName: ticketHolder.fullName,
+              email: ticketHolder.email,
+              phone: ticketHolder.phone,
+            },
+            status: "pending",
+          }));
+
           orderItems.push({
             kind: "event_ticket",
             eventId: String(event.id),
@@ -212,8 +254,12 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
             venue: event.venue ?? "",
             location: event.location ?? "",
             ticketLink: event.ticket_link ?? null,
+            ticketType: "General Admission",
             quantity: safeQty,
             unitPrice: { amount: unitPrice, currency },
+            ticketId: ticketRecords[0]?.ticketId ?? createPublicTicketId(),
+            ticketHolder: ticketRecords[0]?.holder ?? ticketHolder,
+            tickets: ticketRecords,
             reference: `${orderId}-EVENT-${String(orderItems.length + 1).padStart(2, "0")}`,
           });
           continue;
@@ -281,9 +327,9 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         amount: { amount: feeBreakdown.finalTotalAmount, currency },
         customer: {
           id: buyerUid,
-          name: buyerName || buyerEmail || buyerUid,
-          email: buyerEmail || undefined,
-          phoneNumber: buyerPhone,
+          name: buyerName || ticketHolder.fullName || buyerEmail || buyerUid,
+          email: buyerEmail || ticketHolder.email || undefined,
+          phoneNumber: buyerPhone || ticketHolder.phone || undefined,
         },
         metadata: {
           listingIds,
@@ -291,6 +337,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           eventDetails,
           buyerId: buyerUid,
           buyerEmail: buyerEmail || undefined,
+          ticketHolder: containsEventTicket ? ticketHolder : undefined,
           settlementRoute,
           returnUrl,
           cancelUrl,
