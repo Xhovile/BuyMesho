@@ -168,6 +168,7 @@ function ensureEventTicketStatsSchema() {
     FROM events e
     LEFT JOIN orders o ON TRUE
     LEFT JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) AS item ON TRUE
+    WHERE NOT EXISTS (SELECT 1 FROM event_ticket_stats)
     GROUP BY e.id
     ON CONFLICT (event_id) DO UPDATE SET
       tickets_sold = EXCLUDED.tickets_sold,
