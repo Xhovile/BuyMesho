@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
-import { registerValidatorProjectionRoutes } from "./validator.projection.routes.js";
+import { registerValidatorProjectionRoutes } from "./validatorProjection.routes.js";
 import { registerValidatorPublicTicketRoutes } from "./validator.publicTickets.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
 import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes.js";
@@ -56,62 +56,31 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   const { db, requireAuth, requireFirebaseUser } = deps;
 
   if (getConfiguredAdminEmails().length === 0) {
-    console.warn(
-      "Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access."
-    );
+    console.warn("Admin email list is empty. Set ADMIN_EMAILS (or VITE_ADMIN_EMAILS) to enable admin access.");
   }
 
-  function logAdminAction({
-    admin_uid,
-    admin_email,
-    action_type,
-    target_type,
-    target_id,
-    details,
-  }: LogAdminActionArgs) {
+  function logAdminAction({ admin_uid, admin_email, action_type, target_type, target_id, details }: LogAdminActionArgs) {
     if (!isAdminActionType(action_type) || !isAdminTargetType(target_type)) {
       console.warn("Skipped invalid admin action log entry", { action_type, target_type });
       return;
     }
-
     try {
-      db.prepare(`
-        INSERT INTO admin_actions (
-          admin_uid,
-          admin_email,
-          action_type,
-          target_type,
-          target_id,
-          details
-        ) VALUES (?, ?, ?, ?, ?, ?)
-      `).run(
-        admin_uid ?? null,
-        admin_email ?? null,
-        action_type,
-        target_type,
-        target_id ?? null,
-        details ? JSON.stringify(details) : null
+      db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
+        admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
       );
-    } catch (error) {
-      console.warn("Failed to log admin action:", error);
-    }
+    } catch (error) { console.warn("Failed to log admin action:", error); }
   }
 
   registerVerificationEmailRoutes(app);
 
-  // Projection-backed ticket routes must be registered first so Scanner and
-  // Attendees never fall back to reconstructing tickets from every order.
+  // Phase 4 projection routes are deliberately first. Express is first-match,
+  // so Scanner/Attendees use event_tickets rather than legacy order scans.
   registerValidatorProjectionRoutes(app);
 
-  // Validator routes must be registered before the legacy session routes.
-  // sessionRoutes.ts still exposes legacy /api/validator/* handlers, and
-  // Express uses first-match routing. The Validator and legacy modules use
-  // separate installation flags so one cannot suppress the other.
   delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerValidatorRoutes(app);
   registerValidatorPublicTicketRoutes(app);
 
-  // Allow the legacy session module to register its non-overlapping routes too.
   delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerSessionRoutes(app);
 
@@ -130,7 +99,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
-
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
