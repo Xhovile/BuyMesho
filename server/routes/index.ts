@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
+import { registerValidatorProjectionRoutes } from "./validator.projection.routes.js";
 import { registerValidatorPublicTicketRoutes } from "./validator.publicTickets.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
 import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes.js";
@@ -97,6 +98,10 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   }
 
   registerVerificationEmailRoutes(app);
+
+  // Projection-backed ticket routes must be registered first so Scanner and
+  // Attendees never fall back to reconstructing tickets from every order.
+  registerValidatorProjectionRoutes(app);
 
   // Validator routes must be registered before the legacy session routes.
   // sessionRoutes.ts still exposes legacy /api/validator/* handlers, and
