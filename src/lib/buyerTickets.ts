@@ -82,7 +82,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
 
   const tickets: BuyerTicketRecord[] = [];
   const seen = new Set<string>();
-  const pushTicket = (ticket: BuyerTicketRecord) => { const dedupeKey = `${ticket.eventId}:${ticket.ticketId}`; if (seen.has(dedupeKey)) return; seen.add(dedupeKey); tickets.push(ticket); };
+  const pushTicket = (ticket: BuyerTicketRecord) => { const dedupeKey = `${ticket.eventId}:${ticket.ticketId || ticket.key}`; if (seen.has(dedupeKey)) return; seen.add(dedupeKey); tickets.push(ticket); };
 
   orders.forEach((bundle) => {
     const payment = paymentByReference.get(getOrderReference(bundle)) ?? paymentByOrderId.get(String(bundle.order?.id ?? ""));
@@ -110,10 +110,8 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const ticketRecords = Array.isArray(itemData.tickets) ? itemData.tickets.filter((entry) => entry && typeof entry === "object") as Array<Record<string, unknown>> : [];
       const fallbackTicketId = readString(itemData, "ticketId") || formatTicketCode(reference, String(bundle.order?.id ?? reference), payment?.txRef ?? null);
       const ticketType = readString(itemData, "ticketType") || "General Admission";
-
-      // Each purchased ticket is a separate public ticket. Never collapse multiple
-      // ticket IDs into one roster/card record.
       const records = ticketRecords.length > 0 ? ticketRecords : [{ ticketId: fallbackTicketId, holder: itemData.ticketHolder } as Record<string, unknown>];
+
       records.forEach((record, index) => {
         const holder = record.holder && typeof record.holder === "object" ? record.holder as Record<string, unknown> : itemData.ticketHolder && typeof itemData.ticketHolder === "object" ? itemData.ticketHolder as Record<string, unknown> : {};
         const ticketId = readString(record, "ticketId") || `${fallbackTicketId}-${index + 1}`;
@@ -162,9 +160,10 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const title = eventDetail?.title || payment.listingTitle || `Event ${eventId}`;
       const quantity = Math.max(1, Number(eventDetail?.quantity ?? checkoutItem?.quantity ?? payment.quantity ?? 1) || 1);
       const amount = resolvePaymentTicketAmount(payment, eventId, eventDetail);
-      const ticketCode = formatTicketCode(reference, String(payment.orderId ?? reference), payment.txRef ?? null);
       const updatedAt = payment.createdAt ?? payment.updatedAt ?? null;
-      pushTicket({ key: `${reference}:${eventId}:${ticketCode}`, orderId: String(payment.orderId ?? reference), reference, eventId, ticketId: ticketCode, ticketType: "General Admission", holderName: "", holderEmail: "", holderPhone: "", title, organizerName: eventDetail?.organizerName || "Event organizer", eventDate: eventDetail?.eventDate || "", startTime: eventDetail?.startTime || "", venue: eventDetail?.venue || "", location: eventDetail?.location || "", quantity, amount, currency: "MWK", status: ticketStatus, paymentStatus: payment.status, orderStatus: payment.status, ticketCode, detail: buildDetail(eventDetail?.eventDate || "", eventDetail?.startTime || "", eventDetail?.venue || "", eventDetail?.location || "", "payment"), updatedAt, source: "payment" });
+      // A payment record alone does not contain the canonical public Ticket ID.
+      // Do not expose an order/payment reference as a fake Ticket ID while payment is pending.
+      pushTicket({ key: `${reference}:${eventId}:pending`, orderId: String(payment.orderId ?? reference), reference, eventId, ticketId: "", ticketType: "General Admission", holderName: "", holderEmail: "", holderPhone: "", title, organizerName: eventDetail?.organizerName || "Event organizer", eventDate: eventDetail?.eventDate || "", startTime: eventDetail?.startTime || "", venue: eventDetail?.venue || "", location: eventDetail?.location || "", quantity, amount, currency: "MWK", status: ticketStatus, paymentStatus: payment.status, orderStatus: payment.status, ticketCode: "", detail: buildDetail(eventDetail?.eventDate || "", eventDetail?.startTime || "", eventDetail?.venue || "", eventDetail?.location || "", "payment"), updatedAt, source: "payment" });
     });
   });
 
