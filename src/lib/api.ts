@@ -78,8 +78,6 @@ function rewriteEventLifecyclePayload(url: string, init: ApiFetchInit): ApiFetch
   for (const key of lifecycleKeys) {
     if (nextPayload[key] === undefined && spec[key] !== undefined && spec[key] !== "") nextPayload[key] = spec[key];
   }
-  if (nextPayload.publication_mode === undefined) nextPayload.publication_mode = "immediate";
-  if (nextPayload.runtime_mode === undefined) nextPayload.runtime_mode = "automatic";
   return { ...init, body: JSON.stringify(nextPayload) };
 }
 
