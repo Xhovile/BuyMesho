@@ -16,6 +16,8 @@ export type EventSpecValue = ListingSpecValues[string];
 
 export const EVENT_TICKET_MODE_OPTIONS = ["Free", "Paid", "RSVP", "Donation"] as const;
 export const EVENT_DELIVERY_MODE_OPTIONS = ["In Person", "Online", "Hybrid"] as const;
+export const EVENT_PUBLICATION_MODE_OPTIONS = ["immediate", "scheduled"] as const;
+export const EVENT_RUNTIME_MODE_OPTIONS = ["automatic", "force_live", "force_upcoming"] as const;
 
 export const textField = ({
   key,
@@ -161,20 +163,57 @@ export const multiselectField = ({
   helpText,
 });
 
+const EVENT_LIFECYCLE_FIELDS: ListingSpecField[] = [
+  textField({
+    key: "end_time",
+    label: "End Time",
+    advanced: false,
+    placeholder: "e.g. 23:00",
+    helpText: "Used by Automatic runtime mode to determine when the event ends.",
+  }),
+  selectField({
+    key: "publication_mode",
+    label: "Publication",
+    options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS),
+    helpText: "Choose immediate publication or scheduled publication.",
+  }),
+  textField({
+    key: "publication_at",
+    label: "Publication Date & Time",
+    advanced: false,
+    placeholder: "e.g. 2026-08-20T18:00:00+02:00",
+    helpText: "Only used when Publication is scheduled.",
+  }),
+  selectField({
+    key: "runtime_mode",
+    label: "Runtime Status",
+    options: Array.from(EVENT_RUNTIME_MODE_OPTIONS),
+    helpText: "Automatic follows the event clock; Force Live/Upcoming overrides it.",
+  }),
+];
+
 export function createEventConfig(params: {
   itemType: string;
   fields: ListingSpecField[];
   fieldGroups: ListingFieldGroup[];
   requiredKeys: string[];
 }): EventItemConfig {
+  const fields = [...params.fields, ...EVENT_LIFECYCLE_FIELDS];
   return {
     schema: {
       category: EVENT_CATEGORY,
       subcategory: EVENT_SUBCATEGORY,
       itemType: params.itemType,
-      fields: params.fields,
+      fields,
     },
-    fieldGroups: params.fieldGroups,
+    fieldGroups: [
+      ...params.fieldGroups,
+      { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) },
+    ],
+    fieldGroups: [
+      ...params.fieldGroups,
+      { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) },
+    ],
     requiredKeys: params.requiredKeys,
   };
 }
