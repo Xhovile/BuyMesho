@@ -2,6 +2,7 @@ import { postgresDb } from "../../db.js";
 import { ensureMessageSchema } from "../../../src/server/messageSchema.js";
 import { initPaymentSchema } from "../../postgresCompat/schema.js";
 import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema.js";
+import { backfillEventTickets } from "../../modules/orders/eventTicketProjection.js";
 
 function ensureExtraTables() {
   postgresDb.exec(`
@@ -151,7 +152,7 @@ function ensureEventTicketStatsSchema() {
     DROP TRIGGER IF EXISTS trg_buymesho_sync_event_ticket_stats ON orders;
     CREATE TRIGGER trg_buymesho_sync_event_ticket_stats
     AFTER INSERT OR UPDATE OF status, items ON orders
-    FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order();
+    FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order;
 
     INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
     SELECT e.id,
@@ -202,5 +203,6 @@ export function runMigrations() {
   initPaymentSchema(postgresDb);
   ensureEventTicketStatsSchema();
   backfillOrderPaidAtFromPayments();
+  backfillEventTickets();
   return postgresDb;
 }
