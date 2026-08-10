@@ -100,13 +100,14 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   // Validator routes must be registered before the legacy session routes.
   // sessionRoutes.ts still exposes legacy /api/validator/* handlers, and
-  // Express uses first-match routing. Registering the new Validator module
-  // first ensures /api/validator/me, /api/validator/events and related
-  // endpoints reach the canonical Validator implementation.
-  delete (app as any)[Symbol.for("buymesho.validatorRoutesInstalled")];
+  // Express uses first-match routing. The Validator and legacy modules use
+  // separate installation flags so one cannot suppress the other.
+  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerValidatorRoutes(app);
   registerValidatorPublicTicketRoutes(app);
 
+  // Allow the legacy session module to register its non-overlapping routes too.
+  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerSessionRoutes(app);
 
   registerAccountDeletionRoutes(app);
