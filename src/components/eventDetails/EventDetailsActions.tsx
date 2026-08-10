@@ -55,7 +55,7 @@ export default function EventDetailsActions({
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => navigateToPath(`${EVENTS_MANAGE_PATH}?event=${event.id}`)} className={ownerActionButtonClass}>
             <BarChart3 className="h-4 w-4" />
-            Creator dashboard
+            Open Event Manager
           </button>
           <button type="button" onClick={() => navigateToPath(`${EVENTS_CREATE_PATH}?edit=${event.id}&skipCreatorCheck=1`)} className={ownerActionButtonClass}>
             <Pencil className="h-4 w-4" />
