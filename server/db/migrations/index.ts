@@ -98,6 +98,7 @@ function ensureExtraTables() {
       organizer_name TEXT NOT NULL,
       event_date TEXT NOT NULL,
       start_time TEXT NOT NULL,
+      end_time TEXT,
       venue TEXT NOT NULL,
       location TEXT NOT NULL,
       ticket_mode TEXT NOT NULL,
@@ -108,6 +109,10 @@ function ensureExtraTables() {
       poster_alt TEXT,
       spec_values TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'published',
+      publication_status TEXT NOT NULL DEFAULT 'published',
+      publication_mode TEXT NOT NULL DEFAULT 'immediate',
+      publication_at TIMESTAMPTZ,
+      runtime_mode TEXT NOT NULL DEFAULT 'automatic',
       deleted_at TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -125,74 +130,81 @@ function ensureExtraTables() {
   `);
 }
 
-function normalizeHardDeleteAfterColumn() {
-  const column = postgresDb
-    .prepare(
-      `
-        SELECT data_type AS data_type
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = 'listings'
-          AND column_name = 'hard_delete_after'
-        LIMIT 1
-      `
-    )
-    .get() as { data_type?: string } | undefined;
-
-  if (!column?.data_type || column.data_type === 'timestamp with time zone') {
-    return;
-  }
-
+function ensureEventLifecycleSchema() {
   postgresDb.exec(`
-    UPDATE listings
-    SET hard_delete_after = NULL
-    WHERE hard_delete_after IS NOT NULL
-      AND btrim(hard_delete_after) = '';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time TEXT;
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_status TEXT NOT NULL DEFAULT 'published';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_mode TEXT NOT NULL DEFAULT 'immediate';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_at TIMESTAMPTZ;
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS runtime_mode TEXT NOT NULL DEFAULT 'automatic';
 
-    ALTER TABLE listings
-    ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ
-    USING CASE
-      WHEN hard_delete_after IS NULL OR btrim(hard_delete_after) = '' THEN NULL
-      ELSE hard_delete_after::timestamptz
+    UPDATE events
+    SET publication_status = CASE
+      WHEN lower(COALESCE(status, 'published')) = 'draft' THEN 'draft'
+      WHEN lower(COALESCE(status, 'published')) = 'inactive' THEN 'paused'
+      WHEN lower(COALESCE(status, 'published')) = 'cancelled' THEN 'cancelled'
+      ELSE 'published'
+    END
+    WHERE publication_status IS NULL
+       OR (publication_status = 'published' AND lower(COALESCE(status, 'published')) <> 'published');
+
+    UPDATE events SET publication_mode = 'immediate'
+    WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate','scheduled');
+
+    UPDATE events SET runtime_mode = 'automatic'
+    WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic','force_live','force_upcoming');
+
+    UPDATE events
+    SET spec_values = jsonb_set(
+      jsonb_set(
+        CASE WHEN jsonb_typeof(COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
+             THEN COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)
+             ELSE '{}'::jsonb END,
+        '{end_time}', to_jsonb(end_time), true
+      ),
+      '{runtime_mode}', to_jsonb(runtime_mode), true
+    )::text;
+
+    CREATE OR REPLACE FUNCTION buymesho_sync_event_runtime_spec()
+    RETURNS trigger AS $$
+    BEGIN
+      NEW.spec_values := jsonb_set(
+        jsonb_set(
+          CASE WHEN jsonb_typeof(COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
+               THEN COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)
+               ELSE '{}'::jsonb END,
+          '{end_time}', to_jsonb(NEW.end_time), true
+        ),
+        '{runtime_mode}', to_jsonb(NEW.runtime_mode), true
+      )::text;
+      RETURN NEW;
     END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS trg_buymesho_sync_event_runtime_spec ON events;
+    CREATE TRIGGER trg_buymesho_sync_event_runtime_spec
+    BEFORE INSERT OR UPDATE OF end_time, runtime_mode, spec_values ON events
+    FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_runtime_spec();
   `);
+}
+
+function normalizeHardDeleteAfterColumn() {
+  const column = postgresDb.prepare(`SELECT data_type AS data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'listings' AND column_name = 'hard_delete_after' LIMIT 1`).get() as { data_type?: string } | undefined;
+  if (!column?.data_type || column.data_type === 'timestamp with time zone') return;
+  postgresDb.exec(`UPDATE listings SET hard_delete_after = NULL WHERE hard_delete_after IS NOT NULL AND btrim(hard_delete_after) = ''; ALTER TABLE listings ALTER COLUMN hard_delete_after TYPE TIMESTAMPTZ USING CASE WHEN hard_delete_after IS NULL OR btrim(hard_delete_after) = '' THEN NULL ELSE hard_delete_after::timestamptz END;`);
 }
 
 function updateSellerPayoutAccountColumns() {
-  postgresDb.exec(`
-    ALTER TABLE seller_payout_accounts
-    ALTER COLUMN account_number_encrypted DROP NOT NULL;
-
-    ALTER TABLE seller_payout_accounts
-    ALTER COLUMN mobile_encrypted DROP NOT NULL;
-  `);
+  postgresDb.exec(`ALTER TABLE seller_payout_accounts ALTER COLUMN account_number_encrypted DROP NOT NULL; ALTER TABLE seller_payout_accounts ALTER COLUMN mobile_encrypted DROP NOT NULL;`);
 }
 
 function backfillOrderPaidAtFromPayments() {
-  postgresDb.exec(`
-    UPDATE orders
-    SET paid_at = COALESCE(
-      paid_at,
-      (
-        SELECT MIN(COALESCE(p.paid_at, p.updated_at, p.created_at))
-        FROM payments p
-        WHERE p.order_id = orders.id
-          AND p.status = 'captured'
-      )
-    )
-    WHERE paid_at IS NULL
-      AND status IN ('paid', 'in_escrow', 'fulfilled')
-      AND EXISTS (
-        SELECT 1
-        FROM payments p
-        WHERE p.order_id = orders.id
-          AND p.status = 'captured'
-      );
-  `);
+  postgresDb.exec(`UPDATE orders SET paid_at = COALESCE(paid_at,(SELECT MIN(COALESCE(p.paid_at,p.updated_at,p.created_at)) FROM payments p WHERE p.order_id=orders.id AND p.status='captured')) WHERE paid_at IS NULL AND status IN ('paid','in_escrow','fulfilled') AND EXISTS (SELECT 1 FROM payments p WHERE p.order_id=orders.id AND p.status='captured');`);
 }
 
 export function runMigrations() {
   ensureExtraTables();
+  ensureEventLifecycleSchema();
   ensureMessageSchema(postgresDb);
   normalizeHardDeleteAfterColumn();
   updateSellerPayoutAccountColumns();
