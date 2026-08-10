@@ -5,135 +5,17 @@ import { ensurePayoutLifecycleSchema } from "../../modules/payouts/payout.schema
 
 function ensureExtraTables() {
   postgresDb.exec(`
-    CREATE TABLE IF NOT EXISTS seller_applications (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      applicant_uid TEXT NOT NULL,
-      applicant_email TEXT,
-      full_legal_name TEXT NOT NULL,
-      institution TEXT NOT NULL,
-      applicant_type TEXT NOT NULL,
-      institution_id_number TEXT NOT NULL,
-      whatsapp_number TEXT,
-      business_name TEXT NOT NULL,
-      what_to_sell TEXT NOT NULL,
-      business_description TEXT NOT NULL,
-      reason_for_applying TEXT NOT NULL,
-      proof_document_url TEXT NOT NULL,
-      agreed_to_rules INTEGER NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'pending',
-      reviewed_by_uid TEXT,
-      review_notes TEXT,
-      reviewed_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS listing_reviews (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      listing_id BIGINT NOT NULL,
-      seller_uid TEXT NOT NULL,
-      reviewer_uid TEXT NOT NULL,
-      reviewer_email TEXT,
-      reviewer_name TEXT NOT NULL,
-      rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-      title TEXT,
-      body TEXT,
-      is_verified_purchase INTEGER NOT NULL DEFAULT 0,
-      seller_reply TEXT,
-      seller_reply_at TIMESTAMPTZ,
-      is_hidden INTEGER NOT NULL DEFAULT 0,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE (listing_id, reviewer_uid)
-    );
-
-    CREATE TABLE IF NOT EXISTS reports (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      type TEXT NOT NULL DEFAULT 'listing',
-      listing_id BIGINT,
-      subject TEXT,
-      reason TEXT NOT NULL,
-      details TEXT,
-      reporter_uid TEXT,
-      reporter_email TEXT,
-      status TEXT NOT NULL DEFAULT 'open',
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS event_creators (
-      uid TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      display_name TEXT NOT NULL,
-      organization_name TEXT NOT NULL,
-      organization_type TEXT NOT NULL,
-      contact_whatsapp TEXT,
-      event_types TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'approved',
-      active_until TIMESTAMPTZ,
-      approved_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS event_creator_applications (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      applicant_uid TEXT NOT NULL,
-      applicant_email TEXT,
-      display_name TEXT NOT NULL,
-      organization_name TEXT NOT NULL,
-      organization_type TEXT NOT NULL,
-      contact_whatsapp TEXT,
-      event_types TEXT NOT NULL,
-      reason TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'approved',
-      reviewed_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS events (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      creator_uid TEXT,
-      event_type TEXT NOT NULL,
-      event_title TEXT NOT NULL,
-      organizer_name TEXT NOT NULL,
-      event_date TEXT NOT NULL,
-      start_time TEXT NOT NULL,
-      end_time TEXT,
-      venue TEXT NOT NULL,
-      location TEXT NOT NULL,
-      ticket_mode TEXT NOT NULL,
-      ticket_price DOUBLE PRECISION,
-      ticket_link TEXT,
-      description TEXT NOT NULL,
-      contact_whatsapp TEXT,
-      poster_alt TEXT,
-      spec_values TEXT NOT NULL DEFAULT '{}',
-      status TEXT NOT NULL DEFAULT 'published',
-      publication_status TEXT NOT NULL DEFAULT 'published',
-      publication_mode TEXT NOT NULL DEFAULT 'immediate',
-      publication_at TIMESTAMPTZ,
-      runtime_mode TEXT NOT NULL DEFAULT 'automatic',
-      deleted_at TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS event_activity (
-      id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-      event_id BIGINT NOT NULL,
-      actor_uid TEXT,
-      activity_type TEXT NOT NULL,
-      metadata TEXT,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-    );
+    CREATE TABLE IF NOT EXISTS seller_applications (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, applicant_uid TEXT NOT NULL, applicant_email TEXT, full_legal_name TEXT NOT NULL, institution TEXT NOT NULL, applicant_type TEXT NOT NULL, institution_id_number TEXT NOT NULL, whatsapp_number TEXT, business_name TEXT NOT NULL, what_to_sell TEXT NOT NULL, business_description TEXT NOT NULL, reason_for_applying TEXT NOT NULL, proof_document_url TEXT NOT NULL, agreed_to_rules INTEGER NOT NULL DEFAULT 0, status TEXT NOT NULL DEFAULT 'pending', reviewed_by_uid TEXT, review_notes TEXT, reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS listing_reviews (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, listing_id BIGINT NOT NULL, seller_uid TEXT NOT NULL, reviewer_uid TEXT NOT NULL, reviewer_email TEXT, reviewer_name TEXT NOT NULL, rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5), title TEXT, body TEXT, is_verified_purchase INTEGER NOT NULL DEFAULT 0, seller_reply TEXT, seller_reply_at TIMESTAMPTZ, is_hidden INTEGER NOT NULL DEFAULT 0, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE (listing_id, reviewer_uid));
+    CREATE TABLE IF NOT EXISTS reports (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, type TEXT NOT NULL DEFAULT 'listing', listing_id BIGINT, subject TEXT, reason TEXT NOT NULL, details TEXT, reporter_uid TEXT, reporter_email TEXT, status TEXT NOT NULL DEFAULT 'open', created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS event_creators (uid TEXT PRIMARY KEY, email TEXT NOT NULL, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'approved', active_until TIMESTAMPTZ, approved_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS event_creator_applications (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, applicant_uid TEXT NOT NULL, applicant_email TEXT, display_name TEXT NOT NULL, organization_name TEXT NOT NULL, organization_type TEXT NOT NULL, contact_whatsapp TEXT, event_types TEXT NOT NULL, reason TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'approved', reviewed_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS events (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, creator_uid TEXT, event_type TEXT NOT NULL, event_title TEXT NOT NULL, organizer_name TEXT NOT NULL, event_date TEXT NOT NULL, start_time TEXT NOT NULL, end_time TEXT, venue TEXT NOT NULL, location TEXT NOT NULL, ticket_mode TEXT NOT NULL, ticket_price DOUBLE PRECISION, ticket_link TEXT, description TEXT NOT NULL, contact_whatsapp TEXT, poster_alt TEXT, spec_values TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'published', publication_status TEXT NOT NULL DEFAULT 'published', publication_mode TEXT NOT NULL DEFAULT 'immediate', publication_at TIMESTAMPTZ, runtime_mode TEXT NOT NULL DEFAULT 'automatic', deleted_at TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP);
+    CREATE TABLE IF NOT EXISTS event_activity (id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, event_id BIGINT NOT NULL, actor_uid TEXT, activity_type TEXT NOT NULL, metadata TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE);
   `);
 }
 
 function ensureEventLifecycleSchema() {
-  // Existing installations may contain NULL spec_values values. Do not rely on
-  // a NOT NULL column constraint to normalize them; backfill first, then apply
-  // the lifecycle projection.
   postgresDb.exec(`
     ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time TEXT;
     ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_status TEXT DEFAULT 'published';
@@ -141,30 +23,23 @@ function ensureEventLifecycleSchema() {
     ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_at TIMESTAMPTZ;
     ALTER TABLE events ADD COLUMN IF NOT EXISTS runtime_mode TEXT DEFAULT 'automatic';
 
-    UPDATE events
-    SET spec_values = '{}'
-    WHERE spec_values IS NULL;
-
+    UPDATE events SET spec_values = '{}' WHERE spec_values IS NULL;
     ALTER TABLE events ALTER COLUMN spec_values SET DEFAULT '{}';
     ALTER TABLE events ALTER COLUMN spec_values SET NOT NULL;
 
-    UPDATE events
-    SET publication_status = CASE
+    UPDATE events SET publication_status = CASE
       WHEN lower(COALESCE(status, 'published')) = 'draft' THEN 'draft'
       WHEN lower(COALESCE(status, 'published')) = 'inactive' THEN 'paused'
       WHEN lower(COALESCE(status, 'published')) = 'cancelled' THEN 'cancelled'
       ELSE 'published'
     END
-    WHERE publication_status IS NULL
-       OR publication_status NOT IN ('draft','published','paused','cancelled')
+    WHERE publication_status IS NULL OR publication_status NOT IN ('draft','published','paused','cancelled')
        OR (publication_status = 'published' AND lower(COALESCE(status, 'published')) <> 'published');
 
-    UPDATE events
-    SET publication_mode = 'immediate'
+    UPDATE events SET publication_mode = 'immediate'
     WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate','scheduled');
 
-    UPDATE events
-    SET runtime_mode = 'automatic'
+    UPDATE events SET runtime_mode = 'automatic'
     WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic','force_live','force_upcoming');
 
     UPDATE events
@@ -175,9 +50,9 @@ function ensureEventLifecycleSchema() {
             THEN COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)
           ELSE '{}'::jsonb
         END,
-        '{end_time}', to_jsonb(end_time), true
+        '{end_time}', COALESCE(to_jsonb(end_time), 'null'::jsonb), true
       ),
-      '{runtime_mode}', to_jsonb(runtime_mode), true
+      '{runtime_mode}', COALESCE(to_jsonb(runtime_mode), to_jsonb('automatic'::text)), true
     )::text;
 
     ALTER TABLE events ALTER COLUMN publication_status SET DEFAULT 'published';
@@ -197,9 +72,9 @@ function ensureEventLifecycleSchema() {
               THEN COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)
             ELSE '{}'::jsonb
           END,
-          '{end_time}', to_jsonb(NEW.end_time), true
+          '{end_time}', COALESCE(to_jsonb(NEW.end_time), 'null'::jsonb), true
         ),
-        '{runtime_mode}', to_jsonb(NEW.runtime_mode), true
+        '{runtime_mode}', COALESCE(to_jsonb(NEW.runtime_mode), to_jsonb('automatic'::text)), true
       )::text;
       RETURN NEW;
     END;
