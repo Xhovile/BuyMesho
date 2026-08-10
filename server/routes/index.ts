@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
+import { registerValidatorPublicTicketRoutes } from "./validator.publicTickets.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
 import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes.js";
 import { registerMessageModerationRoutes, registerMessageRoutes } from "./messageHubRoutes.js";
@@ -104,6 +105,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   // early without registering /api/validator/session.
   delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerValidatorRoutes(app);
+  registerValidatorPublicTicketRoutes(app);
 
   // Runtime diagnostic: this endpoint is registered immediately after
   // registerValidatorRoutes(). If it responds, the Validator route module
