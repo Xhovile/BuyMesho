@@ -1,6 +1,5 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
-import { hasAdminAccess } from "./adminAccess.js";
 import { getPaymentDb } from "../postgresCompat.js";
 import { orderRepository } from "../modules/orders/order.repository.js";
 import { paymentRepository } from "../modules/payments/payment.repository.js";
@@ -62,7 +61,6 @@ type PublicTicketRecord = {
   seatOrZone: string;
   status: "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked";
   purchaseDate: string;
-  orderId: string;
   updatedAt: string;
 };
 
@@ -116,10 +114,6 @@ function mapOrderStatusToTicketStatus(orderStatus: string, paymentStatus: string
   if (status === "fulfilled") return "Inside" as const;
   if (status === "in_escrow") return "Outside" as const;
   return "Waiting Entry" as const;
-}
-
-function normalizeTicketId(value: string) {
-  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
 }
 
 function readHolder(source: Record<string, unknown> | undefined): PublicTicketHolder {
@@ -180,7 +174,6 @@ function buildPublicTicketsForEvent(uid: string, eventId: string) {
           seatOrZone,
           status: mapOrderStatusToTicketStatus(order.status, payment?.status ?? null),
           purchaseDate,
-          orderId: order.id,
           updatedAt,
         });
       });
