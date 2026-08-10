@@ -87,6 +87,96 @@ function ensureEventLifecycleSchema() {
   `);
 }
 
+function ensureEventTicketStatsSchema() {
+  postgresDb.exec(`
+    CREATE TABLE IF NOT EXISTS event_ticket_stats (
+      event_id BIGINT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+      tickets_sold INTEGER NOT NULL DEFAULT 0,
+      tickets_checked_in INTEGER NOT NULL DEFAULT 0,
+      tickets_remaining INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_event_ticket_stats_updated_at ON event_ticket_stats(updated_at);
+
+    CREATE OR REPLACE FUNCTION buymesho_sync_event_ticket_stats_for_order()
+    RETURNS trigger AS $$
+    DECLARE
+      item JSONB;
+      event_id_value BIGINT;
+      quantity_value INTEGER;
+      old_eligible BOOLEAN;
+      new_eligible BOOLEAN;
+    BEGIN
+      old_eligible := TG_OP = 'UPDATE' AND OLD.status IN ('paid','in_escrow','fulfilled');
+      new_eligible := NEW.status IN ('paid','in_escrow','fulfilled');
+
+      IF old_eligible THEN
+        FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(OLD.items, '')::jsonb, '[]'::jsonb)) LOOP
+          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
+             AND (item->>'eventId') ~ '^[0-9]+$' THEN
+            event_id_value := (item->>'eventId')::BIGINT;
+            quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
+            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
+            VALUES (event_id_value, 0, 0, 0, CURRENT_TIMESTAMP)
+            ON CONFLICT (event_id) DO NOTHING;
+            UPDATE event_ticket_stats
+            SET tickets_sold = GREATEST(0, tickets_sold - quantity_value),
+                tickets_remaining = GREATEST(0, tickets_sold - quantity_value - tickets_checked_in),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE event_id = event_id_value;
+          END IF;
+        END LOOP;
+      END IF;
+
+      IF new_eligible THEN
+        FOR item IN SELECT value FROM jsonb_array_elements(COALESCE(NULLIF(NEW.items, '')::jsonb, '[]'::jsonb)) LOOP
+          IF (item->>'kind' = 'event_ticket' OR NULLIF(item->>'eventId', '') IS NOT NULL)
+             AND (item->>'eventId') ~ '^[0-9]+$' THEN
+            event_id_value := (item->>'eventId')::BIGINT;
+            quantity_value := GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0);
+            INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
+            VALUES (event_id_value, quantity_value, 0, quantity_value, CURRENT_TIMESTAMP)
+            ON CONFLICT (event_id) DO UPDATE SET
+              tickets_sold = event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold,
+              tickets_remaining = GREATEST(0, event_ticket_stats.tickets_sold + EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in),
+              updated_at = CURRENT_TIMESTAMP;
+          END IF;
+        END LOOP;
+      END IF;
+
+      RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+    DROP TRIGGER IF EXISTS trg_buymesho_sync_event_ticket_stats ON orders;
+    CREATE TRIGGER trg_buymesho_sync_event_ticket_stats
+    AFTER INSERT OR UPDATE OF status, items ON orders
+    FOR EACH ROW EXECUTE FUNCTION buymesho_sync_event_ticket_stats_for_order();
+
+    INSERT INTO event_ticket_stats(event_id, tickets_sold, tickets_checked_in, tickets_remaining, updated_at)
+    SELECT e.id,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled')
+             AND (item->>'eventId') ~ '^[0-9]+$'
+             AND (item->>'eventId')::BIGINT = e.id
+             THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           0,
+           COALESCE(SUM(CASE WHEN o.status IN ('paid','in_escrow','fulfilled')
+             AND (item->>'eventId') ~ '^[0-9]+$'
+             AND (item->>'eventId')::BIGINT = e.id
+             THEN GREATEST(COALESCE(NULLIF(item->>'quantity', '')::INTEGER, 1), 0) ELSE 0 END), 0)::INTEGER,
+           CURRENT_TIMESTAMP
+    FROM events e
+    LEFT JOIN orders o ON TRUE
+    LEFT JOIN LATERAL jsonb_array_elements(COALESCE(NULLIF(o.items, '')::jsonb, '[]'::jsonb)) AS item ON TRUE
+    GROUP BY e.id
+    ON CONFLICT (event_id) DO UPDATE SET
+      tickets_sold = EXCLUDED.tickets_sold,
+      tickets_checked_in = event_ticket_stats.tickets_checked_in,
+      tickets_remaining = GREATEST(0, EXCLUDED.tickets_sold - event_ticket_stats.tickets_checked_in),
+      updated_at = CURRENT_TIMESTAMP;
+  `);
+}
+
 function normalizeHardDeleteAfterColumn() {
   const column = postgresDb.prepare(`SELECT data_type AS data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'listings' AND column_name = 'hard_delete_after' LIMIT 1`).get() as { data_type?: string } | undefined;
   if (!column?.data_type || column.data_type === 'timestamp with time zone') return;
@@ -104,6 +194,7 @@ function backfillOrderPaidAtFromPayments() {
 export function runMigrations() {
   ensureExtraTables();
   ensureEventLifecycleSchema();
+  ensureEventTicketStatsSchema();
   ensureMessageSchema(postgresDb);
   normalizeHardDeleteAfterColumn();
   updateSellerPayoutAccountColumns();
