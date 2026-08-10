@@ -58,7 +58,6 @@ function getOrderStatusText(bundle: OrderBundle): string { return String(bundle.
 function getPaymentStatusText(payment: BuyerPaymentRecord | undefined): string { return String(payment?.status ?? "pending"); }
 function formatTicketCode(reference: string, orderId: string, txRef?: string | null) { return extractPayChanguTicketCode(orderId, reference, txRef); }
 function buildDetail(eventDate: string, startTime: string, venue: string, location: string, source: string) { const parts = [eventDate, startTime, venue, location].filter(Boolean); return `${source === "payment" ? "Pending ticket" : "Ticket"}: ${parts.join(" • ")}`; }
-function getEventTicketKey(reference: string, eventId: string) { return `${reference}:${eventId}`; }
 function readString(source: Record<string, unknown> | undefined, ...fields: string[]) { if (!source) return ""; for (const field of fields) { const value = source[field]; if (typeof value === "string" && value.trim()) return value.trim(); } return ""; }
 function readNumber(source: Record<string, unknown> | undefined, ...fields: string[]) { if (!source) return null; for (const field of fields) { const value = source[field]; const numeric = typeof value === "number" ? value : Number(value); if (Number.isFinite(numeric)) return numeric; } return null; }
 function readUnitPrice(itemData: Record<string, unknown> | undefined) {
@@ -83,7 +82,7 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
 
   const tickets: BuyerTicketRecord[] = [];
   const seen = new Set<string>();
-  const pushTicket = (ticket: BuyerTicketRecord) => { const dedupeKey = `${ticket.reference}:${ticket.eventId}:${ticket.ticketId}`; if (seen.has(dedupeKey)) return; seen.add(dedupeKey); tickets.push(ticket); };
+  const pushTicket = (ticket: BuyerTicketRecord) => { const dedupeKey = `${ticket.eventId}:${ticket.ticketId}`; if (seen.has(dedupeKey)) return; seen.add(dedupeKey); tickets.push(ticket); };
 
   orders.forEach((bundle) => {
     const payment = paymentByReference.get(getOrderReference(bundle)) ?? paymentByOrderId.get(String(bundle.order?.id ?? ""));
@@ -109,37 +108,43 @@ export function buildBuyerTickets(orders: OrderBundle[], buyerPayments: BuyerPay
       const paymentEventPrice = paymentEvent?.ticketPrice;
       const amount = typeof itemUnitPrice === "number" ? itemUnitPrice * quantity : typeof paymentEventPrice === "number" ? paymentEventPrice * quantity : Number(bundle.order?.total?.amount ?? 0);
       const ticketRecords = Array.isArray(itemData.tickets) ? itemData.tickets.filter((entry) => entry && typeof entry === "object") as Array<Record<string, unknown>> : [];
-      const firstTicket = ticketRecords[0];
-      const holder = firstTicket?.holder && typeof firstTicket.holder === "object" ? firstTicket.holder as Record<string, unknown> : itemData.ticketHolder && typeof itemData.ticketHolder === "object" ? itemData.ticketHolder as Record<string, unknown> : {};
-      const ticketId = readString(firstTicket, "ticketId") || readString(itemData, "ticketId") || formatTicketCode(reference, String(bundle.order?.id ?? reference), payment?.txRef ?? null);
+      const fallbackTicketId = readString(itemData, "ticketId") || formatTicketCode(reference, String(bundle.order?.id ?? reference), payment?.txRef ?? null);
       const ticketType = readString(itemData, "ticketType") || "General Admission";
 
-      pushTicket({
-        key: `${reference}:${eventId}:${ticketId}`,
-        reference,
-        orderId: String(bundle.order?.id ?? reference),
-        eventId,
-        ticketId,
-        ticketType,
-        holderName: readString(holder, "fullName") || readString(itemData, "buyerName") || "",
-        holderEmail: readString(holder, "email") || "",
-        holderPhone: readString(holder, "phone") || "",
-        title: String(item.title ?? paymentEvent?.title ?? `Event ${eventId}`),
-        organizerName,
-        eventDate,
-        startTime,
-        venue,
-        location,
-        quantity,
-        amount,
-        currency,
-        status: ticketStatus,
-        paymentStatus,
-        orderStatus,
-        ticketCode: ticketId,
-        detail: buildDetail(eventDate, startTime, venue, location, "order"),
-        updatedAt,
-        source: "order",
+      // Each purchased ticket is a separate public ticket. Never collapse multiple
+      // ticket IDs into one roster/card record.
+      const records = ticketRecords.length > 0 ? ticketRecords : [{ ticketId: fallbackTicketId, holder: itemData.ticketHolder } as Record<string, unknown>];
+      records.forEach((record, index) => {
+        const holder = record.holder && typeof record.holder === "object" ? record.holder as Record<string, unknown> : itemData.ticketHolder && typeof itemData.ticketHolder === "object" ? itemData.ticketHolder as Record<string, unknown> : {};
+        const ticketId = readString(record, "ticketId") || `${fallbackTicketId}-${index + 1}`;
+        const ticketAmount = quantity > 0 && records.length > 1 ? amount / records.length : amount;
+        pushTicket({
+          key: `${eventId}:${ticketId}`,
+          reference,
+          orderId: String(bundle.order?.id ?? reference),
+          eventId,
+          ticketId,
+          ticketType,
+          holderName: readString(holder, "fullName") || readString(itemData, "buyerName") || "",
+          holderEmail: readString(holder, "email") || "",
+          holderPhone: readString(holder, "phone") || "",
+          title: String(item.title ?? paymentEvent?.title ?? `Event ${eventId}`),
+          organizerName,
+          eventDate,
+          startTime,
+          venue,
+          location,
+          quantity: 1,
+          amount: ticketAmount,
+          currency,
+          status: ticketStatus,
+          paymentStatus,
+          orderStatus,
+          ticketCode: ticketId,
+          detail: buildDetail(eventDate, startTime, venue, location, "order"),
+          updatedAt,
+          source: "order",
+        });
       });
     });
   });
