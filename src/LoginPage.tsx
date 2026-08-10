@@ -20,7 +20,7 @@ function getTicketValidatorReturnUrl() {
   if (client !== "ticket-validator" || !returnTo) return null;
   try {
     const url = new URL(returnTo);
-    const allowedOrigin = import.meta.env.VITE_TICKET_VALIDATOR_URL?.trim() || "https://ticket-validator.vercel.app";
+    const allowedOrigin = import.meta.env.VITE_TICKET_VALIDATOR_URL?.trim() || "https://ticketvalidator.vercel.app";
     if (url.origin !== new URL(allowedOrigin).origin) return null;
     return url;
   } catch {
