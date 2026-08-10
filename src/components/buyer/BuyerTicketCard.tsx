@@ -1,5 +1,4 @@
-import { CalendarDays, Clock3, Download, MapPin, ShieldAlert, Ticket } from "lucide-react";
-
+import { CalendarDays, Clock3, Download, Mail, MapPin, Phone, ShieldAlert, Ticket } from "lucide-react";
 import { formatMoney } from "../../shared/utils/formatMoney";
 import type { BuyerTicketRecord } from "../../lib/buyerTickets";
 
@@ -9,139 +8,49 @@ function statusClasses(status: BuyerTicketRecord["status"]) {
   if (status === "error") return "bg-rose-100 text-rose-800";
   return "bg-zinc-100 text-zinc-700";
 }
+function displayValue(value: string) { return value && value.trim() ? value : "—"; }
+function formatDateTime(value: string | null | undefined) { if (!value) return ""; const date = new Date(value); if (Number.isNaN(date.getTime())) return value; return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date); }
+function settlementNote(status: BuyerTicketRecord["status"]) { if (status === "paid") return "Ticket confirmed · ready for event"; if (status === "pending") return "Awaiting ticket confirmation"; if (status === "rejected") return "Ticket not issued"; if (status === "error") return "Ticket issue detected"; return ""; }
 
-function displayValue(value: string) {
-  return value && value.trim() ? value : "—";
-}
+type BuyerTicketCardProps = { ticket: BuyerTicketRecord; onDownloadPdf: () => void; onOpenTicket?: () => void; onOpenSupport?: () => void };
 
-function formatDateTime(value: string | null | undefined) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(date);
-}
-
-function displayStatus(status: BuyerTicketRecord["status"]) {
-  return status;
-}
-
-function settlementNote(status: BuyerTicketRecord["status"]) {
-  if (status === "paid") return "Ticket confirmed · ready for event";
-  if (status === "pending") return "Awaiting ticket confirmation";
-  if (status === "rejected") return "Ticket not issued";
-  if (status === "error") return "Ticket issue detected";
-  return "";
-}
-
-type BuyerTicketCardProps = {
-  ticket: BuyerTicketRecord;
-  onDownloadPdf: () => void;
-  onOpenTicket?: () => void;
-  onOpenSupport?: () => void;
-};
-
-export default function BuyerTicketCard({
-  ticket,
-  onDownloadPdf,
-  onOpenTicket,
-  onOpenSupport,
-}: BuyerTicketCardProps) {
-  const showOpenTicketButton = typeof onOpenTicket === "function";
-  const showSupportButton = typeof onOpenSupport === "function";
+export default function BuyerTicketCard({ ticket, onDownloadPdf, onOpenTicket, onOpenSupport }: BuyerTicketCardProps) {
   const note = settlementNote(ticket.status);
   const purchasedAt = formatDateTime(ticket.updatedAt);
-
   return (
     <article className="overflow-hidden rounded-[1.75rem] border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex items-start justify-between gap-4 border-b border-zinc-100 px-5 py-4">
         <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white">
-            <Ticket className="h-3.5 w-3.5" />
-            Event ticket
-          </div>
+          <div className="inline-flex items-center gap-2 rounded-full bg-zinc-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.22em] text-white"><Ticket className="h-3.5 w-3.5" />Event ticket</div>
           <h3 className="mt-3 line-clamp-2 text-lg font-black tracking-tight text-zinc-950">{ticket.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">{displayValue(ticket.organizerName)}</p>
-          {purchasedAt ? (
-            <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600">
-              <Clock3 className="h-3.5 w-3.5 text-zinc-400" />
-              Purchased {purchasedAt}
-            </div>
-          ) : null}
+          {purchasedAt ? <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-zinc-100 px-3 py-1 text-[11px] font-semibold text-zinc-600"><Clock3 className="h-3.5 w-3.5 text-zinc-400" />Purchased {purchasedAt}</div> : null}
           {note ? <p className="mt-2 text-xs font-semibold text-zinc-500">{note}</p> : null}
         </div>
-        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.18em] ${statusClasses(ticket.status)}`}>
-          {displayStatus(ticket.status)}
-        </span>
+        <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-black uppercase tracking-[0.18em] ${statusClasses(ticket.status)}`}>{ticket.status}</span>
       </div>
 
       <div className="grid gap-3 px-5 py-4 text-sm text-zinc-700">
-        <div className="flex items-start gap-3">
-          <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Date</p>
-            <p className="mt-0.5 font-medium text-zinc-900">{displayValue(ticket.eventDate)}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Time</p>
-            <p className="mt-0.5 font-medium text-zinc-900">{displayValue(ticket.startTime)}</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3">
-          <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" />
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Location</p>
-            <p className="mt-0.5 font-medium text-zinc-900">{displayValue([ticket.venue, ticket.location].filter(Boolean).join(" • "))}</p>
-          </div>
-        </div>
+        <div className="flex items-start gap-3"><Ticket className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" /><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket ID</p><p className="mt-0.5 font-mono text-sm font-bold text-zinc-950">{displayValue(ticket.ticketId)}</p></div></div>
+        <div className="flex items-start gap-3"><CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" /><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Date</p><p className="mt-0.5 font-medium text-zinc-900">{displayValue(ticket.eventDate)}</p></div></div>
+        <div className="flex items-start gap-3"><Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" /><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Time</p><p className="mt-0.5 font-medium text-zinc-900">{displayValue(ticket.startTime)}</p></div></div>
+        <div className="flex items-start gap-3"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400" /><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Location</p><p className="mt-0.5 font-medium text-zinc-900">{displayValue([ticket.venue, ticket.location].filter(Boolean).join(" • "))}</p></div></div>
       </div>
 
       <div className="border-t border-zinc-100 px-5 py-4">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Ticket code</p>
-            <p className="mt-1 break-all font-mono text-sm font-semibold text-zinc-900">{ticket.ticketCode}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Amount</p>
-            <p className="mt-1 text-sm font-black text-zinc-950">{formatMoney(ticket.amount, ticket.currency)}</p>
-          </div>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div className="rounded-xl bg-zinc-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">Ticket holder</p><p className="mt-1 text-sm font-bold text-zinc-900">{displayValue(ticket.holderName)}</p></div>
+          <div className="rounded-xl bg-zinc-50 px-3 py-2.5"><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-400">Ticket type</p><p className="mt-1 text-sm font-bold text-zinc-900">{displayValue(ticket.ticketType)}</p></div>
+          <div className="flex items-center gap-2 text-xs text-zinc-600"><Mail className="h-3.5 w-3.5 text-zinc-400" />{displayValue(ticket.holderEmail)}</div>
+          <div className="flex items-center gap-2 text-xs text-zinc-600"><Phone className="h-3.5 w-3.5 text-zinc-400" />{displayValue(ticket.holderPhone)}</div>
         </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onDownloadPdf}
-            className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"
-          >
-            <Download className="h-4 w-4" />
-            Print(PDF)
-          </button>
-          {showOpenTicketButton ? (
-            <button
-              type="button"
-              onClick={onOpenTicket}
-              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-            >
-              <Ticket className="h-4 w-4" />
-              View Details
-            </button>
-          ) : null}
-          {showSupportButton ? (
-            <button
-              type="button"
-              onClick={onOpenSupport}
-              className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Contact Support
-            </button>
-          ) : null}
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-zinc-100 pt-3">
+          <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-zinc-400">Amount</p><p className="mt-1 text-sm font-black text-zinc-950">{formatMoney(ticket.amount, ticket.currency)}</p></div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={onDownloadPdf} className="inline-flex items-center gap-2 rounded-2xl border border-orange-500 bg-orange-500 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-600"><Download className="h-4 w-4" />Print(PDF)</button>
+            {onOpenTicket ? <button type="button" onClick={onOpenTicket} className="inline-flex items-center gap-2 rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"><Ticket className="h-4 w-4" />View Details</button> : null}
+            {onOpenSupport ? <button type="button" onClick={onOpenSupport} className="inline-flex items-center gap-2 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-bold text-sky-800 hover:bg-sky-100"><ShieldAlert className="h-4 w-4" />Contact Support</button> : null}
+          </div>
         </div>
       </div>
     </article>
