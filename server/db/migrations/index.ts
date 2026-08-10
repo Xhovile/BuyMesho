@@ -107,7 +107,7 @@ function ensureExtraTables() {
       description TEXT NOT NULL,
       contact_whatsapp TEXT,
       poster_alt TEXT,
-      spec_values TEXT NOT NULL,
+      spec_values TEXT NOT NULL DEFAULT '{}',
       status TEXT NOT NULL DEFAULT 'published',
       publication_status TEXT NOT NULL DEFAULT 'published',
       publication_mode TEXT NOT NULL DEFAULT 'immediate',
@@ -139,6 +139,10 @@ function ensureEventLifecycleSchema() {
     ALTER TABLE events ADD COLUMN IF NOT EXISTS runtime_mode TEXT NOT NULL DEFAULT 'automatic';
 
     UPDATE events
+    SET spec_values = '{}'
+    WHERE spec_values IS NULL;
+
+    UPDATE events
     SET publication_status = CASE
       WHEN lower(COALESCE(status, 'published')) = 'draft' THEN 'draft'
       WHEN lower(COALESCE(status, 'published')) = 'inactive' THEN 'paused'
@@ -148,18 +152,22 @@ function ensureEventLifecycleSchema() {
     WHERE publication_status IS NULL
        OR (publication_status = 'published' AND lower(COALESCE(status, 'published')) <> 'published');
 
-    UPDATE events SET publication_mode = 'immediate'
-    WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate','scheduled');
+    UPDATE events
+    SET publication_mode = 'immediate'
+    WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate', 'scheduled');
 
-    UPDATE events SET runtime_mode = 'automatic'
-    WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic','force_live','force_upcoming');
+    UPDATE events
+    SET runtime_mode = 'automatic'
+    WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic', 'force_live', 'force_upcoming');
 
     UPDATE events
     SET spec_values = jsonb_set(
       jsonb_set(
-        CASE WHEN jsonb_typeof(COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
-             THEN COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)
-             ELSE '{}'::jsonb END,
+        CASE
+          WHEN jsonb_typeof(COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
+            THEN COALESCE(NULLIF(spec_values, '')::jsonb, '{}'::jsonb)
+          ELSE '{}'::jsonb
+        END,
         '{end_time}', to_jsonb(end_time), true
       ),
       '{runtime_mode}', to_jsonb(runtime_mode), true
@@ -170,9 +178,11 @@ function ensureEventLifecycleSchema() {
     BEGIN
       NEW.spec_values := jsonb_set(
         jsonb_set(
-          CASE WHEN jsonb_typeof(COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
-               THEN COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)
-               ELSE '{}'::jsonb END,
+          CASE
+            WHEN jsonb_typeof(COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)) = 'object'
+              THEN COALESCE(NULLIF(NEW.spec_values, '')::jsonb, '{}'::jsonb)
+            ELSE '{}'::jsonb
+          END,
           '{end_time}', to_jsonb(NEW.end_time), true
         ),
         '{runtime_mode}', to_jsonb(NEW.runtime_mode), true
