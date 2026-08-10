@@ -1,5 +1,6 @@
 import type { OrderState } from '../../../src/modules/orders/orderState.js';
 import { getPaymentDb } from '../../postgresCompat.js';
+import { projectEventTickets } from './eventTicketProjection.js';
 
 export interface StoredOrder extends OrderState {
   paymentReference?: string | null;
@@ -32,7 +33,8 @@ export class PostgresOrderRepository {
         escrow_id = excluded.escrow_id,
         paid_at = excluded.paid_at,
         fulfilled_at = excluded.fulfilled_at,
-        updated_at = excluded.updated_at
+        updated_at = excluded.updated_at,
+        items = excluded.items
     `).run({
       id: stored.id,
       buyer_id: stored.buyerId,
@@ -55,6 +57,8 @@ export class PostgresOrderRepository {
       created_at: stored.createdAt,
       updated_at: stored.updatedAt ?? now,
     });
+
+    projectEventTickets(stored);
     return stored;
   }
 
