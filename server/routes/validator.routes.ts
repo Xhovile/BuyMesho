@@ -7,9 +7,9 @@ import { paymentRepository } from "../modules/payments/payment.repository.js";
 
 type VerifiedRequestUser = { uid: string; email: string | null; email_verified: boolean; is_admin: boolean };
 type ValidatorAccessScope = { can_validate_tickets: boolean; is_admin: boolean; role: "admin" | "validator"; source: "buymesho"; allowed_event_ids: string[]; snapshot_version: string | null };
-type EventRow = { id: number; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: string; status: string; deleted_at: string | null; created_at: string; updated_at: string };
+type EventRow = { id: number; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: string; status: string; deleted_at: string | null; created_at: string; updated_at: string; ticket_count: number; tickets_sold: number; tickets_checked_in: number; tickets_remaining: number };
 type EventCreatorRow = { uid: string; email: string; display_name: string; organization_name: string; organization_type: string; contact_whatsapp: string | null; event_types: string; status: string; active_until: string | null; approved_at: string | null; created_at: string; updated_at: string };
-type ValidatorEvent = { id: string; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: Record<string, unknown>; status: string; created_at: string; updated_at: string; version: string; ticket_count: number };
+type ValidatorEvent = { id: string; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: Record<string, unknown>; status: string; created_at: string; updated_at: string; version: string; ticket_count: number; tickets_sold: number; tickets_checked_in: number; tickets_remaining: number };
 
 type ValidatorTicket = {
   id: string;
@@ -63,19 +63,44 @@ function normalizeTicketCode(value: string) { return value.trim().toUpperCase().
 
 function loadValidatorEvents(uid: string): ValidatorEvent[] {
   const db = getPaymentDb();
-  const rows = db.prepare(`SELECT * FROM events WHERE creator_uid = ? AND deleted_at IS NULL ORDER BY updated_at DESC, created_at DESC, id DESC`).all(uid) as EventRow[];
-  const ticketCounts = new Map<number, number>();
-  const allOrders = db.prepare(`SELECT id FROM orders ORDER BY updated_at DESC, created_at DESC`).all() as Array<{ id: string }>;
-  for (const orderRef of allOrders) {
-    const order = orderRepository.findById(orderRef.id);
-    if (!order || order.status === "draft" || order.status === "pending_payment") continue;
-    for (const item of order.items ?? []) {
-      if (item.kind !== "event_ticket" && !item.eventId) continue;
-      const eventId = Number(item.eventId);
-      if (Number.isInteger(eventId)) ticketCounts.set(eventId, (ticketCounts.get(eventId) ?? 0) + (Number(item.quantity) || 1));
-    }
-  }
-  return rows.map((row) => ({ id: String(row.id), creator_uid: row.creator_uid, event_type: row.event_type, event_title: row.event_title, organizer_name: row.organizer_name, event_date: row.event_date, start_time: row.start_time, venue: row.venue, location: row.location, ticket_mode: row.ticket_mode, ticket_price: row.ticket_price == null ? null : Number(row.ticket_price), ticket_link: row.ticket_link, description: row.description, contact_whatsapp: row.contact_whatsapp, poster_alt: row.poster_alt, spec_values: safeParseJsonObject(row.spec_values), status: row.status, created_at: row.created_at, updated_at: row.updated_at, version: row.updated_at, ticket_count: ticketCounts.get(row.id) ?? 0 }));
+  const rows = db.prepare(`
+    SELECT e.*,
+           COALESCE(s.tickets_sold, 0) AS tickets_sold,
+           COALESCE(s.tickets_checked_in, 0) AS tickets_checked_in,
+           COALESCE(s.tickets_remaining, COALESCE(s.tickets_sold, 0)) AS tickets_remaining,
+           COALESCE(s.tickets_sold, 0) AS ticket_count
+    FROM events e
+    LEFT JOIN event_ticket_stats s ON s.event_id = e.id
+    WHERE e.creator_uid = ? AND e.deleted_at IS NULL
+    ORDER BY e.updated_at DESC, e.created_at DESC, e.id DESC
+  `).all(uid) as EventRow[];
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    creator_uid: row.creator_uid,
+    event_type: row.event_type,
+    event_title: row.event_title,
+    organizer_name: row.organizer_name,
+    event_date: row.event_date,
+    start_time: row.start_time,
+    venue: row.venue,
+    location: row.location,
+    ticket_mode: row.ticket_mode,
+    ticket_price: row.ticket_price == null ? null : Number(row.ticket_price),
+    ticket_link: row.ticket_link,
+    description: row.description,
+    contact_whatsapp: row.contact_whatsapp,
+    poster_alt: row.poster_alt,
+    spec_values: safeParseJsonObject(row.spec_values),
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    version: row.updated_at,
+    ticket_count: Number(row.ticket_count) || 0,
+    tickets_sold: Number(row.tickets_sold) || 0,
+    tickets_checked_in: Number(row.tickets_checked_in) || 0,
+    tickets_remaining: Number(row.tickets_remaining) || 0,
+  }));
 }
 
 function loadCreatorRecord(uid: string) {
