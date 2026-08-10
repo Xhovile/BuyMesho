@@ -194,12 +194,12 @@ function backfillOrderPaidAtFromPayments() {
 export function runMigrations() {
   ensureExtraTables();
   ensureEventLifecycleSchema();
-  ensureEventTicketStatsSchema();
   ensureMessageSchema(postgresDb);
   normalizeHardDeleteAfterColumn();
   updateSellerPayoutAccountColumns();
   ensurePayoutLifecycleSchema();
   initPaymentSchema(postgresDb);
+  ensureEventTicketStatsSchema();
   backfillOrderPaidAtFromPayments();
   return postgresDb;
 }
