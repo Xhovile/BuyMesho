@@ -45,7 +45,9 @@ function buildPublicTicketsForEvent(eventId: string) {
     const payment = order.paymentReference ? paymentRepository.findByReference(order.paymentReference) ?? null : null;
     for (const item of order.items ?? []) {
       if (String(item.kind ?? "") !== "event_ticket" || String(item.eventId ?? "") !== eventId) continue;
-      const itemData = item as Record<string, unknown>;
+      // OrderItem is a concrete domain type without a string index signature. Convert
+      // through unknown before treating its dynamic ticket metadata as a record.
+      const itemData = item as unknown as Record<string, unknown>;
       const ticketType = normalizeString(itemData.ticketType ?? itemData.ticket_type) || "General Admission";
       const ticketTitle = normalizeString(itemData.title ?? event.event_title) || "Event ticket";
       const eventDate = normalizeString(itemData.eventDate ?? itemData.event_date ?? event.event_date);
