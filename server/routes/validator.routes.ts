@@ -1,83 +1,32 @@
 import type { Express, NextFunction, Request, Response } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { hasAdminAccess } from "./adminAccess.js";
-import { revokeTotpVerifiedSessions } from "../../src/server/totpStoreCompat.js";
 import { getPaymentDb } from "../postgresCompat.js";
 import { orderRepository } from "../modules/orders/order.repository.js";
 import { paymentRepository } from "../modules/payments/payment.repository.js";
 
-type VerifiedRequestUser = {
-  uid: string;
-  email: string | null;
-  email_verified: boolean;
-  is_admin: boolean;
-};
-
-type ValidatorAccessScope = {
-  can_validate_tickets: boolean;
-  is_admin: boolean;
-  role: "admin" | "validator";
-  source: "buymesho";
-  allowed_event_ids: string[];
-  snapshot_version: string | null;
-};
-
-type EventRow = {
-  id: number;
-  creator_uid: string | null;
-  event_type: string;
-  event_title: string;
-  organizer_name: string;
-  event_date: string;
-  start_time: string;
-  venue: string;
-  location: string;
-  ticket_mode: string;
-  ticket_price: number | null;
-  ticket_link: string | null;
-  description: string;
-  contact_whatsapp: string | null;
-  poster_alt: string | null;
-  spec_values: string;
-  status: string;
-  deleted_at: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
+type VerifiedRequestUser = { uid: string; email: string | null; email_verified: boolean; is_admin: boolean };
+type ValidatorAccessScope = { can_validate_tickets: boolean; is_admin: boolean; role: "admin" | "validator"; source: "buymesho"; allowed_event_ids: string[]; snapshot_version: string | null };
+type EventRow = { id: number; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: string; status: string; deleted_at: string | null; created_at: string; updated_at: string };
 type EventCreatorRow = { uid: string; email: string; display_name: string; organization_name: string; organization_type: string; contact_whatsapp: string | null; event_types: string; status: string; active_until: string | null; approved_at: string | null; created_at: string; updated_at: string };
-
-type ValidatorEvent = {
-  id: string;
-  creator_uid: string | null;
-  event_type: string;
-  event_title: string;
-  organizer_name: string;
-  event_date: string;
-  start_time: string;
-  venue: string;
-  location: string;
-  ticket_mode: string;
-  ticket_price: number | null;
-  ticket_link: string | null;
-  description: string;
-  contact_whatsapp: string | null;
-  poster_alt: string | null;
-  spec_values: Record<string, unknown>;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  version: string;
-  ticket_count: number;
-};
+type ValidatorEvent = { id: string; creator_uid: string | null; event_type: string; event_title: string; organizer_name: string; event_date: string; start_time: string; venue: string; location: string; ticket_mode: string; ticket_price: number | null; ticket_link: string | null; description: string; contact_whatsapp: string | null; poster_alt: string | null; spec_values: Record<string, unknown>; status: string; created_at: string; updated_at: string; version: string; ticket_count: number };
 
 type ValidatorTicket = {
   id: string;
   code: string;
   event_id: string;
   event_title: string;
-  order_id: string;
-  buyer_id: string;
+  ticket_title: string;
+  ticket_type: string;
+  holder_name: string;
+  holder_email: string;
+  holder_phone: string;
+  event_date: string;
+  start_time: string;
+  end_time: string | null;
+  venue: string;
+  location: string;
+  seat_or_zone: string | null;
   status: "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
   order_status: string;
   payment_status: string | null;
@@ -86,37 +35,18 @@ type ValidatorTicket = {
   metadata: Record<string, unknown>;
 };
 
-type ValidatorQueueItem = {
-  queueId: string;
-  ticketId: string;
-  eventId: string;
-  newStatus: ValidatorTicket["status"];
-  gateName: string;
-  staffName: string;
-};
-
+type ValidatorQueueItem = { queueId: string; ticketId: string; eventId: string; newStatus: ValidatorTicket["status"]; gateName: string; staffName: string };
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.sessionRoutesInstalled");
 
 function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
-  if (!header) {
-    return res.status(401).json({ error: "Missing Authorization Bearer token" });
-  }
-
+  if (!header) return res.status(401).json({ error: "Missing Authorization Bearer token" });
   const [scheme, token] = header.split(" ");
-  if (scheme !== "Bearer" || !token) {
-    return res.status(401).json({ error: "Missing Authorization Bearer token" });
-  }
-
+  if (scheme !== "Bearer" || !token) return res.status(401).json({ error: "Missing Authorization Bearer token" });
   void (async () => {
     try {
       const decoded = await getFirebaseAdmin().auth().verifyIdToken(token.trim(), true);
-      req.user = {
-        uid: decoded.uid,
-        email: decoded.email ?? null,
-        email_verified: (decoded as any).email_verified === true,
-        is_admin: (decoded as any).admin === true || (decoded as any).role === "admin",
-      } as VerifiedRequestUser;
+      req.user = { uid: decoded.uid, email: decoded.email ?? null, email_verified: (decoded as any).email_verified === true, is_admin: (decoded as any).admin === true || (decoded as any).role === "admin" } as VerifiedRequestUser;
       next();
     } catch {
       return res.status(401).json({ error: "Invalid or expired token" });
@@ -124,464 +54,157 @@ function verifyBearerIdentity(req: Request, res: Response, next: NextFunction) {
   })();
 }
 
-function normalizeString(value: unknown): string {
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function normalizeOptionalString(value: unknown): string | null {
-  const text = normalizeString(value);
-  return text.length > 0 ? text : null;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object" && !Array.isArray(value);
-}
-
-function safeParseJsonObject(value: string | null | undefined): Record<string, unknown> {
-  if (!value) return {};
-  try {
-    const parsed = JSON.parse(value);
-    return isPlainObject(parsed) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function isEventCreatorActive(row: EventCreatorRow | undefined) {
-  if (!row || row.status !== "approved") return false;
-  if (!row.active_until) return true;
-  return new Date(row.active_until).getTime() >= Date.now();
-}
+function normalizeString(value: unknown): string { return typeof value === "string" ? value.trim() : ""; }
+function normalizeOptionalString(value: unknown): string | null { const text = normalizeString(value); return text || null; }
+function isPlainObject(value: unknown): value is Record<string, unknown> { return !!value && typeof value === "object" && !Array.isArray(value); }
+function safeParseJsonObject(value: string | null | undefined): Record<string, unknown> { if (!value) return {}; try { const parsed = JSON.parse(value); return isPlainObject(parsed) ? parsed : {}; } catch { return {}; } }
+function isEventCreatorActive(row: EventCreatorRow | undefined) { if (!row || row.status !== "approved") return false; if (!row.active_until) return true; return new Date(row.active_until).getTime() >= Date.now(); }
+function normalizeTicketCode(value: string) { return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, ""); }
 
 function loadValidatorEvents(uid: string): ValidatorEvent[] {
   const db = getPaymentDb();
-  const rows = db
-    .prepare(
-      `
-        SELECT *
-        FROM events
-        WHERE creator_uid = ?
-          AND deleted_at IS NULL
-        ORDER BY updated_at DESC, created_at DESC, id DESC
-      `,
-    )
-    .all(uid) as EventRow[];
-
+  const rows = db.prepare(`SELECT * FROM events WHERE creator_uid = ? AND deleted_at IS NULL ORDER BY updated_at DESC, created_at DESC, id DESC`).all(uid) as EventRow[];
   const ticketCounts = new Map<number, number>();
-  const allOrders = db
-    .prepare(
-      `
-        SELECT id
-        FROM orders
-        ORDER BY updated_at DESC, created_at DESC
-      `,
-    )
-    .all() as Array<{ id: string }>;
-
+  const allOrders = db.prepare(`SELECT id FROM orders ORDER BY updated_at DESC, created_at DESC`).all() as Array<{ id: string }>;
   for (const orderRef of allOrders) {
     const order = orderRepository.findById(orderRef.id);
-    if (!order) continue;
-
+    if (!order || order.status === "draft" || order.status === "pending_payment") continue;
     for (const item of order.items ?? []) {
-      const eventId = typeof item.eventId === "string" ? Number(item.eventId) : Number.NaN;
-      if (!Number.isInteger(eventId)) continue;
-      if (order.status === "draft" || order.status === "pending_payment") continue;
-      ticketCounts.set(eventId, (ticketCounts.get(eventId) ?? 0) + (Number(item.quantity) || 1));
+      if (item.kind !== "event_ticket" && !item.eventId) continue;
+      const eventId = Number(item.eventId);
+      if (Number.isInteger(eventId)) ticketCounts.set(eventId, (ticketCounts.get(eventId) ?? 0) + (Number(item.quantity) || 1));
     }
   }
-
-  return rows.map((row) => ({
-    id: String(row.id),
-    creator_uid: row.creator_uid,
-    event_type: row.event_type,
-    event_title: row.event_title,
-    organizer_name: row.organizer_name,
-    event_date: row.event_date,
-    start_time: row.start_time,
-    venue: row.venue,
-    location: row.location,
-    ticket_mode: row.ticket_mode,
-    ticket_price: row.ticket_price === null || row.ticket_price === undefined ? null : Number(row.ticket_price),
-    ticket_link: row.ticket_link,
-    description: row.description,
-    contact_whatsapp: row.contact_whatsapp,
-    poster_alt: row.poster_alt,
-    spec_values: safeParseJsonObject(row.spec_values),
-    status: row.status,
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-    version: row.updated_at,
-    ticket_count: ticketCounts.get(row.id) ?? 0,
-  }));
+  return rows.map((row) => ({ id: String(row.id), creator_uid: row.creator_uid, event_type: row.event_type, event_title: row.event_title, organizer_name: row.organizer_name, event_date: row.event_date, start_time: row.start_time, venue: row.venue, location: row.location, ticket_mode: row.ticket_mode, ticket_price: row.ticket_price == null ? null : Number(row.ticket_price), ticket_link: row.ticket_link, description: row.description, contact_whatsapp: row.contact_whatsapp, poster_alt: row.poster_alt, spec_values: safeParseJsonObject(row.spec_values), status: row.status, created_at: row.created_at, updated_at: row.updated_at, version: row.updated_at, ticket_count: ticketCounts.get(row.id) ?? 0 }));
 }
 
 function loadCreatorRecord(uid: string) {
-  const db = getPaymentDb();
-  return db
-    .prepare(
-      `
-        SELECT *
-        FROM event_creators
-        WHERE uid = ?
-        LIMIT 1
-      `,
-    )
-    .get(uid) as EventCreatorRow | undefined;
+  return getPaymentDb().prepare(`SELECT * FROM event_creators WHERE uid = ? LIMIT 1`).get(uid) as EventCreatorRow | undefined;
 }
-
 function buildValidatorAccessScope(user: VerifiedRequestUser, events: ValidatorEvent[]): ValidatorAccessScope {
   const isAdmin = hasAdminAccess({ email: user.email, uid: user.uid, is_admin: user.is_admin });
-
-  return {
-    can_validate_tickets: true,
-    is_admin: isAdmin,
-    role: isAdmin ? "admin" : "validator",
-    source: "buymesho",
-    allowed_event_ids: events.map((event) => event.id),
-    snapshot_version: events.length > 0 ? events[0].version : null,
-  };
+  return { can_validate_tickets: true, is_admin: isAdmin, role: isAdmin ? "admin" : "validator", source: "buymesho", allowed_event_ids: events.map((event) => event.id), snapshot_version: events.length > 0 ? events[0].version : null };
 }
-
 function mapOrderStatusToTicketStatus(orderStatus: string, paymentStatus: string | null) {
-  const status = orderStatus.toLowerCase();
-  const payment = (paymentStatus ?? "").toLowerCase();
-
+  const status = orderStatus.toLowerCase(); const payment = (paymentStatus ?? "").toLowerCase();
   if (status === "refunded" || payment === "refunded") return "Refunded" as const;
   if (status === "cancelled") return "Cancelled" as const;
   if (status === "disputed" || status === "closed") return "Blocked" as const;
-  if (status === "fulfilled") return "Inside" as const;
-  if (status === "in_escrow") return "Outside" as const;
   return "Waiting Entry" as const;
 }
 
-function normalizeTicketCode(value: string) {
-  return value.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "");
-}
+function readObject(value: unknown): Record<string, unknown> { return isPlainObject(value) ? value : {}; }
+function readText(source: Record<string, unknown>, ...keys: string[]) { for (const key of keys) { const value = source[key]; if (typeof value === "string" && value.trim()) return value.trim(); } return ""; }
 
 function buildTicketSnapshotsForEvent(uid: string, eventId: string): { event: ValidatorEvent; tickets: ValidatorTicket[] } | null {
-  const events = loadValidatorEvents(uid);
-  const event = events.find((entry) => entry.id === eventId);
+  const event = loadValidatorEvents(uid).find((entry) => entry.id === eventId);
   if (!event) return null;
-
-  const allOrders = getPaymentDb()
-    .prepare(
-      `
-        SELECT id
-        FROM orders
-        ORDER BY updated_at DESC, created_at DESC
-      `,
-    )
-    .all() as Array<{ id: string }>;
-
+  const allOrders = getPaymentDb().prepare(`SELECT id FROM orders ORDER BY updated_at DESC, created_at DESC`).all() as Array<{ id: string }>;
   const tickets: ValidatorTicket[] = [];
 
   for (const orderRef of allOrders) {
     const order = orderRepository.findById(orderRef.id);
-    if (!order) continue;
+    if (!order || order.status === "draft" || order.status === "pending_payment") continue;
     const payment = order.paymentReference ? paymentRepository.findByReference(order.paymentReference) ?? null : null;
 
     for (const item of order.items ?? []) {
-      const itemEventId = typeof item.eventId === "string" ? item.eventId : null;
-      if (itemEventId !== event.id) continue;
+      if (String(item.eventId ?? "") !== event.id) continue;
+      const itemData = item as unknown as Record<string, unknown>;
+      const ticketRecords = Array.isArray(itemData.tickets) ? itemData.tickets.filter((entry) => isPlainObject(entry)) as Array<Record<string, unknown>> : [];
+      const fallbackRecords = ticketRecords.length > 0 ? ticketRecords : (readText(itemData, "ticketId") ? [{ ticketId: readText(itemData, "ticketId"), holder: readObject(itemData.ticketHolder), status: "pending" }] : []);
 
-      const quantity = Math.max(1, Number(item.quantity) || 1);
-      const codeSeed = normalizeString(item.reference ?? order.paymentReference ?? `${order.id}-${item.title}`);
-      const codeBase = normalizeTicketCode(codeSeed || `${order.id}-${event.id}`);
-
-      for (let index = 0; index < quantity; index += 1) {
-        const ticketId = `${order.id}:${event.id}:${index + 1}`;
+      fallbackRecords.forEach((record) => {
+        const holder = readObject(record.holder ?? itemData.ticketHolder);
+        const ticketId = readText(record, "ticketId");
+        if (!ticketId) return;
+        const recordStatus = readText(record, "status");
+        const status = recordStatus === "cancelled" ? "Cancelled" : recordStatus === "refunded" ? "Refunded" : mapOrderStatusToTicketStatus(order.status, payment?.status ?? null);
         const updatedAt = payment?.updatedAt ?? order.updatedAt ?? event.updated_at;
         tickets.push({
           id: ticketId,
-          code: `${codeBase}${quantity > 1 ? `-${index + 1}` : ""}`,
+          code: ticketId,
           event_id: event.id,
           event_title: event.event_title,
-          order_id: order.id,
-          buyer_id: order.buyerId,
-          status: mapOrderStatusToTicketStatus(order.status, payment?.status ?? null),
+          ticket_title: String(item.title ?? event.event_title),
+          ticket_type: readText(itemData, "ticketType") || "General Admission",
+          holder_name: readText(holder, "fullName") || "",
+          holder_email: readText(holder, "email") || "",
+          holder_phone: readText(holder, "phone") || "",
+          event_date: readText(itemData, "eventDate") || event.event_date,
+          start_time: readText(itemData, "startTime") || event.start_time,
+          end_time: normalizeOptionalString(readText(itemData, "endTime")),
+          venue: readText(itemData, "venue") || event.venue,
+          location: readText(itemData, "location") || event.location,
+          seat_or_zone: normalizeOptionalString(readText(record, "seatOrZone") || readText(itemData, "seatOrZone")),
+          status,
           order_status: order.status,
           payment_status: payment?.status ?? null,
           updated_at: updatedAt,
           version: updatedAt,
-          metadata: {
-            item_title: item.title,
-            quantity: 1,
-            unit_price: item.unitPrice ?? null,
-            order_total: order.total,
-            paid_at: order.paidAt ?? payment?.paidAt ?? null,
-            fulfilled_at: order.fulfilledAt ?? null,
-            payment_reference: order.paymentReference ?? payment?.reference ?? null,
-            event_version: event.version,
-            organizer_name: event.organizer_name,
-            venue: event.venue,
-            location: event.location,
-          },
+          metadata: { last_scan_at: readText(record, "lastScanAt") || null },
         });
-      }
+      });
     }
   }
-
   return { event, tickets };
 }
 
 function validatorMeHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) {
-    return res.status(403).json({ error: "Approved event creator access is required" });
-  }
-
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  const creator = loadCreatorRecord(user.uid); if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
   const events = loadValidatorEvents(user.uid);
-  const scope = buildValidatorAccessScope(user, events);
-
-  return res.json({
-    success: true,
-    identity: {
-      uid: user.uid,
-      email: user.email,
-      email_verified: user.email_verified,
-      is_admin: user.is_admin,
-      display_name: creator?.display_name ?? creator?.organization_name ?? null,
-    },
-    creator: creator
-      ? {
-          uid: creator.uid,
-          email: creator.email,
-          display_name: creator.display_name,
-          organization_name: creator.organization_name,
-          organization_type: creator.organization_type,
-          contact_whatsapp: creator.contact_whatsapp,
-          event_types: creator.event_types,
-          status: creator.status,
-          active_until: creator.active_until,
-          approved_at: creator.approved_at,
-          created_at: creator.created_at,
-          updated_at: creator.updated_at,
-        }
-      : null,
-    access_scope: scope,
-    events,
-  });
+  return res.json({ success: true, identity: { uid: user.uid, email: user.email, email_verified: user.email_verified, is_admin: user.is_admin, display_name: creator?.display_name ?? creator?.organization_name ?? null }, creator: creator ? { uid: creator.uid, email: creator.email, display_name: creator.display_name, organization_name: creator.organization_name, organization_type: creator.organization_type, contact_whatsapp: creator.contact_whatsapp, event_types: creator.event_types, status: creator.status, active_until: creator.active_until, approved_at: creator.approved_at, created_at: creator.created_at, updated_at: creator.updated_at } : null, access_scope: buildValidatorAccessScope(user, events), events });
 }
-
 function validatorEventsHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) {
-    return res.status(403).json({ error: "Approved event creator access is required" });
-  }
-
-  return res.json({
-    success: true,
-    events: loadValidatorEvents(user.uid),
-  });
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) return res.status(403).json({ error: "Approved event creator access is required" });
+  return res.json({ success: true, events: loadValidatorEvents(user.uid) });
 }
-
 function validatorEventTicketsHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) {
-    return res.status(401).json({ error: "Authentication required" });
-  }
-
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) {
-    return res.status(403).json({ error: "Approved event creator access is required" });
-  }
-
-  const eventId = normalizeString(req.params.eventId);
-  const bundle = buildTicketSnapshotsForEvent(user.uid, eventId);
-  if (!bundle) {
-    return res.status(404).json({ error: "Event not found" });
-  }
-
-  return res.json({
-    success: true,
-    event: bundle.event,
-    tickets: bundle.tickets,
-    snapshot_version: bundle.event.version,
-  });
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) return res.status(403).json({ error: "Approved event creator access is required" });
+  const bundle = buildTicketSnapshotsForEvent(user.uid, normalizeString(req.params.eventId));
+  if (!bundle) return res.status(404).json({ error: "Event not found" });
+  return res.json({ success: true, event: bundle.event, tickets: bundle.tickets, snapshot_version: bundle.event.version });
 }
-
-function resolveTicketForCode(userUid: string, code: string) {
-  const events = loadValidatorEvents(userUid);
-  for (const event of events) {
-    const bundle = buildTicketSnapshotsForEvent(userUid, event.id);
-    if (!bundle) continue;
-    const ticket = bundle.tickets.find((entry) => normalizeTicketCode(entry.code) === code || normalizeTicketCode(entry.id) === code);
-    if (ticket) return { event: bundle.event, ticket };
-  }
-  return null;
-}
-
 function writeScanResult(ticket: ValidatorTicket, nextStatus: ValidatorTicket["status"], gateName: string, staffName: string) {
   const nextUpdatedAt = new Date().toISOString();
-  return {
-    ...ticket,
-    status: nextStatus,
-    updated_at: nextUpdatedAt,
-    version: nextUpdatedAt,
-    metadata: {
-      ...ticket.metadata,
-      last_gate_name: gateName,
-      last_staff_name: staffName,
-      last_scan_at: nextUpdatedAt,
-    },
-  };
+  return { ...ticket, status: nextStatus, updated_at: nextUpdatedAt, version: nextUpdatedAt, metadata: { ...ticket.metadata, last_gate_name: gateName, last_staff_name: staffName, last_scan_at: nextUpdatedAt } };
 }
-
 function validatorScanHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
-
-  const code = normalizeTicketCode(normalizeString(req.body?.code));
-  const eventId = normalizeString(req.body?.eventId);
-  const gateName = normalizeString(req.body?.gateName) || "Main Gate";
-  const staffName = normalizeString(req.body?.staffName) || "Gate Officer";
-  const allowReentry = req.body?.allowReentry === true;
-  const clientSnapshotVersion = normalizeString(req.body?.clientSnapshotVersion);
-
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) return res.status(403).json({ error: "Approved event creator access is required" });
+  const code = normalizeTicketCode(normalizeString(req.body?.code)); const eventId = normalizeString(req.body?.eventId); const gateName = normalizeString(req.body?.gateName) || "Main Gate"; const staffName = normalizeString(req.body?.staffName) || "Gate Officer"; const allowReentry = req.body?.allowReentry === true; const clientSnapshotVersion = normalizeString(req.body?.clientSnapshotVersion);
   if (!code || !eventId) return res.status(400).json({ error: "Missing scan code or event id" });
-
-  const bundle = buildTicketSnapshotsForEvent(user.uid, eventId);
-  if (!bundle) return res.status(404).json({ error: "Event not found" });
-
-  if (clientSnapshotVersion && clientSnapshotVersion !== bundle.event.version) {
-    return res.status(409).json({
-      error: "Snapshot outdated",
-      result: "rejected",
-      reason: "event_snapshot_outdated",
-      serverVersion: bundle.event.version,
-    });
-  }
-
+  const bundle = buildTicketSnapshotsForEvent(user.uid, eventId); if (!bundle) return res.status(404).json({ error: "Event not found" });
+  if (clientSnapshotVersion && clientSnapshotVersion !== bundle.event.version) return res.status(409).json({ error: "Snapshot outdated", result: "rejected", reason: "event_snapshot_outdated", serverVersion: bundle.event.version });
   const ticket = bundle.tickets.find((entry) => normalizeTicketCode(entry.code) === code || normalizeTicketCode(entry.id) === code);
-  if (!ticket) {
-    return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
-  }
-
-  if (ticket.status === "Inside") {
-    return res.status(409).json({
-      error: "Duplicate scan",
-      result: "already_applied",
-      reason: "already_inside",
-      ticket,
-      serverVersion: bundle.event.version,
-    });
-  }
-
-  if (ticket.status === "Cancelled" || ticket.status === "Refunded" || ticket.status === "Blocked") {
-    return res.status(403).json({
-      error: "Ticket denied",
-      result: "rejected",
-      reason: `ticket_${ticket.status.toLowerCase()}`,
-      ticket,
-      serverVersion: bundle.event.version,
-    });
-  }
-
-  if (ticket.status === "Outside" && !allowReentry) {
-    return res.status(403).json({
-      error: "Re-entry not permitted",
-      result: "rejected",
-      reason: "reentry_not_permitted",
-      ticket,
-      serverVersion: bundle.event.version,
-    });
-  }
-
-  const nextTicket = writeScanResult(ticket, "Inside", gateName, staffName);
-  return res.json({
-    result: "accepted",
-    reason: ticket.status === "Outside" ? "reentry_permitted" : "validated",
-    ticket: nextTicket,
-    serverVersion: bundle.event.version,
-  });
+  if (!ticket) return res.status(404).json({ error: "Ticket not found", result: "rejected", reason: "ticket_not_found" });
+  if (ticket.status === "Inside") return res.status(409).json({ error: "Duplicate scan", result: "already_applied", reason: "already_inside", ticket, serverVersion: bundle.event.version });
+  if (ticket.status === "Cancelled" || ticket.status === "Refunded" || ticket.status === "Blocked") return res.status(403).json({ error: "Ticket denied", result: "rejected", reason: `ticket_${ticket.status.toLowerCase()}`, ticket, serverVersion: bundle.event.version });
+  if (ticket.status === "Outside" && !allowReentry) return res.status(403).json({ error: "Re-entry not permitted", result: "rejected", reason: "reentry_not_permitted", ticket, serverVersion: bundle.event.version });
+  return res.json({ result: "accepted", reason: ticket.status === "Outside" ? "reentry_permitted" : "validated", ticket: writeScanResult(ticket, "Inside", gateName, staffName), serverVersion: bundle.event.version });
 }
-
-function validatorStatusHandler(req: Request, res: Response) {
-  req.body = { ...req.body, code: req.body?.ticketId };
-  return validatorScanHandler(req, res);
-}
-
+function validatorStatusHandler(req: Request, res: Response) { req.body = { ...req.body, code: req.body?.ticketId }; return validatorScanHandler(req, res); }
 function validatorBulkSyncHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) return res.status(403).json({ error: "Approved event creator access is required" });
-
-  const queue = Array.isArray(req.body?.queue) ? req.body.queue as ValidatorQueueItem[] : [];
-  const clientSnapshotVersion = normalizeString(req.body?.clientSnapshotVersion);
-
-  const applied = [];
-  const conflicts = [];
-
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) return res.status(403).json({ error: "Approved event creator access is required" });
+  const queue = Array.isArray(req.body?.queue) ? req.body.queue as ValidatorQueueItem[] : []; const clientSnapshotVersion = normalizeString(req.body?.clientSnapshotVersion); const applied: unknown[] = []; const conflicts: unknown[] = [];
   for (const item of queue) {
     const bundle = buildTicketSnapshotsForEvent(user.uid, item.eventId);
-    if (!bundle) {
-      conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "event_not_found" });
-      continue;
-    }
-
-    if (clientSnapshotVersion && clientSnapshotVersion !== bundle.event.version) {
-      conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "snapshot_outdated", expectedStatus: item.newStatus, actualStatus: bundle.event.version });
-      continue;
-    }
-
-    const ticket = bundle.tickets.find((entry) => entry.id === item.ticketId);
-    if (!ticket) {
-      conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "ticket_not_found" });
-      continue;
-    }
-
-    if (ticket.status === item.newStatus) {
-      applied.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, result: "already_applied", reason: "already_in_desired_state", serverTicket: ticket });
-      continue;
-    }
-
-    if (ticket.status === "Cancelled" || ticket.status === "Refunded" || ticket.status === "Blocked") {
-      conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: `ticket_${ticket.status.toLowerCase()}`, actualStatus: ticket.status });
-      continue;
-    }
-
-    const nextTicket = writeScanResult(ticket, item.newStatus as ValidatorTicket["status"], item.gateName, item.staffName);
-    applied.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, result: "accepted", reason: "synced", serverTicket: nextTicket });
+    if (!bundle) { conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "event_not_found" }); continue; }
+    if (clientSnapshotVersion && clientSnapshotVersion !== bundle.event.version) { conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "snapshot_outdated" }); continue; }
+    const ticket = bundle.tickets.find((entry) => entry.id === item.ticketId); if (!ticket) { conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: "ticket_not_found" }); continue; }
+    if (ticket.status === item.newStatus) { applied.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, result: "already_applied", reason: "already_in_desired_state", serverTicket: ticket }); continue; }
+    if (["Cancelled", "Refunded", "Blocked"].includes(ticket.status)) { conflicts.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, reason: `ticket_${ticket.status.toLowerCase()}`, actualStatus: ticket.status }); continue; }
+    applied.push({ queueId: item.queueId, ticketId: item.ticketId, eventId: item.eventId, result: "accepted", reason: "synced", serverTicket: writeScanResult(ticket, item.newStatus, item.gateName, item.staffName) });
   }
-
   return res.json({ success: true, applied, conflicts });
 }
-
 function validatorSessionHandler(req: Request, res: Response) {
-  const user = req.user as VerifiedRequestUser | undefined;
-  if (!user) return res.status(401).json({ error: "Authentication required" });
-
-  const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) {
-    return res.status(403).json({ error: "Approved event creator access is required" });
-  }
-
-  void (async () => {
-    try {
-      const customToken = await getFirebaseAdmin().auth().createCustomToken(user.uid, {
-        client: "ticket-validator",
-        role: user.is_admin ? "admin" : "validator",
-      });
-
-      return res.json({ success: true, customToken });
-    } catch (error) {
-      console.error("Failed to create Ticket Validator session token:", error);
-      return res.status(500).json({ error: "Unable to create Ticket Validator session" });
-    }
-  })();
+  const user = req.user as VerifiedRequestUser | undefined; if (!user) return res.status(401).json({ error: "Authentication required" });
+  if (!isEventCreatorActive(loadCreatorRecord(user.uid))) return res.status(403).json({ error: "Approved event creator access is required" });
+  void (async () => { try { const customToken = await getFirebaseAdmin().auth().createCustomToken(user.uid, { client: "ticket-validator", role: user.is_admin ? "admin" : "validator" }); return res.json({ success: true, customToken }); } catch (error) { console.error("Failed to create Ticket Validator session token:", error); return res.status(500).json({ error: "Unable to create Ticket Validator session" }); } })();
 }
 
 export function registerValidatorRoutes(app: Express) {
