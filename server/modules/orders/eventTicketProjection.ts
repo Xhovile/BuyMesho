@@ -34,13 +34,19 @@ function ticketStatus(orderStatus: string, explicitStatus: string): string {
   if (status === "refunded") return "Refunded";
   if (status === "cancelled") return "Cancelled";
   if (status === "disputed" || status === "closed") return "Blocked";
-  if (["paid", "in_escrow", "fulfilled"].includes(status)) return "Waiting Entry";
   return "Waiting Entry";
 }
 
 export function projectEventTickets(order: StoredOrder): void {
   const db = getPaymentDb();
   const now = new Date().toISOString();
+
+  // Tickets are materialized only once an order is payable/paid. Pending
+  // checkouts are intentionally kept out of the Validator projection.
+  if (["draft", "pending_payment"].includes(order.status)) {
+    db.prepare(`DELETE FROM event_tickets WHERE order_id = ?`).run(order.id);
+    return;
+  }
 
   const eventItems = (order.items ?? [])
     .map((item) => item as unknown as TicketRecord)
@@ -118,7 +124,7 @@ export function projectEventTickets(order: StoredOrder): void {
         status,
         purchase_date: purchaseDate,
         updated_at: now,
-        event_title: text(item, "title"),
+        event_title: text(item, "title") || "Event Ticket",
         event_date: text(item, "eventDate"),
         start_time: text(item, "startTime"),
         end_time: nullableText(item, "endTime"),
@@ -143,8 +149,7 @@ export function projectEventTickets(order: StoredOrder): void {
 export function backfillEventTickets(): void {
   const db = getPaymentDb();
   const rows = db.prepare(`SELECT id FROM orders ORDER BY created_at ASC`).all() as Array<{ id: string }>;
-  const orderRepositoryRows = rows;
-  for (const row of orderRepositoryRows) {
+  for (const row of rows) {
     const stored = db.prepare(`SELECT * FROM orders WHERE id = ?`).get(row.id) as Record<string, unknown> | undefined;
     if (!stored) continue;
     let items: StoredOrder["items"] = [];
