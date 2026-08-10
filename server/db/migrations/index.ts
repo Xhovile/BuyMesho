@@ -131,16 +131,22 @@ function ensureExtraTables() {
 }
 
 function ensureEventLifecycleSchema() {
+  // Existing installations may contain NULL spec_values values. Do not rely on
+  // a NOT NULL column constraint to normalize them; backfill first, then apply
+  // the lifecycle projection.
   postgresDb.exec(`
     ALTER TABLE events ADD COLUMN IF NOT EXISTS end_time TEXT;
-    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_status TEXT NOT NULL DEFAULT 'published';
-    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_mode TEXT NOT NULL DEFAULT 'immediate';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_status TEXT DEFAULT 'published';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_mode TEXT DEFAULT 'immediate';
     ALTER TABLE events ADD COLUMN IF NOT EXISTS publication_at TIMESTAMPTZ;
-    ALTER TABLE events ADD COLUMN IF NOT EXISTS runtime_mode TEXT NOT NULL DEFAULT 'automatic';
+    ALTER TABLE events ADD COLUMN IF NOT EXISTS runtime_mode TEXT DEFAULT 'automatic';
 
     UPDATE events
     SET spec_values = '{}'
     WHERE spec_values IS NULL;
+
+    ALTER TABLE events ALTER COLUMN spec_values SET DEFAULT '{}';
+    ALTER TABLE events ALTER COLUMN spec_values SET NOT NULL;
 
     UPDATE events
     SET publication_status = CASE
@@ -150,15 +156,16 @@ function ensureEventLifecycleSchema() {
       ELSE 'published'
     END
     WHERE publication_status IS NULL
+       OR publication_status NOT IN ('draft','published','paused','cancelled')
        OR (publication_status = 'published' AND lower(COALESCE(status, 'published')) <> 'published');
 
     UPDATE events
     SET publication_mode = 'immediate'
-    WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate', 'scheduled');
+    WHERE publication_mode IS NULL OR publication_mode NOT IN ('immediate','scheduled');
 
     UPDATE events
     SET runtime_mode = 'automatic'
-    WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic', 'force_live', 'force_upcoming');
+    WHERE runtime_mode IS NULL OR runtime_mode NOT IN ('automatic','force_live','force_upcoming');
 
     UPDATE events
     SET spec_values = jsonb_set(
@@ -172,6 +179,13 @@ function ensureEventLifecycleSchema() {
       ),
       '{runtime_mode}', to_jsonb(runtime_mode), true
     )::text;
+
+    ALTER TABLE events ALTER COLUMN publication_status SET DEFAULT 'published';
+    ALTER TABLE events ALTER COLUMN publication_mode SET DEFAULT 'immediate';
+    ALTER TABLE events ALTER COLUMN runtime_mode SET DEFAULT 'automatic';
+    ALTER TABLE events ALTER COLUMN publication_status SET NOT NULL;
+    ALTER TABLE events ALTER COLUMN publication_mode SET NOT NULL;
+    ALTER TABLE events ALTER COLUMN runtime_mode SET NOT NULL;
 
     CREATE OR REPLACE FUNCTION buymesho_sync_event_runtime_spec()
     RETURNS trigger AS $$
