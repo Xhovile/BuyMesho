@@ -33,15 +33,7 @@ export const textField = ({
   advanced?: boolean;
   placeholder?: string;
   helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "text",
-  required,
-  advanced,
-  placeholder,
-  helpText,
-});
+}): ListingSpecField => ({ key, label, type: "text", required, advanced, placeholder, helpText });
 
 export const textareaField = ({
   key,
@@ -57,15 +49,7 @@ export const textareaField = ({
   advanced?: boolean;
   placeholder?: string;
   helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "textarea",
-  required,
-  advanced,
-  placeholder,
-  helpText,
-});
+}): ListingSpecField => ({ key, label, type: "textarea", required, advanced, placeholder, helpText });
 
 export const numberField = ({
   key,
@@ -81,115 +65,25 @@ export const numberField = ({
   advanced?: boolean;
   placeholder?: string;
   helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "number",
-  required,
-  advanced,
-  placeholder,
-  helpText,
-});
+}): ListingSpecField => ({ key, label, type: "number", required, advanced, placeholder, helpText });
 
-export const booleanField = ({
-  key,
-  label,
-  required,
-  advanced,
-  helpText,
-}: {
-  key: string;
-  label: string;
-  required?: boolean;
-  advanced?: boolean;
-  helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "boolean",
-  required,
-  advanced,
-  helpText,
-});
+export const booleanField = ({ key, label, required, advanced, helpText }: {
+  key: string; label: string; required?: boolean; advanced?: boolean; helpText?: string;
+}): ListingSpecField => ({ key, label, type: "boolean", required, advanced, helpText });
 
-export const selectField = ({
-  key,
-  label,
-  options,
-  required,
-  advanced,
-  placeholder,
-  helpText,
-}: {
-  key: string;
-  label: string;
-  options: string[];
-  required?: boolean;
-  advanced?: boolean;
-  placeholder?: string;
-  helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "select",
-  options,
-  required,
-  advanced,
-  placeholder,
-  helpText,
-});
+export const selectField = ({ key, label, options, required, advanced, placeholder, helpText }: {
+  key: string; label: string; options: string[]; required?: boolean; advanced?: boolean; placeholder?: string; helpText?: string;
+}): ListingSpecField => ({ key, label, type: "select", options, required, advanced, placeholder, helpText });
 
-export const multiselectField = ({
-  key,
-  label,
-  options,
-  required,
-  advanced,
-  helpText,
-}: {
-  key: string;
-  label: string;
-  options: string[];
-  required?: boolean;
-  advanced?: boolean;
-  helpText?: string;
-}): ListingSpecField => ({
-  key,
-  label,
-  type: "multiselect",
-  options,
-  required,
-  advanced,
-  helpText,
-});
+export const multiselectField = ({ key, label, options, required, advanced, helpText }: {
+  key: string; label: string; options: string[]; required?: boolean; advanced?: boolean; helpText?: string;
+}): ListingSpecField => ({ key, label, type: "multiselect", options, required, advanced, helpText });
 
 const EVENT_LIFECYCLE_FIELDS: ListingSpecField[] = [
-  textField({
-    key: "end_time",
-    label: "End Time",
-    advanced: false,
-    placeholder: "e.g. 23:00",
-    helpText: "Used by Automatic runtime mode to determine when the event ends.",
-  }),
-  selectField({
-    key: "publication_mode",
-    label: "Publication",
-    options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS),
-    helpText: "Choose immediate publication or scheduled publication.",
-  }),
-  textField({
-    key: "publication_at",
-    label: "Publication Date & Time",
-    advanced: false,
-    placeholder: "e.g. 2026-08-20T18:00:00+02:00",
-    helpText: "Only used when Publication is scheduled.",
-  }),
-  selectField({
-    key: "runtime_mode",
-    label: "Runtime Status",
-    options: Array.from(EVENT_RUNTIME_MODE_OPTIONS),
-    helpText: "Automatic follows the event clock; Force Live/Upcoming overrides it.",
-  }),
+  textField({ key: "end_time", label: "End Time", placeholder: "e.g. 23:00", helpText: "Used by Automatic runtime mode to determine when the event ends." }),
+  selectField({ key: "publication_mode", label: "Publication", options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS), helpText: "Choose immediate publication or scheduled publication." }),
+  textField({ key: "publication_at", label: "Publication Date & Time", placeholder: "e.g. 2026-08-20T18:00:00+02:00", helpText: "Only used when Publication is scheduled." }),
+  selectField({ key: "runtime_mode", label: "Runtime Status", options: Array.from(EVENT_RUNTIME_MODE_OPTIONS), helpText: "Automatic follows the event clock; Force Live/Upcoming overrides it." }),
 ];
 
 export function createEventConfig(params: {
@@ -200,20 +94,8 @@ export function createEventConfig(params: {
 }): EventItemConfig {
   const fields = [...params.fields, ...EVENT_LIFECYCLE_FIELDS];
   return {
-    schema: {
-      category: EVENT_CATEGORY,
-      subcategory: EVENT_SUBCATEGORY,
-      itemType: params.itemType,
-      fields,
-    },
-    fieldGroups: [
-      ...params.fieldGroups,
-      { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) },
-    ],
-    fieldGroups: [
-      ...params.fieldGroups,
-      { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) },
-    ],
+    schema: { category: EVENT_CATEGORY, subcategory: EVENT_SUBCATEGORY, itemType: params.itemType, fields },
+    fieldGroups: [...params.fieldGroups, { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) }],
     requiredKeys: params.requiredKeys,
   };
 }
@@ -221,92 +103,43 @@ export function createEventConfig(params: {
 export function createEmptyEventSpecValues(fields: ListingSpecField[]): ListingSpecValues {
   return fields.reduce((acc, field) => {
     switch (field.type) {
-      case "multiselect":
-        acc[field.key] = [];
-        break;
+      case "multiselect": acc[field.key] = []; break;
       case "boolean":
-      case "number":
-        acc[field.key] = null;
-        break;
+      case "number": acc[field.key] = null; break;
       case "text":
       case "textarea":
       case "select":
-      default:
-        acc[field.key] = "";
-        break;
+      default: acc[field.key] = ""; break;
     }
     return acc;
   }, {} as ListingSpecValues);
 }
 
-export function validateEventSpecValues(
-  fields: ListingSpecField[],
-  requiredKeys: string[],
-  values: ListingSpecValues = {}
-): ListingSpecValidationResult {
+export function validateEventSpecValues(fields: ListingSpecField[], requiredKeys: string[], values: ListingSpecValues = {}): ListingSpecValidationResult {
   const errors: ListingSpecValidationError[] = [];
-
   for (const field of fields) {
     const value = values[field.key];
     const isRequired = requiredKeys.includes(field.key) || !!field.required;
-
     if (isRequired) {
       const isEmptyString = typeof value === "string" && value.trim().length === 0;
       const isEmptyArray = Array.isArray(value) && value.length === 0;
       const isMissing = value === null || value === undefined || isEmptyString || isEmptyArray;
-
-      if (isMissing) {
-        errors.push({ key: field.key, message: `${field.label} is required.` });
-        continue;
-      }
+      if (isMissing) { errors.push({ key: field.key, message: `${field.label} is required.` }); continue; }
     }
-
     if (value === null || value === undefined || value === "") continue;
-
-    if (field.type === "multiselect" && !Array.isArray(value)) {
-      errors.push({ key: field.key, message: `${field.label} must be a list of selected values.` });
-      continue;
-    }
-
-    if (field.type === "boolean" && typeof value !== "boolean") {
-      errors.push({ key: field.key, message: `${field.label} must be true or false.` });
-      continue;
-    }
-
+    if (field.type === "multiselect" && !Array.isArray(value)) { errors.push({ key: field.key, message: `${field.label} must be a list of selected values.` }); continue; }
+    if (field.type === "boolean" && typeof value !== "boolean") { errors.push({ key: field.key, message: `${field.label} must be true or false.` }); continue; }
     if (field.type === "number") {
-      const isValidNumber =
-        typeof value === "number" ||
-        (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
-
-      if (!isValidNumber) {
-        errors.push({ key: field.key, message: `${field.label} must be a valid number.` });
-      }
+      const isValidNumber = typeof value === "number" || (typeof value === "string" && value.trim() !== "" && !Number.isNaN(Number(value)));
+      if (!isValidNumber) errors.push({ key: field.key, message: `${field.label} must be a valid number.` });
       continue;
     }
-
-    if ((field.type === "select" || field.type === "text" || field.type === "textarea") && typeof value !== "string") {
-      errors.push({ key: field.key, message: `${field.label} must be text.` });
-      continue;
-    }
-
-    if (
-      field.type === "select" &&
-      field.options &&
-      typeof value === "string" &&
-      value.trim() !== "" &&
-      !field.options.includes(value)
-    ) {
-      errors.push({ key: field.key, message: `${field.label} has an invalid option selected.` });
-      continue;
-    }
-
+    if ((field.type === "select" || field.type === "text" || field.type === "textarea") && typeof value !== "string") { errors.push({ key: field.key, message: `${field.label} must be text.` }); continue; }
+    if (field.type === "select" && field.options && typeof value === "string" && value.trim() !== "" && !field.options.includes(value)) { errors.push({ key: field.key, message: `${field.label} has an invalid option selected.` }); continue; }
     if (field.type === "multiselect" && field.options && Array.isArray(value)) {
       const invalidOptions = value.filter((item) => typeof item !== "string" || !field.options?.includes(item));
-      if (invalidOptions.length > 0) {
-        errors.push({ key: field.key, message: `${field.label} contains an invalid selection.` });
-      }
+      if (invalidOptions.length > 0) errors.push({ key: field.key, message: `${field.label} contains an invalid selection.` });
     }
   }
-
   return { isValid: errors.length === 0, errors };
 }
