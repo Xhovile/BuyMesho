@@ -31,36 +31,36 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
     );
 
     CREATE TABLE IF NOT EXISTS event_creators (
-  uid TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  display_name TEXT NOT NULL,
-  organization_name TEXT NOT NULL,
-  organization_type TEXT NOT NULL,
-  contact_whatsapp TEXT,
-  event_types TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'approved',
-  active_until TEXT,
-  approved_at TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+      uid TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      active_until TEXT,
+      approved_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
 
-CREATE TABLE IF NOT EXISTS event_creator_applications (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  applicant_uid TEXT NOT NULL,
-  applicant_email TEXT,
-  display_name TEXT NOT NULL,
-  organization_name TEXT NOT NULL,
-  organization_type TEXT NOT NULL,
-  contact_whatsapp TEXT,
-  event_types TEXT NOT NULL,
-  reason TEXT NOT NULL,
-  status TEXT NOT NULL DEFAULT 'approved',
-  reviewed_at TEXT,
-  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+    CREATE TABLE IF NOT EXISTS event_creator_applications (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      applicant_uid TEXT NOT NULL,
+      applicant_email TEXT,
+      display_name TEXT NOT NULL,
+      organization_name TEXT NOT NULL,
+      organization_type TEXT NOT NULL,
+      contact_whatsapp TEXT,
+      event_types TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'approved',
+      reviewed_at TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
 
-CREATE TABLE IF NOT EXISTS events (
+    CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       creator_uid TEXT,
       event_type TEXT NOT NULL,
@@ -92,6 +92,35 @@ CREATE TABLE IF NOT EXISTS events (
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS event_tickets (
+      id TEXT PRIMARY KEY,
+      event_id BIGINT NOT NULL,
+      order_id TEXT NOT NULL,
+      code TEXT NOT NULL,
+      ticket_title TEXT NOT NULL,
+      ticket_type TEXT NOT NULL DEFAULT 'General Admission',
+      holder_name TEXT NOT NULL DEFAULT '',
+      holder_email TEXT NOT NULL DEFAULT '',
+      holder_phone TEXT NOT NULL DEFAULT '',
+      seat_or_zone TEXT,
+      status TEXT NOT NULL DEFAULT 'Waiting Entry',
+      purchase_date TIMESTAMPTZ,
+      scanned_at TIMESTAMPTZ,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      event_title TEXT NOT NULL DEFAULT '',
+      event_date TEXT NOT NULL DEFAULT '',
+      start_time TEXT NOT NULL DEFAULT '',
+      end_time TEXT,
+      venue TEXT NOT NULL DEFAULT '',
+      location TEXT NOT NULL DEFAULT '',
+      metadata TEXT NOT NULL DEFAULT '{}'
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_event_tickets_event_id ON event_tickets(event_id);
+    CREATE INDEX IF NOT EXISTS idx_event_tickets_event_status ON event_tickets(event_id, status);
+    CREATE INDEX IF NOT EXISTS idx_event_tickets_code ON event_tickets(code);
+    CREATE INDEX IF NOT EXISTS idx_event_tickets_order_id ON event_tickets(order_id);
 
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
