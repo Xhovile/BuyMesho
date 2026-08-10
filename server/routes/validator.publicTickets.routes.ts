@@ -41,12 +41,13 @@ function buildPublicTicketsForEvent(eventId: string) {
 
   for (const row of rows) {
     const order = orderRepository.findById(row.id);
-    if (!order) continue;
+    if (!order || order.status === "draft" || order.status === "pending_payment") continue;
     const payment = order.paymentReference ? paymentRepository.findByReference(order.paymentReference) ?? null : null;
     for (const item of order.items ?? []) {
-      if (String(item.kind ?? "") !== "event_ticket" || String(item.eventId ?? "") !== eventId) continue;
-      // OrderItem is a concrete domain type without a string index signature. Convert
-      // through unknown before treating its dynamic ticket metadata as a record.
+      // Event identity is the source of truth. Do not require a particular item
+      // kind because older/newer event checkout records can use different labels.
+      // Listing-only items have no eventId and therefore remain excluded.
+      if (!String(item.eventId ?? "") || String(item.eventId ?? "") !== eventId) continue;
       const itemData = item as unknown as Record<string, unknown>;
       const ticketType = normalizeString(itemData.ticketType ?? itemData.ticket_type) || "General Admission";
       const ticketTitle = normalizeString(itemData.title ?? event.event_title) || "Event ticket";
