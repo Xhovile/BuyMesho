@@ -97,28 +97,17 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   }
 
   registerVerificationEmailRoutes(app);
-  registerSessionRoutes(app);
 
-  // sessionRoutes.ts and validator.routes.ts historically used the same
-  // global installation symbol. Clear that legacy marker before installing
-  // Validator routes so the Validator route module cannot incorrectly return
-  // early without registering /api/validator/session.
-  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
+  // Validator routes must be registered before the legacy session routes.
+  // sessionRoutes.ts still exposes legacy /api/validator/* handlers, and
+  // Express uses first-match routing. Registering the new Validator module
+  // first ensures /api/validator/me, /api/validator/events and related
+  // endpoints reach the canonical Validator implementation.
+  delete (app as any)[Symbol.for("buymesho.validatorRoutesInstalled")];
   registerValidatorRoutes(app);
   registerValidatorPublicTicketRoutes(app);
 
-  // Runtime diagnostic: this endpoint is registered immediately after
-  // registerValidatorRoutes(). If it responds, the Validator route module
-  // definitely executed in the live server.
-  app.get("/api/validator/runtime-health", (_req, res) => {
-    res.json({
-      ok: true,
-      service: "buymesho-validator-api",
-      validatorRoutesInitialized: true,
-      validatorSessionRouteRegistered: true,
-      timestamp: new Date().toISOString(),
-    });
-  });
+  registerSessionRoutes(app);
 
   registerAccountDeletionRoutes(app);
   registerMessageRoutes(app);
