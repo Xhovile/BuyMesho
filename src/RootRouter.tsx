@@ -29,6 +29,7 @@ import { useAuthUser } from "./hooks/useAuthUser";
 import ScrollToTopFab from "./components/ScrollToTopFab";
 import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import loaderImage from "../photos/LoaderPic.png";
+import logoImage from "../photos/Logo.png";
 
 const App = lazy(() => import("./App.new"));
 const AdminHubPage = lazy(() => import("./AdminHubPage"));
@@ -92,21 +93,48 @@ const EventDetailsPage = lazy(() => import("./EventDetailsPage"));
 const EventsCreatePage = lazy(() => import("./EventsCreatePage"));
 const EventCreatorDashboardPage = lazy(() => import("./EventCreatorDashboardPage"));
 
-function RouteLoader({ route }: { route: AppRoute }) {
-  const useBarLoader = route === "home" || route === "explore";
+function RouteLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white px-6 py-8">
+      <div className="relative h-24 w-24" role="status" aria-label="Loading BuyMesho">
+        <svg
+          className="absolute inset-0 h-full w-full animate-loader-spin"
+          viewBox="0 0 96 96"
+          fill="none"
+          aria-hidden="true"
+        >
+          <circle
+            cx="48"
+            cy="48"
+            r="40"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="text-zinc-100"
+          />
+          <circle
+            cx="48"
+            cy="48"
+            r="40"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeDasharray="125 126"
+            className="text-red-600"
+          />
+        </svg>
 
-  if (useBarLoader) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-white px-4">
-        <div className="flex w-full max-w-xl flex-col items-center gap-6">
-          <img src={loaderImage} alt="BuyMesho loading" className="h-auto w-full max-w-[280px] object-contain" />
-          <div className="progress-outer w-3/4 md:w-2/3"><div className="progress-inner" /></div>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src={logoImage}
+            alt="BuyMesho"
+            width={64}
+            height={64}
+            className="h-16 w-16 object-contain"
+          />
         </div>
       </div>
-    );
-  }
-
-  return <div className="flex h-screen items-center justify-center bg-zinc-100/70"><Loader2 className="h-10 w-10 animate-spin text-zinc-700" /></div>;
+    </div>
+  );
 }
 
 class DebugErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: Error | null }> {
@@ -382,7 +410,7 @@ export default function RootRouter() {
 
   return (
     <>
-      <Suspense fallback={<RouteLoader route={route} />}>
+      <Suspense fallback={<RouteLoader />}>
         {isEventsCreatePath ? (
           <EventsCreatePage />
         ) : isEventsManagePath ? (
