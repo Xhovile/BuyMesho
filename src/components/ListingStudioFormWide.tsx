@@ -13,6 +13,7 @@ import {
   validateListingSpecValues,
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
+import ListingAiStudio from "./ai/ListingAiStudio";
 
 const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 
@@ -467,7 +468,12 @@ const [form, setForm] = useState<ListingDraft>(() => {
   const resolvedSubmitBusyLabel = submitBusyLabel || (mode === "create" ? "Posting..." : "Saving...");
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-6">
+      <ListingAiStudio
+        currentDraft={form}
+        onApplyDraftSuggestion={(suggested) => setForm((prev) => ({ ...prev, ...suggested }))}
+        showFeedback={showFeedback}
+      />
       <div className="grid gap-8 xl:grid-cols-2">
         <div className="min-w-0 space-y-8">
           <section className="border-b border-zinc-200 pb-6">

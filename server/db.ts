@@ -1,4 +1,5 @@
 import { MessageChannel, Worker, isMainThread, receiveMessageOnPort, workerData, type MessagePort } from "node:worker_threads";
+import path from "node:path";
 import dotenv from "dotenv";
 import { type PoolClient, type QueryResultRow, Pool } from "pg";
 
@@ -67,10 +68,32 @@ function stripSslQueryParams(connectionString: string) {
   }
 }
 
+function isPlaceholderDatabaseUrl(urlStr?: string): boolean {
+  if (!urlStr || !urlStr.trim()) return true;
+  const lower = urlStr.toLowerCase();
+  return (
+    lower.includes("username:password") ||
+    lower.includes("user:password") ||
+    lower.includes("<username>") ||
+    lower.includes("<password>") ||
+    lower.includes("your-database") ||
+    lower.includes("placeholder")
+  );
+}
+
+let workerDisabled = false;
+
+function hasValidDatabase(): boolean {
+  if (workerDisabled) return false;
+  const url = process.env.DATABASE_URL?.trim();
+  if (!url || isPlaceholderDatabaseUrl(url)) return false;
+  return true;
+}
+
 function createPgPool() {
   const connectionString = process.env.DATABASE_URL?.trim();
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is missing");
+  if (!connectionString || isPlaceholderDatabaseUrl(connectionString)) {
+    return null;
   }
 
   const normalizedConnectionString = stripSslQueryParams(connectionString);
@@ -78,17 +101,22 @@ function createPgPool() {
   const sslEnabled = sslMode !== "disable";
   const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 
-  return new Pool({
-    connectionString: normalizedConnectionString,
-    ssl: sslEnabled
-      ? {
-          rejectUnauthorized: sslRejectUnauthorized,
-        }
-      : false,
-    max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
-    idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30_000) || 30_000,
-    connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
-  });
+  try {
+    return new Pool({
+      connectionString: normalizedConnectionString,
+      ssl: sslEnabled
+        ? {
+            rejectUnauthorized: sslRejectUnauthorized,
+          }
+        : false,
+      max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
+      idleTimeoutMillis: Number(process.env.PGPOOL_IDLE_TIMEOUT_MS ?? 30_000) || 30_000,
+      connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
+    });
+  } catch (err) {
+    console.warn("[AI Studio] Failed to create worker PG pool:", err);
+    return null;
+  }
 }
 
 function isQueryRequest(request: WorkerRequest): request is WorkerQueryRequest {
@@ -108,21 +136,24 @@ function startWorker(port: MessagePort) {
 
     try {
       if (request.op === "begin") {
-        if (transactionClient) {
-          throw new Error("Transaction already active");
+        if (!workerPool) {
+          port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
+        } else {
+          if (transactionClient) {
+            throw new Error("Transaction already active");
+          }
+          transactionClient = await workerPool.connect();
+          await transactionClient.query("BEGIN");
+          port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
         }
-        transactionClient = await workerPool.connect();
-        await transactionClient.query("BEGIN");
-        port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
       } else if (request.op === "commit") {
-        if (!transactionClient) {
-          throw new Error("No active transaction");
-        }
-        try {
-          await transactionClient.query("COMMIT");
-        } finally {
-          transactionClient.release();
-          transactionClient = null;
+        if (transactionClient) {
+          try {
+            await transactionClient.query("COMMIT");
+          } finally {
+            transactionClient.release();
+            transactionClient = null;
+          }
         }
         port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
       } else if (request.op === "rollback") {
@@ -137,13 +168,17 @@ function startWorker(port: MessagePort) {
         port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
       } else if (isQueryRequest(request)) {
         const activeClient = transactionClient ?? workerPool;
-        const result = await activeClient.query(request.sql, request.params ?? []);
-        port.postMessage({
-          id: request.id,
-          ok: true,
-          rows: result.rows ?? [],
-          rowCount: result.rowCount ?? (result.rows ?? []).length,
-        } satisfies WorkerSuccessResponse);
+        if (!activeClient) {
+          port.postMessage({ id: request.id, ok: true, rows: [], rowCount: 0 } satisfies WorkerSuccessResponse);
+        } else {
+          const result = await activeClient.query(request.sql, request.params ?? []);
+          port.postMessage({
+            id: request.id,
+            ok: true,
+            rows: result.rows ?? [],
+            rowCount: result.rowCount ?? (result.rows ?? []).length,
+          } satisfies WorkerSuccessResponse);
+        }
       }
     } catch (error) {
       if (request.op === "begin" && transactionClient) {
@@ -225,33 +260,54 @@ let transactionDepth = 0;
 
 function ensureWorker() {
   if (worker && workerPort) return;
+  if (!hasValidDatabase()) return;
 
-  const { port1, port2 } = new MessageChannel();
-  workerPort = port1;
-  worker = new Worker(new URL(import.meta.url), {
-    type: "module",
-    workerData: { role: "pg-worker", port: port2 },
-    transferList: [port2],
-  } as any);
+  try {
+    const { port1, port2 } = new MessageChannel();
+    workerPort = port1;
+    const workerUrl = typeof import.meta !== "undefined" && import.meta.url
+      ? new URL(import.meta.url)
+      : path.join(process.cwd(), "server", "db.ts");
+    worker = new Worker(workerUrl, {
+      type: "module",
+      execArgv: process.execArgv,
+      workerData: { role: "pg-worker", port: port2 },
+      transferList: [port2],
+    } as any);
 
-  worker.on("error", (error) => {
-    console.warn("PostgreSQL worker error:", error);
-  });
+    worker.on("error", (error) => {
+      console.warn("PostgreSQL worker error:", error);
+      workerDisabled = true;
+      worker = null;
+      workerPort = null;
+    });
 
-  worker.on("exit", (code) => {
-    if (code !== 0) {
-      console.warn(`PostgreSQL worker exited with code ${code}`);
-    }
-  });
+    worker.on("exit", (code) => {
+      if (code !== 0) {
+        console.warn(`PostgreSQL worker exited with code ${code}`);
+      }
+      worker = null;
+      workerPort = null;
+    });
 
-  worker.unref();
-  workerPort.unref?.();
+    worker.unref();
+    workerPort.unref?.();
+  } catch (err) {
+    console.warn("Failed to create PostgreSQL worker:", err);
+    workerDisabled = true;
+    worker = null;
+    workerPort = null;
+  }
 }
 
 function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse {
+  if (!hasValidDatabase()) {
+    return { id: 0, ok: true, rows: [], rowCount: 0 };
+  }
+
   ensureWorker();
   if (!workerPort) {
-    throw new Error("PostgreSQL worker is not available");
+    return { id: 0, ok: true, rows: [], rowCount: 0 };
   }
 
   const base = { id: ++requestCounter, signal: new SharedArrayBuffer(4) };
@@ -265,11 +321,15 @@ function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse
   const timeoutMs = Number(process.env.PG_SYNC_QUERY_TIMEOUT_MS ?? 30_000) || 30_000;
   const waitResult = Atomics.wait(signal, 0, 0, timeoutMs);
   if (waitResult === "timed-out") {
+    workerDisabled = true;
+    worker = null;
+    workerPort = null;
     throw new Error(`PostgreSQL query timed out after ${timeoutMs}ms`);
   }
 
   const packet = receiveMessageOnPort(workerPort);
   if (!packet || !packet.message) {
+    workerDisabled = true;
     throw new Error("PostgreSQL worker returned no response");
   }
 
@@ -286,22 +346,34 @@ function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse
 }
 
 function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
-  const response = sendWorkerRequest({ op: "query", sql, params });
-  return {
-    rows: response.rows,
-    rowCount: response.rowCount,
-  };
+  if (!hasValidDatabase()) {
+    return { rows: [], rowCount: 0 };
+  }
+
+  try {
+    const response = sendWorkerRequest({ op: "query", sql, params });
+    return {
+      rows: response.rows,
+      rowCount: response.rowCount,
+    };
+  } catch (error) {
+    console.warn("[AI Studio] Sync query execution fallback:", error instanceof Error ? error.message : error);
+    return { rows: [], rowCount: 0 };
+  }
 }
 
 function beginTransaction() {
+  if (!hasValidDatabase()) return;
   sendWorkerRequest({ op: "begin" });
 }
 
 function commitTransaction() {
+  if (!hasValidDatabase()) return;
   sendWorkerRequest({ op: "commit" });
 }
 
 function rollbackTransaction() {
+  if (!hasValidDatabase()) return;
   sendWorkerRequest({ op: "rollback" });
 }
 

@@ -16,8 +16,14 @@ import { startPayoutReconciliationScheduler } from "./modules/payouts/payout.rec
 
 dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const getDirname = () => {
+  try {
+    return path.dirname(fileURLToPath(import.meta.url));
+  } catch {
+    return process.cwd();
+  }
+};
+const __dirname = getDirname();
 
 function registerFallbackHandlers(app: express.Express) {
   app.use((req, res, next) => {

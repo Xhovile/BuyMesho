@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { useListingSEO } from "../../hooks/useListingSEO";
 import ListingActionsMenu from "../ListingActionsMenu";
 import ConfirmModal from "../ConfirmModal";
 import FeedbackModal from "../FeedbackModal";
@@ -100,6 +101,7 @@ export default function ListingDetailsContent({
   const [quickNoticeOpen, setQuickNoticeOpen] = useState(false);
   const [quickNoticeMessage, setQuickNoticeMessage] = useState("");
 
+  useListingSEO(listing, seller?.business_name);
   const isOwner =
     !!firebaseUser?.uid &&
     !!listing?.seller_uid &&

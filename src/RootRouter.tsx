@@ -1,4 +1,7 @@
 import { lazy, Suspense, useEffect, useState, Component, type ErrorInfo, type ReactNode } from "react";
+import { Loader2 } from "lucide-react";
+import BuyMeshoCopilotDrawer from "./components/ai/BuyMeshoCopilotDrawer";
+import AiIcon from "./components/ai/AiIcon";
 import {
   DISPUTES_PATH,
   ADMIN_AUDIT_PATH,
@@ -24,6 +27,7 @@ import {
 } from "./lib/appNavigation";
 import { useAuthUser } from "./hooks/useAuthUser";
 import ScrollToTopFab from "./components/ScrollToTopFab";
+import PwaInstallPrompt from "./components/PwaInstallPrompt";
 import loaderImage from "../photos/LoaderPic.png";
 import logoImage from "../photos/Logo.png";
 
@@ -300,6 +304,7 @@ export default function RootRouter() {
   const { user: firebaseUser, loading: authLoading } = useAuthUser();
 
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [copilotOpen, setCopilotOpen] = useState(false);
   const threadConversationId = new URLSearchParams(locationSearch).get("conversation");
   const isMessageThread = route === "messages" && !!threadConversationId;
   const isOrderDisputePath = locationPath.startsWith("/orders/") && locationPath.endsWith("/dispute");
@@ -311,9 +316,16 @@ export default function RootRouter() {
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+    const handleOpenCopilot = () => setCopilotOpen(true);
+
     window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("open-buymesho-copilot", handleOpenCopilot);
     handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("open-buymesho-copilot", handleOpenCopilot);
+    };
   }, []);
 
   useEffect(() => {
@@ -531,7 +543,33 @@ export default function RootRouter() {
           <HomePage />
         )}
       </Suspense>
+
+      {/* BuyMesho AI Floating Launcher */}
+      {!copilotOpen && (
+        <div className="fixed bottom-5 right-5 sm:bottom-5 sm:right-6 z-[99]">
+          <button
+            type="button"
+            onClick={() => setCopilotOpen(true)}
+            className="p-0 transition-transform hover:scale-110 active:scale-95 cursor-pointer block drop-shadow-md"
+            title="Open BuyMesho AI"
+            aria-label="BuyMesho AI"
+          >
+            <AiIcon className="w-12 h-12" />
+          </button>
+        </div>
+      )}
+
+      <BuyMeshoCopilotDrawer
+        isOpen={copilotOpen}
+        onClose={() => setCopilotOpen(false)}
+        onSelectListing={(id) => {
+          setCopilotOpen(false);
+          navigateToPath(`/listings/${id}`);
+        }}
+      />
+
       <ScrollToTopFab show={showScrollTop} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} />
+      <PwaInstallPrompt />
     </>
   );
 }

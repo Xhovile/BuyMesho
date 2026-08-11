@@ -97,11 +97,11 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
   app.use("/api/admin", createAdminSummaryRouter({ requireAuth, db }));

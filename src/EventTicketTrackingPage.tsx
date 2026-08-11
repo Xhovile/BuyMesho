@@ -7,27 +7,28 @@ import { downloadTicketPdf } from "./lib/ticketPdf";
 import { useRequireVerifiedUser } from "./hooks/useRequireVerifiedUser";
 import type { OrderBundle } from "./lib/orderApi";
 
-type EventTicketTrackingPageProps = { ticketId: string; initialBundle?: OrderBundle | null };
+type EventTicketTrackingPageProps = { ticketId?: string; reference?: string; initialBundle?: OrderBundle | null };
 function getTicketStatusLabel(value: string) { const normalized = value.trim().toLowerCase(); if (["paid", "captured", "verified", "successful", "completed"].includes(normalized)) return "Issued"; if (["pending", "initiated", "processing", "queued", "awaiting_payment"].includes(normalized)) return "Pending confirmation"; if (["rejected", "cancelled", "refunded"].includes(normalized)) return "Cancelled"; if (["failed", "error"].includes(normalized)) return "Ticket issue"; return value || "Pending confirmation"; }
 function formatMoney(amount: number, currency: string) { try { return new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount); } catch { return `${currency} ${amount.toLocaleString()}`; } }
 function readString(source: Record<string, unknown> | undefined, ...fields: string[]) { if (!source) return ""; for (const field of fields) { const value = source[field]; if (typeof value === "string" && value.trim()) return value.trim(); } return ""; }
 function findTicket(bundle: OrderBundle, ticketId: string) { for (const item of bundle.order?.items ?? []) { if (!item || (item as Record<string, unknown>).kind !== "event_ticket") continue; const data = item as Record<string, unknown>; const tickets = Array.isArray(data.tickets) ? data.tickets : []; if (tickets.some((entry) => entry && typeof entry === "object" && String((entry as Record<string, unknown>).ticketId ?? "") === ticketId)) return { item: data, ticket: tickets.find((entry) => entry && typeof entry === "object" && String((entry as Record<string, unknown>).ticketId ?? "") === ticketId) as Record<string, unknown> | undefined }; if (String(data.ticketId ?? "") === ticketId) return { item: data, ticket: undefined }; } return null; }
 function ticketFileName(title: string, ticketId: string) { const safeTitle = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "ticket"; return `${safeTitle}-${ticketId}.pdf`; }
 
-export default function EventTicketTrackingPage({ ticketId, initialBundle = null }: EventTicketTrackingPageProps) {
+export default function EventTicketTrackingPage({ ticketId = "", reference = "", initialBundle = null }: EventTicketTrackingPageProps) {
   const ready = useRequireVerifiedUser();
   if (!ready) return null;
-  return <EventTicketTrackingPageContent ticketId={ticketId} initialBundle={initialBundle} />;
+  return <EventTicketTrackingPageContent ticketId={ticketId} reference={reference} initialBundle={initialBundle} />;
 }
 
-function EventTicketTrackingPageContent({ ticketId, initialBundle = null }: EventTicketTrackingPageProps) {
+function EventTicketTrackingPageContent({ ticketId = "", reference = "", initialBundle = null }: EventTicketTrackingPageProps) {
+  const activeTicketId = (ticketId || reference || "").trim();
   const [bundle, setBundle] = useState<OrderBundle | null>(initialBundle);
   const [loading, setLoading] = useState(() => !initialBundle);
   const [error, setError] = useState<string | null>(null);
   const [match, setMatch] = useState<{ item: Record<string, unknown>; ticket?: Record<string, unknown> } | null>(null);
 
   const reload = useCallback(async () => {
-    const trimmed = ticketId.trim();
+    const trimmed = activeTicketId;
     if (!trimmed) { setError("No Ticket ID found."); setLoading(false); return; }
     setLoading(true); setError(null);
     try {
@@ -38,7 +39,7 @@ function EventTicketTrackingPageContent({ ticketId, initialBundle = null }: Even
       setBundle(found.candidate); setMatch(found.result);
     } catch (err) { setBundle(null); setMatch(null); setError(err instanceof Error ? err.message : "Failed to load ticket details."); }
     finally { setLoading(false); }
-  }, [initialBundle, ticketId]);
+  }, [initialBundle, activeTicketId]);
 
   useEffect(() => { void reload(); }, [reload]);
 
@@ -54,7 +55,7 @@ function EventTicketTrackingPageContent({ ticketId, initialBundle = null }: Even
   const status = getTicketStatusLabel(String(bundle?.payment?.status ?? bundle?.order?.status ?? "pending"));
   const amount = Number(item?.unitPrice && typeof item.unitPrice === "object" ? (item.unitPrice as Record<string, unknown>).amount ?? 0 : item?.ticketPrice ?? 0) || 0;
   const currency = String(item?.unitPrice && typeof item.unitPrice === "object" ? (item.unitPrice as Record<string, unknown>).currency ?? "MWK" : "MWK");
-  const purchaseTime = useMemo(() => [bundle?.order?.paidAt, bundle?.order?.placedAt, bundle?.order?.createdAt, bundle?.order?.updatedAt].find((value): value is string => typeof value === "string" && value.trim()) ?? "", [bundle]);
+  const purchaseTime = useMemo(() => [bundle?.order?.paidAt, bundle?.order?.placedAt, bundle?.order?.createdAt, bundle?.order?.updatedAt].find((value): value is string => typeof value === "string" && Boolean(value.trim())) ?? "", [bundle]);
   const eventId = typeof item?.eventId === "string" ? item.eventId : "";
 
   const handlePrint = () => downloadTicketPdf(ticketFileName(title, ticketId), `${title} ticket`, [{ label: "Event", value: title }, { label: "Organizer", value: organizer }, { label: "Ticket ID", value: ticketId }, { label: "Ticket holder", value: readString(holder, "fullName") || "—" }, { label: "Email", value: readString(holder, "email") || "—" }, { label: "Phone", value: readString(holder, "phone") || "—" }, { label: "Ticket type", value: ticketType }, { label: "Date", value: eventDate || "—" }, { label: "Time", value: startTime || "—" }, { label: "Venue", value: venue || "—" }, { label: "Status", value: status }, { label: "Amount", value: formatMoney(amount, currency) }], { ticketCode: ticketId, brandName: "BuyMesho", brandTagline: "Official event ticket" });

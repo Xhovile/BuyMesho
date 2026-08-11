@@ -1,6 +1,7 @@
 import { Component, StrictMode, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import RootRouter from './RootRouter.tsx';
+import { ToastProvider } from './components/Toast.tsx';
 import './index.css';
 import loaderImage from '../photos/LoaderPic.png';
 
@@ -144,7 +145,24 @@ function setBrandMetadata() {
 
 setBrandMetadata();
 
-window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/service-worker.js')
+        .then((reg) => {
+          console.log('BuyMesho ServiceWorker registered:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('BuyMesho ServiceWorker registration failed:', err);
+        });
+    });
+  }
+}
+
+registerServiceWorker();
+
+const customFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = getUrl(input);
   const urlString = url.toString();
   const method = getMethod(input, init);
@@ -194,6 +212,20 @@ window.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
 
   return response;
 }) as typeof window.fetch;
+
+try {
+  Object.defineProperty(window, 'fetch', {
+    value: customFetch,
+    writable: true,
+    configurable: true,
+  });
+} catch {
+  try {
+    window.fetch = customFetch;
+  } catch {
+    // Ignore fetch patch failures if window.fetch is non-configurable
+  }
+}
 
 class AppErrorBoundary extends Component<
   { children: ReactNode },
@@ -245,7 +277,9 @@ class AppErrorBoundary extends Component<
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AppErrorBoundary>
-      <RootRouter />
+      <ToastProvider>
+        <RootRouter />
+      </ToastProvider>
     </AppErrorBoundary>
   </StrictMode>,
 );

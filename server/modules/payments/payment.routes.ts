@@ -11,6 +11,8 @@ import { calculateCustomerCheckoutFees } from "../payouts/payout.policy.js";
 import { paymentWebhookHandler } from "./payment.webhooks.js";
 import { payoutWebhookHandler } from "../payouts/payout.webhooks.js";
 
+export { payoutWebhookHandler };
+
 const checkoutLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,

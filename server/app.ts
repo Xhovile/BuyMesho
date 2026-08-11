@@ -1,9 +1,10 @@
 import express, { type Express } from "express";
-import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
 
 export function createApp(): Express {
   const app = express();
+
+  app.set("trust proxy", 1);
 
   // Ticket Validator authenticates with a Firebase Bearer token, not cookies.
   // Reflect the requesting origin so the validator can call BuyMesho's API
@@ -29,22 +30,17 @@ export function createApp(): Express {
 
   app.use("/api/payments/paychangu/webhook", express.raw({ type: "application/json" }));
   app.use("/api/payments/paychangu-payout/webhook", express.raw({ type: "application/json" }));
-
-  app.post("/api/payments/paychangu/webhook", paymentWebhookHandler);
   app.post("/api/payments/paychangu-payout/webhook", payoutWebhookHandler);
 
   app.use(express.json({ limit: "10mb" }));
   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
   app.use((req, _res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`[HTTP] ${req.method} ${req.url}`);
+    }
     next();
   });
-
-  // API routes are registered centrally by server/routes/index.ts through
-  // bootstrap.ts. Keeping route registration out of createApp() prevents
-  // duplicate validator/session handlers from being installed before the
-  // canonical route ordering is applied.
 
   return app;
 }
