@@ -3,7 +3,6 @@ import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
 import { registerValidatorProjectionRoutes } from "./validatorProjection.routes.js";
-import { registerValidatorPublicTicketRoutes } from "./validator.publicTickets.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
 import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes.js";
 import { registerMessageModerationRoutes, registerMessageRoutes } from "./messageHubRoutes.js";
@@ -68,20 +67,17 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
         admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
       );
-    } catch (error) { console.warn("Failed to log admin action:", error); }
+    } catch (error) {
+      console.warn("Failed to log admin action:", error);
+    }
   }
 
   registerVerificationEmailRoutes(app);
 
-  // Phase 4 projection routes are deliberately first. Express is first-match,
-  // so Scanner/Attendees use event_tickets rather than legacy order scans.
+  // Validator projection routes own ticket retrieval, Attendees, Scanner,
+  // status changes and offline sync. They must remain ahead of legacy routes.
   registerValidatorProjectionRoutes(app);
-
-  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerValidatorRoutes(app);
-  registerValidatorPublicTicketRoutes(app);
-
-  delete (app as any)[Symbol.for("buymesho.sessionRoutesInstalled")];
   registerSessionRoutes(app);
 
   registerAccountDeletionRoutes(app);
