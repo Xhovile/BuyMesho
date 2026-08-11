@@ -5,11 +5,8 @@ export type ArchitectureSource = {
 };
 
 /**
- * BuyMesho's product/architecture registry for user-facing Copilot answers.
- *
- * This is intentionally a verified implementation snapshot, not a product
- * roadmap, planning document, feature wishlist, or assumption.
- * Only facts listed here may be stated as definitive platform behavior.
+ * Verified implementation snapshot used by user-facing BuyMesho AI services.
+ * This is not a roadmap, proposal, assumption, or generic marketplace model.
  */
 export const BUYMESHO_ARCHITECTURE_VERSION = "2026-08-11";
 

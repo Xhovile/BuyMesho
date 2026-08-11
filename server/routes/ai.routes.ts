@@ -65,20 +65,20 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // Compare Listings
+  // Compare 2-3 supplied BuyMesho listings using only their supplied facts.
   app.post("/api/ai/compare-listings", async (req, res) => {
     try {
       const { items } = req.body || {};
-      if (!Array.isArray(items) || items.length < 2) {
-        return res.status(400).json({ error: "At least 2 items are required for comparison" });
+      if (!Array.isArray(items) || items.length < 2 || items.length > 3) {
+        return res.status(400).json({ error: "Between 2 and 3 listings are required for comparison" });
       }
 
-      const comparison = await compareListings({ items });
+      const comparison = await compareBuyMeshoListings(items);
       return res.json({ comparison });
     } catch (error) {
-      console.error("AI Compare error:", error);
-      const message = error instanceof Error ? error.message : "Failed to compare listings";
-      return res.status(500).json({ error: message });
+      console.error("BuyMesho listing comparison error:", error);
+      const message = error instanceof Error ? error.message : "BuyMesho listing comparison is currently unavailable";
+      return res.status(503).json({ error: message, code: "COMPARISON_UNAVAILABLE" });
     }
   });
 
