@@ -64,6 +64,16 @@ export function navigateToPath(path: string, options?: { replace?: boolean; scro
   if (!hasWindow()) return;
   const url = new URL(path, window.location.href);
 
+  // Keep legacy/AI recommendation links compatible with BuyMesho's canonical
+  // listing-details route. The router expects /listing?listing=<id>, not
+  // /listings/<id>.
+  const listingMatch = url.pathname.match(/^\/listings\/([^/]+)$/);
+  if (listingMatch) {
+    url.pathname = LISTING_PATH;
+    url.searchParams.set("listing", decodeURIComponent(listingMatch[1]));
+    url.searchParams.set("image", url.searchParams.get("image") ?? "0");
+  }
+
   if (url.pathname !== EXPLORE_PATH && url.pathname !== LISTING_PATH) {
     url.searchParams.delete("listing");
     url.searchParams.delete("image");
