@@ -6,12 +6,7 @@ function ensureColumn(
   columnName: string,
   definition: string,
 ): void {
-  const columns = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ?`).all(tableName) as Array<{
-    name: string;
-  }>;
-  if (!columns.some((column) => column.name === columnName)) {
-    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
-  }
+  db.exec(`ALTER TABLE ${tableName} ADD COLUMN IF NOT EXISTS ${columnName} ${definition}`);
 }
 
 export function initPaymentSchema(db: PgCompatDatabase): void {
@@ -208,12 +203,6 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
 
     CREATE INDEX IF NOT EXISTS idx_event_activity_event_type
     ON event_activity (event_id, activity_type, created_at DESC);
-
-    CREATE INDEX IF NOT EXISTS idx_conversations_pair_listing
-    ON conversations (listing_id, buyer_uid, seller_uid);
-
-    CREATE INDEX IF NOT EXISTS idx_conversations_pair_event
-    ON conversations (event_id, buyer_uid, seller_uid);
 
     CREATE INDEX IF NOT EXISTS idx_conversations_buyer_updated_at
     ON conversations (buyer_uid, updated_at DESC);
