@@ -1,5 +1,5 @@
 import type { Express, RequestHandler } from "express";
-import { shoppingAssistant } from "../lib/ai.js";
+import { shoppingAssistant } from "../lib/shopping-assistant.js";
 import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
 import {
   generateListingDraft,
@@ -42,7 +42,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // AI Shopping Assistant & Natural Language Search
+  // AI Shopping Assistant & Natural Language Search.
   app.post("/api/ai/shopping-assistant", async (req, res) => {
     try {
       const { query, university, category, maxPrice, contextListings } = req.body || {};
@@ -52,17 +52,17 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
 
       const result = await shoppingAssistant({
         query,
-        university,
-        category,
-        maxPrice,
+        university: typeof university === "string" ? university : undefined,
+        category: typeof category === "string" ? category : undefined,
+        maxPrice: typeof maxPrice === "number" && Number.isFinite(maxPrice) ? maxPrice : undefined,
         contextListings: Array.isArray(contextListings) ? contextListings : [],
       });
 
       return res.json({ result });
     } catch (error) {
       console.error("AI Shopping Assistant error:", error);
-      const message = error instanceof Error ? error.message : "Failed to process shopping assistant query";
-      return res.status(500).json({ error: message });
+      const message = error instanceof Error ? error.message : "BuyMesho shopping assistant is currently unavailable";
+      return res.status(503).json({ error: message, code: "SHOPPING_ASSISTANT_UNAVAILABLE" });
     }
   });
 
