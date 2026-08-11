@@ -1,4 +1,4 @@
-import type { Express } from "react";
+import type { Express } from "express";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
@@ -73,6 +73,9 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   }
 
   registerVerificationEmailRoutes(app);
+
+  // Validator projection routes own ticket retrieval, Attendees, Scanner,
+  // status changes and offline sync. They must remain ahead of legacy routes.
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
@@ -95,7 +98,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
