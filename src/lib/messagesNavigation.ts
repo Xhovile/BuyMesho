@@ -56,13 +56,10 @@ export const navigateToConversation = (conversationId: string | number) => {
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
-export const consumePendingConversation = (conversationId: number | null) => {
-  const conversation = getPendingConversation(conversationId);
-  if (conversation) {
-    pendingConversation = null;
-  }
-  return conversation;
-};
+// Backwards-compatible read helper. It intentionally does not mutate module state,
+// so callers can safely use it during React render.
+export const consumePendingConversation = (conversationId: number | null) =>
+  getPendingConversation(conversationId);
 
 export const navigateToMessagesForListing = (listingId: string | number) => {
   const url = new URL(window.location.href);
