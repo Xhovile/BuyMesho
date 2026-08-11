@@ -219,10 +219,14 @@ export default function MessageThreadPage() {
 
   const blocked = hasBlockedState(conversation);
   const canReply = conversation.can_reply !== false && !blocked;
-  const isEventThread = conversation.thread_type === "event" && !!conversation.event;
-  const listingName = conversation.listing?.name || conversation.event?.title || "Listing";
-  const sellerName = conversation.seller?.business_name || conversation.event?.organizer_name || "Seller";
-  const listingPrice = Number(conversation.listing?.price || conversation.event?.price || 0);
+  const threadType = String(conversation.thread_type || "listing");
+  const isEventThread = threadType === "event" && !!conversation.event;
+  const isSellerThread = threadType === "seller";
+  const listingName = conversation.listing?.name || "Listing";
+  const sellerName = conversation.seller?.business_name || "Seller";
+  const eventTitle = conversation.event?.title || "Event";
+  const listingPrice = Number(conversation.listing?.price || 0);
+  const sellerProfileHref = `/seller?uid=${encodeURIComponent(conversation.seller.uid)}`;
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-zinc-100 text-zinc-900">
@@ -237,39 +241,74 @@ export default function MessageThreadPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
 
-          <a
-            href={isEventThread ? `${EVENTS_PATH}?event=${conversation.event?.id}` : `/listing?listing=${conversation.listing.id}`}
-            onClick={(event) => {
-              if (!isPlainLeftClick(event)) return;
-              event.preventDefault();
-              if (isEventThread && conversation.event) {
-                navigateToPath(`${EVENTS_PATH}?event=${conversation.event.id}`);
-              } else {
+          {isSellerThread ? (
+            <a
+              href={sellerProfileHref}
+              onClick={(event) => {
+                if (!isPlainLeftClick(event)) return;
+                event.preventDefault();
+                navigateToSellerProfile(conversation.seller.uid);
+              }}
+              className="min-w-0 flex-1 text-left"
+            >
+              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{sellerName}</p>
+              <p className="text-sm font-semibold text-zinc-500">Seller profile</p>
+            </a>
+          ) : isEventThread ? (
+            <a
+              href={`${EVENTS_PATH}?event=${conversation.event?.id}`}
+              onClick={(event) => {
+                if (!isPlainLeftClick(event)) return;
+                event.preventDefault();
+                if (conversation.event) {
+                  navigateToPath(`${EVENTS_PATH}?event=${conversation.event.id}`);
+                }
+              }}
+              className="min-w-0 flex-1 text-left"
+            >
+              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{eventTitle}</p>
+              <p className="text-sm font-semibold text-zinc-500">
+                {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Free event"}
+              </p>
+            </a>
+          ) : (
+            <a
+              href={`/listing?listing=${conversation.listing.id}`}
+              onClick={(event) => {
+                if (!isPlainLeftClick(event)) return;
+                event.preventDefault();
                 navigateToListingDetails(conversation.listing.id, 0);
-              }
-            }}
-            className="min-w-0 flex-1 text-left"
-          >
-            <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">
-              {listingName}
-            </p>
-            <p className="text-sm font-semibold text-zinc-500">
-              {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : isEventThread ? "Free event" : "Price unavailable"}
-            </p>
-          </a>
+              }}
+              className="min-w-0 flex-1 text-left"
+            >
+              <p className="truncate text-base font-extrabold text-zinc-900 sm:text-lg">{listingName}</p>
+              <p className="text-sm font-semibold text-zinc-500">
+                {listingPrice > 0 ? `MWK ${listingPrice.toLocaleString()}` : "Price unavailable"}
+              </p>
+            </a>
+          )}
 
-          <a
-            href={`/seller?uid=${encodeURIComponent(conversation.seller.uid)}`}
-            onClick={(event) => {
-              if (!isPlainLeftClick(event)) return;
-              event.preventDefault();
-              navigateToSellerProfile(conversation.seller.uid);
-            }}
-            className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]"
-          >
-            <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
-            <p className="text-[11px] font-semibold text-zinc-500">{isEventThread ? "Event owner" : "Seller profile"}</p>
-          </a>
+          {isEventThread ? (
+            <div className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]">
+              <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">
+                {conversation.event?.organizer_name || sellerName}
+              </p>
+              <p className="text-[11px] font-semibold text-zinc-500">Event owner</p>
+            </div>
+          ) : (
+            <a
+              href={sellerProfileHref}
+              onClick={(event) => {
+                if (!isPlainLeftClick(event)) return;
+                event.preventDefault();
+                navigateToSellerProfile(conversation.seller.uid);
+              }}
+              className="ml-auto max-w-[10rem] shrink-0 text-right sm:max-w-[14rem]"
+            >
+              <p className="truncate text-sm font-bold text-zinc-900 sm:text-base">{sellerName}</p>
+              <p className="text-[11px] font-semibold text-zinc-500">Seller profile</p>
+            </a>
+          )}
 
           <ConversationActionsMenu
             className="shrink-0 ml-1"

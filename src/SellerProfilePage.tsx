@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, Loader2, Search, ShieldCheck, Star } from "lucide-react";
+import { ChevronLeft, Loader2, MessageCircle, Search, ShieldCheck, Star } from "lucide-react";
 import type { Listing, RatingSummary } from "./types";
 import { apiFetch } from "./lib/api";
 import { useAuthUser } from "./hooks/useAuthUser";
@@ -9,11 +9,14 @@ import {
   getSellerUidFromUrl,
   navigateToListingDetails,
   navigateBackOrPath,
+  navigateToLoginWithReturnPath,
 } from "./lib/appNavigation";
 import FloatingCartButton from "./components/FloatingCartButton";
 import AppFooter from "./components/AppFooter";
 import ListingHeaderBar from "./components/listingDetails/ListingHeaderBar";
 import { readPersistentPageCache, writePersistentPageCache } from "./lib/persistentPageCache";
+import { startConversationWithSeller } from "./lib/messages";
+import { navigateToConversation } from "./lib/messagesNavigation";
 
 type SellerProfile = {
   uid?: string;
@@ -238,6 +241,7 @@ export default function SellerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [ratingLoading, setRatingLoading] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [messageLoading, setMessageLoading] = useState(false);
   const [listingSearch, setListingSearch] = useState("");
 
   useEffect(() => {
@@ -328,6 +332,28 @@ export default function SellerProfilePage() {
 
   const canRateSeller = !!firebaseUser && !!sellerUid && firebaseUser.uid !== sellerUid;
 
+  const handleMessageSeller = async () => {
+    if (!sellerUid || messageLoading) return;
+
+    const returnPath = `/seller?uid=${encodeURIComponent(sellerUid)}`;
+    if (!firebaseUser?.uid) {
+      navigateToLoginWithReturnPath(returnPath);
+      return;
+    }
+
+    if (firebaseUser.uid === sellerUid) return;
+
+    setMessageLoading(true);
+    try {
+      const conversation = await startConversationWithSeller(sellerUid);
+      navigateToConversation(conversation.id);
+    } catch (error) {
+      console.error("Failed to start seller conversation", error);
+    } finally {
+      setMessageLoading(false);
+    }
+  };
+
   const handleRateSeller = async (stars: number) => {
     if (!sellerUid || !firebaseUser) return;
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) return;
@@ -403,7 +429,7 @@ export default function SellerProfilePage() {
                     )}
                   </div>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <h1 className="text-2xl sm:text-4xl font-black tracking-tight text-zinc-900 break-words">
                       {profile.business_name || "Seller Profile"}
                     </h1>
@@ -416,6 +442,18 @@ export default function SellerProfilePage() {
                         </span>
                       ) : null}
                     </div>
+
+                    {firebaseUser?.uid !== sellerUid ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleMessageSeller()}
+                        disabled={messageLoading}
+                        className="mt-3 inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {messageLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
+                        {messageLoading ? "Opening…" : "Message Seller"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
 

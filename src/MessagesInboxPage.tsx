@@ -91,6 +91,19 @@ function ConversationRow({
 }) {
   const unread = Number(convo.unread_count || 0);
   const blocked = Boolean(convo.blocked_by_you || convo.blocked_by_other);
+  const threadType = String(convo.thread_type || "listing");
+  const isEventThread = threadType === "event";
+  const isSellerThread = threadType === "seller";
+  const title = isEventThread
+    ? convo.event?.title || convo.listing.name
+    : isSellerThread
+      ? convo.seller.business_name
+      : convo.listing.name;
+  const subtitle = isEventThread
+    ? `Event · ${convo.event?.organizer_name || convo.seller.business_name}`
+    : isSellerThread
+      ? "Seller"
+      : convo.seller.business_name;
 
   return (
     <div className="rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm transition-colors hover:bg-zinc-50">
@@ -107,8 +120,8 @@ function ConversationRow({
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-extrabold text-zinc-900">{convo.listing.name}</p>
-                <p className="truncate text-xs font-semibold text-zinc-500">{convo.seller.business_name}</p>
+                <p className="truncate text-sm font-extrabold text-zinc-900">{title}</p>
+                <p className="truncate text-xs font-semibold text-zinc-500">{subtitle}</p>
               </div>
               <span className="shrink-0 text-[11px] font-semibold text-zinc-400">
                 {timeLabel(convo.last_message_at)}
