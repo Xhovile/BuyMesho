@@ -21,6 +21,7 @@ import {
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
 import { generateListingDraft } from "../lib/ai";
+import ListingAiStudio from "./ai/ListingAiStudio";
 
 const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
 
@@ -686,6 +687,11 @@ const applyAiDraft = async () => {
     <div className="flex flex-col min-h-0 flex-1">
       <div className="p-6">
         <div className="space-y-4 pr-1">
+          <ListingAiStudio
+            currentDraft={form}
+            onApplyDraftSuggestion={(suggested) => setForm((prev) => ({ ...prev, ...suggested }))}
+            showFeedback={showFeedback}
+          />
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Basic Info</p>
             <button

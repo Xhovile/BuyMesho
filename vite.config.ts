@@ -1,22 +1,20 @@
-import tailwindcss from '@tailwindcss/vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig, loadEnv} from 'vite';
+import tailwindcss from '@tailwindcss/vite';
 
+// https://vite.dev/config/
 export default defineConfig(({mode}) => {
-  const env = loadEnv(mode, '.', '');
   return {
-    plugins: [react(), tailwindcss()],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
-    resolve: {
-      alias: {
-        '@': path.resolve(__dirname, '.'),
-      },
+    plugins: [
+      react(),
+      tailwindcss(),
+    ],
+    server: {
+      host: '0.0.0.0',
+      port: 3000,
     },
     build: {
-      chunkSizeWarningLimit: 1600,
+      sourcemap: true,
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -25,15 +23,11 @@ export default defineConfig(({mode}) => {
             if (id.includes('node_modules/react-dom') || id.includes('node_modules/react/')) {
               return 'vendor-react';
             }
-            if (id.includes('node_modules/firebase')) {
+
+            if (id.includes('node_modules/firebase/')) {
               return 'vendor-firebase';
             }
-            if (id.includes('node_modules/@google/genai')) {
-              return 'vendor-genai';
-            }
-            if (id.includes('node_modules/motion')) {
-              return 'vendor-motion';
-            }
+
             if (id.includes('node_modules/lucide-react')) {
               return 'vendor-lucide';
             }
@@ -42,22 +36,6 @@ export default defineConfig(({mode}) => {
           },
         },
       },
-    },
-    server: {
-      host: true,
-      allowedHosts: true,
-      // Forward /api requests to the Express server (server.ts)
-      proxy: {
-        '/api': {
-          target: 'http://localhost:3000',
-          changeOrigin: true,
-          secure: false,
-        },
-      },
-
-      // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modify—file watching is disabled to prevent flickering during agent edits.
-      hmr: process.env.DISABLE_HMR !== 'true',
     },
   };
 });

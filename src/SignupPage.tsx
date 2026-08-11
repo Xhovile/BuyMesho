@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -33,6 +33,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
   const [redirectAfterFeedback, setRedirectAfterFeedback] = useState(false);
+
   const passwordChecks = getPasswordChecks(form.password);
   const strength = getPasswordStrength(passwordChecks);
   const passwordsMatch = form.password.length > 0 && form.confirmPassword.length > 0 && form.password === form.confirmPassword;
@@ -44,6 +45,7 @@ export default function SignupPage() {
     if (!passwordsMatch) { showFeedback("error", "Passwords do not match", "Ensure both passwords are identical."); return; }
     if (!passwordChecks.hasMinLength || !passwordChecks.hasLowercase || !passwordChecks.hasUppercase || !passwordChecks.hasSpecial) { showFeedback("error", "Password requirements not met", PASSWORD_REQUIREMENTS_MESSAGE); return; }
     const email = form.email.trim();
+
     setLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, form.password);
