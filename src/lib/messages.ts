@@ -1,5 +1,6 @@
 import { apiFetch } from "./api";
 import type { Conversation, MessageThreadItem } from "../types";
+import { preloadConversation } from "./messagesNavigation";
 
 export interface ConversationResponse {
   conversation: Conversation | null;
@@ -60,6 +61,7 @@ export async function startConversationFromEvent(eventId: number): Promise<Conve
     conversation: null as unknown as Conversation,
   });
 
+  preloadConversation(data.conversation);
   return data.conversation;
 }
 
@@ -72,6 +74,7 @@ export async function startConversationWithSeller(sellerUid: string): Promise<Co
     conversation: null as unknown as Conversation,
   });
 
+  preloadConversation(data.conversation);
   return data.conversation;
 }
 
