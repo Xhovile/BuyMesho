@@ -102,6 +102,10 @@ function ensureMessagesSchema() {
       ON conversations (event_id, buyer_uid, seller_uid)
       WHERE event_id IS NOT NULL;
 
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_conversations_seller_thread
+      ON conversations (buyer_uid, seller_uid)
+      WHERE listing_id IS NULL AND event_id IS NULL;
+
       CREATE INDEX IF NOT EXISTS idx_conversations_buyer
       ON conversations (buyer_uid, updated_at DESC);
 
@@ -165,6 +169,24 @@ function getListingById(listingId: number) {
         status: string;
         photos: string | null;
         university: string;
+        business_name: string | null;
+        business_logo: string | null;
+        is_verified: number | null;
+      }
+    | undefined;
+}
+
+function getSellerByUid(sellerUid: string) {
+  return db
+    .prepare(
+      `SELECT uid, business_name, business_logo, is_verified
+       FROM sellers
+       WHERE uid = ?
+       LIMIT 1`
+    )
+    .get(sellerUid) as
+    | {
+        uid: string;
         business_name: string | null;
         business_logo: string | null;
         is_verified: number | null;
@@ -250,7 +272,23 @@ function getConversationForThread(listingId: number, buyerUid: string, sellerUid
     .get(listingId, buyerUid, sellerUid) as ConversationRow | undefined;
 }
 
+function getConversationForSellerThread(buyerUid: string, sellerUid: string) {
+  return db
+    .prepare(
+      `SELECT *
+       FROM conversations
+       WHERE listing_id IS NULL
+         AND event_id IS NULL
+         AND buyer_uid = ?
+         AND seller_uid = ?
+       LIMIT 1`
+    )
+    .get(buyerUid, sellerUid) as ConversationRow | undefined;
+}
+
 function serializeConversation(conversation: ConversationRow) {
+  const threadType = conversation.event_id ? "event" : conversation.listing_id ? "listing" : "seller";
+
   return {
     id: conversation.id,
     listing_id: conversation.listing_id,
@@ -262,11 +300,15 @@ function serializeConversation(conversation: ConversationRow) {
     seller_unread_count: Number(conversation.seller_unread_count || 0),
     created_at: conversation.created_at,
     updated_at: conversation.updated_at,
-    thread_type: conversation.event_id ? "event" : "listing",
+    thread_type: threadType,
     event_id: conversation.event_id,
     listing: {
       id: conversation.listing_id || 0,
-      name: conversation.listing_name || conversation.event_title || "Listing",
+      name:
+        conversation.listing_name ||
+        conversation.event_title ||
+        conversation.seller_business_name ||
+        "Conversation",
       price: Number(conversation.listing_price ?? conversation.event_price ?? 0),
       status: conversation.listing_status || conversation.event_status || "available",
       photos: (() => {
@@ -532,6 +574,54 @@ async function startConversationFromEvent(req: Request, res: Response) {
   res.status(201).json({ conversation: serializeConversation(created) });
 }
 
+async function startConversationWithSeller(req: Request, res: Response) {
+  const user = getUser(req);
+  if (!user) return res.status(401).json({ error: "Authentication required" });
+
+  const sellerUid = String(req.params.sellerUid || "").trim();
+  if (!sellerUid) {
+    return res.status(400).json({ error: "Invalid seller id" });
+  }
+
+  if (sellerUid === user.uid && !user.is_admin) {
+    return res.status(403).json({ error: "Sellers cannot message themselves" });
+  }
+
+  const seller = getSellerByUid(sellerUid);
+  if (!seller) {
+    return res.status(404).json({ error: "Seller not found" });
+  }
+
+  const buyerUid = user.uid;
+  const existing = getConversationForSellerThread(buyerUid, sellerUid);
+  if (existing) {
+    return res.json({ conversation: serializeConversation(getConversationById(existing.id) || existing) });
+  }
+
+  const result = db
+    .prepare(
+      `INSERT INTO conversations (
+        listing_id,
+        event_id,
+        buyer_uid,
+        seller_uid,
+        last_message_preview,
+        last_message_at,
+        buyer_unread_count,
+        seller_unread_count,
+        updated_at
+      ) VALUES (NULL, NULL, ?, ?, NULL, NULL, 0, 0, CURRENT_TIMESTAMP)`
+    )
+    .run(buyerUid, sellerUid);
+
+  const created = getConversationById(Number(result.lastInsertRowid));
+  if (!created) {
+    return res.status(500).json({ error: "Failed to create seller conversation" });
+  }
+
+  res.status(201).json({ conversation: serializeConversation(created) });
+}
+
 async function sendMessage(req: Request, res: Response) {
   const user = getUser(req);
   if (!user) return res.status(401).json({ error: "Authentication required" });
@@ -647,6 +737,7 @@ export function registerMessagesRoutes(app: Express) {
   app.get("/api/messages/:conversationId", requireAuth, (req, res) => void getConversation(req, res));
   app.post("/api/listings/:listingId/messages/start", requireAuth, (req, res) => void startConversationFromListing(req, res));
   app.post("/api/events/:eventId/messages/start", requireAuth, (req, res) => void startConversationFromEvent(req, res));
+  app.post("/api/sellers/:sellerUid/messages/start", requireAuth, (req, res) => void startConversationWithSeller(req, res));
   app.post("/api/messages/:conversationId/messages", requireAuth, (req, res) => void sendMessage(req, res));
   app.post("/api/messages/:conversationId/read", requireAuth, (req, res) => void markRead(req, res));
 
