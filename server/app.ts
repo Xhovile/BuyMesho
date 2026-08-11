@@ -1,4 +1,5 @@
 import express, { type Express } from "express";
+import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
 
 export function createApp(): Express {
@@ -30,6 +31,7 @@ export function createApp(): Express {
 
   app.use("/api/payments/paychangu/webhook", express.raw({ type: "application/json" }));
   app.use("/api/payments/paychangu-payout/webhook", express.raw({ type: "application/json" }));
+  app.post("/api/payments/paychangu/webhook", paymentWebhookHandler);
   app.post("/api/payments/paychangu-payout/webhook", payoutWebhookHandler);
 
   app.use(express.json({ limit: "10mb" }));
