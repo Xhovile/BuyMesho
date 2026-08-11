@@ -88,16 +88,7 @@ export async function queryShoppingAssistant(payload: {
   university?: string;
   category?: string;
   maxPrice?: number;
-  contextListings?: Array<{
-    id: string;
-    name: string;
-    category?: string;
-    price: number;
-    description?: string;
-    condition?: string;
-    university?: string;
-    location?: string;
-  }>;
+  contextListings?: ShoppingAssistantListing[];
 }): Promise<ShoppingAssistantResult | null> {
   try {
     const response = await apiFetch("/api/ai/shopping-assistant", {
@@ -111,20 +102,12 @@ export async function queryShoppingAssistant(payload: {
   }
 }
 
-export async function compareMarketplaceItems(items: Array<{
-  id: string;
-  name: string;
-  category?: string;
-  price: number;
-  description?: string;
-  condition?: string;
-  university?: string;
-  specs?: Record<string, unknown>;
-}>): Promise<CompareListingsResult | null> {
+/** The server owns canonical listing truth for comparisons; clients submit IDs only. */
+export async function compareMarketplaceItems(items: Array<{ id: string }>): Promise<CompareListingsResult | null> {
   try {
     const response = await apiFetch("/api/ai/compare-listings", {
       method: "POST",
-      body: JSON.stringify({ items }),
+      body: JSON.stringify({ listingIds: items.map((item) => String(item.id)) }),
     });
     return response?.comparison ?? null;
   } catch (err) {
