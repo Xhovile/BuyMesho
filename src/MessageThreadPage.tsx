@@ -3,8 +3,7 @@ import { ArrowLeft, Loader2, Paperclip, SendHorizontal, ShieldAlert } from "luci
 import type { Conversation, MessageThreadItem, MessageReportReason } from "./types";
 import { useAuthUser } from "./hooks/useAuthUser";
 import { EVENTS_PATH, navigateToLogin, navigateToListingDetails, navigateToPath, navigateToSellerProfile } from "./lib/appNavigation";
-import { navigateToMessages } from "./lib/messagesNavigation";
-import { getConversationIdFromUrl } from "./lib/messagesNavigation";
+import { navigateToMessages, getConversationIdFromUrl, consumePendingConversation } from "./lib/messagesNavigation";
 import { deleteConversation, fetchConversation, markConversationRead, sendMessage } from "./lib/messages";
 import {
   blockConversationUser,
@@ -29,13 +28,14 @@ function hasBlockedState(conversation: Conversation | null) {
 
 export default function MessageThreadPage() {
   const { user, loading: authLoading } = useAuthUser();
-  const [loading, setLoading] = useState(true);
+  const [conversationId] = useState<number | null>(() => getConversationIdFromUrl());
+  const preloadedConversation = consumePendingConversation(conversationId);
+  const [loading, setLoading] = useState(!preloadedConversation);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
-  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [conversation, setConversation] = useState<Conversation | null>(preloadedConversation);
   const [messages, setMessages] = useState<MessageThreadItem[]>([]);
-  const [conversationId] = useState<number | null>(() => getConversationIdFromUrl());
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -63,7 +63,6 @@ export default function MessageThreadPage() {
     let cancelled = false;
 
     const load = async () => {
-      setLoading(true);
       setStatus(null);
       try {
         const result = await fetchConversation(conversationId);
@@ -79,7 +78,15 @@ export default function MessageThreadPage() {
       }
     };
 
-    void load();
+    if (preloadedConversation) {
+      // Render the conversation immediately from the start endpoint response.
+      // Fetch message history and mark it read in the background.
+      setLoading(false);
+      void load();
+    } else {
+      setLoading(true);
+      void load();
+    }
 
     return () => {
       cancelled = true;
