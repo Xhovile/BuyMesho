@@ -62,52 +62,8 @@
   }
 }
 
-/*
- * Admin payouts data-loading state.
- * The page mounts before its payout request completes, so keep the same
- * branded loader language instead of flashing a second generic spinner.
- * This state is intentionally a little smaller than the route loader.
- */
-.flex.min-h-screen.items-center.justify-center.bg-zinc-50 {
-  position: relative;
-  background: #fff;
-}
-
-.flex.min-h-screen.items-center.justify-center.bg-zinc-50 > svg {
-  display: none;
-}
-
-.flex.min-h-screen.items-center.justify-center.bg-zinc-50::before {
-  content: "";
-  position: absolute;
-  width: 56px;
-  height: 56px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  background: url("/photos/Logo.png") center / contain no-repeat;
-  z-index: 2;
-}
-
-.flex.min-h-screen.items-center.justify-center.bg-zinc-50::after {
-  content: "";
-  position: absolute;
-  width: 72px;
-  height: 72px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1.5px solid #f1f1f1;
-  border-top-color: #dc2626;
-  border-left-color: #dc2626;
-  animation: buymesho-loader-spin 1.4s linear infinite;
-  z-index: 1;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .animate-loader-spin,
-  .flex.min-h-screen.items-center.justify-center.bg-zinc-50::after {
+  .animate-loader-spin {
     animation-duration: 3.5s;
   }
 }
