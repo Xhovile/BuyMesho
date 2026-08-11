@@ -1,35 +1,40 @@
 import type { Express, RequestHandler } from "express";
 import {
-  generateListingDraft,
-  suggestPricing,
   shoppingAssistant,
   compareListings,
-  moderateContent,
+  generateListingDraft as generateLegacyListingDraft,
+  suggestPricing as suggestLegacyPricing,
+  moderateContent as moderateLegacyContent,
 } from "../lib/ai.js";
+import {
+  generateListingDraft,
+  suggestPricing,
+  moderateContent,
+} from "../lib/listing-ai-studio.js";
 
 export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler) {
-  // 1. Generate / enhance listing draft
+  // Listing AI Studio: authenticated seller tooling. Failures are explicit so the UI can preserve the user's draft.
   app.post("/api/ai/listing-draft", requireFirebaseUser, async (req, res) => {
     try {
       const currentDraft = req.body?.currentDraft;
-      if (!currentDraft || typeof currentDraft !== "object") {
+      if (!currentDraft || typeof currentDraft !== "object" || Array.isArray(currentDraft)) {
         return res.status(400).json({ error: "currentDraft object is required" });
       }
 
-      const draft = await generateListingDraft({ currentDraft: currentDraft as Record<string, unknown> });
+      const draft = await generateListingDraft(currentDraft as Record<string, unknown>);
       return res.json({ draft });
     } catch (error) {
       console.error("AI Listing Draft error:", error);
-      const message = error instanceof Error ? error.message : "Failed to generate listing draft";
-      return res.status(500).json({ error: message });
+      const message = error instanceof Error ? error.message : "AI listing enhancement is currently unavailable";
+      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
     }
   });
 
-  // 2. Suggest pricing & market valuation
+  // Listing AI Studio pricing: authenticated seller tooling.
   app.post("/api/ai/suggest-pricing", requireFirebaseUser, async (req, res) => {
     try {
       const { name, category, condition, specs, currentPrice } = req.body || {};
-      if (!name || !category) {
+      if (typeof name !== "string" || !name.trim() || typeof category !== "string" || !category.trim()) {
         return res.status(400).json({ error: "name and category are required" });
       }
 
@@ -37,12 +42,12 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
       return res.json({ pricing });
     } catch (error) {
       console.error("AI Suggest Pricing error:", error);
-      const message = error instanceof Error ? error.message : "Failed to estimate pricing";
-      return res.status(500).json({ error: message });
+      const message = error instanceof Error ? error.message : "AI pricing suggestions are currently unavailable";
+      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
     }
   });
 
-  // 3. AI Shopping Assistant & Natural Language Search
+  // AI Shopping Assistant & Natural Language Search
   app.post("/api/ai/shopping-assistant", async (req, res) => {
     try {
       const { query, university, category, maxPrice, contextListings } = req.body || {};
@@ -66,7 +71,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // 4. Compare Listings
+  // Compare Listings
   app.post("/api/ai/compare-listings", async (req, res) => {
     try {
       const { items } = req.body || {};
@@ -83,20 +88,28 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // 5. Content Moderation
+  // Content Moderation for Listing AI Studio
   app.post("/api/ai/moderate", requireFirebaseUser, async (req, res) => {
     try {
       const { text, type = "listing" } = req.body || {};
-      if (!text) {
+      if (typeof text !== "string" || !text.trim()) {
         return res.status(400).json({ error: "text is required" });
+      }
+      if (type !== "listing" && type !== "message") {
+        return res.status(400).json({ error: "type must be listing or message" });
       }
 
       const moderation = await moderateContent({ text, type });
       return res.json({ moderation });
     } catch (error) {
       console.error("AI Moderation error:", error);
-      const message = error instanceof Error ? error.message : "Failed to moderate content";
-      return res.status(500).json({ error: message });
+      const message = error instanceof Error ? error.message : "AI moderation is currently unavailable";
+      return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
     }
   });
+
+  // Keep imports of the broader AI service available for the remaining AI features while Listing AI Studio is isolated.
+  void generateLegacyListingDraft;
+  void suggestLegacyPricing;
+  void moderateLegacyContent;
 }
