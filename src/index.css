@@ -50,6 +50,13 @@
   @apply bg-zinc-200 rounded-full hover:bg-zinc-300 transition-colors;
 }
 
+/* Seller-level message threads already show the seller name on the left.
+   Hide only the duplicate right-side seller link; listing/event threads keep
+   their existing right-side seller/owner context. */
+header:has(a[href^="/seller?uid="] + a[href^="/seller?uid="]) > div > a[href^="/seller?uid="]:last-of-type {
+  display: none;
+}
+
 /* BuyMesho branded route loader: the logo is fixed at 64px inside a 96px coordinate system. */
 .animate-loader-spin {
   animation: buymesho-loader-spin 1.4s linear infinite;
