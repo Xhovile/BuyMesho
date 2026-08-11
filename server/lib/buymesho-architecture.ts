@@ -16,8 +16,9 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
     sourceFiles: ["src/main.tsx", "src/RootRouter.tsx", "src/lib/appNavigation.ts"],
     verifiedFacts: [
       "BuyMesho is a client application mounted through src/main.tsx and routed through the RootRouter/app navigation layer.",
-      "The application has dedicated public and authenticated experiences.",
+      "The application has dedicated public and authenticated experiences rather than a single undifferentiated page.",
       "Navigation includes marketplace, account, messaging, seller, events/tickets, payments/orders and admin areas present in the implementation.",
+      "The current UI hides the global Copilot launcher on Profile, Become Seller, Create/List Item, My Listings, Messages, Saved, Hidden, Payments, Seller Payouts and Admin pages, while keeping it visible on Settings and other eligible pages.",
     ],
   },
   {
@@ -86,6 +87,7 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "BuyMesho has a messages inbox/thread experience.",
       "Messaging supports listing-specific conversations.",
       "Messaging also supports direct seller conversations and event-specific conversations in the current implementation.",
+      "Seller/event conversation context may exist without a listing attachment.",
     ],
   },
   {
@@ -140,7 +142,7 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "BuyMesho has buyer payment and payments-hub experiences.",
       "Payment, escrow and payout modules exist on the server.",
       "BuyMesho has a disputes experience.",
-      "Do not claim a specific payment provider, payment method, escrow state transition or payout rule unless the relevant implementation establishes it.",
+      "Do not claim a specific payment provider, payment method, escrow state transition or payout rule unless it is present in the relevant implementation being inspected.",
     ],
   },
   {
@@ -171,20 +173,22 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
     ],
   },
   {
-    area: "AI features currently implemented on this branch",
+    area: "AI features currently implemented",
     sourceFiles: [
       "server/routes/ai.routes.ts",
       "server/lib/listing-ai-studio.ts",
-      "server/lib/listing-comparison.ts",
-      "server/lib/shopping-assistant.ts",
+      "server/lib/ai.ts",
+      "server/lib/buymesho-copilot.ts",
       "src/lib/ai.ts",
       "src/components/ai/ListingAiStudio.tsx",
+      "src/components/ai/BuyMeshoCopilotDrawer.tsx",
       "src/components/ai/ProductCompareModal.tsx",
     ],
     verifiedFacts: [
       "AI Listing Studio exists for listing enhancement, pricing suggestions and moderation.",
-      "BuyMesho product comparison exists for comparing supplied marketplace listings.",
-      "The natural-language shopping assistant exists as a server service and only receives supplied marketplace listing context.",
+      "BuyMesho Copilot exists as an in-product assistant drawer.",
+      "A product comparison capability exists in the current application code.",
+      "AI server routes call server-side AI services; the Copilot must not invent product/platform behavior beyond this registry and the supplied live listing context.",
     ],
   },
 ];

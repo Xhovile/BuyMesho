@@ -23,6 +23,11 @@ export type ShoppingAssistantResult = {
   suggested_follow_ups: string[];
 };
 
+export type CopilotConversationMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
 export type CompareListingsResult = {
   summary: string;
   winner_id: string;
@@ -74,8 +79,6 @@ export async function suggestListingPricing(payload: {
 export async function queryShoppingAssistant(payload: {
   query: string;
   university?: string;
-  category?: string;
-  maxPrice?: number;
   contextListings: Array<{
     id: string;
     name: string;
@@ -84,7 +87,9 @@ export async function queryShoppingAssistant(payload: {
     description?: string;
     condition?: string;
     university?: string;
+    location?: string;
   }>;
+  conversation?: CopilotConversationMessage[];
 }): Promise<ShoppingAssistantResult | null> {
   try {
     const response = await apiFetch("/api/ai/shopping-assistant", {
@@ -93,7 +98,7 @@ export async function queryShoppingAssistant(payload: {
     });
     return response?.result ?? null;
   } catch (err) {
-    console.warn("AI Shopping Assistant query failed:", err);
+    console.warn("BuyMesho Copilot query failed:", err);
     return null;
   }
 }

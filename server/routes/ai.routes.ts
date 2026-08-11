@@ -1,6 +1,6 @@
 import type { Express, RequestHandler } from "express";
-import { shoppingAssistant } from "../lib/shopping-assistant.js";
-import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
+import { compareListings } from "../lib/ai.js";
+import { askBuyMeshoCopilot } from "../lib/buymesho-copilot.js";
 import {
   generateListingDraft,
   suggestPricing,
@@ -42,27 +42,26 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // AI Shopping Assistant & Natural Language Search.
+  // BuyMesho Copilot: buyer, seller and marketplace guidance with conversation-aware context.
   app.post("/api/ai/shopping-assistant", async (req, res) => {
     try {
-      const { query, university, category, maxPrice, contextListings } = req.body || {};
-      if (!query || typeof query !== "string") {
+      const { query, university, contextListings, conversation } = req.body || {};
+      if (typeof query !== "string" || !query.trim()) {
         return res.status(400).json({ error: "query string is required" });
       }
 
-      const result = await shoppingAssistant({
+      const result = await askBuyMeshoCopilot({
         query,
         university: typeof university === "string" ? university : undefined,
-        category: typeof category === "string" ? category : undefined,
-        maxPrice: typeof maxPrice === "number" && Number.isFinite(maxPrice) ? maxPrice : undefined,
         contextListings: Array.isArray(contextListings) ? contextListings : [],
+        conversation: Array.isArray(conversation) ? conversation : [],
       });
 
       return res.json({ result });
     } catch (error) {
-      console.error("AI Shopping Assistant error:", error);
-      const message = error instanceof Error ? error.message : "BuyMesho shopping assistant is currently unavailable";
-      return res.status(503).json({ error: message, code: "SHOPPING_ASSISTANT_UNAVAILABLE" });
+      console.error("BuyMesho Copilot error:", error);
+      const message = error instanceof Error ? error.message : "BuyMesho Copilot is currently unavailable";
+      return res.status(503).json({ error: message, code: "COPILOT_UNAVAILABLE" });
     }
   });
 
