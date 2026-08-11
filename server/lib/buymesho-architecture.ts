@@ -7,11 +7,9 @@ export type ArchitectureSource = {
 /**
  * BuyMesho's product/architecture registry for user-facing Copilot answers.
  *
- * This is intentionally a verified snapshot of the implementation, not a
- * product roadmap or feature wishlist. Only facts listed here may be stated
- * as definitive platform behavior by BuyMesho Copilot.
- *
- * Update this registry when routes, pages, or user-facing workflows change.
+ * This is intentionally a verified implementation snapshot, not a product
+ * roadmap, planning document, feature wishlist, or assumption.
+ * Only facts listed here may be stated as definitive platform behavior.
  */
 export const BUYMESHO_ARCHITECTURE_VERSION = "2026-08-11";
 
@@ -23,6 +21,7 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "BuyMesho is a client application mounted through src/main.tsx and routed through the RootRouter/app navigation layer.",
       "The application has dedicated public and authenticated experiences rather than a single undifferentiated page.",
       "Navigation includes marketplace, account, messaging, seller, events/tickets, payments/orders and admin areas present in the implementation.",
+      "The current UI hides the global Copilot launcher on Profile, Become Seller, Create/List Item, My Listings, Messages, Saved, Hidden, Payments, Seller Payouts and Admin pages, while keeping it visible on Settings and other eligible pages.",
     ],
   },
   {
@@ -71,7 +70,6 @@ export const BUYMESHO_ARCHITECTURE: ArchitectureSource[] = [
       "src/SellersDirectoryPage.tsx",
       "src/pages/seller-payouts/SellerPayoutsPage.tsx",
       "src/BecomeSellerPage.tsx",
-      "docs/seller-payout-implementation-plan.md",
     ],
     verifiedFacts: [
       "BuyMesho has seller profiles and a seller directory.",
