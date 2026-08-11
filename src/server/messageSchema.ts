@@ -211,9 +211,6 @@ function ensureIndex(db: SchemaDbLike, indexName: string, sql: string) {
 }
 
 export function ensureMessageSchema(db: SchemaDbLike) {
-  // foreign_keys is a SQLite pragma. PostgreSQL enforces foreign keys by default,
-  // so no PostgreSQL query should be emitted for this compatibility hook.
-  db.pragma("foreign_keys = ON");
   db.exec(MESSAGE_SCHEMA_SQL);
 
   ensureColumn(db, "conversations", "listing_id", "INTEGER");
@@ -236,7 +233,7 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   ensureColumn(db, "messages", "read_at", "DATETIME");
   ensureColumn(db, "messages", "is_spam", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "messages", "spam_flag_count", "INTEGER NOT NULL DEFAULT 0");
-  ensureColumn(db, "messages", "deleted_at", "DATETIME");
+  ensureColumn(db, "messages", "deleted_at", "TEXT");
   ensureColumn(db, "messages", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "messages", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
 
