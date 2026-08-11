@@ -8,6 +8,22 @@ export const preloadConversation = (conversation: Conversation) => {
   pendingConversation = conversation;
 };
 
+export const getPendingConversation = (conversationId: number | null) => {
+  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
+    return null;
+  }
+
+  return pendingConversation;
+};
+
+export const clearPendingConversation = (conversationId: number | null) => {
+  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
+    return;
+  }
+
+  pendingConversation = null;
+};
+
 export const navigateToMessages = () => {
   const url = new URL(window.location.href);
   url.pathname = MESSAGES_PATH;
@@ -41,12 +57,10 @@ export const navigateToConversation = (conversationId: string | number) => {
 };
 
 export const consumePendingConversation = (conversationId: number | null) => {
-  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
-    return null;
+  const conversation = getPendingConversation(conversationId);
+  if (conversation) {
+    pendingConversation = null;
   }
-
-  const conversation = pendingConversation;
-  pendingConversation = null;
   return conversation;
 };
 
