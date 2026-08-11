@@ -7,7 +7,7 @@ import {
   moderateContent,
 } from "../lib/listing-ai-studio.js";
 
-export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler) {
+export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler, db?: any) {
   // Listing AI Studio: authenticated seller tooling. Failures are explicit so the UI can preserve the user's draft.
   app.post("/api/ai/listing-draft", requireFirebaseUser, async (req, res) => {
     try {
@@ -46,7 +46,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
   app.post("/api/ai/shopping-assistant", async (req, res) => {
     try {
       const { query, university, category, maxPrice, contextListings } = req.body || {};
-      if (!query || typeof query !== "string") {
+      if (typeof query !== "string" || !query.trim()) {
         return res.status(400).json({ error: "query string is required" });
       }
 
@@ -55,7 +55,8 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
         maxPrice: typeof maxPrice === "number" && Number.isFinite(maxPrice) ? maxPrice : undefined,
-        contextListings: Array.isArray(contextListings) ? contextListings : [],
+        contextListings: Array.isArray(contextListings) ? contextListings : undefined,
+        db,
       });
 
       return res.json({ result });
