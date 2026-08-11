@@ -1,8 +1,6 @@
 import express, { type Express } from "express";
 import { paymentWebhookHandler } from "./modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "./modules/payouts/payout.webhooks.js";
-import { registerSessionRoutes } from "./auth/sessionRoutes.js";
-import { registerValidatorRoutes } from "./routes/validator.routes.js";
 
 export function createApp(): Express {
   const app = express();
@@ -43,8 +41,10 @@ export function createApp(): Express {
     next();
   });
 
-  registerSessionRoutes(app);
-  registerValidatorRoutes(app);
+  // API routes are registered centrally by server/routes/index.ts through
+  // bootstrap.ts. Keeping route registration out of createApp() prevents
+  // duplicate validator/session handlers from being installed before the
+  // canonical route ordering is applied.
 
   return app;
 }
