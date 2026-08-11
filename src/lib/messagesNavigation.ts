@@ -1,6 +1,12 @@
-import { navigateToPath } from "./appNavigation";
+import type { Conversation } from "../types";
 
 export const MESSAGES_PATH = "/messages";
+
+let pendingConversation: Conversation | null = null;
+
+export const preloadConversation = (conversation: Conversation) => {
+  pendingConversation = conversation;
+};
 
 export const navigateToMessages = () => {
   const url = new URL(window.location.href);
@@ -11,6 +17,7 @@ export const navigateToMessages = () => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -25,9 +32,22 @@ export const navigateToConversation = (conversationId: string | number) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  if (!pendingConversation || String(pendingConversation.id) !== String(conversationId)) {
+    pendingConversation = null;
+  }
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+export const consumePendingConversation = (conversationId: number | null) => {
+  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
+    return null;
+  }
+
+  const conversation = pendingConversation;
+  pendingConversation = null;
+  return conversation;
 };
 
 export const navigateToMessagesForListing = (listingId: string | number) => {
@@ -39,6 +59,7 @@ export const navigateToMessagesForListing = (listingId: string | number) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -65,5 +86,6 @@ export const clearMessageParams = () => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.replaceState({}, "", url.toString());
 };
