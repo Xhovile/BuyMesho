@@ -4,8 +4,9 @@ export interface SEOConfig {
   title: string;
   description: string;
   image?: string;
+  imageAlt?: string;
   url?: string;
-  type?: string;
+  type?: "website" | "product";
   keywords?: string[];
   noIndex?: boolean;
   price?: number;
@@ -17,32 +18,46 @@ export interface SEOConfig {
   condition?: string;
 }
 
-const DEFAULT_SEO = {
-  title: "BuyMesho | Campus Marketplace in Malawi",
+const SITE_URL = "https://buymesho.app";
+
+export const DEFAULT_SEO = {
+  title: "BuyMesho | Malawi's Secure Marketplace",
   description:
-    "BuyMesho is Malawi's premier student-to-student and public campus marketplace. Buy and sell smartphones, textbooks, fashion, electronics, and tickets securely with Escrow protection.",
+    "BuyMesho is Malawi's secure marketplace, helping student sellers reach more people while giving everyone a simple, trusted place to discover and buy products, services, and tickets.",
   siteName: "BuyMesho",
-  type: "website",
-  image: "https://buymesho.com/og-image.jpg",
+  type: "website" as const,
+  image: `${SITE_URL}/Og-image.webp`,
+  imageAlt: "BuyMesho — Malawi's Secure Marketplace",
   currency: "MWK",
 };
 
-/**
- * Helper to update or create a meta tag by property or name selector
- */
-function updateMetaTag(selector: string, content: string, attributeName: "name" | "property") {
-  let element = document.head.querySelector<HTMLMetaElement>(`meta[${selector}]`);
+function absoluteUrl(value: string): string {
+  try {
+    return new URL(value, SITE_URL).toString();
+  } catch {
+    return SITE_URL;
+  }
+}
+
+function normalizeTitle(title?: string): string {
+  if (!title) return DEFAULT_SEO.title;
+  const cleaned = title.trim();
+  if (!cleaned) return DEFAULT_SEO.title;
+  if (cleaned === DEFAULT_SEO.title) return cleaned;
+  if (cleaned.endsWith(` | ${DEFAULT_SEO.siteName}`)) return cleaned;
+  return `${cleaned} | ${DEFAULT_SEO.siteName}`;
+}
+
+function updateMetaTag(attribute: "name" | "property", key: string, content: string) {
+  let element = document.head.querySelector<HTMLMetaElement>(`meta[${attribute}="${key}"]`);
   if (!element) {
     element = document.createElement("meta");
-    element.setAttribute(attributeName, selector.replace(/^meta\[(?:name|property)="|"\]$/g, "").replace(/.*="/, "").replace('"]', ''));
+    element.setAttribute(attribute, key);
     document.head.appendChild(element);
   }
   element.setAttribute("content", content);
 }
 
-/**
- * Helper to set or create a link tag (e.g. canonical)
- */
 function updateLinkTag(rel: string, href: string) {
   let element = document.head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
   if (!element) {
@@ -53,21 +68,18 @@ function updateLinkTag(rel: string, href: string) {
   element.setAttribute("href", href);
 }
 
-/**
- * Inject or update JSON-LD Structured Data for Product indexing
- */
 function updateJsonLdSchema(data: object | null) {
-  const SCHEMA_ID = "buymesho-jsonld-schema";
-  let scriptTag = document.head.querySelector<HTMLScriptElement>(`script#${SCHEMA_ID}`);
+  const schemaId = "buymesho-jsonld-schema";
+  let scriptTag = document.head.querySelector<HTMLScriptElement>(`script#${schemaId}`);
 
   if (!data) {
-    if (scriptTag) scriptTag.remove();
+    scriptTag?.remove();
     return;
   }
 
   if (!scriptTag) {
     scriptTag = document.createElement("script");
-    scriptTag.id = SCHEMA_ID;
+    scriptTag.id = schemaId;
     scriptTag.type = "application/ld+json";
     document.head.appendChild(scriptTag);
   }
@@ -76,79 +88,86 @@ function updateJsonLdSchema(data: object | null) {
 }
 
 /**
- * Main SEO injection function for general pages and product/listing pages
+ * Update standard, Open Graph, Twitter/X and JSON-LD metadata.
+ * This is intentionally browser-safe for the Vite SPA while index.html
+ * provides the crawler-visible homepage defaults before JavaScript runs.
  */
-export function updateSEOMetaTags(config: Partial<SEOConfig>) {
+export function updateSEOMetaTags(config: Partial<SEOConfig> = {}) {
   if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  const title = config.title ? `${config.title} | ${DEFAULT_SEO.siteName}` : DEFAULT_SEO.title;
-  const description = config.description || DEFAULT_SEO.description;
-  const image = config.image || DEFAULT_SEO.image;
-  const url = config.url || window.location.href;
+  const title = normalizeTitle(config.title);
+  const description = config.description?.trim() || DEFAULT_SEO.description;
+  const image = absoluteUrl(config.image || DEFAULT_SEO.image);
+  const imageAlt = config.imageAlt?.trim() || DEFAULT_SEO.imageAlt;
+  const url = absoluteUrl(config.url || window.location.pathname || "/");
   const type = config.type || DEFAULT_SEO.type;
-  const keywords = config.keywords?.length
-    ? config.keywords.join(", ")
-    : "BuyMesho, campus marketplace, Malawi, student deals, buy and sell, MWK, university marketplace";
+  const robots = config.noIndex ? "noindex, nofollow" : "index, follow";
 
-  // 1. Title & Standard Meta Tags
   document.title = title;
-  updateMetaTag('name="description"', description, "name");
-  updateMetaTag('name="keywords"', keywords, "name");
-  updateMetaTag('name="robots"', config.noIndex ? "noindex, nofollow" : "index, follow", "name");
+  updateMetaTag("name", "description", description);
+  updateMetaTag("name", "robots", robots);
+  updateMetaTag("name", "application-name", DEFAULT_SEO.siteName);
 
-  // 2. Canonical Link
   updateLinkTag("canonical", url);
 
-  // 3. Open Graph / Facebook Meta
-  updateMetaTag('property="og:site_name"', DEFAULT_SEO.siteName, "property");
-  updateMetaTag('property="og:title"', title, "property");
-  updateMetaTag('property="og:description"', description, "property");
-  updateMetaTag('property="og:image"', image, "property");
-  updateMetaTag('property="og:url"', url, "property");
-  updateMetaTag('property="og:type"', type, "property");
+  updateMetaTag("property", "og:site_name", DEFAULT_SEO.siteName);
+  updateMetaTag("property", "og:title", title);
+  updateMetaTag("property", "og:description", description);
+  updateMetaTag("property", "og:type", type);
+  updateMetaTag("property", "og:url", url);
+  updateMetaTag("property", "og:image", image);
+  updateMetaTag("property", "og:image:alt", imageAlt);
+  updateMetaTag("property", "og:locale", "en_MW");
+
+  updateMetaTag("name", "twitter:card", "summary_large_image");
+  updateMetaTag("name", "twitter:title", title);
+  updateMetaTag("name", "twitter:description", description);
+  updateMetaTag("name", "twitter:image", image);
+  updateMetaTag("name", "twitter:image:alt", imageAlt);
 
   if (config.price !== undefined) {
-    updateMetaTag('property="og:price:amount"', config.price.toString(), "property");
-    updateMetaTag('property="og:price:currency"', config.currency || DEFAULT_SEO.currency, "property");
+    updateMetaTag("property", "product:price:amount", String(config.price));
+    updateMetaTag("property", "product:price:currency", config.currency || DEFAULT_SEO.currency);
   }
 
-  // 4. Twitter Cards
-  updateMetaTag('name="twitter:card"', image ? "summary_large_image" : "summary", "name");
-  updateMetaTag('name="twitter:title"', title, "name");
-  updateMetaTag('name="twitter:description"', description, "name");
-  updateMetaTag('name="twitter:image"', image, "name");
-
-  // 5. Product JSON-LD Structured Data Schema.org
   if (config.price !== undefined || config.category) {
+    const itemCondition = config.condition
+      ? config.condition.toLowerCase().includes("new")
+        ? "https://schema.org/NewCondition"
+        : "https://schema.org/UsedCondition"
+      : undefined;
+
     const jsonLdProduct = {
-      "@context": "https://schema.org/",
+      "@context": "https://schema.org",
       "@type": "Product",
-      name: config.title || DEFAULT_SEO.title,
+      name: config.title || DEFAULT_SEO.siteName,
       image: [image],
-      description: description,
-      category: config.category || "General Marketplace",
-      itemCondition: config.condition
-        ? `https://schema.org/${config.condition.toLowerCase().includes("new") ? "NewCondition" : "UsedCondition"}`
-        : "https://schema.org/UsedCondition",
+      description,
+      ...(config.category ? { category: config.category } : {}),
+      ...(itemCondition ? { itemCondition } : {}),
       brand: {
         "@type": "Brand",
-        name: "BuyMesho Campus Marketplace",
+        name: DEFAULT_SEO.siteName,
       },
       offers: {
         "@type": "Offer",
-        url: url,
+        url,
         priceCurrency: config.currency || DEFAULT_SEO.currency,
-        price: config.price || 0,
-        priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        itemCondition: config.condition
-          ? `https://schema.org/${config.condition.toLowerCase().includes("new") ? "NewCondition" : "UsedCondition"}`
-          : "https://schema.org/UsedCondition",
-        availability: config.availability === "OutOfStock" ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
-        seller: {
-          "@type": "Person",
-          name: config.sellerName || "BuyMesho Seller",
-        },
-        areaServed: config.campus ? `${config.campus}, Malawi` : "Malawi Universities",
+        price: config.price ?? 0,
+        availability:
+          config.availability === "OutOfStock"
+            ? "https://schema.org/OutOfStock"
+            : "https://schema.org/InStock",
+        ...(itemCondition ? { itemCondition } : {}),
+        ...(config.sellerName
+          ? {
+              seller: {
+                "@type": "Person",
+                name: config.sellerName,
+              },
+            }
+          : {}),
+        ...(config.campus ? { areaServed: `${config.campus}, Malawi` } : { areaServed: "Malawi" }),
       },
     };
 
@@ -159,57 +178,46 @@ export function updateSEOMetaTags(config: Partial<SEOConfig>) {
 }
 
 /**
- * Generate SEO metadata specifically tailored for a BuyMesho product/listing object
+ * Generate SEO metadata for a BuyMesho listing.
  */
 export function getSEOForListing(listing: Listing, sellerName?: string): SEOConfig {
-  const itemTitle = listing.name || "Campus Item";
+  const itemTitle = listing.name?.trim() || "Marketplace listing";
+  const price = listing.price || 0;
   const formattedPrice = new Intl.NumberFormat("en-MW", {
     style: "currency",
     currency: "MWK",
     maximumFractionDigits: 0,
-  }).format(listing.price || 0);
-
-  const title = `${itemTitle} - ${formattedPrice} | BuyMesho`;
+  }).format(price);
   const locationText = listing.university ? `at ${listing.university}` : "in Malawi";
-  const cleanDescription = (listing.description || "")
-    ? `${listing.description.slice(0, 150)}... Buy ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho.`
-    : `Buy ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho. Verified campus marketplace with Escrow protection.`;
 
-  const primaryImage =
-    listing.photos && listing.photos.length > 0
-      ? listing.photos[0]
-      : DEFAULT_SEO.image;
+  const descriptionSource = listing.description?.trim();
+  const description = descriptionSource
+    ? `${descriptionSource.slice(0, 155).trimEnd()}${descriptionSource.length > 155 ? "…" : ""} ${itemTitle} is listed for ${formattedPrice} ${locationText} on BuyMesho.`
+    : `Discover ${itemTitle} for ${formattedPrice} ${locationText} on BuyMesho, Malawi's secure marketplace.`;
 
-  const currentUrl = typeof window !== "undefined" ? window.location.href : `https://buymesho.com/listing/${listing.id}`;
+  const primaryImage = listing.photos?.[0] || DEFAULT_SEO.image;
+  const currentUrl = typeof window !== "undefined"
+    ? window.location.href
+    : `${SITE_URL}/listing/${listing.id}`;
 
   return {
-    title,
-    description: cleanDescription,
+    title: `${itemTitle} - ${formattedPrice}`,
+    description,
     image: primaryImage,
+    imageAlt: `${itemTitle} on BuyMesho`,
     url: currentUrl,
     type: "product",
-    price: listing.price,
-    currency: "MWK",
+    price,
+    currency: DEFAULT_SEO.currency,
     category: listing.category,
     campus: listing.university,
     condition: listing.condition,
-    sellerName: sellerName || listing.business_name || "Campus Seller",
+    sellerName: sellerName || listing.business_name || "BuyMesho seller",
     availability: listing.status === "sold" ? "OutOfStock" : "InStock",
-    keywords: [
-      itemTitle,
-      listing.category,
-      listing.university || "Malawi Campus",
-      "BuyMesho",
-      "Buy and Sell Malawi",
-      "Student Marketplace",
-      formattedPrice,
-    ].filter(Boolean) as string[],
+    keywords: [itemTitle, listing.category, listing.university, "BuyMesho", "Malawi marketplace"].filter(Boolean) as string[],
   };
 }
 
-/**
- * Reset SEO tags back to default BuyMesho branding
- */
 export function resetSEOMetaTags() {
   updateSEOMetaTags({});
 }
