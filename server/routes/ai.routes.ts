@@ -6,17 +6,32 @@ import {
   suggestPricing,
   moderateContent,
 } from "../lib/listing-ai-studio.js";
+import {
+  authenticatedAiRateLimit,
+  publicAiRateLimit,
+} from "../middleware/aiRateLimit.js";
+
+const MAX_TEXT_LENGTH = 8_000;
+const MAX_DRAFT_KEYS = 40;
+const MAX_CONTEXT_LISTINGS = 30;
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
 
 export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandler, db?: any) {
-  // Listing AI Studio: authenticated seller tooling. Failures are explicit so the UI can preserve the user's draft.
-  app.post("/api/ai/listing-draft", requireFirebaseUser, async (req, res) => {
+  // Authenticated seller tooling. Rate-limit after auth so the per-user key can be used.
+  app.post("/api/ai/listing-draft", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const currentDraft = req.body?.currentDraft;
-      if (!currentDraft || typeof currentDraft !== "object" || Array.isArray(currentDraft)) {
+      if (!isPlainObject(currentDraft)) {
         return res.status(400).json({ error: "currentDraft object is required" });
       }
+      if (Object.keys(currentDraft).length > MAX_DRAFT_KEYS) {
+        return res.status(400).json({ error: "currentDraft contains too many fields" });
+      }
 
-      const draft = await generateListingDraft(currentDraft as Record<string, unknown>);
+      const draft = await generateListingDraft(currentDraft);
       return res.json({ draft });
     } catch (error) {
       console.error("AI Listing Draft error:", error);
@@ -25,12 +40,23 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // Listing AI Studio pricing: authenticated seller tooling.
-  app.post("/api/ai/suggest-pricing", requireFirebaseUser, async (req, res) => {
+  app.post("/api/ai/suggest-pricing", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const { name, category, condition, specs, currentPrice } = req.body || {};
-      if (typeof name !== "string" || !name.trim() || typeof category !== "string" || !category.trim()) {
-        return res.status(400).json({ error: "name and category are required" });
+      if (typeof name !== "string" || !name.trim() || name.length > 300) {
+        return res.status(400).json({ error: "name is required and must be 300 characters or fewer" });
+      }
+      if (typeof category !== "string" || !category.trim() || category.length > 150) {
+        return res.status(400).json({ error: "category is required and must be 150 characters or fewer" });
+      }
+      if (condition !== undefined && (typeof condition !== "string" || condition.length > 100)) {
+        return res.status(400).json({ error: "condition must be a string of 100 characters or fewer" });
+      }
+      if (specs !== undefined && !isPlainObject(specs)) {
+        return res.status(400).json({ error: "specs must be an object" });
+      }
+      if (currentPrice !== undefined && (typeof currentPrice !== "number" || !Number.isFinite(currentPrice) || currentPrice < 0)) {
+        return res.status(400).json({ error: "currentPrice must be a non-negative number" });
       }
 
       const pricing = await suggestPricing({ name, category, condition, specs, currentPrice });
@@ -42,12 +68,25 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // AI Shopping Assistant & Natural Language Search.
-  app.post("/api/ai/shopping-assistant", async (req, res) => {
+  // Public discovery endpoint. The database is authoritative for candidate listings;
+  // client-supplied context can only narrow the candidate set.
+  app.post("/api/ai/shopping-assistant", publicAiRateLimit, async (req, res) => {
     try {
       const { query, university, category, maxPrice, contextListings } = req.body || {};
-      if (typeof query !== "string" || !query.trim()) {
-        return res.status(400).json({ error: "query string is required" });
+      if (typeof query !== "string" || !query.trim() || query.length > MAX_TEXT_LENGTH) {
+        return res.status(400).json({ error: "query is required and must be 8,000 characters or fewer" });
+      }
+      if (university !== undefined && (typeof university !== "string" || university.length > 150)) {
+        return res.status(400).json({ error: "university must be a string of 150 characters or fewer" });
+      }
+      if (category !== undefined && (typeof category !== "string" || category.length > 150)) {
+        return res.status(400).json({ error: "category must be a string of 150 characters or fewer" });
+      }
+      if (maxPrice !== undefined && (typeof maxPrice !== "number" || !Number.isFinite(maxPrice) || maxPrice < 0)) {
+        return res.status(400).json({ error: "maxPrice must be a non-negative number" });
+      }
+      if (contextListings !== undefined && (!Array.isArray(contextListings) || contextListings.length > MAX_CONTEXT_LISTINGS)) {
+        return res.status(400).json({ error: `contextListings must contain at most ${MAX_CONTEXT_LISTINGS} items` });
       }
 
       const result = await shoppingAssistant({
@@ -67,15 +106,23 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // Compare 2-3 supplied BuyMesho listings using only their supplied facts.
-  app.post("/api/ai/compare-listings", async (req, res) => {
+  // Public comparison endpoint. Only canonical BuyMesho listing IDs are accepted.
+  app.post("/api/ai/compare-listings", publicAiRateLimit, async (req, res) => {
     try {
-      const { items } = req.body || {};
-      if (!Array.isArray(items) || items.length < 2 || items.length > 3) {
-        return res.status(400).json({ error: "Between 2 and 3 listings are required for comparison" });
+      const { listingIds } = req.body || {};
+      if (!Array.isArray(listingIds) || listingIds.length < 2 || listingIds.length > 3) {
+        return res.status(400).json({ error: "Between 2 and 3 listingIds are required for comparison" });
       }
 
-      const comparison = await compareBuyMeshoListings(items);
+      const normalizedIds = listingIds.map((id) => String(id).trim());
+      if (normalizedIds.some((id) => !/^\d+$/.test(id))) {
+        return res.status(400).json({ error: "listingIds must contain only numeric BuyMesho listing IDs" });
+      }
+      if (new Set(normalizedIds).size !== normalizedIds.length) {
+        return res.status(400).json({ error: "listingIds must be unique" });
+      }
+
+      const comparison = await compareBuyMeshoListings(db, normalizedIds);
       return res.json({ comparison });
     } catch (error) {
       console.error("BuyMesho listing comparison error:", error);
@@ -84,12 +131,11 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
     }
   });
 
-  // Content Moderation for Listing AI Studio
-  app.post("/api/ai/moderate", requireFirebaseUser, async (req, res) => {
+  app.post("/api/ai/moderate", requireFirebaseUser, authenticatedAiRateLimit, async (req, res) => {
     try {
       const { text, type = "listing" } = req.body || {};
-      if (typeof text !== "string" || !text.trim()) {
-        return res.status(400).json({ error: "text is required" });
+      if (typeof text !== "string" || !text.trim() || text.length > MAX_TEXT_LENGTH) {
+        return res.status(400).json({ error: "text is required and must be 8,000 characters or fewer" });
       }
       if (type !== "listing" && type !== "message") {
         return res.status(400).json({ error: "type must be listing or message" });
