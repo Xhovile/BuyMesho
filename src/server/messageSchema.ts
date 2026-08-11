@@ -195,14 +195,13 @@ function stripNonConstantDefault(definition: string) {
 }
 
 function ensureColumn(db: SchemaDbLike, table: string, column: string, definition: string) {
-  const rows = db.prepare(`SELECT column_name AS name FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = '${table}'`).all();
-  if (rows.some((row) => String(row.name ?? "") === column)) return;
-
   const alterDefinition = hasNonConstantDefault(definition)
     ? stripNonConstantDefault(definition)
     : definition;
 
-  db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${alterDefinition}`);
+  // PostgreSQL performs the existence check atomically. This avoids a race where
+  // two startup paths both observe a missing column and then both try to add it.
+  db.exec(`ALTER TABLE ${table} ADD COLUMN IF NOT EXISTS ${column} ${alterDefinition}`);
 }
 
 function ensureIndex(db: SchemaDbLike, indexName: string, sql: string) {
@@ -212,6 +211,8 @@ function ensureIndex(db: SchemaDbLike, indexName: string, sql: string) {
 }
 
 export function ensureMessageSchema(db: SchemaDbLike) {
+  // foreign_keys is a SQLite pragma. PostgreSQL enforces foreign keys by default,
+  // so no PostgreSQL query should be emitted for this compatibility hook.
   db.pragma("foreign_keys = ON");
   db.exec(MESSAGE_SCHEMA_SQL);
 
