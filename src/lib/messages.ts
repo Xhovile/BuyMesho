@@ -63,6 +63,18 @@ export async function startConversationFromEvent(eventId: number): Promise<Conve
   return data.conversation;
 }
 
+export async function startConversationWithSeller(sellerUid: string): Promise<Conversation> {
+  const result = await apiFetch(`/api/sellers/${encodeURIComponent(sellerUid)}/messages/start`, {
+    method: "POST",
+  });
+
+  const data = unwrapData<{ conversation: Conversation }>(result, {
+    conversation: null as unknown as Conversation,
+  });
+
+  return data.conversation;
+}
+
 export async function sendMessage(
   conversationId: number,
   body: string
