@@ -14,6 +14,7 @@ const AI_HIDDEN_DRAWER_PATHS = new Set([
   "/hidden",
   "/payments",
   "/seller/payouts",
+  "/create",
 ]);
 
 function shouldHideLauncher() {
