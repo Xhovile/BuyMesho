@@ -5,7 +5,31 @@ type Props = {
   size?: number | string;
 };
 
+const AI_HIDDEN_DRAWER_PATHS = new Set([
+  "/profile",
+  "/become-seller",
+  "/my-listings",
+  "/messages",
+  "/saved",
+  "/hidden",
+  "/payments",
+  "/seller/payouts",
+]);
+
+function shouldHideLauncher() {
+  if (typeof window === "undefined") return false;
+
+  const pathname = window.location.pathname;
+  if (pathname === "/settings") return false;
+  if (AI_HIDDEN_DRAWER_PATHS.has(pathname)) return true;
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
+
+  return false;
+}
+
 export default function AiIcon({ className = "w-5 h-5", size }: Props) {
+  if (shouldHideLauncher()) return null;
+
   const style = size ? { width: size, height: size } : undefined;
 
   return (
