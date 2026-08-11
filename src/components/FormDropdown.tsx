@@ -1,0 +1,196 @@
+import { createPortal } from "react-dom";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { ChevronRight, Search } from "lucide-react";
+
+type FormDropdownProps = {
+  label: string;
+  value: string;
+  options: readonly (string | { value: string; label: string })[] | (string | { value: string; label: string })[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  disabled?: boolean;
+  searchable?: boolean;
+  tone?: "light" | "dark";
+};
+
+export default function FormDropdown({
+  label,
+  value,
+  options,
+  onChange,
+  placeholder = "Select an option",
+  searchPlaceholder = "Search...",
+  disabled = false,
+  searchable = true,
+  tone = "light",
+}: FormDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const [menuStyle, setMenuStyle] = useState<CSSProperties>({});
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (wrapperRef.current?.contains(target) || menuRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false);
+      setQuery("");
+    }
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const updateMenuPosition = () => {
+      const rect = wrapperRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      const top = Math.min(rect.bottom + 8, window.innerHeight - 16);
+      setMenuStyle({
+        position: "fixed",
+        top,
+        left: rect.left,
+        width: rect.width,
+        zIndex: 9999,
+      });
+    };
+
+    updateMenuPosition();
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+    };
+  }, [open]);
+
+  const normalizedOptions = useMemo(() => {
+    return options.map((option) =>
+      typeof option === "string"
+        ? { value: option, label: option, searchable: option.toLowerCase() }
+        : { value: option.value, label: option.label, searchable: `${option.label} ${option.value}`.toLowerCase() },
+    );
+  }, [options]);
+
+  const filteredOptions = useMemo(() => {
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return normalizedOptions;
+    return normalizedOptions.filter((option) => option.searchable.includes(trimmed));
+  }, [normalizedOptions, query]);
+
+  const selectedLabel = useMemo(() => {
+    const selectedOption = normalizedOptions.find((option) => option.value === value);
+    return selectedOption?.label ?? value;
+  }, [normalizedOptions, value]);
+
+  const isDark = tone === "dark";
+  const triggerBase = isDark
+    ? "w-full flex items-center justify-between gap-3 rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-sm font-semibold text-white/95 backdrop-blur-md transition-all hover:border-white/25 hover:bg-white/15"
+    : "w-full flex items-center justify-between gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-700 transition-all hover:border-zinc-300 hover:bg-white";
+  const menuWrapper = "rounded-2xl border border-zinc-200 bg-white shadow-2xl overflow-hidden";
+  const searchWrap = "p-2 border-b border-zinc-100 bg-white sticky top-0 z-10";
+  const searchInput =
+    "w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-700 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-zinc-300";
+  const listWrap = "max-h-64 overflow-y-auto p-2";
+  const itemBase = "w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors";
+  const activeItem = "bg-zinc-900 text-white";
+  const inactiveItem = "text-zinc-700 hover:bg-zinc-100";
+
+  const menu = open && typeof document !== "undefined" ? (
+    createPortal(
+      <div ref={menuRef} style={menuStyle} className={menuWrapper}>
+        {searchable ? (
+          <div className={searchWrap}>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={searchPlaceholder}
+                className={searchInput}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        <div className={listWrap}>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                  setQuery("");
+                }}
+                className={`${itemBase} ${value === option.value ? activeItem : inactiveItem}`}
+              >
+                {option.label}
+              </button>
+            ))
+          ) : (
+            <div className="px-3 py-3 text-sm text-zinc-500">No results found.</div>
+          )}
+        </div>
+      </div>,
+      document.body
+    )
+  ) : null;
+
+  return (
+    <div className="relative space-y-2" data-form-dropdown ref={wrapperRef}>
+      <label className={`mb-1 block text-xs font-bold uppercase ${isDark ? "text-white/70" : "text-zinc-400"}`}>
+        {label}
+      </label>
+
+      <button
+        type="button"
+        onClick={() => {
+          if (!disabled) {
+            setOpen((prev) => !prev);
+          }
+        }}
+        disabled={disabled}
+        className={`${triggerBase} ${disabled ? (isDark ? "cursor-not-allowed bg-white/5 text-white/45 hover:bg-white/5 hover:border-white/10" : "cursor-not-allowed bg-zinc-100 text-zinc-500 hover:border-zinc-200 hover:bg-zinc-100") : ""}`}
+      >
+        <span className="truncate text-left">{selectedLabel || placeholder}</span>
+        <ChevronRight
+          className={`h-4 w-4 flex-shrink-0 transition-transform ${isDark ? "text-white/65" : "text-zinc-400"} ${open ? "rotate-90" : "rotate-0"}`}
+        />
+      </button>
+
+      {menu}
+    </div>
+  );
+}

@@ -1,0 +1,20 @@
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.env*
+!.env.example
+dist-server
+market.db
+market.db.backup-now
+market.db.before-cf5c564
+market.*.db
+market.db-wal
+market.db-shm
+<<<<<<< HEAD
+test-market.db
+=======
+test-market.db
+>>>>>>> bb6e685a533bf1ae5af2194146bd251c88f06335

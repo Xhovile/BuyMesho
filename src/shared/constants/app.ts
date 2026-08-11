@@ -1,0 +1,9 @@
+export const APP_NAME = 'BuyMesho';
+export const APP_SLUG = 'buymesho';
+export const APP_VERSION = '0.1.0';
+export const DEFAULT_CURRENCY = 'MWK';
+export const DEFAULT_DATE_LOCALE = 'en-MW';
+export const DEFAULT_PAGE_SIZE = 20;
+export const DEFAULT_PAGE = 1;
+export const REQUEST_TIMEOUT_MS = 30_000;
+export const LOCAL_STORAGE_PREFIX = 'buymesho';

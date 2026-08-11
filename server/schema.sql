@@ -1,0 +1,210 @@
+CREATE TABLE IF NOT EXISTS sellers (
+  uid TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  business_name TEXT,
+  business_logo TEXT,
+  university TEXT,
+  bio TEXT,
+  is_verified INTEGER NOT NULL DEFAULT 0,
+  is_seller INTEGER NOT NULL DEFAULT 0,
+  is_suspended INTEGER NOT NULL DEFAULT 0,
+  profile_views INTEGER NOT NULL DEFAULT 0,
+  join_date TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS seller_payout_accounts (
+  id TEXT PRIMARY KEY,
+  seller_uid TEXT NOT NULL,
+  destination_type TEXT NOT NULL,
+  provider_name TEXT NOT NULL,
+  provider_ref_id TEXT,
+  currency TEXT NOT NULL DEFAULT 'MWK',
+  account_name TEXT NOT NULL,
+  account_number_encrypted TEXT,
+  mobile_encrypted TEXT,
+  masked_account TEXT NOT NULL,
+  destination_fingerprint TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  verification_status TEXT NOT NULL DEFAULT 'pending',
+  verification_attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT,
+  verified_at TIMESTAMPTZ,
+  replaced_from_id TEXT,
+  replaced_by_id TEXT,
+  is_active INTEGER NOT NULL DEFAULT 1,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE,
+  FOREIGN KEY (replaced_from_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL,
+  FOREIGN KEY (replaced_by_id) REFERENCES seller_payout_accounts(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS seller_applications (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  applicant_uid TEXT NOT NULL,
+  applicant_email TEXT,
+  full_legal_name TEXT NOT NULL,
+  institution TEXT NOT NULL,
+  applicant_type TEXT NOT NULL,
+  institution_id_number TEXT NOT NULL,
+  whatsapp_number TEXT,
+  business_name TEXT NOT NULL,
+  what_to_sell TEXT NOT NULL,
+  business_description TEXT NOT NULL,
+  reason_for_applying TEXT NOT NULL,
+  proof_document_url TEXT NOT NULL,
+  agreed_to_rules INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending',
+  reviewed_by_uid TEXT,
+  review_notes TEXT,
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (applicant_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS listings (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  seller_uid TEXT NOT NULL,
+  name TEXT NOT NULL,
+  price DOUBLE PRECISION NOT NULL,
+  original_price DOUBLE PRECISION,
+  discount_percent INTEGER,
+  deal_label TEXT,
+  listing_mode TEXT NOT NULL DEFAULT 'normal',
+  deal_expires_at TEXT,
+  is_wholesale INTEGER NOT NULL DEFAULT 0,
+  pack_size INTEGER,
+  bulk_units TEXT,
+  can_sell_individually INTEGER,
+  description TEXT,
+  category TEXT NOT NULL,
+  subcategory TEXT,
+  item_type TEXT,
+  spec_values TEXT,
+  university TEXT NOT NULL,
+  is_seller INTEGER NOT NULL DEFAULT 1,
+  photos TEXT,
+  video_url TEXT,
+  status TEXT NOT NULL DEFAULT 'available',
+  condition TEXT NOT NULL DEFAULT 'used',
+  views_count INTEGER NOT NULL DEFAULT 0,
+  whatsapp_clicks INTEGER NOT NULL DEFAULT 0,
+  is_hidden INTEGER NOT NULL DEFAULT 0,
+  deleted_at TEXT,
+  deleted_by_uid TEXT,
+  hard_delete_after TEXT,
+  quantity INTEGER NOT NULL DEFAULT 1,
+  sold_quantity INTEGER NOT NULL DEFAULT 0,
+  single_item_price DOUBLE PRECISION,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (seller_uid) REFERENCES sellers(uid) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS event_creators (
+  uid TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  active_until TIMESTAMPTZ,
+  approved_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_creator_applications (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  applicant_uid TEXT NOT NULL,
+  applicant_email TEXT,
+  display_name TEXT NOT NULL,
+  organization_name TEXT NOT NULL,
+  organization_type TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  event_types TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'approved',
+  reviewed_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  creator_uid TEXT,
+  event_type TEXT NOT NULL,
+  event_title TEXT NOT NULL,
+  organizer_name TEXT NOT NULL,
+  event_date TEXT NOT NULL,
+  start_time TEXT NOT NULL,
+  venue TEXT NOT NULL,
+  location TEXT NOT NULL,
+  ticket_mode TEXT NOT NULL,
+  ticket_price DOUBLE PRECISION,
+  ticket_link TEXT,
+  description TEXT NOT NULL,
+  contact_whatsapp TEXT,
+  poster_alt TEXT,
+  spec_values TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'published',
+  deleted_at TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_activity (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  event_id BIGINT NOT NULL,
+  actor_uid TEXT,
+  activity_type TEXT NOT NULL,
+  metadata TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS buyer_cart_items (
+  buyer_uid TEXT NOT NULL,
+  listing_id BIGINT NOT NULL,
+  listing_title TEXT NOT NULL,
+  listing_image TEXT,
+  listing_description TEXT,
+  university TEXT,
+  quantity INTEGER NOT NULL,
+  unit_price DOUBLE PRECISION NOT NULL,
+  total_price DOUBLE PRECISION NOT NULL,
+  available_quantity INTEGER,
+  added_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (buyer_uid, listing_id),
+  FOREIGN KEY (listing_id) REFERENCES listings(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_order_id
+ON payments (order_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  buyer_id TEXT NOT NULL,
+  seller_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  status TEXT NOT NULL,
+  currency TEXT NOT NULL,
+  subtotal_amount DOUBLE PRECISION NOT NULL,
+  subtotal_currency TEXT NOT NULL,
+  fees_amount DOUBLE PRECISION,
+  fees_currency TEXT,
+  total_amount DOUBLE PRECISION NOT NULL,
+  total_currency TEXT NOT NULL,
+  payment_provider TEXT,
+  payment_reference TEXT,
+  escrow_id TEXT,
+  items TEXT NOT NULL DEFAULT '[]',
+  placed_at TEXT,
+  paid_at TEXT,
+  fulfilled_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);

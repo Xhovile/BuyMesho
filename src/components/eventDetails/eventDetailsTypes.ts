@@ -1,0 +1,21 @@
+export type EventRecord = {
+  id: number;
+  creator_uid: string | null;
+  event_type: string;
+  event_title: string;
+  organizer_name: string;
+  event_date: string;
+  start_time: string;
+  venue: string;
+  location: string;
+  ticket_mode: string;
+  ticket_price: number | null;
+  ticket_link: string | null;
+  description: string;
+  contact_whatsapp: string | null;
+  poster_alt: string | null;
+  spec_values: Record<string, unknown>;
+  status: string;
+  created_at: string;
+  updated_at: string;
+};

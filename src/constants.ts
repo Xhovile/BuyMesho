@@ -1,0 +1,40 @@
+export const UNIVERSITIES = [
+  "Kamuzu University of Health Sciences (KUHeS)",
+  "Malawi University of Business and Applied Sciences (MUBAS)",
+  "University of Malawi (UNIMA)",
+  "Malawi University of Science and Technology (MUST)",
+  "Mzuzu University (MZUNI)",
+  "Lilongwe University of Agriculture and Natural Resources (LUANAR)",
+  "Catholic University of Malawi (CUNIMA)",
+  "DMI St John the Baptist University",
+  "Nkhoma University (NKHUNI)",
+  "Malawi Assemblies of God University (MAGU)",
+  "Daeyang University",
+  "Malawi Adventist University (MAU)",
+  "Pentecostal Life University (PLU)",
+  "University of Livingstonia (UNILIA)",
+  "Exploits University (EU)",
+  "University of Lilongwe (UNILIL)",
+  "Lake Malawi Anglican University (LAMAU)",
+  "Unicaf University",
+  "Blantyre International University (BIU)",
+  "ShareWorld Open University (SWOU)",
+  "Jubilee University (JU)",
+  "University of Blantyre Synod (UBS)",
+  "Marble Hill University",
+  "Emmanuel University",
+  "University of Hebron",
+  "International Open University (Islamic Online University)",
+] as const;
+
+export const CATEGORIES = [
+  "Food & Snacks",
+  "Fashion & Clothing",
+  "Academic Services",
+  "Electronics & Gadgets",
+  "Beauty & Personal Care"
+] as const;
+
+export const QUICK_CHIPS = ["All", "Deals", "Lay-by", "Events", "Wholesale", "Sellers", "Innovation", "Accommodation"] as const;
+
+export type HeaderChip = (typeof QUICK_CHIPS)[number];

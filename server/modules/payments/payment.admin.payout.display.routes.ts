@@ -1,0 +1,326 @@
+import express, { type RequestHandler } from 'express';
+import { hasAdminAccess } from '../../auth/adminAccess.js';
+import { getPaymentDb } from '../../postgresCompat.js';
+import { payoutLimiter } from '../../routes/escrow/shared.js';
+import { PAYOUT_POLICY, isRetryableFailureCode } from '../payouts/payout.policy.js';
+
+function requireAdmin(req: express.Request, res: express.Response): boolean {
+  if (!hasAdminAccess(req.user)) {
+    res.status(403).json({ error: 'Admin access required' });
+    return false;
+  }
+  return true;
+}
+
+function normalizeText(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  const text = String(value).trim();
+  return text ? text : null;
+}
+
+function shapeRow(row: Record<string, unknown>) {
+  const sellerId = normalizeText(row.sellerId ?? row.seller_id) ?? '';
+  const sellerBusinessName = normalizeText(row.sellerBusinessName ?? row.seller_business_name) ?? null;
+  const status = String(row.currentState ?? row.status ?? '').toLowerCase();
+  const failureReason = normalizeText(row.failureReason ?? row.failure_reason) ?? null;
+  const destinationAccountId = normalizeText(row.destinationAccountId ?? row.destination_account_id) ?? null;
+  const rawVerificationStatus = normalizeText(row.destinationVerificationStatus ?? row.destination_verification_status);
+  const destinationVerificationStatus = (rawVerificationStatus ?? (destinationAccountId ? 'pending' : 'missing')).toLowerCase();
+  const destinationActive = Number(row.destinationActive ?? row.destination_active ?? row.destinationIsActive ?? row.destination_is_active ?? (destinationAccountId ? 1 : 0)) === 1;
+  const sellerSuspended = Number(row.sellerSuspended ?? row.seller_suspended ?? 0) === 1;
+  const attemptCount = Number(row.attemptCount ?? row.attempt_count ?? 0);
+
+  const verificationBlockers: string[] = [];
+  if (sellerSuspended) verificationBlockers.push('Seller payouts are suspended');
+  if (!destinationAccountId) {
+    verificationBlockers.push('No payout destination configured for seller');
+  } else if (destinationVerificationStatus !== 'verified' || !destinationActive) {
+    verificationBlockers.push(
+      destinationVerificationStatus === 'failed'
+        ? 'Destination verification failed'
+        : destinationVerificationStatus === 'disabled' || !destinationActive
+          ? 'Destination is disabled'
+          : 'Destination pending verification',
+    );
+  }
+
+  const hasRetryableFailureContext =
+    status === 'held'
+      ? !failureReason || isRetryableFailureCode(failureReason)
+      : isRetryableFailureCode(failureReason);
+
+  const retryEligible =
+    (status === 'failed' || status === 'held') &&
+    attemptCount < PAYOUT_POLICY.maxRetryCount &&
+    hasRetryableFailureContext &&
+    !sellerSuspended &&
+    destinationVerificationStatus === 'verified' &&
+    destinationActive;
+
+  return {
+    ...row,
+    sellerId,
+    sellerBusinessName,
+    destinationAccountId,
+    currentState: status,
+    attemptCount,
+    destinationVerificationStatus,
+    destinationActive,
+    sellerSuspended,
+    verificationBlockers,
+    lastError: failureReason ?? normalizeText(row.latestAttemptFailureReason ?? row.latest_attempt_failure_reason) ?? null,
+    holdReason: status === 'held' ? normalizeText(row.holdReason ?? row.hold_reason) ?? null : null,
+    retryEligible,
+    retryAllowed: retryEligible,
+    manualReviewPending: status === 'held',
+    retryBlockedReason: retryEligible
+      ? null
+      : sellerSuspended
+        ? 'Seller payouts are suspended'
+        : !destinationAccountId
+          ? 'No payout destination account'
+          : destinationVerificationStatus !== 'verified' || !destinationActive
+            ? 'Destination pending verification'
+            : status !== 'failed'
+              ? `Retry unavailable while payout is ${status}`
+              : 'Retry unavailable due to policy gate',
+    auditSummary: {
+      totalEvents: Number(row.auditEventCount ?? row.audit_event_count ?? 0),
+      latestEventType: normalizeText(row.latestAuditEventType ?? row.latest_audit_event_type) ?? null,
+      latestEventAt: normalizeText(row.latestAuditEventAt ?? row.latest_audit_event_at) ?? null,
+    },
+  };
+}
+
+export function createPaymentAdminPayoutDisplayRouter(requireAuth: RequestHandler): express.Router {
+  const router = express.Router();
+
+  router.get('/payouts', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const rawLimit = Array.isArray(req.query?.limit) ? req.query.limit[0] : req.query?.limit;
+      const rawOffset = Array.isArray(req.query?.offset) ? req.query.offset[0] : req.query?.offset;
+      const parsedLimit = Number(rawLimit);
+      const parsedOffset = Number(rawOffset);
+      const hasPaginationQuery = rawLimit != null || rawOffset != null;
+      const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(Math.trunc(parsedLimit), 1), 500) : 200;
+      const offset = Number.isFinite(parsedOffset) ? Math.max(Math.trunc(parsedOffset), 0) : 0;
+
+      const db = getPaymentDb();
+      const total = Number((db.prepare(`SELECT COUNT(*) AS total FROM payouts`).get() as { total?: number } | undefined)?.total ?? 0);
+      const rows = db.prepare(
+        `SELECT
+          p.id,
+          p.seller_id AS sellerId,
+          s.business_name AS sellerBusinessName,
+          p.order_id AS orderId,
+          p.escrow_id AS escrowId,
+          e.state AS escrowState,
+          p.release_entry_id AS releaseEntryId,
+          p.amount,
+          p.currency,
+          p.status,
+          COALESCE(p.provider, 'paychangu') AS provider,
+          p.provider_charge_id AS providerChargeId,
+          p.provider_ref_id AS providerReference,
+          p.provider_transaction_id AS providerTransactionId,
+          p.provider_status AS providerStatus,
+          p.processed_by AS processedBy,
+          p.approved_by AS approvedBy,
+          COALESCE(p.destination_account_id, spa.id) AS destinationAccountId,
+          spa.masked_account AS destinationMaskedAccount,
+          spa.destination_type AS destinationType,
+          spa.verification_status AS destinationVerificationStatus,
+          spa.is_active AS destinationIsActive,
+          spa.last_error AS destinationLastError,
+          s.is_suspended AS sellerSuspended,
+          p.failure_reason AS failureReason,
+          p.manual_review_reason AS manualReviewReason,
+          p.requested_by AS requestedBy,
+          p.requested_at AS requestedAt,
+          p.sent_at AS sentAt,
+          p.paid_at AS paidAt,
+          p.failed_at AS failedAt,
+          p.created_at AS createdAt,
+          p.updated_at AS updatedAt,
+          p.gross_amount AS grossAmount,
+          p.platform_fee_amount AS platformFeeAmount,
+          p.processing_fee_amount AS legacyProcessingFeeAmount,
+          p.reserve_amount AS reserveAmount,
+          p.reserve_cap_amount AS reserveCapAmount,
+          p.manual_adjustment_amount AS manualAdjustmentAmount,
+          p.net_amount AS netAmount,
+          p.formula_snapshot AS formulaSnapshot,
+          p.last_adjustment_id AS lastAdjustmentId,
+          (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attemptCount,
+          (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
+          (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
+          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
+          (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
+          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventAt,
+          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
+          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
+          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
+          (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
+         FROM payouts p
+         LEFT JOIN sellers s ON s.uid = p.seller_id
+         LEFT JOIN escrows e ON e.id = p.escrow_id
+         LEFT JOIN seller_payout_accounts spa ON spa.id = COALESCE(
+           p.destination_account_id,
+           (
+             SELECT id
+             FROM seller_payout_accounts
+             WHERE seller_uid = p.seller_id
+               AND is_active = 1
+             ORDER BY (verification_status = 'verified') DESC, is_default DESC, updated_at DESC, created_at DESC
+             LIMIT 1
+           )
+         )
+         ORDER BY p.created_at DESC
+         LIMIT ?
+         OFFSET ?`,
+      ).all(limit, offset) as Array<Record<string, unknown>>;
+
+      for (const row of rows) {
+        if (!row.destination_account_id && row.destinationAccountId) {
+          try {
+            db.prepare(`UPDATE payouts SET destination_account_id = ?, updated_at = ? WHERE id = ? AND destination_account_id IS NULL`).run(
+              String(row.destinationAccountId),
+              new Date().toISOString(),
+              String(row.id),
+            );
+          } catch {
+            // Ignore background backfill errors
+          }
+        }
+      }
+
+      const shapedRows = rows.map((row) => shapeRow(row));
+
+      if (hasPaginationQuery) {
+        return res.status(200).json({
+          rows: shapedRows,
+          pagination: {
+            limit,
+            offset,
+            total,
+            hasMore: offset + shapedRows.length < total,
+          },
+        });
+      }
+
+      return res.status(200).json(shapedRows);
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load payout queue' });
+    }
+  });
+
+  router.get('/payouts/detail/:payoutId', payoutLimiter, requireAuth, (req, res) => {
+    try {
+      if (!requireAdmin(req, res)) return;
+
+      const payoutId = String(req.params.payoutId ?? '').trim();
+      if (!payoutId) {
+        return res.status(400).json({ error: 'payoutId is required' });
+      }
+
+      const db = getPaymentDb();
+      const row = db.prepare(
+        `SELECT
+          p.id,
+          p.seller_id AS sellerId,
+          s.business_name AS sellerBusinessName,
+          p.order_id AS orderId,
+          p.escrow_id AS escrowId,
+          e.state AS escrowState,
+          p.release_entry_id AS releaseEntryId,
+          p.amount,
+          p.currency,
+          p.status,
+          COALESCE(p.provider, 'paychangu') AS provider,
+          p.provider_charge_id AS providerChargeId,
+          p.provider_ref_id AS providerReference,
+          p.provider_transaction_id AS providerTransactionId,
+          p.provider_status AS providerStatus,
+          p.processed_by AS processedBy,
+          p.approved_by AS approvedBy,
+          COALESCE(p.destination_account_id, spa.id) AS destinationAccountId,
+          spa.masked_account AS destinationMaskedAccount,
+          spa.destination_type AS destinationType,
+          spa.verification_status AS destinationVerificationStatus,
+          spa.is_active AS destinationIsActive,
+          spa.last_error AS destinationLastError,
+          s.is_suspended AS sellerSuspended,
+          p.failure_reason AS failureReason,
+          p.manual_review_reason AS manualReviewReason,
+          p.requested_by AS requestedBy,
+          p.requested_at AS requestedAt,
+          p.sent_at AS sentAt,
+          p.paid_at AS paidAt,
+          p.failed_at AS failedAt,
+          p.created_at AS createdAt,
+          p.updated_at AS updatedAt,
+          p.gross_amount AS grossAmount,
+          p.platform_fee_amount AS platformFeeAmount,
+          p.processing_fee_amount AS legacyProcessingFeeAmount,
+          p.reserve_amount AS reserveAmount,
+          p.reserve_cap_amount AS reserveCapAmount,
+          p.manual_adjustment_amount AS manualAdjustmentAmount,
+          p.net_amount AS netAmount,
+          p.formula_snapshot AS formulaSnapshot,
+          p.last_adjustment_id AS lastAdjustmentId,
+          (SELECT COALESCE(MAX(attempt_no), 0) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS attemptCount,
+          (SELECT MAX(attempt_no) FROM payout_attempts pa WHERE pa.payout_id = p.id) AS latestAttemptNo,
+          (SELECT status FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptStatus,
+          (SELECT created_at FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptAt,
+          (SELECT failure_reason FROM payout_attempts pa WHERE pa.payout_id = p.id ORDER BY pa.attempt_no DESC LIMIT 1) AS latestAttemptFailureReason,
+          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventType,
+          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id AND pe.event_type IN ('payout_reconciled', 'payout_webhook_duplicate', 'payout_webhook_rejected') ORDER BY pe.created_at DESC LIMIT 1) AS latestWebhookEventAt,
+          (SELECT event_type FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventType,
+          (SELECT created_at FROM payout_events pe WHERE pe.payout_id = p.id ORDER BY pe.created_at DESC LIMIT 1) AS latestAuditEventAt,
+          (SELECT COUNT(*) FROM payout_events pe WHERE pe.payout_id = p.id) AS auditEventCount,
+          (SELECT COUNT(*) FROM payout_adjustments pa WHERE pa.payout_id = p.id) AS adjustmentCount
+         FROM payouts p
+         LEFT JOIN sellers s ON s.uid = p.seller_id
+         LEFT JOIN escrows e ON e.id = p.escrow_id
+         LEFT JOIN seller_payout_accounts spa ON spa.id = COALESCE(
+           p.destination_account_id,
+           (
+             SELECT id
+             FROM seller_payout_accounts
+             WHERE seller_uid = p.seller_id
+               AND is_active = 1
+             ORDER BY (verification_status = 'verified') DESC, is_default DESC, updated_at DESC, created_at DESC
+             LIMIT 1
+           )
+         )
+         WHERE p.id = ?
+         LIMIT 1`,
+      ).get(payoutId) as Record<string, unknown> | undefined;
+
+      if (!row) {
+        return res.status(404).json({ error: 'Payout not found' });
+      }
+
+      if (!row.destination_account_id && row.destinationAccountId) {
+        try {
+          db.prepare(`UPDATE payouts SET destination_account_id = ?, updated_at = ? WHERE id = ? AND destination_account_id IS NULL`).run(
+            String(row.destinationAccountId),
+            new Date().toISOString(),
+            payoutId,
+          );
+        } catch {
+          // Ignore background backfill errors
+        }
+      }
+
+      return res.status(200).json(shapeRow(row));
+    } catch (error) {
+      return res.status(500).json({ error: error instanceof Error ? error.message : 'Failed to load payout detail' });
+    }
+  });
+
+  return router;
+}
