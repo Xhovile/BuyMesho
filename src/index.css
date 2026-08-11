@@ -50,70 +50,10 @@
   @apply bg-zinc-200 rounded-full hover:bg-zinc-300 transition-colors;
 }
 
-/* Premium route loader: fixed 64px logo centered inside a compact 96px loader. */
-div:has(> img[alt="BuyMesho loading"]) {
-  position: relative;
-  width: 96px !important;
-  height: 96px !important;
-  max-width: none !important;
-  gap: 0 !important;
-}
-
-/* A restrained circular track, centered on the exact same 96px coordinate system. */
-div:has(> img[alt="BuyMesho loading"])::before,
-[class~="bg-zinc-100/70"]:has(> svg.lucide-loader-circle)::before {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  width: 80px;
-  height: 80px;
-  box-sizing: border-box;
-  border: 1.5px solid rgba(24, 24, 27, 0.08);
-  border-radius: 9999px;
-  z-index: 0;
-}
-
-/* The moving BuyMesho-red arc. The logo remains completely stationary. */
-div:has(> img[alt="BuyMesho loading"])::after,
-[class~="bg-zinc-100/70"]:has(> svg.lucide-loader-circle)::after {
-  content: "";
-  position: absolute;
-  inset: 8px;
-  width: 80px;
-  height: 80px;
-  box-sizing: border-box;
-  border: 2px solid transparent;
-  border-top-color: #dc2626;
-  border-right-color: #dc2626;
-  border-radius: 9999px;
+/* BuyMesho branded route loader: the logo is fixed at 64px inside a 96px coordinate system. */
+.animate-loader-spin {
   animation: buymesho-loader-spin 1.4s linear infinite;
-  z-index: 1;
-}
-
-div:has(> img[alt="BuyMesho loading"]) > img[alt="BuyMesho loading"] {
-  width: 64px !important;
-  height: 64px !important;
-  max-width: none !important;
-  object-fit: contain;
-  content: url("/photos/Logo.png");
-  position: absolute;
-  inset: 16px;
-  z-index: 2;
-}
-
-/* Remove the old oversized horizontal loader completely. */
-div:has(> img[alt="BuyMesho loading"]) .progress-outer {
-  display: none;
-}
-
-/* Give non-home routes the same centered branded loading experience. */
-[class~="bg-zinc-100/70"]:has(> svg.lucide-loader-circle) {
-  position: relative;
-  background: #ffffff !important;
-}
-
-[class~="bg-zinc-100/70"]:has(> svg.lucide-loader-circle) > svg.lucide-loader-circle {
-  display: none;
+  transform-origin: center;
 }
 
 @keyframes buymesho-loader-spin {
@@ -123,8 +63,7 @@ div:has(> img[alt="BuyMesho loading"]) .progress-outer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  div:has(> img[alt="BuyMesho loading"])::after,
-  [class~="bg-zinc-100/70"]:has(> svg.lucide-loader-circle)::after {
+  .animate-loader-spin {
     animation-duration: 3.5s;
   }
 }
