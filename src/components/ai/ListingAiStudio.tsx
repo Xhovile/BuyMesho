@@ -27,10 +27,12 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
       const suggested = await generateListingDraft(currentDraft);
       if (suggested && Object.keys(suggested).length > 0) {
         onApplyDraftSuggestion(suggested);
-        showFeedback("success", "AI Polish Complete", "Updated title, description, categories, and specs!");
+        showFeedback("success", "AI Polish Complete", "Updated the listing using the information you provided.");
+      } else {
+        showFeedback("error", "AI Unavailable", "No listing suggestions were returned. Your existing draft was left unchanged.");
       }
     } catch (err) {
-      showFeedback("error", "AI Error", "Failed to generate listing suggestions.");
+      showFeedback("error", "AI Unavailable", "Listing enhancement failed. Your existing draft was left unchanged.");
     } finally {
       setLoadingAction(null);
     }
@@ -38,7 +40,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
 
   const handleSuggestPrice = async () => {
     if (!currentDraft.name || !currentDraft.category) {
-      showFeedback("info", "Select category & title", "Enter a title and category to get market pricing estimates.");
+      showFeedback("info", "Select category & title", "Enter a title and category to get a pricing suggestion.");
       return;
     }
 
@@ -54,10 +56,14 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
 
       if (result) {
         setPricingResult(result);
-        showFeedback("success", "Market Valuation Ready", `Recommended Price: ${formatMoney(result.recommended_price)}`);
+        showFeedback("success", "Pricing Suggestion Ready", `Suggested Price: ${formatMoney(result.recommended_price)}`);
+      } else {
+        setPricingResult(null);
+        showFeedback("error", "Pricing Unavailable", "BuyMesho AI could not produce a reliable pricing suggestion. Your current price was left unchanged.");
       }
     } catch (err) {
-      showFeedback("error", "Pricing Error", "Could not estimate price range.");
+      setPricingResult(null);
+      showFeedback("error", "Pricing Unavailable", "BuyMesho AI could not produce a pricing suggestion. Your current price was left unchanged.");
     } finally {
       setLoadingAction(null);
     }
@@ -76,13 +82,17 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
       if (result) {
         setModerationResult(result);
         if (result.is_safe) {
-          showFeedback("success", "Listing Approved", "No trust & safety issues found!");
+          showFeedback("success", "Listing Review Complete", "No trust & safety issues were identified by the AI review.");
         } else {
           showFeedback("error", "Safety Alert", result.explanation);
         }
+      } else {
+        setModerationResult(null);
+        showFeedback("error", "Safety Check Unavailable", "The AI safety review failed. Do not treat this listing as AI-approved.");
       }
     } catch (err) {
-      showFeedback("error", "Audit Error", "Failed to run safety audit.");
+      setModerationResult(null);
+      showFeedback("error", "Safety Check Unavailable", "The AI safety review failed. Do not treat this listing as AI-approved.");
     } finally {
       setLoadingAction(null);
     }
@@ -99,15 +109,14 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
             <h4 className="font-semibold text-sm text-neutral-900 flex items-center gap-2">
               BuyMesho AI Studio
               <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full uppercase">
-                Gemini 2.5
+                AI
               </span>
             </h4>
-            <p className="text-xs text-neutral-600">Smart seller tools to optimize title, description, and market price</p>
+            <p className="text-xs text-neutral-600">Enhance listing content, get pricing suggestions, and review safety signals.</p>
           </div>
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="flex flex-wrap gap-2 pt-1">
         <button
           type="button"
@@ -134,7 +143,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           ) : (
             <DollarSign className="w-3.5 h-3.5 text-emerald-700" />
           )}
-          Estimate Market Price
+          Suggest Price
         </button>
 
         <button
@@ -152,12 +161,11 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
         </button>
       </div>
 
-      {/* Pricing Estimation Result Cards */}
       {pricingResult && (
         <div className="mt-3 bg-white p-3.5 rounded-xl border border-emerald-200 text-xs space-y-2 animate-in fade-in">
           <div className="flex items-center justify-between">
             <span className="font-semibold text-neutral-800 flex items-center gap-1">
-              <Tag className="w-3.5 h-3.5 text-emerald-700" /> Recommended Price
+              <Tag className="w-3.5 h-3.5 text-emerald-700" /> Suggested Price
             </span>
             <span className="font-bold text-emerald-800 text-sm">
               {formatMoney(pricingResult.recommended_price)}
@@ -172,7 +180,10 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           </div>
 
           <p className="text-neutral-600 text-[11px] leading-relaxed pt-1">
-            💡 {pricingResult.market_insight}
+            {pricingResult.market_insight}
+          </p>
+          <p className="text-[10px] text-neutral-500">
+            AI suggestion only · Confidence {Math.round(pricingResult.confidence_score)}%
           </p>
 
           <button
@@ -188,7 +199,6 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
         </div>
       )}
 
-      {/* Moderation Result Card */}
       {moderationResult && (
         <div
           className={`mt-3 p-3 rounded-xl border text-xs flex items-start gap-2.5 ${
@@ -204,7 +214,7 @@ export default function ListingAiStudio({ currentDraft, onApplyDraftSuggestion, 
           )}
           <div>
             <p className="font-semibold">
-              {moderationResult.is_safe ? "Safety Check Passed" : "Potential Safety Flag Detected"}
+              {moderationResult.is_safe ? "Safety Review Passed" : "Potential Safety Flag Detected"}
             </p>
             <p className="text-[11px] mt-0.5">{moderationResult.explanation}</p>
           </div>
