@@ -1,11 +1,5 @@
 import type { Express, RequestHandler } from "express";
-import {
-  shoppingAssistant,
-  compareListings,
-  generateListingDraft as generateLegacyListingDraft,
-  suggestPricing as suggestLegacyPricing,
-  moderateContent as moderateLegacyContent,
-} from "../lib/ai.js";
+import { shoppingAssistant, compareListings } from "../lib/ai.js";
 import {
   generateListingDraft,
   suggestPricing,
@@ -107,9 +101,4 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
       return res.status(503).json({ error: message, code: "AI_UNAVAILABLE" });
     }
   });
-
-  // Keep imports of the broader AI service available for the remaining AI features while Listing AI Studio is isolated.
-  void generateLegacyListingDraft;
-  void suggestLegacyPricing;
-  void moderateLegacyContent;
 }
