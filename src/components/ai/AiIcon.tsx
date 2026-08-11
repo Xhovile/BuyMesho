@@ -28,13 +28,6 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
             <stop offset="100%" stopColor="#650D1D" />
           </linearGradient>
 
-          {/* Glass highlight */}
-          <linearGradient id="glassHighlight" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="white" stopOpacity=".75" />
-            <stop offset="35%" stopColor="white" stopOpacity=".18" />
-            <stop offset="100%" stopColor="white" stopOpacity="0" />
-          </linearGradient>
-
           {/* Soft depth */}
           <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow
@@ -45,34 +38,29 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
               floodOpacity=".28"
             />
           </filter>
-
-          {/* Subtle glass blur */}
-          <filter id="softBlur">
-            <feGaussianBlur stdDeviation="1.2" />
-          </filter>
         </defs>
 
-        {/* Main glass body */}
+        {/* Outer frame: border only, leaving the gap beneath it transparent */}
         <rect
           x="7"
           y="7"
           width="86"
           height="86"
           rx="23"
-          fill="rgba(255,255,255,.18)"
+          fill="none"
           stroke="url(#redGlass)"
           strokeWidth="5"
           filter="url(#shadow)"
         />
 
-        {/* Inner glass surface */}
+        {/* Solid white inner surface */}
         <rect
           x="14"
           y="14"
           width="72"
           height="72"
           rx="18"
-          fill="rgba(255,255,255,.42)"
+          fill="#FFFFFF"
           stroke="rgba(255,255,255,.78)"
           strokeWidth="2"
         />
@@ -88,18 +76,6 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
           stroke="#8F1528"
           strokeOpacity=".55"
           strokeWidth="2"
-        />
-
-        {/* Glass reflection */}
-        <path
-          d="M20 29
-             Q20 19 31 19
-             H70
-             Q80 19 80 29
-             V34
-             Q51 24 20 42Z"
-          fill="url(#glassHighlight)"
-          opacity=".65"
         />
 
         {/* AI lettering */}
