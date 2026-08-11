@@ -215,6 +215,13 @@ export function ensureMessageSchema(db: SchemaDbLike) {
 
   ensureColumn(db, "conversations", "listing_id", "INTEGER");
   ensureColumn(db, "conversations", "event_id", "INTEGER");
+
+  // Direct seller and event conversations intentionally have no listing_id.
+  // Existing production databases may have been created with listing_id NOT NULL,
+  // so make both context columns explicitly nullable during schema initialization.
+  db.exec(`ALTER TABLE conversations ALTER COLUMN listing_id DROP NOT NULL`);
+  db.exec(`ALTER TABLE conversations ALTER COLUMN event_id DROP NOT NULL`);
+
   ensureColumn(db, "conversations", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "conversations", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "conversations", "last_message_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
