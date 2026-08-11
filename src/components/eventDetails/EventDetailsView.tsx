@@ -82,7 +82,7 @@ export default function EventDetailsView() {
   const eventPageUrl = typeof window !== "undefined" && event ? `${window.location.origin}${EVENTS_PATH}?event=${event.id}` : "";
   const isPublished = event?.status === "published";
   const canManageEvent = !!firebaseUser?.uid && !!event?.creator_uid && event.creator_uid === firebaseUser.uid;
-  const canMessageEvent = !!firebaseUser?.uid && !!event?.creator_uid && isPublished;
+  const canMessageEvent = !!event?.creator_uid && isPublished;
   const canBuyOrCart = !!event && isPublished;
   const shouldShowMenu = !!event && !canManageEvent;
 
@@ -210,7 +210,7 @@ export default function EventDetailsView() {
       await apiFetch(`/api/events/${event.id}`, { method: "DELETE" });
       navigateToPath(EVENTS_PATH, { replace: true });
     } catch (error: any) {
-      setNotice(error?.message || "Could not cancel this event.");
+      setNotice(error?.message || "Could not cancel event.");
     }
   };
 
