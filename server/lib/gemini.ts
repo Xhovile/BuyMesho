@@ -1,6 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.6-flash";
+const DEFAULT_GEMINI_FALLBACK_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
 
 export class GeminiServiceError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
@@ -24,15 +25,22 @@ function getGeminiClient(): GoogleGenAI {
   return new GoogleGenAI({ apiKey });
 }
 
+function parseConfiguredFallbackModels(): string[] {
+  const raw = process.env.GEMINI_FALLBACK_MODELS?.trim();
+  if (!raw) return DEFAULT_GEMINI_FALLBACK_MODELS;
+
+  return raw
+    .split(",")
+    .map((model) => model.trim())
+    .filter(Boolean);
+}
+
 export function getGeminiModelCandidates(): string[] {
   return Array.from(
     new Set(
       [
-        process.env.GEMINI_MODEL?.trim(),
-        DEFAULT_GEMINI_MODEL,
-        "gemini-2.5-flash",
-        "gemini-flash-latest",
-        "gemini-3.1-flash-lite",
+        process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL,
+        ...parseConfiguredFallbackModels(),
       ].filter((value): value is string => Boolean(value)),
     ),
   );
