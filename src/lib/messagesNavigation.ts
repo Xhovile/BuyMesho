@@ -1,6 +1,28 @@
-import { navigateToPath } from "./appNavigation";
+import type { Conversation } from "../types";
 
 export const MESSAGES_PATH = "/messages";
+
+let pendingConversation: Conversation | null = null;
+
+export const preloadConversation = (conversation: Conversation) => {
+  pendingConversation = conversation;
+};
+
+export const getPendingConversation = (conversationId: number | null) => {
+  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
+    return null;
+  }
+
+  return pendingConversation;
+};
+
+export const clearPendingConversation = (conversationId: number | null) => {
+  if (!conversationId || !pendingConversation || pendingConversation.id !== conversationId) {
+    return;
+  }
+
+  pendingConversation = null;
+};
 
 export const navigateToMessages = () => {
   const url = new URL(window.location.href);
@@ -11,6 +33,7 @@ export const navigateToMessages = () => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -25,10 +48,18 @@ export const navigateToConversation = (conversationId: string | number) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  if (!pendingConversation || String(pendingConversation.id) !== String(conversationId)) {
+    pendingConversation = null;
+  }
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
+
+// Backwards-compatible read helper. It intentionally does not mutate module state,
+// so callers can safely use it during React render.
+export const consumePendingConversation = (conversationId: number | null) =>
+  getPendingConversation(conversationId);
 
 export const navigateToMessagesForListing = (listingId: string | number) => {
   const url = new URL(window.location.href);
@@ -39,6 +70,7 @@ export const navigateToMessagesForListing = (listingId: string | number) => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.pushState({}, "", url.toString());
   window.dispatchEvent(new PopStateEvent("popstate"));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -65,5 +97,6 @@ export const clearMessageParams = () => {
   url.searchParams.delete("uid");
   url.searchParams.delete("id");
 
+  pendingConversation = null;
   window.history.replaceState({}, "", url.toString());
 };
