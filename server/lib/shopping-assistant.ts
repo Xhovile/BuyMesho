@@ -17,7 +17,8 @@ export type ShoppingAssistantInput = {
   university?: string;
   category?: string;
   maxPrice?: number;
-  contextListings: ShoppingAssistantListing[];
+  contextListings?: ShoppingAssistantListing[];
+  db?: any;
 };
 
 export type ShoppingAssistantResult = {
@@ -25,7 +26,24 @@ export type ShoppingAssistantResult = {
   recommended_listing_ids: string[];
   match_reasons: Record<string, string>;
   suggested_follow_ups: string[];
+  recommended_listings: ShoppingAssistantListing[];
 };
+
+const STOP_WORDS = new Set([
+  "find", "show", "me", "some", "a", "an", "the", "for", "with", "under", "below", "less", "than",
+  "buy", "want", "need", "looking", "look", "get", "please", "cheap", "affordable", "best", "good", "please",
+  "in", "at", "on", "and", "or", "of", "to", "from", "near", "around", "within", "my", "i", "can", "you",
+]);
+
+function extractSearchTerms(query: string): string[] {
+  return query
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length >= 3 && !STOP_WORDS.has(token))
+    .slice(0, 6);
+}
 
 function sanitizeListings(listings: ShoppingAssistantListing[]) {
   return listings.slice(0, 30).map((listing) => ({
@@ -37,6 +55,61 @@ function sanitizeListings(listings: ShoppingAssistantListing[]) {
     condition: listing.condition?.slice(0, 100),
     university: listing.university?.slice(0, 150),
     location: listing.location?.slice(0, 150),
+  }));
+}
+
+function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput): ShoppingAssistantListing[] {
+  if (!db) return [];
+
+  const params: any[] = [];
+  let where = `
+    WHERE l.is_hidden = 0
+      AND l.deleted_at IS NULL
+      AND l.status != 'sold'
+      AND l.sold_quantity < l.quantity
+  `;
+
+  if (input.category) {
+    where += " AND l.category = ?";
+    params.push(input.category);
+  }
+
+  if (input.university) {
+    where += " AND l.university = ?";
+    params.push(input.university);
+  }
+
+  if (typeof input.maxPrice === "number" && Number.isFinite(input.maxPrice)) {
+    where += " AND l.price <= ?";
+    params.push(input.maxPrice);
+  }
+
+  const terms = extractSearchTerms(input.query);
+  if (terms.length > 0) {
+    const termClauses = terms.map(() => "(LOWER(l.name) LIKE ? OR LOWER(l.description) LIKE ?)");
+    where += ` AND (${termClauses.join(" OR ")})`;
+    for (const term of terms) {
+      params.push(`%${term}%`, `%${term}%`);
+    }
+  }
+
+  const rows = db.prepare(`
+    SELECT l.id, l.name, l.category, l.price, l.description, l.condition, l.university, l.location
+    FROM listings l
+    ${where}
+    ORDER BY l.created_at DESC
+    LIMIT 30
+  `).all(...params) as Array<Record<string, unknown>>;
+
+  return rows.map((row) => ({
+    id: String(row.id),
+    name: String(row.name ?? ""),
+    category: typeof row.category === "string" ? row.category : undefined,
+    price: Number(row.price ?? 0),
+    description: typeof row.description === "string" ? row.description : undefined,
+    condition: typeof row.condition === "string" ? row.condition : undefined,
+    university: typeof row.university === "string" ? row.university : undefined,
+    location: typeof row.location === "string" ? row.location : undefined,
   }));
 }
 
@@ -58,7 +131,7 @@ DISCOVERY RULES:
 - Recommend only listing IDs present in the supplied context.
 - Return at most 4 recommendations.
 - Do not invent product names, prices, stock, sellers, ratings, specifications, availability, delivery methods, or locations.
-- If no supplied listing matches, say that no matching listing was found in the current context. Do not fabricate alternatives.
+- If no supplied listing matches, say that no matching listing was found in the current listing context. Do not fabricate alternatives.
 - Never imply that the supplied context represents all BuyMesho listings unless that is explicitly established by the caller.
 - match_reasons must be grounded only in supplied listing fields.
 
@@ -89,7 +162,12 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
   const query = input.query.trim();
   if (!query) throw new Error("Shopping assistant query is required");
 
-  const listings = sanitizeListings(input.contextListings);
+  const suppliedListings = Array.isArray(input.contextListings) ? input.contextListings : [];
+  const marketplaceListings = suppliedListings.length > 0
+    ? suppliedListings
+    : loadMarketplaceCandidates(input.db, input);
+  const listings = sanitizeListings(marketplaceListings);
+
   const payload = {
     current_user_context: {
       university: input.university,
@@ -105,9 +183,9 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
     payload,
   });
 
-  const allowedIds = new Set(listings.map((listing) => listing.id));
+  const allowedById = new Map(listings.map((listing) => [listing.id, listing]));
   const recommendationIds = Array.isArray(result.recommended_listing_ids)
-    ? result.recommended_listing_ids.filter((id) => allowedIds.has(String(id))).slice(0, 4).map(String)
+    ? result.recommended_listing_ids.filter((id) => allowedById.has(String(id))).slice(0, 4).map(String)
     : [];
 
   return {
@@ -126,5 +204,6 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
     suggested_follow_ups: Array.isArray(result.suggested_follow_ups)
       ? result.suggested_follow_ups.filter((value) => typeof value === "string" && value.trim()).slice(0, 3)
       : [],
+    recommended_listings: recommendationIds.map((id) => allowedById.get(id)!).filter(Boolean),
   };
 }
