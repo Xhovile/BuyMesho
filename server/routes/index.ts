@@ -65,7 +65,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
     }
     try {
       db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
-        admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
+        admin_uid ?? null, admin_email ?? null, action_type, target_id ? target_type : target_type, target_id ?? null, details ? JSON.stringify(details) : null
       );
     } catch (error) {
       console.warn("Failed to log admin action:", error);
@@ -74,8 +74,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   registerVerificationEmailRoutes(app);
 
-  // Validator projection routes own ticket retrieval, Attendees, Scanner,
-  // status changes and offline sync. They must remain ahead of legacy routes.
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
@@ -89,7 +87,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerListingRoutes(app, { db });
   registerEventRoutes(app, { db });
   registerEventCreatorOverviewRoutes(app, { db });
-  registerAiRoutes(app, requireFirebaseUser);
+  registerAiRoutes(app, requireFirebaseUser, db);
   registerSellerApplicationRoutes(app, { db });
   mountTotpRoutes(app);
 
