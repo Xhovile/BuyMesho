@@ -189,7 +189,7 @@ function validatorMeHandler(req: Request, res: Response) {
   if (!user) return res.status(401).json({ error: "Authentication required" });
 
   const creator = loadCreatorRecord(user.uid);
-  if (!isEventCreatorActive(creator)) {
+  if (!creator || !isEventCreatorActive(creator)) {
     return res.status(403).json({ error: "Approved event creator access is required" });
   }
 
@@ -202,7 +202,7 @@ function validatorMeHandler(req: Request, res: Response) {
       email: user.email,
       email_verified: user.email_verified,
       is_admin: user.is_admin,
-      display_name: creator?.display_name ?? creator?.organization_name ?? null,
+      display_name: creator.display_name ?? creator.organization_name ?? null,
     },
     creator: {
       uid: creator.uid,
