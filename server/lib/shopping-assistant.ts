@@ -30,10 +30,29 @@ export type ShoppingAssistantResult = {
 };
 
 const STOP_WORDS = new Set([
-  "find", "show", "me", "some", "a", "an", "the", "for", "with", "under", "below", "less", "than",
-  "buy", "want", "need", "looking", "look", "get", "please", "cheap", "affordable", "best", "good", "please",
-  "in", "at", "on", "and", "or", "of", "to", "from", "near", "around", "within", "my", "i", "can", "you",
+  "find", "show", "me", "some", "for", "with", "under", "below", "less", "than", "buy", "want", "need",
+  "looking", "look", "get", "please", "cheap", "affordable", "best", "good", "in", "at", "on", "and",
+  "or", "of", "to", "from", "near", "around", "within", "my", "i", "can", "you",
 ]);
+
+function parseBudgetToNumber(raw: string): number | undefined {
+  const normalized = raw.toLowerCase().replace(/,/g, "").trim();
+  const match = normalized.match(/^(\d+(?:\.\d+)?)(k|m)?$/);
+  if (!match) return undefined;
+
+  const value = Number(match[1]);
+  if (!Number.isFinite(value)) return undefined;
+
+  if (match[2] === "k") return Math.round(value * 1_000);
+  if (match[2] === "m") return Math.round(value * 1_000_000);
+  return Math.round(value);
+}
+
+function extractMaxPrice(query: string): number | undefined {
+  const match = query.toLowerCase().match(/(?:under|below|less than|up to|max(?:imum)?(?: price)?|within)\s*(?:mwk\s*)?([0-9][0-9,]*(?:\.\d+)?\s*[km]?)/i);
+  if (!match) return undefined;
+  return parseBudgetToNumber(match[1]);
+}
 
 function extractSearchTerms(query: string): string[] {
   return query
@@ -41,7 +60,7 @@ function extractSearchTerms(query: string): string[] {
     .replace(/[^a-z0-9\s-]/g, " ")
     .split(/\s+/)
     .map((token) => token.trim())
-    .filter((token) => token.length >= 3 && !STOP_WORDS.has(token))
+    .filter((token) => token.length >= 3 && !STOP_WORDS.has(token) && !/^\d+$/.test(token) && !/^\d+[km]$/.test(token))
     .slice(0, 6);
 }
 
@@ -79,9 +98,10 @@ function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput): Shop
     params.push(input.university);
   }
 
-  if (typeof input.maxPrice === "number" && Number.isFinite(input.maxPrice)) {
+  const maxPrice = input.maxPrice ?? extractMaxPrice(input.query);
+  if (typeof maxPrice === "number" && Number.isFinite(maxPrice)) {
     where += " AND l.price <= ?";
-    params.push(input.maxPrice);
+    params.push(maxPrice);
   }
 
   const terms = extractSearchTerms(input.query);
@@ -172,7 +192,7 @@ export async function shoppingAssistant(input: ShoppingAssistantInput): Promise<
     current_user_context: {
       university: input.university,
       category: input.category,
-      max_price: input.maxPrice,
+      max_price: input.maxPrice ?? extractMaxPrice(query),
     },
     current_query: query,
     available_listings: listings,
