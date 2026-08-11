@@ -32,7 +32,9 @@ export type ShoppingAssistantResult = {
 const STOP_WORDS = new Set([
   "find", "show", "me", "some", "for", "with", "under", "below", "less", "than", "buy", "want", "need",
   "looking", "look", "get", "please", "cheap", "affordable", "best", "good", "in", "at", "on", "and",
-  "or", "of", "to", "from", "near", "around", "within", "my", "i", "can", "you",
+  "or", "of", "to", "from", "near", "around", "within", "my", "i", "can", "you", "what", "how",
+  "would", "could", "anything", "something", "items", "item", "products", "product", "currently", "available",
+  "campus", "budget", "buying", "wanting", "like", "give", "showing",
 ]);
 
 function parseBudgetToNumber(raw: string): number | undefined {
@@ -106,10 +108,10 @@ function loadMarketplaceCandidates(db: any, input: ShoppingAssistantInput): Shop
 
   const terms = extractSearchTerms(input.query);
   if (terms.length > 0) {
-    const termClauses = terms.map(() => "(LOWER(l.name) LIKE ? OR LOWER(l.description) LIKE ?)");
+    const termClauses = terms.map(() => "(LOWER(l.name) LIKE ? OR LOWER(l.category) LIKE ? OR LOWER(l.description) LIKE ?)");
     where += ` AND (${termClauses.join(" OR ")})`;
     for (const term of terms) {
-      params.push(`%${term}%`, `%${term}%`);
+      params.push(`%${term}%`, `%${term}%`, `%${term}%`);
     }
   }
 
