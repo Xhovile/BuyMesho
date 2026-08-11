@@ -233,7 +233,7 @@ export function ensureMessageSchema(db: SchemaDbLike) {
   ensureColumn(db, "messages", "read_at", "DATETIME");
   ensureColumn(db, "messages", "is_spam", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(db, "messages", "spam_flag_count", "INTEGER NOT NULL DEFAULT 0");
-  ensureColumn(db, "messages", "deleted_at", "TEXT");
+  ensureColumn(db, "messages", "deleted_at", "DATETIME");
   ensureColumn(db, "messages", "created_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
   ensureColumn(db, "messages", "updated_at", "DATETIME DEFAULT CURRENT_TIMESTAMP");
 
