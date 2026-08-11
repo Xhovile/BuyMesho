@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express } from "react";
 import { mountTotpRoutes } from "../totpServer.js";
 import { registerSessionRoutes } from "../auth/sessionRoutes.js";
 import { registerValidatorRoutes } from "./validator.routes.js";
@@ -65,7 +65,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
     }
     try {
       db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
-        admin_uid ?? null, admin_email ?? null, action_type, target_id ? target_type : target_type, target_id ?? null, details ? JSON.stringify(details) : null
+        admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
       );
     } catch (error) {
       console.warn("Failed to log admin action:", error);
@@ -73,7 +73,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   }
 
   registerVerificationEmailRoutes(app);
-
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
@@ -97,8 +96,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
