@@ -16,11 +16,23 @@ export type PriceSuggestionResult = {
   pricing_tips: string[];
 };
 
+export type ShoppingAssistantListing = {
+  id: string;
+  name: string;
+  category?: string;
+  price: number;
+  description?: string;
+  condition?: string;
+  university?: string;
+  location?: string;
+};
+
 export type ShoppingAssistantResult = {
   reply: string;
   recommended_listing_ids: string[];
   match_reasons: Record<string, string>;
   suggested_follow_ups: string[];
+  recommended_listings: ShoppingAssistantListing[];
 };
 
 export type CompareListingsResult = {
@@ -76,7 +88,7 @@ export async function queryShoppingAssistant(payload: {
   university?: string;
   category?: string;
   maxPrice?: number;
-  contextListings: Array<{
+  contextListings?: Array<{
     id: string;
     name: string;
     category?: string;
@@ -84,6 +96,7 @@ export async function queryShoppingAssistant(payload: {
     description?: string;
     condition?: string;
     university?: string;
+    location?: string;
   }>;
 }): Promise<ShoppingAssistantResult | null> {
   try {
