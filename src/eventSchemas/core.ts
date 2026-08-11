@@ -80,10 +80,9 @@ export const multiselectField = ({ key, label, options, required, advanced, help
 }): ListingSpecField => ({ key, label, type: "multiselect", options, required, advanced, helpText });
 
 const EVENT_LIFECYCLE_FIELDS: ListingSpecField[] = [
-  textField({ key: "end_time", label: "End Time", placeholder: "e.g. 23:00", helpText: "Used by Automatic runtime mode to determine when the event ends." }),
-  selectField({ key: "publication_mode", label: "Publication", options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS), helpText: "Choose immediate publication or scheduled publication." }),
-  textField({ key: "publication_at", label: "Publication Date & Time", placeholder: "e.g. 2026-08-20T18:00:00+02:00", helpText: "Only used when Publication is scheduled." }),
-  selectField({ key: "runtime_mode", label: "Runtime Status", options: Array.from(EVENT_RUNTIME_MODE_OPTIONS), helpText: "Automatic follows the event clock; Force Live/Upcoming overrides it." }),
+  textField({ key: "end_time", label: "End Time", placeholder: "e.g. 23:00", helpText: "When does the event end?" }),
+  selectField({ key: "publication_mode", label: "Publication", options: Array.from(EVENT_PUBLICATION_MODE_OPTIONS), helpText: "Choose when the event should be visible to people." }),
+  textField({ key: "publication_at", label: "Publication Date & Time", placeholder: "e.g. 2026-08-20T18:00:00+02:00", helpText: "Choose when the event should become visible." }),
 ];
 
 export function createEventConfig(params: {
@@ -95,7 +94,7 @@ export function createEventConfig(params: {
   const fields = [...params.fields, ...EVENT_LIFECYCLE_FIELDS];
   return {
     schema: { category: EVENT_CATEGORY, subcategory: EVENT_SUBCATEGORY, itemType: params.itemType, fields },
-    fieldGroups: [...params.fieldGroups, { title: "Publication & Runtime", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) }],
+    fieldGroups: [...params.fieldGroups, { title: "Event Schedule & Publication", keys: EVENT_LIFECYCLE_FIELDS.map((field) => field.key) }],
     requiredKeys: params.requiredKeys,
   };
 }
