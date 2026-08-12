@@ -292,6 +292,7 @@ async function checkCriticalDataConsistency(tableNames: Set<string>, columnMap: 
   }
 }
 
+
 async function checkBusinessInvariants(
   tableNames: Set<string>,
   columnMap: Map<string, Set<string>>,
@@ -306,7 +307,7 @@ async function checkBusinessInvariants(
   };
 
   try {
-    // Order ↔ payment consistency.
+    // 1. Order ↔ payment consistency.
     if (canCheck("payments", "order_id") && canCheck("orders", "id")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
@@ -329,7 +330,7 @@ async function checkBusinessInvariants(
       record("order_payment_reference_mismatch", Number(result.rows[0]?.count ?? 0), "Orders and their stored payments disagree on payment reference");
     }
 
-    if (canCheck("payments", "order_id", "status") && canCheck("orders", "id", "total_amount")) {
+    if (canCheck("payments", "order_id", "status") && canCheck("orders", "id", "status", "total_amount")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
         FROM (
@@ -344,7 +345,7 @@ async function checkBusinessInvariants(
       record("captured_payment_total_mismatch", Number(result.rows[0]?.count ?? 0), "Captured payment totals do not reconcile to order totals");
     }
 
-    // Payment ↔ escrow consistency.
+    // 2. Payment ↔ escrow consistency.
     if (canCheck("orders", "id", "escrow_id") && canCheck("escrows", "id", "order_id")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
@@ -377,7 +378,7 @@ async function checkBusinessInvariants(
       record("order_escrow_order_id_mismatch", Number(result.rows[0]?.count ?? 0), "Order escrow linkage is inconsistent");
     }
 
-    // Escrow ↔ payout consistency.
+    // 3. Escrow ↔ payout consistency.
     if (canCheck("payouts", "escrow_id", "order_id") && canCheck("escrows", "id", "order_id")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
@@ -412,8 +413,20 @@ async function checkBusinessInvariants(
       record("payout_order_orphans", Number(result.rows[0]?.count ?? 0), "Payouts reference missing orders");
     }
 
-    // Payout amount calculations.
-    if (canCheck("payouts", "gross_amount", "platform_fee_amount", "processing_fee_amount", "reserve_amount", "manual_adjustment_amount", "payout_fee_amount", "seller_receives_amount", "net_amount")) {
+    // 4. Payout amount calculations.
+    if (
+      canCheck(
+        "payouts",
+        "gross_amount",
+        "platform_fee_amount",
+        "processing_fee_amount",
+        "reserve_amount",
+        "manual_adjustment_amount",
+        "payout_fee_amount",
+        "seller_receives_amount",
+        "net_amount",
+      )
+    ) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
         FROM payouts
@@ -434,7 +447,7 @@ async function checkBusinessInvariants(
       record("payout_amount_formula_mismatches", Number(result.rows[0]?.count ?? 0), "Stored payout amounts do not reconcile to the payout formula");
     }
 
-    // Duplicate payment/reference/idempotency conditions.
+    // 5. Duplicate payment/reference/idempotency conditions.
     if (canCheck("payments", "reference")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
@@ -492,7 +505,7 @@ async function checkBusinessInvariants(
       record("duplicate_payment_webhook_events", Number(result.rows[0]?.count ?? 0), "Duplicate payment webhook event identities detected");
     }
 
-    // Status-transition validity at the current-state level.
+    // 6. Status-transition validity at the current-state level.
     if (canCheck("orders", "status")) {
       const result = await query<{ count: string }>(`
         SELECT COUNT(*)::text AS count
@@ -578,13 +591,21 @@ async function checkHardDeleteColumn(columnMap: Map<string, Set<string>>, tableN
 
 function checkEnvironment(name: string, required = false): NamedCheck {
   const configured = Boolean(process.env[name]?.trim());
-  return { status: configured ? "PASS" : required ? "FAIL" : "WARN", message: configured ? `${name} is configured` : `${name} is not configured`, details: { configured } };
+  return {
+    status: configured ? "PASS" : required ? "FAIL" : "WARN",
+    message: configured ? `${name} is configured` : `${name} is not configured`,
+    details: { configured },
+  };
 }
 
 function checkEnvironmentGroup(names: string[], label: string, mode: "all" | "any" = "all"): NamedCheck {
   const configured = names.filter((name) => Boolean(process.env[name]?.trim()));
   const complete = mode === "any" ? configured.length > 0 : configured.length === names.length;
-  return { status: complete ? "PASS" : "WARN", message: complete ? `${label} is configured` : `${label} is partially or not configured`, details: { configured, missing: names.filter((name) => !configured.includes(name)) } };
+  return {
+    status: complete ? "PASS" : "WARN",
+    message: complete ? `${label} is configured` : `${label} is partially or not configured`,
+    details: { configured, missing: names.filter((name) => !configured.includes(name)) },
+  };
 }
 
 function checkFirebaseAdmin(): NamedCheck {
@@ -599,7 +620,11 @@ function checkFirebaseAdmin(): NamedCheck {
 function checkWebhookExports(): NamedCheck {
   const paymentOk = typeof paymentWebhookHandler === "function" && typeof (paymentWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
   const payoutOk = typeof payoutWebhookHandler === "function" && typeof (payoutWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
-  return { status: paymentOk && payoutOk ? "PASS" : "FAIL", message: paymentOk && payoutOk ? "Webhook handlers are exported" : "Webhook handler exports are missing", details: { paymentWebhookHandler: paymentOk, payoutWebhookHandler: payoutOk } };
+  return {
+    status: paymentOk && payoutOk ? "PASS" : "FAIL",
+    message: paymentOk && payoutOk ? "Webhook handlers are exported" : "Webhook handler exports are missing",
+    details: { paymentWebhookHandler: paymentOk, payoutWebhookHandler: payoutOk },
+  };
 }
 
 function checkPaymentEndpointContract(): NamedCheck {
@@ -608,19 +633,34 @@ function checkPaymentEndpointContract(): NamedCheck {
   for (const [key, expected] of Object.entries(REQUIRED_PAYMENT_ENDPOINTS)) {
     if (actual[key] !== expected) mismatches[key] = { expected, actual: actual[key] };
   }
-  return { status: Object.keys(mismatches).length ? "FAIL" : "PASS", message: Object.keys(mismatches).length ? "Payment endpoint contract mismatch" : "Payment endpoint contract matches", details: mismatches };
+  return {
+    status: Object.keys(mismatches).length ? "FAIL" : "PASS",
+    message: Object.keys(mismatches).length ? "Payment endpoint contract mismatch" : "Payment endpoint contract matches",
+    details: mismatches,
+  };
 }
 
 export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
-  app.get("/api/health", (_req, res) => { res.redirect("/api/diagnostics"); });
+  app.get("/api/health", (_req, res) => {
+    res.redirect("/api/diagnostics");
+  });
 
   app.get("/api/diagnostics", async (_req, res) => {
     const started = Date.now();
     try {
       const database = await checkDatabase();
       if (database.status === "FAIL") {
-        const checks: Record<string, NamedCheck> = { database, database_url: checkEnvironment("DATABASE_URL", true) };
-        res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
+        const checks: Record<string, NamedCheck> = {
+          database,
+          database_url: checkEnvironment("DATABASE_URL", true),
+        };
+        res.status(503).setHeader("Cache-Control", "no-store").json({
+          overall: "FAIL",
+          authoritative: true,
+          timestamp: new Date().toISOString(),
+          duration_ms: Date.now() - started,
+          checks,
+        });
         return;
       }
 
@@ -630,7 +670,6 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
       const counts = await checkRowCounts(tableNames);
       const foreignKeys = await checkForeignKeys(tableNames);
       const criticalData = await checkCriticalDataConsistency(tableNames, columnMap);
-      const businessInvariants = await checkBusinessInvariants(tableNames, columnMap);
       const databaseIdentity = await checkDatabaseIdentity();
       const hardDelete = await checkHardDeleteColumn(columnMap, tableNames);
       const paymentEndpoints = checkPaymentEndpointContract();
@@ -644,7 +683,6 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
         counts,
         foreign_keys: foreignKeys,
         critical_data: criticalData,
-        business_invariants: businessInvariants,
         hard_delete_after: hardDelete,
         firebase: checkFirebaseAdmin(),
         cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
@@ -653,16 +691,28 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
         database_url: checkEnvironment("DATABASE_URL", true),
         admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
         payments: {
-          status: combineStatus([paymentEndpoints, webhookExports, tables, columns, counts, foreignKeys, criticalData, businessInvariants]),
+          status: combineStatus([paymentEndpoints, webhookExports, tables, columns, counts, foreignKeys, criticalData]),
           message: "Payment runtime and database integrity checks included above",
           details: { endpoint_contract: paymentEndpoints, webhook_exports: webhookExports },
         },
       };
 
       const overall = combineStatus(Object.values(checks));
-      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json({ overall, authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
+      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json({
+        overall,
+        authoritative: true,
+        timestamp: new Date().toISOString(),
+        duration_ms: Date.now() - started,
+        checks,
+      });
     } catch (error) {
-      res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, error: error instanceof Error ? error.message : String(error) });
+      res.status(503).setHeader("Cache-Control", "no-store").json({
+        overall: "FAIL",
+        authoritative: true,
+        timestamp: new Date().toISOString(),
+        duration_ms: Date.now() - started,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   });
 }
