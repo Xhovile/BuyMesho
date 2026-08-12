@@ -56,6 +56,9 @@ export class EscrowRepository {
   }
 
   create(orderId: string, currency: string, amount: number): StoredEscrow {
+    const existing = this.findByOrderId(orderId);
+    if (existing) return existing;
+
     const now = new Date().toISOString();
     const id = randomUUID();
     const entry: EscrowEntry = {
@@ -79,16 +82,12 @@ export class EscrowRepository {
       createdAt: now,
       updatedAt: now,
     };
+
     this.db
       .prepare(
         `INSERT INTO escrows (id, order_id, state, currency, balance_amount, balance_currency, entries, created_at, updated_at)
          VALUES (@id, @order_id, @state, @currency, @balance_amount, @balance_currency, @entries, @created_at, @updated_at)
-         ON CONFLICT(order_id) DO UPDATE SET
-           state = excluded.state,
-           balance_amount = excluded.balance_amount,
-           balance_currency = excluded.balance_currency,
-           entries = excluded.entries,
-           updated_at = excluded.updated_at`,
+         ON CONFLICT(order_id) DO NOTHING`,
       )
       .run({
         id: escrow.id,
@@ -101,7 +100,12 @@ export class EscrowRepository {
         created_at: escrow.createdAt,
         updated_at: escrow.updatedAt,
       });
-    return escrow;
+
+    const stored = this.findByOrderId(orderId);
+    if (!stored) {
+      throw new Error('Failed to create or retrieve escrow');
+    }
+    return stored;
   }
 
   findByOrderId(orderId: string): StoredEscrow | undefined {
