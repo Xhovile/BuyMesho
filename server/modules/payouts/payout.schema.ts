@@ -183,6 +183,9 @@ function ensurePayoutLifecycleSchema(): void {
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payout_adjustments_seller_id ON payout_adjustments (seller_id, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_seller_payout_account_events_seller_uid ON seller_payout_account_events (seller_uid, created_at DESC)`);
   ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_destination_account_id ON payouts (destination_account_id)`);
+  ensureIndex(`CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_release_entry_unique ON payouts (release_entry_id) WHERE release_entry_id IS NOT NULL`);
+  ensureIndex(`CREATE UNIQUE INDEX IF NOT EXISTS idx_payouts_connect_order_unique ON payouts (order_id) WHERE order_id IS NOT NULL AND escrow_id IS NULL`);
+  ensureIndex(`CREATE INDEX IF NOT EXISTS idx_payouts_escrow_id ON payouts (escrow_id)`);
 
   db.exec(`DROP TRIGGER IF EXISTS trg_preserve_verified_seller_payout_destination ON seller_payout_accounts;`);
   db.exec(`DROP FUNCTION IF EXISTS preserve_verified_seller_payout_destination();`);
