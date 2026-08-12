@@ -2,6 +2,7 @@ import type { PgCompatDatabase } from "../../db.js";
 import express, { type RequestHandler } from "express";
 import { hasAdminAccess } from "../../auth/adminAccess.js";
 import { adminApiLimiter } from "./admin.rateLimit.js";
+import { isAdminActionType, isAdminTargetType } from "../../../src/modules/admin/shared/adminAuditTypes.js";
 
 type AdminActionRow = {
   id: number;
@@ -166,19 +167,53 @@ export function createAdminActionsRouter(params: {
       const lastRow = rows.at(-1);
       const nextCursor = hasMore && lastRow ? encodeAdminActionsCursor(lastRow) : null;
 
-      return res.json(
-        {
-          rows: normalizedRows,
-          total,
-          limit,
-          offset,
-          hasMore,
-          nextCursor,
-        }
-      );
+      return res.json({
+        rows: normalizedRows,
+        total,
+        limit,
+        offset,
+        hasMore,
+        nextCursor,
+      });
     } catch (error) {
       console.error("Admin actions fetch error:", error);
       return res.status(500).json({ error: "Failed to load admin actions" });
+    }
+  });
+
+  router.post("/actions", adminApiLimiter, requireAuth, (req: any, res) => {
+    if (!hasAdminAccess(req.user)) {
+      return res.status(403).json({ error: "Forbidden: admin access required" });
+    }
+
+    const actionType = typeof req.body?.action_type === "string" ? req.body.action_type.trim() : "";
+    const targetType = typeof req.body?.target_type === "string" ? req.body.target_type.trim() : "";
+
+    if (!isAdminActionType(actionType) || !isAdminTargetType(targetType)) {
+      return res.status(400).json({ error: "Invalid admin action or target type" });
+    }
+
+    try {
+      const details = req.body?.details ?? null;
+      const adminUid = req.user?.uid ?? null;
+      const adminEmail = req.user?.email ?? null;
+
+      const result = db.prepare(`
+        INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_id, details, target_type)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(
+        adminUid,
+        adminEmail,
+        actionType,
+        typeof req.body?.target_id === "string" ? req.body.target_id : null,
+        details == null ? null : JSON.stringify(details),
+        targetType,
+      );
+
+      return res.status(201).json({ success: true, id: Number(result.lastInsertRowid ?? 0) });
+    } catch (error) {
+      console.error("Admin action write error:", error);
+      return res.status(500).json({ error: "Failed to record admin action" });
     }
   });
 
