@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ElementType } from "react";
 import {
   BookOpen,
   Camera,
@@ -19,7 +19,7 @@ type ListingImageProps = {
   performanceMode?: boolean;
 };
 
-type IconType = typeof Camera;
+type IconType = ElementType;
 
 function getFallbackIcon(category?: string | null, subcategory?: string | null): IconType {
   const value = `${category ?? ""} ${subcategory ?? ""}`.trim().toLowerCase();
