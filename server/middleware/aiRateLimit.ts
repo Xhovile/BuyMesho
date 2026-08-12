@@ -14,28 +14,17 @@ function createLimiter(windowMs: number, limit: number, message: string): Reques
     legacyHeaders: false,
     keyGenerator: keyForRequest,
     handler: (_req, res) => {
-      res.status(429).json({
-        error: message,
-        code: "AI_RATE_LIMITED",
-      });
+      res.status(429).json({ error: message, code: "AI_RATE_LIMITED" });
     },
   });
 }
 
-/**
- * Public Gemini-consuming endpoints. The key is a Firebase UID when available,
- * otherwise the request IP, so both authenticated and anonymous abuse are limited.
- */
 export const publicAiRateLimit = createLimiter(
   60_000,
   10,
   "Too many AI requests. Please try again in a minute.",
 );
 
-/**
- * Authenticated seller/admin AI tooling. Slightly higher allowance, but still
- * bounded to prevent automated Gemini quota consumption.
- */
 export const authenticatedAiRateLimit = createLimiter(
   60_000,
   20,

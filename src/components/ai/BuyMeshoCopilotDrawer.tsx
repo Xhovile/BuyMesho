@@ -1,49 +1,45 @@
 import { useEffect, useRef, useState } from "react";
-import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight } from "lucide-react";
-import {
-  queryShoppingAssistant,
-  type ShoppingAssistantResult,
-  type CopilotConversationMessage,
-} from "../../lib/ai";
+import { X, Send, Bot, RefreshCw, ShoppingBag, ArrowRight, HelpCircle, Search } from "lucide-react";
+import { queryShoppingAssistant, type ShoppingAssistantResult, type ShoppingAssistantListing } from "../../lib/ai";
 import { formatMoney } from "../../shared/utils/formatMoney";
-import { apiFetch } from "../../lib/api";
 import AiIcon from "./AiIcon";
-
-type ContextListing = {
-  id: string;
-  name: string;
-  category?: string;
-  price: number;
-  description?: string;
-  condition?: string;
-  university?: string;
-  location?: string;
-};
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  availableListings?: ContextListing[];
+  availableListings?: ShoppingAssistantListing[];
   onSelectListing?: (listingId: string) => void;
 };
 
-const SUGGESTED_QUERIES = [
-  "Find smartphones under 250,000 MWK",
-  "How does escrow protect my purchase?",
-  "I want to become a seller. What do I need?",
-  "Where do I manage my seller payout details?",
-  "I have a problem with an order. What should I do?",
-];
+type AssistantMode = "ask" | "shop";
+
+const SUGGESTED_QUERIES: Record<AssistantMode, string[]> = {
+  ask: [
+    "How does BuyMesho escrow and buyer protection work?",
+    "How do I become a seller on BuyMesho?",
+    "What can I do with my BuyMesho account?",
+    "How can I manage an order or message a seller?",
+  ],
+  shop: [
+    "Find smartphones under 250,000 MWK",
+    "Find affordable fashion under 50,000 MWK",
+    "Show me electronics that are currently available",
+    "Find something useful for my campus budget",
+  ],
+};
 
 export default function BuyMeshoCopilotDrawer({
   isOpen,
   onClose,
-  availableListings = [],
+  availableListings,
   onSelectListing,
 }: Props) {
+  // Kept for compatibility with existing callers. Server-side marketplace data is authoritative.
+  void availableListings;
+
+  const [mode, setMode] = useState<AssistantMode>("ask");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
-  const [fetchedListings, setFetchedListings] = useState<ContextListing[]>([]);
   const [messages, setMessages] = useState<
     Array<{
       role: "user" | "assistant";
@@ -53,21 +49,15 @@ export default function BuyMeshoCopilotDrawer({
   >([
     {
       role: "assistant",
-      text: "Muli bwanji! I’m your BuyMesho Copilot. I can help you find products, understand BuyMesho, make buying or selling decisions, and navigate marketplace features.",
+      text: "Muli bwanji! I am BuyMesho Copilot. Ask me about how BuyMesho works, buying and selling, or switch to Shop to describe what you want to find.",
     },
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
   useEffect(() => {
     if (isOpen) {
-      const timer = setTimeout(() => {
-        scrollToBottom();
-      }, 50);
+      const timer = setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
       return () => clearTimeout(timer);
     }
   }, [messages, loading, isOpen]);
@@ -82,20 +72,12 @@ export default function BuyMeshoCopilotDrawer({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen && availableListings.length === 0 && fetchedListings.length === 0) {
-      apiFetch("/api/listings")
-        .then((data: any) => {
-          const list = Array.isArray(data) ? data : data?.listings || [];
-          setFetchedListings(list);
-        })
-        .catch(() => {});
-    }
-  }, [isOpen, availableListings.length, fetchedListings.length]);
-
   if (!isOpen) return null;
 
-  const activeContextListings = availableListings.length > 0 ? availableListings : fetchedListings;
+  const handleModeChange = (nextMode: AssistantMode) => {
+    setMode(nextMode);
+    setQuery("");
+  };
 
   const handleSend = async (userText: string) => {
     const trimmed = userText.trim();
@@ -111,36 +93,23 @@ export default function BuyMeshoCopilotDrawer({
     setLoading(true);
 
     try {
-      const result = await queryShoppingAssistant({
-        query: trimmed,
-        contextListings: activeContextListings.slice(0, 30),
-        conversation,
-      });
+      const result = await queryShoppingAssistant({ query: trimmed });
 
-      if (result) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            text: result.reply,
-            result,
-          },
-        ]);
-      } else {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            text: "BuyMesho Copilot is temporarily unavailable. Your message has not been lost. Please try again shortly.",
-          },
-        ]);
-      }
+      setMessages((prev) => [
+        ...prev,
+        result
+          ? { role: "assistant", text: result.reply, result }
+          : {
+              role: "assistant",
+              text: "BuyMesho Copilot is currently unavailable. No fabricated marketplace information was generated.",
+            },
+      ]);
     } catch {
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: "BuyMesho Copilot is temporarily unavailable. Your message has not been lost. Please try again shortly.",
+          text: "BuyMesho Copilot is currently unavailable. Please try again later.",
         },
       ]);
     } finally {
@@ -150,151 +119,98 @@ export default function BuyMeshoCopilotDrawer({
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in">
-      <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col border-l border-zinc-200">
-        <div className="px-5 py-3.5 bg-white border-b border-zinc-200 text-zinc-900 flex items-center justify-between shrink-0">
+      <div className="relative flex h-full w-full max-w-lg flex-col border-l border-zinc-200 bg-white shadow-2xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-zinc-200 bg-white px-5 py-3.5 text-zinc-900">
           <div className="flex items-center gap-3">
-            <div className="p-1.5 rounded-2xl bg-zinc-100 border border-zinc-200 flex items-center justify-center">
-              <AiIcon className="w-6 h-6" />
+            <div className="flex items-center justify-center rounded-2xl border border-zinc-200 bg-zinc-100 p-1.5">
+              <AiIcon className="h-6 w-6" />
             </div>
             <div>
-              <h3 className="font-extrabold text-base text-zinc-900 leading-tight">
-                BuyMesho Copilot
-              </h3>
-              <p className="text-xs text-zinc-500 font-semibold">Your marketplace guide</p>
+              <h3 className="text-base font-extrabold leading-tight text-zinc-900">BuyMesho Copilot</h3>
+              <p className="text-xs font-semibold text-zinc-500">Ask about BuyMesho or discover products</p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-2xl hover:bg-zinc-100 text-zinc-400 hover:text-zinc-900 transition-colors cursor-pointer"
-            aria-label="Close BuyMesho Copilot"
-          >
-            <X className="w-5 h-5" />
+          <button onClick={onClose} className="cursor-pointer rounded-2xl p-2 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900" aria-label="Close BuyMesho Copilot">
+            <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-zinc-100">
+        <div className="shrink-0 border-b border-zinc-200 bg-zinc-50 px-4 py-3">
+          <div className="grid grid-cols-2 gap-2 rounded-2xl border border-zinc-200 bg-white p-1">
+            <button type="button" onClick={() => handleModeChange("ask")} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "ask" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
+              <HelpCircle className="h-4 w-4" /> Ask BuyMesho
+            </button>
+            <button type="button" onClick={() => handleModeChange("shop")} className={`flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold transition ${mode === "shop" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"}`}>
+              <Search className="h-4 w-4" /> Shop
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 space-y-3.5 overflow-y-auto bg-zinc-100 p-4">
           {messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}
-            >
-              <div
-                className={`max-w-[85%] rounded-3xl px-4 py-3 text-sm shadow-2xs ${
-                  msg.role === "user"
-                    ? "bg-zinc-900 text-white rounded-br-xs"
-                    : "bg-white text-zinc-900 border border-sky-300 rounded-bl-xs"
-                }`}
-              >
+            <div key={idx} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+              <div className={`max-w-[88%] rounded-3xl px-4 py-3 text-sm shadow-2xs ${msg.role === "user" ? "rounded-br-xs bg-zinc-900 text-white" : "rounded-bl-xs border border-zinc-200 bg-white text-zinc-900"}`}>
                 {msg.role === "assistant" && (
-                  <div className="flex items-center gap-1.5 font-bold text-xs text-zinc-700 mb-1.5">
-                    <Bot className="w-3.5 h-3.5 text-zinc-900" /> BuyMesho Copilot
-                  </div>
+                  <div className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-zinc-700"><Bot className="h-3.5 w-3.5 text-zinc-900" /> BuyMesho Copilot</div>
                 )}
                 <p className="whitespace-pre-wrap leading-relaxed">{msg.text}</p>
 
-                {msg.result?.recommended_listing_ids && msg.result.recommended_listing_ids.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-zinc-200/80 space-y-2">
-                    <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider flex items-center gap-1">
-                      <ShoppingBag className="w-3 h-3 text-zinc-800" /> Relevant listings
-                    </p>
+                {msg.result?.recommended_listings?.length ? (
+                  <div className="mt-3 space-y-2 border-t border-zinc-200/80 pt-3">
+                    <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-zinc-500"><ShoppingBag className="h-3 w-3 text-zinc-800" /> Current BuyMesho matches</p>
                     <div className="grid gap-2">
-                      {msg.result.recommended_listing_ids.map((id) => {
-                        const item = activeContextListings.find((l) => String(l.id) === String(id));
-                        if (!item) return null;
-                        const reason = msg.result?.match_reasons?.[id];
-
+                      {msg.result.recommended_listings.map((item) => {
+                        const reason = msg.result?.match_reasons?.[String(item.id)];
                         return (
-                          <div
-                            key={id}
-                            onClick={() => onSelectListing?.(id)}
-                            className="p-2.5 rounded-2xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 hover:border-zinc-300 transition-all cursor-pointer group flex items-start justify-between gap-2"
-                          >
-                            <div className="space-y-1 min-w-0">
-                              <h4 className="text-xs font-bold text-zinc-900 group-hover:text-black truncate">
-                                {item.name}
-                              </h4>
-                              <p className="text-xs text-zinc-900 font-extrabold">
-                                {formatMoney(item.price)}
-                              </p>
-                              {reason && (
-                                <p className="text-[11px] text-zinc-600 line-clamp-2 leading-snug">
-                                  {reason}
-                                </p>
-                              )}
-                            </div>
-                            <ArrowRight className="w-4 h-4 text-zinc-400 group-hover:text-zinc-900 transition-transform shrink-0 self-center" />
-                          </div>
+                          <button type="button" key={item.id} onClick={() => onSelectListing?.(item.id)} className="group flex items-start justify-between gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-2.5 text-left transition-all hover:border-zinc-300 hover:bg-zinc-100">
+                            <span className="min-w-0 space-y-1">
+                              <span className="block truncate text-xs font-bold text-zinc-900">{item.name}</span>
+                              <span className="block text-xs font-extrabold text-zinc-900">{formatMoney(item.price)}</span>
+                              {item.condition ? <span className="block text-[11px] text-zinc-500">Condition: {item.condition}</span> : null}
+                              {reason ? <span className="block line-clamp-2 text-[11px] leading-snug text-zinc-600">{reason}</span> : null}
+                            </span>
+                            <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-zinc-400 transition-transform group-hover:text-zinc-900" />
+                          </button>
                         );
                       })}
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              {msg.result?.suggested_follow_ups && msg.result.suggested_follow_ups.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5 justify-start max-w-[85%]">
+              {msg.result?.suggested_follow_ups?.length ? (
+                <div className="mt-2 flex max-w-[88%] flex-wrap justify-start gap-1.5">
                   {msg.result.suggested_follow_ups.map((prompt, pIdx) => (
-                    <button
-                      key={pIdx}
-                      onClick={() => handleSend(prompt)}
-                      className="text-xs text-emerald-950 bg-emerald-50/80 hover:bg-emerald-100/80 border border-emerald-300/80 hover:border-emerald-400 px-3 py-1.5 rounded-full transition-all font-semibold shadow-2xs cursor-pointer"
-                    >
-                      {prompt}
-                    </button>
+                    <button key={pIdx} onClick={() => handleSend(prompt)} className="cursor-pointer rounded-full border border-emerald-300/80 bg-emerald-50/80 px-3 py-1.5 text-xs font-semibold text-emerald-950 transition-all hover:border-emerald-400 hover:bg-emerald-100/80">{prompt}</button>
                   ))}
                 </div>
-              )}
+              ) : null}
             </div>
           ))}
 
-          {loading && (
-            <div className="flex items-center gap-2 text-xs font-semibold text-zinc-700 bg-white p-3 rounded-2xl border border-sky-300 w-fit shadow-2xs animate-pulse">
-              <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-600" />
-              BuyMesho Copilot is thinking…
+          {loading ? (
+            <div className="flex w-fit animate-pulse items-center gap-2 rounded-2xl border border-zinc-200 bg-white p-3 text-xs font-semibold text-zinc-700 shadow-2xs">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin text-red-900" />
+              {mode === "shop" ? "Searching current BuyMesho listings…" : "Checking BuyMesho's current product guidance…"}
             </div>
-          )}
+          ) : null}
           <div ref={messagesEndRef} />
         </div>
 
-        {messages.length <= 2 && (
-          <div className="px-4 py-3 border-t border-zinc-200 bg-zinc-50/80 shrink-0">
-            <p className="text-[11px] text-zinc-500 font-bold mb-2 uppercase tracking-wider">Try asking</p>
-            <div className="flex flex-wrap gap-1.5">
-              {SUGGESTED_QUERIES.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleSend(q)}
-                  className="text-xs px-3 py-1.5 rounded-xl transition-all text-left font-semibold shadow-2xs cursor-pointer border bg-emerald-50/80 hover:bg-emerald-100/90 border-emerald-300/90 hover:border-emerald-400 text-emerald-950"
-                >
-                  {q}
-                </button>
-              ))}
-            </div>
+        <div className="shrink-0 border-t border-zinc-200 bg-zinc-50/80 px-4 py-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-500">Try asking:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {SUGGESTED_QUERIES[mode].map((q) => (
+              <button key={q} onClick={() => handleSend(q)} className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-left text-xs font-semibold text-zinc-700 shadow-2xs transition-all hover:border-zinc-300 hover:bg-zinc-100">{q}</button>
+            ))}
           </div>
-        )}
+        </div>
 
-        <div className="p-3 sm:p-4 bg-white border-t border-zinc-200 shrink-0">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend(query);
-            }}
-            className="flex items-center gap-2"
-          >
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Ask BuyMesho Copilot anything..."
-              className="flex-1 bg-zinc-100 hover:bg-zinc-50 focus:bg-white text-zinc-900 placeholder:text-zinc-400 border border-zinc-200 rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-black focus:ring-2 focus:ring-black transition-all"
-            />
-            <button
-              type="submit"
-              disabled={!query.trim() || loading}
-              className="p-2.5 bg-zinc-900 hover:bg-zinc-800 disabled:opacity-40 text-white rounded-2xl transition-all shrink-0 cursor-pointer"
-              aria-label="Send message to BuyMesho Copilot"
-            >
-              <Send className="w-4 h-4" />
+        <div className="shrink-0 border-t border-zinc-200 bg-white p-3 sm:p-4">
+          <form onSubmit={(e) => { e.preventDefault(); handleSend(query); }} className="flex items-center gap-2">
+            <input type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={mode === "shop" ? "Describe what you want to buy…" : "Ask how BuyMesho works…"} className="flex-1 rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-2.5 text-sm text-zinc-900 outline-none transition-all placeholder:text-zinc-400 hover:bg-zinc-50 focus:border-black focus:bg-white focus:ring-2 focus:ring-black" />
+            <button type="submit" disabled={!query.trim() || loading} className="shrink-0 cursor-pointer rounded-2xl bg-zinc-900 p-2.5 text-white transition-all hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40" aria-label={mode === "shop" ? "Search BuyMesho listings" : "Ask BuyMesho Copilot"}>
+              <Send className="h-4 w-4" />
             </button>
           </form>
         </div>

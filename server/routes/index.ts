@@ -116,7 +116,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerListingRoutes(app, { db });
   registerEventRoutes(app, { db });
   registerEventCreatorOverviewRoutes(app, { db });
-  registerAiRoutes(app, requireFirebaseUser);
+  registerAiRoutes(app, requireFirebaseUser, db);
   registerSellerApplicationRoutes(app, { db });
   mountTotpRoutes(app);
 
@@ -183,8 +183,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
-  app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));

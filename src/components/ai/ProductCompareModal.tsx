@@ -57,7 +57,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
     setLoading(true);
     setError(null);
     try {
-      const response = await compareMarketplaceItems(selectedItems);
+      const response = await compareMarketplaceItems(selectedItems.map((item) => ({ id: item.id })));
       if (response) {
         setResult(response);
       } else {
@@ -87,7 +87,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
                   Decision support
                 </span>
               </h3>
-              <p className="text-xs text-emerald-100/80">Compares only the listing information supplied to BuyMesho</p>
+              <p className="text-xs text-emerald-100/80">Compares canonical BuyMesho listing records</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-lg text-white/80 hover:text-white" aria-label="Close product comparison">
@@ -100,7 +100,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
             <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-xs text-zinc-600 flex items-start gap-2">
               <Scale className="w-4 h-4 text-zinc-800 shrink-0 mt-0.5" />
               <p>
-                This is an AI-assisted comparison based on the supplied listing data. Missing information is not treated as a fact, and the result is not an official valuation, verification or guarantee.
+                This comparison uses the canonical BuyMesho listing records identified by the selected listing IDs. Missing information is not treated as a fact, and the result is not an official valuation, verification or guarantee.
               </p>
             </div>
           )}
@@ -108,7 +108,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
           {loading && (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
               <RefreshCw className="w-8 h-8 text-emerald-700 animate-spin" />
-              <p className="text-sm font-medium text-neutral-700">Comparing the supplied listing information…</p>
+              <p className="text-sm font-medium text-neutral-700">Comparing canonical BuyMesho listing information…</p>
             </div>
           )}
 
@@ -123,7 +123,7 @@ export default function ProductCompareModal({ isOpen, onClose, items }: Props) {
             <div className="space-y-6">
               <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm">
-                  <Trophy className="w-4 h-4 text-amber-500" /> Best overall option from the supplied information
+                  <Trophy className="w-4 h-4 text-amber-500" /> Best overall option from the canonical listing information
                 </div>
                 <p className="text-xs text-neutral-800 leading-relaxed">{result.winner_reason}</p>
                 <p className="text-xs text-neutral-600 leading-relaxed">{result.summary}</p>
