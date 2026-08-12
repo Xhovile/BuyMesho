@@ -30,7 +30,7 @@ const REQUIRED_PAYMENT_ENDPOINTS = { initialize:"/api/payments/paychangu/initial
 
 function statusWeight(status: CheckStatus): number { return status === "FAIL" ? 2 : status === "WARN" ? 1 : 0; }
 function combineStatus(checks: NamedCheck[]): CheckStatus { const worst = checks.reduce((max, check) => Math.max(max, statusWeight(check.status)), 0); return worst === 2 ? "FAIL" : worst === 1 ? "WARN" : "PASS"; }
-function quoteIdent(value: string): string { return `"${value.replaceAll('"','""')}"`; }
+function quoteIdent(value: string): string { return `"${value.replace(/"/g, '""')}"`; }
 
 async function checkDatabase(): Promise<NamedCheck> {
   const started = Date.now();
@@ -66,7 +66,9 @@ export function registerDiagnosticsRoutes(app: Express, _deps: RouteDeps) {
       const [tableNames,columnMap]=await Promise.all([getTableNames(),getColumnMap()]);
       const tables=await checkTables(tableNames);const columns=await checkColumns(columnMap,tableNames);const counts=await checkRowCounts(tableNames);const foreign_keys=await checkForeignKeys(tableNames);const critical_data=await checkCriticalDataConsistency(tableNames,columnMap);const database_identity=await checkDatabaseIdentity();
       const checks={database,database_identity,tables,columns,counts,foreign_keys,critical_data,hard_delete_after:await checkHardDeleteColumnDirect(columnMap,tableNames),firebase:checkFirebaseAdmin(),cloudinary:checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME","CLOUDINARY_API_KEY","CLOUDINARY_API_SECRET"],"Cloudinary"),smtp:checkEnvironmentGroup(["SMTP_HOST","SMTP_USER","SMTP_PASS"],"SMTP"),paychangu:checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY","PAYCHANGU_WEBHOOK_SECRET"],"PayChangu"),database_url:checkEnvironment("DATABASE_URL",true),admin_access:checkEnvironmentGroup(["ADMIN_EMAILS","ADMIN_UIDS"],"Admin access","any"),payments:{status:combineStatus([checkPaymentEndpointContract(),checkWebhookExports(),tables,columns]),message:"Payment runtime and database structure checks included above"}} satisfies Record<string,NamedCheck>;
-      const overall=combineStatus(Object.values(checks));res.status(overall==="FAIL"?503:200).setHeader("Cache-Control","no-store").json({overall,authoritative:true,timestamp:new Date().toISOString(),duration_ms:Date.now()-started,checks});
-    }catch(error){res.status(503).setHeader("Cache-Control","no-store").json({overall:"FAIL",authoritative:true,timestamp:new Date().toISOString(),duration_ms:Date.now()-started,error:error instanceof Error?error.message:String(error)});}
+      const overall=combineStatus(Object.values(checks)); const statusCode=overall==="FAIL"?503:200; res.status(statusCode).setHeader("Cache-Control","no-store").json({overall,authoritative:true,timestamp:new Date().toISOString(),duration_ms:Date.now()-started,checks});
+    } catch(error){ res.status(503).setHeader("Cache-Control","no-store").json({overall:"FAIL",authoritative:true,timestamp:new Date().toISOString(),duration_ms:Date.now()-started,error:error instanceof Error?error.message:String(error)}); }
   });
 }
+
+async function checkHardDeleteColumnDirect(columnMap:Map<string,Set<string>>,tableNames:Set<string>):Promise<NamedCheck>{if(!tableNames.has("listings"))return {status:"FAIL",message:"listings table is missing"};if(!columnMap.get("listings")?.has("hard_delete_after"))return {status:"FAIL",message:"hard_delete_after column is missing"};try{const result=await query<{data_type:string}>(`SELECT data_type FROM information_schema.columns WHERE table_schema=current_schema() AND table_name='listings' AND column_name='hard_delete_after' LIMIT 1`);const dataType=result.rows[0]?.data_type;if(!dataType)return {status:"FAIL",message:"hard_delete_after data type could not be verified"};return {status:dataType==="timestamp with time zone"?"PASS":"WARN",message:dataType==="timestamp with time zone"?"hard_delete_after is TIMESTAMPTZ":`hard_delete_after is ${dataType}`,details:{data_type:dataType}};}catch(error){return {status:"FAIL",message:`hard_delete_after check failed: ${error instanceof Error?error.message:String(error)}`};}}
