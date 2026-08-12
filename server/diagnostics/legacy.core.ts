@@ -1,1 +1,1 @@
-import type { Express } from "../types-placeholder";
+export { registerDiagnosticsRoutes } from "../routes/diagnostics.core.js";
