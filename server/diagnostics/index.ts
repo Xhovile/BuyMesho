@@ -1,1 +1,1 @@
-export { registerDiagnosticsRoutes, runDiagnostics } from "./legacy.core.js";
+export { registerDiagnosticsRoutes } from "./legacy.core.js";
