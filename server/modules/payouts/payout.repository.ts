@@ -6,6 +6,7 @@ import {
   type PayChanguPayoutExecutionResult,
 } from './paychangu.payout.js';
 import { PAYOUT_POLICY, isRetryableFailureCode } from './payout.policy.js';
+import { PayoutStatusRepository } from './payout.status-repository.js';
 import {
   decryptSensitiveValue,
   exactProviderErrorMessage,
@@ -21,6 +22,12 @@ import {
 } from './payout.shared.js';
 
 export class PayoutRepository {
+  private readonly statusRepository: PayoutStatusRepository;
+
+  constructor() {
+    this.statusRepository = new PayoutStatusRepository((id) => this.findById(id));
+  }
+
   private get db() {
     return getPaymentDb();
   }
@@ -360,49 +367,12 @@ export class PayoutRepository {
     return { payout, created: payout.id === id };
   }
 
-  updateStatus(id: string, status: PayoutStatus, extra: Record<string, unknown> = {}): PayoutRecord | undefined {
-    const now = new Date().toISOString();
-
-    this.db.prepare(
-      `UPDATE payouts
-        SET status = ?,
-             provider = COALESCE(?, provider),
-             provider_charge_id = COALESCE(?, provider_charge_id),
-             provider_ref_id = COALESCE(?, provider_ref_id),
-             provider_status = COALESCE(?, provider_status),
-             provider_transaction_id = COALESCE(?, provider_transaction_id),
-             failure_reason = COALESCE(?, failure_reason),
-             manual_review_reason = COALESCE(?, manual_review_reason),
-             processed_by = COALESCE(?, processed_by),
-             approved_by = COALESCE(?, approved_by),
-             last_attempt_id = COALESCE(?, last_attempt_id),
-             raw_response = COALESCE(?, raw_response),
-             sent_at = COALESCE(?, sent_at),
-             paid_at = COALESCE(?, paid_at),
-             failed_at = COALESCE(?, failed_at),
-             updated_at = ?
-        WHERE id = ?`,
-    ).run(
-      status,
-      extra.provider ?? null,
-      extra.providerChargeId ?? null,
-      extra.providerReference ?? null,
-      extra.providerStatus ?? null,
-      extra.providerTransactionId ?? null,
-      extra.failureReason ?? null,
-      extra.manualReviewReason ?? null,
-      extra.processedBy ?? null,
-      extra.approvedBy ?? null,
-      extra.lastAttemptId ?? null,
-      extra.rawResponse ? JSON.stringify(extra.rawResponse) : null,
-      extra.sentAt ?? null,
-      extra.paidAt ?? null,
-      extra.failedAt ?? null,
-      now,
-      id,
-    );
-
-    return this.findById(id);
+  updateStatus(
+    id: string,
+    status: PayoutStatus,
+    extra: Record<string, unknown> = {},
+  ): PayoutRecord | undefined {
+    return this.statusRepository.updateStatus(id, status, extra);
   }
 
   updateExecutionState(
@@ -581,26 +551,26 @@ export class PayoutRepository {
     );
   }
 
-private rowToPayout(row: Record<string, unknown>): PayoutRecord {
-  return {
-    id: row.id as string,
-    sellerId: row.seller_id as string,
-    orderId: (row.order_id as string | null) ?? null,
-    escrowId: (row.escrow_id as string | null) ?? null,
-    releaseEntryId: (row.release_entry_id as string | null) ?? null,
-    destinationAccountId: (row.destination_account_id as string | null) ?? null,
-    amount: row.amount as number,
-    currency: row.currency as string,
-    status: row.status as PayoutStatus,
-    provider: (row.provider as string | null) ?? null,
-    providerChargeId: (row.provider_charge_id as string | null) ?? null,
-    providerStatus: (row.provider_status as string | null) ?? null,
-    requestedBy: (row.requested_by as string | null) ?? null,
-    requestedAt: (row.requested_at as string | null) ?? null,
-    createdAt: row.created_at as string,
-    updatedAt: row.updated_at as string,
-  };
- }
+  private rowToPayout(row: Record<string, unknown>): PayoutRecord {
+    return {
+      id: row.id as string,
+      sellerId: row.seller_id as string,
+      orderId: (row.order_id as string | null) ?? null,
+      escrowId: (row.escrow_id as string | null) ?? null,
+      releaseEntryId: (row.release_entry_id as string | null) ?? null,
+      destinationAccountId: (row.destination_account_id as string | null) ?? null,
+      amount: row.amount as number,
+      currency: row.currency as string,
+      status: row.status as PayoutStatus,
+      provider: (row.provider as string | null) ?? null,
+      providerChargeId: (row.provider_charge_id as string | null) ?? null,
+      providerStatus: (row.provider_status as string | null) ?? null,
+      requestedBy: (row.requested_by as string | null) ?? null,
+      requestedAt: (row.requested_at as string | null) ?? null,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
+    };
+  }
 }
 
 export const payoutRepository = new PayoutRepository();
