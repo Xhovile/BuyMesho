@@ -70,22 +70,22 @@ async function importFreshService(tag: string) {
   return import(new URL(`../connect.service.ts?${tag}`, import.meta.url).href);
 }
 
-test('validateConnectEnvironment throws when required env values are missing', async () => {
+test('validateConnectEnvironment throws when each required env value is missing', async () => {
   setConnectEnv();
-  const serviceWithPresentKey = await importFreshService('missing-env-present-key');
+  const service = await importFreshService('missing-env');
 
   delete process.env.PAYCHANGU_SECRET_KEY;
-  assert.throws(() => serviceWithPresentKey.validateConnectEnvironment(), /PAYCHANGU_SECRET_KEY/);
+  assert.throws(() => service.validateConnectEnvironment(), /PAYCHANGU_SECRET_KEY/);
 
-  process.env.PAYCHANGU_SECRET_KEY = BASE_ENV.PAYCHANGU_SECRET_KEY;
+  setConnectEnv();
   delete process.env.PAYCHANGU_WEBHOOK_SECRET;
-  assert.throws(() => serviceWithPresentKey.validateConnectEnvironment(), /PAYCHANGU_WEBHOOK_SECRET/);
+  assert.throws(() => service.validateConnectEnvironment(), /PAYCHANGU_WEBHOOK_SECRET/);
 
-  delete process.env.PAYCHANGU_SECRET_KEY;
-  delete process.env.PAYCHANGU_WEBHOOK_SECRET;
+  setConnectEnv();
   delete process.env.CONNECT_TOKEN_ENCRYPTION_KEY;
-  const serviceWithMissingKey = await importFreshService('missing-connect-key');
-  assert.throws(() => serviceWithMissingKey.validateConnectEnvironment(), /CONNECT_TOKEN_ENCRYPTION_KEY/);
+  assert.throws(() => service.validateConnectEnvironment(), /CONNECT_TOKEN_ENCRYPTION_KEY/);
+
+  setConnectEnv();
 });
 
 test('startConnectOnboarding creates a pending attempt and authorization URL', async () => {
