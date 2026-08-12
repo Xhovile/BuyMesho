@@ -201,6 +201,7 @@ test('integration: pending webhook keeps payment and order pending without escro
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     seedOrder('order_pending_1', 'txref-pending-1');
+    seedStoredPayment('order_pending_1', 'txref-pending-1');
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-pending-1', data: { tx_ref: 'txref-pending-1', status: 'queued', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook)).status, 200);
     assert.equal(paymentRepository.findByReference('txref-pending-1')?.status, 'pending');
@@ -224,6 +225,7 @@ test('integration: failed webhook fails payment without paying order or creating
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     seedOrder('order_failed_1', 'txref-failed-1');
+    seedStoredPayment('order_failed_1', 'txref-failed-1');
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', tx_ref: 'txref-failed-1', data: { tx_ref: 'txref-failed-1', status: 'failed', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook)).status, 200);
     assert.equal(paymentRepository.findByReference('txref-failed-1')?.status, 'failed');
