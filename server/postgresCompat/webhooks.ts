@@ -123,6 +123,19 @@ export function findPaymentWebhookDuplicate(
   return null;
 }
 
+export function getPaymentWebhookEventStatus(id: number): PaymentWebhookProcessingStatus | string | null {
+  const row = getPaymentDb()
+    .prepare(
+      `SELECT processing_status
+       FROM payment_webhook_events
+       WHERE id = ?
+       LIMIT 1`,
+    )
+    .get(id) as { processing_status?: string | null } | undefined;
+
+  return row?.processing_status ?? null;
+}
+
 export function insertPaymentWebhookEvent(
   input: InsertPaymentWebhookEventInput,
 ): InsertPaymentWebhookEventResult {
