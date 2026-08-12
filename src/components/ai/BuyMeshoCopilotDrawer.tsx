@@ -83,6 +83,11 @@ export default function BuyMeshoCopilotDrawer({
     const trimmed = userText.trim();
     if (!trimmed || loading) return;
 
+    const conversation: CopilotConversationMessage[] = messages.slice(-8).map((message) => ({
+      role: message.role,
+      text: message.text,
+    }));
+
     setMessages((prev) => [...prev, { role: "user", text: trimmed }]);
     setQuery("");
     setLoading(true);

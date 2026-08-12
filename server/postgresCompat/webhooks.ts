@@ -123,6 +123,19 @@ export function findPaymentWebhookDuplicate(
   return null;
 }
 
+export function getPaymentWebhookEventStatus(id: number): PaymentWebhookProcessingStatus | string | null {
+  const row = getPaymentDb()
+    .prepare(
+      `SELECT processing_status
+       FROM payment_webhook_events
+       WHERE id = ?
+       LIMIT 1`,
+    )
+    .get(id) as { processing_status?: string | null } | undefined;
+
+  return row?.processing_status ?? null;
+}
+
 export function insertPaymentWebhookEvent(
   input: InsertPaymentWebhookEventInput,
 ): InsertPaymentWebhookEventResult {
@@ -181,10 +194,35 @@ export function insertPaymentWebhookEvent(
       payloadHash: normalized.payloadHash,
     });
 
+    if (existing) {
+      const existingStatus = getPaymentWebhookEventStatus(existing.id);
+
+      // A processed webhook is terminally idempotent. A non-terminal record is
+      // reusable so a later provider retry can finish business processing if
+      // the original request stopped after recording the webhook event.
+      if (existingStatus !== "processed") {
+        db.prepare(
+          `UPDATE payment_webhook_events
+           SET processing_status = 'received',
+               processed_at = NULL,
+               error = NULL,
+               signature_valid = ?
+           WHERE id = ?`,
+        ).run(input.signatureValid ? 1 : 0, existing.id);
+
+        return { inserted: true, id: existing.id };
+      }
+
+      return {
+        inserted: false,
+        duplicate: true,
+        existingId: existing.id,
+      };
+    }
+
     return {
       inserted: false,
       duplicate: true,
-      ...(existing ? { existingId: existing.id } : {}),
     };
   }
 }

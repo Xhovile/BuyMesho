@@ -31,7 +31,9 @@ import { createBuyerEscrowRouter } from "../routes/escrow/buyerEscrowRoutes.js";
 import { createOrderRouter } from "./orderRoutes.js";
 import { createDisputeRouter } from "../routes/escrow/disputeRoutes.js";
 import { createPayoutRouter } from "../routes/escrow/payoutRoutes.js";
+import { createCartRouter } from "./cart.routes.js";
 import { getConfiguredAdminEmails } from "../auth/adminAccess.js";
+import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
@@ -51,6 +53,27 @@ export type RouteDeps = {
   requireFirebaseUser: typeof requireFirebaseUser;
 };
 
+function installPostgresMessageSchemaGuard(db: any) {
+  if (!process.env.DATABASE_URL || !db || typeof db.exec !== "function") return;
+
+  const installedFlag = Symbol.for("buymesho.postgresMessageSchemaGuardInstalled");
+  if (db[installedFlag]) return;
+  db[installedFlag] = true;
+
+  const originalExec = db.exec.bind(db) as (sql: string) => void;
+  db.exec = (sql: string) => {
+    const normalizedSql = sql.replace(
+      /ALTER\s+TABLE\s+conversations\s+ADD\s+COLUMN\s+event_id\s+INTEGER(?!\s+IF\s+NOT\s+EXISTS)/gi,
+      "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS event_id INTEGER",
+    );
+    return originalExec(normalizedSql);
+  };
+
+  if (typeof db.pragma === "function") {
+    db.pragma = () => undefined;
+  }
+}
+
 export function registerRoutes(app: Express, deps: RouteDeps) {
   const { db, requireAuth, requireFirebaseUser } = deps;
 
@@ -64,8 +87,13 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       return;
     }
     try {
-      db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
-        admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
+      db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_id, details, target_type) VALUES (?, ?, ?, ?, ?, ?)`).run(
+        admin_uid ?? null,
+        admin_email ?? null,
+        action_type,
+        target_id ?? null,
+        details ? JSON.stringify(details) : null,
+        target_type,
       );
     } catch (error) {
       console.warn("Failed to log admin action:", error);
@@ -74,8 +102,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   registerVerificationEmailRoutes(app);
 
-  // Validator projection routes own ticket retrieval, Attendees, Scanner,
-  // status changes and offline sync. They must remain ahead of legacy routes.
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
@@ -83,6 +109,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerAccountDeletionRoutes(app);
   registerMessageRoutes(app);
   registerMessageModerationRoutes(app);
+  installPostgresMessageSchemaGuard(db);
   registerMessagesRoutes(app);
   registerReviewsRoutes(app);
   registerDiagnosticsRoutes(app, { db });
@@ -92,6 +119,63 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerAiRoutes(app, requireFirebaseUser, db);
   registerSellerApplicationRoutes(app, { db });
   mountTotpRoutes(app);
+
+  // Buyer profile is authenticated and intentionally lives before the SPA fallback.
+  app.get("/api/profile", requireFirebaseUser, async (req: any, res) => {
+    const uid = String(req.user?.uid ?? "").trim();
+    if (!uid) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+
+    try {
+      let profile: any = null;
+
+      try {
+        const firebaseAdmin = getFirebaseAdmin();
+        const userSnap = await firebaseAdmin.firestore().collection("users").doc(uid).get();
+        if (userSnap.exists) {
+          profile = userSnap.data() ?? null;
+        }
+      } catch (error) {
+        console.warn("Failed to read Firestore profile; continuing with server profile data", error);
+      }
+
+      let seller: any = null;
+      try {
+        seller = db.prepare(`
+          SELECT uid, email, business_name, business_logo, university, bio,
+                 is_verified, is_seller, join_date
+          FROM sellers
+          WHERE uid = ?
+          LIMIT 1
+        `).get(uid);
+      } catch (error) {
+        console.warn("Failed to read seller profile data", error);
+      }
+
+      const firebaseUser = req.user?.firebaseUser ?? req.firebaseUser ?? null;
+      const email = profile?.email ?? seller?.email ?? firebaseUser?.email ?? "";
+
+      return res.json({
+        uid,
+        email,
+        display_name: profile?.display_name ?? profile?.displayName ?? null,
+        university: profile?.university ?? seller?.university ?? null,
+        phone: profile?.phone ?? null,
+        bio: profile?.bio ?? seller?.bio ?? null,
+        business_name: profile?.business_name ?? seller?.business_name ?? null,
+        business_logo: profile?.business_logo ?? seller?.business_logo ?? null,
+        is_verified: !!(profile?.is_verified ?? seller?.is_verified),
+        is_seller: !!(profile?.is_seller ?? seller?.is_seller),
+        join_date: profile?.join_date ?? seller?.join_date ?? null,
+      });
+    } catch (error) {
+      console.error("Failed to load profile", error);
+      return res.status(500).json({ error: "Failed to load profile" });
+    }
+  });
+
+  app.use("/api/cart", createCartRouter(requireFirebaseUser));
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));

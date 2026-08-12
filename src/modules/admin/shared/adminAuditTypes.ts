@@ -22,6 +22,8 @@ export const ADMIN_ACTION_TYPES = {
   HIDE_EVENT: "hide_event",
   CANCEL_EVENT: "cancel_event",
   DELETE_EVENT: "delete_event",
+
+  RUN_DIAGNOSTICS: "run_diagnostics",
 } as const;
 
 export const ADMIN_TARGET_TYPES = {
@@ -34,6 +36,8 @@ export const ADMIN_TARGET_TYPES = {
 
   EVENT_CREATOR: "event_creator",
   EVENT: "event",
+
+  SYSTEM: "system",
 } as const;
 
 export type AdminActionType =
@@ -102,6 +106,9 @@ export const ADMIN_ACTION_LABELS: Record<AdminActionType, string> = {
 
   [ADMIN_ACTION_TYPES.DELETE_EVENT]:
     "Deleted event",
+
+  [ADMIN_ACTION_TYPES.RUN_DIAGNOSTICS]:
+    "Ran system diagnostics",
 };
 
 export const ADMIN_TARGET_LABELS: Record<AdminTargetType, string> = {
@@ -125,6 +132,9 @@ export const ADMIN_TARGET_LABELS: Record<AdminTargetType, string> = {
 
   [ADMIN_TARGET_TYPES.EVENT]:
     "Event",
+
+  [ADMIN_TARGET_TYPES.SYSTEM]:
+    "System",
 };
 
 export function isAdminActionType(

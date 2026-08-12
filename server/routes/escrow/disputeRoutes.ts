@@ -34,44 +34,81 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
       const openedBy = req.user!.uid;
       const now = new Date().toISOString();
-      const id = randomUUID();
       const db = getPaymentDb();
 
-      const escrow = escrowRepository.findByOrderId(orderId);
+      const result = db.transaction(() => {
+        const existing = db
+          .prepare(
+            `SELECT *
+             FROM disputes
+             WHERE order_id = ?
+               AND status = 'open'
+             ORDER BY created_at ASC
+             LIMIT 1`,
+          )
+          .get(orderId) as Record<string, unknown> | undefined;
 
-      db.prepare(
-        `INSERT INTO disputes (
+        if (existing) {
+          return {
+            created: false,
+            dispute: existing,
+          };
+        }
+
+        const id = randomUUID();
+        const escrow = escrowRepository.findByOrderId(orderId);
+
+        db.prepare(
+          `INSERT INTO disputes (
+            id,
+            order_id,
+            escrow_id,
+            opened_by,
+            reason,
+            status,
+            created_at,
+            updated_at
+          ) VALUES (?, ?, ?, ?, ?, 'open', ?, ?)`,
+        ).run(
           id,
-          order_id,
-          escrow_id,
-          opened_by,
+          orderId,
+          escrow?.id ?? null,
+          openedBy,
           reason,
-          status,
-          created_at,
-          updated_at
-        ) VALUES (?, ?, ?, ?, ?, 'open', ?, ?)`,
-      ).run(
-        id,
-        orderId,
-        escrow?.id ?? null,
-        openedBy,
-        reason,
-        now,
-        now,
-      );
+          now,
+          now,
+        );
 
-      if (escrow) {
-        escrowRepository.updateState(orderId, 'disputed');
-        serverOrderService.setStatus(orderId, 'disputed');
-      }
+        if (escrow) {
+          escrowRepository.updateState(orderId, 'disputed');
+          const updatedOrder = serverOrderService.setStatus(orderId, 'disputed');
+          if (!updatedOrder) {
+            throw new Error('Order not found while opening dispute');
+          }
+        }
 
-      return res.status(201).json({
-        id,
-        orderId,
-        openedBy,
-        reason,
-        status: 'open',
-        createdAt: now,
+        const created = db
+          .prepare('SELECT * FROM disputes WHERE id = ? LIMIT 1')
+          .get(id) as Record<string, unknown> | undefined;
+
+        if (!created) {
+          throw new Error('Failed to create dispute');
+        }
+
+        return {
+          created: true,
+          dispute: created,
+        };
+      })();
+
+      return res.status(result.created ? 201 : 200).json({
+        id: result.dispute.id,
+        orderId: result.dispute.order_id,
+        openedBy: result.dispute.opened_by,
+        reason: result.dispute.reason,
+        status: result.dispute.status,
+        createdAt: result.dispute.created_at,
+        alreadyOpen: !result.created,
       });
     } catch (error) {
       return res.status(500).json(jsonError(error, 'Failed to open dispute'));

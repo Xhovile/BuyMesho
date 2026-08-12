@@ -2,6 +2,7 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 import type { ReactNode } from "react";
 import { navigateToPath } from "../../lib/appNavigation";
 import AdminWorkspaceNav from "./AdminWorkspaceNav";
+import DiagnosticsDrawer from "./DiagnosticsDrawer";
 
 type AdminWorkspaceLayoutProps = {
   title: string;
@@ -19,6 +20,7 @@ export default function AdminWorkspaceLayout({
   showNav = true,
 }: AdminWorkspaceLayoutProps) {
   const pathname = window.location.pathname;
+  const isAuditLog = pathname.includes("audit-log") || pathname.includes("audit");
 
   return (
     <div className="min-h-screen bg-zinc-100 text-zinc-900">
@@ -32,16 +34,19 @@ export default function AdminWorkspaceLayout({
             <ArrowLeft className="h-4 w-4" />
             Back to Market
           </button>
-          {onRefresh ? (
-            <button
-              type="button"
-              onClick={onRefresh}
-              className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Refresh
-            </button>
-          ) : null}
+          <div className="flex items-center gap-2">
+            {isAuditLog ? <DiagnosticsDrawer /> : null}
+            {onRefresh ? (
+              <button
+                type="button"
+                onClick={onRefresh}
+                className="inline-flex items-center gap-2 rounded-2xl bg-zinc-900 px-4 py-2.5 text-sm font-bold text-white hover:bg-zinc-800"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh
+              </button>
+            ) : null}
+          </div>
         </div>
       </header>
 

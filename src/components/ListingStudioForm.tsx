@@ -20,7 +20,6 @@ import {
   validateListingSpecValues,
 } from "../listingSchemas";
 import type { ListingSpecField } from "../listingSchemas";
-import { generateListingDraft } from "../lib/ai";
 import ListingAiStudio from "./ai/ListingAiStudio";
 
 const LISTING_MODE_OPTIONS: ListingMode[] = ["normal", "deal", "wholesale"];
@@ -53,7 +52,6 @@ export default function ListingStudioForm({
   const [form, setForm] = useState<ListingDraft>(initialData);
   const [showAdvancedSpecs, setShowAdvancedSpecs] = useState(false);
   const [uploadingMedia, setUploadingMedia] = useState(false);
-  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const specFieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -456,52 +454,6 @@ export default function ListingStudioForm({
     setForm((prev) => ({ ...prev, video_url: "" }));
   };
 
-const applyAiDraft = async () => {
-  if (isGeneratingDraft) return;
-
-  setIsGeneratingDraft(true);
-  try {
-    const draft = await generateListingDraft(form);
-
-    setForm((prev) => ({
-      ...prev,
-      name: draft.name ?? prev.name,
-      description: draft.description ?? prev.description,
-      category: (draft.category as Category) ?? prev.category,
-      subcategory: draft.subcategory ?? prev.subcategory,
-      item_type: draft.item_type ?? prev.item_type,
-      condition: draft.condition ?? prev.condition,
-      university: (draft.university as University) ?? prev.university,
-      price: draft.price != null ? String(draft.price) : prev.price,
-      quantity: draft.quantity != null ? String(draft.quantity) : prev.quantity,
-      sold_quantity:
-        draft.sold_quantity != null ? String(draft.sold_quantity) : prev.sold_quantity,
-      listing_mode: (draft.listing_mode as ListingMode) ?? prev.listing_mode,
-      original_price:
-        draft.original_price != null ? String(draft.original_price) : prev.original_price,
-      deal_label: draft.deal_label ?? prev.deal_label,
-      deal_expires_at: draft.deal_expires_at ?? prev.deal_expires_at,
-      is_wholesale: draft.is_wholesale ?? prev.is_wholesale,
-      can_sell_individually:
-        draft.can_sell_individually ?? prev.can_sell_individually,
-      pack_size: draft.pack_size != null ? String(draft.pack_size) : prev.pack_size,
-      bulk_units: draft.bulk_units ?? prev.bulk_units,
-      single_item_price:
-        draft.single_item_price != null ? String(draft.single_item_price) : prev.single_item_price,
-      spec_values: {
-        ...prev.spec_values,
-        ...(draft.spec_values ?? {}),
-      },
-    }));
-
-    showFeedback("success", "AI draft ready", "The draft has been filled from your current listing details.");
-  } catch (error: any) {
-    showFeedback("error", "AI draft failed", error?.message || "Could not generate a draft.");
-  } finally {
-    setIsGeneratingDraft(false);
-  }
-};
-  
   const handleSave = async () => {
     setFieldErrors({});
 
@@ -694,14 +646,7 @@ const applyAiDraft = async () => {
           />
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest">Basic Info</p>
-            <button
-              type="button"
-              onClick={() => void applyAiDraft()}
-              disabled={isGeneratingDraft || uploadingMedia || isSubmitting}
-              className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-xs font-bold text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
-              >
-              {isGeneratingDraft ? "Generating..." : "AI Draft"}
-            </button>
+
           </div>
           <div>
               <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Product Name</label>

@@ -174,6 +174,8 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "seller_payout_accounts", "is_active", "INTEGER NOT NULL DEFAULT 1");
   ensureColumn(db, "seller_payout_accounts", "currency", "TEXT NOT NULL DEFAULT 'MWK'");
   ensureColumn(db, "seller_payout_accounts", "provider_ref_id", "TEXT");
+  ensureColumn(db, "orders", "checkout_idempotency_key", "TEXT");
+  ensureColumn(db, "orders", "checkout_request_hash", "TEXT");
 
   ensureColumn(db, "events", "creator_uid", "TEXT");
   ensureColumn(db, "events", "ticket_price", "REAL");
@@ -192,6 +194,10 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "event_activity", "created_at", "TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP");
 
   db.exec(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_buyer_checkout_idempotency
+    ON orders (buyer_id, checkout_idempotency_key)
+    WHERE checkout_idempotency_key IS NOT NULL;
+
     CREATE INDEX IF NOT EXISTS idx_payments_status
     ON payments (status, created_at DESC);
 

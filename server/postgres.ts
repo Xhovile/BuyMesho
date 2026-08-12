@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import fs from "node:fs";
+import path from "node:path";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 const rawConnectionString = process.env.DATABASE_URL?.trim();
@@ -47,14 +49,30 @@ const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 
+function loadSslCaCertificate(): string | undefined {
+  if (!sslEnabled || !sslRejectUnauthorized) return undefined;
+
+  const caPath = process.env.PGSSL_CA_PATH?.trim() || path.resolve(process.cwd(), "ca.pem");
+  try {
+    return fs.readFileSync(caPath, "utf8");
+  } catch (error) {
+    const message =
+      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}.`;
+    throw new Error(`${message} ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 let poolInstance: Pool | null = null;
 if (connectionString) {
   try {
+    const sslCa = loadSslCaCertificate();
+
     poolInstance = new Pool({
       connectionString,
       ssl: sslEnabled
         ? {
             rejectUnauthorized: sslRejectUnauthorized,
+            ...(sslCa ? { ca: sslCa } : {}),
           }
         : false,
       max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
@@ -62,7 +80,8 @@ if (connectionString) {
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
     });
   } catch (err) {
-    console.warn("[AI Studio] Failed to create PostgreSQL pool:", err);
+    console.error("[AI Studio] Failed to create PostgreSQL pool:", err instanceof Error ? err.message : err);
+    throw err;
   }
 } else {
   console.warn("[AI Studio] DATABASE_URL is not configured — database operations will fallback to mock mode.");
@@ -90,34 +109,20 @@ export async function query<Row extends QueryResultRow = DbRow>(
   if (!poolInstance) {
     return { rows: [], rowCount: 0 };
   }
-  try {
-    const result = await poolInstance.query<Row>(text, params);
-    return {
-      rows: result.rows,
-      rowCount: result.rowCount ?? result.rows.length,
-    };
-  } catch (error) {
-    console.warn("[AI Studio] Database query failed:", error instanceof Error ? error.message : error);
-    return { rows: [], rowCount: 0 };
-  }
+
+  const result = await poolInstance.query<Row>(text, params);
+  return {
+    rows: result.rows,
+    rowCount: result.rowCount ?? result.rows.length,
+  };
 }
 
 export async function getClient(): Promise<PoolClient> {
   if (!poolInstance) {
-    return {
-      query: async () => ({ rows: [], rowCount: 0 }),
-      release: () => {},
-    } as unknown as PoolClient;
+    throw new Error("PostgreSQL is not configured: DATABASE_URL is missing or invalid.");
   }
-  try {
-    return await poolInstance.connect();
-  } catch (error) {
-    console.warn("[AI Studio] Database client connection failed:", error instanceof Error ? error.message : error);
-    return {
-      query: async () => ({ rows: [], rowCount: 0 }),
-      release: () => {},
-    } as unknown as PoolClient;
-  }
+
+  return poolInstance.connect();
 }
 
 export async function withTransaction<T>(

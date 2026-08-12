@@ -35,6 +35,11 @@ export type ShoppingAssistantResult = {
   recommended_listings: ShoppingAssistantListing[];
 };
 
+export type CopilotConversationMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
 export type CompareListingsResult = {
   summary: string;
   winner_id: string;
@@ -97,7 +102,7 @@ export async function queryShoppingAssistant(payload: {
     });
     return response?.result ?? null;
   } catch (err) {
-    console.warn("AI Shopping Assistant query failed:", err);
+    console.warn("BuyMesho Copilot query failed:", err);
     return null;
   }
 }

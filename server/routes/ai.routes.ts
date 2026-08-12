@@ -1,5 +1,5 @@
 import type { Express, RequestHandler } from "express";
-import { shoppingAssistant } from "../lib/shopping-assistant.js";
+import { askBuyMeshoCopilot } from "../lib/buymesho-copilot.js";
 import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
 import {
   generateListingDraft,
@@ -89,7 +89,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
         return res.status(400).json({ error: `contextListings must contain at most ${MAX_CONTEXT_LISTINGS} items` });
       }
 
-      const result = await shoppingAssistant({
+      const result = await askBuyMeshoCopilot({
         query,
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
@@ -100,9 +100,9 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
 
       return res.json({ result });
     } catch (error) {
-      console.error("AI Shopping Assistant error:", error);
-      const message = error instanceof Error ? error.message : "BuyMesho shopping assistant is currently unavailable";
-      return res.status(503).json({ error: message, code: "SHOPPING_ASSISTANT_UNAVAILABLE" });
+      console.error("BuyMesho Copilot error:", error);
+      const message = error instanceof Error ? error.message : "BuyMesho Copilot is currently unavailable";
+      return res.status(503).json({ error: message, code: "COPILOT_UNAVAILABLE" });
     }
   });
 

@@ -8,6 +8,7 @@ import {
 import { navigateToListingDetails, navigateToLogin } from "../lib/appNavigation";
 import { saveListingDetailsFallback } from "../lib/listings";
 import type { Listing } from "../types";
+import ListingImage from "./ListingImage";
 import ListingActionsMenu from "./ListingActionsMenu";
 import CheckoutModal from "./CheckoutModal";
 
@@ -65,10 +66,6 @@ export default function ListingCard({
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [buyNotice, setBuyNotice] = useState<string | null>(null);
   const pricing = getListingPricing(listing);
-  const firstPhoto =
-    Array.isArray(listing.photos) && typeof listing.photos[0] === "string" && listing.photos[0].trim()
-      ? listing.photos[0]
-      : `https://picsum.photos/seed/${encodeURIComponent(String(listing.id ?? "listing"))}/600/600`;
 
   const titleLabel =
     typeof listing.name === "string" && listing.name.trim() ? listing.name : "Untitled listing";
@@ -140,13 +137,12 @@ export default function ListingCard({
               openDetails();
             }}
           >
-            <img
-              src={firstPhoto}
+            <ListingImage
+              src={listing.photos?.[0]}
               alt={titleLabel}
-              loading="lazy"
-              decoding="async"
-              className={`h-full w-full object-cover ${performanceMode ? "" : "transition-transform duration-700 group-hover:scale-105"}`}
-              referrerPolicy="no-referrer"
+              category={listing.category}
+              subcategory={listing.subcategory}
+              performanceMode={performanceMode}
             />
           </div>
 

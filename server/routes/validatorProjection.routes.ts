@@ -26,8 +26,7 @@ function authorized(req: Request, res: Response) {
   if (!user) { res.status(401).json({ error: "Authentication required" }); return null; }
   const creator = creatorFor(user.uid);
   if (!creator || creator.status !== "approved" || (creator.active_until && new Date(creator.active_until).getTime() < Date.now())) {
-    res.status(403).json({ error: "Approved event creator access is required" }); return null;
-  }
+    res.status(403).json({ error: "Approved event creator access is required" }); return null; }
   return user;
 }
 
@@ -90,19 +89,63 @@ function refreshStats(eventId: string) {
     VALUES(?,?,?,?,?) ON CONFLICT(event_id) DO UPDATE SET tickets_sold=excluded.tickets_sold,tickets_checked_in=excluded.tickets_checked_in,tickets_remaining=excluded.tickets_remaining,updated_at=excluded.updated_at`).run(Number(eventId), Number(row?.sold ?? 0), Number(row?.checked ?? 0), Number(row?.remaining ?? 0), new Date().toISOString());
 }
 
-function updateTicket(uid: string, eventId: string, ticketId: string, nextStatus: TicketStatus, gateName: string, staffName: string) {
+export function updateTicket(uid: string, eventId: string, ticketId: string, nextStatus: TicketStatus, gateName: string, staffName: string, allowReentry = false) {
   const db = getPaymentDb();
   const event = eventFor(uid, eventId); if (!event) return { error: "Event not found", status: 404 as const };
-  const ticket = db.prepare("SELECT * FROM event_tickets WHERE id=? AND event_id=? LIMIT 1").get(ticketId, Number(eventId)) as any;
-  if (!ticket) return { error: "Ticket not found", status: 404 as const };
-  const current = String(ticket.status) as TicketStatus;
-  if (["Cancelled","Refunded","Blocked"].includes(current) && !["Cancelled","Refunded","Blocked"].includes(nextStatus)) return { error: `Ticket is ${current}`, status: 403 as const, ticket: snapshot(uid,eventId) };
+  const currentRow = db.prepare("SELECT status FROM event_tickets WHERE id=? AND event_id=? LIMIT 1").get(ticketId, Number(eventId)) as { status?: string } | undefined;
+  if (!currentRow) return { error: "Ticket not found", status: 404 as const };
+  const current = String(currentRow.status ?? "Waiting Entry") as TicketStatus;
+
+  if (["Cancelled","Refunded","Blocked"].includes(current) && !["Cancelled","Refunded","Blocked"].includes(nextStatus)) {
+    return { error: `Ticket is ${current}`, status: 403 as const, ticket: snapshot(uid,eventId) };
+  }
+  if (current === nextStatus) {
+    const result = snapshot(uid,eventId);
+    const updated = result?.tickets.find((entry) => entry.ticketId === ticketId) ?? null;
+    return { result: "already_applied" as const, reason: "already_in_desired_state", ticket: updated, serverVersion: result?.snapshot_version ?? null };
+  }
+  if (current === "Outside" && nextStatus === "Inside" && !allowReentry) {
+    return { error: "Re-entry not permitted", status: 403 as const, ticket: snapshot(uid,eventId) };
+  }
+
   const now = new Date().toISOString();
-  db.prepare(`UPDATE event_tickets SET status=?,scanned_at=CASE WHEN ?='Inside' THEN ? ELSE scanned_at END,updated_at=?,metadata=? WHERE id=? AND event_id=?`).run(nextStatus, nextStatus, now, now, JSON.stringify({ gate_name: gateName, staff_name: staffName, last_scan_at: now }), ticketId, Number(eventId));
+  const metadata = JSON.stringify({ gate_name: gateName, staff_name: staffName, last_scan_at: now });
+  let allowedPreviousStatuses: TicketStatus[];
+  if (nextStatus === "Inside") {
+    allowedPreviousStatuses = allowReentry ? ["Waiting Entry", "Outside"] : ["Waiting Entry"];
+  } else if (nextStatus === "Outside") {
+    allowedPreviousStatuses = ["Inside"];
+  } else if (nextStatus === "Cancelled" || nextStatus === "Refunded" || nextStatus === "Blocked") {
+    allowedPreviousStatuses = ["Waiting Entry", "Outside", "Inside"];
+  } else {
+    allowedPreviousStatuses = ["Waiting Entry", "Outside", "Inside"];
+  }
+
+  const placeholders = allowedPreviousStatuses.map(() => "?").join(",");
+  const result = db.prepare(`
+    UPDATE event_tickets
+    SET status=?,
+        scanned_at=CASE WHEN ?='Inside' THEN ? ELSE scanned_at END,
+        updated_at=?,
+        metadata=?
+    WHERE id=? AND event_id=? AND status IN (${placeholders})
+  `).run(nextStatus, nextStatus, now, now, metadata, ticketId, Number(eventId), ...allowedPreviousStatuses) as { changes?: number };
+
+  if (Number(result.changes ?? 0) !== 1) {
+    const latest = db.prepare("SELECT status FROM event_tickets WHERE id=? AND event_id=? LIMIT 1").get(ticketId, Number(eventId)) as { status?: string } | undefined;
+    const latestStatus = String(latest?.status ?? "") as TicketStatus;
+    const latestSnapshot = snapshot(uid,eventId);
+    const latestTicket = latestSnapshot?.tickets.find((entry) => entry.ticketId === ticketId) ?? null;
+    if (latestStatus === nextStatus) {
+      return { result: "already_applied" as const, reason: "already_in_desired_state", ticket: latestTicket, serverVersion: latestSnapshot?.snapshot_version ?? null };
+    }
+    return { error: `Ticket changed to ${latestStatus || "an unknown state"} before this request was applied`, status: 409 as const, result: "rejected" as const, reason: "concurrent_ticket_state_change", ticket: latestTicket, serverVersion: latestSnapshot?.snapshot_version ?? null };
+  }
+
   refreshStats(eventId);
-  const result = snapshot(uid,eventId);
-  const updated = result?.tickets.find((entry) => entry.ticketId === ticketId) ?? null;
-  return { result: current === nextStatus ? "already_applied" : "accepted", reason: current === nextStatus ? "already_in_desired_state" : "validated", ticket: updated, serverVersion: result?.snapshot_version ?? null };
+  const updatedSnapshot = snapshot(uid,eventId);
+  const updated = updatedSnapshot?.tickets.find((entry) => entry.ticketId === ticketId) ?? null;
+  return { result: "accepted" as const, reason: "validated", ticket: updated, serverVersion: updatedSnapshot?.snapshot_version ?? null };
 }
 
 function ticketsHandler(req: Request, res: Response) {
@@ -121,7 +164,7 @@ function scanHandler(req: Request,res: Response) {
   if(ticket.status==='Inside')return res.status(409).json({error:"Duplicate scan",result:"already_applied",reason:"already_inside",ticket,serverVersion:result.snapshot_version});
   if(['Cancelled','Refunded','Blocked'].includes(ticket.status))return res.status(403).json({error:"Ticket denied",result:"rejected",reason:`ticket_${ticket.status.toLowerCase()}`,ticket,serverVersion:result.snapshot_version});
   if(ticket.status==='Outside'&&req.body?.allowReentry!==true)return res.status(403).json({error:"Re-entry not permitted",result:"rejected",reason:"reentry_not_permitted",ticket,serverVersion:result.snapshot_version});
-  const updated=updateTicket(user.uid,eventId,ticket.ticketId,'Inside',gate,staff);
+  const updated=updateTicket(user.uid,eventId,ticket.ticketId,'Inside',gate,staff,req.body?.allowReentry===true);
   return res.status(updated.status ?? 200).json(updated.status ? {error:updated.error} : updated);
 }
 function statusHandler(req: Request,res: Response) {
@@ -129,15 +172,15 @@ function statusHandler(req: Request,res: Response) {
   const eventId=text(req.body?.eventId), ticketId=text(req.body?.ticketId), status=text(req.body?.status) as TicketStatus;
   if(!eventId||!ticketId||!status)return res.status(400).json({error:"Missing ticket status data"});
   const allowed:TicketStatus[]=['Waiting Entry','Inside','Outside','Cancelled','Refunded','Blocked']; if(!allowed.includes(status))return res.status(400).json({error:"Invalid ticket status"});
-  const result=updateTicket(user.uid,eventId,ticketId,status,text(req.body?.gateName)||'Main Gate',text(req.body?.staffName)||'Gate Officer');
+  const result=updateTicket(user.uid,eventId,ticketId,status,text(req.body?.gateName)||'Main Gate',text(req.body?.staffName)||'Gate Officer',req.body?.allowReentry===true);
   return res.status(result.status ?? 200).json(result.status ? {error:result.error} : result);
 }
 function syncHandler(req: Request,res: Response) {
   const user=authorized(req,res); if(!user)return;
   const queue=Array.isArray(req.body?.queue)?req.body.queue:[]; const applied:any[]=[]; const conflicts:any[]=[];
   for(const item of queue){
-    const result=updateTicket(user.uid,text(item.eventId),text(item.ticketId),text(item.newStatus) as TicketStatus,text(item.gateName)||'Main Gate',text(item.staffName)||'Gate Officer');
-    if(result.status) conflicts.push({queueId:item.queueId,ticketId:item.ticketId,eventId:item.eventId,reason:result.error});
+    const result=updateTicket(user.uid,text(item.eventId),text(item.ticketId),text(item.newStatus) as TicketStatus,text(item.gateName)||'Main Gate',text(item.staffName)||'Gate Officer',item.allowReentry===true);
+    if(result.status) conflicts.push({queueId:item.queueId,ticketId:item.ticketId,eventId:item.eventId,reason:result.error,result:(result as any).result});
     else applied.push({queueId:item.queueId,ticketId:item.ticketId,eventId:item.eventId,result:result.result,reason:result.reason,serverTicket:result.ticket});
   }
   return res.json({success:true,applied,conflicts});
