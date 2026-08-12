@@ -1,121 +1,41 @@
 import type { Express } from "express";
 import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
+import { query } from "../postgres.js";
 import { PAYMENT_ENDPOINTS } from "../modules/payments/payment.endpoints.js";
 import { paymentWebhookHandler } from "../modules/payments/payment.webhooks.js";
 import { payoutWebhookHandler } from "../modules/payouts/payout.webhooks.js";
 
-type RouteDeps = {
-  db: any;
-};
-
+type RouteDeps = { db: any };
 type CheckStatus = "PASS" | "WARN" | "FAIL";
+type NamedCheck = { status: CheckStatus; message: string; details?: Record<string, unknown> };
 
-type NamedCheck = {
-  status: CheckStatus;
-  message: string;
-  details?: Record<string, unknown>;
+type TableInfo = { table_schema: string; table_name: string };
+type ColumnInfo = { table_name: string; column_name: string };
+type ForeignKeyInfo = {
+  constraint_name: string;
+  table_schema: string;
+  table_name: string;
+  column_name: string;
+  foreign_table_schema: string;
+  foreign_table_name: string;
+  foreign_column_name: string;
 };
 
 const REQUIRED_TABLES = [
-  "sellers",
-  "listings",
-  "payments",
-  "orders",
-  "seller_applications",
-  "listing_reviews",
-  "reports",
-  "buyer_cart_items",
-  "conversations",
-  "messages",
-  "admin_actions",
-  "escrows",
-  "escrow_events",
-  "disputes",
-  "payouts",
-  "payment_webhook_events",
-  "seller_payout_accounts",
-  "payout_attempts",
-  "payout_events",
-  "payout_adjustments",
-  "seller_payout_account_events",
-  "idempotency_keys",
+  "sellers", "listings", "payments", "orders", "seller_applications", "listing_reviews", "reports",
+  "buyer_cart_items", "conversations", "messages", "admin_actions", "escrows", "escrow_events",
+  "disputes", "payouts", "payment_webhook_events", "seller_payout_accounts", "payout_attempts",
+  "payout_events", "payout_adjustments", "seller_payout_account_events", "idempotency_keys",
 ] as const;
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
-  listings: [
-    "seller_uid",
-    "name",
-    "price",
-    "status",
-    "quantity",
-    "sold_quantity",
-    "category",
-    "university",
-    "deleted_at",
-    "deleted_by_uid",
-    "hard_delete_after",
-  ],
+  listings: ["seller_uid", "name", "price", "status", "quantity", "sold_quantity", "category", "university", "deleted_at", "deleted_by_uid", "hard_delete_after"],
   payments: ["order_id", "provider", "method", "status", "reference", "currency", "amount"],
   orders: ["id", "buyer_id", "seller_id", "source", "status", "currency", "subtotal_amount", "total_amount"],
-  seller_applications: [
-    "applicant_uid",
-    "applicant_email",
-    "full_legal_name",
-    "institution",
-    "applicant_type",
-    "institution_id_number",
-    "business_name",
-    "what_to_sell",
-    "business_description",
-    "reason_for_applying",
-    "proof_document_url",
-    "status",
-  ],
+  seller_applications: ["applicant_uid", "applicant_email", "full_legal_name", "institution", "applicant_type", "institution_id_number", "business_name", "what_to_sell", "business_description", "reason_for_applying", "proof_document_url", "status"],
   payment_webhook_events: ["provider", "reference", "event_type", "signature_valid", "payload", "created_at"],
-  payouts: [
-    "seller_id",
-    "order_id",
-    "escrow_id",
-    "status",
-    "currency",
-    "amount",
-    "destination_account_id",
-    "provider_ref_id",
-    "provider_transaction_id",
-    "provider_status",
-    "failure_reason",
-    "manual_review_reason",
-    "approved_by",
-    "sent_at",
-    "paid_at",
-    "failed_at",
-    "gross_amount",
-    "platform_fee_amount",
-    "processing_fee_amount",
-    "reserve_amount",
-    "reserve_cap_amount",
-    "manual_adjustment_amount",
-    "payout_fee_amount",
-    "seller_receives_amount",
-    "net_amount",
-    "formula_snapshot",
-    "last_adjustment_id",
-    "processed_by",
-    "raw_request",
-    "raw_response",
-  ],
-  seller_payout_accounts: [
-    "seller_uid",
-    "destination_type",
-    "provider_name",
-    "masked_account",
-    "destination_fingerprint",
-    "is_default",
-    "verification_status",
-    "is_active",
-    "created_at",
-    "updated_at",
-  ],
+  payouts: ["seller_id", "order_id", "escrow_id", "status", "currency", "amount", "destination_account_id", "provider_ref_id", "provider_transaction_id", "provider_status", "failure_reason", "manual_review_reason", "approved_by", "sent_at", "paid_at", "failed_at", "gross_amount", "platform_fee_amount", "processing_fee_amount", "reserve_amount", "reserve_cap_amount", "manual_adjustment_amount", "payout_fee_amount", "seller_receives_amount", "net_amount", "formula_snapshot", "last_adjustment_id", "processed_by", "raw_request", "raw_response"],
+  seller_payout_accounts: ["seller_uid", "destination_type", "provider_name", "masked_account", "destination_fingerprint", "is_default", "verification_status", "is_active", "created_at", "updated_at"],
   payout_attempts: ["payout_id", "attempt_no", "provider", "provider_charge_id", "request_payload", "status", "created_at", "updated_at"],
   payout_events: ["payout_id", "seller_id", "event_type", "actor_type", "created_at"],
   payout_adjustments: ["payout_id", "seller_id", "adjustment_type", "amount", "currency", "reason", "actor_type", "created_at"],
@@ -130,336 +50,276 @@ const REQUIRED_PAYMENT_ENDPOINTS = {
 } as const;
 
 function statusWeight(status: CheckStatus): number {
-  if (status === "FAIL") return 2;
-  if (status === "WARN") return 1;
-  return 0;
+  return status === "FAIL" ? 2 : status === "WARN" ? 1 : 0;
 }
 
 function combineStatus(checks: NamedCheck[]): CheckStatus {
-  const worst = checks.reduce((acc, check) => Math.max(acc, statusWeight(check.status)), 0);
-  if (worst === 2) return "FAIL";
-  if (worst === 1) return "WARN";
-  return "PASS";
+  const worst = checks.reduce((max, check) => Math.max(max, statusWeight(check.status)), 0);
+  return worst === 2 ? "FAIL" : worst === 1 ? "WARN" : "PASS";
 }
 
-function isTablePresent(db: any, tableName: string): boolean {
-  const row = db
-    .prepare(
-      `
-        SELECT EXISTS (
-          SELECT 1
-          FROM information_schema.tables
-          WHERE table_schema = current_schema()
-            AND table_name = ?
-        ) AS present
-      `
-    )
-    .get(tableName) as { present?: number | boolean } | undefined;
-
-  return !!row?.present;
+function quoteIdent(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
 }
 
-function getColumns(db: any, tableName: string): string[] {
-  const rows = db
-    .prepare(
-      `
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = ?
-        ORDER BY ordinal_position
-      `
-    )
-    .all(tableName) as Array<{ column_name: string }>;
-
-  return rows.map((row) => row.column_name);
-}
-
-function getCount(db: any, tableName: string): number | null {
+async function checkDatabase(): Promise<NamedCheck> {
+  const started = Date.now();
   try {
-    const row = db.prepare(`SELECT COUNT(*) AS count FROM ${tableName}`).get() as { count?: number } | undefined;
-    return Number(row?.count ?? 0);
-  } catch {
-    return null;
+    const result = await query<{ ok: number }>("SELECT 1 AS ok");
+    const latencyMs = Date.now() - started;
+    const ok = result.rows[0]?.ok === 1;
+    return { status: ok ? "PASS" : "FAIL", message: ok ? "Direct PostgreSQL query succeeded" : "Direct PostgreSQL query returned an unexpected result", details: { latency_ms: latencyMs, row_count: result.rowCount } };
+  } catch (error) {
+    return { status: "FAIL", message: `Direct PostgreSQL query failed: ${error instanceof Error ? error.message : String(error)}`, details: { latency_ms: Date.now() - started } };
+  }
+}
+
+async function getTableNames(): Promise<Set<string>> {
+  const result = await query<TableInfo>(`SELECT table_schema, table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'`);
+  return new Set(result.rows.map((row) => row.table_name));
+}
+
+async function getColumnMap(): Promise<Map<string, Set<string>>> {
+  const result = await query<ColumnInfo>(`SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = current_schema()`);
+  const map = new Map<string, Set<string>>();
+  for (const row of result.rows) {
+    const set = map.get(row.table_name) ?? new Set<string>();
+    set.add(row.column_name);
+    map.set(row.table_name, set);
+  }
+  return map;
+}
+
+async function checkTables(tableNames: Set<string>): Promise<NamedCheck> {
+  const missing = REQUIRED_TABLES.filter((table) => !tableNames.has(table));
+  return { status: missing.length === 0 ? "PASS" : "FAIL", message: missing.length === 0 ? "All required tables are present" : `Missing tables: ${missing.join(", ")}`, details: { required_tables: REQUIRED_TABLES.length, missing_tables: missing } };
+}
+
+async function checkColumns(columnMap: Map<string, Set<string>>, tableNames: Set<string>): Promise<NamedCheck> {
+  const missingByTable: Record<string, string[]> = {};
+  for (const [tableName, columns] of Object.entries(REQUIRED_COLUMNS)) {
+    if (!tableNames.has(tableName)) {
+      missingByTable[tableName] = [...columns];
+      continue;
+    }
+    const present = columnMap.get(tableName) ?? new Set<string>();
+    const missing = columns.filter((column) => !present.has(column));
+    if (missing.length) missingByTable[tableName] = missing;
+  }
+  return { status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL", message: Object.keys(missingByTable).length === 0 ? "Required columns are present" : "Required columns are missing", details: { checked_tables: Object.keys(REQUIRED_COLUMNS), missing_columns: missingByTable } };
+}
+
+async function checkRowCounts(tableNames: Set<string>): Promise<NamedCheck> {
+  const counts: Record<string, number> = {};
+  const failures: Record<string, string> = {};
+  for (const tableName of REQUIRED_TABLES) {
+    if (!tableNames.has(tableName)) {
+      failures[tableName] = "table missing";
+      continue;
+    }
+    try {
+      const result = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM ${quoteIdent(tableName)}`);
+      const count = Number(result.rows[0]?.count);
+      if (!Number.isSafeInteger(count) || count < 0) throw new Error("invalid count returned");
+      counts[tableName] = count;
+    } catch (error) {
+      failures[tableName] = error instanceof Error ? error.message : String(error);
+    }
+  }
+  const status: CheckStatus = Object.keys(failures).length ? "FAIL" : "PASS";
+  return { status, message: status === "PASS" ? "Exact row counts collected for every required table" : "One or more table counts could not be verified", details: { counts, failures } };
+}
+
+async function checkForeignKeys(tableNames: Set<string>): Promise<NamedCheck> {
+  try {
+    const result = await query<ForeignKeyInfo>(`
+      SELECT
+        tc.constraint_name,
+        tc.table_schema,
+        tc.table_name,
+        kcu.column_name,
+        ccu.table_schema AS foreign_table_schema,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+      FROM information_schema.table_constraints tc
+      JOIN information_schema.key_column_usage kcu
+        ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema AND tc.table_name = kcu.table_name
+      JOIN information_schema.constraint_column_usage ccu
+        ON ccu.constraint_name = tc.constraint_name AND ccu.constraint_schema = tc.table_schema
+      WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = current_schema()
+      ORDER BY tc.table_name, tc.constraint_name, kcu.ordinal_position
+    `);
+
+    const checked: Array<Record<string, unknown>> = [];
+    const orphaned: Array<Record<string, unknown>> = [];
+
+    for (const fk of result.rows) {
+      if (!tableNames.has(fk.table_name) || !tableNames.has(fk.foreign_table_name)) continue;
+      const childTable = quoteIdent(fk.table_name);
+      const childColumn = quoteIdent(fk.column_name);
+      const parentTable = quoteIdent(fk.foreign_table_name);
+      const parentColumn = quoteIdent(fk.foreign_column_name);
+      const orphanResult = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM ${childTable} child
+        LEFT JOIN ${parentTable} parent ON child.${childColumn} = parent.${parentColumn}
+        WHERE child.${childColumn} IS NOT NULL AND parent.${parentColumn} IS NULL
+      `);
+      const orphanCount = Number(orphanResult.rows[0]?.count ?? -1);
+      const item = { constraint: fk.constraint_name, table: fk.table_name, column: fk.column_name, references: `${fk.foreign_table_name}.${fk.foreign_column_name}`, orphan_count: orphanCount };
+      checked.push(item);
+      if (orphanCount > 0) orphaned.push(item);
+    }
+
+    return { status: orphaned.length === 0 ? "PASS" : "FAIL", message: orphaned.length === 0 ? "No orphaned foreign-key records found" : "Foreign-key integrity violations detected", details: { constraints_checked: checked.length, orphaned } };
+  } catch (error) {
+    return { status: "FAIL", message: `Foreign-key integrity check failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+async function checkDatabaseIdentity(): Promise<NamedCheck> {
+  try {
+    const result = await query<{ database_name: string; schema_name: string; server_version: string; checked_at: string; ssl: boolean }>(`
+      SELECT current_database() AS database_name,
+             current_schema() AS schema_name,
+             current_setting('server_version') AS server_version,
+             NOW()::text AS checked_at,
+             COALESCE((SELECT ssl FROM pg_stat_ssl WHERE pid = pg_backend_pid()), false) AS ssl
+    `);
+    const row = result.rows[0];
+    if (!row) return { status: "FAIL", message: "Database identity query returned no row" };
+    return { status: row.ssl ? "PASS" : "WARN", message: row.ssl ? "Connected directly to PostgreSQL over SSL" : "Connected to PostgreSQL without SSL", details: { database: row.database_name, schema: row.schema_name, server_version: row.server_version, ssl: row.ssl, checked_at: row.checked_at } };
+  } catch (error) {
+    return { status: "FAIL", message: `Database identity check failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+async function checkCriticalDataConsistency(tableNames: Set<string>, columnMap: Map<string, Set<string>>): Promise<NamedCheck> {
+  const problems: Record<string, number | string> = {};
+  const can = (table: string, ...columns: string[]) => tableNames.has(table) && columns.every((column) => columnMap.get(table)?.has(column));
+
+  try {
+    if (can("orders", "buyer_id")) {
+      const r = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM orders WHERE buyer_id IS NULL OR BTRIM(buyer_id::text) = ''`);
+      problems.orders_missing_buyer_id = Number(r.rows[0]?.count ?? 0);
+    }
+    if (can("orders", "seller_id")) {
+      const r = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM orders WHERE seller_id IS NULL OR BTRIM(seller_id::text) = ''`);
+      problems.orders_missing_seller_id = Number(r.rows[0]?.count ?? 0);
+    }
+    if (can("listings", "seller_uid")) {
+      const r = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM listings WHERE seller_uid IS NULL OR BTRIM(seller_uid::text) = ''`);
+      problems.listings_missing_seller_uid = Number(r.rows[0]?.count ?? 0);
+    }
+    if (can("payments", "order_id")) {
+      const r = await query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM payments WHERE order_id IS NULL OR BTRIM(order_id::text) = ''`);
+      problems.payments_missing_order_id = Number(r.rows[0]?.count ?? 0);
+    }
+
+    const numericProblems = Object.values(problems).filter((value) => typeof value === "number" && value > 0).length;
+    return { status: numericProblems === 0 ? "PASS" : "FAIL", message: numericProblems === 0 ? "Critical business records have required identifiers" : "Critical business records contain missing identifiers", details: problems };
+  } catch (error) {
+    return { status: "FAIL", message: `Critical data consistency check failed: ${error instanceof Error ? error.message : String(error)}`, details: problems };
   }
 }
 
 function checkEnvironment(name: string, required = false): NamedCheck {
-  const value = process.env[name];
-  if (value && value.trim().length > 0) {
-    return { status: "PASS", message: `${name} is set`, details: { configured: true } };
-  }
-
-  return {
-    status: required ? "FAIL" : "WARN",
-    message: `${name} is not set`,
-    details: { configured: false },
-  };
+  const configured = Boolean(process.env[name]?.trim());
+  return { status: configured ? "PASS" : required ? "FAIL" : "WARN", message: configured ? `${name} is configured` : `${name} is not configured`, details: { configured } };
 }
 
 function checkEnvironmentGroup(names: string[], label: string, mode: "all" | "any" = "all"): NamedCheck {
-  const configured = names.filter((name) => {
-    const value = process.env[name];
-    return typeof value === "string" && value.trim().length > 0;
-  });
-
-  if (mode === "any") {
-    return configured.length > 0
-      ? { status: "PASS", message: `${label} is configured`, details: { configured } }
-      : { status: "WARN", message: `${label} is not configured`, details: { expected_any_of: names } };
-  }
-
-  if (configured.length === names.length) {
-    return { status: "PASS", message: `${label} is fully configured`, details: { configured } };
-  }
-
-  return {
-    status: "WARN",
-    message: `${label} is partially configured`,
-    details: { configured, missing: names.filter((name) => !configured.includes(name)) },
-  };
-}
-
-function checkDatabase(db: any): NamedCheck {
-  const started = Date.now();
-  const row = db.prepare("SELECT 1 AS ok").get() as { ok?: number } | undefined;
-  const latencyMs = Date.now() - started;
-
-  return {
-    status: row?.ok === 1 ? "PASS" : "FAIL",
-    message: row?.ok === 1 ? "Database connection is healthy" : "Database query did not return the expected result",
-    details: { latency_ms: latencyMs },
-  };
-}
-
-function checkTables(db: any): NamedCheck {
-  const missing = REQUIRED_TABLES.filter((table) => !isTablePresent(db, table));
-  return {
-    status: missing.length === 0 ? "PASS" : "FAIL",
-    message: missing.length === 0 ? "All required tables are present" : `Missing tables: ${missing.join(", ")}`,
-    details: { required_tables: REQUIRED_TABLES.length, missing_tables: missing },
-  };
-}
-
-function checkColumns(db: any): NamedCheck {
-  const missingByTable: Record<string, string[]> = {};
-
-  for (const [tableName, columns] of Object.entries(REQUIRED_COLUMNS)) {
-    if (!isTablePresent(db, tableName)) {
-      missingByTable[tableName] = [...columns];
-      continue;
-    }
-
-    const presentColumns = new Set(getColumns(db, tableName));
-    const missing = columns.filter((column) => !presentColumns.has(column));
-    if (missing.length > 0) missingByTable[tableName] = missing;
-  }
-
-  return {
-    status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL",
-    message: Object.keys(missingByTable).length === 0 ? "Required columns are present" : "Some required columns are missing",
-    details: {
-      checked_tables: Object.keys(REQUIRED_COLUMNS),
-      missing_columns: missingByTable,
-    },
-  };
-}
-
-function checkCounts(db: any): NamedCheck {
-  const tablesToCount = ["sellers", "listings", "orders", "payments", "seller_applications", "messages", "conversations"];
-  const counts: Record<string, number | null> = {};
-  for (const table of tablesToCount) {
-    counts[table] = isTablePresent(db, table) ? getCount(db, table) : null;
-  }
-  return { status: "PASS", message: "Row counts collected", details: counts };
-}
-
-function checkHardDeleteColumn(db: any): NamedCheck {
-  if (!isTablePresent(db, "listings")) {
-    return { status: "FAIL", message: "listings table is missing" };
-  }
-
-  const row = db
-    .prepare(
-      `
-        SELECT data_type
-        FROM information_schema.columns
-        WHERE table_schema = current_schema()
-          AND table_name = 'listings'
-          AND column_name = 'hard_delete_after'
-        LIMIT 1
-      `
-    )
-    .get() as { data_type?: string } | undefined;
-
-  if (!row?.data_type) {
-    return { status: "FAIL", message: "hard_delete_after column is missing" };
-  }
-
-  const status = row.data_type === "timestamp with time zone" ? "PASS" : "WARN";
-  return {
-    status,
-    message: row.data_type === "timestamp with time zone" ? "hard_delete_after is normalized to TIMESTAMPTZ" : `hard_delete_after is still ${row.data_type}`,
-    details: { data_type: row.data_type },
-  };
+  const configured = names.filter((name) => Boolean(process.env[name]?.trim()));
+  const complete = mode === "any" ? configured.length > 0 : configured.length === names.length;
+  return { status: complete ? "PASS" : mode === "any" ? "WARN" : "WARN", message: complete ? `${label} is configured` : `${label} is partially or not configured`, details: { configured, missing: names.filter((name) => !configured.includes(name)) } };
 }
 
 function checkFirebaseAdmin(): NamedCheck {
   try {
     const admin = getFirebaseAdmin();
-    return {
-      status: "PASS",
-      message: "Firebase Admin initialized",
-      details: { apps: admin.apps.length },
-    };
+    return { status: "PASS", message: "Firebase Admin initialized", details: { apps: admin.apps.length } };
   } catch (error) {
     return { status: "FAIL", message: error instanceof Error ? error.message : String(error) };
   }
 }
 
 function checkWebhookExports(): NamedCheck {
-  const paymentWebhookOk =
-    typeof paymentWebhookHandler === "function" &&
-    typeof (paymentWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
-  const payoutWebhookOk =
-    typeof payoutWebhookHandler === "function" &&
-    typeof (payoutWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
-
-  return {
-    status: paymentWebhookOk && payoutWebhookOk ? "PASS" : "FAIL",
-    message: paymentWebhookOk && payoutWebhookOk ? "Webhook handlers are exported" : "Webhook handler exports are missing",
-    details: {
-      paymentWebhookHandler: paymentWebhookOk,
-      payoutWebhookHandler: payoutWebhookOk,
-    },
-  };
+  const paymentWebhookOk = typeof paymentWebhookHandler === "function" && typeof (paymentWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
+  const payoutWebhookOk = typeof payoutWebhookHandler === "function" && typeof (payoutWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function';
+  return { status: paymentWebhookOk && payoutWebhookOk ? "PASS" : "FAIL", message: paymentWebhookOk && payoutWebhookOk ? "Webhook handlers are exported" : "Webhook handler exports are missing", details: { paymentWebhookHandler: paymentWebhookOk, payoutWebhookHandler: payoutWebhookOk } };
 }
 
 function checkPaymentEndpointContract(): NamedCheck {
-  const actual = PAYMENT_ENDPOINTS.paychangu;
+  const actual = PAYMENT_ENDPOINTS.paychangu as Record<string, string | undefined>;
   const mismatches: Record<string, { expected: string; actual: string | undefined }> = {};
-
   for (const [key, expected] of Object.entries(REQUIRED_PAYMENT_ENDPOINTS)) {
-    const actualValue = (actual as Record<string, string | undefined>)[key];
-    if (actualValue !== expected) {
-      mismatches[key] = { expected, actual: actualValue };
-    }
+    if (actual[key] !== expected) mismatches[key] = { expected, actual: actual[key] };
   }
-
-  return {
-    status: Object.keys(mismatches).length === 0 ? "PASS" : "FAIL",
-    message: Object.keys(mismatches).length === 0 ? "Payment endpoint contract matches" : "Payment endpoint contract mismatch",
-    details: mismatches,
-  };
+  return { status: Object.keys(mismatches).length === 0 ? "PASS" : "FAIL", message: Object.keys(mismatches).length === 0 ? "Payment endpoint contract matches" : "Payment endpoint contract mismatch", details: mismatches };
 }
 
-function checkPaymentTables(db: any): NamedCheck {
-  const required = [
-    "payment_webhook_events",
-    "seller_payout_accounts",
-    "payout_attempts",
-    "payout_events",
-    "payout_adjustments",
-    "seller_payout_account_events",
-    "idempotency_keys",
-  ];
-  const missing = required.filter((table) => !isTablePresent(db, table));
-  return {
-    status: missing.length === 0 ? "PASS" : "FAIL",
-    message: missing.length === 0 ? "Payment lifecycle tables are present" : `Missing payment tables: ${missing.join(", ")}`,
-    details: { required_tables: required, missing_tables: missing },
-  };
-}
-
-function checkPaymentColumns(db: any): NamedCheck {
-  const tables = ["payment_webhook_events", "seller_payout_accounts", "payouts", "payout_attempts", "payout_events", "payout_adjustments", "seller_payout_account_events"];
-  const missingByTable: Record<string, string[]> = {};
-
-  for (const tableName of tables) {
-    const requiredColumns = REQUIRED_COLUMNS[tableName] ?? [];
-    if (!isTablePresent(db, tableName)) {
-      missingByTable[tableName] = [...requiredColumns];
-      continue;
-    }
-
-    const presentColumns = new Set(getColumns(db, tableName));
-    const missing = requiredColumns.filter((column) => !presentColumns.has(column));
-    if (missing.length > 0) missingByTable[tableName] = missing;
-  }
-
-  return {
-    status: Object.keys(missingByTable).length === 0 ? "PASS" : "FAIL",
-    message: Object.keys(missingByTable).length === 0 ? "Payment columns are present" : "Missing payment columns",
-    details: missingByTable,
-  };
-}
-
-function checkPaymentSummarySurface(db: any): NamedCheck {
-  const summaryTables = ["payments", "orders", "payouts", "payment_webhook_events"];
-  const present = summaryTables.filter((table) => isTablePresent(db, table));
-  const missing = summaryTables.filter((table) => !isTablePresent(db, table));
-
-  return {
-    status: missing.length === 0 ? "PASS" : "FAIL",
-    message: missing.length === 0 ? "Payment summary surface is complete" : "Payment summary surface is incomplete",
-    details: { present, missing },
-  };
-}
-
-function checkPaymentsStrict(db: any): NamedCheck {
-  const endpointContract = checkPaymentEndpointContract();
-  const webhookExports = checkWebhookExports();
-  const tableCheck = checkPaymentTables(db);
-  const columnCheck = checkPaymentColumns(db);
-  const summarySurfaceCheck = checkPaymentSummarySurface(db);
-  const combined = [endpointContract, webhookExports, tableCheck, columnCheck, summarySurfaceCheck];
-  const status = combineStatus(combined);
-
-  return {
-    status,
-    message: status === "PASS" ? "Payments stack is structurally healthy" : "Payments stack has one or more strict failures",
-    details: {
-      endpointContract,
-      webhookExports,
-      tableCheck,
-      columnCheck,
-      summarySurfaceCheck,
-    },
-  };
-}
-
-export function registerDiagnosticsRoutes(app: Express, deps: RouteDeps) {
-  const { db } = deps;
-
+export function registerDiagnosticsRoutes(app: Express, _deps: RouteDeps) {
   app.get("/api/health", (_req, res) => {
     res.redirect("/api/diagnostics");
   });
 
-  app.get("/api/diagnostics", (_req, res) => {
-    const payments = checkPaymentsStrict(db);
-    const checks = {
-      database: checkDatabase(db),
-      tables: checkTables(db),
-      columns: checkColumns(db),
-      counts: checkCounts(db),
-      hard_delete_after: checkHardDeleteColumn(db),
-      firebase: checkFirebaseAdmin(),
-      cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
-      smtp: checkEnvironmentGroup(["SMTP_HOST", "SMTP_USER", "SMTP_PASS"], "SMTP"),
-      paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
-      database_url: checkEnvironment("DATABASE_URL", true),
-      admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
-      payments,
-    };
+  app.get("/api/diagnostics", async (_req, res) => {
+    const started = Date.now();
+    try {
+      const database = await checkDatabase();
+      if (database.status === "FAIL") {
+        const checks = { database, database_url: checkEnvironment("DATABASE_URL", true) };
+        res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
+        return;
+      }
 
-    const overall = combineStatus(Object.values(checks));
+      const [tableNames, columnMap] = await Promise.all([getTableNames(), getColumnMap()]);
+      const tables = await checkTables(tableNames);
+      const columns = await checkColumns(columnMap, tableNames);
+      const counts = await checkRowCounts(tableNames);
+      const foreign_keys = await checkForeignKeys(tableNames);
+      const critical_data = await checkCriticalDataConsistency(tableNames, columnMap);
+      const database_identity = await checkDatabaseIdentity();
 
-    res.setHeader("Cache-Control", "no-store");
-    res.json({
-      overall,
-      timestamp: new Date().toISOString(),
-      uptime_ms: Math.round(process.uptime() * 1000),
-      checks,
-    });
+      const checks = {
+        database,
+        database_identity,
+        tables,
+        columns,
+        counts,
+        foreign_keys,
+        critical_data,
+        hard_delete_after: await checkHardDeleteColumnDirect(columnMap, tableNames),
+        firebase: checkFirebaseAdmin(),
+        cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
+        smtp: checkEnvironmentGroup(["SMTP_HOST", "SMTP_USER", "SMTP_PASS"], "SMTP"),
+        paychangu: checkEnvironmentGroup(["PAYCHANGU_SECRET_KEY", "PAYCHANGU_WEBHOOK_SECRET"], "PayChangu"),
+        database_url: checkEnvironment("DATABASE_URL", true),
+        admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
+        payments: {
+          status: combineStatus([checkPaymentEndpointContract(), checkWebhookExports(), tables, columns]),
+          message: "Payment runtime and database structure checks included above",
+        },
+      } satisfies Record<string, NamedCheck>;
+
+      const overall = combineStatus(Object.values(checks));
+      const statusCode = overall === "FAIL" ? 503 : 200;
+      res.status(statusCode).setHeader("Cache-Control", "no-store").json({ overall, authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
+    } catch (error) {
+      res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, error: error instanceof Error ? error.message : String(error) });
+    }
   });
+}
+
+async function checkHardDeleteColumnDirect(columnMap: Map<string, Set<string>>, tableNames: Set<string>): Promise<NamedCheck> {
+  if (!tableNames.has("listings")) return { status: "FAIL", message: "listings table is missing" };
+  if (!columnMap.get("listings")?.has("hard_delete_after")) return { status: "FAIL", message: "hard_delete_after column is missing" };
+  try {
+    const result = await query<{ data_type: string }>(`SELECT data_type FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'listings' AND column_name = 'hard_delete_after' LIMIT 1`);
+    const dataType = result.rows[0]?.data_type;
+    if (!dataType) return { status: "FAIL", message: "hard_delete_after data type could not be verified" };
+    return { status: dataType === "timestamp with time zone" ? "PASS" : "WARN", message: dataType === "timestamp with time zone" ? "hard_delete_after is TIMESTAMPTZ" : `hard_delete_after is ${dataType}`, details: { data_type: dataType } };
+  } catch (error) {
+    return { status: "FAIL", message: `hard_delete_after check failed: ${error instanceof Error ? error.message : String(error)}` };
+  }
 }
