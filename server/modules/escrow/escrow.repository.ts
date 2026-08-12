@@ -51,6 +51,21 @@ export interface StoredEscrow {
   updatedAt: string;
 }
 
+const ESCROW_ALLOWED_TRANSITIONS: Readonly<Record<EscrowState, readonly EscrowState[]>> = {
+  initiated: ['initiated', 'funded', 'closed'],
+  funded: ['funded', 'held', 'released', 'refunded', 'disputed'],
+  held: ['held', 'released', 'refunded', 'disputed'],
+  released: ['released', 'closed'],
+  refunded: ['refunded'],
+  disputed: ['disputed', 'refunded', 'released', 'closed'],
+  closed: ['closed'],
+} as const;
+
+function assertEscrowStateTransition(from: EscrowState, to: EscrowState): void {
+  if (ESCROW_ALLOWED_TRANSITIONS[from].includes(to)) return;
+  throw new Error(`Illegal escrow state transition: ${from} -> ${to}`);
+}
+
 export class EscrowRepository {
   private get db() {
     return getPaymentDb();
@@ -126,6 +141,10 @@ export class EscrowRepository {
   }
 
   updateState(orderId: string, state: EscrowState): StoredEscrow | undefined {
+    const current = this.findByOrderId(orderId);
+    if (!current) return undefined;
+    assertEscrowStateTransition(current.state, state);
+
     const now = new Date().toISOString();
     this.db
       .prepare('UPDATE escrows SET state = @state, updated_at = @updated_at WHERE order_id = @order_id')
@@ -260,12 +279,13 @@ export class EscrowRepository {
     } catch {
       entries = [];
     }
+
     return {
       id: row.id as string,
       orderId: row.order_id as string,
       state: row.state as EscrowState,
       currency: row.currency as string,
-      balanceAmount: row.balance_amount as number,
+      balanceAmount: Number(row.balance_amount ?? 0),
       balanceCurrency: row.balance_currency as string,
       entries,
       createdAt: row.created_at as string,
