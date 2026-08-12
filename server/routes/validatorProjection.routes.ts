@@ -89,7 +89,7 @@ function refreshStats(eventId: string) {
     VALUES(?,?,?,?,?) ON CONFLICT(event_id) DO UPDATE SET tickets_sold=excluded.tickets_sold,tickets_checked_in=excluded.tickets_checked_in,tickets_remaining=excluded.tickets_remaining,updated_at=excluded.updated_at`).run(Number(eventId), Number(row?.sold ?? 0), Number(row?.checked ?? 0), Number(row?.remaining ?? 0), new Date().toISOString());
 }
 
-function updateTicket(uid: string, eventId: string, ticketId: string, nextStatus: TicketStatus, gateName: string, staffName: string, allowReentry = false) {
+export function updateTicket(uid: string, eventId: string, ticketId: string, nextStatus: TicketStatus, gateName: string, staffName: string, allowReentry = false) {
   const db = getPaymentDb();
   const event = eventFor(uid, eventId); if (!event) return { error: "Event not found", status: 404 as const };
   const currentRow = db.prepare("SELECT status FROM event_tickets WHERE id=? AND event_id=? LIMIT 1").get(ticketId, Number(eventId)) as { status?: string } | undefined;
