@@ -1,1 +1,1 @@
-export { registerDiagnosticsRoutes } from "./diagnostics.core.js";
+export { registerDiagnosticsRoutes } from "../diagnostics/index.js";
