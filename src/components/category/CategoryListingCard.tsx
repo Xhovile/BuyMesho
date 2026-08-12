@@ -6,6 +6,7 @@ import {
   getListingConditionLabel,
 } from "../../lib/listingCardHighlights";
 import type { ListingSpecValues } from "../../types";
+import ListingImage from "../ListingImage";
 
 type ListingPreview = {
   id: number | string;
@@ -59,12 +60,11 @@ export default function CategoryListingCard({ item, categoryLabel }: Props) {
       aria-label={`Open listing details for ${item.name}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
-        <img
-          src={item.photos?.[0] || `https://picsum.photos/seed/${item.id}/600/450`}
+        <ListingImage
+          src={item.photos?.[0]}
           alt={item.name}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          category={item.category || categoryLabel}
+          subcategory={item.subcategory}
         />
 
         <div className="absolute left-3 top-3 rounded-full bg-white/80 px-3 py-1 text-[10px] font-extrabold uppercase tracking-[0.16em] text-zinc-700 shadow-sm backdrop-blur-sm">

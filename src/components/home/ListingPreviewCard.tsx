@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import { navigateToListingDetails } from "../../lib/appNavigation";
 import { getOptimizedImageUrl } from "../../lib/imageUrl";
+import ListingImage from "../ListingImage";
 import type { HomePreviewListing } from "../../hooks/useHomePageData";
 
 type ListingPreviewCardProps = {
@@ -16,7 +17,7 @@ function truncateWords(text: string, maxWords: number) {
 export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
   const descriptionSource = item.description || item.category || "Tap to open the listing.";
   const description = truncateWords(descriptionSource, 8);
-  const imageSrc = getOptimizedImageUrl(item.photos?.[0], 480) || `https://picsum.photos/seed/${item.id}/480/360`;
+  const imageSrc = getOptimizedImageUrl(item.photos?.[0], 480);
 
   return (
     <button
@@ -25,12 +26,10 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
       className="group flex h-full w-full flex-col bg-transparent text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-900/40"
     >
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
-        <img
+        <ListingImage
           src={imageSrc}
           alt={item.name}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+          category={item.category}
         />
       </div>
 
@@ -40,7 +39,7 @@ export default function ListingPreviewCard({ item }: ListingPreviewCardProps) {
         </p>
 
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-zinc-500">
-          {item.description || "Tap to open the full listing details."}
+          {item.description || description}
         </p>
 
         <p className="mt-3 text-base font-bold text-red-900">
