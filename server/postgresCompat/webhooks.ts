@@ -72,6 +72,28 @@ function isPaymentWebhookUniqueConstraintFailure(error: unknown): boolean {
   );
 }
 
+export function findPendingPayChanguWebhook(reference: string): { id: number; payload: string } | null {
+  const normalizedReference = normalizeOptionalText(reference);
+  if (!normalizedReference) return null;
+
+  const row = getPaymentDb()
+    .prepare(
+      `SELECT id, payload
+       FROM payment_webhook_events
+       WHERE provider = 'paychangu'
+         AND (reference = ? OR tx_ref = ?)
+         AND signature_valid = 1
+         AND processing_status IN ('received', 'failed', 'ignored')
+         AND payload IS NOT NULL
+       ORDER BY created_at ASC
+       LIMIT 1`,
+    )
+    .get(normalizedReference, normalizedReference) as { id?: number; payload?: string | null } | undefined;
+
+  if (!row?.id || !row.payload) return null;
+  return { id: Number(row.id), payload: String(row.payload) };
+}
+
 export function findPaymentWebhookDuplicate(
   input: FindPaymentWebhookDuplicateInput,
 ): { id: number } | null {
@@ -197,9 +219,6 @@ export function insertPaymentWebhookEvent(
     if (existing) {
       const existingStatus = getPaymentWebhookEventStatus(existing.id);
 
-      // A processed webhook is terminally idempotent. A non-terminal record is
-      // reusable so a later provider retry can finish business processing if
-      // the original request stopped after recording the webhook event.
       if (existingStatus !== "processed") {
         db.prepare(
           `UPDATE payment_webhook_events
@@ -263,11 +282,10 @@ export function recordPaymentWebhookDuplicateAttempt(
 
     return Number(result.lastInsertRowid);
   } catch (error) {
-    if (!isPaymentWebhookUniqueConstraintFailure(error)) {
-      throw error;
+    if (isPaymentWebhookUniqueConstraintFailure(error)) {
+      return null;
     }
-
-    return null;
+    throw error;
   }
 }
 
@@ -277,22 +295,21 @@ export function updatePaymentWebhookEventStatus(
   options: UpdatePaymentWebhookEventStatusOptions = {},
 ): void {
   const db = getPaymentDb();
+  const processedAt = options.processedAt ?? null;
+  const error = normalizeOptionalText(options.error);
+
   db.prepare(
     `UPDATE payment_webhook_events
      SET processing_status = ?,
-         processed_at = COALESCE(?, processed_at),
+         processed_at = ?,
          error = ?,
          signature_valid = COALESCE(?, signature_valid)
      WHERE id = ?`,
   ).run(
-    normalizeOptionalText(status) ?? "received",
-    options.processedAt ?? null,
-    normalizeOptionalText(options.error),
-    options.signatureValid === undefined || options.signatureValid === null
-      ? null
-      : options.signatureValid
-        ? 1
-        : 0,
+    status,
+    processedAt,
+    error,
+    options.signatureValid === undefined ? null : options.signatureValid ? 1 : 0,
     id,
   );
 }
