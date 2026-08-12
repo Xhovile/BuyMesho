@@ -1,5 +1,5 @@
 import express, { type RequestHandler } from "express";
-import { randomUUID } from "crypto";
+import { createHash, randomUUID } from "crypto";
 import rateLimit from "express-rate-limit";
 import { serverPaymentService } from "./payment.service.js";
 import { serverOrderService } from "../orders/order.service.js";
@@ -139,6 +139,72 @@ function validateTicketHolder(holder: ReturnType<typeof normalizeTicketHolder>) 
   return null;
 }
 
+function normalizeIdempotencyKey(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function buildCheckoutRequestHash(input: {
+  requestedItems: CheckoutItemInput[];
+  method: unknown;
+  settlementRoute: unknown;
+  returnUrl: unknown;
+  cancelUrl: unknown;
+  buyerName: unknown;
+  buyerPhone: unknown;
+  ticketHolder: ReturnType<typeof normalizeTicketHolder>;
+}): string {
+  const normalized = {
+    requestedItems: input.requestedItems.map((item) => ({
+      listingId: item.listingId == null ? null : String(item.listingId),
+      eventId: item.eventId == null ? null : String(item.eventId),
+      quantity: Number(item.quantity ?? 1),
+    })),
+    method: String(input.method ?? "mobile_money"),
+    settlementRoute: String(input.settlementRoute ?? "escrow"),
+    returnUrl: String(input.returnUrl ?? ""),
+    cancelUrl: String(input.cancelUrl ?? ""),
+    buyerName: String(input.buyerName ?? ""),
+    buyerPhone: String(input.buyerPhone ?? ""),
+    ticketHolder: input.ticketHolder,
+  };
+
+  return createHash("sha256").update(JSON.stringify(normalized)).digest("hex");
+}
+
+function idempotentCheckoutResponse(order: ReturnType<typeof orderRepository.findById>) {
+  if (!order) return null;
+  const payment = order.paymentReference ? paymentRepository.findByReference(order.paymentReference) : null;
+  if (!payment) {
+    return {
+      status: 409,
+      body: {
+        error: "This checkout is already being initialized. Please continue with the existing checkout.",
+        code: "CHECKOUT_IN_PROGRESS",
+        orderId: order.id,
+      },
+    };
+  }
+
+  return {
+    status: 200,
+    body: {
+      success: true,
+      idempotentReplay: true,
+      orderId: order.id,
+      paymentId: payment.id,
+      reference: payment.reference,
+      checkoutUrl: payment.checkoutUrl ?? null,
+      payment,
+      order,
+      totals: {
+        subtotal: order.subtotal.amount,
+        total: order.total.amount,
+        fees: Math.max(0, Number(order.total.amount) - Number(order.subtotal.amount)),
+      },
+    },
+  };
+}
+
 export function createPaymentRouter(requireAuth: RequestHandler): express.Router {
   const router = express.Router();
 
@@ -155,11 +221,20 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const buyerName = body.buyerName;
       const buyerPhone = body.buyerPhone;
       const ticketHolder = normalizeTicketHolder(body.ticketHolder as TicketHolderInput | undefined);
+      const idempotencyKey = normalizeIdempotencyKey(req.headers["idempotency-key"] ?? body.idempotencyKey);
       const hasLegacyListingId = listingId !== undefined && listingId !== null && String(listingId).trim() !== "";
       const requestedItems: CheckoutItemInput[] = items.length > 0 ? items : (hasLegacyListingId ? [{ listingId, quantity }] : []);
 
       if (requestedItems.length === 0) {
         return res.status(400).json({ error: "listingId or items are required" });
+      }
+
+      if (!idempotencyKey) {
+        return res.status(400).json({ error: "Idempotency-Key header is required for checkout", code: "IDEMPOTENCY_KEY_REQUIRED" });
+      }
+
+      if (idempotencyKey.length > 200) {
+        return res.status(400).json({ error: "Idempotency-Key is too long", code: "INVALID_IDEMPOTENCY_KEY" });
       }
 
       const containsEventTicket = requestedItems.some((item) => item?.eventId !== undefined && item?.eventId !== null && String(item.eventId).trim() !== "");
@@ -168,10 +243,34 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
         if (holderError) return res.status(400).json({ error: holderError });
       }
 
+      const buyerUid = req.user.uid;
+      const requestHash = buildCheckoutRequestHash({
+        requestedItems,
+        method,
+        settlementRoute,
+        returnUrl,
+        cancelUrl,
+        buyerName,
+        buyerPhone,
+        ticketHolder,
+      });
+
+      const existingOrder = orderRepository.findByCheckoutIdempotencyKey(buyerUid, idempotencyKey);
+      if (existingOrder) {
+        if (existingOrder.checkoutRequestHash && existingOrder.checkoutRequestHash !== requestHash) {
+          return res.status(409).json({
+            error: "This Idempotency-Key was already used for a different checkout request.",
+            code: "IDEMPOTENCY_KEY_REUSED",
+          });
+        }
+
+        const replay = idempotentCheckoutResponse(existingOrder);
+        if (replay) return res.status(replay.status).json(replay.body);
+      }
+
       const db: any = getPaymentDb();
       const currency = "MWK";
       const now = new Date().toISOString();
-      const buyerUid = req.user.uid;
       const buyerEmail = req.user.email ?? "";
       const orderId = `ord_${randomUUID()}`;
       const orderItems: any[] = [];
@@ -193,7 +292,7 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
           return res.status(400).json({ error: "Each checkout item requires a listingId or eventId" });
         }
         if (hasItemListingId && hasItemEventId) {
-          return res.status(400).json({ error: "A checkout item cannot contain both listingId and eventId" });
+          return res.status(400).json({ error: "A checkout item cannot contain both a listingId and eventId" });
         }
 
         const parsedQty = Number(item.quantity ?? 1);
@@ -304,22 +403,36 @@ export function createPaymentRouter(requireAuth: RequestHandler): express.Router
       const primarySellerId = sellerIds.values().next().value ?? "multiple-sellers";
       const feeBreakdown = calculateCustomerCheckoutFees({ itemTotalAmount: total, currency });
 
-      serverOrderService.create({
-        id: orderId,
-        buyerId: buyerUid,
-        sellerId: primarySellerId,
-        source,
-        status: "pending_payment",
-        currency,
-        subtotal: { amount: total, currency },
-        total: { amount: feeBreakdown.finalTotalAmount, currency },
-        paymentProvider: "paychangu",
-        settlementRoute,
-        items: orderItems,
-        placedAt: now,
-        createdAt: now,
-        updatedAt: now,
-      } as any);
+      try {
+        serverOrderService.create({
+          id: orderId,
+          buyerId: buyerUid,
+          sellerId: primarySellerId,
+          source,
+          status: "pending_payment",
+          currency,
+          subtotal: { amount: total, currency },
+          total: { amount: feeBreakdown.finalTotalAmount, currency },
+          paymentProvider: "paychangu",
+          settlementRoute,
+          checkoutIdempotencyKey: idempotencyKey,
+          checkoutRequestHash: requestHash,
+          items: orderItems,
+          placedAt: now,
+          createdAt: now,
+          updatedAt: now,
+        } as any);
+      } catch (error) {
+        const racedOrder = orderRepository.findByCheckoutIdempotencyKey(buyerUid, idempotencyKey);
+        if (racedOrder) {
+          if (racedOrder.checkoutRequestHash && racedOrder.checkoutRequestHash !== requestHash) {
+            return res.status(409).json({ error: "This Idempotency-Key was already used for a different checkout request.", code: "IDEMPOTENCY_KEY_REUSED" });
+          }
+          const replay = idempotentCheckoutResponse(racedOrder);
+          if (replay) return res.status(replay.status).json(replay.body);
+        }
+        throw error;
+      }
 
       const paymentResult = await serverPaymentService.createPayment({
         orderId,
