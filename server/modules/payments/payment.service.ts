@@ -48,12 +48,13 @@ function normalizeCurrency(value: string | undefined): string {
   return String(value ?? '').trim().toUpperCase();
 }
 
-function paymentCoversExpectedTotal(
+function paymentMatchesExpectedTotal(
   expected: { amount: number; currency: string },
   actual?: { amount: number; currency: string },
 ): boolean {
   if (!actual) return false;
-  return actual.amount >= expected.amount && normalizeCurrency(expected.currency) === normalizeCurrency(actual.currency);
+  return actual.amount === expected.amount
+    && normalizeCurrency(expected.currency) === normalizeCurrency(actual.currency);
 }
 
 export function createServerPaymentConfigFromEnv(): ServerPaymentConfig {
@@ -138,10 +139,10 @@ export class ServerPaymentService {
       } else if (order.paymentReference && order.paymentReference !== requestedTxRef) {
         strictVerified = false;
         failureReason = failureReason ?? 'Order payment reference does not match requested transaction reference';
-      } else if (!paymentCoversExpectedTotal(order.total, verification.amount)) {
+      } else if (!paymentMatchesExpectedTotal(order.total, verification.amount)) {
         strictVerified = false;
         failureReason =
-          failureReason ?? `Payment amount or currency does not cover order total for ${order.id}`;
+          failureReason ?? `Payment amount or currency does not exactly match order total for ${order.id}`;
       }
     }
 
