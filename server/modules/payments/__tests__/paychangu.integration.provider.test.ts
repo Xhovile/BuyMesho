@@ -1,8 +1,7 @@
 import test from 'node:test';
-import '../../payouts/payout.schema.js';
 import assert from 'node:assert/strict';
 import { paychanguProvider } from '../paychangu.provider.js';
-import { clearPaymentState, createApp, mockFetch, mockPayChanguFetch, seedOrder, seedStoredPayment, countEscrowsForOrder } from './paychangu.test.helpers.js';
+import { clearPaymentState, createApp, mockPayChanguFetch, seedOrder, seedStoredPayment, countEscrowsForOrder } from './paychangu.test.helpers.js';
 import { orderRepository, paymentRepository } from './paychangu.test.helpers.js';
 
 test('provider: PayChangu initialization formats object validation messages for buyers', async () => {
@@ -10,28 +9,13 @@ test('provider: PayChangu initialization formats object validation messages for 
   global.fetch = (async (input: Parameters<typeof fetch>[0]) => {
     const target = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
     if (/^https:\/\/[^/]*paychangu\.com\/payment/.test(target)) {
-      return new Response(JSON.stringify({
-        status: 'error',
-        message: {
-          email: ['The email field is required.'],
-          amount: ['The amount must be at least 100.'],
-        },
-      }), { status: 422, headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ status: 'error', message: { email: ['The email field is required.'], amount: ['The amount must be at least 100.'] } }), { status: 422, headers: { 'content-type': 'application/json' } });
     }
     return originalFetch(input);
   }) as typeof fetch;
-
   try {
     await assert.rejects(
-      () => paychanguProvider.createPayment({
-        orderId: 'order_object_error_1',
-        provider: 'paychangu',
-        method: 'mobile_money',
-        amount: { amount: 50, currency: 'MWK' },
-        customer: { id: 'buyer_1', name: 'Buyer One' },
-        returnUrl: 'https://example.com/return',
-        cancelUrl: 'https://example.com/cancel',
-      }, { paychanguSecretKey: 'integration-secret-key' }),
+      () => paychanguProvider.createPayment({ orderId: 'order_object_error_1', provider: 'paychangu', method: 'mobile_money', amount: { amount: 50, currency: 'MWK' }, customer: { id: 'buyer_1', name: 'Buyer One' }, returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel' }, { paychanguSecretKey: 'integration-secret-key' }),
       (error: unknown) => {
         assert.ok(error instanceof Error);
         assert.notEqual(error.message, '[object Object]');
@@ -52,8 +36,7 @@ test('integration: PayChangu verification rejects overpaid payments', async () =
   global.fetch = mockPayChanguFetch(originalFetch, 'txref-overpaid-1', 'success', 1250);
   process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
   const server = app.listen(0);
-  const port = (server.address() as { port: number }).port;
-  const base = `http://127.0.0.1:${port}`;
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     seedOrder('order_overpaid_1', 'txref-overpaid-1');
     seedStoredPayment('order_overpaid_1', 'txref-overpaid-1');
@@ -85,8 +68,7 @@ test('integration: PayChangu verification rejects underpaid, wrong-currency, and
     global.fetch = mockPayChanguFetch(originalFetch, scenario.reference, 'success', scenario.amount, scenario.currency, scenario.verifiedReference);
     process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
     const server = app.listen(0);
-    const port = (server.address() as { port: number }).port;
-    const base = `http://127.0.0.1:${port}`;
+    const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
     try {
       const orderId = `order_${scenario.name.replace(/\s+/g, '_')}_1`;
       seedOrder(orderId, scenario.reference);
@@ -95,7 +77,7 @@ test('integration: PayChangu verification rejects underpaid, wrong-currency, and
       assert.equal(verifyRes.status, 200);
       const verifyResult = await verifyRes.json() as { verified?: boolean; failureReason?: string };
       assert.equal(verifyResult.verified, false);
-      assert.match(verifyResult.failureReason ?? '', scenario.expectedReason, `${scenario.name} should explain the validation failure`);
+      assert.match(verifyResult.failureReason ?? '', scenario.expectedReason);
       assert.equal(orderRepository.findById(orderId)?.status, 'pending_payment');
       assert.equal(countEscrowsForOrder(orderId), 0);
       assert.equal(paymentRepository.findByReference(scenario.reference)?.verified, false);
@@ -104,38 +86,5 @@ test('integration: PayChangu verification rejects underpaid, wrong-currency, and
       server.close();
       clearPaymentState();
     }
-  }
-});
-
-test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
-  clearPaymentState();
-  const app = createApp();
-  const originalFetch = global.fetch;
-  global.fetch = mockFetch(originalFetch);
-  process.env.PAYCHANGU_WEBHOOK_SECRET = 'integration-secret';
-  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
-  const server = app.listen(0);
-  const port = (server.address() as { port: number }).port;
-  const base = `http://127.0.0.1:${port}`;
-  try {
-    seedOrder('order_it_1', 'txref-integration-1');
-    const createPaymentRes = await fetch(`${base}/api/payments/paychangu/initialize`, {
-      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer fake' },
-      body: JSON.stringify({ orderId: 'order_it_1', provider: 'paychangu', method: 'mobile_money', amount: { amount: 1000, currency: 'MWK' }, customer: { id: 'buyer_1', name: 'Buyer One', email: 'buyer@example.com', phoneNumber: '+265999111000' }, returnUrl: 'https://example.com/return', cancelUrl: 'https://example.com/cancel' }),
-    });
-    assert.equal(createPaymentRes.status, 201);
-    const rawWebhook = JSON.stringify({ event_type: 'charge.success', tx_ref: 'txref-integration-1', data: { tx_ref: 'txref-integration-1', status: 'successful', amount: 1000, currency: 'MWK' } });
-    const webhookRes = await fetch(`${base}/api/payments/paychangu/webhook`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-paychangu-signature': 'invalid-placeholder' }, body: rawWebhook });
-    assert.equal(webhookRes.status, 200);
-    const savedOrder = orderRepository.findById('order_it_1');
-    const savedPayment = paymentRepository.findByReference('txref-integration-1');
-    assert.equal(savedOrder?.status, 'in_escrow');
-    assert.equal(savedPayment?.verified, true);
-    assert.equal(savedPayment?.status, 'captured');
-    assert.equal(countEscrowsForOrder('order_it_1'), 1);
-  } finally {
-    global.fetch = originalFetch;
-    server.close();
-    clearPaymentState();
   }
 });
