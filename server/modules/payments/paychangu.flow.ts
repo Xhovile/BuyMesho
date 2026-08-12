@@ -29,10 +29,6 @@ function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '').trim();
 }
 
-function normalizeCurrency(value: string | undefined | null): string {
-  return String(value ?? '').trim().toUpperCase();
-}
-
 function stripPayChanguPrefix(value: string): string {
   return value.replace(/^PAYCHANGU-/i, '');
 }
@@ -192,10 +188,6 @@ export function applyVerifiedPayChanguPayment(
 
   const order = resolveOrderByReferences(referenceCandidates);
 
-  // A verified provider callback can legitimately arrive before the order is
-  // queryable. Do not commit a partial payment mutation in that case; the
-  // webhook remains retryable and can settle the full state once the order is
-  // available.
   if (!order) {
     const payment = referenceCandidates
       .map((candidate) => paymentRepository.findByReference(candidate))
@@ -207,21 +199,37 @@ export function applyVerifiedPayChanguPayment(
     };
   }
 
-  const expectedCurrency = normalizeCurrency(order.currency);
-  const verifiedAmount = verification.amount?.amount;
-  const verifiedCurrency = normalizeCurrency(verification.amount?.currency ?? verification.currency);
+  // A late provider success must not resurrect money after the local order has
+  // already been refunded/closed/disputed. The financial outcome is already
+  // terminal and must be preserved until an explicit recovery workflow exists.
+  if (['refunded', 'closed', 'disputed'].includes(order.status)) {
+    const payment = referenceCandidates
+      .map((candidate) => paymentRepository.findByReference(candidate))
+      .find(Boolean);
 
-  if (
-    verifiedAmount !== order.total.amount ||
-    !verifiedCurrency ||
-    verifiedCurrency !== expectedCurrency
-  ) {
-    throw new Error(
-      `Financial integrity violation for ${order.id}: provider payment does not exactly match order total`,
-    );
+    return {
+      payment,
+      order,
+      verification,
+    };
   }
 
   const settlement = getPaymentDb().transaction(() => {
+    const existingPayment = referenceCandidates
+      .map((candidate) => paymentRepository.findByReference(candidate))
+      .find(Boolean);
+
+    if (existingPayment?.status === 'refunded') {
+      return {
+        payment: existingPayment,
+        order,
+        verification,
+        sellerPayoutQueued: false,
+        payoutId: null,
+        orderEnteredEscrow: false,
+      };
+    }
+
     const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
       ...current,
       verified: true,
@@ -254,7 +262,7 @@ export function applyVerifiedPayChanguPayment(
       const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
       const payoutMethod = derivePayoutMethod(destination);
       const grossAmount = activeOrder.total.amount;
-      const currency = expectedCurrency;
+      const currency = normalizeReference(activeOrder.currency).toUpperCase();
       const payoutFormula = calculatePayoutFormula({
         grossAmount,
         currency,
@@ -319,7 +327,7 @@ export function applyVerifiedPayChanguPayment(
     }
 
     const escrowAmount = activeOrder.total.amount;
-    const currency = expectedCurrency;
+    const currency = normalizeReference(activeOrder.currency).toUpperCase();
 
     const escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
     const escrowedOrder =
