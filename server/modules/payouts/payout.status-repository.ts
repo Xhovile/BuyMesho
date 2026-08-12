@@ -1,6 +1,24 @@
 import { getPaymentDb } from '../../postgresCompat.js';
 import type { PayoutRecord, PayoutStatus } from './payout.shared.js';
 
+const PAYOUT_ALLOWED_TRANSITIONS: Readonly<Record<PayoutStatus, readonly PayoutStatus[]>> = {
+  pending_settlement: ['pending_settlement', 'eligible', 'ready_for_payout', 'held', 'cancelled'],
+  eligible: ['eligible', 'ready_for_payout', 'queued', 'held', 'cancelled'],
+  ready_for_payout: ['ready_for_payout', 'queued', 'held', 'cancelled'],
+  queued: ['queued', 'processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
+  processing: ['processing', 'pending', 'paid', 'failed', 'held', 'cancelled'],
+  pending: ['pending', 'processing', 'paid', 'failed', 'held', 'cancelled'],
+  held: ['held', 'eligible', 'ready_for_payout', 'queued', 'processing', 'pending', 'paid', 'failed', 'cancelled'],
+  paid: ['paid'],
+  failed: ['failed', 'eligible', 'ready_for_payout', 'queued', 'processing', 'pending', 'held', 'cancelled'],
+  cancelled: ['cancelled'],
+} as const;
+
+function assertPayoutStatusTransition(from: PayoutStatus, to: PayoutStatus): void {
+  if (PAYOUT_ALLOWED_TRANSITIONS[from].includes(to)) return;
+  throw new Error(`Illegal payout state transition: ${from} -> ${to}`);
+}
+
 export class PayoutStatusRepository {
   constructor(
     private readonly findById: (id: string) => PayoutRecord | undefined,
@@ -11,6 +29,10 @@ export class PayoutStatusRepository {
     status: PayoutStatus,
     extra: Record<string, unknown> = {},
   ): PayoutRecord | undefined {
+    const current = this.findById(id);
+    if (!current) return undefined;
+    assertPayoutStatusTransition(current.status, status);
+
     const now = new Date().toISOString();
     const db = getPaymentDb();
 
