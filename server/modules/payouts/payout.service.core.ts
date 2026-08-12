@@ -1,5 +1,5 @@
 import './payout.schema.js';
-import { payoutRepository, type PayoutRepository } from './payout.repository.js';
+import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
 import { executePayoutFlow, getProviderBalance } from './payout.service.execution.js';
 import {
   reconcilePendingPayoutStatusesFlow,
@@ -17,7 +17,7 @@ import {
 } from './payout.shared.js';
 
 export class PayoutService {
-  constructor(private readonly repository = payoutRepository) {}
+  constructor(private readonly repository: PayoutTransitionRepository = payoutRepository) {}
 
   findById(id: string): PayoutRecord | undefined {
     return this.repository.findById(id);
@@ -31,7 +31,7 @@ export class PayoutService {
     return this.repository.createConnectPayoutCandidate(input);
   }
 
-  addEvent(input: Parameters<PayoutRepository['addEvent']>[0]): void {
+  addEvent(input: Parameters<PayoutTransitionRepository['addEvent']>[0]): void {
     this.repository.addEvent(input);
   }
 

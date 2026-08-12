@@ -84,6 +84,78 @@ test('missing bank UUID blocks payout submission', async () => {
   assert.equal(result.reasonCode, 'destination_incomplete');
 });
 
+test('foreign seller destination cannot be used for payout execution', async () => {
+  const db = getPaymentDb();
+  const prefix = 'route-foreign-destination';
+  const payoutId = `${prefix}-payout`;
+  const orderId = `${prefix}-order`;
+  const sellerId = `${prefix}-seller`;
+  const foreignSellerId = `${prefix}-foreign-seller`;
+  const foreignDestinationId = `${prefix}-foreign-destination`;
+  const now = new Date().toISOString();
+
+  db.prepare('DELETE FROM payout_attempts WHERE payout_id = ?').run(payoutId);
+  db.prepare('DELETE FROM payouts WHERE id = ?').run(payoutId);
+  db.prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
+  db.prepare('DELETE FROM orders WHERE id = ?').run(orderId);
+  db.prepare('DELETE FROM seller_payout_accounts WHERE id = ?').run(foreignDestinationId);
+  db.prepare('DELETE FROM sellers WHERE uid IN (?, ?)').run(sellerId, foreignSellerId);
+
+  db.prepare(`INSERT INTO sellers (uid, email, is_verified, is_suspended)
+              VALUES (?, ?, 1, 0), (?, ?, 1, 0)`).run(
+    sellerId, `${prefix}@example.com`,
+    foreignSellerId, `${prefix}-foreign@example.com`,
+  );
+  db.prepare(`INSERT INTO seller_payout_accounts (
+      id, seller_uid, destination_type, provider_name, provider_ref_id, currency, account_name,
+      mobile_encrypted, masked_account, destination_fingerprint, is_default,
+      verification_status, verification_attempts, is_active, created_at, updated_at
+    ) VALUES (?, ?, 'mobile_money', 'Provider', 'airtel-money', 'MWK', 'Foreign Seller',
+      ?, '****9999', ?, 1, 'verified', 1, 1, ?, ?)`)
+    .run(foreignDestinationId, foreignSellerId, '265999999999', randomUUID(), now, now);
+
+  serverOrderService.create({
+    id: orderId,
+    buyerId: `${prefix}-buyer`,
+    sellerId,
+    source: 'listing',
+    status: 'fulfilled',
+    currency: 'MWK',
+    subtotal: { amount: 1500, currency: 'MWK' },
+    total: { amount: 1500, currency: 'MWK' },
+    items: [],
+    createdAt: now,
+    updatedAt: now,
+  });
+  db.prepare(`UPDATE orders SET status = 'fulfilled' WHERE id = ?`).run(orderId);
+  escrowRepository.create(orderId, 'MWK', 1500);
+  escrowRepository.updateState(orderId, 'released');
+  const escrow = escrowRepository.findByOrderId(orderId);
+
+  db.prepare(`INSERT INTO payouts (
+    id, seller_id, order_id, escrow_id, release_entry_id, destination_account_id,
+    amount, currency, status, provider, requested_by, requested_at, created_at, updated_at
+  ) VALUES (?, ?, ?, ?, ?, ?, 1470, 'MWK', 'eligible', 'paychangu', 'system', ?, ?, ?)`)
+    .run(payoutId, sellerId, orderId, escrow?.id ?? `${prefix}-escrow`, `${prefix}-release`, foreignDestinationId, now, now, now);
+
+  try {
+    const result = await payoutService.executePayout({ payoutId, actorType: 'system', actorId: 'system' });
+    assert.equal(result.attempt, null);
+    assert.equal(result.reasonCode, 'destination_not_verified');
+
+    const persisted = db.prepare('SELECT destination_account_id FROM payouts WHERE id = ?').get(payoutId) as { destination_account_id: string | null };
+    assert.equal(persisted.destination_account_id, foreignDestinationId);
+  } finally {
+    db.prepare('DELETE FROM payout_attempts WHERE payout_id = ?').run(payoutId);
+    db.prepare('DELETE FROM payout_events WHERE payout_id = ?').run(payoutId);
+    db.prepare('DELETE FROM payouts WHERE id = ?').run(payoutId);
+    db.prepare('DELETE FROM escrows WHERE order_id = ?').run(orderId);
+    db.prepare('DELETE FROM orders WHERE id = ?').run(orderId);
+    db.prepare('DELETE FROM seller_payout_accounts WHERE id = ?').run(foreignDestinationId);
+    db.prepare('DELETE FROM sellers WHERE uid IN (?, ?)').run(sellerId, foreignSellerId);
+  }
+});
+
 test('seller payout status labels include settlement states', () => {
   assert.equal(getSellerPayoutStatusLabel('pending_settlement'), 'Awaiting settlement');
   assert.equal(getSellerPayoutStatusLabel('ready_for_payout'), 'Ready for payout');
@@ -128,7 +200,6 @@ test('valid routing ID is sent in provider payload and pending/processing stay i
     }
   }
 });
-
 
 test('admin mark-paid does not mask blocked provider submission path', async () => {
   const { payoutId } = seedSubmissionPayout('route-admin-mask', 'mobile_money', null);

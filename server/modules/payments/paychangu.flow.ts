@@ -188,10 +188,6 @@ export function applyVerifiedPayChanguPayment(
 
   const order = resolveOrderByReferences(referenceCandidates);
 
-  // A verified provider callback can legitimately arrive before the order is
-  // queryable. Do not commit a partial payment mutation in that case; the
-  // webhook remains retryable and can settle the full state once the order is
-  // available.
   if (!order) {
     const payment = referenceCandidates
       .map((candidate) => paymentRepository.findByReference(candidate))
@@ -203,7 +199,37 @@ export function applyVerifiedPayChanguPayment(
     };
   }
 
+  // A late provider success must not resurrect money after the local order has
+  // already been refunded/closed/disputed. The financial outcome is already
+  // terminal and must be preserved until an explicit recovery workflow exists.
+  if (['refunded', 'closed', 'disputed'].includes(order.status)) {
+    const payment = referenceCandidates
+      .map((candidate) => paymentRepository.findByReference(candidate))
+      .find(Boolean);
+
+    return {
+      payment,
+      order,
+      verification,
+    };
+  }
+
   const settlement = getPaymentDb().transaction(() => {
+    const existingPayment = referenceCandidates
+      .map((candidate) => paymentRepository.findByReference(candidate))
+      .find(Boolean);
+
+    if (existingPayment?.status === 'refunded') {
+      return {
+        payment: existingPayment,
+        order,
+        verification,
+        sellerPayoutQueued: false,
+        payoutId: null,
+        orderEnteredEscrow: false,
+      };
+    }
+
     const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
       ...current,
       verified: true,
@@ -235,8 +261,8 @@ export function applyVerifiedPayChanguPayment(
 
       const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
       const payoutMethod = derivePayoutMethod(destination);
-      const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
-      const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+      const grossAmount = activeOrder.total.amount;
+      const currency = normalizeReference(activeOrder.currency).toUpperCase();
       const payoutFormula = calculatePayoutFormula({
         grossAmount,
         currency,
@@ -300,8 +326,8 @@ export function applyVerifiedPayChanguPayment(
       };
     }
 
-    const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
-    const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+    const escrowAmount = activeOrder.total.amount;
+    const currency = normalizeReference(activeOrder.currency).toUpperCase();
 
     const escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
     const escrowedOrder =

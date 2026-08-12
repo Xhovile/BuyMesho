@@ -4,6 +4,7 @@ import { getPaymentDb } from '../../postgresCompat.js';
 import { escrowRepository } from '../../modules/escrow/escrow.repository.js';
 import { orderRepository } from '../../modules/orders/order.repository.js';
 import { serverOrderService } from '../../modules/orders/order.service.js';
+import { assertAllowedDisputeTransition, type DisputeStatus } from './disputeState.js';
 import {
   assertOrderAccess,
   disputeLimiter,
@@ -164,6 +165,15 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
 
       const now = new Date().toISOString();
       const db = getPaymentDb();
+      const existing = db.prepare('SELECT status FROM disputes WHERE id = ?').get(req.params.id) as { status?: string } | undefined;
+
+      if (!existing) {
+        return res.status(404).json({
+          error: 'Dispute not found',
+        });
+      }
+
+      assertAllowedDisputeTransition(existing.status as DisputeStatus, status as DisputeStatus);
 
       db.prepare(
         `UPDATE disputes
@@ -184,15 +194,9 @@ export function createDisputeRouter(requireAuth: RequestHandler): express.Router
         .prepare('SELECT * FROM disputes WHERE id = ?')
         .get(req.params.id);
 
-      if (!updated) {
-        return res.status(404).json({
-          error: 'Dispute not found',
-        });
-      }
-
       return res.status(200).json(updated);
     } catch (error) {
-      return res.status(500).json(jsonError(error, 'Failed to resolve dispute'));
+      return res.status(400).json(jsonError(error, 'Failed to resolve dispute'));
     }
   });
 

@@ -1,9 +1,25 @@
+import type { PaymentIntentStatus } from '../../../src/shared/types/payment.js';
 import type { PaymentResult, PaymentVerificationResult } from '../../../src/modules/payments/types.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 
 export interface StoredPayment extends PaymentResult {
   verified?: boolean;
   verification?: PaymentVerificationResult;
+}
+
+const PAYMENT_ALLOWED_TRANSITIONS: Readonly<Record<PaymentIntentStatus, readonly PaymentIntentStatus[]>> = {
+  pending: ['pending', 'requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
+  requires_action: ['requires_action', 'authorized', 'captured', 'failed', 'cancelled'],
+  authorized: ['authorized', 'captured', 'failed', 'cancelled'],
+  captured: ['captured', 'refunded'],
+  failed: ['failed', 'captured', 'cancelled'],
+  cancelled: ['cancelled'],
+  refunded: ['refunded'],
+} as const;
+
+function assertPaymentStatusTransition(from: PaymentIntentStatus, to: PaymentIntentStatus): void {
+  if (PAYMENT_ALLOWED_TRANSITIONS[from].includes(to)) return;
+  throw new Error(`Illegal payment state transition: ${from} -> ${to}`);
 }
 
 export class PostgresPaymentRepository {
@@ -73,7 +89,6 @@ export class PostgresPaymentRepository {
         reference: p.reference,
         provider_reference: p.providerReference ?? null,
         currency: p.amount.currency,
-        amount: p.amount.amount,
         checkout_url: p.checkoutUrl ?? null,
         paid_at: p.paidAt ?? null,
         raw_response: p.rawResponse ? JSON.stringify(p.rawResponse) : null,
@@ -87,7 +102,7 @@ export class PostgresPaymentRepository {
 
   return payment;
   }
-  
+
   findByReference(reference: string): StoredPayment | undefined {
     const row = this.db.prepare('SELECT * FROM payments WHERE reference = ?').get(reference) as Record<string, unknown> | undefined;
     if (!row) return undefined;
@@ -98,6 +113,7 @@ export class PostgresPaymentRepository {
     const current = this.findByReference(reference);
     if (!current) return undefined;
     const next = updater(current);
+    assertPaymentStatusTransition(current.status, next.status);
     return this.save(next);
   }
 
