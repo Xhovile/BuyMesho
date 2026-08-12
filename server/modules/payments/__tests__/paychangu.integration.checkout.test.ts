@@ -1,9 +1,11 @@
 import test from 'node:test';
+import assert from 'node:assert/strict';
 import {
   clearPaymentState,
   createApp,
   fetchWebhookAuditRows,
   hashPayload,
+  initializePayment,
   postPayChanguWebhook,
   mockPayChanguFetch,
   refs,
@@ -12,7 +14,6 @@ import {
   countEscrowsForOrder,
 } from './paychangu.test.helpers.js';
 import { orderRepository, paymentRepository } from './paychangu.test.helpers.js';
-
 
 test('integration: atomic checkout → paychangu payment → webhook persists state and classifies duplicate delivery', async () => {
   clearPaymentState();
@@ -25,7 +26,6 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     status, condition, views_count, whatsapp_clicks, is_hidden, quantity, sold_quantity
   ) VALUES (999, 'seller_1', 'Test Item', 1000, 'test', 'Test University', '+265999111000',
     'available', 'used', 0, 0, 0, 5, 0)`).run();
-
   const app = createApp();
   const originalFetch = global.fetch;
   const originalConsoleLog = console.log;
@@ -48,16 +48,13 @@ test('integration: atomic checkout → paychangu payment → webhook persists st
     assert.ok(checkoutResult.reference);
     assert.ok(checkoutResult.checkoutUrl);
     assert.equal(checkoutResult.items?.[0]?.reference, `${checkoutResult.orderId}-ITEM-01`);
-
     const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/${encodeURIComponent('txref-integration-1')}`, { headers: { authorization: 'Bearer test' } });
     assert.equal(verifyRes.status, 200);
     const verifyResult = await verifyRes.json() as { verified?: boolean };
     assert.equal(verifyResult.verified, true);
-
     const rawWebhook = JSON.stringify({ event_type: 'api.charge.payment', event_id: 'evt_success_1', tx_ref: checkoutResult.reference, data: { tx_ref: checkoutResult.reference, status: 'paid', amount: 1000, currency: 'MWK' } });
     assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
     assert.equal((await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook))).status, 200);
-
     const savedOrder = orderRepository.findById(checkoutResult.orderId!);
     const savedPayment = paymentRepository.findByReference(checkoutResult.reference!);
     const auditRows = fetchWebhookAuditRows(checkoutResult.reference!);
@@ -103,6 +100,10 @@ test('integration: PayChangu-prefixed references activate escrow after verificat
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     seedOrder('order_prefixed_1', prefixedReference);
+    const createPaymentRes = await initializePayment(base, 'order_prefixed_1');
+    assert.equal(createPaymentRes.status, 201);
+    const paymentResult = await createPaymentRes.json() as { reference?: string };
+    assert.equal(paymentResult.reference, prefixedReference);
     const verifyRes = await fetch(`${base}/api/payments/paychangu/verify/${encodeURIComponent(prefixedReference)}`, { headers: { authorization: 'Bearer test' } });
     assert.equal(verifyRes.status, 200);
     const verifyResult = await verifyRes.json() as { verified?: boolean };
