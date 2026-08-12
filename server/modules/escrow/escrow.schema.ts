@@ -8,7 +8,7 @@ db.exec(`
 
   DROP TRIGGER IF EXISTS trg_guard_escrow_terminal_state ON escrows;
 
-  CREATE FUNCTION guard_escrow_terminal_state()
+  CREATE OR REPLACE FUNCTION guard_escrow_terminal_state()
   RETURNS trigger
   LANGUAGE plpgsql
   AS $$
