@@ -56,10 +56,9 @@ function loadSslCaCertificate(): string | undefined {
   try {
     return fs.readFileSync(caPath, "utf8");
   } catch (error) {
-    throw new Error(
-      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}.`,
-      { cause: error },
-    );
+    const message =
+      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}.`;
+    throw new Error(`${message} ${error instanceof Error ? error.message : String(error)}`);
   }
 }
 
