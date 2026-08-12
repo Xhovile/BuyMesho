@@ -7,7 +7,12 @@ type EndpointResult = {
   details: Record<string, unknown>;
 };
 
-async function checkEndpoint(baseUrl: string, path: string, expectedStatus: number, validateBody: (body: unknown) => { ok: boolean; message: string; details?: Record<string, unknown> }): Promise<EndpointResult> {
+async function checkEndpoint(
+  baseUrl: string,
+  path: string,
+  expectedStatus: number,
+  validateBody: (body: unknown) => { ok: boolean; message: string; details?: Record<string, unknown> },
+): Promise<EndpointResult> {
   const started = Date.now();
   try {
     const response = await fetch(new URL(path, baseUrl), {
@@ -18,6 +23,7 @@ async function checkEndpoint(baseUrl: string, path: string, expectedStatus: numb
     const latencyMs = Date.now() - started;
     const contentType = response.headers.get("content-type") ?? "";
     let body: unknown = null;
+
     if (contentType.includes("application/json")) {
       try {
         body = await response.json();
@@ -32,7 +38,11 @@ async function checkEndpoint(baseUrl: string, path: string, expectedStatus: numb
       return {
         status: "FAIL",
         message: `${path} returned HTTP ${response.status}; expected ${expectedStatus}`,
-        details: { http_status: response.status, latency_ms: latencyMs, content_type: contentType },
+        details: {
+          http_status: response.status,
+          latency_ms: latencyMs,
+          content_type: contentType,
+        },
       };
     }
 
@@ -57,9 +67,11 @@ async function checkEndpoint(baseUrl: string, path: string, expectedStatus: numb
 }
 
 function validateEvents(body: unknown) {
-  const items = typeof body === "object" && body !== null && Array.isArray((body as { items?: unknown }).items)
-    ? (body as { items: unknown[] }).items
-    : null;
+  const items =
+    typeof body === "object" && body !== null && Array.isArray((body as { items?: unknown }).items)
+      ? (body as { items: unknown[] }).items
+      : null;
+
   return {
     ok: items !== null,
     message: items !== null ? "/api/events returned a valid items array" : "/api/events response shape is invalid",
@@ -67,7 +79,7 @@ function validateEvents(body: unknown) {
   };
 }
 
-function validateProtectedContract(body: unknown) {
+function validateProtectedContract(_body: unknown) {
   return {
     ok: true,
     message: "Protected endpoint is reachable and authentication can be validated separately",
@@ -75,10 +87,20 @@ function validateProtectedContract(body: unknown) {
   };
 }
 
+function getDiagnosticBaseUrl() {
+  const explicitBaseUrl = process.env.DIAGNOSTIC_BASE_URL ?? process.env.INTERNAL_API_BASE_URL;
+  if (explicitBaseUrl) {
+    return explicitBaseUrl.replace(/\/$/, "");
+  }
+
+  const port = process.env.PORT ?? "10000";
+  return `http://127.0.0.1:${port}`;
+}
+
 export function registerApiDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/api", async (_req, res) => {
     const started = Date.now();
-    const baseUrl = `${process.env.PUBLIC_APP_URL ?? process.env.APP_URL ?? "http://127.0.0.1:10000"}`.replace(/\/$/, "");
+    const baseUrl = getDiagnosticBaseUrl();
 
     const events = await checkEndpoint(baseUrl, "/api/events", 200, validateEvents);
 
@@ -98,7 +120,7 @@ export function registerApiDiagnosticsRoutes(app: Express) {
     const payload: DiagnosticPayload = {
       overall,
       authoritative: true,
-      diagnostic_version: "3.2",
+      diagnostic_version: "3.3",
       timestamp: new Date().toISOString(),
       duration_ms: Date.now() - started,
       checks,
