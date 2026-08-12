@@ -51,6 +51,29 @@ export type RouteDeps = {
   requireFirebaseUser: typeof requireFirebaseUser;
 };
 
+function installPostgresMessageSchemaGuard(db: any) {
+  if (!process.env.DATABASE_URL || !db || typeof db.exec !== "function") return;
+
+  const installedFlag = Symbol.for("buymesho.postgresMessageSchemaGuardInstalled");
+  if (db[installedFlag]) return;
+  db[installedFlag] = true;
+
+  const originalExec = db.exec.bind(db) as (sql: string) => void;
+  db.exec = (sql: string) => {
+    const normalizedSql = sql.replace(
+      /ALTER\s+TABLE\s+conversations\s+ADD\s+COLUMN\s+event_id\s+INTEGER(?!\s+IF\s+NOT\s+EXISTS)/gi,
+      "ALTER TABLE conversations ADD COLUMN IF NOT EXISTS event_id INTEGER",
+    );
+    return originalExec(normalizedSql);
+  };
+
+  // PostgreSQL does not use SQLite PRAGMA statements. The legacy message route
+  // calls db.pragma() during schema setup; on PostgreSQL this must remain a no-op.
+  if (typeof db.pragma === "function") {
+    db.pragma = () => undefined;
+  }
+}
+
 export function registerRoutes(app: Express, deps: RouteDeps) {
   const { db, requireAuth, requireFirebaseUser } = deps;
 
@@ -64,8 +87,13 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       return;
     }
     try {
-      db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_type, target_id, details) VALUES (?, ?, ?, ?, ?, ?)`).run(
-        admin_uid ?? null, admin_email ?? null, action_type, target_type, target_id ?? null, details ? JSON.stringify(details) : null
+      db.prepare(`INSERT INTO admin_actions (admin_uid, admin_email, action_type, target_id, details, target_type) VALUES (?, ?, ?, ?, ?, ?)`).run(
+        admin_uid ?? null,
+        admin_email ?? null,
+        action_type,
+        target_id ?? null,
+        details ? JSON.stringify(details) : null,
+        target_type,
       );
     } catch (error) {
       console.warn("Failed to log admin action:", error);
@@ -83,6 +111,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerAccountDeletionRoutes(app);
   registerMessageRoutes(app);
   registerMessageModerationRoutes(app);
+  installPostgresMessageSchemaGuard(db);
   registerMessagesRoutes(app);
   registerReviewsRoutes(app);
   registerDiagnosticsRoutes(app, { db });
