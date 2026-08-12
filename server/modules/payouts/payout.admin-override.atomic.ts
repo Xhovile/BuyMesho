@@ -1,5 +1,5 @@
 import { getPaymentDb } from '../../postgresCompat.js';
-import { payoutRepository, type PayoutRepository } from './payout.repository.js';
+import { payoutRepository, type PayoutTransitionRepository } from './payout.transition-repository.js';
 import type { AdminOverrideAction, PayoutRecord } from './payout.shared.js';
 
 const ALLOWED_TRANSITIONS: Record<AdminOverrideAction, readonly PayoutRecord['status'][]> = {
@@ -64,7 +64,7 @@ function buildUpdate(action: AdminOverrideAction, actorId: string, reason: strin
 }
 
 export function applyAdminOverrideAtomic(
-  repository: PayoutRepository = payoutRepository,
+  repository: PayoutTransitionRepository = payoutRepository,
   input: {
     payoutId: string;
     action: AdminOverrideAction;
