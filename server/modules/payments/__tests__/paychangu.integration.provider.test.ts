@@ -44,7 +44,7 @@ test('integration: PayChangu verification rejects overpaid payments', async () =
     assert.equal(verifyRes.status, 200);
     const verifyResult = await verifyRes.json() as { verified?: boolean; failureReason?: string };
     assert.equal(verifyResult.verified, false);
-    assert.match(verifyResult.failureReason ?? '', /amount or currency does not cover order total/i);
+    assert.match(verifyResult.failureReason ?? '', /exactly match order total/i);
     assert.equal(orderRepository.findById('order_overpaid_1')?.status, 'pending_payment');
     assert.equal(paymentRepository.findByReference('txref-overpaid-1')?.verified, false);
     assert.equal(countEscrowsForOrder('order_overpaid_1'), 0);
@@ -57,8 +57,8 @@ test('integration: PayChangu verification rejects overpaid payments', async () =
 
 test('integration: PayChangu verification rejects underpaid, wrong-currency, and mismatched-reference responses', async () => {
   const scenarios = [
-    { name: 'underpaid', reference: 'txref-underpaid-1', amount: 999, currency: 'MWK', verifiedReference: 'txref-underpaid-1', expectedReason: /amount or currency does not cover order total/ },
-    { name: 'wrong currency', reference: 'txref-currency-1', amount: 1000, currency: 'USD', verifiedReference: 'txref-currency-1', expectedReason: /amount or currency does not cover order total/ },
+    { name: 'underpaid', reference: 'txref-underpaid-1', amount: 999, currency: 'MWK', verifiedReference: 'txref-underpaid-1', expectedReason: /exactly match order total/ },
+    { name: 'wrong currency', reference: 'txref-currency-1', amount: 1000, currency: 'USD', verifiedReference: 'txref-currency-1', expectedReason: /exactly match order total/ },
     { name: 'mismatched reference', reference: 'txref-mismatch-1', amount: 1000, currency: 'MWK', verifiedReference: 'txref-other-1', expectedReason: /reference does not match requested transaction reference/ },
   ] as const;
   for (const scenario of scenarios) {
