@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import './escrow.schema.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import type { EscrowState } from '../../../src/shared/types/payment.js';
 
