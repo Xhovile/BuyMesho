@@ -1,11 +1,5 @@
 import type { PayoutStatus } from './payout.shared.js';
 
-/**
- * Legal payout lifecycle transitions.
- *
- * Persistence remains in PayoutRepository. This module only owns the
- * financial state-transition policy.
- */
 const PAYOUT_TRANSITIONS: Record<PayoutStatus, readonly PayoutStatus[]> = {
   eligible: ['pending_settlement', 'held', 'cancelled'],
   pending_settlement: ['ready_for_payout', 'queued', 'processing', 'held', 'failed', 'cancelled'],
@@ -19,12 +13,14 @@ const PAYOUT_TRANSITIONS: Record<PayoutStatus, readonly PayoutStatus[]> = {
   cancelled: [],
 };
 
-export function assertPayoutStatusTransition(
-  from: PayoutStatus,
-  to: PayoutStatus,
-): void {
+export function assertPayoutStatusTransition(from: PayoutStatus, to: PayoutStatus): void {
+  // Existing payout writes are idempotent; the exception is an active
+  // processing payout, where a second processing mutation would be a new attempt.
   if (from === to) {
-    throw new Error(`Payout is already ${from}`);
+    if (from === 'processing') {
+      throw new Error('Payout is already processing');
+    }
+    return;
   }
 
   if (PAYOUT_TRANSITIONS[from].includes(to)) return;
@@ -32,8 +28,6 @@ export function assertPayoutStatusTransition(
   throw new Error(`Illegal payout status transition: ${from} -> ${to}`);
 }
 
-export function getAllowedPayoutTransitions(
-  status: PayoutStatus,
-): readonly PayoutStatus[] {
+export function getAllowedPayoutTransitions(status: PayoutStatus): readonly PayoutStatus[] {
   return PAYOUT_TRANSITIONS[status];
 }
