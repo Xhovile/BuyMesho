@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 
 import { EXPLORE_PATH, navigateToListingDetails, navigateToPath } from "../../lib/appNavigation";
 import { getOptimizedImageUrl } from "../../lib/imageUrl";
+import ListingImage from "../ListingImage";
 import type { ListingStripVariant, SectionListing } from "../../home/home.types";
 
 function ListingCardSkeleton() {
@@ -71,7 +72,7 @@ export default function ListingStrip({
           </div>
         ) : (
           listings.slice(0, maxItems).map((item) => {
-            const imageSrc = getOptimizedImageUrl(item.photos?.[0], 420) || `https://picsum.photos/seed/${item.id}/420/315`;
+            const imageSrc = getOptimizedImageUrl(item.photos?.[0], 420);
 
             return (
               <button
@@ -81,12 +82,10 @@ export default function ListingStrip({
                 className="group flex w-[220px] shrink-0 snap-start flex-col bg-transparent text-left sm:w-[260px]"
               >
                 <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-zinc-100">
-                  <img
+                  <ListingImage
                     src={imageSrc}
                     alt={item.name}
-                    loading="lazy"
-                    decoding="async"
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                    category={item.category}
                   />
                 </div>
 
