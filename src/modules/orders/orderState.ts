@@ -57,3 +57,29 @@ export const ORDER_STATE_FLOW: readonly OrderStatus[] = [
   'disputed',
   'closed',
 ] as const;
+
+/**
+ * Financially meaningful order transitions only. This is intentionally a
+ * small explicit map rather than a generic state-machine framework.
+ */
+export const ORDER_ALLOWED_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
+  draft: ['pending_payment', 'cancelled'],
+  pending_payment: ['paid', 'cancelled'],
+  paid: ['in_escrow', 'fulfilled', 'cancelled', 'refunded', 'disputed'],
+  in_escrow: ['fulfilled', 'refunded', 'disputed'],
+  fulfilled: ['refunded', 'disputed', 'closed'],
+  cancelled: [],
+  refunded: [],
+  disputed: ['refunded', 'fulfilled', 'closed'],
+  closed: [],
+} as const;
+
+export function isAllowedOrderTransition(from: OrderStatus, to: OrderStatus): boolean {
+  if (from === to) return true;
+  return ORDER_ALLOWED_TRANSITIONS[from].includes(to);
+}
+
+export function assertAllowedOrderTransition(from: OrderStatus, to: OrderStatus): void {
+  if (isAllowedOrderTransition(from, to)) return;
+  throw new Error(`Illegal order state transition: ${from} -> ${to}`);
+}
