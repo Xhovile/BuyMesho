@@ -60,8 +60,6 @@ export function buildPayChanguPayoutChargeId(payoutId: string, attemptNo: number
   return `BM-PO-${payoutId}-A${String(safeAttemptNo).padStart(2, '0')}`;
 }
 
-
-
 function emitSellerPayoutQueuedNotification(sellerId: string, orderId: string, payoutId: string): void {
   const payload = {
     orderId,
@@ -188,134 +186,158 @@ export function applyVerifiedPayChanguPayment(
     );
   }
 
-  const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
-    ...current,
-    verified: true,
-    verification,
-    status: 'captured',
-    paidAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  }));
+  const order = resolveOrderByReferences(referenceCandidates);
 
-  let order = resolveOrderByReferences(referenceCandidates);
-  if (!order && payment) {
-    order = orderRepository.findById(payment.orderId);
-  }
-
+  // A verified provider callback can legitimately arrive before the order is
+  // queryable. Do not commit a partial payment mutation in that case; the
+  // webhook remains retryable and can settle the full state once the order is
+  // available.
   if (!order) {
+    const payment = referenceCandidates
+      .map((candidate) => paymentRepository.findByReference(candidate))
+      .find(Boolean);
+
     return {
       payment,
       verification,
     };
   }
 
-  const confirmedOrder =
-    confirmOrderByReferences(referenceCandidates) ??
-    serverOrderService.setStatus(order.id, 'paid') ??
-    order;
+  const settlement = getPaymentDb().transaction(() => {
+    const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
+      ...current,
+      verified: true,
+      verification,
+      status: 'captured',
+      paidAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }));
 
-  const activeOrder = confirmedOrder ?? order;
+    const confirmedOrder =
+      confirmOrderByReferences(referenceCandidates) ??
+      serverOrderService.setStatus(order.id, 'paid') ??
+      order;
 
-  if (activeOrder.settlementRoute === 'connect') {
-    const connectAccount = getConnectAccount(activeOrder.sellerId);
-    if (!connectAccount || connectAccount.status !== 'connected') {
+    const activeOrder = confirmedOrder ?? order;
+
+    if (activeOrder.settlementRoute === 'connect') {
+      const connectAccount = getConnectAccount(activeOrder.sellerId);
+      if (!connectAccount || connectAccount.status !== 'connected') {
+        return {
+          payment,
+          order: activeOrder,
+          verification,
+          sellerPayoutQueued: false,
+          payoutId: null,
+          orderEnteredEscrow: false,
+        };
+      }
+
+      const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
+      const payoutMethod = derivePayoutMethod(destination);
+      const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
+      const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+      const payoutFormula = calculatePayoutFormula({
+        grossAmount,
+        currency,
+        payoutMethod,
+      });
+
+      const { payout, created } = payoutService.createConnectPayoutCandidate({
+        sellerId: activeOrder.sellerId,
+        orderId: activeOrder.id,
+        amount: payoutFormula.sellerReceivesAmount,
+        grossAmount: payoutFormula.grossAmount,
+        platformFeeAmount: payoutFormula.platformFeeAmount,
+        processingFeeAmount: payoutFormula.processingFeeAmount,
+        reserveAmount: payoutFormula.reserveAmount,
+        reserveCapAmount: payoutFormula.reserveCapAmount,
+        manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
+        payoutFeeAmount: payoutFormula.payoutFeeAmount,
+        sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
+        netAmount: payoutFormula.netAmount,
+        formulaSnapshot: payoutFormula,
+        currency,
+        requestedBy: 'system',
+        destinationAccountId: destination?.id ?? null,
+        snapshot: {
+          payoutFormula,
+          settlementRoute: activeOrder.settlementRoute,
+          paymentReference: reference,
+          payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
+          connectAccountId: connectAccount.id,
+          connectStatus: connectAccount.status,
+          connectMode: connectAccount.mode,
+        },
+      });
+
+      if (created) {
+        payoutRepository.addEvent({
+          payoutId: payout.id,
+          sellerId: activeOrder.sellerId,
+          eventType: 'connect_payout_queued',
+          actorType: 'system',
+          note: 'Connect payment created seller payout candidate',
+          payload: {
+            settlementRoute: activeOrder.settlementRoute,
+            payoutFormula,
+            destinationAccountId: destination?.id ?? null,
+            connectAccountId: connectAccount.id,
+            connectStatus: connectAccount.status,
+            connectMode: connectAccount.mode,
+            payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
+          },
+        });
+      }
+
       return {
         payment,
         order: activeOrder,
         verification,
+        sellerPayoutQueued: created,
+        payoutId: payout.id,
+        orderEnteredEscrow: false,
       };
     }
 
-    const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
-    const payoutMethod = derivePayoutMethod(destination);
-    const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
+    const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
     const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
-    const payoutFormula = calculatePayoutFormula({
-      grossAmount,
-      currency,
-      payoutMethod,
-    });
 
-    const { payout, created } = payoutService.createConnectPayoutCandidate({
-      sellerId: activeOrder.sellerId,
-      orderId: activeOrder.id,
-      amount: payoutFormula.sellerReceivesAmount,
-      grossAmount: payoutFormula.grossAmount,
-      platformFeeAmount: payoutFormula.platformFeeAmount,
-      processingFeeAmount: payoutFormula.processingFeeAmount,
-      reserveAmount: payoutFormula.reserveAmount,
-      reserveCapAmount: payoutFormula.reserveCapAmount,
-      manualAdjustmentAmount: payoutFormula.manualAdjustmentAmount,
-      payoutFeeAmount: payoutFormula.payoutFeeAmount,
-      sellerReceivesAmount: payoutFormula.sellerReceivesAmount,
-      netAmount: payoutFormula.netAmount,
-      formulaSnapshot: payoutFormula,
-      currency,
-      requestedBy: 'system',
-      destinationAccountId: destination?.id ?? null,
-      snapshot: {
-        payoutFormula,
-        settlementRoute: activeOrder.settlementRoute,
-        paymentReference: reference,
-        payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
-        connectAccountId: connectAccount.id,
-        connectStatus: connectAccount.status,
-        connectMode: connectAccount.mode,
-      },
-    });
-
-    if (created) {
-      payoutRepository.addEvent({
-        payoutId: payout.id,
-        sellerId: activeOrder.sellerId,
-        eventType: 'connect_payout_queued',
-        actorType: 'system',
-        note: 'Connect payment created seller payout candidate',
-        payload: {
-          settlementRoute: activeOrder.settlementRoute,
-          payoutFormula,
-          destinationAccountId: destination?.id ?? null,
-          connectAccountId: connectAccount.id,
-          connectStatus: connectAccount.status,
-          payChanguVerificationReference: verification.reference ?? verification.txRef ?? null,
-        },
-      });
-
-      emitSellerPayoutQueuedNotification(activeOrder.sellerId, activeOrder.id, payout.id);
-    }
+    const escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
+    const escrowedOrder =
+      serverOrderService.markInEscrow(activeOrder.id, escrow.id) ??
+      activeOrder;
 
     return {
       payment,
-      order: activeOrder,
+      order: escrowedOrder,
       verification,
+      sellerPayoutQueued: false,
+      payoutId: null,
+      orderEnteredEscrow: escrowedOrder.status === 'in_escrow' && order.status !== 'in_escrow',
     };
+  })();
+
+  if (settlement.sellerPayoutQueued && settlement.payoutId) {
+    emitSellerPayoutQueuedNotification(
+      settlement.order.sellerId,
+      settlement.order.id,
+      settlement.payoutId,
+    );
   }
 
-  const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
-  const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
-
-  let escrow = escrowRepository.findByOrderId(activeOrder.id);
-
-  if (!escrow) {
-    escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
-  }
-
-  const escrowedOrder =
-    serverOrderService.markInEscrow(activeOrder.id, escrow.id) ??
-    activeOrder;
-
-  if (escrowedOrder.status === 'in_escrow' && order.status !== 'in_escrow') {
+  if (settlement.orderEnteredEscrow) {
     emitOrderPaidNotification(
-      escrowedOrder.buyerId,
-      escrowedOrder.sellerId,
-      escrowedOrder.id,
+      settlement.order.buyerId,
+      settlement.order.sellerId,
+      settlement.order.id,
     );
   }
 
   return {
-    payment,
-    order: escrowedOrder,
-    verification,
+    payment: settlement.payment,
+    order: settlement.order,
+    verification: settlement.verification,
   };
 }
 
