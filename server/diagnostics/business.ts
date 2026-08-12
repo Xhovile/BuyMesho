@@ -6,7 +6,7 @@ export function registerBusinessDiagnosticsRoutes(app: Express) {
   app.get("/api/diagnostics/business", async (_req, res) => {
     const started = Date.now();
     try {
-      const [orders, listings, lifecycle] = await Promise.all([
+      const [orders, listings, lifecycle, lifecycleDetails] = await Promise.all([
         query<{ count: string }>("SELECT COUNT(*)::text AS count FROM orders"),
         query<{ count: string }>("SELECT COUNT(*)::text AS count FROM listings"),
         query<{ count: string }>(`
@@ -17,6 +17,21 @@ export function registerBusinessDiagnosticsRoutes(app: Express) {
              OR (status = 'fulfilled' AND (paid_at IS NULL OR fulfilled_at IS NULL))
              OR (fulfilled_at IS NOT NULL AND paid_at IS NULL)
         `),
+        query<{
+          id: string;
+          status: string;
+          created_at: string | null;
+          updated_at: string | null;
+          paid_at: string | null;
+          fulfilled_at: string | null;
+          placed_at: string | null;
+        }>(`
+          SELECT id, status, created_at, updated_at, paid_at, fulfilled_at, placed_at
+          FROM orders
+          WHERE status = 'fulfilled'
+            AND fulfilled_at IS NULL
+          ORDER BY updated_at DESC NULLS LAST, created_at DESC
+        `),
       ]);
 
       const lifecycleCount = Number(lifecycle.rows[0]?.count ?? 0);
@@ -24,7 +39,7 @@ export function registerBusinessDiagnosticsRoutes(app: Express) {
       const payload: DiagnosticPayload = {
         overall: status,
         authoritative: true,
-        diagnostic_version: "3.0",
+        diagnostic_version: "3.1",
         timestamp: new Date().toISOString(),
         duration_ms: Date.now() - started,
         checks: {
@@ -39,7 +54,10 @@ export function registerBusinessDiagnosticsRoutes(app: Express) {
           order_lifecycle: {
             status,
             message: lifecycleCount > 0 ? "Order lifecycle timestamp inconsistencies detected" : "Order lifecycle timestamps are consistent",
-            details: { count: lifecycleCount },
+            details: {
+              count: lifecycleCount,
+              offending_orders: lifecycle.rows[0]?.count === "0" ? [] : lifecycleDetails.rows,
+            },
           },
         },
       };
@@ -49,7 +67,7 @@ export function registerBusinessDiagnosticsRoutes(app: Express) {
       res.status(503).setHeader("Cache-Control", "no-store").json({
         overall: "FAIL",
         authoritative: true,
-        diagnostic_version: "3.0",
+        diagnostic_version: "3.1",
         timestamp: new Date().toISOString(),
         duration_ms: Date.now() - started,
         error: error instanceof Error ? error.message : String(error),
