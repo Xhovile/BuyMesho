@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { createHash } from "crypto";
 import { paymentRepository } from "./payment.repository.js";
+import { orderRepository } from "../orders/order.repository.js";
 import { applyVerifiedPayChanguPayment } from "./paychangu.flow.js";
 import {
   isAcceptedPaychanguEventType,
@@ -83,6 +84,10 @@ function readString(...values: unknown[]): string {
   return "";
 }
 
+function normalizeCurrency(value: string | undefined | null): string {
+  return String(value ?? "").trim().toUpperCase();
+}
+
 function readAmountAndCurrency(payload: Record<string, unknown> | null): { amount?: { amount: number; currency: string }; currency: string } {
   const directAmount = payload?.amount;
   const nestedData = extractNestedObject(payload?.data);
@@ -95,8 +100,7 @@ function readAmountAndCurrency(payload: Record<string, unknown> | null): { amoun
     nestedTransaction?.currency,
     nestedData?.currency,
     payload?.currency,
-    "MWK",
-  ) || "MWK";
+  );
 
   if (Number.isFinite(amountCandidate) && amountCandidate > 0) {
     return {
@@ -205,14 +209,41 @@ async function handlePayChanguWebhookInternal(
   const now = new Date().toISOString();
 
   if (isPaychanguSuccessStatus(status)) {
+    const order = orderRepository.findById(payment.orderId);
+    const expectedCurrency = normalizeCurrency(order?.currency);
+    const receivedCurrency = normalizeCurrency(amount?.currency ?? currency);
+    const receivedAmount = amount?.amount;
+
+    if (
+      !order ||
+      receivedAmount !== order.total.amount ||
+      !receivedCurrency ||
+      receivedCurrency !== expectedCurrency
+    ) {
+      const reason = !order
+        ? `Associated order not found for payment ${txRef}`
+        : `Payment amount or currency does not exactly match order total for ${order.id}`;
+
+      updatePaymentWebhookEventStatus(inserted.id, "ignored", {
+        processedAt: now,
+        error: reason,
+        signatureValid: true,
+      });
+
+      return { ok: true, status: "ignored", reference: txRef };
+    }
+
     applyVerifiedPayChanguPayment({
       verified: true,
       provider: "paychangu",
       txRef,
       reference: txRef,
       status,
-      currency,
-      amount,
+      currency: receivedCurrency,
+      amount: {
+        amount: receivedAmount,
+        currency: receivedCurrency,
+      },
       checkoutUrl: null,
       rawResponse: parsedPayload,
     });
