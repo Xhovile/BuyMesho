@@ -18,10 +18,12 @@ export class PostgresOrderRepository {
   save(order: StoredOrder): StoredOrder {
     const now = new Date().toISOString();
     const paidAt = order.status === 'paid' ? (order.paidAt ?? now) : (order.paidAt ?? null);
+    const fulfilledAt = order.status === 'fulfilled' ? (order.fulfilledAt ?? now) : (order.fulfilledAt ?? null);
 
     const stored: StoredOrder = {
       ...order,
       paidAt,
+      fulfilledAt,
     };
 
     this.db.prepare(`
@@ -59,7 +61,7 @@ export class PostgresOrderRepository {
       items: JSON.stringify(stored.items),
       placed_at: stored.placedAt ?? null,
       paid_at: paidAt,
-      fulfilled_at: stored.fulfilledAt ?? null,
+      fulfilled_at: fulfilledAt,
       created_at: stored.createdAt,
       updated_at: stored.updatedAt ?? now,
     });
