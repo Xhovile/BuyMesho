@@ -3,6 +3,7 @@ import { registerDatabaseDiagnosticsRoutes } from "./database.js";
 import { registerBusinessDiagnosticsRoutes } from "./business.js";
 import { registerPaymentDiagnosticsRoutes } from "./payments.js";
 import { registerInfrastructureDiagnosticsRoutes } from "./infrastructure.js";
+import { registerApiDiagnosticsRoutes } from "./api.js";
 import type { Express } from "express";
 
 export function registerDiagnosticsRoutes(app: Express, deps: { db: any }) {
@@ -11,4 +12,5 @@ export function registerDiagnosticsRoutes(app: Express, deps: { db: any }) {
   registerBusinessDiagnosticsRoutes(app);
   registerPaymentDiagnosticsRoutes(app);
   registerInfrastructureDiagnosticsRoutes(app);
+  registerApiDiagnosticsRoutes(app);
 }
