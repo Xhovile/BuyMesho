@@ -7,6 +7,7 @@ import { paychanguProvider } from './paychangu.provider.js';
 import { paymentRepository } from './payment.repository.js';
 import { orderRepository } from '../orders/order.repository.js';
 import { applyVerifiedPayChanguPayment } from './paychangu.flow.js';
+import { findPendingPayChanguWebhook } from '../../postgresCompat/webhooks.js';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -107,8 +108,18 @@ export class ServerPaymentService {
       ? await paychanguProvider.createPayment(request, this.resolveConfig())
       : await this.registry.get(request.provider).createPayment(request);
 
-    await paymentRepository.save({ ...result, verified: false });
-    return result;
+    const saved = await paymentRepository.save({ ...result, verified: false });
+
+    if (result.provider === 'paychangu' && findPendingPayChanguWebhook(result.reference)) {
+      try {
+        await this.verifyPaychanguPayment(result.reference);
+      } catch {
+        // The original verified webhook remains stored as a retryable event.
+        // A provider timeout here must never turn checkout creation into a false failure.
+      }
+    }
+
+    return saved;
   }
 
   async verifyPaychanguPayment(txRef: string): Promise<PaymentVerificationResult> {
