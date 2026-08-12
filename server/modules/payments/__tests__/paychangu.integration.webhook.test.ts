@@ -1,4 +1,5 @@
 import test from 'node:test';
+import assert from 'node:assert/strict';
 import {
   clearPaymentState,
   createApp,
@@ -6,6 +7,7 @@ import {
   fetchWebhookAuditRows,
   fetchWebhookAuditRowsByPayloadHash,
   hashPayload,
+  initializePayment,
   mockFetch,
   mockPayChanguFetch,
   postPayChanguPayoutWebhook,
@@ -17,8 +19,7 @@ import {
   countEscrowsForOrder,
   countPayoutEvents,
 } from './paychangu.test.helpers.js';
-import { escrowRepository, orderRepository, paymentRepository, getPaymentDb } from './paychangu.test.helpers.js';
-
+import { escrowRepository, orderRepository, paymentRepository } from './paychangu.test.helpers.js';
 
 test('integration: order -> paychangu payment -> verified webhook persists state', async () => {
   clearPaymentState();
@@ -31,9 +32,11 @@ test('integration: order -> paychangu payment -> verified webhook persists state
   const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
   try {
     seedOrder('order_it_1', 'txref-integration-1');
+    const createPaymentRes = await initializePayment(base, 'order_it_1');
+    assert.equal(createPaymentRes.status, 201);
     const rawWebhook = JSON.stringify({ event_type: 'charge.success', tx_ref: 'txref-integration-1', data: { tx_ref: 'txref-integration-1', status: 'successful', amount: 1000, currency: 'MWK' } });
     const webhookRes = await postPayChanguWebhook(base, rawWebhook);
-    assert(webhookRes.status === 200);
+    assert.equal(webhookRes.status, 200);
     assert.equal(orderRepository.findById('order_it_1')?.status, 'in_escrow');
     assert.equal(paymentRepository.findByReference('txref-integration-1')?.verified, true);
     assert.equal(paymentRepository.findByReference('txref-integration-1')?.status, 'captured');
