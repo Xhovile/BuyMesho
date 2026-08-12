@@ -29,6 +29,10 @@ function normalizeReference(value: string | undefined | null): string {
   return String(value ?? '').trim();
 }
 
+function normalizeCurrency(value: string | undefined | null): string {
+  return String(value ?? '').trim().toUpperCase();
+}
+
 function stripPayChanguPrefix(value: string): string {
   return value.replace(/^PAYCHANGU-/i, '');
 }
@@ -203,6 +207,20 @@ export function applyVerifiedPayChanguPayment(
     };
   }
 
+  const expectedCurrency = normalizeCurrency(order.currency);
+  const verifiedAmount = verification.amount?.amount;
+  const verifiedCurrency = normalizeCurrency(verification.amount?.currency ?? verification.currency);
+
+  if (
+    verifiedAmount !== order.total.amount ||
+    !verifiedCurrency ||
+    verifiedCurrency !== expectedCurrency
+  ) {
+    throw new Error(
+      `Financial integrity violation for ${order.id}: provider payment does not exactly match order total`,
+    );
+  }
+
   const settlement = getPaymentDb().transaction(() => {
     const payment = updatePaymentByReferences(referenceCandidates, (current) => ({
       ...current,
@@ -235,8 +253,8 @@ export function applyVerifiedPayChanguPayment(
 
       const destination = findSellerDefaultPayoutDestination(activeOrder.sellerId);
       const payoutMethod = derivePayoutMethod(destination);
-      const grossAmount = verification.amount?.amount ?? activeOrder.total.amount;
-      const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+      const grossAmount = activeOrder.total.amount;
+      const currency = expectedCurrency;
       const payoutFormula = calculatePayoutFormula({
         grossAmount,
         currency,
@@ -300,8 +318,8 @@ export function applyVerifiedPayChanguPayment(
       };
     }
 
-    const escrowAmount = verification.amount?.amount ?? activeOrder.total.amount;
-    const currency = String(verification.currency ?? activeOrder.currency ?? 'MWK').toUpperCase();
+    const escrowAmount = activeOrder.total.amount;
+    const currency = expectedCurrency;
 
     const escrow = escrowRepository.create(activeOrder.id, currency, escrowAmount);
     const escrowedOrder =
