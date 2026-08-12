@@ -292,6 +292,271 @@ async function checkCriticalDataConsistency(tableNames: Set<string>, columnMap: 
   }
 }
 
+async function checkBusinessInvariants(
+  tableNames: Set<string>,
+  columnMap: Map<string, Set<string>>,
+): Promise<NamedCheck> {
+  const checks: Record<string, { status: CheckStatus; count: number; message: string }> = {};
+
+  const canCheck = (table: string, ...columns: string[]) =>
+    tableNames.has(table) && columns.every((column) => columnMap.get(table)?.has(column));
+
+  const record = (name: string, count: number, message: string, status: CheckStatus = count > 0 ? "FAIL" : "PASS") => {
+    checks[name] = { status, count, message };
+  };
+
+  try {
+    // Order ↔ payment consistency.
+    if (canCheck("payments", "order_id") && canCheck("orders", "id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payments p
+        LEFT JOIN orders o ON o.id = p.order_id
+        WHERE p.order_id IS NOT NULL AND o.id IS NULL
+      `);
+      record("order_payment_orphans", Number(result.rows[0]?.count ?? 0), "Payments referencing missing orders");
+    }
+
+    if (canCheck("payments", "order_id", "reference") && canCheck("orders", "id", "payment_reference")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payments p
+        JOIN orders o ON o.id = p.order_id
+        WHERE o.payment_reference IS NOT NULL
+          AND BTRIM(o.payment_reference::text) <> ''
+          AND o.payment_reference <> p.reference
+      `);
+      record("order_payment_reference_mismatch", Number(result.rows[0]?.count ?? 0), "Orders and their stored payments disagree on payment reference");
+    }
+
+    if (canCheck("payments", "order_id", "status") && canCheck("orders", "id", "total_amount")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM (
+          SELECT o.id
+          FROM orders o
+          JOIN payments p ON p.order_id = o.id
+          WHERE p.status = 'captured'
+          GROUP BY o.id, o.total_amount
+          HAVING ABS(COALESCE(SUM(p.amount), 0) - COALESCE(MAX(o.total_amount), 0)) > 0
+        ) mismatches
+      `);
+      record("captured_payment_total_mismatch", Number(result.rows[0]?.count ?? 0), "Captured payment totals do not reconcile to order totals");
+    }
+
+    // Payment ↔ escrow consistency.
+    if (canCheck("orders", "id", "escrow_id") && canCheck("escrows", "id", "order_id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM orders o
+        LEFT JOIN escrows e ON e.id = o.escrow_id
+        WHERE o.escrow_id IS NOT NULL
+          AND e.id IS NULL
+      `);
+      record("order_escrow_orphans", Number(result.rows[0]?.count ?? 0), "Orders reference missing escrows");
+    }
+
+    if (canCheck("escrows", "id", "order_id") && canCheck("orders", "id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM escrows e
+        LEFT JOIN orders o ON o.id = e.order_id
+        WHERE o.id IS NULL
+      `);
+      record("escrow_order_orphans", Number(result.rows[0]?.count ?? 0), "Escrows reference missing orders");
+    }
+
+    if (canCheck("orders", "id", "escrow_id", "status") && canCheck("escrows", "id", "order_id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM orders o
+        JOIN escrows e ON e.id = o.escrow_id
+        WHERE o.status IN ('in_escrow', 'fulfilled', 'disputed', 'refunded', 'closed')
+          AND e.order_id <> o.id
+      `);
+      record("order_escrow_order_id_mismatch", Number(result.rows[0]?.count ?? 0), "Order escrow linkage is inconsistent");
+    }
+
+    // Escrow ↔ payout consistency.
+    if (canCheck("payouts", "escrow_id", "order_id") && canCheck("escrows", "id", "order_id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts p
+        JOIN escrows e ON e.id = p.escrow_id
+        WHERE p.escrow_id IS NOT NULL
+          AND p.order_id IS NOT NULL
+          AND p.order_id <> e.order_id
+      `);
+      record("payout_escrow_order_mismatch", Number(result.rows[0]?.count ?? 0), "Payout order and escrow order do not match");
+    }
+
+    if (canCheck("payouts", "escrow_id") && canCheck("escrows", "id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts p
+        LEFT JOIN escrows e ON e.id = p.escrow_id
+        WHERE p.escrow_id IS NOT NULL
+          AND e.id IS NULL
+      `);
+      record("payout_escrow_orphans", Number(result.rows[0]?.count ?? 0), "Payouts reference missing escrows");
+    }
+
+    if (canCheck("payouts", "order_id") && canCheck("orders", "id")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts p
+        LEFT JOIN orders o ON o.id = p.order_id
+        WHERE p.order_id IS NOT NULL
+          AND o.id IS NULL
+      `);
+      record("payout_order_orphans", Number(result.rows[0]?.count ?? 0), "Payouts reference missing orders");
+    }
+
+    // Payout amount calculations.
+    if (canCheck("payouts", "gross_amount", "platform_fee_amount", "processing_fee_amount", "reserve_amount", "manual_adjustment_amount", "payout_fee_amount", "seller_receives_amount", "net_amount")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts
+        WHERE ABS(
+          COALESCE(seller_receives_amount, 0) -
+          GREATEST(
+            0,
+            COALESCE(gross_amount, 0)
+              - COALESCE(platform_fee_amount, 0)
+              - COALESCE(processing_fee_amount, 0)
+              - COALESCE(reserve_amount, 0)
+              - COALESCE(manual_adjustment_amount, 0)
+              - COALESCE(payout_fee_amount, 0)
+          )
+        ) > 0
+        OR ABS(COALESCE(net_amount, 0) - COALESCE(seller_receives_amount, 0)) > 0
+      `);
+      record("payout_amount_formula_mismatches", Number(result.rows[0]?.count ?? 0), "Stored payout amounts do not reconcile to the payout formula");
+    }
+
+    // Duplicate payment/reference/idempotency conditions.
+    if (canCheck("payments", "reference")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM (
+          SELECT reference
+          FROM payments
+          WHERE reference IS NOT NULL AND BTRIM(reference::text) <> ''
+          GROUP BY reference
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `);
+      record("duplicate_payment_references", Number(result.rows[0]?.count ?? 0), "Duplicate payment references detected");
+    }
+
+    if (canCheck("payments", "provider", "provider_reference")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM (
+          SELECT provider, provider_reference
+          FROM payments
+          WHERE provider_reference IS NOT NULL AND BTRIM(provider_reference::text) <> ''
+          GROUP BY provider, provider_reference
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `);
+      record("duplicate_provider_references", Number(result.rows[0]?.count ?? 0), "Duplicate provider payment references detected");
+    }
+
+    if (canCheck("orders", "buyer_id", "checkout_idempotency_key")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM (
+          SELECT buyer_id, checkout_idempotency_key
+          FROM orders
+          WHERE checkout_idempotency_key IS NOT NULL
+            AND BTRIM(checkout_idempotency_key::text) <> ''
+          GROUP BY buyer_id, checkout_idempotency_key
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `);
+      record("duplicate_checkout_idempotency_keys", Number(result.rows[0]?.count ?? 0), "Duplicate buyer checkout idempotency keys detected");
+    }
+
+    if (canCheck("payment_webhook_events", "provider", "reference", "event_type")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM (
+          SELECT provider, reference, event_type
+          FROM payment_webhook_events
+          WHERE reference IS NOT NULL AND BTRIM(reference::text) <> ''
+          GROUP BY provider, reference, event_type
+          HAVING COUNT(*) > 1
+        ) duplicates
+      `);
+      record("duplicate_payment_webhook_events", Number(result.rows[0]?.count ?? 0), "Duplicate payment webhook event identities detected");
+    }
+
+    // Status-transition validity at the current-state level.
+    if (canCheck("orders", "status")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM orders
+        WHERE status NOT IN ('draft','pending_payment','paid','in_escrow','fulfilled','cancelled','refunded','disputed','closed')
+      `);
+      record("orders_invalid_status", Number(result.rows[0]?.count ?? 0), "Orders contain unknown lifecycle states");
+    }
+
+    if (canCheck("orders", "status", "paid_at", "fulfilled_at")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM orders
+        WHERE (status IN ('paid','in_escrow','fulfilled','refunded','disputed','closed') AND paid_at IS NULL)
+           OR (status = 'fulfilled' AND fulfilled_at IS NULL)
+           OR (fulfilled_at IS NOT NULL AND paid_at IS NULL)
+      `);
+      record("order_status_timestamp_inconsistencies", Number(result.rows[0]?.count ?? 0), "Order status and lifecycle timestamps are inconsistent");
+    }
+
+    if (canCheck("escrows", "state")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM escrows
+        WHERE state NOT IN ('initiated','funded','held','released','refunded','disputed','closed')
+      `);
+      record("escrows_invalid_state", Number(result.rows[0]?.count ?? 0), "Escrows contain unknown lifecycle states");
+    }
+
+    if (canCheck("payouts", "status")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts
+        WHERE status NOT IN ('eligible','pending_settlement','ready_for_payout','queued','processing','pending','held','paid','failed','cancelled')
+      `);
+      record("payouts_invalid_status", Number(result.rows[0]?.count ?? 0), "Payouts contain unknown lifecycle states");
+    }
+
+    if (canCheck("payouts", "status", "paid_at", "failed_at")) {
+      const result = await query<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM payouts
+        WHERE (status = 'paid' AND paid_at IS NULL)
+           OR (status = 'failed' AND failed_at IS NULL)
+           OR (status = 'paid' AND failed_at IS NOT NULL)
+      `);
+      record("payout_status_timestamp_inconsistencies", Number(result.rows[0]?.count ?? 0), "Payout status and lifecycle timestamps are inconsistent");
+    }
+
+    const failed = Object.values(checks).filter((check) => check.status === "FAIL");
+    return {
+      status: failed.length ? "FAIL" : "PASS",
+      message: failed.length ? "Business-level integrity violations detected" : "Business-level integrity checks passed",
+      details: checks,
+    };
+  } catch (error) {
+    return {
+      status: "FAIL",
+      message: `Business invariant checks failed: ${error instanceof Error ? error.message : String(error)}`,
+      details: checks,
+    };
+  }
+}
+
 async function checkHardDeleteColumn(columnMap: Map<string, Set<string>>, tableNames: Set<string>): Promise<NamedCheck> {
   if (!tableNames.has("listings")) return { status: "FAIL", message: "listings table is missing" };
   if (!columnMap.get("listings")?.has("hard_delete_after")) return { status: "FAIL", message: "hard_delete_after column is missing" };
@@ -313,21 +578,13 @@ async function checkHardDeleteColumn(columnMap: Map<string, Set<string>>, tableN
 
 function checkEnvironment(name: string, required = false): NamedCheck {
   const configured = Boolean(process.env[name]?.trim());
-  return {
-    status: configured ? "PASS" : required ? "FAIL" : "WARN",
-    message: configured ? `${name} is configured` : `${name} is not configured`,
-    details: { configured },
-  };
+  return { status: configured ? "PASS" : required ? "FAIL" : "WARN", message: configured ? `${name} is configured` : `${name} is not configured`, details: { configured } };
 }
 
 function checkEnvironmentGroup(names: string[], label: string, mode: "all" | "any" = "all"): NamedCheck {
   const configured = names.filter((name) => Boolean(process.env[name]?.trim()));
   const complete = mode === "any" ? configured.length > 0 : configured.length === names.length;
-  return {
-    status: complete ? "PASS" : "WARN",
-    message: complete ? `${label} is configured` : `${label} is partially or not configured`,
-    details: { configured, missing: names.filter((name) => !configured.includes(name)) },
-  };
+  return { status: complete ? "PASS" : "WARN", message: complete ? `${label} is configured` : `${label} is partially or not configured`, details: { configured, missing: names.filter((name) => !configured.includes(name)) } };
 }
 
 function checkFirebaseAdmin(): NamedCheck {
@@ -342,11 +599,7 @@ function checkFirebaseAdmin(): NamedCheck {
 function checkWebhookExports(): NamedCheck {
   const paymentOk = typeof paymentWebhookHandler === "function" && typeof (paymentWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
   const payoutOk = typeof payoutWebhookHandler === "function" && typeof (payoutWebhookHandler as { handlePaychanguWebhook?: unknown }).handlePaychanguWebhook === "function";
-  return {
-    status: paymentOk && payoutOk ? "PASS" : "FAIL",
-    message: paymentOk && payoutOk ? "Webhook handlers are exported" : "Webhook handler exports are missing",
-    details: { paymentWebhookHandler: paymentOk, payoutWebhookHandler: payoutOk },
-  };
+  return { status: paymentOk && payoutOk ? "PASS" : "FAIL", message: paymentOk && payoutOk ? "Webhook handlers are exported" : "Webhook handler exports are missing", details: { paymentWebhookHandler: paymentOk, payoutWebhookHandler: payoutOk } };
 }
 
 function checkPaymentEndpointContract(): NamedCheck {
@@ -355,34 +608,19 @@ function checkPaymentEndpointContract(): NamedCheck {
   for (const [key, expected] of Object.entries(REQUIRED_PAYMENT_ENDPOINTS)) {
     if (actual[key] !== expected) mismatches[key] = { expected, actual: actual[key] };
   }
-  return {
-    status: Object.keys(mismatches).length ? "FAIL" : "PASS",
-    message: Object.keys(mismatches).length ? "Payment endpoint contract mismatch" : "Payment endpoint contract matches",
-    details: mismatches,
-  };
+  return { status: Object.keys(mismatches).length ? "FAIL" : "PASS", message: Object.keys(mismatches).length ? "Payment endpoint contract mismatch" : "Payment endpoint contract matches", details: mismatches };
 }
 
 export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
-  app.get("/api/health", (_req, res) => {
-    res.redirect("/api/diagnostics");
-  });
+  app.get("/api/health", (_req, res) => { res.redirect("/api/diagnostics"); });
 
   app.get("/api/diagnostics", async (_req, res) => {
     const started = Date.now();
     try {
       const database = await checkDatabase();
       if (database.status === "FAIL") {
-        const checks: Record<string, NamedCheck> = {
-          database,
-          database_url: checkEnvironment("DATABASE_URL", true),
-        };
-        res.status(503).setHeader("Cache-Control", "no-store").json({
-          overall: "FAIL",
-          authoritative: true,
-          timestamp: new Date().toISOString(),
-          duration_ms: Date.now() - started,
-          checks,
-        });
+        const checks: Record<string, NamedCheck> = { database, database_url: checkEnvironment("DATABASE_URL", true) };
+        res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
         return;
       }
 
@@ -392,6 +630,7 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
       const counts = await checkRowCounts(tableNames);
       const foreignKeys = await checkForeignKeys(tableNames);
       const criticalData = await checkCriticalDataConsistency(tableNames, columnMap);
+      const businessInvariants = await checkBusinessInvariants(tableNames, columnMap);
       const databaseIdentity = await checkDatabaseIdentity();
       const hardDelete = await checkHardDeleteColumn(columnMap, tableNames);
       const paymentEndpoints = checkPaymentEndpointContract();
@@ -405,6 +644,7 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
         counts,
         foreign_keys: foreignKeys,
         critical_data: criticalData,
+        business_invariants: businessInvariants,
         hard_delete_after: hardDelete,
         firebase: checkFirebaseAdmin(),
         cloudinary: checkEnvironmentGroup(["CLOUDINARY_CLOUD_NAME", "CLOUDINARY_API_KEY", "CLOUDINARY_API_SECRET"], "Cloudinary"),
@@ -413,28 +653,16 @@ export function registerDiagnosticsRoutes(app: Express, _deps: { db: any }) {
         database_url: checkEnvironment("DATABASE_URL", true),
         admin_access: checkEnvironmentGroup(["ADMIN_EMAILS", "ADMIN_UIDS"], "Admin access", "any"),
         payments: {
-          status: combineStatus([paymentEndpoints, webhookExports, tables, columns, counts, foreignKeys, criticalData]),
+          status: combineStatus([paymentEndpoints, webhookExports, tables, columns, counts, foreignKeys, criticalData, businessInvariants]),
           message: "Payment runtime and database integrity checks included above",
           details: { endpoint_contract: paymentEndpoints, webhook_exports: webhookExports },
         },
       };
 
       const overall = combineStatus(Object.values(checks));
-      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json({
-        overall,
-        authoritative: true,
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
-        checks,
-      });
+      res.status(overall === "FAIL" ? 503 : 200).setHeader("Cache-Control", "no-store").json({ overall, authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, checks });
     } catch (error) {
-      res.status(503).setHeader("Cache-Control", "no-store").json({
-        overall: "FAIL",
-        authoritative: true,
-        timestamp: new Date().toISOString(),
-        duration_ms: Date.now() - started,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      res.status(503).setHeader("Cache-Control", "no-store").json({ overall: "FAIL", authoritative: true, timestamp: new Date().toISOString(), duration_ms: Date.now() - started, error: error instanceof Error ? error.message : String(error) });
     }
   });
 }
