@@ -1,6 +1,6 @@
 import type { Express, RequestHandler } from "express";
-import { compareListings } from "../lib/ai.js";
 import { askBuyMeshoCopilot } from "../lib/buymesho-copilot.js";
+import { compareBuyMeshoListings } from "../lib/listing-comparison.js";
 import {
   generateListingDraft,
   suggestPricing,
