@@ -2,11 +2,11 @@ import './payout.schema.js';
 import { payoutRepository, type PayoutRepository } from './payout.repository.js';
 import { executePayoutFlow, getProviderBalance } from './payout.service.execution.js';
 import {
-  applyAdminOverrideFlow,
   reconcilePendingPayoutStatusesFlow,
   reconcilePayoutStatusFlow,
   reconcileProviderCallbackFlow,
 } from './payout.service.reconciliation.js';
+import { applyAdminOverrideAtomic } from './payout.admin-override.atomic.js';
 import {
   type CreateConnectPayoutInput,
   type CreateEligiblePayoutInput,
@@ -64,7 +64,7 @@ export class PayoutService {
   }
 
   markPaid(payoutId: string, actorId: string, note?: string): PayoutRecord | undefined {
-    return applyAdminOverrideFlow(this.repository, {
+    return applyAdminOverrideAtomic(this.repository, {
       payoutId,
       action: 'mark_paid',
       actorId,
@@ -73,7 +73,7 @@ export class PayoutService {
   }
 
   markFailed(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
-    return applyAdminOverrideFlow(this.repository, {
+    return applyAdminOverrideAtomic(this.repository, {
       payoutId,
       action: 'mark_failed',
       actorId,
@@ -82,7 +82,7 @@ export class PayoutService {
   }
 
   markHeld(payoutId: string, actorId: string, reason: string): PayoutRecord | undefined {
-    return applyAdminOverrideFlow(this.repository, {
+    return applyAdminOverrideAtomic(this.repository, {
       payoutId,
       action: 'hold',
       actorId,
@@ -97,7 +97,7 @@ export class PayoutService {
     reason?: string | null;
     sellerId?: string | null;
   }): PayoutRecord | undefined {
-    return applyAdminOverrideFlow(this.repository, input);
+    return applyAdminOverrideAtomic(this.repository, input);
   }
 
   processPayout(request: PayoutRequest) {
