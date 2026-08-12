@@ -256,6 +256,14 @@ function normalizeSchemaSql(sql: string): string {
     .replace(/\bDATETIME\b/gi, "TIMESTAMPTZ");
 }
 
+function workerExecArgv(): string[] {
+  return process.execArgv.filter((arg) => {
+    if (arg === "--test" || arg.startsWith("--test-")) return false;
+    if (arg === "--watch" || arg.startsWith("--watch-")) return false;
+    return true;
+  });
+}
+
 let worker: Worker | null = null;
 let workerPort: MessagePort | null = null;
 let requestCounter = 0;
@@ -273,7 +281,7 @@ function ensureWorker() {
       : path.join(process.cwd(), "server", "db.ts");
     worker = new Worker(workerUrl, {
       type: "module",
-      execArgv: process.execArgv,
+      execArgv: workerExecArgv(),
       workerData: { role: "pg-worker", port: port2 },
       transferList: [port2],
     } as any);
