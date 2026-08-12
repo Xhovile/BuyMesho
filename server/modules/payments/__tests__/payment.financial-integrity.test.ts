@@ -69,7 +69,7 @@ test('financial integrity: successful webhook with overpayment is ignored withou
 
 test('financial integrity: successful webhook without an amount is ignored without settlement', async () => {
   clearPaymentState();
-  process.env.PAYCHANGUANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
   process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
 
   const originalFetch = global.fetch;
