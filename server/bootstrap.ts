@@ -111,7 +111,7 @@ export async function startServer() {
   } else {
     const staticDir = path.join(process.cwd(), "dist");
     app.use(express.static(staticDir));
-    app.get("*", (_req, res) => {
+    app.get(/^\/(?!api\/).*/, (_req, res) => {
       res.sendFile(path.join(staticDir, "index.html"));
     });
   }
