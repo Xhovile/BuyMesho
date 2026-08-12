@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import fs from "node:fs";
+import path from "node:path";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 const rawConnectionString = process.env.DATABASE_URL?.trim();
@@ -47,14 +49,31 @@ const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 
+function loadSslCaCertificate(): string | undefined {
+  if (!sslEnabled || !sslRejectUnauthorized) return undefined;
+
+  const caPath = process.env.PGSSL_CA_PATH?.trim() || path.resolve(process.cwd(), "ca.pem");
+  try {
+    return fs.readFileSync(caPath, "utf8");
+  } catch (error) {
+    throw new Error(
+      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}.`,
+      { cause: error },
+    );
+  }
+}
+
 let poolInstance: Pool | null = null;
 if (connectionString) {
   try {
+    const sslCa = loadSslCaCertificate();
+
     poolInstance = new Pool({
       connectionString,
       ssl: sslEnabled
         ? {
             rejectUnauthorized: sslRejectUnauthorized,
+            ...(sslCa ? { ca: sslCa } : {}),
           }
         : false,
       max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
@@ -62,7 +81,8 @@ if (connectionString) {
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
     });
   } catch (err) {
-    console.warn("[AI Studio] Failed to create PostgreSQL pool:", err);
+    console.error("[AI Studio] Failed to create PostgreSQL pool:", err instanceof Error ? err.message : err);
+    throw err;
   }
 } else {
   console.warn("[AI Studio] DATABASE_URL is not configured — database operations will fallback to mock mode.");
