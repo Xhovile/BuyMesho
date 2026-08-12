@@ -109,34 +109,20 @@ export async function query<Row extends QueryResultRow = DbRow>(
   if (!poolInstance) {
     return { rows: [], rowCount: 0 };
   }
-  try {
-    const result = await poolInstance.query<Row>(text, params);
-    return {
-      rows: result.rows,
-      rowCount: result.rowCount ?? result.rows.length,
-    };
-  } catch (error) {
-    console.warn("[AI Studio] Database query failed:", error instanceof Error ? error.message : error);
-    return { rows: [], rowCount: 0 };
-  }
+
+  const result = await poolInstance.query<Row>(text, params);
+  return {
+    rows: result.rows,
+    rowCount: result.rowCount ?? result.rows.length,
+  };
 }
 
 export async function getClient(): Promise<PoolClient> {
   if (!poolInstance) {
-    return {
-      query: async () => ({ rows: [], rowCount: 0 }),
-      release: () => {},
-    } as unknown as PoolClient;
+    throw new Error("PostgreSQL is not configured: DATABASE_URL is missing or invalid.");
   }
-  try {
-    return await poolInstance.connect();
-  } catch (error) {
-    console.warn("[AI Studio] Database client connection failed:", error instanceof Error ? error.message : error);
-    return {
-      query: async () => ({ rows: [], rowCount: 0 }),
-      release: () => {},
-    } as unknown as PoolClient;
-  }
+
+  return poolInstance.connect();
 }
 
 export async function withTransaction<T>(
