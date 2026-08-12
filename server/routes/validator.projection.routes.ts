@@ -6,6 +6,21 @@ import { getPaymentDb } from "../postgresCompat.js";
 type User = { uid: string; email: string | null; email_verified: boolean; is_admin: boolean };
 type TicketStatus = "Waiting Entry" | "Inside" | "Outside" | "Cancelled" | "Refunded" | "Blocked" | "Duplicate Scan Attempt";
 
+const TICKET_ALLOWED_TRANSITIONS: Readonly<Record<TicketStatus, readonly TicketStatus[]>> = {
+  "Waiting Entry": ["Waiting Entry", "Inside", "Cancelled", "Refunded", "Blocked", "Duplicate Scan Attempt"],
+  Inside: ["Inside", "Outside", "Cancelled", "Refunded", "Blocked", "Duplicate Scan Attempt"],
+  Outside: ["Outside", "Inside", "Cancelled", "Refunded", "Blocked", "Duplicate Scan Attempt"],
+  Cancelled: ["Cancelled"],
+  Refunded: ["Refunded"],
+  Blocked: ["Blocked"],
+  "Duplicate Scan Attempt": ["Duplicate Scan Attempt"],
+} as const;
+
+function assertTicketStatusTransition(from: TicketStatus, to: TicketStatus): void {
+  if (TICKET_ALLOWED_TRANSITIONS[from].includes(to)) return;
+  throw new Error(`Illegal ticket state transition: ${from} -> ${to}`);
+}
+
 function auth(req: Request, res: Response, next: NextFunction) {
   const header = req.headers.authorization;
   if (!header) return res.status(401).json({ error: "Missing Authorization Bearer token" });
@@ -119,6 +134,8 @@ function scanHandler(req: Request, res: Response) {
   if (ticket.status === "Outside" && !allowReentry) return res.status(403).json({ error: "Re-entry not permitted", result: "rejected", reason: "reentry_not_permitted", ticket, serverVersion: eventVersion(event) });
 
   const now = new Date().toISOString();
+  const nextStatus: TicketStatus = "Inside";
+  assertTicketStatusTransition(ticket.status, nextStatus);
   const metadata = { ...(ticket.metadata ?? {}), last_gate_name: gateName, last_staff_name: staffName, last_scan_at: now };
   getPaymentDb().prepare(`UPDATE event_tickets SET status = 'Inside', scanned_at = ?, updated_at = ?, metadata = ? WHERE id = ? AND event_id = ?`).run(now, now, JSON.stringify(metadata), ticket.id, eventId);
   refreshStats(eventId);
@@ -136,6 +153,7 @@ function statusHandler(req: Request, res: Response) {
   const existing = getPaymentDb().prepare(`SELECT id, status FROM event_tickets WHERE id = ? AND event_id = ? LIMIT 1`).get(ticketId, eventId) as { id?: string; status?: TicketStatus } | undefined;
   if (!existing) return res.status(404).json({ error: "Ticket not found" });
   const now = new Date().toISOString();
+  assertTicketStatusTransition(existing.status ?? "Waiting Entry", status);
   getPaymentDb().prepare(`UPDATE event_tickets SET status = ?, scanned_at = CASE WHEN ? IN ('Inside','Outside') THEN COALESCE(scanned_at, ?) ELSE scanned_at END, updated_at = ? WHERE id = ? AND event_id = ?`).run(status, status, now, now, ticketId, eventId);
   refreshStats(eventId);
   return res.json({ success: true, status, ticketId, serverVersion: eventVersion(event) });
@@ -153,6 +171,10 @@ function syncHandler(req: Request, res: Response) {
     if (!ticket) { conflicts.push({ queueId: item?.queueId, ticketId, eventId, reason: "ticket_not_found" }); continue; }
     if (ticket.status === status) { applied.push({ queueId: item?.queueId, ticketId, eventId, result: "already_applied", reason: "already_in_desired_state" }); continue; }
     if (["Cancelled", "Refunded", "Blocked"].includes(ticket.status ?? "")) { conflicts.push({ queueId: item?.queueId, ticketId, eventId, reason: `ticket_${String(ticket.status).toLowerCase()}`, actualStatus: ticket.status }); continue; }
+    if (!TICKET_ALLOWED_TRANSITIONS[ticket.status as TicketStatus]?.includes(status)) {
+      conflicts.push({ queueId: item?.queueId, ticketId, eventId, reason: "illegal_ticket_transition", actualStatus: ticket.status, requestedStatus: status });
+      continue;
+    }
     const now = new Date().toISOString();
     getPaymentDb().prepare(`UPDATE event_tickets SET status = ?, updated_at = ? WHERE id = ? AND event_id = ?`).run(status, now, ticketId, eventId);
     refreshStats(eventId);
