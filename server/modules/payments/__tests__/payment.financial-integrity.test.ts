@@ -11,7 +11,7 @@ import {
   signWebhook,
   countEscrowsForOrder,
 } from './paychangu.test.helpers.js';
-import { orderRepository, paymentRepository } from './paychangu.test.helpers.js';
+import { escrowRepository, orderRepository, paymentRepository } from './paychangu.test.helpers.js';
 
 const WEBHOOK_SECRET = 'integration-secret';
 
@@ -100,6 +100,60 @@ test('financial integrity: successful webhook without an amount is ignored witho
       assert.equal(orderRepository.findById('order_webhook_missing_amount_1')?.status, 'pending_payment');
       assert.equal(paymentRepository.findByReference('txref-webhook-missing-amount-1')?.verified, false);
       assert.equal(countEscrowsForOrder('order_webhook_missing_amount_1'), 0);
+    });
+  } finally {
+    global.fetch = originalFetch;
+    clearPaymentState();
+  }
+});
+
+test('financial integrity: late success webhook cannot resurrect a refunded order', async () => {
+  clearPaymentState();
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-late-success-after-refund-1', 'successful', 1000);
+
+  try {
+    const orderId = 'order_late_success_after_refund_1';
+    const reference = 'txref-late-success-after-refund-1';
+    seedOrder(orderId, reference, 'refunded');
+    seedStoredPayment(orderId, reference);
+    paymentRepository.updateByReference(reference, (current) => ({
+      ...current,
+      status: 'refunded',
+      verified: false,
+    }));
+
+    const escrow = escrowRepository.create(orderId, 'MWK', 1000);
+    escrowRepository.refundHeldBalance({
+      orderId,
+      refundedBy: 'system-test',
+      reference: 'refund-late-success-test',
+    });
+
+    await withServer(async (base) => {
+      const rawWebhook = JSON.stringify({
+        event_type: 'charge.success',
+        event_id: 'evt_late_success_after_refund_1',
+        tx_ref: reference,
+        data: {
+          tx_ref: reference,
+          status: 'successful',
+          amount: 1000,
+          currency: 'MWK',
+        },
+      });
+
+      const response = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
+      assert.equal(response.status, 200);
+
+      assert.equal(orderRepository.findById(orderId)?.status, 'refunded');
+      assert.equal(paymentRepository.findByReference(reference)?.status, 'refunded');
+      assert.equal(paymentRepository.findByReference(reference)?.verified, false);
+      assert.equal(escrowRepository.findById(escrow.id)?.state, 'refunded');
+      assert.equal(countEscrowsForOrder(orderId), 1);
     });
   } finally {
     global.fetch = originalFetch;
