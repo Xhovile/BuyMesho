@@ -275,4 +275,5 @@ export function countEscrowsForOrder(orderId: string): number {
   return row.count;
 }
 
+export { orderRepository, paymentRepository, escrowRepository };
 export const refs = { orderRepository, paymentRepository, escrowRepository, serverOrderService, getPaymentDb };
