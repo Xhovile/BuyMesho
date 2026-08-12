@@ -4,6 +4,7 @@ import { ServerPaymentService } from '../payment.service.js';
 import {
   clearPaymentState,
   createApp,
+  initializePayment,
   mockPayChanguFetch,
   postPayChanguWebhook,
   seedOrder,
@@ -45,17 +46,11 @@ test('financial integrity: successful webhook with overpayment is ignored withou
         event_type: 'charge.success',
         event_id: 'evt_webhook_overpaid_1',
         tx_ref: 'txref-webhook-overpaid-1',
-        data: {
-          tx_ref: 'txref-webhook-overpaid-1',
-          status: 'successful',
-          amount: 1250,
-          currency: 'MWK',
-        },
+        data: { tx_ref: 'txref-webhook-overpaid-1', status: 'successful', amount: 1250, currency: 'MWK' },
       });
 
       const response = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
       assert.equal(response.status, 200);
-
       const result = await response.json() as { status?: string };
       assert.equal(result.status, 'ignored');
       assert.equal(orderRepository.findById('order_webhook_overpaid_1')?.status, 'pending_payment');
@@ -85,21 +80,59 @@ test('financial integrity: successful webhook without an amount is ignored witho
         event_type: 'charge.success',
         event_id: 'evt_webhook_missing_amount_1',
         tx_ref: 'txref-webhook-missing-amount-1',
-        data: {
-          tx_ref: 'txref-webhook-missing-amount-1',
-          status: 'successful',
-          currency: 'MWK',
-        },
+        data: { tx_ref: 'txref-webhook-missing-amount-1', status: 'successful', currency: 'MWK' },
       });
 
       const response = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
       assert.equal(response.status, 200);
-
       const result = await response.json() as { status?: string };
       assert.equal(result.status, 'ignored');
       assert.equal(orderRepository.findById('order_webhook_missing_amount_1')?.status, 'pending_payment');
       assert.equal(paymentRepository.findByReference('txref-webhook-missing-amount-1')?.verified, false);
       assert.equal(countEscrowsForOrder('order_webhook_missing_amount_1'), 0);
+    });
+  } finally {
+    global.fetch = originalFetch;
+    clearPaymentState();
+  }
+});
+
+test('recovery: valid webhook arriving before local payment is recovered when payment is created', async () => {
+  clearPaymentState();
+  process.env.PAYCHANGU_WEBHOOK_SECRET = WEBHOOK_SECRET;
+  process.env.PAYCHANGU_SECRET_KEY = 'integration-secret-key';
+
+  const originalFetch = global.fetch;
+  global.fetch = mockPayChanguFetch(originalFetch, 'txref-early-webhook-1', 'successful', 1000);
+
+  try {
+    const orderId = 'order_early_webhook_1';
+    const reference = 'txref-early-webhook-1';
+    seedOrder(orderId, reference);
+
+    await withServer(async (base) => {
+      const rawWebhook = JSON.stringify({
+        event_type: 'charge.success',
+        event_id: 'evt_early_webhook_1',
+        tx_ref: reference,
+        data: { tx_ref: reference, status: 'successful', amount: 1000, currency: 'MWK' },
+      });
+
+      const webhookResponse = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
+      assert.equal(webhookResponse.status, 200);
+      assert.equal(orderRepository.findById(orderId)?.status, 'pending_payment');
+      assert.equal(paymentRepository.findByReference(reference), undefined);
+
+      const initializeResponse = await initializePayment(base, orderId);
+      assert.equal(initializeResponse.status, 201);
+
+      const savedPayment = paymentRepository.findByReference(reference);
+      assert.ok(savedPayment);
+      assert.equal(savedPayment.verified, true);
+      assert.equal(savedPayment.status, 'captured');
+      assert.equal(orderRepository.findById(orderId)?.status, 'in_escrow');
+      assert.equal(escrowRepository.findByOrderId(orderId)?.balanceAmount, 1000);
+      assert.equal(countEscrowsForOrder(orderId), 1);
     });
   } finally {
     global.fetch = originalFetch;
@@ -120,35 +153,21 @@ test('financial integrity: late success webhook cannot resurrect a refunded orde
     const reference = 'txref-late-success-after-refund-1';
     seedOrder(orderId, reference, 'refunded');
     seedStoredPayment(orderId, reference);
-    paymentRepository.updateByReference(reference, (current) => ({
-      ...current,
-      status: 'refunded',
-      verified: false,
-    }));
+    paymentRepository.updateByReference(reference, (current) => ({ ...current, status: 'refunded', verified: false }));
 
     const escrow = escrowRepository.create(orderId, 'MWK', 1000);
-    escrowRepository.refundHeldBalance({
-      orderId,
-      refundedBy: 'system-test',
-      reference: 'refund-late-success-test',
-    });
+    escrowRepository.refundHeldBalance({ orderId, refundedBy: 'system-test', reference: 'refund-late-success-test' });
 
     await withServer(async (base) => {
       const rawWebhook = JSON.stringify({
         event_type: 'charge.success',
         event_id: 'evt_late_success_after_refund_1',
         tx_ref: reference,
-        data: {
-          tx_ref: reference,
-          status: 'successful',
-          amount: 1000,
-          currency: 'MWK',
-        },
+        data: { tx_ref: reference, status: 'successful', amount: 1000, currency: 'MWK' },
       });
 
       const response = await postPayChanguWebhook(base, rawWebhook, signWebhook(rawWebhook));
       assert.equal(response.status, 200);
-
       assert.equal(orderRepository.findById(orderId)?.status, 'refunded');
       assert.equal(paymentRepository.findByReference(reference)?.status, 'refunded');
       assert.equal(paymentRepository.findByReference(reference)?.verified, false);
