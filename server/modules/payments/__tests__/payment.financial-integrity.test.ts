@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { ServerPaymentService } from '../payment.service.js';
 import {
   clearPaymentState,
   createApp,
@@ -104,4 +105,23 @@ test('financial integrity: successful webhook without an amount is ignored witho
     global.fetch = originalFetch;
     clearPaymentState();
   }
+});
+
+test('financial integrity: unsupported PayChangu refund fails safely without claiming a refund', async () => {
+  const service = new ServerPaymentService();
+
+  await assert.rejects(
+    () => service.refund({
+      paymentId: 'pay_refund_1',
+      provider: 'paychangu',
+      amount: { amount: 1000, currency: 'MWK' },
+      reason: 'test refund',
+    }),
+    (error: unknown) => {
+      assert.ok(error instanceof Error);
+      assert.match(error.message, /Refunds are not available yet for this payment provider/);
+      assert.equal((error as { status?: number }).status, 501);
+      return true;
+    },
+  );
 });
