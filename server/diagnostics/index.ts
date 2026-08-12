@@ -5,11 +5,9 @@ import { registerPaymentDiagnosticsRoutes } from "./payments.js";
 import { registerInfrastructureDiagnosticsRoutes } from "./infrastructure.js";
 import { registerApiDiagnosticsRoutes } from "./api.js";
 import { registerMessagingDiagnosticsRoutes } from "./messaging.js";
-import type { DiagnosticPayload } from "./types.js";
+import type { DiagnosticPayload, NamedCheck } from "./types.js";
 
-type DiagnosticResponse = DiagnosticPayload & {
-  checks?: Record<string, unknown>;
-};
+type DiagnosticResponse = DiagnosticPayload;
 
 function localBaseUrl(): string {
   const port = process.env.PORT ?? "10000";
@@ -35,7 +33,7 @@ async function fetchDiagnostic(path: string): Promise<DiagnosticResponse> {
       timestamp: new Date().toISOString(),
       duration_ms: 0,
       error: `${path} returned an invalid diagnostic payload`,
-    } satisfies DiagnosticResponse;
+    };
   }
 
   return body as DiagnosticResponse;
@@ -71,12 +69,12 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
         Object.entries(paths).map(async ([key, path]) => [key, await fetchDiagnostic(path)] as const),
       );
 
-      const checks: Record<string, unknown> = {};
+      const checks: Record<string, NamedCheck> = {};
       const statuses: string[] = [];
 
       for (const [key, result] of results) {
         statuses.push(result.overall);
-        if (result.checks && typeof result.checks === "object") {
+        if (result.checks) {
           Object.assign(checks, result.checks);
         } else {
           checks[key] = {
