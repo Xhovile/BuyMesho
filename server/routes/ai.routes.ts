@@ -92,10 +92,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
       const result = await askBuyMeshoCopilot({
         query,
         university: typeof university === "string" ? university : undefined,
-        category: typeof category === "string" ? category : undefined,
-        maxPrice: typeof maxPrice === "number" && Number.isFinite(maxPrice) ? maxPrice : undefined,
         contextListings: Array.isArray(contextListings) ? contextListings : [],
-        db,
       });
 
       return res.json({ result });
