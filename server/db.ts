@@ -283,11 +283,34 @@ function normalizeSchemaSql(sql: string): string {
 }
 
 function workerExecArgv(): string[] {
-  return process.execArgv.filter((arg) => {
-    if (arg === "--test" || arg.startsWith("--test-")) return false;
-    if (arg === "--watch" || arg.startsWith("--watch-")) return false;
-    return true;
-  });
+  const args = process.execArgv;
+  const allowed: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+
+    if (arg === "--import" || arg === "--require" || arg === "--loader") {
+      const value = args[index + 1];
+      if (value) {
+        allowed.push(arg, value);
+        index += 1;
+      }
+      continue;
+    }
+
+    if (
+      arg.startsWith("--import=") ||
+      arg.startsWith("--require=") ||
+      arg.startsWith("--loader=") ||
+      arg === "--experimental-strip-types" ||
+      arg === "--no-warnings" ||
+      arg === "--enable-source-maps"
+    ) {
+      allowed.push(arg);
+    }
+  }
+
+  return allowed;
 }
 
 let worker: Worker | null = null;
