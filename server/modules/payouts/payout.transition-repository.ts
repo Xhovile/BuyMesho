@@ -1,9 +1,6 @@
-import {
-  PayoutRepository,
-  type PayoutRecord,
-} from './payout.repository.js';
+import { PayoutRepository } from './payout.repository.js';
 import { assertPayoutStatusTransition } from './payout.transitions.js';
-import type { PayoutStatus } from './payout.shared.js';
+import type { PayoutRecord, PayoutStatus } from './payout.shared.js';
 
 /**
  * Financially safe repository facade.
@@ -24,5 +21,3 @@ export class PayoutTransitionRepository extends PayoutRepository {
     return super.updateStatus(id, status, extra);
   }
 }
-
-export const payoutRepository = new PayoutTransitionRepository();
