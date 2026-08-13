@@ -69,6 +69,11 @@ header:has(a[href^="/seller?uid="] + a[href^="/seller?uid="]) > div > a[href^="/
   stroke-width: 3.5px;
 }
 
+/* Keep the AI launcher out of the route-loading screen. */
+body:has([role="status"][aria-label="Loading BuyMesho"]) [aria-label="BuyMesho AI"] {
+  display: none;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
