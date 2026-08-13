@@ -75,7 +75,9 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
       for (const [key, result] of results) {
         statuses.push(result.overall);
         if (result.checks) {
-          Object.assign(checks, result.checks);
+          for (const [checkKey, check] of Object.entries(result.checks)) {
+            checks[`${key}.${checkKey}`] = check;
+          }
         } else {
           checks[key] = {
             status: result.overall,
@@ -88,7 +90,7 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
       const payload: DiagnosticPayload = {
         overall,
         authoritative: true,
-        diagnostic_version: "4.0",
+        diagnostic_version: "4.1",
         timestamp: new Date().toISOString(),
         duration_ms: Date.now() - started,
         checks,
@@ -102,7 +104,7 @@ export function registerDiagnosticsRoutes(app: Express, _deps?: { db?: any }) {
       res.status(503).setHeader("Cache-Control", "no-store").json({
         overall: "FAIL",
         authoritative: true,
-        diagnostic_version: "4.0",
+        diagnostic_version: "4.1",
         timestamp: new Date().toISOString(),
         duration_ms: Date.now() - started,
         error: error instanceof Error ? error.message : String(error),
