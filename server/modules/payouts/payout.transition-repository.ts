@@ -21,3 +21,5 @@ export class PayoutTransitionRepository extends PayoutRepository {
     return super.updateStatus(id, status, extra);
   }
 }
+
+export const payoutRepository = new PayoutTransitionRepository();
