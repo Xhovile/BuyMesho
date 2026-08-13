@@ -1,5 +1,6 @@
 import { MessageChannel, Worker, isMainThread, receiveMessageOnPort, workerData, type MessagePort } from "node:worker_threads";
 import path from "node:path";
+import fs from "node:fs";
 import dotenv from "dotenv";
 import { type PoolClient, type QueryResultRow, Pool } from "pg";
 
@@ -81,10 +82,33 @@ function isPlaceholderDatabaseUrl(urlStr?: string): boolean {
   );
 }
 
+const allowMockDatabase = process.env.NODE_ENV === "test" || parseBoolean(process.env.ALLOW_MOCK_DATABASE) === true;
+
 function hasValidDatabase(): boolean {
   const url = process.env.DATABASE_URL?.trim();
   if (!url || isPlaceholderDatabaseUrl(url)) return false;
   return true;
+}
+
+function loadSslCaCertificate(): string | undefined {
+  const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
+  const sslEnabled = sslMode !== "disable";
+  const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
+  if (!sslEnabled || !sslRejectUnauthorized) return undefined;
+
+  const inlineCa = process.env.PGSSL_CA?.trim();
+  if (inlineCa) return inlineCa;
+
+  const caPath = process.env.PGSSL_CA_PATH?.trim() || path.resolve(process.cwd(), "ca.pem");
+  try {
+    return fs.readFileSync(caPath, "utf8");
+  } catch (error) {
+    throw new Error(
+      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}. ` +
+      "Set PGSSL_CA to the Aiven project CA or set PGSSL_CA_PATH to a readable CA file. " +
+      (error instanceof Error ? error.message : String(error)),
+    );
+  }
 }
 
 function createPgPool() {
@@ -99,11 +123,13 @@ function createPgPool() {
   const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
 
   try {
+    const sslCa = loadSslCaCertificate();
     return new Pool({
       connectionString: normalizedConnectionString,
       ssl: sslEnabled
         ? {
             rejectUnauthorized: sslRejectUnauthorized,
+            ...(sslCa ? { ca: sslCa } : {}),
           }
         : false,
       max: Number(process.env.PGPOOL_MAX ?? 10) || 10,
@@ -111,7 +137,7 @@ function createPgPool() {
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
     });
   } catch (err) {
-    console.warn("[AI Studio] Failed to create worker PG pool:", err);
+    console.error("[BuyMesho] Failed to create worker PostgreSQL pool:", err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -311,7 +337,8 @@ function ensureWorker() {
 
 function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse {
   if (!hasValidDatabase()) {
-    return { id: 0, ok: true, rows: [], rowCount: 0 };
+    if (allowMockDatabase) return { id: 0, ok: true, rows: [], rowCount: 0 };
+    throw new Error("PostgreSQL is unavailable: DATABASE_URL is missing or invalid.");
   }
 
   ensureWorker();
@@ -358,7 +385,8 @@ function sendWorkerRequest(request: WorkerRequestPayload): WorkerSuccessResponse
 
 function executeSync(sql: string, params: unknown[] = []): { rows: Record<string, unknown>[]; rowCount: number } {
   if (!hasValidDatabase()) {
-    return { rows: [], rowCount: 0 };
+    if (allowMockDatabase) return { rows: [], rowCount: 0 };
+    throw new Error("PostgreSQL is unavailable: DATABASE_URL is missing or invalid.");
   }
 
   const response = sendWorkerRequest({ op: "query", sql, params });
@@ -369,17 +397,26 @@ function executeSync(sql: string, params: unknown[] = []): { rows: Record<string
 }
 
 function beginTransaction() {
-  if (!hasValidDatabase()) return;
+  if (!hasValidDatabase()) {
+    if (allowMockDatabase) return;
+    throw new Error("PostgreSQL is unavailable: DATABASE_URL is missing or invalid.");
+  }
   sendWorkerRequest({ op: "begin" });
 }
 
 function commitTransaction() {
-  if (!hasValidDatabase()) return;
+  if (!hasValidDatabase()) {
+    if (allowMockDatabase) return;
+    throw new Error("PostgreSQL is unavailable: DATABASE_URL is missing or invalid.");
+  }
   sendWorkerRequest({ op: "commit" });
 }
 
 function rollbackTransaction() {
-  if (!hasValidDatabase()) return;
+  if (!hasValidDatabase()) {
+    if (allowMockDatabase) return;
+    throw new Error("PostgreSQL is unavailable: DATABASE_URL is missing or invalid.");
+  }
   sendWorkerRequest({ op: "rollback" });
 }
 
