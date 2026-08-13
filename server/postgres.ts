@@ -41,23 +41,28 @@ function isPlaceholderDatabaseUrl(urlStr?: string): boolean {
   );
 }
 
-const connectionString = (rawConnectionString && !isPlaceholderDatabaseUrl(rawConnectionString))
+const connectionString = rawConnectionString && !isPlaceholderDatabaseUrl(rawConnectionString)
   ? stripSslQueryParams(rawConnectionString)
   : "";
 
 const sslMode = process.env.PGSSLMODE?.trim().toLowerCase();
 const sslEnabled = sslMode !== "disable";
 const sslRejectUnauthorized = parseBoolean(process.env.PGSSL_REJECT_UNAUTHORIZED) ?? false;
+const allowMockDatabase = process.env.NODE_ENV === "test" || parseBoolean(process.env.ALLOW_MOCK_DATABASE) === true;
 
 function loadSslCaCertificate(): string | undefined {
   if (!sslEnabled || !sslRejectUnauthorized) return undefined;
+
+  const inlineCa = process.env.PGSSL_CA?.trim();
+  if (inlineCa) return inlineCa;
 
   const caPath = process.env.PGSSL_CA_PATH?.trim() || path.resolve(process.cwd(), "ca.pem");
   try {
     return fs.readFileSync(caPath, "utf8");
   } catch (error) {
     const message =
-      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}.`;
+      `PostgreSQL SSL certificate verification is enabled, but the CA certificate could not be loaded from ${caPath}. ` +
+      "Set PGSSL_CA to the Aiven project CA or set PGSSL_CA_PATH to a readable CA file.";
     throw new Error(`${message} ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -80,18 +85,23 @@ if (connectionString) {
       connectionTimeoutMillis: Number(process.env.PGPOOL_CONNECTION_TIMEOUT_MS ?? 10_000) || 10_000,
     });
   } catch (err) {
-    console.error("[AI Studio] Failed to create PostgreSQL pool:", err instanceof Error ? err.message : err);
+    console.error("[BuyMesho] Failed to create PostgreSQL pool:", err instanceof Error ? err.message : err);
     throw err;
   }
+} else if (!allowMockDatabase) {
+  throw new Error("PostgreSQL is not configured: DATABASE_URL is missing or invalid.");
 } else {
-  console.warn("[AI Studio] DATABASE_URL is not configured — database operations will fallback to mock mode.");
+  console.warn("[BuyMesho] DATABASE_URL is not configured; mock database mode is enabled for this process.");
 }
 
 export const pool = poolInstance ?? (new Proxy({}, {
   get(_target, prop) {
-    if (prop === 'query') return async () => ({ rows: [], rowCount: 0 });
-    if (prop === 'connect') return async () => ({ query: async () => ({ rows: [], rowCount: 0 }), release: () => {} });
-    if (prop === 'end') return async () => {};
+    if (!allowMockDatabase) {
+      throw new Error("PostgreSQL is unavailable and mock database mode is disabled.");
+    }
+    if (prop === "query") return async () => ({ rows: [], rowCount: 0 });
+    if (prop === "connect") return async () => ({ query: async () => ({ rows: [], rowCount: 0 }), release: () => {} });
+    if (prop === "end") return async () => {};
     return () => {};
   }
 }) as unknown as Pool);
@@ -107,18 +117,25 @@ export async function query<Row extends QueryResultRow = DbRow>(
   params: unknown[] = [],
 ): Promise<DbQueryResult<Row>> {
   if (!poolInstance) {
-    return { rows: [], rowCount: 0 };
+    if (allowMockDatabase) return { rows: [], rowCount: 0 };
+    throw new Error("PostgreSQL is unavailable: no connection pool is configured.");
   }
 
-  const result = await poolInstance.query<Row>(text, params);
-  return {
-    rows: result.rows,
-    rowCount: result.rowCount ?? result.rows.length,
-  };
+  try {
+    const result = await poolInstance.query<Row>(text, params);
+    return {
+      rows: result.rows,
+      rowCount: result.rowCount ?? result.rows.length,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`PostgreSQL query failed: ${message}`);
+  }
 }
 
 export async function getClient(): Promise<PoolClient> {
   if (!poolInstance) {
+    if (allowMockDatabase) throw new Error("PostgreSQL is not configured in mock mode.");
     throw new Error("PostgreSQL is not configured: DATABASE_URL is missing or invalid.");
   }
 
