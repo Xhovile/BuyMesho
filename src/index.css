@@ -63,6 +63,12 @@ header:has(a[href^="/seller?uid="] + a[href^="/seller?uid="]) > div > a[href^="/
   transform-origin: center;
 }
 
+/* Slightly strengthen only the red progress arc; position, radius, diameter,
+   logo size, and animation remain unchanged. */
+.animate-loader-spin circle:last-child {
+  stroke-width: 3.5px;
+}
+
 @keyframes buymesho-loader-spin {
   to {
     transform: rotate(360deg);
