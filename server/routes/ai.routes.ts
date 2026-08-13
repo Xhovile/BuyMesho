@@ -94,7 +94,7 @@ export function registerAiRoutes(app: Express, requireFirebaseUser: RequestHandl
         university: typeof university === "string" ? university : undefined,
         category: typeof category === "string" ? category : undefined,
         maxPrice: typeof maxPrice === "number" && Number.isFinite(maxPrice) ? maxPrice : undefined,
-        contextListings: Array.isArray(contextListings) ? contextListings : undefined,
+        contextListings: Array.isArray(contextListings) ? contextListings : [],
         db,
       });
 
