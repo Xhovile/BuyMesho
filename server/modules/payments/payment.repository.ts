@@ -89,6 +89,7 @@ export class PostgresPaymentRepository {
         reference: p.reference,
         provider_reference: p.providerReference ?? null,
         currency: p.amount.currency,
+        amount: p.amount.amount,
         checkout_url: p.checkoutUrl ?? null,
         paid_at: p.paidAt ?? null,
         raw_response: p.rawResponse ? JSON.stringify(p.rawResponse) : null,
