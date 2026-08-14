@@ -71,6 +71,15 @@ export interface CreateListingPayload {
   single_item_price?: number | null;
 }
 
+export interface BuyerDeliveryDetails {
+  fullName: string;
+  phone: string;
+  addressLine: string;
+  area: string;
+  townOrDistrict: string;
+  landmark: string;
+}
+
 export interface UserProfile {
   uid: string;
   email: string;
@@ -83,6 +92,7 @@ export interface UserProfile {
   phone: string | null;
   university: string | null;
   campus: string | null;
+  buyer_details?: BuyerDeliveryDetails | null;
 }
 
 export interface SellerDashboardPayoutTotals {
