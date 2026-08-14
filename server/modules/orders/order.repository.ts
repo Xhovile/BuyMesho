@@ -27,8 +27,8 @@ export class PostgresOrderRepository {
     };
 
     this.db.prepare(`
-      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, checkout_idempotency_key, checkout_request_hash, escrow_id, items, placed_at, paid_at, fulfilled_at, created_at, updated_at)
-      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @checkout_idempotency_key, @checkout_request_hash, @escrow_id, @items, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
+      INSERT INTO orders (id, buyer_id, seller_id, source, status, currency, subtotal_amount, subtotal_currency, total_amount, total_currency, payment_provider, settlement_route, payment_reference, checkout_idempotency_key, checkout_request_hash, escrow_id, items, buyer_details, placed_at, paid_at, fulfilled_at, created_at, updated_at)
+      VALUES (@id, @buyer_id, @seller_id, @source, @status, @currency, @subtotal_amount, @subtotal_currency, @total_amount, @total_currency, @payment_provider, @settlement_route, @payment_reference, @checkout_idempotency_key, @checkout_request_hash, @escrow_id, @items, @buyer_details, @placed_at, @paid_at, @fulfilled_at, @created_at, @updated_at)
       ON CONFLICT(id) DO UPDATE SET
         status = excluded.status,
         payment_provider = excluded.payment_provider,
@@ -40,7 +40,8 @@ export class PostgresOrderRepository {
         paid_at = excluded.paid_at,
         fulfilled_at = excluded.fulfilled_at,
         updated_at = excluded.updated_at,
-        items = excluded.items
+        items = excluded.items,
+        buyer_details = excluded.buyer_details
     `).run({
       id: stored.id,
       buyer_id: stored.buyerId,
@@ -59,6 +60,7 @@ export class PostgresOrderRepository {
       checkout_request_hash: stored.checkoutRequestHash ?? null,
       escrow_id: stored.escrowId ?? null,
       items: JSON.stringify(stored.items),
+      buyer_details: stored.buyerDetails ? JSON.stringify(stored.buyerDetails) : null,
       placed_at: stored.placedAt ?? null,
       paid_at: paidAt,
       fulfilled_at: fulfilledAt,
@@ -115,6 +117,13 @@ export class PostgresOrderRepository {
       items = [];
     }
 
+    let buyerDetails: StoredOrder['buyerDetails'] = null;
+    try {
+      buyerDetails = row.buyer_details ? JSON.parse(row.buyer_details as string) as StoredOrder['buyerDetails'] : null;
+    } catch {
+      buyerDetails = null;
+    }
+
     return {
       id: row.id as string,
       buyerId: row.buyer_id as string,
@@ -133,6 +142,7 @@ export class PostgresOrderRepository {
       capturedAt: (row.paid_at as string | null) ?? null,
       escrowId: (row.escrow_id as string | null) ?? null,
       items,
+      buyerDetails,
       placedAt: (row.placed_at as string | null) ?? null,
       paidAt: (row.paid_at as string | null) ?? null,
       fulfilledAt: (row.fulfilled_at as string | null) ?? null,
