@@ -4,6 +4,62 @@ import fs from "node:fs";
 import path from "node:path";
 import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
+function normalizeConnectionString(value: string): string {
+  try {
+    const url = new URL(value);
+    url.searchParams.delete("sslmode");
+    url.searchParams.delete("ssl");
+    url.searchParams.delete("sslcert");
+    url.searchParams.delete("sslkey");
+    url.searchParams.delete("sslrootcert");
+    return url.toString();
+  } catch {
+    return value.trim();
+  }
+}
+
+function getDatabaseName(connectionString: string): string {
+  try {
+    const url = new URL(connectionString);
+    return decodeURIComponent(url.pathname.replace(/^\/+/, ""));
+  } catch {
+    return "";
+  }
+}
+
+function assertTestDatabaseSafety(): void {
+  if (process.env.NODE_ENV !== "test") return;
+
+  const testUrl = process.env.TEST_DATABASE_URL?.trim();
+  const configuredUrl = process.env.DATABASE_URL?.trim();
+
+  if (!testUrl) {
+    throw new Error(
+      "TEST DATABASE SAFETY: TEST_DATABASE_URL is required when NODE_ENV=test. Refusing to create a PostgreSQL connection.",
+    );
+  }
+
+  if (configuredUrl && normalizeConnectionString(configuredUrl) === normalizeConnectionString(testUrl)) {
+    throw new Error(
+      "TEST DATABASE SAFETY: TEST_DATABASE_URL is identical to DATABASE_URL. Refusing to run against the configured database.",
+    );
+  }
+
+  const testDatabaseName = getDatabaseName(testUrl);
+  if (!/(^|[_-])test([_-]|$)/i.test(testDatabaseName)) {
+    throw new Error(
+      `TEST DATABASE SAFETY: TEST_DATABASE_URL must point to a database explicitly named as a test database. Received: ${testDatabaseName || "unknown"}`,
+    );
+  }
+
+  // Ensure every PostgreSQL path in the application, including the worker
+  // compatibility layer, uses the verified test database in test mode.
+  process.env.DATABASE_URL = testUrl;
+  process.env.ALLOW_MOCK_DATABASE = "false";
+}
+
+assertTestDatabaseSafety();
+
 const rawConnectionString = process.env.DATABASE_URL?.trim();
 
 function parseBoolean(value: string | undefined): boolean | undefined {
