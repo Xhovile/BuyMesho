@@ -39,6 +39,7 @@ import { getFirebaseAdmin } from "../auth/firebaseAdmin.js";
 import { isAdminActionType, isAdminTargetType, type AdminActionType, type AdminTargetType } from "../../src/modules/admin/shared/adminAuditTypes.js";
 import { requireAuth } from "../middleware/requireAuth.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
+import { requireListingBuyerDetails } from "../modules/orders/buyerDetails.middleware.js";
 
 export type LogAdminActionArgs = {
   admin_uid?: string | null;
@@ -240,6 +241,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
 
   app.use("/api/payments/orders", createOrderRouter(requireAuth));
   app.use("/api/seller/escrows", createBuyerEscrowRouter(requireAuth));
+  app.post("/api/payments/checkout", requireFirebaseUser, requireListingBuyerDetails);
   app.use("/api/payments", createPaymentRouter(requireFirebaseUser));
   app.use("/api/admin", createPaymentAdminActionRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
