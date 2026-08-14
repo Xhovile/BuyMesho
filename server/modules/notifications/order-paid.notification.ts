@@ -12,7 +12,9 @@ async function sendOrderPaidEmail(order: StoredOrder, role: RecipientRole): Prom
   if (!email) return;
 
   const recipientName = userRecord.displayName?.trim() || email.split("@")[0] || "there";
-  const actionUrl = `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
+  const actionUrl = role === "seller"
+    ? `https://buymesho.app/seller/payouts?view=orders&order=${encodeURIComponent(order.id)}`
+    : `https://buymesho.app/orders/${encodeURIComponent(order.id)}`;
   const { text, html } = renderOrderPaidEmail({
     recipientName,
     role,
