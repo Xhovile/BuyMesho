@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { postgresDb as db } from "../db.js";
 
 export type IdempotencyBeginResult =
@@ -79,7 +79,7 @@ export function beginIdempotentOperation(input: {
     return { kind: "processing" };
   }
 
-  const id = crypto.randomUUID();
+  const id = randomUUID();
 
   try {
     db.prepare(
