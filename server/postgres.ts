@@ -39,17 +39,20 @@ function assertTestDatabaseSafety(): void {
     );
   }
 
-  if (configuredUrl && normalizeConnectionString(configuredUrl) === normalizeConnectionString(testUrl)) {
-    throw new Error(
-      "TEST DATABASE SAFETY: TEST_DATABASE_URL is identical to DATABASE_URL. Refusing to run against the configured database.",
-    );
-  }
-
   const testDatabaseName = getDatabaseName(testUrl);
   if (!/(^|[_-])test([_-]|$)/i.test(testDatabaseName)) {
     throw new Error(
       `TEST DATABASE SAFETY: TEST_DATABASE_URL must point to a database explicitly named as a test database. Received: ${testDatabaseName || "unknown"}`,
     );
+  }
+
+  if (configuredUrl) {
+    const configuredDatabaseName = getDatabaseName(configuredUrl);
+    if (configuredDatabaseName && !/(^|[_-])test([_-]|$)/i.test(configuredDatabaseName)) {
+      throw new Error(
+        `TEST DATABASE SAFETY: DATABASE_URL points to a non-test database (${configuredDatabaseName}). Refusing to create a PostgreSQL connection in test mode.`,
+      );
+    }
   }
 
   // Ensure every PostgreSQL path in the application, including the worker
