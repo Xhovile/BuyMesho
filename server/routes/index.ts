@@ -21,6 +21,8 @@ import { createPaymentAdminActionRouter } from "../modules/payments/payment.admi
 import { createPaymentAdminPayoutDisplayRouter } from "../modules/payments/payment.admin.payout.display.routes.js";
 import { createPaymentAdminPayoutRouter } from "../modules/payments/payment.admin.payout.routes.js";
 import { createPaymentAdminRouter } from "../modules/payments/payment.admin.routes.js";
+import { createPaymentAdminDetailRouter } from "../modules/payments/payment.admin.detail.routes.js";
+import { createPaymentAdminReconcileRouter } from "../modules/payments/payment.admin.reconcile.routes.js";
 import { createAdminModerationRouter } from "../modules/admin/admin.moderation.routes.js";
 import { createAdminActionsRouter } from "../modules/admin/admin.actions.routes.js";
 import { createAdminAccessRouter } from "../modules/admin/admin.access.routes.js";
@@ -148,20 +150,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
       }
       const firebaseUser = req.user?.firebaseUser ?? req.firebaseUser ?? null;
       const email = profile?.email ?? seller?.email ?? firebaseUser?.email ?? "";
-      return res.json({
-        uid,
-        email,
-        display_name: profile?.display_name ?? profile?.displayName ?? null,
-        university: profile?.university ?? seller?.university ?? null,
-        phone: profile?.phone ?? null,
-        bio: profile?.bio ?? seller?.bio ?? null,
-        business_name: profile?.business_name ?? seller?.business_name ?? null,
-        business_logo: profile?.business_logo ?? seller?.business_logo ?? null,
-        is_verified: !!(profile?.is_verified ?? seller?.is_verified),
-        is_seller: !!(profile?.is_seller ?? seller?.is_seller),
-        join_date: profile?.join_date ?? seller?.join_date ?? null,
-        buyer_details: profile?.buyer_details ?? null,
-      });
+      return res.json({ uid, email, display_name: profile?.display_name ?? profile?.displayName ?? null, university: profile?.university ?? seller?.university ?? null, phone: profile?.phone ?? null, bio: profile?.bio ?? seller?.bio ?? null, business_name: profile?.business_name ?? seller?.business_name ?? null, business_logo: profile?.business_logo ?? seller?.business_logo ?? null, is_verified: !!(profile?.is_verified ?? seller?.is_verified), is_seller: !!(profile?.is_seller ?? seller?.is_seller), join_date: profile?.join_date ?? seller?.join_date ?? null, buyer_details: profile?.buyer_details ?? null });
     } catch (error) {
       console.error("Failed to load profile", error);
       return res.status(500).json({ error: "Failed to load profile" });
@@ -208,6 +197,8 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   app.use("/api/admin", createPaymentAdminPayoutDisplayRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminPayoutRouter(requireAuth));
   app.use("/api/admin", createPaymentAdminRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminDetailRouter(requireAuth));
+  app.use("/api/admin", createPaymentAdminReconcileRouter(requireAuth));
   app.use("/api/admin", createAdminAccessRouter(requireAuth));
   app.use("/api/admin", createAdminActionsRouter({ requireAuth, db }));
   app.use("/api/admin", createAdminSummaryRouter({ requireAuth, db }));
