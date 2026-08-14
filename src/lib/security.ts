@@ -4,7 +4,6 @@ import {
   deleteUser,
   reauthenticateWithCredential,
   reload,
-  sendEmailVerification,
   signOut,
   updatePassword,
   verifyBeforeUpdateEmail,
@@ -81,8 +80,11 @@ export async function reauthenticateWithPassword({
 export async function resendVerificationEmail(): Promise<SecurityResult> {
   try {
     const user = requireUser();
-    await sendEmailVerification(user, DEFAULT_ACTION_CODE_SETTINGS);
-    return { ok: true, message: "Verification email sent." };
+    await apiFetch("/api/auth/resend-verification-email", {
+      method: "POST",
+      body: JSON.stringify({ display_name: user.displayName || undefined }),
+    });
+    return { ok: true, message: "Verification email sent. Check your inbox and spam folder if you do not see it." };
   } catch (error: any) {
     return { ok: false, message: getErrorMessage(error, "Could not send verification email."), code: error?.code };
   }
@@ -261,8 +263,6 @@ export async function changeEmailWithVerification(
 
     await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, currentPassword));
 
-    // Sends a verification link to the new email address and updates the account
-    // only after the user confirms the action from that email.
     await verifyBeforeUpdateEmail(user, nextEmail, DEFAULT_ACTION_CODE_SETTINGS);
 
     return {
@@ -276,10 +276,8 @@ export async function changeEmailWithVerification(
 
 export async function logoutOtherSessions(): Promise<SecurityResult> {
   try {
-    // Backend should revoke refresh tokens for this user.
     await apiFetch("/api/auth/revoke-sessions", { method: "POST" });
 
-    // Current device logs out too, because the app should behave like single-device access.
     clearTotpVerifiedSessionToken();
     await signOut(auth);
 
@@ -297,8 +295,6 @@ export async function deleteCurrentAccount(): Promise<SecurityResult> {
   try {
     const user = requireUser();
 
-    // Server-side cleanup removes listings, reports, seller applications, ratings,
-    // and uploaded assets before the Firebase account is removed.
     await apiFetch("/api/account/delete", { method: "DELETE" });
 
     clearTotpVerifiedSessionToken();
@@ -310,10 +306,6 @@ export async function deleteCurrentAccount(): Promise<SecurityResult> {
   }
 }
 
-/**
- * Optional helper for email-action code links.
- * Use this on a route/page that handles action links if you later add one.
- */
 export async function applyPendingEmailActionCode(oobCode: string): Promise<SecurityResult> {
   try {
     await applyActionCode(auth, oobCode);
