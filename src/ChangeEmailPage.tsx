@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 import { Loader2, Mail, Lock } from "lucide-react";
+import { EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import AccountPageShell from "./components/AccountPageShell";
 import FeedbackModal from "./components/FeedbackModal";
 import { navigateToPath } from "./lib/appNavigation";
 import { useAccountProfile } from "./hooks/useAccountProfile";
-import { changeEmailWithVerification } from "./lib/security";
+import { apiFetch } from "./lib/api";
 
 type FeedbackState =
   | {
@@ -14,6 +15,22 @@ type FeedbackState =
       message: string;
     }
   | null;
+
+function getChangeEmailErrorMessage(error: any) {
+  switch (error?.code) {
+    case "auth/requires-recent-login":
+      return "Please verify your identity again and try once more.";
+    case "auth/wrong-password":
+    case "auth/invalid-credential":
+      return "The password is incorrect.";
+    case "auth/email-already-in-use":
+      return "That email address is already in use.";
+    case "auth/invalid-email":
+      return "That email address is invalid.";
+    default:
+      return error?.message || "Failed to change email.";
+  }
+}
 
 export default function ChangeEmailPage() {
   const { firebaseUser, authLoading } = useAccountProfile();
@@ -50,33 +67,36 @@ export default function ChangeEmailPage() {
       return;
     }
 
-    if (nextEmail.trim() === firebaseUser.email.trim()) {
+    if (nextEmail.trim().toLowerCase() === firebaseUser.email.trim().toLowerCase()) {
       showFeedback("info", "Same email", "The new email must be different from the current one.");
       return;
     }
 
     setSaving(true);
     try {
-      const result = await changeEmailWithVerification(
-        currentPassword,
-        nextEmail.trim().toLowerCase()
+      const normalizedEmail = nextEmail.trim().toLowerCase();
+      await reauthenticateWithCredential(
+        firebaseUser,
+        EmailAuthProvider.credential(firebaseUser.email, currentPassword),
       );
 
-      if (!result.ok) {
-        showFeedback("error", "Email change failed", result.message);
-        return;
-      }
+      const response = await apiFetch("/api/auth/send-email-change-verification", {
+        method: "POST",
+        body: JSON.stringify({ new_email: normalizedEmail }),
+      });
 
       showFeedback(
         "success",
         "Verification sent",
-        result.message ||
+        response?.message ||
           "A verification email has been sent to your new address. Open that email to finish the change."
       );
 
       setCurrentPassword("");
       setNextEmail("");
       setConfirmEmail("");
+    } catch (error: any) {
+      showFeedback("error", "Email change failed", getChangeEmailErrorMessage(error));
     } finally {
       setSaving(false);
     }
