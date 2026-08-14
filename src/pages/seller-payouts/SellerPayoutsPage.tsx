@@ -12,9 +12,7 @@ import SellerPayoutsNotice from "./components/SellerPayoutsNotice";
 import { useSellerPayoutsPage } from "./useSellerPayoutsPage";
 
 export default function SellerPayoutsPage() {
-  if (new URLSearchParams(window.location.search).get("view") === "orders") {
-    return <SellerOrdersPage />;
-  }
+  const isOrdersView = new URLSearchParams(window.location.search).get("view") === "orders";
 
   const {
     profileLoading,
@@ -54,6 +52,10 @@ export default function SellerPayoutsPage() {
     handleConfirmRemoveDestination,
     handleRefresh,
   } = useSellerPayoutsPage();
+
+  if (isOrdersView) {
+    return <SellerOrdersPage />;
+  }
 
   if (profileLoading || loading || !isSeller) {
     return (
