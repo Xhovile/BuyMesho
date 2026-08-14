@@ -4,6 +4,15 @@ import type { CheckoutSettlementRoute, PaymentProviderKey } from '../../shared/t
 export type OrderStatus = 'draft' | 'pending_payment' | 'paid' | 'in_escrow' | 'fulfilled' | 'cancelled' | 'refunded' | 'disputed' | 'closed';
 export type OrderSource = 'listing' | 'layby' | 'event' | 'mixed' | 'accommodation' | 'wholesale';
 
+export interface BuyerDeliveryDetails {
+  fullName: string;
+  phone: string;
+  addressLine: string;
+  area: string;
+  townOrDistrict: string;
+  landmark: string;
+}
+
 export interface OrderItem {
   kind?: 'listing' | 'event_ticket';
   listingId?: EntityId;
@@ -35,6 +44,7 @@ export interface OrderState extends Timestamped {
   paymentReference?: string | null;
   escrowId?: EntityId | null;
   items: OrderItem[];
+  buyerDetails?: BuyerDeliveryDetails | null;
   placedAt?: ISODateString | null;
   paidAt?: ISODateString | null;
   fulfilledAt?: ISODateString | null;
@@ -58,10 +68,6 @@ export const ORDER_STATE_FLOW: readonly OrderStatus[] = [
   'closed',
 ] as const;
 
-/**
- * Financially meaningful order transitions only. This is intentionally a
- * small explicit map rather than a generic state-machine framework.
- */
 export const ORDER_ALLOWED_TRANSITIONS: Readonly<Record<OrderStatus, readonly OrderStatus[]>> = {
   draft: ['pending_payment', 'cancelled'],
   pending_payment: ['paid', 'cancelled'],
