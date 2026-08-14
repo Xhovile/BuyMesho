@@ -1,5 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { sendEmail } from "../modules/email/email.service.js";
 import { renderVerificationEmail } from "../modules/email/templates/verification.js";
@@ -23,7 +23,7 @@ const resendVerificationLimiter = rateLimit({
   },
   keyGenerator: (req: Request) => {
     const user = (req as Request & { user?: VerifiedRequestUser }).user;
-    return user?.uid || req.ip;
+    return user?.uid ?? ipKeyGenerator(req.ip ?? "unknown");
   },
 });
 
