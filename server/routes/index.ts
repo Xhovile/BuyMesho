@@ -5,6 +5,7 @@ import { registerValidatorRoutes } from "./validator.routes.js";
 import { registerValidatorProjectionRoutes } from "./validatorProjection.routes.js";
 import { registerAccountDeletionRoutes } from "../auth/accountDeletionRoutes.js";
 import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes.js";
+import { registerPasswordResetEmailRoutes } from "../auth/passwordResetEmailRoutes.js";
 import { registerMessageModerationRoutes, registerMessageRoutes } from "./messageHubRoutes.js";
 import { registerMessagesRoutes } from "./messagesRoutes.js";
 import { registerReviewsRoutes } from "./reviewsRoutes.js";
@@ -101,6 +102,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   }
 
   registerVerificationEmailRoutes(app);
+  registerPasswordResetEmailRoutes(app);
 
   registerValidatorProjectionRoutes(app);
   registerValidatorRoutes(app);
