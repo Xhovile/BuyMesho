@@ -1,4 +1,5 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
+import rateLimit from "express-rate-limit";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { sendEmail } from "../modules/email/email.service.js";
 import { renderVerificationEmail } from "../modules/email/templates/verification.js";
@@ -11,6 +12,20 @@ type VerifiedRequestUser = {
 };
 
 const ROUTES_INSTALLED_FLAG = Symbol.for("buymesho.verificationEmailRoutesInstalled");
+
+const resendVerificationLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error: "Too many verification email requests. Please wait a few minutes and try again.",
+  },
+  keyGenerator: (req: Request) => {
+    const user = (req as Request & { user?: VerifiedRequestUser }).user;
+    return user?.uid || req.ip;
+  },
+});
 
 function getAppUrl() {
   return process.env.APP_URL?.trim() || "http://localhost:3000";
@@ -63,7 +78,7 @@ async function sendVerificationEmail(params: { email: string; displayName?: stri
       email: params.email,
       name: recipientName,
     },
-    subject: "BuyMesho — verify your email",
+    subject: "Verify your BuyMesho email address",
     text,
     html,
   });
@@ -111,7 +126,12 @@ function registerVerificationEmailRoutes(app: Express) {
   }
 
   app.post("/api/auth/send-verification-email", verifyBearerIdentity, verificationEmailHandler);
-  app.post("/api/auth/resend-verification-email", verifyBearerIdentity, verificationEmailHandler);
+  app.post(
+    "/api/auth/resend-verification-email",
+    verifyBearerIdentity,
+    resendVerificationLimiter,
+    verificationEmailHandler,
+  );
 
   (app as any)[ROUTES_INSTALLED_FLAG] = true;
 }
