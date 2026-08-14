@@ -76,6 +76,27 @@ function installPostgresMessageSchemaGuard(db: any) {
   }
 }
 
+function normalizeBuyerDetails(input: unknown) {
+  const value = input && typeof input === "object" ? (input as Record<string, unknown>) : {};
+  return {
+    fullName: typeof value.fullName === "string" ? value.fullName.trim() : "",
+    phone: typeof value.phone === "string" ? value.phone.trim() : "",
+    addressLine: typeof value.addressLine === "string" ? value.addressLine.trim() : "",
+    area: typeof value.area === "string" ? value.area.trim() : "",
+    townOrDistrict: typeof value.townOrDistrict === "string" ? value.townOrDistrict.trim() : "",
+    landmark: typeof value.landmark === "string" ? value.landmark.trim() : "",
+  };
+}
+
+function validateBuyerDetails(details: ReturnType<typeof normalizeBuyerDetails>): string | null {
+  if (details.fullName.length < 2) return "Full name is required";
+  if (details.phone.length < 7) return "A valid phone number is required";
+  if (details.addressLine.length < 3) return "Delivery address is required";
+  if (details.area.length < 2) return "Area / location is required";
+  if (details.townOrDistrict.length < 2) return "Town / district is required";
+  return null;
+}
+
 export function registerRoutes(app: Express, deps: RouteDeps) {
   const { db, requireAuth, requireFirebaseUser } = deps;
 
@@ -124,7 +145,6 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerSellerApplicationRoutes(app, { db });
   mountTotpRoutes(app);
 
-  // Buyer profile is authenticated and intentionally lives before the SPA fallback.
   app.get("/api/profile", requireFirebaseUser, async (req: any, res) => {
     const uid = String(req.user?.uid ?? "").trim();
     if (!uid) {
@@ -172,10 +192,47 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
         is_verified: !!(profile?.is_verified ?? seller?.is_verified),
         is_seller: !!(profile?.is_seller ?? seller?.is_seller),
         join_date: profile?.join_date ?? seller?.join_date ?? null,
+        buyer_details: profile?.buyer_details ?? null,
       });
     } catch (error) {
       console.error("Failed to load profile", error);
       return res.status(500).json({ error: "Failed to load profile" });
+    }
+  });
+
+  app.get("/api/profile/buyer-details", requireFirebaseUser, async (req: any, res) => {
+    const uid = String(req.user?.uid ?? "").trim();
+    if (!uid) return res.status(401).json({ error: "Authentication required" });
+
+    try {
+      const firebaseAdmin = getFirebaseAdmin();
+      const snap = await firebaseAdmin.firestore().collection("users").doc(uid).get();
+      const data = snap.exists ? snap.data() ?? {} : {};
+      return res.json({ buyerDetails: data.buyer_details ?? null });
+    } catch (error) {
+      console.error("Failed to load saved buyer details", error);
+      return res.status(500).json({ error: "Failed to load saved buyer details" });
+    }
+  });
+
+  app.put("/api/profile/buyer-details", requireFirebaseUser, async (req: any, res) => {
+    const uid = String(req.user?.uid ?? "").trim();
+    if (!uid) return res.status(401).json({ error: "Authentication required" });
+
+    const details = normalizeBuyerDetails(req.body?.buyerDetails);
+    const validationError = validateBuyerDetails(details);
+    if (validationError) return res.status(400).json({ error: validationError });
+
+    try {
+      const firebaseAdmin = getFirebaseAdmin();
+      await firebaseAdmin.firestore().collection("users").doc(uid).set(
+        { buyer_details: details, updated_at: new Date().toISOString() },
+        { merge: true },
+      );
+      return res.json({ success: true, buyerDetails: details });
+    } catch (error) {
+      console.error("Failed to save buyer details", error);
+      return res.status(500).json({ error: "Failed to save buyer details" });
     }
   });
 
