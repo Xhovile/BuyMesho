@@ -68,6 +68,7 @@ export const REPORT_PATH = "/report";
 export const SELLER_PATH = "/seller";
 export const SELLER_DASHBOARD_PATH = "/seller-dashboard";
 export const SELLER_PAYOUTS_PATH = "/seller/payouts";
+export const SELLER_ORDERS_PATH = "/seller/orders";
 export const LISTING_PATH = "/listing";
 export const MESSAGES_PATH = "/messages";
 export const CREATE_PATH = "/create";
