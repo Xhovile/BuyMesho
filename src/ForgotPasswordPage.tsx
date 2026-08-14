@@ -1,10 +1,9 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { sendPasswordResetEmail } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import AccountPageShell from "./components/AccountPageShell";
-import { auth } from "./firebase";
 import { navigateToPath } from "./lib/appNavigation";
+import { apiFetch } from "./lib/api";
 
 type FeedbackAction = {
   label: string;
@@ -57,7 +56,10 @@ export default function ForgotPasswordPage() {
 
     setSending(true);
     try {
-      await sendPasswordResetEmail(auth, email.trim());
+      await apiFetch("/api/auth/send-password-reset-email", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim() }),
+      });
       showFeedback(
         "success",
         "Reset email sent",
@@ -65,7 +67,7 @@ export default function ForgotPasswordPage() {
       );
       setCooldownSeconds(RESET_COOLDOWN_SECONDS);
     } catch (err: any) {
-      if (err?.code === "auth/user-not-found") {
+      if (err?.status === 404) {
         showFeedback(
           "error",
           "No account found",
