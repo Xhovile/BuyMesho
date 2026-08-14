@@ -9,6 +9,7 @@ import { getConnectAccount } from '../connect/connect.service.js';
 import { calculatePayoutFormula } from '../payouts/payout.policy.js';
 import { getPaymentDb } from '../../postgresCompat.js';
 import { isPaychanguSuccessStatus } from './paychangu.provider.js';
+import { notifyOrderPaid } from '../notifications/order-paid.notification.js';
 
 export interface ApplyPayChanguResult {
   payment?: ReturnType<typeof paymentRepository.findByReference>;
@@ -72,16 +73,11 @@ function emitSellerPayoutQueuedNotification(sellerId: string, orderId: string, p
   console.log('[notification] seller_payout_queued', JSON.stringify(payload));
 }
 
-function emitOrderPaidNotification(buyerId: string, sellerId: string, orderId: string): void {
-  const payload = {
-    orderId,
-    buyerId,
-    sellerId,
-    event: 'order_paid',
-    emittedAt: new Date().toISOString(),
-  };
-
-  console.log('[notification] order_paid', JSON.stringify(payload));
+function emitOrderPaidNotification(order: ReturnType<typeof orderRepository.findByPaymentReference>): void {
+  if (!order) return;
+  void notifyOrderPaid(order).catch((error) => {
+    console.warn('[notification] order_paid email delivery failed', error);
+  });
 }
 
 function findActiveVerifiedDestination(sellerId: string): { id: string; destination_type: string | null } | undefined {
@@ -137,7 +133,7 @@ function derivePayoutMethod(destination: SellerPayoutDestination | undefined): C
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-      isPaychanguSuccessStatus(String(verification.status ?? '')),
+      isPayChanguSuccessStatus(String(verification.status ?? '')),
   );
 }
 
@@ -353,11 +349,9 @@ export function applyVerifiedPayChanguPayment(
   }
 
   if (settlement.orderEnteredEscrow) {
-    emitOrderPaidNotification(
-      settlement.order.buyerId,
-      settlement.order.sellerId,
-      settlement.order.id,
-    );
+    emitOrderPaidNotification(settlement.order);
+  } else if (settlement.order?.status === 'paid') {
+    emitOrderPaidNotification(settlement.order);
   }
 
   return {
