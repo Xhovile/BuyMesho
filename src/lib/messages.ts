@@ -80,11 +80,12 @@ export async function startConversationWithSeller(sellerUid: string): Promise<Co
 
 export async function sendMessage(
   conversationId: number,
-  body: string
+  body: string,
+  idempotencyKey?: string,
 ): Promise<SendMessageResponse> {
   const result = await apiFetch(`/api/messages/${conversationId}/messages`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, idempotencyKey }),
   });
 
   return unwrapData<SendMessageResponse>(result, {
