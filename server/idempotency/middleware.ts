@@ -2,9 +2,9 @@ import type { RequestHandler } from "express";
 import {
   beginIdempotentOperation,
   completeIdempotentOperation,
-  createIdempotencyKeyConflictError,
   failIdempotentOperation,
   hashIdempotencyRequest,
+  IdempotencyKeyConflictError,
 } from "./idempotency.js";
 
 export function createIdempotencyMiddleware(scope: string): RequestHandler {
@@ -45,8 +45,8 @@ export function createIdempotencyMiddleware(scope: string): RequestHandler {
         }),
       });
     } catch (error) {
-      if (createIdempotencyKeyConflictError(error)) {
-        res.status(409).json({ error: (error as Error).message, code: "IDEMPOTENCY_KEY_REUSED" });
+      if (error instanceof IdempotencyKeyConflictError) {
+        res.status(409).json({ error: error.message, code: "IDEMPOTENCY_KEY_REUSED" });
         return;
       }
       next(error);
