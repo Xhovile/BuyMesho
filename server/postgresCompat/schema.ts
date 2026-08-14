@@ -176,6 +176,7 @@ export function initPaymentSchema(db: PgCompatDatabase): void {
   ensureColumn(db, "seller_payout_accounts", "provider_ref_id", "TEXT");
   ensureColumn(db, "orders", "checkout_idempotency_key", "TEXT");
   ensureColumn(db, "orders", "checkout_request_hash", "TEXT");
+  ensureColumn(db, "orders", "buyer_details", "TEXT");
 
   ensureColumn(db, "events", "creator_uid", "TEXT");
   ensureColumn(db, "events", "ticket_price", "REAL");
