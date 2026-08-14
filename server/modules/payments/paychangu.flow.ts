@@ -133,7 +133,7 @@ function derivePayoutMethod(destination: SellerPayoutDestination | undefined): C
 function isCaptured(verification: PaymentVerificationResult): boolean {
   return Boolean(
     verification.verified &&
-      isPayChanguSuccessStatus(String(verification.status ?? '')),
+      isPaychanguSuccessStatus(String(verification.status ?? '')),
   );
 }
 
@@ -195,9 +195,6 @@ export function applyVerifiedPayChanguPayment(
     };
   }
 
-  // A late provider success must not resurrect money after the local order has
-  // already been refunded/closed/disputed. The financial outcome is already
-  // terminal and must be preserved until an explicit recovery workflow exists.
   if (['refunded', 'closed', 'disputed'].includes(order.status)) {
     const payment = referenceCandidates
       .map((candidate) => paymentRepository.findByReference(candidate))
