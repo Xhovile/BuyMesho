@@ -5,6 +5,11 @@ import { serverOrderService } from '../server/modules/orders/order.service.js';
 import { escrowRepository } from '../server/modules/escrow/escrow.repository.js';
 import { getPaymentDb } from '../server/postgresCompat.js';
 
+if (process.env.NODE_ENV !== 'test') {
+  console.error('Debug release refused: this destructive reproduction may only run with NODE_ENV=test against the isolated test database.');
+  process.exit(1);
+}
+
 // Minimal debug reproduction of the test
 async function main() {
   process.env.PAYCHANGU_SECRET_KEY = 'test-secret-key';
