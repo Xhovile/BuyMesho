@@ -85,10 +85,11 @@ export async function sendMessage(
   body: string,
   idempotencyKey?: string,
 ): Promise<SendMessageResponse> {
-  const key = idempotencyKey ?? pendingMessageIdempotencyKeys.get(String(conversationId)) ?? crypto.randomUUID();
+  const pendingKey = `${conversationId}:${body}`;
+  const key = idempotencyKey ?? pendingMessageIdempotencyKeys.get(pendingKey) ?? crypto.randomUUID();
 
   if (!idempotencyKey) {
-    pendingMessageIdempotencyKeys.set(String(conversationId), key);
+    pendingMessageIdempotencyKeys.set(pendingKey, key);
   }
 
   try {
@@ -97,7 +98,7 @@ export async function sendMessage(
       body: JSON.stringify({ body, idempotencyKey: key }),
     });
 
-    pendingMessageIdempotencyKeys.delete(String(conversationId));
+    pendingMessageIdempotencyKeys.delete(pendingKey);
 
     return unwrapData<SendMessageResponse>(result, {
       success: false,
