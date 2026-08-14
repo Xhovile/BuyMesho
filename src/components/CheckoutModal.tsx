@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircle2, Loader2, ShoppingBag, X } from "lucide-react";
 import type { Listing } from "../types";
@@ -6,6 +6,7 @@ import { apiFetch } from "../lib/api";
 import { ENDPOINTS } from "../shared/api/endpoints";
 import { touchBuyerPaymentFromCheckout } from "../lib/buyerState";
 import { calculateCustomerCheckoutFees } from "../../server/modules/payouts/payout.policy";
+import BuyerDetailsForm, { type BuyerDeliveryDetails } from "./checkout/BuyerDetailsForm";
 
 type CheckoutStep = "form" | "loading" | "success" | "error";
 type SettlementRoute = "escrow" | "connect";
@@ -30,8 +31,27 @@ interface CheckoutModalProps {
   buyerEmail?: string | null;
 }
 
+const EMPTY_BUYER_DETAILS: BuyerDeliveryDetails = {
+  fullName: "",
+  phone: "",
+  addressLine: "",
+  area: "",
+  townOrDistrict: "",
+  landmark: "",
+};
+
 function formatPrice(amount: number): string {
   return `MK ${Number(amount).toLocaleString()}`;
+}
+
+function isBuyerDetailsComplete(details: BuyerDeliveryDetails): boolean {
+  return Boolean(
+    details.fullName.trim() &&
+      details.phone.trim() &&
+      details.addressLine.trim() &&
+      details.area.trim() &&
+      details.townOrDistrict.trim(),
+  );
 }
 
 const settlementOptions: Array<{
@@ -64,6 +84,9 @@ export default function CheckoutModal({
   const [step, setStep] = useState<CheckoutStep>("form");
   const [quantity, setQuantity] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [buyerDetails, setBuyerDetails] = useState<BuyerDeliveryDetails>(EMPTY_BUYER_DETAILS);
+  const [saveBuyerDetails, setSaveBuyerDetails] = useState(false);
+  const [buyerDetailsLoading, setBuyerDetailsLoading] = useState(false);
   const idempotencyKeyRef = useRef<string>("");
 
   const maxQty = Math.max(
@@ -82,14 +105,43 @@ export default function CheckoutModal({
       setStep("form");
       setQuantity(1);
       setError(null);
+      setBuyerDetails({ ...EMPTY_BUYER_DETAILS, fullName: buyerName?.trim() ?? "" });
+      setSaveBuyerDetails(false);
+      setBuyerDetailsLoading(false);
       idempotencyKeyRef.current = crypto.randomUUID();
     }
-  }, [isOpen]);
+  }, [isOpen, buyerName]);
+
+  const handleBuyerDetailsChange = useCallback((next: BuyerDeliveryDetails) => {
+    setBuyerDetails(next);
+  }, []);
+
+  const handleSaveBuyerDetailsChange = useCallback((next: boolean) => {
+    setSaveBuyerDetails(next);
+  }, []);
+
+  const handleBuyerDetailsLoadingChange = useCallback((loading: boolean) => {
+    setBuyerDetailsLoading(loading);
+  }, []);
 
   const handleConfirm = async (settlementRoute: SettlementRoute) => {
+    if (!isBuyerDetailsComplete(buyerDetails)) {
+      setError("Complete your delivery details before continuing.");
+      return;
+    }
+
     setStep("loading");
     setError(null);
+
     try {
+      if (saveBuyerDetails) {
+        await apiFetch("/api/profile/buyer-details", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ buyerDetails }),
+        });
+      }
+
       const returnUrl = `${window.location.origin}/payment/return?listingId=${encodeURIComponent(String(listing.id))}`;
       const cancelUrl = `${window.location.origin}/payment/return?cancelled=1&listingId=${encodeURIComponent(String(listing.id))}`;
 
@@ -106,7 +158,9 @@ export default function CheckoutModal({
           settlementRoute,
           returnUrl,
           cancelUrl,
-          buyerName: buyerName || buyerEmail || undefined,
+          buyerName: buyerDetails.fullName || buyerName || buyerEmail || undefined,
+          buyerPhone: buyerDetails.phone || undefined,
+          buyerDetails,
         }),
       })) as CheckoutResult;
 
@@ -162,7 +216,7 @@ export default function CheckoutModal({
             initial={{ opacity: 0, scale: 0.96, y: 18 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: 18 }}
-            className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+            className="relative max-h-[92vh] w-full max-w-md overflow-y-auto rounded-3xl bg-white shadow-2xl"
             role="dialog"
             aria-modal="true"
             aria-label="Checkout"
@@ -173,12 +227,8 @@ export default function CheckoutModal({
                   <ShoppingBag className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">
-                    Checkout
-                  </p>
-                  <h2 className="text-base font-extrabold text-zinc-900">
-                    Choose how you want to pay
-                  </h2>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Checkout</p>
+                  <h2 className="text-base font-extrabold text-zinc-900">Complete your purchase</h2>
                 </div>
               </div>
 
@@ -198,18 +248,14 @@ export default function CheckoutModal({
               {step === "loading" && (
                 <div className="flex flex-col items-center gap-4 py-6">
                   <Loader2 className="h-10 w-10 animate-spin text-zinc-700" />
-                  <p className="text-sm font-semibold text-zinc-600">
-                    Initializing secure checkout…
-                  </p>
+                  <p className="text-sm font-semibold text-zinc-600">Initializing secure checkout…</p>
                 </div>
               )}
 
               {step === "success" && (
                 <div className="flex flex-col items-center gap-4 py-6">
                   <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-                  <p className="text-sm font-bold text-zinc-800">
-                    Redirecting you to the payment page…
-                  </p>
+                  <p className="text-sm font-bold text-zinc-800">Redirecting you to the payment page…</p>
                 </div>
               )}
 
@@ -224,21 +270,23 @@ export default function CheckoutModal({
                       />
                     )}
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-extrabold text-zinc-900">
-                        {listing.name}
-                      </p>
+                      <p className="truncate text-sm font-extrabold text-zinc-900">{listing.name}</p>
                       <p className="mt-0.5 text-xs text-zinc-500">{listing.university}</p>
-                      <p className="mt-1 text-base font-black text-zinc-900">
-                        {formatPrice(unitPrice)}
-                      </p>
+                      <p className="mt-1 text-base font-black text-zinc-900">{formatPrice(unitPrice)}</p>
                     </div>
                   </div>
 
+                  <BuyerDetailsForm
+                    value={buyerDetails}
+                    onChange={handleBuyerDetailsChange}
+                    saveForLater={saveBuyerDetails}
+                    onSaveForLaterChange={handleSaveBuyerDetailsChange}
+                    onLoadingChange={handleBuyerDetailsLoadingChange}
+                  />
+
                   {maxQty > 1 && (
                     <div>
-                      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.18em] text-zinc-500">
-                        Quantity
-                      </label>
+                      <label className="mb-1.5 block text-xs font-black uppercase tracking-[0.18em] text-zinc-500">Quantity</label>
                       <div className="flex items-center gap-3">
                         <button
                           type="button"
@@ -248,9 +296,7 @@ export default function CheckoutModal({
                         >
                           −
                         </button>
-                        <span className="min-w-[2rem] text-center text-sm font-extrabold text-zinc-900">
-                          {quantity}
-                        </span>
+                        <span className="min-w-[2rem] text-center text-sm font-extrabold text-zinc-900">{quantity}</span>
                         <button
                           type="button"
                           onClick={() => setQuantity((q) => Math.min(maxQty, q + 1))}
@@ -282,9 +328,7 @@ export default function CheckoutModal({
                   </div>
 
                   {error && (
-                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                      {error}
-                    </div>
+                    <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{error}</div>
                   )}
 
                   <div className="space-y-3">
@@ -292,8 +336,9 @@ export default function CheckoutModal({
                       <button
                         key={option.route}
                         type="button"
+                        disabled={buyerDetailsLoading}
                         onClick={() => void handleConfirm(option.route)}
-                        className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${option.buttonClassName}`}
+                        className={`w-full rounded-2xl border px-4 py-4 text-left transition-all disabled:cursor-not-allowed disabled:opacity-50 ${option.buttonClassName}`}
                       >
                         <p className="text-sm font-extrabold">{option.label}</p>
                         <p className="mt-1 text-xs opacity-80">{option.description}</p>
