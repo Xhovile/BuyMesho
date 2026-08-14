@@ -1,5 +1,10 @@
 import { getPaymentDb } from "../server/postgresCompat.js";
 
+if (process.env.NODE_ENV !== "test") {
+  console.error("Finance reset refused: this script may only run with NODE_ENV=test against the isolated test database.");
+  process.exit(1);
+}
+
 const FINANCE_TABLES_IN_DELETE_ORDER = [
   "payout_attempts",
   "payout_events",
