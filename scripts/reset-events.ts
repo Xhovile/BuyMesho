@@ -1,5 +1,10 @@
 import { closePool, withTransaction } from "../server/postgres.js";
 
+if (process.env.NODE_ENV !== "test") {
+  console.error("Event reset refused: this script may only run with NODE_ENV=test against the isolated test database.");
+  process.exit(1);
+}
+
 async function hasColumn(client: Parameters<typeof withTransaction>[0] extends (client: infer C) => Promise<any> ? C : never, tableName: string, columnName: string) {
   const result = await client.query<{ exists: boolean }>(
     `
