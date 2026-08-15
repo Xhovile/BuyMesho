@@ -13,6 +13,7 @@ import { getListingImagePlaceholderUrl } from "../lib/imageUrl";
 
 type ListingImageProps = {
   src?: string | null;
+  placeholderSrc?: string | null;
   alt: string;
   category?: string | null;
   subcategory?: string | null;
@@ -56,6 +57,7 @@ function getBackdropClass(category?: string | null, subcategory?: string | null)
 
 export default function ListingImage({
   src,
+  placeholderSrc,
   alt,
   category,
   subcategory,
@@ -63,11 +65,13 @@ export default function ListingImage({
   performanceMode = false,
 }: ListingImageProps) {
   const normalizedSrc = typeof src === "string" ? src.trim() : "";
+  const normalizedPlaceholderSrc = typeof placeholderSrc === "string" ? placeholderSrc.trim() : "";
   const [failed, setFailed] = useState(!normalizedSrc);
   const [loaded, setLoaded] = useState(false);
-  const placeholderSrc = useMemo(
-    () => getListingImagePlaceholderUrl(normalizedSrc),
-    [normalizedSrc],
+
+  const lqipSrc = useMemo(
+    () => getListingImagePlaceholderUrl(normalizedPlaceholderSrc || normalizedSrc),
+    [normalizedPlaceholderSrc, normalizedSrc],
   );
 
   useEffect(() => {
@@ -102,9 +106,9 @@ export default function ListingImage({
         </div>
       ) : (
         <>
-          {placeholderSrc ? (
+          {lqipSrc ? (
             <img
-              src={placeholderSrc}
+              src={lqipSrc}
               alt=""
               aria-hidden="true"
               className="absolute inset-0 h-full w-full scale-[1.02] object-cover blur-[1px]"
