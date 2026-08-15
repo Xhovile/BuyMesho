@@ -1,0 +1,74 @@
+name: Apply Security Cleanup
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ github.event.head_commit.message != 'Apply security cleanup integration' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Apply security cleanup
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Account deletion: clean TOTP/passkey records before Firebase deletion.
+          p = Path('server/auth/accountDeletionRoutes.ts')
+          text = p.read_text()
+          text = text.replace(
+              'import { getFirebaseAdmin } from "./firebaseAdmin.js";\n',
+              'import { getFirebaseAdmin } from "./firebaseAdmin.js";\nimport { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";\nimport { disableTotpEnrollment } from "../../src/server/totpStore.js";\n'
+          )
+          old = '''    const urls = collectUserMediaUrls(user.uid);\n    cleanupUserRecords(user.uid);\n'''
+          new = '''    const urls = collectUserMediaUrls(user.uid);\n    await Promise.all([\n      deleteAllPasskeysForUser(user.uid),\n      deletePasskeyCeremoniesForUser(user.uid),\n    ]);\n    disableTotpEnrollment(user.uid);\n    cleanupUserRecords(user.uid);\n'''
+          if old not in text:
+              raise SystemExit('Account deletion block not found')
+          p.write_text(text.replace(old, new, 1))
+
+          # Remove the passkey status check from the login transition. Home owns the offer decision.
+          p = Path('src/LoginPage.tsx')
+          text = p.read_text()
+          text = text.replace(
+              'import { beginPasskeyLogin, getPasskeyStatus, registerCurrentPasskey, supportsPasskeys } from "./lib/passkeys";',
+              'import { beginPasskeyLogin, markPasskeySetupOffer, registerCurrentPasskey, supportsPasskeys } from "./lib/passkeys";'
+          )
+          start = '    // Offer passkey enrollment after a normal login, but do not interrupt\n'
+          begin = text.find(start)
+          if begin == -1:
+              raise SystemExit('Login passkey offer block start not found')
+          end_marker = '    await finishAuthentication();\n  };'
+          end = text.find(end_marker, begin)
+          if end == -1:
+              raise SystemExit('Login passkey offer block end not found')
+          replacement = '''    // Let the post-login Home prompt check passkey status after navigation.\n    if (!isValidatorEntry && passkeysAvailable) {\n      markPasskeySetupOffer();\n    }\n\n    await finishAuthentication();\n  };'''
+          text = text[:begin] + replacement + text[end + len(end_marker):]
+          p.write_text(text)
+
+          # Fix Passkeys accordion className template string.
+          p = Path('src/components/settings/SettingsSecuritySection.tsx')
+          text = p.read_text()
+          broken = '<ChevronDown className="w-4 h-4 text-zinc-500 transition-transform ${passkeyExpanded ? "rotate-180" : ""}" />'
+          fixed = '<ChevronDown className={`w-4 h-4 text-zinc-500 transition-transform ${passkeyExpanded ? "rotate-180" : ""}`} />'
+          if broken not in text:
+              raise SystemExit('Passkey accordion icon markup not found')
+          p.write_text(text.replace(broken, fixed, 1))
+          PY
+
+      - name: Commit security cleanup
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/auth/accountDeletionRoutes.ts src/LoginPage.tsx src/components/settings/SettingsSecuritySection.tsx
+          git commit -m "Apply security cleanup integration"
+          git push
