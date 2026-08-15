@@ -39,6 +39,7 @@ const sellerFailureReasons = new Set(["seller_suspended", "seller_disabled", "ac
 const destinationFailureReasons = new Set(["destination_missing", "destination_unverified", "destination_disabled", "destination_verification_failed"]);
 const reconciliationFailureReasons = new Set(["missing_provider_attempt", "provider_charge_mismatch", "payout_attempt_missing", "reconciliation_failed", "data_integrity_failed"]);
 const lifecycleWaitingStatuses = new Set(["eligible", "pending_settlement", "ready_for_payout", "queued", "processing", "pending"]);
+const missingAttemptStatuses = new Set(["processing", "pending", "failed"]);
 
 function clean(value: unknown): string | null {
   if (value === null || value === undefined) return null;
@@ -93,7 +94,7 @@ export type DiagnosticClassification =
 
 export function classifyPayoutDiagnostic(row: PayoutRow): { classification: DiagnosticClassification; message: string | null; label: string } {
   const d = getPayoutDiagnostics(row);
-  const status = token(d.status);
+  const status = token((row.currentState ?? d.status));
   const providerStatus = token(d.providerStatus);
   const attemptStatus = token(d.latestAttemptStatus);
   const destinationStatus = token(d.destinationVerificationStatus);
@@ -112,7 +113,11 @@ export function classifyPayoutDiagnostic(row: PayoutRow): { classification: Diag
     return { classification: "provider", label: "Provider execution failed", message: `Provider execution failed${providerFailure ? `: ${providerFailure}` : ""}` };
   }
 
-  if (destinationVerified && ["processing", "pending", "failed"].includes(status) && !d.latestAttemptNo) {
+  if (lifecycleWaitingStatuses.has(status) && status !== "processing" && status !== "pending") {
+    return { classification: "lifecycle", label: "Payout lifecycle", message: "Payout is waiting for the next settlement or provider submission step." };
+  }
+
+  if (destinationVerified && missingAttemptStatuses.has(status) && !d.latestAttemptNo) {
     return { classification: "reconciliation", label: "Reconciliation/data-integrity", message: "Destination verified, but payout record has no provider attempt." };
   }
 
