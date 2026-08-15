@@ -133,6 +133,39 @@ export function createTotpAuthRouter(deps: TotpAuthRoutesDeps) {
     });
   });
 
+  // After Firebase email/password authentication succeeds, the login page calls
+  // this endpoint to prove possession of the configured authenticator app.
+  // This route was missing even though enrollment/status routes existed.
+  router.post("/challenge/verify", async (req, res) => {
+    const user = await getUserContext(req, deps.resolveUser);
+    if (!user) return sendError(res, 401, "Login required.");
+
+    const code = normalizeTotpCode(requireString(req.body?.code));
+    if (!code) return sendError(res, 400, "A 6-digit code is required.");
+
+    const record = getTotpEnrollment(user.uid);
+    if (!record || record.status !== "enabled") {
+      return sendError(res, 400, "Two-factor authentication is not enabled for this account.");
+    }
+
+    const result = verifyTotpCode({ secret: record.secret, code });
+    if (result.ok === false) {
+      return sendError(
+        res,
+        400,
+        result.reason === "clock_skew" ? "That code has expired." : "Invalid authenticator code."
+      );
+    }
+
+    const session = createTotpVerifiedSession(user.uid);
+    return sendOk(res, {
+      verified: true,
+      status: record.status,
+      sessionToken: session.token,
+      expiresAt: session.expiresAt,
+    });
+  });
+
   router.post("/disable", async (req, res) => {
     const user = await getUserContext(req, deps.resolveUser);
     if (!user) return sendError(res, 401, "Login required.");
