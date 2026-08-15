@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 type Props = {
   className?: string;
@@ -15,21 +15,56 @@ const AI_HIDDEN_DRAWER_PATHS = new Set([
   "/payments",
   "/seller/payouts",
   "/create",
+  "/login",
+  "/signup",
+  "/cart",
+  "/buyer-payments",
+  "/payments/return",
+  "/payment/return",
 ]);
 
-function shouldHideLauncher() {
+export function shouldHideLauncher() {
   if (typeof window === "undefined") return false;
 
   const pathname = window.location.pathname;
   if (pathname === "/settings") return false;
   if (AI_HIDDEN_DRAWER_PATHS.has(pathname)) return true;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
+  if (pathname.startsWith("/orders/")) return true;
+  if (pathname === "/track-order" || pathname === "/payments/track-order") return true;
+
+  // Checkout is often a modal layered over a listing/details page, so hide
+  // the floating AI launcher whenever an active checkout dialog is mounted.
+  if (document.querySelector('[aria-label="Checkout"]')) return true;
 
   return false;
 }
 
 export default function AiIcon({ className = "w-5 h-5", size }: Props) {
-  if (shouldHideLauncher()) return null;
+  const [hidden, setHidden] = useState(() => shouldHideLauncher());
+
+  useEffect(() => {
+    const updateVisibility = () => {
+      const nextHidden = shouldHideLauncher();
+      setHidden((current) => (current === nextHidden ? current : nextHidden));
+    };
+
+    window.addEventListener("popstate", updateVisibility);
+
+    const observer = new MutationObserver(updateVisibility);
+    if (document.body) {
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    updateVisibility();
+
+    return () => {
+      window.removeEventListener("popstate", updateVisibility);
+      observer.disconnect();
+    };
+  }, []);
+
+  if (hidden) return null;
 
   const style = size ? { width: size, height: size } : undefined;
 
