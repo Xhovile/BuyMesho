@@ -27,7 +27,9 @@ export function shouldHideLauncher() {
   if (typeof window === "undefined") return false;
 
   const pathname = window.location.pathname;
-  if (pathname === "/settings") return false;
+  const isMobile = window.matchMedia("(max-width: 767px)").matches;
+
+  if (pathname === "/settings" && isMobile) return true;
   if (AI_HIDDEN_DRAWER_PATHS.has(pathname)) return true;
   if (pathname === "/admin" || pathname.startsWith("/admin/")) return true;
   if (pathname.startsWith("/orders/")) return true;
@@ -50,6 +52,7 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
     };
 
     window.addEventListener("popstate", updateVisibility);
+    window.addEventListener("resize", updateVisibility);
 
     const observer = new MutationObserver(updateVisibility);
     if (document.body) {
@@ -60,6 +63,7 @@ export default function AiIcon({ className = "w-5 h-5", size }: Props) {
 
     return () => {
       window.removeEventListener("popstate", updateVisibility);
+      window.removeEventListener("resize", updateVisibility);
       observer.disconnect();
     };
   }, []);
