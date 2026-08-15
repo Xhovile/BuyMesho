@@ -1,5 +1,24 @@
-import { authenticateWithPasskey, isPasskeySupported, registerPasskey } from "@xhovile/platform/passkeys/browser";
+import {
+  authenticateWithPasskey,
+  isPasskeySupported,
+  registerPasskey,
+} from "@xhovile/platform/passkeys/browser";
 import { apiFetch } from "./api";
+
+export type PasskeyCredential = {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  deviceType: string | null;
+  backedUp: boolean | null;
+};
+
+export type PasskeyStatus = {
+  enabled: boolean;
+  count: number;
+  credentials?: PasskeyCredential[];
+};
 
 export function supportsPasskeys(): boolean {
   try {
@@ -39,6 +58,12 @@ export async function registerCurrentPasskey(): Promise<{ credentialId: string }
   return { credentialId: result.credentialId };
 }
 
-export async function getPasskeyStatus(): Promise<{ enabled: boolean; count: number }> {
+export async function getPasskeyStatus(): Promise<PasskeyStatus> {
   return apiFetch("/api/auth/passkey/status", { method: "GET" });
+}
+
+export async function removePasskey(credentialId: string): Promise<void> {
+  await apiFetch(`/api/auth/passkey/${encodeURIComponent(credentialId)}`, {
+    method: "DELETE",
+  });
 }
