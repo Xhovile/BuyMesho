@@ -1,6 +1,7 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
+import "./floatingControls.css";
 
 type ScrollToTopFabProps = {
   show: boolean;
@@ -8,6 +9,13 @@ type ScrollToTopFabProps = {
 };
 
 export default function ScrollToTopFab({ show, onClick }: ScrollToTopFabProps) {
+  const hideOnMobileSettings =
+    typeof window !== "undefined" &&
+    window.location.pathname === "/settings" &&
+    window.matchMedia("(max-width: 767px)").matches;
+
+  if (hideOnMobileSettings) return null;
+
   return (
     <AnimatePresence>
       {show && (
