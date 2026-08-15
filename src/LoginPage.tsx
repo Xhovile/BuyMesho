@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+import { Eye, EyeOff, Loader2, Fingerprint } from "lucide-react";
+import { signInWithEmailAndPassword, signOut, signInWithCustomToken } from "firebase/auth";
 import FeedbackModal from "./components/FeedbackModal";
 import TotpChallengeModal from "./components/TotpChallengeModal";
 import AccountPageShell from "./components/AccountPageShell";
@@ -10,6 +10,7 @@ import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath, navi
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 import { apiFetch } from "./lib/api";
+import { beginPasskeyLogin, supportsPasskeys } from "./lib/passkeys";
 
 type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" | "secondary" };
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
@@ -44,6 +45,7 @@ export default function LoginPage() {
   const [totpChallengeBusy, setTotpChallengeBusy] = useState(false);
   const [authTransition, setAuthTransition] = useState<AuthTransitionState>(null);
   const isValidatorEntry = Boolean(getTicketValidatorReturnUrl());
+  const passkeysAvailable = supportsPasskeys();
 
   const showFeedback = (type: "success" | "error" | "info", title: string, message: string, actions?: FeedbackAction[]) => setFeedback({ open: true, type, title, message, actions });
   const closeFeedback = () => setFeedback(null);
@@ -85,6 +87,26 @@ export default function LoginPage() {
       return;
     }
     await finishAuthentication();
+  };
+
+  const handlePasskeyLogin = async () => {
+    if (!passkeysAvailable) return;
+
+    setLoading(true);
+    clearTotpVerifiedSessionToken();
+    try {
+      const result = await beginPasskeyLogin();
+      const userCredential = await signInWithCustomToken(auth, result.customToken);
+      await completeSuccessfulLogin(userCredential.user);
+    } catch (err: any) {
+      if (err?.name === "NotAllowedError") {
+        showFeedback("info", "Passkey sign-in cancelled", "No passkey sign-in was completed.");
+        return;
+      }
+      showFeedback("error", "Passkey sign-in failed", err?.message || "Please try another sign-in method.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogin = async (e: FormEvent) => {
@@ -240,6 +262,26 @@ export default function LoginPage() {
           {!isValidatorEntry && <div className="flex items-center justify-between gap-4 text-sm font-bold"><button type="button" onClick={() => navigateToPath("/forgot-password")} className="text-primary hover:underline">Forgot Password?</button><button type="button" onClick={() => navigateToSignup()} className="text-zinc-500 hover:text-zinc-900 hover:underline">Create account</button></div>}
           <button type="submit" disabled={loading} className="flex min-w-[180px] items-center justify-center gap-2 rounded-2xl bg-zinc-900 px-6 py-3 font-bold text-white transition-colors hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto">{loading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Log In"}</button>
         </form>
+
+        {passkeysAvailable && (
+          <div className="mt-8 w-full">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-x-0 h-px bg-zinc-200" />
+              <span className="relative bg-white px-4 text-xs font-bold uppercase tracking-[0.18em] text-zinc-400">or</span>
+            </div>
+            <button
+              type="button"
+              onClick={handlePasskeyLogin}
+              disabled={loading || Boolean(authTransition)}
+              className="mt-6 flex w-full items-center justify-center gap-3 rounded-2xl border border-zinc-300 bg-white px-6 py-3.5 font-bold text-zinc-900 transition hover:border-zinc-900 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Fingerprint className="h-5 w-5" />
+              Sign in with passkey
+            </button>
+            <p className="mt-2 text-center text-xs font-medium text-zinc-500">Use your fingerprint, Face ID, device PIN, or security key.</p>
+          </div>
+        )}
+
         <TotpChallengeModal open={totpChallengeOpen} title="Two-factor verification" message="Your account uses an authenticator app. Enter the current 6-digit code to continue." code={totpChallengeCode} busy={totpChallengeBusy} onCodeChange={setTotpChallengeCode} onSubmit={handleTotpChallengeSubmit} onCancel={handleTotpChallengeCancel} />
         {feedback && <FeedbackModal open={feedback.open} type={feedback.type} title={feedback.title} message={feedback.message} actions={feedback.actions} onClose={closeFeedback} />}
       </AccountPageShell>
