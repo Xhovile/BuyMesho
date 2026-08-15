@@ -2,6 +2,8 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import { postgresDb as db } from "../db.js";
 import { v2 as cloudinary } from "cloudinary";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
+import { deleteAllPasskeysForUser, deletePasskeyCeremoniesForUser } from "./passkeyStore.js";
+import { disableTotpEnrollment } from "../../src/server/totpStore.js";
 
 type VerifiedRequestUser = {
   uid: string;
@@ -165,6 +167,11 @@ async function accountDeletionHandler(req: Request, res: Response) {
 
   try {
     const urls = collectUserMediaUrls(user.uid);
+    await Promise.all([
+      deleteAllPasskeysForUser(user.uid),
+      deletePasskeyCeremoniesForUser(user.uid),
+    ]);
+    disableTotpEnrollment(user.uid);
     cleanupUserRecords(user.uid);
 
     res.json({

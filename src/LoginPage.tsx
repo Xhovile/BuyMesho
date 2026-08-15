@@ -10,7 +10,7 @@ import { consumeAuthReturnPath, HOME_PATH, navigateToLogin, navigateToPath, navi
 import { clearTotpVerifiedSessionToken } from "./lib/totpSession";
 import { getTotpStatus, verifyTotpChallenge } from "./lib/security";
 import { apiFetch } from "./lib/api";
-import { beginPasskeyLogin, getPasskeyStatus, registerCurrentPasskey, supportsPasskeys } from "./lib/passkeys";
+import { beginPasskeyLogin, markPasskeySetupOffer, registerCurrentPasskey, supportsPasskeys } from "./lib/passkeys";
 
 type FeedbackAction = { label: string; onClick: () => void; variant?: "primary" | "secondary" };
 type FeedbackState = { open: boolean; type: "success" | "error" | "info"; title: string; message: string; actions?: FeedbackAction[] } | null;
@@ -88,40 +88,9 @@ export default function LoginPage() {
       return;
     }
 
-    // Offer passkey enrollment after a normal login, but do not interrupt
-    // the Ticket Validator hand-off flow.
+    // Let the post-login Home prompt check passkey status after navigation.
     if (!isValidatorEntry && passkeysAvailable) {
-      try {
-        const passkeyStatus = await getPasskeyStatus();
-        if (!passkeyStatus.enabled) {
-          showFeedback(
-            "info",
-            "Set up a passkey?",
-            "Use your fingerprint, Face ID, device PIN, or security key to make future BuyMesho sign-ins faster and more secure.",
-            [
-              {
-                label: "Not now",
-                variant: "secondary",
-                onClick: () => {
-                  closeFeedback();
-                  void finishAuthentication();
-                },
-              },
-              {
-                label: "Set up passkey",
-                onClick: () => {
-                  closeFeedback();
-                  void handlePasskeySetupAndFinish();
-                },
-              },
-            ],
-          );
-          return;
-        }
-      } catch (error) {
-        // Passkey availability should never prevent a normal login from completing.
-        console.warn("[passkeys] status check failed after login", error);
-      }
+      markPasskeySetupOffer();
     }
 
     await finishAuthentication();
