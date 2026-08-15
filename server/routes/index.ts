@@ -10,6 +10,7 @@ import { registerVerificationEmailRoutes } from "../auth/verificationEmailRoutes
 import { registerPasswordResetEmailRoutes } from "../auth/passwordResetEmailRoutes.js";
 import { registerEmailChangeRoutes } from "../auth/emailChangeRoutes.js";
 import { registerLoginEmailCheckRoutes } from "../auth/loginEmailCheckRoutes.js";
+import { registerMessageConversationCompatibilityRoutes } from "./messageConversationCompatibility.js";
 import { registerMessageModerationRoutes, registerMessageRoutes } from "./messageHubRoutes.js";
 import { registerMessagesRoutes } from "./messagesRoutes.js";
 import { registerReviewsRoutes } from "./reviewsRoutes.js";
@@ -123,6 +124,7 @@ export function registerRoutes(app: Express, deps: RouteDeps) {
   registerValidatorRoutes(app);
   registerSessionRoutes(app);
   registerAccountDeletionRoutes(app);
+  registerMessageConversationCompatibilityRoutes(app);
   registerMessageRoutes(app);
   registerMessageModerationRoutes(app);
   installPostgresMessageSchemaGuard(db);
