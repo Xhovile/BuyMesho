@@ -117,14 +117,7 @@ export function useSellerPayoutsPage() {
       if (!options?.silent) setLoading(true);
 
       try {
-        const [
-          permissionsRes,
-          destinationsRes,
-          payoutsRes,
-          escrowsRes,
-          providerMetadataRes,
-          connectRes,
-        ] = await Promise.allSettled([
+        const [permissionsRes, destinationsRes, payoutsRes, escrowsRes, providerMetadataRes, connectRes] = await Promise.allSettled([
           getPayoutPermissions(sellerId),
           getPayoutDestinations(sellerId),
           getPayoutHistory(sellerId),
@@ -138,7 +131,7 @@ export function useSellerPayoutsPage() {
         const nextPayouts = payoutsRes.status === "fulfilled" ? payoutsRes.value : [];
         const nextProviderMetadata = providerMetadataRes.status === "fulfilled"
           ? providerMetadataRes.value
-          : providerMetadata;
+          : { mobileMoneyOperators: [], banks: [], currencies: [DEFAULT_CURRENCY] };
         const nextConnectAccount = connectRes.status === "fulfilled" ? connectRes.value : null;
         const nextEscrows = escrowsRes.status === "fulfilled"
           ? escrowsRes.value
@@ -173,7 +166,7 @@ export function useSellerPayoutsPage() {
         setRefreshing(false);
       }
     },
-    [cacheKey, providerMetadata, sellerId],
+    [cacheKey, sellerId],
   );
 
   useEffect(() => {
@@ -205,7 +198,6 @@ export function useSellerPayoutsPage() {
     if (!removeTarget) return;
 
     setRemoveCountdown(REMOVE_COUNTDOWN_SECONDS);
-
     const interval = window.setInterval(() => {
       setRemoveCountdown((prev) => {
         if (prev <= 0) {
@@ -219,27 +211,16 @@ export function useSellerPayoutsPage() {
     return () => window.clearInterval(interval);
   }, [removeTarget]);
 
-  const earningsSummary = useMemo(
-    () => buildSellerEarningsSummary({ payouts, escrows, destinations }),
-    [payouts, escrows, destinations],
-  );
-
-  const activeDestinations = useMemo(
-    () => destinations.filter((item) => item.isActive),
-    [destinations],
-  );
-
-  const summary = useMemo<PayoutSummary>(
-    () => ({
-      activeDestinations: activeDestinations.length,
-      defaultDestination: activeDestinations.find((item) => item.isDefault) || null,
-      total: earningsSummary.lifetimeSales,
-      paid: earningsSummary.paidOut,
-      pending: earningsSummary.availableForPayout + earningsSummary.pendingPayout,
-      failed: earningsSummary.failedActionRequired,
-    }),
-    [activeDestinations, earningsSummary],
-  );
+  const earningsSummary = useMemo(() => buildSellerEarningsSummary({ payouts, escrows, destinations }), [payouts, escrows, destinations]);
+  const activeDestinations = useMemo(() => destinations.filter((item) => item.isActive), [destinations]);
+  const summary = useMemo<PayoutSummary>(() => ({
+    activeDestinations: activeDestinations.length,
+    defaultDestination: activeDestinations.find((item) => item.isDefault) || null,
+    total: earningsSummary.lifetimeSales,
+    paid: earningsSummary.paidOut,
+    pending: earningsSummary.availableForPayout + earningsSummary.pendingPayout,
+    failed: earningsSummary.failedActionRequired,
+  }), [activeDestinations, earningsSummary]);
 
   const canEditSettings = permissions?.editPayoutSettings !== false;
   const canViewHistory = permissions?.viewPayoutHistory !== false;
@@ -268,7 +249,6 @@ export function useSellerPayoutsPage() {
   const handleConnectRefresh = useCallback(async () => {
     setConnectLoading(true);
     setConnectError(null);
-
     try {
       await loadData({ silent: true });
     } catch (error) {
@@ -280,11 +260,9 @@ export function useSellerPayoutsPage() {
 
   const handleConnect = useCallback(async () => {
     if (!sellerId) return;
-
     try {
       setConnectLoading(true);
       setConnectError(null);
-
       const result = await createConnectAuthorizationLink({
         sellerUid: sellerId,
         clientId: import.meta.env.VITE_PAYCHANGU_CLIENT_ID,
@@ -294,7 +272,6 @@ export function useSellerPayoutsPage() {
         whUrl: import.meta.env.VITE_PAYCHANGU_WEBHOOK_URL,
         whSecret: import.meta.env.VITE_PAYCHANGU_WEBHOOK_SECRET,
       });
-
       window.location.href = result.authorizationUrl;
     } catch (error) {
       setConnectError(error instanceof Error ? error.message : "Failed to start Connect onboarding.");
@@ -305,14 +282,10 @@ export function useSellerPayoutsPage() {
 
   const handleDisconnect = useCallback(async () => {
     if (!sellerId) return;
-
     try {
       setConnectLoading(true);
       setConnectError(null);
-      const updated = await disconnectConnectAccount(
-        sellerId,
-        "Seller disconnected from PayChangu Connect",
-      );
+      const updated = await disconnectConnectAccount(sellerId, "Seller disconnected from PayChangu Connect");
       setConnectAccount(updated);
       setLastSaveDiagnostic(null);
       await loadData({ silent: true });
@@ -325,7 +298,6 @@ export function useSellerPayoutsPage() {
 
   const handleSaveDestination = useCallback(async () => {
     if (!sellerId) return;
-
     const validationMessage = validateDestinationForm(form);
     if (validationMessage) {
       setDestinationFormError(validationMessage);
@@ -336,22 +308,13 @@ export function useSellerPayoutsPage() {
 
     setDestinationFormError(null);
     setSavingDestination(true);
-
     try {
       const payload = buildDestinationPayload(sellerId, form);
-      const response = selectedDestinationId
-        ? await replacePayoutDestination(selectedDestinationId, payload)
-        : await createPayoutDestination(payload);
-
+      const response = selectedDestinationId ? await replacePayoutDestination(selectedDestinationId, payload) : await createPayoutDestination(payload);
       const destination = ((response as { destination?: PayoutDestination }).destination ?? response) as PayoutDestination;
       const diagnostic = buildDestinationQueueDiagnostic(destination);
       setLastSaveDiagnostic(diagnostic);
-
-      setNotice({
-        type: diagnostic.shouldAppearInAdminQueue ? "success" : "info",
-        message: diagnostic.summary,
-      });
-
+      setNotice({ type: diagnostic.shouldAppearInAdminQueue ? "success" : "info", message: diagnostic.summary });
       resetForm();
       await loadData({ silent: true });
     } catch (error) {
@@ -364,72 +327,46 @@ export function useSellerPayoutsPage() {
     }
   }, [form, loadData, resetForm, selectedDestinationId, sellerId]);
 
-  const handleMakeDefault = useCallback(
-    async (destination: PayoutDestination) => {
-      if (!destination.isActive || destination.isDefault) return;
-
-      setSavingDestination(true);
-      try {
-        await updatePayoutDestination(destination.id, { isDefault: true });
-        setNotice({
-          type: "success",
-          message: `${destination.providerName} is now your default payout destination.`,
-        });
-        setLastSaveDiagnostic(null);
-        await loadData({ silent: true });
-      } catch (error) {
-        setNotice({
-          type: "error",
-          message:
-            error instanceof Error ? error.message : "Failed to update default destination",
-        });
-      } finally {
-        setSavingDestination(false);
-      }
-    },
-    [loadData],
-  );
-
-  const handleRemoveDestination = useCallback(
-    (destination: PayoutDestination) => {
-      if (destination.isDefault) {
-        startEdit(destination);
-        setNotice({
-          type: "info",
-          message: "Default payout destination cannot be removed. Replace it in Payout Setup.",
-        });
-        setLastSaveDiagnostic(null);
-        return;
-      }
-
-      setRemoveTarget(destination);
-      setDestinationFormError(null);
-      setNotice(null);
+  const handleMakeDefault = useCallback(async (destination: PayoutDestination) => {
+    if (!destination.isActive || destination.isDefault) return;
+    setSavingDestination(true);
+    try {
+      await updatePayoutDestination(destination.id, { isDefault: true });
+      setNotice({ type: "success", message: `${destination.providerName} is now your default payout destination.` });
       setLastSaveDiagnostic(null);
-    },
-    [startEdit],
-  );
+      await loadData({ silent: true });
+    } catch (error) {
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Failed to update default destination" });
+    } finally {
+      setSavingDestination(false);
+    }
+  }, [loadData]);
+
+  const handleRemoveDestination = useCallback((destination: PayoutDestination) => {
+    if (destination.isDefault) {
+      startEdit(destination);
+      setNotice({ type: "info", message: "Default payout destination cannot be removed. Replace it in Payout Setup." });
+      setLastSaveDiagnostic(null);
+      return;
+    }
+    setRemoveTarget(destination);
+    setDestinationFormError(null);
+    setNotice(null);
+    setLastSaveDiagnostic(null);
+  }, [startEdit]);
 
   const handleConfirmRemoveDestination = useCallback(async () => {
     if (!removeTarget || removeCountdown > 0) return;
-
     setSavingDestination(true);
     try {
       await deletePayoutDestination(removeTarget.id);
-      setNotice({
-        type: "success",
-        message: `${removeTarget.providerName} payout destination removed.`,
-      });
+      setNotice({ type: "success", message: `${removeTarget.providerName} payout destination removed.` });
       setLastSaveDiagnostic(null);
-
       if (selectedDestinationId === removeTarget.id) resetForm();
       setRemoveTarget(null);
       await loadData({ silent: true });
     } catch (error) {
-      setNotice({
-        type: "error",
-        message: error instanceof Error ? error.message : "Failed to remove destination",
-      });
+      setNotice({ type: "error", message: error instanceof Error ? error.message : "Failed to remove destination" });
     } finally {
       setSavingDestination(false);
     }
