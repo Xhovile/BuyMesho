@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express } from "express";
 import { getFirebaseAdmin } from "./firebaseAdmin.js";
 import { requireFirebaseUser } from "../middleware/requireFirebaseUser.js";
 import { postgresDb as db } from "../db.js";
@@ -12,7 +12,7 @@ function normalizeString(value: unknown): string {
 export function registerAccountRoutes(app: Express) {
   if ((app as any)[ROUTES_INSTALLED_FLAG]) return;
 
-  app.put("/api/account", requireFirebaseUser, async (req: Request, res: Response) => {
+  app.put("/api/account", requireFirebaseUser, async (req: any, res) => {
     const uid = String(req.user?.uid ?? "").trim();
     if (!uid) return res.status(401).json({ error: "Authentication required" });
 
@@ -42,7 +42,6 @@ export function registerAccountRoutes(app: Express) {
         }
       }
 
-      const firebaseUser = req.user?.firebaseUser ?? req.firebaseUser ?? null;
       let seller: any = null;
       try {
         seller = db
@@ -61,7 +60,7 @@ export function registerAccountRoutes(app: Express) {
         success: true,
         profile: {
           uid,
-          email: seller?.email ?? firebaseUser?.email ?? "",
+          email: seller?.email ?? req.user?.email ?? "",
           university: university || seller?.university || null,
           profile_picture: profilePicture || null,
           business_name: seller?.business_name ?? null,
